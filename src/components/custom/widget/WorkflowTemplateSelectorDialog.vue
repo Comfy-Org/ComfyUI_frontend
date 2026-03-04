@@ -106,12 +106,12 @@
         class="text-neutral px-6 pt-4 pb-2 text-2xl font-semibold flex items-center gap-2"
       >
         <template v-if="isMyTemplatesView && showSubmissionForm">
-          <a
-            class="cursor-pointer text-muted transition-colors hover:text-foreground hover:underline"
-            @click.prevent="cancelPublishing"
+          <button
+            class="cursor-pointer border-none bg-transparent p-0 text-2xl font-semibold text-muted transition-colors hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
+            @click="cancelPublishing"
           >
             {{ pageTitle }}
-          </a>
+          </button>
           <StepBreadcrumbs
             :labels="stepLabels"
             :current-step="currentStep"
@@ -166,6 +166,14 @@
         </p>
       </div>
       <div v-else class="flex flex-col flex-grow">
+        <!-- Dashboard for My Templates -->
+        <MyTemplatesDashboard
+          v-if="
+            isMyTemplatesView && !showSubmissionForm && myTemplates.length > 0
+          "
+          :templates="myTemplates"
+        />
+
         <!-- Title -->
         <span
           v-if="isLoading"
@@ -470,6 +478,7 @@ import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import WorkflowTemplateDetailsPanel from '@/components/custom/widget/WorkflowTemplateDetailsPanel.vue'
 import MarketplaceTemplateDetailsPanel from '@/platform/marketplace/components/MarketplaceTemplateDetailsPanel.vue'
+import MyTemplatesDashboard from '@/platform/marketplace/components/MyTemplatesDashboard.vue'
 import MyTemplatesEmptyState from '@/platform/marketplace/components/MyTemplatesEmptyState.vue'
 import { useMyTemplates } from '@/platform/marketplace/composables/useMyTemplates'
 import {

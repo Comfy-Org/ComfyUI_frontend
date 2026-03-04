@@ -7,7 +7,7 @@
     >
       <img :src="url" class="size-full object-cover" />
       <button
-        class="absolute top-1 right-1 rounded-full bg-base-background/80 p-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+        class="absolute top-1 right-1 rounded-full bg-base-background/80 p-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
         @click="emit('remove', index)"
       >
         <i class="icon-[lucide--x] size-3" />

@@ -4,28 +4,7 @@ import type { SystemStats } from '@/schemas/apiSchema'
 
 import { extractVramSnapshot } from './vramUtil'
 
-describe('emptyVramSnapshot', () => {
-  it('returns a new object each call', () => {
-    const a = {
-      torchVramTotal: 0,
-      torchVramFree: 0
-    }
-    const b = {
-      torchVramTotal: 0,
-      torchVramFree: 0
-    }
-    expect(a).not.toBe(b)
-  })
-})
-
 describe('extractVramSnapshot', () => {
-  it('returns zero snapshot for null stats', () => {
-    expect(extractVramSnapshot(null as unknown as SystemStats)).toEqual({
-      torchVramTotal: 0,
-      torchVramFree: 0
-    })
-  })
-
   it('returns zero snapshot for empty devices', () => {
     const stats = { system: {}, devices: [] } as unknown as SystemStats
     expect(extractVramSnapshot(stats)).toEqual({

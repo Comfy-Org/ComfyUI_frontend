@@ -1,13 +1,13 @@
 <template>
   <template v-for="(label, index) in labels" :key="index">
     <i class="icon-[lucide--chevron-right] size-5 text-muted" />
-    <a
+    <button
       v-if="index < currentStep - 1"
-      class="cursor-pointer text-muted transition-colors hover:text-foreground hover:underline"
-      @click.prevent="emit('navigate', index + 1)"
+      class="cursor-pointer border-none bg-transparent p-0 text-muted transition-colors hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
+      @click="emit('navigate', index + 1)"
     >
       {{ label }}
-    </a>
+    </button>
     <span
       v-else
       :class="index === currentStep - 1 ? 'font-medium' : 'text-muted'"

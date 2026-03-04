@@ -10,7 +10,7 @@
       >
         <img :src="files[0]" class="size-full object-cover" />
         <button
-          class="absolute top-1 right-1 rounded-full bg-base-background/80 p-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+          class="absolute top-1 right-1 rounded-full bg-base-background/80 p-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
           @click="emit('remove', 0)"
         >
           <i class="icon-[lucide--x] size-3" />
@@ -50,7 +50,7 @@
       >
         <img :src="files[1]" class="size-full object-cover" />
         <button
-          class="absolute top-1 right-1 rounded-full bg-base-background/80 p-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+          class="absolute top-1 right-1 rounded-full bg-base-background/80 p-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
           @click="emit('remove', 1)"
         >
           <i class="icon-[lucide--x] size-3" />

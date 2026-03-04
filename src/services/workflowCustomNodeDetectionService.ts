@@ -13,7 +13,7 @@ export function detectCustomNodeTypes(
   if (!graph) return []
 
   const customNodes = collectAllNodes(graph, ({ type }) => {
-    return !coreNodeDefs[type]
+    return !!type && !coreNodeDefs[type]
   })
 
   return [...new Set(customNodes.map((node) => node.type!))]

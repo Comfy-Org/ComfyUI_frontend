@@ -10,7 +10,7 @@
           :key="variant.value"
           :class="
             cn(
-              'flex flex-col items-center gap-1 rounded-lg border border-border-default p-3 text-xs transition-colors',
+              'flex flex-col items-center gap-1 rounded-lg border border-border-default p-3 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-primary-background',
               selectedVariant === variant.value
                 ? 'border-primary-background bg-primary-background/10'
                 : 'hover:bg-secondary-background'

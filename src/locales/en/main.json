@@ -1075,7 +1075,13 @@
       "edit": "Edit Submission",
       "remove": "Remove",
       "removeConfirm": "Remove",
-      "confirmRemove": "Are you sure you want to remove this submission?"
+      "confirmRemove": "Are you sure you want to remove this submission?",
+      "dashboard": "Stats for Nerds",
+      "totalDownloads": "Total Downloads",
+      "totalFavorites": "Total Favorites",
+      "averageRating": "Avg Rating",
+      "templateCount": "Templates",
+      "performance": "Template Performance"
     },
     "publish": {
       "title": "Publish Template",

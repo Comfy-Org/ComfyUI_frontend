@@ -1,5 +1,5 @@
-import { computed, ref, toValue } from 'vue';
-import type { MaybeRefOrGetter } from 'vue';
+import { computed, ref, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import { suggestTags } from '../services/tagApi'
 
 export function useTagSuggestions(

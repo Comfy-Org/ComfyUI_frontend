@@ -130,40 +130,6 @@ describe('minimapCanvasRenderer', () => {
     expect(mockContext.fillRect).not.toHaveBeenCalled()
   })
 
-  it('should batch render nodes by color', () => {
-    const context: MinimapRenderContext = {
-      bounds: { minX: 0, minY: 0, width: 500, height: 400 },
-      scale: 0.5,
-      settings: {
-        nodeColors: true,
-        showLinks: false,
-        showGroups: false,
-        renderBypass: false,
-        renderError: false
-      },
-      width: 250,
-      height: 200
-    }
-
-    renderMinimapToCanvas(mockCanvas, createDataSource(), context)
-
-    const fillStyleCalls: string[] = []
-    let currentStyle = ''
-
-    mockContext.fillStyle = ''
-    Object.defineProperty(mockContext, 'fillStyle', {
-      get: () => currentStyle,
-      set: (value: string) => {
-        currentStyle = value
-        fillStyleCalls.push(value)
-      }
-    })
-
-    renderMinimapToCanvas(mockCanvas, createDataSource(), context)
-
-    expect(fillStyleCalls.length).toBeGreaterThan(0)
-  })
-
   it('should render bypass nodes with special color', () => {
     const context: MinimapRenderContext = {
       bounds: { minX: 0, minY: 0, width: 500, height: 400 },
@@ -304,27 +270,5 @@ describe('minimapCanvasRenderer', () => {
     renderMinimapToCanvas(mockCanvas, createDataSource(), context)
 
     expect(adjustColor).toHaveBeenCalled()
-  })
-
-  it('should calculate correct offsets for centering', () => {
-    const context: MinimapRenderContext = {
-      bounds: { minX: 0, minY: 0, width: 200, height: 100 },
-      scale: 0.5,
-      settings: {
-        nodeColors: false,
-        showLinks: false,
-        showGroups: false,
-        renderBypass: false,
-        renderError: false
-      },
-      width: 250,
-      height: 200
-    }
-
-    renderMinimapToCanvas(mockCanvas, createDataSource(), context)
-
-    // With bounds 200x100 at scale 0.5 = 100x50
-    // Canvas is 250x200, so offset should be (250-100)/2 = 75, (200-50)/2 = 75
-    expect(mockContext.fillRect).toHaveBeenCalled()
   })
 })

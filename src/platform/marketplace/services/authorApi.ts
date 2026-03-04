@@ -3,11 +3,26 @@ import { useMockKVStore } from '@/utils/mockKVStore'
 import type {
   AuthorDashboardStats,
   MarketplaceTemplate,
+  PeriodDataPoint,
   StatsPeriod
 } from '../types/marketplace'
 
 const store = useMockKVStore('marketplace')
 const collection = store.collection<MarketplaceTemplate>('templates')
+
+function generateMockPeriodData(period: StatsPeriod): PeriodDataPoint[] {
+  const days = period === 'day' ? 1 : period === 'week' ? 7 : 30
+  const now = new Date()
+  return Array.from({ length: days }, (_, i) => {
+    const date = new Date(now)
+    date.setDate(date.getDate() - (days - 1 - i))
+    return {
+      date: date.toISOString().slice(0, 10),
+      downloads: Math.floor(Math.random() * 50) + 5,
+      favorites: Math.floor(Math.random() * 20) + 1
+    }
+  })
+}
 
 // GET /api/marketplace/author/templates
 export async function getAuthorTemplates(
@@ -42,6 +57,6 @@ export async function getAuthorStats(
           templates.length
         : 0,
     templateCount: templates.length,
-    periodData: []
+    periodData: generateMockPeriodData(_period)
   }
 }
