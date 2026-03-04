@@ -11,7 +11,6 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
@@ -29,7 +28,6 @@ const { t } = useI18n()
 const draggableList = ref<DraggableList | undefined>(undefined)
 const sectionWidgetsRef = ref<{ widgetsContainer: HTMLElement }>()
 const isSearching = ref(false)
-const isAllCollapsed = ref(false)
 
 const favoritedWidgets = computed(
   () => favoritedWidgetsStore.validFavoritedWidgets
@@ -110,6 +108,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   draggableList.value?.dispose()
 })
+
+function onCollapseUpdate() {
+  // Rebuild draggable list after the section header is toggled
+  nextTick(setDraggableState)
+}
 </script>
 
 <template>
@@ -122,25 +125,9 @@ onBeforeUnmount(() => {
       :update-key="favoritedWidgets"
       class="flex-1"
     />
-    <Transition
-      enter-active-class="transition-all duration-300 ease-in-out"
-      enter-from-class="max-w-0 opacity-0 ml-0"
-      enter-to-class="max-w-10 opacity-100 ml-2"
-      leave-active-class="transition-all duration-300 ease-in-out"
-      leave-from-class="max-w-10 opacity-100 ml-2"
-      leave-to-class="max-w-0 opacity-0 ml-0"
-    >
-      <div
-        v-if="!isSearching && 1 > 1"
-        class="overflow-hidden flex items-center"
-      >
-        <CollapseToggleButton v-model="isAllCollapsed" />
-      </div>
-    </Transition>
   </div>
   <SectionWidgets
     ref="sectionWidgetsRef"
-    :collapse="isAllCollapsed && !isSearching"
     :label
     :widgets="searchedFavoritedWidgets"
     :is-draggable="!isSearching"
@@ -148,12 +135,7 @@ onBeforeUnmount(() => {
     show-node-name
     enable-empty-state
     class="border-b border-interface-stroke"
-    @update:collapse="
-      (v) => {
-        isAllCollapsed = v
-        nextTick(setDraggableState)
-      }
-    "
+    @update:collapse="onCollapseUpdate"
   >
     <template #empty>
       <div class="text-sm text-muted-foreground px-4 text-center py-10">

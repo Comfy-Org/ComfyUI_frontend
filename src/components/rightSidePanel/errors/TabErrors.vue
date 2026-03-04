@@ -5,21 +5,10 @@
       class="px-4 pt-1 pb-4 flex items-center border-b border-interface-stroke shrink-0 min-w-0"
     >
       <FormSearchInput v-model="searchQuery" class="flex-1" />
-      <Transition
-        enter-active-class="transition-all duration-300 ease-in-out"
-        enter-from-class="max-w-0 opacity-0 ml-0"
-        enter-to-class="max-w-10 opacity-100 ml-2"
-        leave-active-class="transition-all duration-300 ease-in-out"
-        leave-from-class="max-w-10 opacity-100 ml-2"
-        leave-to-class="max-w-0 opacity-0 ml-0"
-      >
-        <div
-          v-if="!isSearching && tabErrorGroups.length > 1"
-          class="overflow-hidden flex items-center"
-        >
-          <CollapseToggleButton v-model="isAllCollapsed" />
-        </div>
-      </Transition>
+      <CollapseToggleButton
+        v-model="isAllCollapsed"
+        :show="!isSearching && tabErrorGroups.length > 1"
+      />
     </div>
 
     <!-- Scrollable content -->
@@ -242,9 +231,7 @@ const {
 
 const isAllCollapsed = computed({
   get() {
-    return filteredGroups.value.every(
-      (g) => isSectionCollapsed(g.title) === true
-    )
+    return filteredGroups.value.every((g) => isSectionCollapsed(g.title))
   },
   set(collapse: boolean) {
     for (const group of tabErrorGroups.value) {
