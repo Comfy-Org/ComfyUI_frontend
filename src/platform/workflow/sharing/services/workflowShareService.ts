@@ -4,6 +4,7 @@ import type {
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { AssetInfo } from '@/schemas/apiSchema'
 import {
   zPublishRecordResponse,
@@ -71,7 +72,6 @@ function decodeSharedWorkflowPayload(
     name: r.name,
     listed: r.listed,
     publishedAt: r.publish_time ? parsePublishedAt(r.publish_time) : null,
-    // workflow_json is validated by our backend publish pipeline before storage
     workflowJson: r.workflow_json as ComfyWorkflowJSON,
     assets: r.assets
   }
@@ -122,7 +122,10 @@ export function useWorkflowShareService() {
       `/userdata/${encodeURIComponent(workflowPath)}/publish`
     )
     if (!response.ok) {
-      return UNPUBLISHED
+      if (response.status === 404) return UNPUBLISHED
+      throw new Error(
+        `Failed to fetch publish status: ${response.status} ${response.statusText}`
+      )
     }
 
     const record = decodePublishRecord(await response.json())
@@ -168,6 +171,12 @@ export function useWorkflowShareService() {
     if (!workflow) {
       throw new Error('Failed to load shared workflow: invalid response')
     }
+
+    const validated = await validateComfyWorkflow(workflow.workflowJson)
+    if (!validated) {
+      throw new Error('Failed to load shared workflow: invalid workflow data')
+    }
+    workflow.workflowJson = validated
 
     return workflow
   }

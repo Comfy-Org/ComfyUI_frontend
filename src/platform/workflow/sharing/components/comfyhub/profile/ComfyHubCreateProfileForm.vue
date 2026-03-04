@@ -160,6 +160,7 @@ function handleProfileSelect(event: Event) {
 }
 
 async function handleCreate() {
+  if (isCreating.value) return
   isCreating.value = true
   try {
     const profile = await createProfile({

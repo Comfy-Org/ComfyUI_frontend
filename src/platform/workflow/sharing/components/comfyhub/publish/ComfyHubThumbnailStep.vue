@@ -207,6 +207,9 @@ function isThumbnailType(value: string): value is ThumbnailType {
 
 function handleThumbnailTypeChange(value: unknown) {
   if (typeof value === 'string' && isThumbnailType(value)) {
+    emit('update:thumbnailFile', null)
+    emit('update:comparisonBeforeFile', null)
+    emit('update:comparisonAfterFile', null)
     emit('update:thumbnailType', value)
   }
 }
@@ -293,15 +296,16 @@ function isImageType(types: readonly string[]) {
   return types.some((type) => type.startsWith('image/'))
 }
 
-function isMediaType(types: readonly string[]) {
+function isVideoModeMedia(types: readonly string[]) {
   return types.some(
-    (type) => type.startsWith('video/') || type.startsWith('image/')
+    (type) =>
+      type.startsWith('video/') || type === 'image/gif' || type === 'image/webp'
   )
 }
 
 const { isOverDropZone: isOverSingleDrop } = useDropZone(singleDropRef, {
   dataTypes: (types: readonly string[]) =>
-    thumbnailType === 'video' ? isMediaType(types) : isImageType(types),
+    thumbnailType === 'video' ? isVideoModeMedia(types) : isImageType(types),
   multiple: false,
   onDrop(files) {
     const file = files?.[0]

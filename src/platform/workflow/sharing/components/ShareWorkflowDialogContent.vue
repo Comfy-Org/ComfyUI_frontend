@@ -364,6 +364,11 @@ const {
 
     const publishableAssets = await shareService.getShareableAssets()
 
+    if (publishableAssets.length > 0 && !acknowledged.value) {
+      assetInfo.value = publishableAssets
+      return null
+    }
+
     const result = await shareService.publishWorkflow(
       workflow.path,
       publishableAssets

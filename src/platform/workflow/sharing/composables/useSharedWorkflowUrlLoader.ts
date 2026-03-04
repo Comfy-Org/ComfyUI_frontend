@@ -139,30 +139,37 @@ export function useSharedWorkflowUrlLoader() {
 
     try {
       await app.loadGraphData(payload.workflowJson, true, true, workflowName)
-
-      if (result.action === 'copy-and-open' && nonOwnedAssets.length > 0) {
-        try {
-          await workflowShareService.importPublishedAssets(
-            nonOwnedAssets.map((a) => a.id)
-          )
-        } catch (importError) {
-          console.error(
-            '[useSharedWorkflowUrlLoader] Failed to import assets:',
-            importError
-          )
-          toast.add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('openSharedWorkflow.importFailed'),
-            life: 3000
-          })
-        }
-      }
     } catch (error) {
       console.error(
         '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',
         error
       )
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('shareWorkflow.loadFailed'),
+        life: 5000
+      })
+      return 'failed'
+    }
+
+    if (result.action === 'copy-and-open' && nonOwnedAssets.length > 0) {
+      try {
+        await workflowShareService.importPublishedAssets(
+          nonOwnedAssets.map((a) => a.id)
+        )
+      } catch (importError) {
+        console.error(
+          '[useSharedWorkflowUrlLoader] Failed to import assets:',
+          importError
+        )
+        toast.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('openSharedWorkflow.importFailed'),
+          life: 5000
+        })
+      }
     }
 
     cleanupUrlParams()

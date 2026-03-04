@@ -32,6 +32,7 @@
       <button
         v-for="image in exampleImages"
         :key="image.id"
+        type="button"
         :class="
           cn(
             'relative h-[100px] cursor-pointer overflow-hidden rounded border-none p-0',

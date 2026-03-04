@@ -121,7 +121,14 @@ async function handlePublish() {
 
   isResolvingPublishAccess.value = true
   try {
-    const profileExists = await checkProfile()
+    let profileExists: boolean
+    try {
+      profileExists = await checkProfile()
+    } catch (error) {
+      console.error('Failed to check profile:', error)
+      return
+    }
+
     if (profileExists) {
       onPublish()
       return

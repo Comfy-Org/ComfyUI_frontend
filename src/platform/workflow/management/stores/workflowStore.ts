@@ -504,6 +504,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
         if (workflow.path !== oldPath) {
           delete workflowLookup.value[oldPath]
           workflowLookup.value[workflow.path] = workflow
+
+          const openIndex = openWorkflowPaths.value.indexOf(oldPath)
+          if (openIndex !== -1) {
+            openWorkflowPaths.value.splice(openIndex, 1, workflow.path)
+          }
         }
         throw error
       }
