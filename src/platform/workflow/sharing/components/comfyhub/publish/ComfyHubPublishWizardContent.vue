@@ -37,7 +37,6 @@
             "
           />
           <ComfyHubExamplesStep
-            embedded
             :example-images="formData.exampleImages"
             :selected-example-ids="formData.selectedExampleIds"
             @update:example-images="onUpdateFormData({ exampleImages: $event })"

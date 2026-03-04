@@ -181,7 +181,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
     const loaded = await loadSharedWorkflowFromUrl()
 
-    expect(loaded).toBe('loaded')
+    expect(loaded).toBe('cancelled')
     expect(mockLoadGraphData).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(

@@ -29,7 +29,9 @@
       </span>
       <Select
         :model-value="workflowType"
-        @update:model-value="$emit('update:workflowType', String($event))"
+        @update:model-value="
+          emit('update:workflowType', $event as ComfyHubWorkflowType)
+        "
       >
         <SelectTrigger>
           <SelectValue
@@ -120,6 +122,7 @@ import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
+import type { ComfyHubWorkflowType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
@@ -127,14 +130,14 @@ import { vAutoAnimate } from '@formkit/auto-animate/vue'
 const { tags, workflowType } = defineProps<{
   name: string
   description: string
-  workflowType: string
+  workflowType: ComfyHubWorkflowType | ''
   tags: string[]
 }>()
 
 const emit = defineEmits<{
   'update:name': [value: string]
   'update:description': [value: string]
-  'update:workflowType': [value: string]
+  'update:workflowType': [value: ComfyHubWorkflowType | '']
   'update:tags': [value: string[]]
 }>()
 

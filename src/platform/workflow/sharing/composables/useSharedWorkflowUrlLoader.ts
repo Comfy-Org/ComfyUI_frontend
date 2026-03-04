@@ -15,7 +15,11 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
-type SharedWorkflowUrlLoadStatus = 'not-present' | 'loaded' | 'failed'
+type SharedWorkflowUrlLoadStatus =
+  | 'not-present'
+  | 'loaded'
+  | 'cancelled'
+  | 'failed'
 
 type DialogResult =
   | { action: 'copy-and-open'; payload: SharedWorkflowPayload }
@@ -120,7 +124,7 @@ export function useSharedWorkflowUrlLoader() {
     if (result.action === 'cancel') {
       cleanupUrlParams()
       clearPreservedQuery(SHARE_NAMESPACE)
-      return 'loaded'
+      return 'cancelled'
     }
 
     const { payload } = result

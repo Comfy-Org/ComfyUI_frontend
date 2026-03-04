@@ -12,16 +12,9 @@ const isFetchingProfile = ref(false)
 const profile = ref<ComfyHubProfile | null>(null)
 const cachedUserId = ref<string | null>(null)
 
-function mapHubProfileResponse(payload: unknown): ComfyHubProfile {
+function mapHubProfileResponse(payload: unknown): ComfyHubProfile | null {
   const result = zHubProfileResponse.safeParse(payload)
-  if (result.success) return result.data
-  return {
-    username: '',
-    name: undefined,
-    description: undefined,
-    coverImageUrl: undefined,
-    profilePictureUrl: undefined
-  }
+  return result.success ? result.data : null
 }
 
 export function useComfyHubProfileGate() {
@@ -57,6 +50,11 @@ export function useComfyHubProfileGate() {
       }
 
       const nextProfile = mapHubProfileResponse(await response.json())
+      if (!nextProfile) {
+        hasProfile.value = false
+        profile.value = null
+        return null
+      }
       hasProfile.value = true
       profile.value = nextProfile
       return nextProfile
@@ -114,6 +112,9 @@ export function useComfyHubProfileGate() {
     }
 
     const createdProfile = mapHubProfileResponse(await response.json())
+    if (!createdProfile) {
+      throw new Error('Invalid profile response from server')
+    }
     hasProfile.value = true
     profile.value = createdProfile
     return createdProfile

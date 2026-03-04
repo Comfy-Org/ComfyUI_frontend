@@ -17,7 +17,6 @@
     "size:report": "node scripts/size-report.js",
     "collect-i18n": "pnpm exec playwright test --config=playwright.i18n.config.ts",
     "dev:cloud": "cross-env DEV_SERVER_COMFYUI_URL='https://testcloud.comfy.org/' nx serve",
-    "dev:cloud-eph": "cross-env DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL='https://pr-2591.testenvs.comfy.org/' nx serve",
     "dev:desktop": "nx dev @comfyorg/desktop-ui",
     "dev:electron": "cross-env DISTRIBUTION=desktop nx serve --config vite.electron.config.mts",
     "dev:no-vue": "cross-env DISABLE_VUE_PLUGINS=true nx serve",

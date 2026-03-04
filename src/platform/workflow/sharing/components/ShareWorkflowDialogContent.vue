@@ -241,20 +241,9 @@ function tabButtonClass(mode: DialogMode) {
 }
 
 function handleDialogModeChange(nextMode: DialogMode) {
-  if (nextMode === 'shareLink') {
-    dialogMode.value = 'shareLink'
-    return
-  }
-
-  if (nextMode === dialogMode.value) {
-    return
-  }
-
-  if (!showPublishToHubTab.value) {
-    return
-  }
-
-  dialogMode.value = 'publishToHub'
+  if (nextMode === dialogMode.value) return
+  if (nextMode === 'publishToHub' && !showPublishToHubTab.value) return
+  dialogMode.value = nextMode
 }
 
 watch(showPublishToHubTab, (isVisible) => {
@@ -335,10 +324,7 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     acknowledged.value = false
     reloadAssets()
 
-    const status = await shareService.getPublishStatus(workflow.path)
-    const resolved = resolveDialogStateFromStatus(status, workflow)
-    publishResult.value = resolved.publishResult
-    dialogState.value = resolved.dialogState
+    await refreshDialogState()
   },
   undefined,
   {

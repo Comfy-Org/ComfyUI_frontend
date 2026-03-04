@@ -13,6 +13,7 @@ import type {
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
+import { zShareableAssetsResponse } from '@/schemas/apiSchema'
 import type { IFuseOptions } from 'fuse.js'
 import type {
   TemplateIncludeOnDistributionEnum,
@@ -894,7 +895,8 @@ export class ComfyApi extends EventTarget {
     if (res.status !== 200) {
       throw new Error(`Failed to fetch shareable assets: ${res.status}`)
     }
-    return await res.json()
+    const data = await res.json()
+    return zShareableAssetsResponse.parse(data)
   }
 
   /**

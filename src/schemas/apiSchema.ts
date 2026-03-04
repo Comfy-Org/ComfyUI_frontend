@@ -502,7 +502,7 @@ export const zAssetInfo = z.object({
 
 export type AssetInfo = z.infer<typeof zAssetInfo>
 
-const zShareableAssetsResponse = z.object({
+export const zShareableAssetsResponse = z.object({
   assets: z.array(zAssetInfo)
 })
 

@@ -1,5 +1,11 @@
 export type ThumbnailType = 'image' | 'video' | 'imageComparison'
 
+export type ComfyHubWorkflowType =
+  | 'imageGeneration'
+  | 'videoGeneration'
+  | 'upscaling'
+  | 'editing'
+
 export interface ExampleImage {
   id: string
   url: string
@@ -9,7 +15,7 @@ export interface ExampleImage {
 export interface ComfyHubPublishFormData {
   name: string
   description: string
-  workflowType: string
+  workflowType: ComfyHubWorkflowType | ''
   tags: string[]
   thumbnailType: ThumbnailType
   thumbnailFile: File | null

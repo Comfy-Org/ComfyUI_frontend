@@ -53,11 +53,6 @@ export function useComfyHubPublishWizard() {
     stepper.goTo('finish')
   }
 
-  function resetWizard() {
-    stepper.goTo('describe')
-    formData.value = createDefaultFormData()
-  }
-
   return {
     currentStep: stepper.current,
     formData,
@@ -69,7 +64,6 @@ export function useComfyHubPublishWizard() {
     goNext: stepper.goToNext,
     goBack: stepper.goToPrevious,
     openProfileCreationStep,
-    closeProfileCreationStep,
-    resetWizard
+    closeProfileCreationStep
   }
 }
