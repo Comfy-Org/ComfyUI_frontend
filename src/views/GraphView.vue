@@ -113,6 +113,12 @@ const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 const { isBuilderMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
 
+watch(linearMode, (isLinear) => {
+  if (isLinear) {
+    useSidebarTabStore().activeSidebarTabId = null
+  }
+})
+
 const telemetry = useTelemetry()
 const firebaseAuthStore = useFirebaseAuthStore()
 let hasTrackedLogin = false
