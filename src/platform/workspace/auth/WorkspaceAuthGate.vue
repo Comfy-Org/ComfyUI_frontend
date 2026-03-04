@@ -4,9 +4,7 @@
     v-else
     class="fixed inset-0 z-[1100] flex items-center justify-center bg-[var(--p-mask-background)]"
   >
-    <i
-      class="icon-[lucide--loader-circle] size-12 animate-spin text-neutral-400"
-    />
+    <i class="icon-[lucide--loader-circle] size-12 animate-spin text-white" />
   </div>
 </template>
 

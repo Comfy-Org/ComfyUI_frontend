@@ -4,9 +4,7 @@
     v-if="isLoading"
     class="absolute inset-0 flex items-center justify-center"
   >
-    <i
-      class="icon-[lucide--loader-circle] size-12 animate-spin text-neutral-400"
-    />
+    <i class="icon-[lucide--loader-circle] size-12 animate-spin text-white" />
   </div>
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
