@@ -208,5 +208,13 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'Escape'
     },
     commandId: 'Comfy.Graph.ExitSubgraph'
+  },
+  {
+    combo: {
+      key: 'f',
+      ctrl: true,
+      shift: true
+    },
+    commandId: 'Workspace.ToggleFocusMode'
   }
 ]
