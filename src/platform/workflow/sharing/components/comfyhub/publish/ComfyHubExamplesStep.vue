@@ -12,13 +12,19 @@
     <div class="grid grid-cols-4 gap-2.5 overflow-y-auto">
       <!-- Upload tile -->
       <label
-        class="flex h-25 aspect-square text-center cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default transition-colors hover:border-muted-foreground"
+        tabindex="0"
+        role="button"
+        :aria-label="$t('comfyHubPublish.uploadExampleImage')"
+        class="flex h-25 aspect-square text-center cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         @dragenter.stop
         @dragleave.stop
         @dragover.prevent.stop
         @drop.prevent.stop="handleFileDrop"
+        @keydown.enter.prevent="fileInputRef?.click()"
+        @keydown.space.prevent="fileInputRef?.click()"
       >
         <input
+          ref="fileInputRef"
           type="file"
           accept="image/*"
           multiple
@@ -66,10 +72,13 @@
 
 <script setup lang="ts">
 import { v4 as uuidv4 } from 'uuid'
+import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { cn } from '@/utils/tailwindUtil'
+
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const MAX_EXAMPLES = 8
 

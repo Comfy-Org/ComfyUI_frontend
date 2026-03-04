@@ -128,8 +128,14 @@ export function useWorkflowShareService() {
       )
     }
 
-    const record = decodePublishRecord(await response.json())
-    if (!record?.shareId || !record.publishedAt) return UNPUBLISHED
+    const json = await response.json()
+    const record = decodePublishRecord(json)
+    if (!record) {
+      throw new Error(
+        `Failed to decode publish record: unexpected response shape: ${JSON.stringify(json)}`
+      )
+    }
+    if (!record.shareId || !record.publishedAt) return UNPUBLISHED
 
     return {
       isPublished: true,

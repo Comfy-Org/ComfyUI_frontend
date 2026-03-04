@@ -69,7 +69,7 @@
             variant="primary"
             size="lg"
             :loading="isSaving"
-            @click="handleSave"
+            @click="() => handleSave()"
           >
             {{
               isSaving
@@ -105,7 +105,7 @@
               isLoadingAssets ||
               (requiresAcknowledgment && !acknowledged)
             "
-            @click="handlePublish"
+            @click="() => handlePublish()"
           >
             {{ publishButtonLabel }}
           </Button>
