@@ -7,7 +7,6 @@ import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
@@ -17,6 +16,7 @@ import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
 import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
+import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
@@ -39,6 +39,7 @@ const executionStore = useExecutionStore()
 const mediaActions = useMediaAssetActions()
 const queueStore = useQueueStore()
 const { isBuilderMode, isArrangeMode } = useAppMode()
+const { allOutputs } = useOutputHistory()
 const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
@@ -58,8 +59,7 @@ function handleSelection(sel: OutputSelection) {
 }
 
 function downloadAsset(item?: AssetItem) {
-  const user_metadata = getOutputAssetMetadata(item?.user_metadata)
-  for (const output of user_metadata?.allOutputs ?? [])
+  for (const output of allOutputs(item))
     downloadFile(output.url, output.filename)
 }
 
@@ -131,7 +131,7 @@ async function rerun(e: Event) {
         {
           icon: 'icon-[lucide--download]',
           label: t('linearMode.downloadAll'),
-          command: () => downloadAsset(selectedItem!)
+          command: () => downloadAsset(selectedItem)
         },
         { separator: true },
         {
