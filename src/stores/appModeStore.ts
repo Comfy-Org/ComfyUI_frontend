@@ -43,7 +43,6 @@ export const useAppModeStore = defineStore('appMode', () => {
     { immediate: true }
   )
 
-  let unwatch: () => void | undefined
   watch(
     () =>
       isBuilderMode.value
@@ -62,10 +61,12 @@ export const useAppModeStore = defineStore('appMode', () => {
     { deep: true }
   )
 
+  let unwatch: () => void | undefined
   watch(
     () => mode.value === 'builder:select',
     (inSelect) => {
       const { state } = getCanvas()
+      if (!state) return
       state.readOnly = inSelect
       unwatch?.()
       if (inSelect)
