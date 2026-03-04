@@ -2600,7 +2600,8 @@
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
     "enterNewName": "Enter new name",
-    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red)."
+    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red).",
+    "share": "Share"
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",
