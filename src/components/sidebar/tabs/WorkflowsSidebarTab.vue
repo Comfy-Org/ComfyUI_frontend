@@ -161,7 +161,7 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 
 const settingStore = useSettingStore()
@@ -256,10 +256,11 @@ const renderTreeNode = (
     ? {
         handleClick,
         async handleRename(newName: string) {
+          const suffix = getWorkflowSuffix(workflow.suffix)
           const newPath =
             type === WorkflowTreeType.Browse
-              ? workflow.directory + '/' + appendJsonExt(newName)
-              : ComfyWorkflow.basePath + appendJsonExt(newName)
+              ? workflow.directory + '/' + ensureWorkflowSuffix(newName, suffix)
+              : ComfyWorkflow.basePath + ensureWorkflowSuffix(newName, suffix)
 
           await workflowService.renameWorkflow(workflow, newPath)
         },

@@ -21,7 +21,7 @@ export const buttonVariants = cva({
         'text-destructive-background bg-transparent hover:bg-destructive-background/10',
       'overlay-white': 'bg-white text-gray-600 hover:bg-white/90',
       gradient:
-        'bg-subscription-gradient text-white border-transparent hover:opacity-90'
+        'bg-(image:--subscription-button-gradient) text-white border-transparent hover:opacity-90'
     },
     size: {
       sm: 'h-6 rounded-sm px-2 py-1 text-xs',
