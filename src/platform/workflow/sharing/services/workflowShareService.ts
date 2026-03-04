@@ -139,13 +139,16 @@ export function useWorkflowShareService() {
     }
   }
 
-  async function getShareableAssets(): Promise<AssetInfo[]> {
+  async function getShareableAssets(
+    includingPublic = false
+  ): Promise<AssetInfo[]> {
     const graph = app.rootGraph
     if (!graph) return []
 
     const { output } = await app.graphToPrompt(graph)
-    const result = await api.getShareableAssets(output)
-    return result.assets
+    const { assets } = await api.getShareableAssets(output)
+
+    return includingPublic ? assets : assets.filter((asset) => !asset.public)
   }
 
   async function getSharedWorkflow(
