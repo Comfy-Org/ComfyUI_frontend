@@ -1134,6 +1134,8 @@
       "mediaUploadHintCompare": "Upload a before image and an after image",
       "mediaUploadHintVideo": "Upload a short video preview",
       "addFile": "Add",
+      "uploadFailed": "Failed to upload file",
+      "uploading": "Uploading...",
       "fileCount": "{count} file | {count} files",
       "before": "Before",
       "after": "After",

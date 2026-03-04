@@ -13,6 +13,14 @@
       </button>
     </div>
 
+    <div
+      v-else-if="uploadingIndices.has(0)"
+      class="flex size-24 flex-col items-center justify-center gap-1 rounded-lg border border-border-default bg-base-background/80 text-xs text-muted"
+    >
+      <i class="icon-[lucide--loader-2] size-5 animate-spin" />
+      {{ uploadingIndices.get(0) }}%
+    </div>
+
     <button
       v-else
       class="flex size-24 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border-default text-xs text-muted transition-colors hover:border-primary-background hover:text-foreground"
@@ -38,8 +46,9 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-defineProps<{
+const { uploadingIndices = new Map() } = defineProps<{
   files: string[]
+  uploadingIndices?: Map<number, number>
 }>()
 
 const emit = defineEmits<{

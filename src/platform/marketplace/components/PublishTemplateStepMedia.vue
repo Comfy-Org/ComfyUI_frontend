@@ -46,6 +46,7 @@
       <component
         :is="uploadComponent"
         :files="wizardData.gallery ?? []"
+        :uploading-indices="uploadingIndices"
         @add="onFileAdded"
         @remove="onFileRemoved"
       />
@@ -62,6 +63,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -85,6 +87,7 @@ function isImageAsset(asset: AssetItem): boolean {
 const { t } = useI18n()
 const { wizardData } = usePublishTemplateWizard()
 const assetsStore = useAssetsStore()
+const toastStore = useToastStore()
 
 const outputImageAssets = computed(() =>
   assetsStore.historyAssets.filter(isImageAsset)
@@ -99,6 +102,7 @@ onMounted(() => {
 })
 
 const errors = ref<Record<string, string>>({})
+const uploadingIndices = ref(new Map<number, number>())
 const selectedVariant = ref<string>(
   wizardData.value.thumbnailVariant ?? 'default'
 )
@@ -156,8 +160,25 @@ function onSuggestionSelected(url: string) {
 }
 
 async function onFileAdded(file: File) {
-  const result = await uploadMedia('draft', file)
-  wizardData.value.gallery = [...(wizardData.value.gallery ?? []), result.url]
+  const gallery = wizardData.value.gallery ?? []
+  const slotIndex = gallery.length
+
+  uploadingIndices.value.set(slotIndex, 0)
+
+  try {
+    const result = await uploadMedia('draft', file, (percent) => {
+      uploadingIndices.value.set(slotIndex, percent)
+    })
+    uploadingIndices.value.delete(slotIndex)
+    wizardData.value.gallery = [...(wizardData.value.gallery ?? []), result.url]
+  } catch {
+    uploadingIndices.value.delete(slotIndex)
+    toastStore.add({
+      severity: 'error',
+      summary: t('templateWorkflows.publish.uploadFailed'),
+      life: 5000
+    })
+  }
 }
 
 function onFileRemoved(index: number) {
