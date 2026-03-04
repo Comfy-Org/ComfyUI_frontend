@@ -275,7 +275,7 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
 
   if (tiffHeaderOffset !== -1) {
     const exifData = itemData.subarray(tiffHeaderOffset)
-    const data: Record<string, any> = parseExifData(exifData)
+    const data: Record<string, unknown> = parseExifData(exifData)
     for (const key in data) {
       const value = data[key]
       if (typeof value === 'string') {

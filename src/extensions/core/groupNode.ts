@@ -732,7 +732,7 @@ export class GroupNodeConfig {
   ) {
     // Add converted widgets sorted into their index order (ordered as they were converted) so link ids match up
     const convertedSlots = [...converted.keys()]
-      .sort()
+      .sort((a, b) => a - b)
       .map((k) => converted.get(k))
     for (let i = 0; i < convertedSlots.length; i++) {
       const inputName = convertedSlots[i]

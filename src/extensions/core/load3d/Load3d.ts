@@ -558,7 +558,9 @@ class Load3d {
     if (this.loadingPromise) {
       try {
         await this.loadingPromise
-      } catch (e) {}
+      } catch {
+        // Previous load error is irrelevant — we only need to wait for it to settle
+      }
     }
 
     this.loadingPromise = this._loadModelInternal(url, originalFileName)

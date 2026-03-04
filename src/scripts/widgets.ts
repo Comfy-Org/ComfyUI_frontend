@@ -108,7 +108,7 @@ export function addValueControlWidgets(
   node: LGraphNode,
   targetWidget: IBaseWidget,
   defaultValue?: string,
-  options?: Record<string, any>,
+  options?: Record<string, unknown>,
   inputData?: InputSpec
 ): [IComboWidget, ...IStringWidget[]] {
   if (!defaultValue) defaultValue = 'randomize'
@@ -116,7 +116,7 @@ export function addValueControlWidgets(
 
   const getName = (defaultName: string, optionName: string) => {
     let name = defaultName
-    if (options[optionName]) {
+    if (typeof options[optionName] === 'string') {
       name = options[optionName]
     } else if (typeof inputData?.[1]?.[defaultName] === 'string') {
       name = inputData?.[1]?.[defaultName]

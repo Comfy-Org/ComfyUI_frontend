@@ -501,7 +501,7 @@ export class LiteGraphGlobal {
 
       if (!types.includes(type)) {
         types.push(type)
-        types.sort()
+        types.sort((a, b) => a.localeCompare(b))
       }
     }
   }
