@@ -117,10 +117,7 @@ const placeholderText = computed(
   () => placeholder ?? t('g.searchPlaceholder', { subject: '' })
 )
 
-let skipNextWatchEmission = false
-
 function clearSearch() {
-  skipNextWatchEmission = true
   modelValue.value = ''
   emit('search', '')
   focus()
@@ -129,10 +126,7 @@ function clearSearch() {
 watchDebounced(
   modelValue,
   (value: string) => {
-    if (skipNextWatchEmission) {
-      skipNextWatchEmission = false
-      return
-    }
+    if (value === '') return
     emit('search', value)
   },
   { debounce: debounceTime }
