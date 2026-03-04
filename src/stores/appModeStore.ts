@@ -94,7 +94,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   )
 
   function enterBuilder() {
-    if (!app.rootGraph.nodes?.length) {
+    if (!app.rootGraph?.nodes?.length) {
       emptyWorkflowDialog.show({
         onEnterBuilder: () => enterBuilder(),
         onDismiss: () => setMode('graph')
