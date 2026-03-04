@@ -11,6 +11,7 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
+import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
 import type { LGraph } from './LGraph'
@@ -363,6 +364,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.canvas.dispatchEvent(new CustomEvent(type, { detail }))
   }
 
+  private _setCursor!: ReturnType<typeof createCursorCache>
+
   private _updateCursorStyle() {
     if (!this.state.shouldSetCursor) return
 
@@ -385,7 +388,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       cursor = 'grab'
     }
 
-    this.canvas.style.cursor = cursor
+    this._setCursor(cursor)
   }
 
   // Whether the canvas was previously being dragged prior to pressing space key.
@@ -1910,6 +1913,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.pointer.element = element
 
     if (!element) return
+    this._setCursor = createCursorCache(element)
 
     // TODO: classList.add
     element.className += ' lgraphcanvas'
@@ -2969,7 +2973,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
 
           // Set appropriate cursor for resize direction
-          this.canvas.style.cursor = cursors[resizeDirection]
+          this._setCursor(cursors[resizeDirection])
           return
         }
       }
