@@ -841,7 +841,7 @@
     "amount": "مقدار",
     "apply": "اعمال",
     "architecture": "معماری",
-    "asset": "{count} دارایی | {count} دارایی | {count} دارایی",
+    "asset": "{count} دارایی | {count} دارایی",
     "audioFailedToLoad": "بارگذاری صوت ناموفق بود",
     "audioProgress": "پیشرفت صوت",
     "author": "نویسنده",
@@ -1018,7 +1018,7 @@
     "nodeSlotsError": "خطا در slotهای node",
     "nodeWidgetsError": "خطا در ابزارک‌های node",
     "nodes": "nodeها",
-    "nodesCount": "{count} نود | {count} نود | {count} نود",
+    "nodesCount": "{count} نود | {count} نود",
     "nodesRunning": "nodeها در حال اجرا هستند",
     "none": "هیچ‌کدام",
     "nothingToCopy": "موردی برای کپی وجود ندارد",
@@ -2139,7 +2139,7 @@
   "progressToast": {
     "allDownloadsCompleted": "همه دانلودها تکمیل شدند",
     "downloadingModel": "در حال دانلود مدل...",
-    "downloadsFailed": "{count} دانلود ناموفق بود | {count} دانلود ناموفق بود | {count} دانلود ناموفق بودند",
+    "downloadsFailed": "{count} دانلود ناموفق بود | {count} دانلود ناموفق بودند",
     "failed": "ناموفق",
     "filter": {
       "all": "همه",

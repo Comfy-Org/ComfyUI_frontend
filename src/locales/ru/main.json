@@ -822,7 +822,7 @@
     "downloadFailed": "Не удалось скачать «{name}»",
     "exportCompleted": "ZIP-архив готов к загрузке",
     "exportError": "Ошибка экспорта",
-    "exportFailed": "{count} экспорт не выполнен | {count} экспорт не выполнен | {count} экспорта не выполнено",
+    "exportFailed": "{count} экспорт не выполнен | {count} экспорта не выполнено",
     "exportFailedSingle": "Не удалось создать ZIP-экспорт",
     "exportStarted": "Подготовка к загрузке ZIP...",
     "exportingAssets": "Экспорт ассетов",
@@ -2139,7 +2139,7 @@
   "progressToast": {
     "allDownloadsCompleted": "Все загрузки завершены",
     "downloadingModel": "Загрузка модели...",
-    "downloadsFailed": "{count} загрузок не удалось | {count} загрузка не удалась | {count} загрузок не удалось",
+    "downloadsFailed": "{count} загрузка не удалась | {count} загрузок не удалось",
     "failed": "Не удалось",
     "filter": {
       "all": "Все",

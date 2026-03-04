@@ -775,7 +775,7 @@
     "promptExecutionError": "İstem yürütmesi başarısız oldu"
   },
   "errorOverlay": {
-    "errorCount": "{count} HATA | {count} HATA | {count} HATA",
+    "errorCount": "{count} HATA | {count} HATA",
     "seeErrors": "Hataları Gör"
   },
   "essentials": {
@@ -822,7 +822,7 @@
     "downloadFailed": "\"{name}\" indirilemedi",
     "exportCompleted": "ZIP indirme hazır",
     "exportError": "Dışa aktarma başarısız",
-    "exportFailed": "{count} dışa aktarma başarısız oldu | {count} dışa aktarma başarısız oldu | {count} dışa aktarma başarısız oldu",
+    "exportFailed": "{count} dışa aktarma başarısız oldu | {count} dışa aktarma başarısız oldu",
     "exportFailedSingle": "ZIP dışa aktarımı oluşturulamadı",
     "exportStarted": "ZIP indirme hazırlanıyor...",
     "exportingAssets": "Varlıklar dışa aktarılıyor",
@@ -841,7 +841,7 @@
     "amount": "Miktar",
     "apply": "Uygula",
     "architecture": "Mimari",
-    "asset": "{count} varlık | {count} varlık | {count} varlık",
+    "asset": "{count} varlık | {count} varlık",
     "audioFailedToLoad": "Ses yüklenemedi",
     "audioProgress": "Ses ilerlemesi",
     "author": "Yazar",
@@ -1018,7 +1018,7 @@
     "nodeSlotsError": "Düğüm Yuva Hatası",
     "nodeWidgetsError": "Düğüm Widget Hatası",
     "nodes": "Düğümler",
-    "nodesCount": "{count} düğüm | {count} düğüm | {count} düğüm",
+    "nodesCount": "{count} düğüm | {count} düğüm",
     "nodesRunning": "düğüm çalışıyor",
     "none": "Hiçbiri",
     "nothingToCopy": "Kopyalanacak bir şey yok",
@@ -2139,7 +2139,7 @@
   "progressToast": {
     "allDownloadsCompleted": "Tüm indirmeler tamamlandı",
     "downloadingModel": "Model indiriliyor...",
-    "downloadsFailed": "{count} indirme başarısız oldu | {count} indirme başarısız oldu | {count} indirme başarısız oldu",
+    "downloadsFailed": "{count} indirme başarısız oldu | {count} indirme başarısız oldu",
     "failed": "Başarısız",
     "filter": {
       "all": "Tümü",

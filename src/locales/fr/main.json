@@ -775,7 +775,7 @@
     "promptExecutionError": "L'exécution de l'invite a échoué"
   },
   "errorOverlay": {
-    "errorCount": "{count} ERREURS | {count} ERREUR | {count} ERREURS",
+    "errorCount": "{count} ERREUR | {count} ERREURS",
     "seeErrors": "Voir les erreurs"
   },
   "essentials": {
@@ -822,7 +822,7 @@
     "downloadFailed": "Échec du téléchargement de « {name} »",
     "exportCompleted": "Téléchargement ZIP prêt",
     "exportError": "Échec de l’exportation",
-    "exportFailed": "{count} exportation échouée | {count} exportation échouée | {count} exportations échouées",
+    "exportFailed": "{count} exportation échouée | {count} exportations échouées",
     "exportFailedSingle": "Échec de la création de l’export ZIP",
     "exportStarted": "Préparation du téléchargement ZIP...",
     "exportingAssets": "Exportation des ressources",
@@ -841,7 +841,7 @@
     "amount": "Quantité",
     "apply": "Appliquer",
     "architecture": "Architecture",
-    "asset": "{count} ressources | {count} ressource | {count} ressources",
+    "asset": "{count} ressource | {count} ressources",
     "audioFailedToLoad": "Échec du chargement de l'audio",
     "audioProgress": "Progression audio",
     "author": "Auteur",
@@ -1018,7 +1018,7 @@
     "nodeSlotsError": "Erreur d'emplacements du nœud",
     "nodeWidgetsError": "Erreur de widgets du nœud",
     "nodes": "Nœuds",
-    "nodesCount": "{count} nœuds | {count} nœud | {count} nœuds",
+    "nodesCount": "{count} nœud | {count} nœuds",
     "nodesRunning": "nœuds en cours d’exécution",
     "none": "Aucun",
     "nothingToCopy": "Rien à copier",
@@ -2139,7 +2139,7 @@
   "progressToast": {
     "allDownloadsCompleted": "Tous les téléchargements sont terminés",
     "downloadingModel": "Téléchargement du modèle...",
-    "downloadsFailed": "{count} téléchargements échoués | {count} téléchargement échoué | {count} téléchargements échoués",
+    "downloadsFailed": "{count} téléchargement échoué | {count} téléchargements échoués",
     "failed": "Échec",
     "filter": {
       "all": "Tous",

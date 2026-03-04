@@ -775,7 +775,7 @@
     "promptExecutionError": "La ejecución del prompt falló"
   },
   "errorOverlay": {
-    "errorCount": "{count} ERRORES | {count} ERROR | {count} ERRORES",
+    "errorCount": "{count} ERROR | {count} ERRORES",
     "seeErrors": "Ver errores"
   },
   "essentials": {
@@ -822,7 +822,7 @@
     "downloadFailed": "No se pudo descargar \"{name}\"",
     "exportCompleted": "Descarga ZIP lista",
     "exportError": "Error en la exportación",
-    "exportFailed": "{count} exportación fallida | {count} exportación fallida | {count} exportaciones fallidas",
+    "exportFailed": "{count} exportación fallida | {count} exportaciones fallidas",
     "exportFailedSingle": "No se pudo crear la exportación ZIP",
     "exportStarted": "Preparando descarga ZIP...",
     "exportingAssets": "Exportando recursos",
@@ -841,7 +841,7 @@
     "amount": "Cantidad",
     "apply": "Aplicar",
     "architecture": "Arquitectura",
-    "asset": "{count} recursos | {count} recurso | {count} recursos",
+    "asset": "{count} recurso | {count} recursos",
     "audioFailedToLoad": "No se pudo cargar el audio",
     "audioProgress": "Progreso de audio",
     "author": "Autor",
@@ -1018,7 +1018,7 @@
     "nodeSlotsError": "Error de Ranuras del Nodo",
     "nodeWidgetsError": "Error de Widgets del Nodo",
     "nodes": "Nodos",
-    "nodesCount": "{count} nodos | {count} nodo | {count} nodos",
+    "nodesCount": "{count} nodo | {count} nodos",
     "nodesRunning": "nodos en ejecución",
     "none": "Ninguno",
     "nothingToCopy": "Nada para copiar",
@@ -2139,7 +2139,7 @@
   "progressToast": {
     "allDownloadsCompleted": "Todas las descargas completadas",
     "downloadingModel": "Descargando modelo...",
-    "downloadsFailed": "{count} descargas fallidas | {count} descarga fallida | {count} descargas fallidas",
+    "downloadsFailed": "{count} descarga fallida | {count} descargas fallidas",
     "failed": "Fallido",
     "filter": {
       "all": "Todo",

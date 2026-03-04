@@ -1018,7 +1018,7 @@
     "nodeSlotsError": "節點插槽錯誤",
     "nodeWidgetsError": "節點小工具錯誤",
     "nodes": "節點",
-    "nodesCount": "{count} 個節點 | {count} 個節點 | {count} 個節點",
+    "nodesCount": "{count} 個節點 | {count} 個節點",
     "nodesRunning": "節點執行中",
     "none": "無",
     "nothingToCopy": "沒有可複製的項目",
@@ -2139,7 +2139,7 @@
   "progressToast": {
     "allDownloadsCompleted": "所有下載已完成",
     "downloadingModel": "正在下載模型...",
-    "downloadsFailed": "{count} 個下載失敗 | {count} 個下載失敗 | {count} 個下載失敗",
+    "downloadsFailed": "{count} 個下載失敗 | {count} 個下載失敗",
     "failed": "失敗",
     "filter": {
       "all": "全部",

@@ -841,7 +841,7 @@
     "amount": "수량",
     "apply": "적용",
     "architecture": "아키텍처",
-    "asset": "{count}개 에셋 | {count}개 에셋 | {count}개 에셋",
+    "asset": "{count}개 에셋 | {count}개 에셋",
     "audioFailedToLoad": "오디오를 불러오지 못했습니다",
     "audioProgress": "오디오 진행률",
     "author": "작성자",
@@ -1018,7 +1018,7 @@
     "nodeSlotsError": "노드 슬롯 오류",
     "nodeWidgetsError": "노드 위젯 오류",
     "nodes": "노드",
-    "nodesCount": "{count}개 노드 | {count}개 노드 | {count}개 노드",
+    "nodesCount": "{count}개 노드 | {count}개 노드",
     "nodesRunning": "노드 실행 중",
     "none": "없음",
     "nothingToCopy": "복사할 항목 없음",
@@ -2139,7 +2139,7 @@
   "progressToast": {
     "allDownloadsCompleted": "모든 다운로드가 완료되었습니다",
     "downloadingModel": "모델 다운로드 중...",
-    "downloadsFailed": "{count}개 다운로드 실패 | {count}개 다운로드 실패 | {count}개 다운로드 실패",
+    "downloadsFailed": "{count}개 다운로드 실패 | {count}개 다운로드 실패",
     "failed": "실패",
     "filter": {
       "all": "전체",

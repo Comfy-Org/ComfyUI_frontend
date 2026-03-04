@@ -841,7 +841,7 @@
     "amount": "量",
     "apply": "適用する",
     "architecture": "アーキテクチャ",
-    "asset": "{count} 個のアセット | {count} 個のアセット | {count} 個のアセット",
+    "asset": "{count} 個のアセット | {count} 個のアセット",
     "audioFailedToLoad": "オーディオの読み込みに失敗しました",
     "audioProgress": "オーディオの進捗",
     "author": "作者",
@@ -1018,7 +1018,7 @@
     "nodeSlotsError": "ノードスロットエラー",
     "nodeWidgetsError": "ノードウィジェットエラー",
     "nodes": "ノード",
-    "nodesCount": "{count} ノード | {count} ノード | {count} ノード",
+    "nodesCount": "{count} ノード | {count} ノード",
     "nodesRunning": "ノードが実行中",
     "none": "なし",
     "nothingToCopy": "コピーするものがありません",
@@ -2139,7 +2139,7 @@
   "progressToast": {
     "allDownloadsCompleted": "すべてのダウンロードが完了しました",
     "downloadingModel": "モデルをダウンロード中...",
-    "downloadsFailed": "{count}件のダウンロードに失敗 | {count}件のダウンロードに失敗 | {count}件のダウンロードに失敗",
+    "downloadsFailed": "{count}件のダウンロードに失敗 | {count}件のダウンロードに失敗",
     "failed": "失敗",
     "filter": {
       "all": "すべて",
