@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { computed, provide, ref, toValue, watchEffect } from 'vue'
+import { computed, provide, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -25,6 +25,7 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
@@ -45,32 +46,12 @@ provide(HideLayoutFieldKey, true)
 
 workflowStore.activeWorkflow?.changeTracker?.reset()
 
-function resolveNode(nodeId: NodeId) {
-  return (
-    app.rootGraph.getNodeById(nodeId) ??
-    [...app.rootGraph.subgraphs.values()]
-      .flatMap((sg) => sg.nodes)
-      .find((n) => n.id == nodeId)
-  )
-}
-
-// Prune stale entries whose node/widget no longer exists, so the
-// DraggableList model always matches the rendered items.
-watchEffect(() => {
-  const valid = appModeStore.selectedInputs.filter(([nodeId, widgetName]) =>
-    resolveNode(nodeId)?.widgets?.some((w) => w.name === widgetName)
-  )
-  if (valid.length < appModeStore.selectedInputs.length) {
-    appModeStore.selectedInputs = valid
-  }
-})
-
 const arrangeInputs = computed(() =>
   appModeStore.selectedInputs
     .map(([nodeId, widgetName]) => {
       const node = resolveNode(nodeId)
-      const widget = node?.widgets?.find((w) => w.name === widgetName)
-      if (!node || !widget) return null
+      if (!node) return null
+      const widget = node.widgets?.find((w) => w.name === widgetName)
       return { nodeId, widgetName, node, widget }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
@@ -80,7 +61,13 @@ const inputsWithState = computed(() =>
   appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
     const node = resolveNode(nodeId)
     const widget = node?.widgets?.find((w) => w.name === widgetName)
-    if (!node || !widget) return { nodeId, widgetName }
+    if (!node || !widget) {
+      return {
+        nodeId,
+        widgetName,
+        subLabel: t('linearMode.builder.unknownWidget')
+      }
+    }
 
     const input = node.inputs.find((i) => i.widget?.name === widget.name)
     const rename = input && (() => renameWidget(widget, input))
@@ -228,15 +215,21 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
       :key="`${nodeId}: ${widgetName}`"
       :class="cn(dragClass, 'p-2 my-2 pointer-events-auto')"
-      :aria-label="`${widget.label ?? widgetName} — ${node.title}`"
+      :aria-label="`${widget?.label ?? widgetName} — ${node.title}`"
     >
-      <div class="pointer-events-none" inert>
+      <div v-if="widget" class="pointer-events-none" inert>
         <WidgetItem
           :widget="widget"
           :node="node"
           show-node-name
           hidden-widget-actions
         />
+      </div>
+      <div v-else class="text-muted-foreground text-sm p-1 pointer-events-none">
+        {{ widgetName }}
+        <p class="text-xs italic">
+          ({{ t('linearMode.builder.unknownWidget') }})
+        </p>
       </div>
     </div>
   </DraggableList>

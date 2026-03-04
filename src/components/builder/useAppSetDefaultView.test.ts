@@ -10,12 +10,17 @@ const mockDialogStore = vi.hoisted(() => ({
 }))
 
 const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: null as { initialMode?: string | null } | null
+  activeWorkflow: null as {
+    initialMode?: string | null
+    changeTracker?: { checkState: () => void }
+  } | null
 }))
 
 const mockApp = vi.hoisted(() => ({
   rootGraph: { extra: {} as Record<string, unknown> }
 }))
+
+const mockSetMode = vi.hoisted(() => vi.fn())
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => mockDialogService
@@ -33,8 +38,16 @@ vi.mock('@/scripts/app', () => ({
   app: mockApp
 }))
 
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => ({ setMode: mockSetMode })
+}))
+
 vi.mock('./DefaultViewDialogContent.vue', () => ({
   default: { name: 'MockDefaultViewDialogContent' }
+}))
+
+vi.mock('./BuilderDefaultModeAppliedDialogContent.vue', () => ({
+  default: { name: 'MockBuilderDefaultModeAppliedDialogContent' }
 }))
 
 import { useAppSetDefaultView } from './useAppSetDefaultView'
@@ -140,6 +153,69 @@ describe('useAppSetDefaultView', () => {
 
       expect(mockDialogStore.closeDialog).toHaveBeenCalledWith({
         key: 'builder-default-view'
+      })
+    })
+
+    it('shows confirmation dialog after applying', () => {
+      mockWorkflowStore.activeWorkflow = { initialMode: null }
+
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
+
+      const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
+      call.props.onApply(true)
+
+      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledTimes(2)
+      const confirmCall = mockDialogService.showLayoutDialog.mock.calls[1][0]
+      expect(confirmCall.key).toBe('builder-default-view-applied')
+      expect(confirmCall.props.appliedAsApp).toBe(true)
+    })
+
+    it('passes appliedAsApp false to confirmation dialog when graph', () => {
+      mockWorkflowStore.activeWorkflow = { initialMode: null }
+
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
+
+      const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
+      call.props.onApply(false)
+
+      const confirmCall = mockDialogService.showLayoutDialog.mock.calls[1][0]
+      expect(confirmCall.props.appliedAsApp).toBe(false)
+    })
+  })
+
+  describe('applied dialog', () => {
+    function applyAndGetConfirmDialog(openAsApp: boolean) {
+      mockWorkflowStore.activeWorkflow = { initialMode: null }
+
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
+
+      const applyCall = mockDialogService.showLayoutDialog.mock.calls[0][0]
+      applyCall.props.onApply(openAsApp)
+
+      return mockDialogService.showLayoutDialog.mock.calls[1][0]
+    }
+
+    it('onViewApp sets mode to app and closes dialog', () => {
+      const confirmCall = applyAndGetConfirmDialog(true)
+      confirmCall.props.onViewApp()
+
+      expect(mockDialogStore.closeDialog).toHaveBeenCalledWith({
+        key: 'builder-default-view-applied'
+      })
+      expect(mockSetMode).toHaveBeenCalledWith('app')
+    })
+
+    it('onClose closes confirmation dialog', () => {
+      const confirmCall = applyAndGetConfirmDialog(true)
+
+      mockDialogStore.closeDialog.mockClear()
+      confirmCall.props.onClose()
+
+      expect(mockDialogStore.closeDialog).toHaveBeenCalledWith({
+        key: 'builder-default-view-applied'
       })
     })
   })

@@ -854,6 +854,7 @@
       "clearQueued": "Clear queued",
       "clearHistory": "Clear job history",
       "dockedJobHistory": "Docked Job History",
+      "showRunProgressBar": "Show run progress bar",
       "clearHistoryMenuAssetsNote": "Media assets won't be deleted.",
       "filterJobs": "Filter jobs",
       "filterBy": "Filter by",
@@ -1280,6 +1281,7 @@
     "Duplicate Current Workflow": "Duplicate Current Workflow",
     "Export": "Export",
     "Export (API)": "Export (API)",
+    "Share": "Share",
     "Convert Selection to Subgraph": "Convert Selection to Subgraph",
     "Edit Subgraph Widgets": "Edit Subgraph Widgets",
     "Exit Subgraph": "Exit Subgraph",
@@ -2592,7 +2594,7 @@
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",
-    "enterBuilderMode": "Enter app builder",
+    "enterBuilderMode": "App builder",
     "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
@@ -3167,7 +3169,9 @@
     },
     "appModeToolbar": {
       "appBuilder": "App builder",
-      "apps": "Apps"
+      "apps": "Apps",
+      "appsEmptyMessage": "Saved apps will show up here.\nClick below to build your first app.",
+      "enterAppMode": "Enter app mode"
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
@@ -3191,7 +3195,8 @@
       "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
       "noOutputs": "No output nodes added yet",
       "outputsDesc": "Connect at least one output node so users can see results after running.",
-      "outputsExample": "Examples: “Save Image” or “Save Video”"
+      "outputsExample": "Examples: “Save Image” or “Save Video”",
+      "unknownWidget": "Widget not visible"
     },
     "queue": {
       "clickToClear": "Click to clear queue",
@@ -3494,11 +3499,17 @@
     "appDescription": "Opens as an app by default",
     "nodeGraph": "Node graph",
     "nodeGraphDescription": "Opens as node graph by default",
-    "saveSuccess": "Successfully saved",
-    "saveSuccessAppMessage": "'{name}' has been saved. It will open in App Mode by default from now on.",
-    "saveSuccessAppPrompt": "Would you like to view it now?",
-    "saveSuccessGraphMessage": "'{name}' has been saved. It will open as a node graph by default.",
-    "viewApp": "View app"
+    "defaultModeAppliedTitle": "Successfully set",
+    "defaultModeAppliedAppBody": "This workflow will open in App Mode by default from now on.",
+    "defaultModeAppliedAppPrompt": "Would you like to view it now?",
+    "defaultModeAppliedGraphBody": "This workflow will open as a node graph by default from now on.",
+    "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
+    "viewApp": "View app",
+    "emptyWorkflowTitle": "This workflow has no nodes",
+    "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
+    "emptyWorkflowPrompt": "Do you want to start with a template?",
+    "backToWorkflow": "Back to workflow",
+    "loadTemplate": "Load a template"
   },
   "builderMenu": {
     "exitAppBuilder": "Exit app builder"

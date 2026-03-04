@@ -139,6 +139,7 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -180,14 +181,16 @@ const isActionbarFloating = computed(
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
 )
-const isQueuePanelV2Enabled = computed(() =>
-  settingStore.get('Comfy.Queue.QPOV2')
-)
+const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
+  useQueueFeatureFlags()
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
 )
 const shouldShowInlineProgressSummary = computed(
-  () => isQueuePanelV2Enabled.value && isActionbarEnabled.value
+  () =>
+    isQueuePanelV2Enabled.value &&
+    isActionbarEnabled.value &&
+    isRunProgressBarEnabled.value
 )
 const shouldShowQueueNotificationBanners = computed(
   () => isActionbarEnabled.value

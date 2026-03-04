@@ -215,7 +215,9 @@
         </template>
       </Button>
     </div>
-    <template v-if="!isCollapsed && nodeData.resizable !== false">
+    <template
+      v-if="!isCollapsed && nodeData.resizable !== false && !isSelectMode"
+    >
       <div
         v-for="handle in RESIZE_HANDLES"
         :key="handle.corner"

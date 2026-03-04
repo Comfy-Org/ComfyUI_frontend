@@ -1,7 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 import { defineComponent, h } from 'vue'
+
+import { i18n } from '@/i18n'
 
 const popoverCloseSpy = vi.fn()
 
@@ -24,7 +25,9 @@ vi.mock('@/components/ui/Popover.vue', () => {
 })
 
 const mockGetSetting = vi.fn<(key: string) => boolean | undefined>((key) =>
-  key === 'Comfy.Queue.QPOV2' ? true : undefined
+  key === 'Comfy.Queue.QPOV2' || key === 'Comfy.Queue.ShowRunProgressBar'
+    ? true
+    : undefined
 )
 const mockSetSetting = vi.fn()
 const mockSetMany = vi.fn()
@@ -52,27 +55,6 @@ const tooltipDirectiveStub = {
   updated: vi.fn()
 }
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: { more: 'More' },
-      sideToolbar: {
-        queueProgressOverlay: {
-          queuedSuffix: 'queued',
-          clearQueued: 'Clear queued',
-          clearQueueTooltip: 'Clear queue',
-          clearAllJobsTooltip: 'Cancel all running jobs',
-          moreOptions: 'More options',
-          clearHistory: 'Clear history',
-          dockedJobHistory: 'Docked Job History'
-        }
-      }
-    }
-  }
-})
-
 const mountHeader = (props = {}) =>
   mount(QueueOverlayHeader, {
     props: {
@@ -88,6 +70,7 @@ const mountHeader = (props = {}) =>
 
 describe('QueueOverlayHeader', () => {
   beforeEach(() => {
+    i18n.global.locale.value = 'en'
     popoverCloseSpy.mockClear()
     mockSetSetting.mockClear()
     mockSetMany.mockClear()
@@ -206,5 +189,20 @@ describe('QueueOverlayHeader', () => {
       'Comfy.Queue.QPOV2': false,
       'Comfy.Queue.History.Expanded': true
     })
+  })
+
+  it('toggles show run progress bar setting from the menu', async () => {
+    const wrapper = mountHeader()
+
+    const showRunProgressBarButton = wrapper.get(
+      '[data-testid="show-run-progress-bar-action"]'
+    )
+    await showRunProgressBarButton.trigger('click')
+
+    expect(mockSetSetting).toHaveBeenCalledTimes(1)
+    expect(mockSetSetting).toHaveBeenCalledWith(
+      'Comfy.Queue.ShowRunProgressBar',
+      false
+    )
   })
 })
