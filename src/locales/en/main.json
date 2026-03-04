@@ -3199,6 +3199,7 @@
       "unsupportedTitle": "Unsupported Node Packs",
       "cloudMessage": "This workflow requires custom nodes not yet available on Comfy Cloud.",
       "ossMessage": "This workflow uses custom nodes you haven't installed yet.",
+      "ossManagerDisabledHint": "To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.",
       "installAll": "Install All",
       "installNodePack": "Install node pack",
       "unknownPack": "Unknown pack",
