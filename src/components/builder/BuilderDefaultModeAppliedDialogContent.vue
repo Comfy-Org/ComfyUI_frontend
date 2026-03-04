@@ -3,7 +3,10 @@
     <template #title>
       <span class="inline-flex items-center gap-2">
         {{ $t('builderToolbar.defaultModeAppliedTitle') }}
-        <i class="icon-[lucide--circle-check-big] size-4 text-green-500" />
+        <i
+          aria-hidden="true"
+          class="icon-[lucide--circle-check-big] size-4 text-green-500"
+        />
       </span>
     </template>
 
