@@ -301,7 +301,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     )
     quickRegister('LLM/checkpoints', 'LoadChatGLM3', 'chatglm3_checkpoint')
 
-// Qwen3 TTS speech models (ComfyUI-FunBox)
+    // Qwen3 TTS speech models (ComfyUI-FunBox)
     // Top-level 'qwen-tts' catches all qwen-tts/* subdirs via hierarchical fallback
     quickRegister('qwen-tts', 'FB_Qwen3TTSVoiceClone', 'model_choice')
 
@@ -346,7 +346,6 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
 
     // Detection models (vitpose, yolo)
     quickRegister('detection', 'OnnxDetectionModelLoader', 'yolo_model')
-
   }
 
   return {
