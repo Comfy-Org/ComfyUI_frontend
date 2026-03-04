@@ -1,5 +1,7 @@
 <template>
-  <div class="flex w-full min-w-96 flex-col rounded-2xl bg-base-background">
+  <div
+    class="flex min-h-80 w-full min-w-116 flex-col rounded-2xl bg-base-background"
+  >
     <!-- Header -->
     <div
       class="flex h-12 items-center justify-between border-b border-border-default px-4"
@@ -21,7 +23,7 @@
     </div>
 
     <!-- Body -->
-    <div class="flex flex-col gap-4 px-4 py-4">
+    <div class="flex flex-1 flex-col gap-4 px-4 py-4">
       <slot />
     </div>
 
