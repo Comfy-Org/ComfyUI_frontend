@@ -55,6 +55,12 @@ const visibleHistory = computed(() =>
 
 const selectableItems = computed(() => {
   const items: SelectionValue[] = []
+  if (
+    queueCount.value > 0 &&
+    store.activeWorkflowInProgressItems.length === 0
+  ) {
+    items.push({ id: 'slot:pending', kind: 'inProgress', itemId: 'pending' })
+  }
   for (const item of store.activeWorkflowInProgressItems) {
     items.push({
       id: `slot:${item.id}`,
@@ -280,26 +286,36 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       data-testid="linear-outputs"
       class="py-3 overflow-y-clip overflow-x-auto min-w-0"
     >
-      <div class="flex items-center gap-0.5 mx-auto w-fit">
+      <div class="flex items-start gap-0.5 mx-auto w-fit h-21">
         <div
           v-if="queueCount > 0 || hasActiveContent"
           :class="
             cn(
-              'sticky left-0 z-10 shrink-0 flex items-center gap-0.5',
+              'sticky left-0 z-10 shrink-0 flex items-start gap-0.5',
               'bg-comfy-menu-bg md:bg-comfy-menu-secondary-bg'
             )
           "
         >
-          <div v-if="queueCount > 0" class="shrink-0 flex items-center gap-0.5">
-            <OutputHistoryActiveQueueItem :queue-count="queueCount" />
-            <div
-              v-if="hasActiveContent || visibleHistory.length > 0"
-              class="border-l border-border-default h-12 shrink-0 mx-4"
-            />
+          <OutputHistoryActiveQueueItem
+            v-if="queueCount > 0"
+            class="mr-3"
+            :queue-count="queueCount"
+          />
+
+          <div
+            v-if="
+              queueCount > 0 && store.activeWorkflowInProgressItems.length === 0
+            "
+            :ref="selectedRef('slot:pending')"
+            v-bind="itemAttrs('slot:pending')"
+            :class="itemClass"
+            @click="store.select('slot:pending')"
+          >
+            <OutputPreviewItem />
           </div>
 
           <div
-            v-for="item in store.inProgressItems"
+            v-for="item in store.activeWorkflowInProgressItems"
             :key="`${item.id}-${item.state}`"
             :ref="selectedRef(`slot:${item.id}`)"
             v-bind="itemAttrs(`slot:${item.id}`)"
