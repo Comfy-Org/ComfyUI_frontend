@@ -4,7 +4,9 @@
     v-else
     class="fixed inset-0 z-[1100] flex items-center justify-center bg-[var(--p-mask-background)]"
   >
-    <ProgressSpinner />
+    <i
+      class="icon-[lucide--loader-circle] size-12 animate-spin text-neutral-400"
+    />
   </div>
 </template>
 
@@ -23,7 +25,6 @@
  */
 import { promiseTimeout, until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import ProgressSpinner from 'primevue/progressspinner'
 import { onMounted, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'

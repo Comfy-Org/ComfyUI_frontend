@@ -1,9 +1,13 @@
 <template>
   <router-view />
-  <ProgressSpinner
+  <div
     v-if="isLoading"
-    class="absolute inset-0 flex h-[unset] items-center justify-center"
-  />
+    class="absolute inset-0 flex items-center justify-center"
+  >
+    <i
+      class="icon-[lucide--loader-circle] size-12 animate-spin text-neutral-400"
+    />
+  </div>
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
 </template>
@@ -11,7 +15,6 @@
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
