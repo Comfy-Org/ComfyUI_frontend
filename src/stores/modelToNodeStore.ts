@@ -246,7 +246,11 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('qwen-tts', 'FB_Qwen3TTSVoiceClone', 'model_choice')
 
     // DepthAnything V3 models (comfyui-depthanythingv2)
-    quickRegister('depthanything3', 'DownloadAndLoadDepthAnythingV3Model', 'model')
+    quickRegister(
+      'depthanything3',
+      'DownloadAndLoadDepthAnythingV3Model',
+      'model'
+    )
 
     // LivePortrait face animation models (comfyui-liveportrait)
     quickRegister('liveportrait', 'DownloadAndLoadLivePortraitModels', '')
@@ -256,11 +260,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('dwpose', 'MimicMotionGetPoses', '')
 
     // Face parsing segmentation models (comfyui_face_parsing)
-    quickRegister(
-      'face_parsing',
-      'FaceParsingModelLoader(FaceParsing)',
-      ''
-    )
+    quickRegister('face_parsing', 'FaceParsingModelLoader(FaceParsing)', '')
 
     // Kolors image generation models (ComfyUI-KolorsWrapper)
     // Top-level 'diffusers' catches diffusers/Kolors/* subdirs
