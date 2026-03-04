@@ -3369,7 +3369,13 @@
     "app": "App",
     "appDescription": "Opens as an app by default",
     "nodeGraph": "Node graph",
-    "nodeGraphDescription": "Opens as node graph by default"
+    "nodeGraphDescription": "Opens as node graph by default",
+    "defaultModeAppliedTitle": "Successfully set",
+    "defaultModeAppliedAppBody": "This workflow will open in App Mode by default from now on.",
+    "defaultModeAppliedAppPrompt": "Would you like to view it now?",
+    "defaultModeAppliedGraphBody": "This workflow will open as a node graph by default from now on.",
+    "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
+    "viewApp": "View app"
   },
   "builderMenu": {
     "exitAppBuilder": "Exit app builder"
