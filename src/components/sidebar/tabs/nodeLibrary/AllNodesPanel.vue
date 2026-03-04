@@ -1,28 +1,30 @@
 <template>
   <TabsContent value="all" class="flex-1 overflow-y-auto h-full">
     <!-- Favorites section -->
-    <template v-if="hasFavorites">
-      <h3
-        class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground mb-0"
-      >
-        {{ $t('sideToolbar.nodeLibraryTab.sections.favorites') }}
-      </h3>
-      <TreeExplorerV2
-        v-model:expanded-keys="expandedKeys"
-        :root="favoritesRoot"
-        show-context-menu
-        @node-click="(node) => emit('nodeClick', node)"
-        @add-to-favorites="handleAddToFavorites"
-      />
-    </template>
+    <h3
+      class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground mb-0"
+    >
+      {{ $t('sideToolbar.nodeLibraryTab.sections.bookmarked') }}
+    </h3>
+    <TreeExplorerV2
+      v-if="hasFavorites"
+      v-model:expanded-keys="expandedKeys"
+      :root="favoritesRoot"
+      show-context-menu
+      @node-click="(node) => emit('nodeClick', node)"
+      @add-to-favorites="handleAddToFavorites"
+    />
+    <div v-else class="px-6 py-2 text-xs text-muted-background">
+      {{ $t('sideToolbar.nodeLibraryTab.noBookmarkedNodes') }}
+    </div>
 
     <!-- Node sections -->
-    <div v-for="(section, index) in sections" :key="section.title ?? index">
+    <div v-for="(section, index) in sections" :key="section.category ?? index">
       <h3
-        v-if="section.title"
-        class="px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground mb-0"
+        v-if="section.category && sortOrder !== 'alphabetical'"
+        class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground mb-0"
       >
-        {{ section.title }}
+        {{ $t(NODE_CATEGORY_LABELS[section.category]) }}
       </h3>
       <TreeExplorerV2
         v-model:expanded-keys="expandedKeys"
@@ -42,15 +44,17 @@ import { computed } from 'vue'
 import TreeExplorerV2 from '@/components/common/TreeExplorerV2.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { NODE_CATEGORY_LABELS } from '@/types/nodeOrganizationTypes'
 import type {
   NodeLibrarySection,
   RenderedTreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'
 
-const { fillNodeInfo } = defineProps<{
-  sections: NodeLibrarySection[]
+const { fillNodeInfo, sortOrder = 'original' } = defineProps<{
+  sections: NodeLibrarySection<ComfyNodeDefImpl>[]
   fillNodeInfo: (node: TreeNode) => RenderedTreeExplorerNode<ComfyNodeDefImpl>
+  sortOrder?: string
 }>()
 
 const expandedKeys = defineModel<string[]>('expandedKeys', { required: true })

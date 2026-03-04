@@ -72,9 +72,19 @@
         v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
         class="icon-[lucide--circle-help] mr-auto cursor-help text-base text-muted-foreground"
       />
-      <!-- Add Credits (subscribed + personal or workspace owner only) -->
+      <!-- Upgrade to add credits (free tier) -->
       <Button
-        v-if="isActiveSubscription && permissions.canTopUp"
+        v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
+        variant="gradient"
+        size="sm"
+        data-testid="upgrade-to-add-credits-button"
+        @click="handleUpgradeToAddCredits"
+      >
+        {{ $t('subscription.upgradeToAddCredits') }}
+      </Button>
+      <!-- Add Credits (subscribed + personal or workspace owner only, paid tier) -->
+      <Button
+        v-else-if="isActiveSubscription && permissions.canTopUp"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -93,7 +103,7 @@
             : $t('workspaceSwitcher.subscribe')
         "
         size="sm"
-        variant="gradient"
+        button-variant="gradient"
       />
       <Button
         v-if="showSubscribeAction && !isPersonalWorkspace"
@@ -242,8 +252,14 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
-const { isActiveSubscription, subscription, balance, isLoading, fetchBalance } =
-  useBillingContext()
+const {
+  isActiveSubscription,
+  isFreeTier,
+  subscription,
+  balance,
+  isLoading,
+  fetchBalance
+} = useBillingContext()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
@@ -307,6 +323,11 @@ const handleOpenPlanAndCreditsSettings = () => {
     settingsDialog.show('credits')
   }
 
+  emit('close')
+}
+
+const handleUpgradeToAddCredits = () => {
+  subscriptionDialog.showPricingTable()
   emit('close')
 }
 

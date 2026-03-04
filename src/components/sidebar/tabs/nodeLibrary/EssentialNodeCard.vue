@@ -35,11 +35,11 @@
 
 <script setup lang="ts">
 import { kebabCase } from 'es-toolkit/string'
+import type { Ref } from 'vue'
 import { computed, inject } from 'vue'
 
 import TextTickerMultiLine from '@/components/common/TextTickerMultiLine.vue'
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
-import { SidebarContainerKey } from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -49,11 +49,15 @@ const { node } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
 }>()
 
+const panelRef = inject<Ref<HTMLElement | null>>(
+  'essentialsPanelRef',
+  undefined!
+)
+
 const emit = defineEmits<{
   click: [node: RenderedTreeExplorerNode<ComfyNodeDefImpl>]
 }>()
 
-const panelRef = inject(SidebarContainerKey, undefined)
 const nodeDef = computed(() => node.data)
 
 const {
@@ -64,7 +68,7 @@ const {
   handleMouseLeave,
   handleDragStart,
   handleDragEnd
-} = useNodePreviewAndDrag(nodeDef, { panelRef })
+} = useNodePreviewAndDrag(nodeDef, panelRef)
 
 const nodeIcon = computed(() => {
   const nodeName = node.data?.name

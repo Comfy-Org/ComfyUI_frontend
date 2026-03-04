@@ -5,8 +5,9 @@ import { useTemplateRef } from 'vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-defineProps<{
+const { active = true } = defineProps<{
   dataTfWidget: string
+  active?: boolean
 }>()
 
 const feedbackRef = useTemplateRef('feedbackRef')
@@ -40,6 +41,6 @@ whenever(feedbackRef, () => {
         <i class="icon-[lucide--circle-help] size-4" />
       </Button>
     </template>
-    <div ref="feedbackRef" data-tf-auto-resize :data-tf-widget />
+    <div v-if="active" ref="feedbackRef" data-tf-auto-resize :data-tf-widget />
   </Popover>
 </template>

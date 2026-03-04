@@ -46,6 +46,16 @@
         class="icon-[lucide--circle-help] cursor-help text-base text-muted-foreground mr-auto"
       />
       <Button
+        v-if="isFreeTier"
+        variant="gradient"
+        size="sm"
+        data-testid="upgrade-to-add-credits-button"
+        @click="handleUpgradeToAddCredits"
+      >
+        {{ $t('subscription.upgradeToAddCredits') }}
+      </Button>
+      <Button
+        v-else
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -61,7 +71,7 @@
         :fluid="false"
         :label="$t('subscription.subscribeToComfyCloud')"
         size="sm"
-        variant="gradient"
+        button-variant="gradient"
         @subscribed="handleSubscribed"
       />
     </div>
@@ -170,6 +180,7 @@ const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
   isActiveSubscription,
+  isFreeTier,
   subscriptionTierName,
   subscriptionTier,
   fetchStatus
@@ -234,6 +245,11 @@ const handleOpenPartnerNodesInfo = () => {
     buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
     '_blank'
   )
+  emit('close')
+}
+
+const handleUpgradeToAddCredits = () => {
+  subscriptionDialog.showPricingTable()
   emit('close')
 }
 
