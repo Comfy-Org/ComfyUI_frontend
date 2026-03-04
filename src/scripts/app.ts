@@ -1308,34 +1308,6 @@ export class ComfyApp {
           subgraph
         )
       }
-
-      if (
-        restore_view &&
-        useSettingStore().get('Comfy.EnableWorkflowViewRestore')
-      ) {
-        // Always fit view for templates to ensure they're visible on load
-        if (openSource === 'template') {
-          useLitegraphService().fitView()
-        } else if (graphData.extra?.ds) {
-          this.canvas.ds.offset = graphData.extra.ds.offset
-          this.canvas.ds.scale = graphData.extra.ds.scale
-
-          // Fit view if no nodes visible in restored viewport
-          this.canvas.ds.computeVisibleArea(this.canvas.viewport)
-          if (
-            this.canvas.visible_area.width &&
-            this.canvas.visible_area.height &&
-            !anyItemOverlapsRect(
-              this.rootGraph._nodes,
-              this.canvas.visible_area
-            )
-          ) {
-            requestAnimationFrame(() => useLitegraphService().fitView())
-          }
-        } else {
-          useLitegraphService().fitView()
-        }
-      }
     } catch (error) {
       useDialogService().showErrorDialog(error, {
         title: t('errorDialog.loadWorkflowTitle'),
@@ -1414,6 +1386,42 @@ export class ComfyApp {
       workflow,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
+    // View restoration runs after afterLoadNewGraph so the mode has
+    // switched and the canvas is visible.
+    if (
+      restore_view &&
+      useSettingStore().get('Comfy.EnableWorkflowViewRestore')
+    ) {
+      try {
+        // Ensure the canvas is the correct size after switching from app mode
+        this.canvas.resize()
+        // Always fit view for templates to ensure they're visible on load
+        if (openSource === 'template') {
+          requestAnimationFrame(() => useLitegraphService().fitView())
+        } else if (graphData.extra?.ds) {
+          this.canvas.ds.offset = graphData.extra.ds.offset
+          this.canvas.ds.scale = graphData.extra.ds.scale
+
+          // Fit view if no nodes visible in restored viewport
+          this.canvas.ds.computeVisibleArea(this.canvas.viewport)
+          if (
+            this.canvas.visible_area.width &&
+            this.canvas.visible_area.height &&
+            !anyItemOverlapsRect(
+              this.rootGraph._nodes,
+              this.canvas.visible_area
+            )
+          ) {
+            requestAnimationFrame(() => useLitegraphService().fitView())
+          }
+        } else {
+          requestAnimationFrame(() => useLitegraphService().fitView())
+        }
+      } catch (error) {
+        // Non critical error, so don't show an error dialog
+        console.error('Error restoring view', error)
+      }
+    }
 
     // Store pending warnings on the workflow for deferred display
     const activeWf = useWorkspaceStore().workflow.activeWorkflow

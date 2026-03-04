@@ -6,7 +6,7 @@
 
     <div class="flex flex-col gap-2">
       <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('builderToolbar.emptyWorkflowExplanation') }}
+        {{ $t('linearMode.emptyWorkflowExplanation') }}
       </p>
       <p class="m-0 text-sm text-muted-foreground">
         {{ $t('builderToolbar.emptyWorkflowPrompt') }}
@@ -19,10 +19,10 @@
         size="lg"
         @click="$emit('backToWorkflow')"
       >
-        {{ $t('builderToolbar.backToWorkflow') }}
+        {{ $t('linearMode.backToWorkflow') }}
       </Button>
       <Button variant="secondary" size="lg" @click="$emit('loadTemplate')">
-        {{ $t('builderToolbar.loadTemplate') }}
+        {{ $t('linearMode.loadTemplate') }}
       </Button>
     </template>
   </BuilderDialog>
