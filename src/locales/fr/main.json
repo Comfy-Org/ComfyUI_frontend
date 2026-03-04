@@ -326,14 +326,14 @@
     "deleteWorkflow": "Supprimer le workflow",
     "duplicate": "Dupliquer",
     "enterAppMode": "Entrer en mode application",
+    "enterBuilderMode": "Entrer dans le mode constructeur d'application",
     "enterNewName": "Entrez un nouveau nom",
     "exitAppMode": "Quitter le mode application",
     "missingNodesWarning": "Le workflow contient des nœuds non pris en charge (surlignés en rouge).",
     "workflowActions": "Actions du workflow"
   },
   "builderMenu": {
-    "exitAppBuilder": "Quitter le constructeur d'application",
-    "saveApp": "Enregistrer l'application"
+    "exitAppBuilder": "Quitter le constructeur d'application"
   },
   "builderToolbar": {
     "app": "Application",
@@ -343,22 +343,16 @@
     "connectOutput": "Connecter une sortie",
     "connectOutputBody1": "Votre application doit avoir au moins une sortie connectée avant de pouvoir être enregistrée.",
     "connectOutputBody2": "Passez à l'étape « Sélectionner » et cliquez sur les nœuds de sortie pour les ajouter ici.",
-    "filename": "Nom du fichier",
+    "defaultView": "Définir une vue par défaut",
+    "defaultViewDescription": "Choisissez comment cela s'ouvre",
+    "defaultViewLabel": "Par défaut, ce workflow s'ouvrira comme :",
+    "defaultViewTitle": "Définir la vue par défaut pour ce workflow",
     "label": "Créateur d'applications",
     "nodeGraph": "Graphe de nœuds",
     "nodeGraphDescription": "S'ouvre par défaut en tant que graphe de nœuds",
-    "save": "Enregistrer",
-    "saveAs": "Enregistrer sous",
-    "saveAsLabel": "Enregistrer ce workflow sous ...",
-    "saveDescription": "Enregistrer et terminer",
-    "saveSuccess": "Enregistré avec succès",
-    "saveSuccessAppMessage": "« {name} » a été enregistré. Il s'ouvrira désormais par défaut en mode application.",
-    "saveSuccessAppPrompt": "Voulez-vous le voir maintenant ?",
-    "saveSuccessGraphMessage": "« {name} » a été enregistré. Il s'ouvrira par défaut en tant que graphe de nœuds.",
     "select": "Sélectionner",
     "selectDescription": "Choisir les entrées/sorties",
-    "switchToSelect": "Passer à Sélectionner",
-    "viewApp": "Voir l'application"
+    "switchToSelect": "Passer à Sélectionner"
   },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
@@ -1363,9 +1357,11 @@
     },
     "downloadAll": "Tout télécharger",
     "dragAndDropImage": "Glissez-déposez une image",
+    "enterNodeGraph": "Entrer dans le graphique de nœuds",
     "giveFeedback": "Donner un avis",
     "graphMode": "Mode graphique",
     "linearMode": "Mode App",
+    "mobileControls": "Éditer & Exécuter",
     "queue": {
       "clear": "Vider la file d'attente",
       "clickToClear": "Cliquez pour vider la file d'attente"
@@ -1373,6 +1369,7 @@
     "rerun": "Relancer",
     "reuseParameters": "Réutiliser les paramètres",
     "runCount": "Nombre d’exécutions :",
+    "viewJob": "Voir la tâche",
     "welcome": {
       "backToWorkflow": "Retour au workflow",
       "buildApp": "Créer une application",
@@ -1749,6 +1746,7 @@
     "disabled": "Désactivé",
     "disabledTooltip": "Le flux de travail ne sera pas mis en file d'attente automatiquement",
     "execute": "Exécuter",
+    "fullscreen": "Plein écran",
     "help": "Aide",
     "helpAndFeedback": "Aide et commentaires",
     "hideMenu": "Masquer le menu",
@@ -3202,7 +3200,9 @@
     "enterFilename": "Entrez le nom du fichier",
     "enterFilenamePrompt": "Entrez le nom du fichier :",
     "exportWorkflow": "Exporter le flux de travail",
-    "saveWorkflow": "Enregistrer le flux de travail"
+    "saveWorkflow": "Enregistrer le flux de travail",
+    "savedAsApp": "Converti en workflow d'application",
+    "savedAsWorkflow": "Converti en workflow graphique de nœuds uniquement"
   },
   "workspace": {
     "addedToWorkspace": "Vous avez été ajouté à {workspaceName}",

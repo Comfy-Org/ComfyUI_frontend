@@ -326,14 +326,14 @@
     "deleteWorkflow": "حذف سير العمل",
     "duplicate": "تكرار",
     "enterAppMode": "الدخول إلى وضع التطبيق",
+    "enterBuilderMode": "دخول وضع بناء التطبيق",
     "enterNewName": "أدخل اسمًا جديدًا",
     "exitAppMode": "الخروج من وضع التطبيق",
     "missingNodesWarning": "يحتوي سير العمل على عقد غير مدعومة (مظللة باللون الأحمر).",
     "workflowActions": "إجراءات سير العمل"
   },
   "builderMenu": {
-    "exitAppBuilder": "الخروج من مُنشئ التطبيق",
-    "saveApp": "حفظ التطبيق"
+    "exitAppBuilder": "الخروج من مُنشئ التطبيق"
   },
   "builderToolbar": {
     "app": "تطبيق",
@@ -343,22 +343,16 @@
     "connectOutput": "توصيل مخرج",
     "connectOutputBody1": "يجب توصيل مخرج واحد على الأقل قبل حفظ التطبيق.",
     "connectOutputBody2": "انتقل إلى خطوة 'تحديد' وانقر على عقد المخرجات لإضافتها هنا.",
-    "filename": "اسم الملف",
+    "defaultView": "تعيين العرض الافتراضي",
+    "defaultViewDescription": "اختر كيفية الفتح",
+    "defaultViewLabel": "افتراضيًا، سيتم فتح سير العمل هذا كـ:",
+    "defaultViewTitle": "تعيين العرض الافتراضي لهذا سير العمل",
     "label": "منشئ التطبيقات",
     "nodeGraph": "رسم العقد",
     "nodeGraphDescription": "يفتح كرسم عقد بشكل افتراضي",
-    "save": "حفظ",
-    "saveAs": "حفظ باسم",
-    "saveAsLabel": "احفظ سير العمل هذا كـ ...",
-    "saveDescription": "حفظ وإنهاء",
-    "saveSuccess": "تم الحفظ بنجاح",
-    "saveSuccessAppMessage": "تم حفظ '{name}'. سيفتح في وضع التطبيق بشكل افتراضي من الآن فصاعدًا.",
-    "saveSuccessAppPrompt": "هل ترغب في عرضه الآن؟",
-    "saveSuccessGraphMessage": "تم حفظ '{name}'. سيفتح كرسم عقد بشكل افتراضي.",
     "select": "تحديد",
     "selectDescription": "اختيار المدخلات/المخرجات",
-    "switchToSelect": "الانتقال إلى التحديد",
-    "viewApp": "عرض التطبيق"
+    "switchToSelect": "الانتقال إلى التحديد"
   },
   "clipboard": {
     "errorMessage": "فشل النسخ إلى الحافظة",
@@ -1363,9 +1357,11 @@
     },
     "downloadAll": "تنزيل الكل",
     "dragAndDropImage": "اسحب وأسقط صورة",
+    "enterNodeGraph": "دخول مخطط العقد",
     "giveFeedback": "إعطاء ملاحظات",
     "graphMode": "وضع الرسم البياني",
     "linearMode": "وضع التطبيق",
+    "mobileControls": "تعديل وتشغيل",
     "queue": {
       "clear": "مسح قائمة الانتظار",
       "clickToClear": "انقر لمسح قائمة الانتظار"
@@ -1373,6 +1369,7 @@
     "rerun": "تشغيل مجدد",
     "reuseParameters": "إعادة استخدام المعلمات",
     "runCount": "عدد مرات التشغيل:",
+    "viewJob": "عرض المهمة",
     "welcome": {
       "backToWorkflow": "العودة إلى سير العمل",
       "buildApp": "إنشاء تطبيق",
@@ -1749,6 +1746,7 @@
     "disabled": "معطل",
     "disabledTooltip": "لن يتم وضع سير العمل في قائمة الانتظار تلقائيًا",
     "execute": "تنفيذ",
+    "fullscreen": "ملء الشاشة",
     "help": "مساعدة",
     "helpAndFeedback": "المساعدة والتعليقات",
     "hideMenu": "إخفاء القائمة",
@@ -3202,7 +3200,9 @@
     "enterFilename": "أدخل اسم الملف",
     "enterFilenamePrompt": "أدخل اسم الملف:",
     "exportWorkflow": "تصدير سير العمل",
-    "saveWorkflow": "حفظ سير العمل"
+    "saveWorkflow": "حفظ سير العمل",
+    "savedAsApp": "تم التحويل إلى سير عمل تطبيق",
+    "savedAsWorkflow": "تم التحويل إلى سير عمل مخطط العقد فقط"
   },
   "workspace": {
     "addedToWorkspace": "تمت إضافتك إلى {workspaceName}",

@@ -326,14 +326,14 @@
     "deleteWorkflow": "Eliminar flujo de trabajo",
     "duplicate": "Duplicar",
     "enterAppMode": "Entrar en modo aplicación",
+    "enterBuilderMode": "Entrar al constructor de aplicaciones",
     "enterNewName": "Ingrese un nuevo nombre",
     "exitAppMode": "Salir del modo aplicación",
     "missingNodesWarning": "El flujo de trabajo contiene nodos no compatibles (resaltados en rojo).",
     "workflowActions": "Acciones del flujo de trabajo"
   },
   "builderMenu": {
-    "exitAppBuilder": "Salir del constructor de aplicaciones",
-    "saveApp": "Guardar aplicación"
+    "exitAppBuilder": "Salir del constructor de aplicaciones"
   },
   "builderToolbar": {
     "app": "Aplicación",
@@ -343,22 +343,16 @@
     "connectOutput": "Conectar una salida",
     "connectOutputBody1": "Tu aplicación necesita al menos una salida conectada antes de poder guardarse.",
     "connectOutputBody2": "Cambia al paso 'Seleccionar' y haz clic en los nodos de salida para agregarlos aquí.",
-    "filename": "Nombre de archivo",
+    "defaultView": "Establecer vista predeterminada",
+    "defaultViewDescription": "Elige cómo se abre esto",
+    "defaultViewLabel": "Por defecto, este flujo de trabajo se abrirá como:",
+    "defaultViewTitle": "Establecer la vista predeterminada para este flujo de trabajo",
     "label": "Constructor de aplicaciones",
     "nodeGraph": "Grafo de nodos",
     "nodeGraphDescription": "Se abre como grafo de nodos por defecto",
-    "save": "Guardar",
-    "saveAs": "Guardar como",
-    "saveAsLabel": "Guardar este flujo de trabajo como...",
-    "saveDescription": "Guardar y finalizar",
-    "saveSuccess": "Guardado exitosamente",
-    "saveSuccessAppMessage": "'{name}' ha sido guardado. Se abrirá en modo aplicación por defecto de ahora en adelante.",
-    "saveSuccessAppPrompt": "¿Te gustaría verlo ahora?",
-    "saveSuccessGraphMessage": "'{name}' ha sido guardado. Se abrirá como grafo de nodos por defecto.",
     "select": "Seleccionar",
     "selectDescription": "Elegir entradas/salidas",
-    "switchToSelect": "Cambiar a Seleccionar",
-    "viewApp": "Ver aplicación"
+    "switchToSelect": "Cambiar a Seleccionar"
   },
   "clipboard": {
     "errorMessage": "Error al copiar al portapapeles",
@@ -1363,9 +1357,11 @@
     },
     "downloadAll": "Descargar todo",
     "dragAndDropImage": "Arrastra y suelta una imagen",
+    "enterNodeGraph": "Entrar al grafo de nodos",
     "giveFeedback": "Enviar comentarios",
     "graphMode": "Modo gráfico",
     "linearMode": "Modo App",
+    "mobileControls": "Editar y ejecutar",
     "queue": {
       "clear": "Limpiar cola",
       "clickToClear": "Haz clic para limpiar la cola"
@@ -1373,6 +1369,7 @@
     "rerun": "Volver a ejecutar",
     "reuseParameters": "Reutilizar parámetros",
     "runCount": "Número de ejecuciones:",
+    "viewJob": "Ver tarea",
     "welcome": {
       "backToWorkflow": "Volver al flujo de trabajo",
       "buildApp": "Crear aplicación",
@@ -1749,6 +1746,7 @@
     "disabled": "Deshabilitado",
     "disabledTooltip": "El flujo de trabajo no se encolará automáticamente",
     "execute": "Ejecutar",
+    "fullscreen": "Pantalla completa",
     "help": "Ayuda",
     "helpAndFeedback": "Ayuda y comentarios",
     "hideMenu": "Ocultar menú",
@@ -3202,7 +3200,9 @@
     "enterFilename": "Introduzca el nombre del archivo",
     "enterFilenamePrompt": "Introduce el nombre del archivo:",
     "exportWorkflow": "Exportar flujo de trabajo",
-    "saveWorkflow": "Guardar flujo de trabajo"
+    "saveWorkflow": "Guardar flujo de trabajo",
+    "savedAsApp": "Convertido a flujo de trabajo de aplicación",
+    "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos"
   },
   "workspace": {
     "addedToWorkspace": "Has sido añadido a {workspaceName}",
