@@ -69,7 +69,6 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -82,15 +81,14 @@ import StepBadge from './StepBadge.vue'
 import StepLabel from './StepLabel.vue'
 import type { BuilderToolbarStep } from './types'
 import { useAppSetDefaultView } from './useAppSetDefaultView'
+import { useBuilderSteps } from './useBuilderSteps'
 
 const { t } = useI18n()
-const { mode, setMode } = useAppMode()
-const { hasOutputs } = storeToRefs(useAppModeStore())
-const { settingView, showDialog } = useAppSetDefaultView()
-
-const activeStep = computed(() =>
-  settingView.value ? 'setDefaultView' : mode.value
-)
+const { setMode } = useAppMode()
+const appModeStore = useAppModeStore()
+const { hasOutputs } = storeToRefs(appModeStore)
+const { showDialog } = useAppSetDefaultView()
+const { activeStep } = useBuilderSteps()
 
 const stepClasses =
   'inline-flex h-14 min-h-8 cursor-pointer items-center gap-3 rounded-lg py-2 pr-4 pl-2 transition-colors border-none'

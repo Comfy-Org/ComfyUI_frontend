@@ -3373,5 +3373,10 @@
   },
   "builderMenu": {
     "exitAppBuilder": "Exit app builder"
+  },
+  "builderFooterToolbar": {
+    "label": "Builder navigation",
+    "back": "Back",
+    "next": "Next"
   }
 }
