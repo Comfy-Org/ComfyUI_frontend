@@ -237,9 +237,83 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('SEEDVR2', 'SeedVR2LoadDiTModel', 'model')
 
     // Qwen VL vision-language models (comfyui-qwen-vl)
-    // Top-level 'LLM' catches all LLM/Qwen-VL/* subdirs via hierarchical fallback
-    quickRegister('LLM', 'AILab_QwenVL', 'model_name')
+    // Register each specific path to avoid LLM fallback catching unrelated models
+    // (e.g., LLM/llava-* should NOT map to AILab_QwenVL)
+    quickRegister(
+      'LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-2B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-2B-Thinking',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-4B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-4B-Thinking',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-8B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-8B-Thinking',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-32B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-32B-Thinking',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-0.6B',
+      'AILab_QwenVL_PromptEnhancer',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-4B-Instruct-2507',
+      'AILab_QwenVL_PromptEnhancer',
+      'model_name'
+    )
     quickRegister('LLM/checkpoints', 'LoadChatGLM3', 'chatglm3_checkpoint')
+
+    // LLM/llava text encoder models for HunyuanVideo
+    // These use DownloadAndLoadHyVideoTextEncoder which auto-downloads,
+    // so map to the closest user-facing HunyuanVideo node
+    quickRegister(
+      'LLM/llava-llama-3-8b-text-encoder-tokenizer',
+      'TextEncodeHunyuanVideo_ImageToVideo',
+      ''
+    )
+    quickRegister(
+      'LLM/llava-llama-3-8b-v1_1-transformers',
+      'TextEncodeHunyuanVideo_ImageToVideo',
+      ''
+    )
 
     // Qwen3 TTS speech models (ComfyUI-FunBox)
     // Top-level 'qwen-tts' catches all qwen-tts/* subdirs via hierarchical fallback
@@ -286,6 +360,21 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
 
     // Detection models (vitpose, yolo)
     quickRegister('detection', 'OnnxDetectionModelLoader', 'yolo_model')
+
+    // LatentSync lip-sync models (node pack not yet deployed — pre-registered)
+    quickRegister('latentsync', 'LatentSyncNode', '')
+
+    // SAM-3D object generation models (node pack not yet deployed — pre-registered)
+    quickRegister('sam3d', 'SAM3DLoader', '')
+
+    // SAM-3D body models (node pack not yet deployed — pre-registered)
+    quickRegister('sam3dbody', 'SAM3DBodyLoader', '')
+
+    // Inpaint models (Fooocus inpaint, LAMA, MAT)
+    quickRegister('inpaint', 'InpaintModelConditioning', '')
+
+    // VAE approximate decoding (TAESD models, used internally by ComfyUI)
+    quickRegister('vae_approx', 'VAEDecodeTiled', '')
   }
 
   return {
