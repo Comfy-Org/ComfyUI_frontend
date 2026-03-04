@@ -6,6 +6,7 @@ import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { app } from '@/scripts/app'
 
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
@@ -28,37 +29,36 @@ export const useAppModeStore = defineStore('appMode', () => {
     loadSelections(activeWorkflow.changeTracker?.activeState?.extra?.linearData)
   }
 
-  function flushSelections() {
-    const workflow = workflowStore.activeWorkflow
-    if (workflow) {
-      workflow.dirtyLinearData = {
-        inputs: [...selectedInputs],
-        outputs: [...selectedOutputs]
-      }
-    }
-  }
-
   watch(
     () => workflowStore.activeWorkflow,
-    (newWorkflow, oldWorkflow) => {
-      // Persist in-progress builder selections to the outgoing workflow
-      if (oldWorkflow && isBuilderMode.value) {
-        oldWorkflow.dirtyLinearData = {
-          inputs: [...selectedInputs],
-          outputs: [...selectedOutputs]
-        }
-      }
-      // Load from incoming workflow: dirty state first, then persisted
+    (newWorkflow) => {
       if (newWorkflow) {
         loadSelections(
-          newWorkflow.dirtyLinearData ??
-            newWorkflow.changeTracker?.activeState?.extra?.linearData
+          newWorkflow.changeTracker?.activeState?.extra?.linearData
         )
       } else {
         loadSelections(undefined)
       }
     },
     { immediate: true }
+  )
+
+  watch(
+    () =>
+      isBuilderMode.value
+        ? { inputs: selectedInputs, outputs: selectedOutputs }
+        : null,
+    (data) => {
+      if (!data) return
+      const graph = app.rootGraph
+      if (!graph) return
+      const extra = (graph.extra ??= {})
+      extra.linearData = {
+        inputs: [...data.inputs],
+        outputs: [...data.outputs]
+      }
+    },
+    { deep: true }
   )
 
   watch(
@@ -75,8 +75,6 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   async function exitBuilder() {
-    const workflow = workflowStore.activeWorkflow
-    if (workflow) workflow.dirtyLinearData = null
     resetSelectedToWorkflow()
     setMode('graph')
   }
@@ -85,7 +83,6 @@ export const useAppModeStore = defineStore('appMode', () => {
     enterBuilder,
     exitBuilder,
     hasOutputs,
-    flushSelections,
     resetSelectedToWorkflow,
     selectedInputs,
     selectedOutputs

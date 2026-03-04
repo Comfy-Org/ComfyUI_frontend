@@ -7,11 +7,10 @@ import type {
   WorkflowMenuItem
 } from '@/types/workflowMenuItem'
 
-function getNewItemIds(items: WorkflowMenuItem[]): string[] {
+function getNewActions(items: WorkflowMenuItem[]): WorkflowMenuAction[] {
   return items
     .filter((i): i is WorkflowMenuAction => !('separator' in i && i.separator))
     .filter((i) => i.isNew)
-    .map((i) => i.id)
 }
 
 export function useNewMenuItemIndicator(
@@ -19,7 +18,7 @@ export function useNewMenuItemIndicator(
 ) {
   const settingStore = useSettingStore()
 
-  const newItemIds = computed(() => getNewItemIds(toValue(menuItems)))
+  const newActions = computed(() => getNewActions(toValue(menuItems)))
 
   const seenItems = computed<string[]>(
     () => settingStore.get('Comfy.WorkflowActions.SeenItems') ?? []
@@ -27,14 +26,28 @@ export function useNewMenuItemIndicator(
 
   const hasUnseenItems = computed(() => {
     const seen = new Set(seenItems.value)
-    return newItemIds.value.some((id) => !seen.has(id))
+    return newActions.value
+      .filter((i) => i.visible !== false)
+      .some((i) => !seen.has(i.id))
   })
 
   function markAsSeen() {
-    if (!newItemIds.value.length) return
-    void settingStore.set('Comfy.WorkflowActions.SeenItems', [
-      ...newItemIds.value
-    ])
+    const actions = newActions.value
+    if (!actions.length) return
+
+    const seen = new Set(seenItems.value)
+    const visibleIds = actions
+      .filter((i) => i.visible !== false)
+      .map((i) => i.id)
+    const retainedIds = actions
+      .filter((i) => i.visible === false && seen.has(i.id))
+      .map((i) => i.id)
+
+    const nextSeen = [...visibleIds, ...retainedIds]
+    if (nextSeen.length === seen.size && nextSeen.every((id) => seen.has(id)))
+      return
+
+    void settingStore.set('Comfy.WorkflowActions.SeenItems', nextSeen)
   }
 
   return { hasUnseenItems, markAsSeen }
