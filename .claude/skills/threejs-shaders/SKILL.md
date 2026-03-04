@@ -8,12 +8,12 @@ description: Three.js shaders - GLSL, ShaderMaterial, uniforms, custom effects. 
 ## Quick Start
 
 ```javascript
-import * as THREE from "three";
+import * as THREE from 'three'
 
 const material = new THREE.ShaderMaterial({
   uniforms: {
     time: { value: 0 },
-    color: { value: new THREE.Color(0xff0000) },
+    color: { value: new THREE.Color(0xff0000) }
   },
   vertexShader: `
     void main() {
@@ -26,11 +26,11 @@ const material = new THREE.ShaderMaterial({
     void main() {
       gl_FragColor = vec4(color, 1.0);
     }
-  `,
-});
+  `
+})
 
 // Update in animation loop
-material.uniforms.time.value = clock.getElapsedTime();
+material.uniforms.time.value = clock.getElapsedTime()
 ```
 
 ## ShaderMaterial vs RawShaderMaterial
@@ -63,8 +63,8 @@ const material = new THREE.ShaderMaterial({
     void main() {
       gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
     }
-  `,
-});
+  `
+})
 ```
 
 ### RawShaderMaterial
@@ -75,7 +75,7 @@ Full control - you define everything.
 const material = new THREE.RawShaderMaterial({
   uniforms: {
     projectionMatrix: { value: camera.projectionMatrix },
-    modelViewMatrix: { value: new THREE.Matrix4() },
+    modelViewMatrix: { value: new THREE.Matrix4() }
   },
   vertexShader: `
     precision highp float;
@@ -94,8 +94,8 @@ const material = new THREE.RawShaderMaterial({
     void main() {
       gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
     }
-  `,
-});
+  `
+})
 ```
 
 ## Uniforms
@@ -128,10 +128,10 @@ const material = new THREE.ShaderMaterial({
     // Arrays
     floatArray: { value: [1.0, 2.0, 3.0] },
     vec3Array: {
-      value: [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0)],
-    },
-  },
-});
+      value: [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0)]
+    }
+  }
+})
 ```
 
 ### GLSL Declarations
@@ -156,14 +156,14 @@ uniform vec3 vec3Array[2];
 
 ```javascript
 // Direct assignment
-material.uniforms.time.value = clock.getElapsedTime();
+material.uniforms.time.value = clock.getElapsedTime()
 
 // Vector/Color updates
-material.uniforms.position.value.set(x, y, z);
-material.uniforms.color.value.setHSL(hue, 1, 0.5);
+material.uniforms.position.value.set(x, y, z)
+material.uniforms.color.value.setHSL(hue, 1, 0.5)
 
 // Matrix updates
-material.uniforms.matrix.value.copy(mesh.matrixWorld);
+material.uniforms.matrix.value.copy(mesh.matrixWorld)
 ```
 
 ## Varyings
@@ -194,8 +194,8 @@ const material = new THREE.ShaderMaterial({
       // Use interpolated values
       gl_FragColor = vec4(vNormal * 0.5 + 0.5, 1.0);
     }
-  `,
-});
+  `
+})
 ```
 
 ## Common Shader Patterns
@@ -205,7 +205,7 @@ const material = new THREE.ShaderMaterial({
 ```javascript
 const material = new THREE.ShaderMaterial({
   uniforms: {
-    map: { value: texture },
+    map: { value: texture }
   },
   vertexShader: `
     varying vec2 vUv;
@@ -223,8 +223,8 @@ const material = new THREE.ShaderMaterial({
       vec4 texColor = texture2D(map, vUv);
       gl_FragColor = texColor;
     }
-  `,
-});
+  `
+})
 ```
 
 ### Vertex Displacement
@@ -233,7 +233,7 @@ const material = new THREE.ShaderMaterial({
 const material = new THREE.ShaderMaterial({
   uniforms: {
     time: { value: 0 },
-    amplitude: { value: 0.5 },
+    amplitude: { value: 0.5 }
   },
   vertexShader: `
     uniform float time;
@@ -253,8 +253,8 @@ const material = new THREE.ShaderMaterial({
     void main() {
       gl_FragColor = vec4(0.5, 0.8, 1.0, 1.0);
     }
-  `,
-});
+  `
+})
 ```
 
 ### Fresnel Effect
@@ -285,8 +285,8 @@ const material = new THREE.ShaderMaterial({
 
       gl_FragColor = vec4(mix(baseColor, fresnelColor, fresnel), 1.0);
     }
-  `,
-});
+  `
+})
 ```
 
 ### Noise-Based Effects
@@ -360,8 +360,8 @@ const material = new THREE.ShaderMaterial({
 
       gl_FragColor = vec4(baseColor + rimColor * rim, 1.0);
     }
-  `,
-});
+  `
+})
 ```
 
 ### Dissolve Effect
@@ -393,31 +393,31 @@ void main() {
 Modify existing material shaders.
 
 ```javascript
-const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 })
 
 material.onBeforeCompile = (shader) => {
   // Add custom uniform
-  shader.uniforms.time = { value: 0 };
+  shader.uniforms.time = { value: 0 }
 
   // Store reference for updates
-  material.userData.shader = shader;
+  material.userData.shader = shader
 
   // Modify vertex shader
   shader.vertexShader = shader.vertexShader.replace(
-    "#include <begin_vertex>",
+    '#include <begin_vertex>',
     `
     #include <begin_vertex>
     transformed.y += sin(position.x * 10.0 + time) * 0.1;
-    `,
-  );
+    `
+  )
 
   // Add uniform declaration
-  shader.vertexShader = "uniform float time;\n" + shader.vertexShader;
-};
+  shader.vertexShader = 'uniform float time;\n' + shader.vertexShader
+}
 
 // Update in animation loop
 if (material.userData.shader) {
-  material.userData.shader.uniforms.time.value = clock.getElapsedTime();
+  material.userData.shader.uniforms.time.value = clock.getElapsedTime()
 }
 ```
 
@@ -425,14 +425,14 @@ if (material.userData.shader) {
 
 ```javascript
 // Vertex shader chunks
-"#include <begin_vertex>"; // After position is calculated
-"#include <project_vertex>"; // After gl_Position
-"#include <beginnormal_vertex>"; // Normal calculation start
+'#include <begin_vertex>' // After position is calculated
+'#include <project_vertex>' // After gl_Position
+'#include <beginnormal_vertex>' // Normal calculation start
 
 // Fragment shader chunks
-"#include <color_fragment>"; // After diffuse color
-"#include <output_fragment>"; // Final output
-"#include <fog_fragment>"; // After fog applied
+'#include <color_fragment>' // After diffuse color
+'#include <output_fragment>' // Final output
+'#include <fog_fragment>' // After fog applied
 ```
 
 ## GLSL Built-in Functions
@@ -497,8 +497,8 @@ const material = new THREE.ShaderMaterial({
   uniforms: {
     /* ... */
   },
-  vertexShader: "/* ... */",
-  fragmentShader: "/* ... */",
+  vertexShader: '/* ... */',
+  fragmentShader: '/* ... */',
 
   // Rendering
   transparent: true,
@@ -520,12 +520,12 @@ const material = new THREE.ShaderMaterial({
     derivatives: true, // For fwidth, dFdx, dFdy
     fragDepth: true, // gl_FragDepth
     drawBuffers: true, // Multiple render targets
-    shaderTextureLOD: true, // texture2DLod
+    shaderTextureLOD: true // texture2DLod
   },
 
   // GLSL version
-  glslVersion: THREE.GLSL3, // For WebGL2 features
-});
+  glslVersion: THREE.GLSL3 // For WebGL2 features
+})
 ```
 
 ## Shader Includes
@@ -533,7 +533,7 @@ const material = new THREE.ShaderMaterial({
 ### Using Three.js Shader Chunks
 
 ```javascript
-import { ShaderChunk } from "three";
+import { ShaderChunk } from 'three'
 
 const fragmentShader = `
   ${ShaderChunk.common}
@@ -547,29 +547,29 @@ const fragmentShader = `
     float linearDepth = perspectiveDepthToViewZ(depth, 0.1, 1000.0);
     gl_FragColor = vec4(vec3(-linearDepth / 100.0), 1.0);
   }
-`;
+`
 ```
 
 ### External Shader Files
 
 ```javascript
 // With vite/webpack
-import vertexShader from "./shaders/vertex.glsl";
-import fragmentShader from "./shaders/fragment.glsl";
+import vertexShader from './shaders/vertex.glsl'
+import fragmentShader from './shaders/fragment.glsl'
 
 const material = new THREE.ShaderMaterial({
   vertexShader,
-  fragmentShader,
-});
+  fragmentShader
+})
 ```
 
 ## Instanced Shaders
 
 ```javascript
 // Instanced attribute
-const offsets = new Float32Array(instanceCount * 3);
+const offsets = new Float32Array(instanceCount * 3)
 // Fill offsets...
-geometry.setAttribute("offset", new THREE.InstancedBufferAttribute(offsets, 3));
+geometry.setAttribute('offset', new THREE.InstancedBufferAttribute(offsets, 3))
 
 const material = new THREE.ShaderMaterial({
   vertexShader: `
@@ -584,8 +584,8 @@ const material = new THREE.ShaderMaterial({
     void main() {
       gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
     }
-  `,
-});
+  `
+})
 ```
 
 ## Debugging Shaders
@@ -593,9 +593,9 @@ const material = new THREE.ShaderMaterial({
 ```javascript
 // Check for compile errors
 material.onBeforeCompile = (shader) => {
-  console.log("Vertex Shader:", shader.vertexShader);
-  console.log("Fragment Shader:", shader.fragmentShader);
-};
+  console.log('Vertex Shader:', shader.vertexShader)
+  console.log('Fragment Shader:', shader.fragmentShader)
+}
 
 // Visual debugging
 fragmentShader: `
@@ -609,10 +609,10 @@ fragmentShader: `
     // Debug position
     gl_FragColor = vec4(vPosition * 0.1 + 0.5, 1.0);
   }
-`;
+`
 
 // Check WebGL errors
-renderer.debug.checkShaderErrors = true;
+renderer.debug.checkShaderErrors = true
 ```
 
 ## Performance Tips
