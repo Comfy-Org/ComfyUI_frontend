@@ -1393,8 +1393,10 @@ export class ComfyApp {
       useSettingStore().get('Comfy.EnableWorkflowViewRestore')
     ) {
       try {
-        // Ensure the canvas is the correct size after switching from app mode
-        this.canvas.resize()
+        if (!this.canvasEl.width || !this.canvasEl.height) {
+          // Ensure the canvas is the correct size after switching from app mode
+          this.canvas.resize()
+        }
         // Always fit view for templates to ensure they're visible on load
         if (openSource === 'template') {
           requestAnimationFrame(() => useLitegraphService().fitView())
