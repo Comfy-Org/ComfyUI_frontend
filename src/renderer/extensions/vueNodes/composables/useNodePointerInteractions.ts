@@ -138,6 +138,9 @@ export function useNodePointerInteractions(
       safeDragEnd(event)
 
       if (wasDragging) {
+        // Suppress the click event that fires after pointerup to prevent
+        // unintended actions (e.g. collapse button toggling after a drag).
+        suppressNextClick(event)
         return
       }
     }
@@ -151,6 +154,25 @@ export function useNodePointerInteractions(
     if (nodeId) {
       toggleNodeSelectionAfterPointerUp(nodeId, multiSelect)
     }
+  }
+
+  /**
+   * After a drag, the browser fires a click event on the element under the
+   * pointer. Register a one-shot capture-phase listener to swallow it so
+   * interactive children (e.g. collapse button) don't trigger.
+   */
+  function suppressNextClick(event: PointerEvent) {
+    const target = event.currentTarget as HTMLElement | null
+    if (!target) return
+
+    target.addEventListener(
+      'click',
+      (e) => {
+        e.stopPropagation()
+        e.preventDefault()
+      },
+      { capture: true, once: true }
+    )
   }
 
   function onPointercancel(event: PointerEvent) {
