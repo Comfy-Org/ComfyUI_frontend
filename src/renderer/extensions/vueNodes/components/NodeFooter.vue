@@ -172,7 +172,7 @@ const getTabStyles = (isBackground = false) => {
   }
 
   return cn(
-    'absolute top-full left-0 text-xs',
+    'absolute top-full left-0 text-xs pointer-events-auto',
     footerRadiusClass.value,
     sizeClasses,
     props.hasAnyError ? '-translate-x-1 translate-y-0.5' : 'translate-y-0.5'
