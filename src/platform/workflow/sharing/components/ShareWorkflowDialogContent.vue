@@ -127,7 +127,7 @@
         data-testid="publish-tab-panel"
         class="min-h-0"
       >
-        <ComfyHubIntroPopover
+        <ComfyHubPublishIntroPanel
           data-testid="publish-intro"
           :on-create-profile="handleOpenPublishDialog"
           :on-close="onClose"
@@ -145,7 +145,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ComfyHubIntroPopover from '@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubIntroPopover.vue'
+import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubPublishIntroPanel.vue'
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'

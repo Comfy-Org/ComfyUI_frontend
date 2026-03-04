@@ -76,7 +76,7 @@ describe('ComfyHubPublishDialog', () => {
             template: '<nav data-testid="publish-nav" />',
             props: ['currentStep']
           },
-          ComfyHubPublishWizardPanel: {
+          ComfyHubPublishWizardContent: {
             template:
               '<div><button data-testid="require-profile" @click="$props.onRequireProfile()" /><button data-testid="gate-complete" @click="$props.onGateComplete()" /><button data-testid="gate-close" @click="$props.onGateClose()" /></div>',
             props: [

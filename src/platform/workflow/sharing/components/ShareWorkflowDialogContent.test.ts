@@ -186,12 +186,12 @@ describe('ShareWorkflowDialogContent', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          ComfyHubIntroPopover: {
+          ComfyHubPublishIntroPanel: {
             template:
               '<section data-testid="publish-intro"><button data-testid="publish-intro-cta" @click="$props.onCreateProfile()">Start publishing</button></section>',
             props: ['onCreateProfile']
           },
-          'comfy-hub-intro-popover': {
+          'comfy-hub-publish-intro-panel': {
             template:
               '<section data-testid="publish-intro"><button data-testid="publish-intro-cta" @click="$props.onCreateProfile()">Start publishing</button></section>',
             props: ['onCreateProfile']

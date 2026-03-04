@@ -195,9 +195,7 @@ describe(ShareAssetWarningBox, () => {
 
     const images = wrapper.findAll('img')
     expect(images).toHaveLength(1)
-    expect(images[0].attributes('src')).toBe(
-      'https://example.com/a.jpg?res=256'
-    )
+    expect(images[0].attributes('src')).toBe('https://example.com/a.jpg')
     expect(images[0].attributes('alt')).toBe('image.png')
   })
 

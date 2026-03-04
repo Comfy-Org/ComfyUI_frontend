@@ -1,17 +1,17 @@
 <template>
-  <ComfyHubIntroPopover
+  <ComfyHubPublishIntroPanel
     v-if="stepper.isCurrent('intro')"
     :on-create-profile="stepper.goToNext"
     :on-close
     :show-close-button
   />
-  <ComfyHubCreateProfileModal
+  <ComfyHubCreateProfileForm
     v-else-if="stepper.isCurrent('create')"
     :on-profile-created
     :on-close
     :show-close-button
   />
-  <ComfyHubProfileSuccessPopover
+  <ComfyHubProfileSuccessPanel
     v-else-if="stepper.isCurrent('success') && createdProfile"
     :profile="createdProfile"
     :on-upload="onComplete"
@@ -26,9 +26,9 @@ import { useStepper } from '@vueuse/core'
 
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 
-import ComfyHubCreateProfileModal from './ComfyHubCreateProfileModal.vue'
-import ComfyHubIntroPopover from './ComfyHubIntroPopover.vue'
-import ComfyHubProfileSuccessPopover from './ComfyHubProfileSuccessPopover.vue'
+import ComfyHubCreateProfileForm from './ComfyHubCreateProfileForm.vue'
+import ComfyHubPublishIntroPanel from './ComfyHubPublishIntroPanel.vue'
+import ComfyHubProfileSuccessPanel from './ComfyHubProfileSuccessPanel.vue'
 
 type ProfileGateStep = 'intro' | 'create' | 'success'
 

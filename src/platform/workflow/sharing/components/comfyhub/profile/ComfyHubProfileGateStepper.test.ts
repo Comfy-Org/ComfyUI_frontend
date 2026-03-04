@@ -2,11 +2,11 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import ComfyHubProfileGateDialog from '@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubProfileGateDialog.vue'
+import ComfyHubProfileGateStepper from '@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubProfileGateStepper.vue'
 
-describe('ComfyHubProfileGateDialog', () => {
+describe('ComfyHubProfileGateStepper', () => {
   function createWrapper(initialStep?: 'intro' | 'create') {
-    return mount(ComfyHubProfileGateDialog, {
+    return mount(ComfyHubProfileGateStepper, {
       props: {
         onComplete: vi.fn(),
         onClose: vi.fn(),
@@ -14,22 +14,22 @@ describe('ComfyHubProfileGateDialog', () => {
       },
       global: {
         stubs: {
-          ComfyHubIntroPopover: {
+          ComfyHubPublishIntroPanel: {
             template: '<section data-testid="profile-gate-intro" />'
           },
-          ComfyHubCreateProfileModal: {
+          ComfyHubCreateProfileForm: {
             template: '<section data-testid="profile-gate-create" />'
           },
-          ComfyHubProfileSuccessPopover: {
+          ComfyHubProfileSuccessPanel: {
             template: '<section data-testid="profile-gate-success" />'
           },
-          'comfy-hub-intro-popover': {
+          'comfy-hub-publish-intro-panel': {
             template: '<section data-testid="profile-gate-intro" />'
           },
-          'comfy-hub-create-profile-modal': {
+          'comfy-hub-create-profile-form': {
             template: '<section data-testid="profile-gate-create" />'
           },
-          'comfy-hub-profile-success-popover': {
+          'comfy-hub-profile-success-panel': {
             template: '<section data-testid="profile-gate-success" />'
           }
         }

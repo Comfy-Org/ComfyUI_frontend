@@ -1,6 +1,6 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <ComfyHubProfileGateDialog
+    <ComfyHubProfileGateStepper
       v-if="currentStep === 'profileCreation'"
       data-testid="publish-gate-flow"
       :on-complete="onGateComplete"
@@ -25,8 +25,7 @@
           v-else-if="currentStep === 'examples'"
           class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4"
         >
-          <ComfyHubFinishStep
-            embedded
+          <ComfyHubThumbnailStep
             :thumbnail-type="formData.thumbnailType"
             @update:thumbnail-type="onUpdateFormData({ thumbnailType: $event })"
             @update:thumbnail-file="onUpdateFormData({ thumbnailFile: $event })"
@@ -47,7 +46,7 @@
             "
           />
         </div>
-        <ComfyHubFinishStep
+        <ComfyHubProfilePromptPanel
           v-else-if="currentStep === 'finish'"
           @request-profile="onRequireProfile"
         />
@@ -69,12 +68,13 @@ import { computed, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
-import ComfyHubProfileGateDialog from '@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubProfileGateDialog.vue'
+import ComfyHubProfileGateStepper from '@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubProfileGateStepper.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
 import ComfyHubExamplesStep from './ComfyHubExamplesStep.vue'
-import ComfyHubFinishStep from './ComfyHubFinishStep.vue'
+import ComfyHubProfilePromptPanel from './ComfyHubProfilePromptPanel.vue'
+import ComfyHubThumbnailStep from './ComfyHubThumbnailStep.vue'
 import ComfyHubPublishFooter from './ComfyHubPublishFooter.vue'
 
 const {

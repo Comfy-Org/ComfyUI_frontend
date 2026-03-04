@@ -17,7 +17,7 @@
 
     <template #header />
     <template #content>
-      <ComfyHubPublishWizardPanel
+      <ComfyHubPublishWizardContent
         :current-step
         :form-data
         :is-first-step
@@ -39,7 +39,7 @@ import { onBeforeUnmount, onMounted, provide } from 'vue'
 
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import ComfyHubPublishNav from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishNav.vue'
-import ComfyHubPublishWizardPanel from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishWizardPanel.vue'
+import ComfyHubPublishWizardContent from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishWizardContent.vue'
 import { useComfyHubPublishWizard } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
