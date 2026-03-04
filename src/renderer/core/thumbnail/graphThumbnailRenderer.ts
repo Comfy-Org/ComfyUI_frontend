@@ -5,6 +5,7 @@ import {
   calculateMinimapScale,
   calculateNodeBounds
 } from '@/renderer/core/spatial/boundsCalculator'
+import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
 
 import { renderMinimapToCanvas } from '../../extensions/minimap/minimapCanvasRenderer'
 
@@ -38,19 +39,23 @@ export function createGraphThumbnail(): string | null {
   canvas.height = height
 
   // Render the minimap
-  renderMinimapToCanvas(canvas, graph as LGraph, {
-    bounds,
-    scale,
-    settings: {
-      nodeColors: true,
-      showLinks: false,
-      showGroups: true,
-      renderBypass: false,
-      renderError: false
-    },
-    width,
-    height
-  })
+  renderMinimapToCanvas(
+    canvas,
+    MinimapDataSourceFactory.create(graph as LGraph),
+    {
+      bounds,
+      scale,
+      settings: {
+        nodeColors: true,
+        showLinks: false,
+        showGroups: true,
+        renderBypass: false,
+        renderError: false
+      },
+      width,
+      height
+    }
+  )
 
   const dataUrl = canvas.toDataURL()
 

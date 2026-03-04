@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full flex-col scrollbar-custom">
+  <div class="flex flex-grow flex-col">
     <PropertiesAccordionItem
       class="border-t border-border-default bg-transparent"
     >
@@ -219,6 +219,10 @@
     </PropertiesAccordionItem>
 
     <div class="mt-auto border-t border-border-default p-4 flex flex-col gap-2">
+      <WorkflowPreview
+        :workflow-json="graphPreviewJson"
+        :loading="graphPreviewLoading"
+      />
       <template v-if="confirmingRemove">
         <p class="m-0 text-sm text-muted">
           {{ t('templateWorkflows.myTemplates.confirmRemove') }}
@@ -267,13 +271,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
+import WorkflowPreview from '@/components/templates/WorkflowPreview.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import WorkflowTemplateDetailsField from '@/components/custom/widget/WorkflowTemplateDetailsField.vue'
+import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import type { WorkflowJsonInput } from '@/renderer/extensions/minimap/data/WorkflowJsonDataSource'
 import { formatSize } from '@/utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
@@ -284,6 +291,7 @@ import TemplateStatsDisplay from './TemplateStatsDisplay.vue'
 const DetailsField = WorkflowTemplateDetailsField
 
 const { t } = useI18n()
+const { fetchTemplateJson } = useTemplateWorkflows()
 
 const { submission } = defineProps<{
   submission: MarketplaceTemplate
@@ -303,4 +311,22 @@ const renderedShortDescription = computed(() =>
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString()
 }
+
+const graphPreviewLoading = ref(false)
+const graphPreviewJson = ref<WorkflowJsonInput | null>(null)
+
+onMounted(async () => {
+  const name = submission.name
+  if (!name) return
+  graphPreviewLoading.value = true
+  try {
+    const sourceModule = submission.sourceModule ?? 'default'
+    const json = await fetchTemplateJson(name, sourceModule)
+    graphPreviewJson.value = json as WorkflowJsonInput
+  } catch (e) {
+    console.error('Failed to load workflow preview:', e)
+  } finally {
+    graphPreviewLoading.value = false
+  }
+})
 </script>

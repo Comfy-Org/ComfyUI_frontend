@@ -183,6 +183,7 @@ export function useTemplateWorkflows() {
     getTemplateThumbnailUrl,
     getTemplateTitle,
     getTemplateDescription,
-    loadWorkflowTemplate
+    loadWorkflowTemplate,
+    fetchTemplateJson
   }
 }

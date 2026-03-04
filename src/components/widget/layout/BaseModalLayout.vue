@@ -125,7 +125,7 @@
               <i class="pi pi-times" />
             </Button>
           </header>
-          <div class="min-h-0 flex-1 overflow-y-auto">
+          <div class="min-h-0 flex-1 flex flex-col overflow-y-auto">
             <slot name="rightPanel" />
           </div>
         </div>

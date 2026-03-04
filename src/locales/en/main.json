@@ -1042,7 +1042,8 @@
       "vram": "VRAM",
       "tags": "Tags",
       "install": "Install",
-      "viewTutorial": "View Tutorial"
+      "viewTutorial": "View Tutorial",
+      "viewGraph": "View Graph"
     },
     "myTemplates": {
       "title": "My Templates",

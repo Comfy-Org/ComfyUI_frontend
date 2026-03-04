@@ -3,6 +3,7 @@ import type { Ref, ShallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
+import { MinimapDataSourceFactory } from '../data/MinimapDataSourceFactory'
 import { renderMinimapToCanvas } from '../minimapCanvasRenderer'
 import type { UpdateFlags } from '../types'
 
@@ -44,19 +45,23 @@ export function useMinimapRenderer(
       updateFlags.value.connections
 
     if (needsRedraw) {
-      renderMinimapToCanvas(canvasRef.value, g, {
-        bounds: bounds.value,
-        scale: scale.value,
-        settings: {
-          nodeColors: settings.nodeColors.value,
-          showLinks: settings.showLinks.value,
-          showGroups: settings.showGroups.value,
-          renderBypass: settings.renderBypass.value,
-          renderError: settings.renderError.value
-        },
-        width,
-        height
-      })
+      renderMinimapToCanvas(
+        canvasRef.value,
+        MinimapDataSourceFactory.create(g),
+        {
+          bounds: bounds.value,
+          scale: scale.value,
+          settings: {
+            nodeColors: settings.nodeColors.value,
+            showLinks: settings.showLinks.value,
+            showGroups: settings.showGroups.value,
+            renderBypass: settings.renderBypass.value,
+            renderError: settings.renderError.value
+          },
+          width,
+          height
+        }
+      )
 
       needsFullRedraw.value = false
       updateFlags.value.nodes = false

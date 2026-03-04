@@ -429,7 +429,7 @@
     </template>
 
     <template #rightPanel>
-      <div ref="rightPanelRef">
+      <div ref="rightPanelRef" class="flex flex-grow flex-col">
         <MarketplaceTemplateDetailsPanel
           v-if="selectedSubmission"
           :submission="selectedSubmission"

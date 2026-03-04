@@ -1,9 +1,7 @@
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
-import { MinimapDataSourceFactory } from './data/MinimapDataSourceFactory'
 import type {
   IMinimapDataSource,
   MinimapNodeData,
@@ -215,19 +213,14 @@ function renderConnections(
  */
 export function renderMinimapToCanvas(
   canvas: HTMLCanvasElement,
-  graph: LGraph,
+  dataSource: IMinimapDataSource,
   context: MinimapRenderContext
 ) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  // Clear canvas
   ctx.clearRect(0, 0, context.width, context.height)
 
-  // Create unified data source (Dependency Inversion)
-  const dataSource = MinimapDataSourceFactory.create(graph)
-
-  // Fast path for empty graph
   if (!dataSource.hasData()) {
     return
   }
