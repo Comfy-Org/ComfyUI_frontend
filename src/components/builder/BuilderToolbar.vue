@@ -7,14 +7,19 @@
       class="inline-flex items-center gap-1 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
     >
       <template
-        v-for="(step, index) in [selectInputsStep, selectOutputsStep, arrangeStep]"
+        v-for="(step, index) in [
+          selectInputsStep,
+          selectOutputsStep,
+          arrangeStep
+        ]"
         :key="step.id"
       >
         <button
           :class="
             cn(
               stepClasses,
-              activeStep === step.id ? 'bg-interface-builder-mode-background'
+              activeStep === step.id
+                ? 'bg-interface-builder-mode-background'
                 : 'hover:bg-secondary-background bg-transparent'
             )
           "
@@ -116,4 +121,3 @@ const defaultViewStep: BuilderToolbarStep<BuilderStepId> = {
   icon: 'icon-[lucide--eye]'
 }
 </script>
-

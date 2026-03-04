@@ -41,9 +41,10 @@ export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
     return activeStepIndex.value >= BUILDER_STEPS.length - 1
   })
 
-  const isSelectStep = computed(() =>
-    activeStep.value === 'builder:inputs'
-      || activeStep.value === 'builder:outputs'
+  const isSelectStep = computed(
+    () =>
+      activeStep.value === 'builder:inputs' ||
+      activeStep.value === 'builder:outputs'
   )
 
   function navigateToStep(stepId: BuilderStepId) {

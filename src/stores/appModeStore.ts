@@ -78,19 +78,17 @@ export const useAppModeStore = defineStore('appMode', () => {
   )
 
   let unwatch: () => void | undefined
-  watch(isSelectMode,
-    (inSelect) => {
-      const { state } = getCanvas()
-      if (!state) return
-      state.readOnly = inSelect
-      unwatch?.()
-      if (inSelect)
-        unwatch = watch(
-          () => state.readOnly,
-          () => (state.readOnly = true)
-        )
-    }
-  )
+  watch(isSelectMode, (inSelect) => {
+    const { state } = getCanvas()
+    if (!state) return
+    state.readOnly = inSelect
+    unwatch?.()
+    if (inSelect)
+      unwatch = watch(
+        () => state.readOnly,
+        () => (state.readOnly = true)
+      )
+  })
 
   function enterBuilder() {
     if (!app.rootGraph?.nodes?.length) {
