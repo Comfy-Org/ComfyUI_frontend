@@ -1,12 +1,8 @@
 <template>
   <div v-if="embedded" :class="containerClass">
-    <p class="text-sm text-base-foreground">
-      {{ $t('comfyHubPublish.finishDescription') }}
-    </p>
-
     <div class="flex flex-col gap-2">
       <span class="text-sm text-base-foreground">
-        {{ $t('comfyHubPublish.thumbnailType') }}
+        {{ $t('comfyHubPublish.selectAThumbnail') }}
       </span>
       <ToggleGroup
         type="single"
@@ -18,39 +14,9 @@
           v-for="option in thumbnailOptions"
           :key="option.value"
           :value="option.value"
-          class="h-auto w-full gap-2 rounded bg-node-component-surface p-2 data-[state=on]:bg-muted-background"
+          class="h-auto w-full rounded bg-node-component-surface p-2 data-[state=on]:bg-muted-background"
         >
-          <div
-            :ref="
-              option.overlayImage
-                ? (el) => (compareContainerRef = el as HTMLElement)
-                : undefined
-            "
-            class="relative aspect-square w-1/2 overflow-hidden rounded-sm"
-          >
-            <img
-              :src="option.image"
-              :alt="option.label"
-              class="h-full w-full object-cover"
-            />
-            <template v-if="option.overlayImage">
-              <img
-                :src="option.overlayImage"
-                :alt="option.label"
-                class="absolute inset-0 h-full w-full object-cover"
-                :style="{
-                  clipPath: `inset(0 ${100 - compareSliderPosition}% 0 0)`
-                }"
-              />
-              <div
-                class="pointer-events-none absolute inset-y-0 w-0.5 bg-white/30 backdrop-blur-sm"
-                :style="{ left: `${compareSliderPosition}%` }"
-              />
-            </template>
-          </div>
-          <span
-            class="w-1/2 text-center text-sm font-bold text-base-foreground"
-          >
+          <span class="text-center text-sm font-bold text-base-foreground">
             {{ option.label }}
           </span>
         </ToggleGroupItem>
@@ -290,19 +256,15 @@ const uploadDropText = computed(() =>
 const thumbnailOptions = [
   {
     value: 'image' as const,
-    label: t('comfyHubPublish.thumbnailImage'),
-    image: '/assets/images/comfyhub/type_image.png'
+    label: t('comfyHubPublish.thumbnailImage')
   },
   {
     value: 'video' as const,
-    label: t('comfyHubPublish.thumbnailVideo'),
-    image: '/assets/images/comfyhub/type_video.gif'
+    label: t('comfyHubPublish.thumbnailVideo')
   },
   {
     value: 'imageComparison' as const,
-    label: t('comfyHubPublish.thumbnailImageComparison'),
-    image: '/assets/images/comfyhub/type_compare_b.png',
-    overlayImage: '/assets/images/comfyhub/type_compare_a.png'
+    label: t('comfyHubPublish.thumbnailImageComparison')
   }
 ]
 
@@ -314,9 +276,6 @@ onBeforeUnmount(() => {
     URL.revokeObjectURL(thumbnailPreviewUrl.value)
   }
 })
-
-const compareContainerRef = ref<HTMLElement | null>(null)
-const compareSliderPosition = useSliderFromMouse(compareContainerRef)
 
 function setThumbnailPreview(file: File) {
   if (thumbnailPreviewUrl.value) {

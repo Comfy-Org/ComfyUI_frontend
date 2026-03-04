@@ -1,18 +1,18 @@
 <template>
   <div :class="containerClass">
-    <p class="text-sm text-muted-foreground">
+    <div class="text-sm">
       {{
         $t('comfyHubPublish.examplesDescription', {
           selected: selectedExampleIds.length,
           total: MAX_EXAMPLES
         })
       }}
-    </p>
+    </div>
 
     <div class="grid grid-cols-4 gap-2.5 overflow-y-auto">
       <!-- Upload tile -->
       <label
-        class="flex h-[100px] aspect-square text-center cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default transition-colors hover:border-muted-foreground"
+        class="flex h-25 aspect-square text-center cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default transition-colors hover:border-muted-foreground"
         @dragenter.stop
         @dragleave.stop
         @dragover.prevent.stop
@@ -25,10 +25,7 @@
           class="hidden"
           @change="handleFileSelect"
         />
-        <span class="text-sm text-muted-foreground">
-          {{ $t('comfyHubPublish.uploadAnImage') }}
-        </span>
-        <i class="icon-[lucide--image] size-4 text-muted-foreground" />
+        <i class="icon-[lucide--plus] size-4 text-muted-foreground" />
       </label>
 
       <!-- Example images -->

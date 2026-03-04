@@ -151,7 +151,7 @@ export function useFeatureFlags() {
         remoteConfig.value.comfyhub_profile_gate_enabled ??
         api.getServerFeature(
           ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
-          true
+          false
         )
       )
     }
