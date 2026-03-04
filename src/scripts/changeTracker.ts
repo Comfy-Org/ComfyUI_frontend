@@ -34,6 +34,13 @@ export class ChangeTracker {
   activeState: ComfyWorkflowJSON
   undoQueue: ComfyWorkflowJSON[] = []
   redoQueue: ComfyWorkflowJSON[] = []
+  /**
+   * Nesting counter for compound operations. While greater than zero,
+   * {@link checkState} is suppressed. Incremented by {@link beforeChange},
+   * decremented by {@link afterChange}. When it returns to zero,
+   * `checkState()` runs and captures a single undo entry for all mutations
+   * since the first `beforeChange`.
+   */
   changeCount: number = 0
   /**
    * Whether the redo/undo restoring is in progress.
@@ -203,10 +210,24 @@ export class ChangeTracker {
     }
   }
 
+  /**
+   * Marks the start of a compound operation. Increments the nesting
+   * counter to suppress {@link checkState} until the matching
+   * {@link afterChange} call completes.
+   *
+   * Typically called via `LGraphCanvas.emitBeforeChange()` through the
+   * `litegraph:canvas` DOM event, rather than directly.
+   */
   beforeChange() {
     this.changeCount++
   }
 
+  /**
+   * Marks the end of a compound operation. Decrements the nesting
+   * counter; when it reaches zero, calls {@link checkState} to capture
+   * a single undo entry for all mutations since the first
+   * {@link beforeChange}.
+   */
   afterChange() {
     if (!--this.changeCount) {
       this.checkState()

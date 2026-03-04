@@ -3972,14 +3972,41 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )
   }
 
-  /** @todo Refactor to where it belongs - e.g. Deleting / creating nodes is not actually canvas event. */
+  /**
+   * Signals the start of a compound graph operation. All graph mutations
+   * between this call and the matching {@link emitAfterChange} are treated
+   * as a single undoable action by the change tracking system.
+   *
+   * Emits a `litegraph:canvas` DOM event with `subType: 'before-change'`,
+   * which `ChangeTracker` listens for to suppress intermediate state
+   * snapshots. Calls are nestable — only the outermost pair triggers a
+   * state check.
+   *
+   * Always pair with {@link emitAfterChange} in a `try/finally` block.
+   *
+   * @example
+   * ```ts
+   * canvas.emitBeforeChange()
+   * try {
+   *   // multiple graph mutations...
+   * } finally {
+   *   canvas.emitAfterChange()
+   * }
+   * ```
+   */
   emitBeforeChange(): void {
     this.emitEvent({
       subType: 'before-change'
     })
   }
 
-  /** @todo See {@link emitBeforeChange} */
+  /**
+   * Signals the end of a compound graph operation started by
+   * {@link emitBeforeChange}. When the outermost pair completes, the
+   * change tracking system takes a single state snapshot and records
+   * one undo entry for all mutations since the matching
+   * `emitBeforeChange`.
+   */
   emitAfterChange(): void {
     this.emitEvent({
       subType: 'after-change'

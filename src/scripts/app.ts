@@ -1720,21 +1720,26 @@ export class ComfyApp {
     if (fileList.length === 0) return
     if (!fileList[0].type.startsWith('image')) return
 
-    const imageNodes = await pasteImageNodes(this.canvas, fileList)
-    if (imageNodes.length === 0) return
+    this.canvas.emitBeforeChange()
+    try {
+      const imageNodes = await pasteImageNodes(this.canvas, fileList)
+      if (imageNodes.length === 0) return
 
-    if (imageNodes.length > 1) {
-      const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
-      if (!batchImagesNode) return
+      if (imageNodes.length > 1) {
+        const batchImagesNode = await createNode(
+          this.canvas,
+          'BatchImagesNode'
+        )
+        if (!batchImagesNode) return
 
-      this.positionBatchNodes(imageNodes, batchImagesNode)
-      this.canvas.selectItems([...imageNodes, batchImagesNode])
-
-      imageNodes.forEach((imageNode, index) => {
-        imageNode.connect(0, batchImagesNode, index)
-      })
-    } else {
-      this.canvas.selectItems(imageNodes)
+        imageNodes.forEach((imageNode, index) => {
+          imageNode.connect(0, batchImagesNode, index)
+        })
+      } else {
+        this.canvas.selectItems(imageNodes)
+      }
+    } finally {
+      this.canvas.emitAfterChange()
     }
   }
 
