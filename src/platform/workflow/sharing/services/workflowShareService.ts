@@ -12,7 +12,7 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
-export class SharedWorkflowLoadError extends Error {
+class SharedWorkflowLoadError extends Error {
   readonly status: number | null
 
   constructor(status: number | null, message?: string) {
@@ -126,13 +126,7 @@ export function useWorkflowShareService() {
     }
 
     const record = decodePublishRecord(await response.json())
-    if (!record || !record.shareId) {
-      return UNPUBLISHED
-    }
-
-    if (!record.publishedAt) {
-      return UNPUBLISHED
-    }
+    if (!record?.shareId || !record.publishedAt) return UNPUBLISHED
 
     return {
       isPublished: true,
