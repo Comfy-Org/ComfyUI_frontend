@@ -20,7 +20,7 @@
             )
           "
           :aria-current="activeStep === step.id ? 'step' : undefined"
-          @click="setMode(step.id)"
+          @click="navigateToStep(step.id)"
         >
           <StepBadge :step :index :model-value="activeStep" />
           <StepLabel :step />
@@ -33,7 +33,7 @@
       <ConnectOutputPopover
         v-if="!hasOutputs"
         :is-select-active="activeStep === 'builder:select'"
-        @switch="setMode('builder:select')"
+        @switch="navigateToStep('builder:select')"
       >
         <button :class="cn(stepClasses, 'opacity-30 bg-transparent')">
           <StepBadge
@@ -54,7 +54,7 @@
               : 'hover:bg-secondary-background bg-transparent'
           )
         "
-        @click="showDialog()"
+        @click="navigateToStep('setDefaultView')"
       >
         <StepBadge
           :step="defaultViewStep"
@@ -69,11 +69,8 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useAppMode } from '@/composables/useAppMode'
-import type { AppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -81,35 +78,32 @@ import ConnectOutputPopover from './ConnectOutputPopover.vue'
 import StepBadge from './StepBadge.vue'
 import StepLabel from './StepLabel.vue'
 import type { BuilderToolbarStep } from './types'
-import { useAppSetDefaultView } from './useAppSetDefaultView'
+import type { BuilderStepId } from './useBuilderSteps'
+import { useBuilderSteps } from './useBuilderSteps'
 
 const { t } = useI18n()
-const { mode, setMode } = useAppMode()
-const { hasOutputs } = storeToRefs(useAppModeStore())
-const { settingView, showDialog } = useAppSetDefaultView()
-
-const activeStep = computed(() =>
-  settingView.value ? 'setDefaultView' : mode.value
-)
+const appModeStore = useAppModeStore()
+const { hasOutputs } = storeToRefs(appModeStore)
+const { activeStep, navigateToStep } = useBuilderSteps()
 
 const stepClasses =
   'inline-flex h-14 min-h-8 cursor-pointer items-center gap-3 rounded-lg py-2 pr-4 pl-2 transition-colors border-none'
 
-const selectStep: BuilderToolbarStep<AppMode> = {
+const selectStep: BuilderToolbarStep<BuilderStepId> = {
   id: 'builder:select',
   title: t('builderToolbar.select'),
   subtitle: t('builderToolbar.selectDescription'),
   icon: 'icon-[lucide--mouse-pointer-click]'
 }
 
-const arrangeStep: BuilderToolbarStep<AppMode> = {
+const arrangeStep: BuilderToolbarStep<BuilderStepId> = {
   id: 'builder:arrange',
   title: t('builderToolbar.arrange'),
   subtitle: t('builderToolbar.arrangeDescription'),
   icon: 'icon-[lucide--layout-panel-left]'
 }
 
-const defaultViewStep: BuilderToolbarStep<'setDefaultView'> = {
+const defaultViewStep: BuilderToolbarStep<BuilderStepId> = {
   id: 'setDefaultView',
   title: t('builderToolbar.defaultView'),
   subtitle: t('builderToolbar.defaultViewDescription'),

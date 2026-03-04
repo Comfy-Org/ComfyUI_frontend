@@ -188,6 +188,15 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'share',
+      label: t('menuLabels.Share'),
+      icon: 'icon-[comfy--send]',
+      command: async () => {},
+      disabled: true,
+      visible: isRoot
+    })
+
+    addItem({
       id: 'enter-app-mode',
       label: t('breadcrumbsMenu.enterAppMode'),
       icon: 'icon-[lucide--panels-top-left]',

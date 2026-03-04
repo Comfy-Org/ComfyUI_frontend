@@ -1280,6 +1280,7 @@
     "Duplicate Current Workflow": "Duplicate Current Workflow",
     "Export": "Export",
     "Export (API)": "Export (API)",
+    "Share": "Share",
     "Convert Selection to Subgraph": "Convert Selection to Subgraph",
     "Edit Subgraph Widgets": "Edit Subgraph Widgets",
     "Exit Subgraph": "Exit Subgraph",
@@ -3043,7 +3044,9 @@
     },
     "appModeToolbar": {
       "appBuilder": "App builder",
-      "apps": "Apps"
+      "apps": "Apps",
+      "appsEmptyMessage": "Saved apps will show up here.\nClick below to build your first app.",
+      "enterAppMode": "Enter app mode"
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
@@ -3067,7 +3070,8 @@
       "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
       "noOutputs": "No output nodes added yet",
       "outputsDesc": "Connect at least one output node so users can see results after running.",
-      "outputsExample": "Examples: “Save Image” or “Save Video”"
+      "outputsExample": "Examples: “Save Image” or “Save Video”",
+      "unknownWidget": "Widget not visible"
     },
     "queue": {
       "clickToClear": "Click to clear queue",
@@ -3369,7 +3373,13 @@
     "app": "App",
     "appDescription": "Opens as an app by default",
     "nodeGraph": "Node graph",
-    "nodeGraphDescription": "Opens as node graph by default"
+    "nodeGraphDescription": "Opens as node graph by default",
+    "defaultModeAppliedTitle": "Successfully set",
+    "defaultModeAppliedAppBody": "This workflow will open in App Mode by default from now on.",
+    "defaultModeAppliedAppPrompt": "Would you like to view it now?",
+    "defaultModeAppliedGraphBody": "This workflow will open as a node graph by default from now on.",
+    "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
+    "viewApp": "View app"
   },
   "builderMenu": {
     "exitAppBuilder": "Exit app builder"
