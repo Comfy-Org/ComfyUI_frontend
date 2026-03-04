@@ -130,8 +130,8 @@ describe('appModeStore', () => {
   })
 
   describe('empty workflow dialog callbacks', () => {
-    function getDialogOptions() {
-      vi.mocked(app.rootGraph).nodes = []
+    function getDialogOptions(nodes: LGraphNode[] = []) {
+      vi.mocked(app.rootGraph).nodes = nodes
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
       store.enterBuilder()
       return mockEmptyWorkflowDialog.lastOptions
@@ -149,10 +149,7 @@ describe('appModeStore', () => {
     })
 
     it('onEnterBuilder enters builder when nodes exist', () => {
-      const options = getDialogOptions()
-
-      // Simulate template having loaded nodes
-      vi.mocked(app.rootGraph).nodes = [{ id: 1 } as LGraphNode]
+      const options = getDialogOptions([{ id: 1 } as LGraphNode])
 
       options.onEnterBuilder()
 
