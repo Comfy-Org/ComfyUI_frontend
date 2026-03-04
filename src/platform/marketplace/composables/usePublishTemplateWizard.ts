@@ -109,7 +109,7 @@ function createPublishTemplateWizard() {
   }
 }
 
-export type PublishTemplateWizardContext = ReturnType<
+type PublishTemplateWizardContext = ReturnType<
   typeof createPublishTemplateWizard
 >
 

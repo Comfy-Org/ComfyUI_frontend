@@ -1,6 +1,6 @@
 import type { SystemStats } from '@/schemas/apiSchema'
 
-export interface VramSnapshot {
+interface VramSnapshot {
   torchVramTotal: number
   torchVramFree: number
 }

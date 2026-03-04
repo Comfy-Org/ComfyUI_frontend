@@ -37,17 +37,17 @@ export const authorInfoSchema = z.object({
   profileUrl: z.string()
 })
 
-export const templateInfoSchema = z.custom<Partial<TemplateInfo>>(
+const templateInfoSchema = z.custom<Partial<TemplateInfo>>(
   (value) => value != null && typeof value === 'object' && 'name' in value
 )
 
-export const thumbnailVariantSchema = z.enum([
+const thumbnailVariantSchema = z.enum([
   'default',
   'compareSlider',
   'hoverDissolve'
 ])
 
-export const requiredModelSchema = z.object({
+const requiredModelSchema = z.object({
   name: z.string().min(1),
   category: z.string().min(1)
 })

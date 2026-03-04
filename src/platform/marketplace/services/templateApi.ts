@@ -55,13 +55,6 @@ export async function createTemplateDraft(
   return { id: record.id, status: record.status }
 }
 
-// GET /api/marketplace/templates/:id
-export async function getTemplate(
-  id: string
-): Promise<MarketplaceTemplate | null> {
-  return collection.get(id)
-}
-
 // PUT /api/marketplace/templates/:id
 export async function updateTemplate(
   body: UpdateTemplateRequest

@@ -1,17 +1,10 @@
 import type { z } from 'zod'
 
 import type {
-  authorDashboardStatsSchema,
-  periodDataPointSchema,
-  statsPeriodSchema
-} from '../schemas/authorStatsSchema'
-import type {
   authorInfoSchema,
   createTemplateDraftRequestSchema,
   difficultySchema,
-  licenseTypeSchema,
   marketplaceTemplateSchema,
-  requiredModelSchema,
   submitTemplateRequestSchema,
   templateStatsSchema,
   templateStatusSchema,
@@ -25,10 +18,7 @@ import type { StatusBadgeVariants } from '@/components/common/statusBadge.varian
 export const MARKETPLACE_TEMPLATE_KEY = '__is_marketplace'
 
 export type Difficulty = z.infer<typeof difficultySchema>
-export type LicenseType = z.infer<typeof licenseTypeSchema>
-export type RequiredModel = z.infer<typeof requiredModelSchema>
 export type TemplateStatus = z.infer<typeof templateStatusSchema>
-export type StatsPeriod = z.infer<typeof statsPeriodSchema>
 
 export type AuthorInfo = z.infer<typeof authorInfoSchema>
 export type TemplateStats = z.infer<typeof templateStatsSchema>
@@ -66,6 +56,3 @@ export const DIFFICULTY_SPRITES: Record<string, string> = {
   intermediate: '/assets/images/DOOM-intermediate.png',
   advanced: '/assets/images/DOOM-advanced.png'
 }
-
-export type AuthorDashboardStats = z.infer<typeof authorDashboardStatsSchema>
-export type PeriodDataPoint = z.infer<typeof periodDataPointSchema>

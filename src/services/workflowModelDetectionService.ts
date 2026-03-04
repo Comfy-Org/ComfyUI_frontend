@@ -2,7 +2,7 @@ import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 import { mapAllNodes } from '@/utils/graphTraversalUtil'
 
-export interface DetectedModel {
+interface DetectedModel {
   /** Model filename as selected in the widget */
   name: string
   /** Model category from modelToNodeStore (e.g. 'checkpoints', 'loras') */
