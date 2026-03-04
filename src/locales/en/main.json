@@ -2593,7 +2593,7 @@
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",
-    "enterBuilderMode": "Enter app builder",
+    "enterBuilderMode": "App builder",
     "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
@@ -3379,7 +3379,12 @@
     "defaultModeAppliedAppPrompt": "Would you like to view it now?",
     "defaultModeAppliedGraphBody": "This workflow will open as a node graph by default from now on.",
     "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
-    "viewApp": "View app"
+    "viewApp": "View app",
+    "emptyWorkflowTitle": "This workflow has no nodes",
+    "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
+    "emptyWorkflowPrompt": "Do you want to start with a template?",
+    "backToWorkflow": "Back to workflow",
+    "loadTemplate": "Load a template"
   },
   "builderMenu": {
     "exitAppBuilder": "Exit app builder"
