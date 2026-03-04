@@ -339,7 +339,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('UltraShape', 'UltraShapeLoadModel', 'checkpoint')
 
     // SHaRP depth estimation
-    quickRegister('sharp', 'LoadSharpModel', 'device')
+    quickRegister('sharp', 'LoadSharpModel', 'checkpoint_path')
 
     // ONNX upscale models (used by OnnxDetectionModelLoader and upscale nodes)
     quickRegister('onnx', 'UpscaleModelLoader', 'model_name')
