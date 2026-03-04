@@ -138,8 +138,6 @@ export function useNodePointerInteractions(
       safeDragEnd(event)
 
       if (wasDragging) {
-        // Suppress the click event that fires after pointerup to prevent
-        // unintended actions (e.g. collapse button toggling after a drag).
         suppressNextClick(event)
         return
       }
@@ -157,8 +155,7 @@ export function useNodePointerInteractions(
   }
 
   /**
-   * After a drag, the browser fires a click event on the element under the
-   * pointer. Register a one-shot capture-phase listener to swallow it so
+   * Register a one-shot capture-phase listener to swallow it so
    * interactive children (e.g. collapse button) don't trigger.
    */
   function suppressNextClick(event: PointerEvent) {
