@@ -19,7 +19,7 @@
             data-testid="docked-job-history-action"
             class="w-full justify-between text-sm font-light"
             variant="textonly"
-            size="sm"
+            size="md"
             @click="onToggleDockedJobHistory(close)"
           >
             <span class="flex items-center gap-2">
@@ -35,14 +35,32 @@
               class="icon-[lucide--check] size-4"
             />
           </Button>
+          <Button
+            data-testid="show-run-progress-bar-action"
+            class="w-full justify-between text-sm font-light"
+            variant="textonly"
+            size="md"
+            @click="onToggleRunProgressBar"
+          >
+            <span class="flex items-center gap-2">
+              <i class="icon-[lucide--hourglass] size-4 text-text-secondary" />
+              <span>{{
+                t('sideToolbar.queueProgressOverlay.showRunProgressBar')
+              }}</span>
+            </span>
+            <i
+              v-if="isRunProgressBarEnabled"
+              class="icon-[lucide--check] size-4"
+            />
+          </Button>
           <!-- TODO: Bug in assets sidebar panel derives assets from history, so despite this not deleting the assets, it still effectively shows to the user as deleted -->
           <template v-if="showClearHistoryAction">
             <div class="my-1 border-t border-interface-stroke" />
             <Button
               data-testid="clear-history-action"
-              class="h-auto min-h-0 w-full items-start justify-start whitespace-normal"
+              class="h-auto min-h-8 w-full items-start justify-start whitespace-normal"
               variant="textonly"
-              size="sm"
+              size="md"
               @click="onClearHistoryFromMenu(close)"
             >
               <i
@@ -76,6 +94,7 @@ import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -90,9 +109,8 @@ const settingStore = useSettingStore()
 const sidebarTabStore = useSidebarTabStore()
 
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
-const isQueuePanelV2Enabled = computed(() =>
-  settingStore.get('Comfy.Queue.QPOV2')
-)
+const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
+  useQueueFeatureFlags()
 const showClearHistoryAction = computed(() => !isCloud)
 
 const onClearHistoryFromMenu = (close: () => void) => {
@@ -117,5 +135,12 @@ const onToggleDockedJobHistory = async (close: () => void) => {
   } catch {
     return
   }
+}
+
+const onToggleRunProgressBar = async () => {
+  await settingStore.set(
+    'Comfy.Queue.ShowRunProgressBar',
+    !isRunProgressBarEnabled.value
+  )
 }
 </script>
