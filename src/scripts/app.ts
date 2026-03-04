@@ -2242,10 +2242,7 @@ export class ComfyApp {
       if (imageNodes.length === 0) return
 
       if (imageNodes.length > 1) {
-        const batchImagesNode = await createNode(
-          this.canvas,
-          'BatchImagesNode'
-        )
+        const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
         if (!batchImagesNode) return
 
         imageNodes.forEach((imageNode, index) => {
