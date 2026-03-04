@@ -1,5 +1,5 @@
 <template>
-  <div :class="containerClass">
+  <div class="flex min-h-0 flex-1 flex-col gap-6">
     <div class="flex flex-col gap-2">
       <span class="text-sm text-base-foreground">
         {{ $t('comfyHubPublish.selectAThumbnail') }}
@@ -184,8 +184,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useSliderFromMouse } from '@/platform/workflow/sharing/composables/useSliderFromMouse'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { cn } from '@/utils/tailwindUtil'
-import { useDropZone } from '@vueuse/core'
-import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+import { useDropZone, useObjectUrl } from '@vueuse/core'
+import { computed, onBeforeUnmount, reactive, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { thumbnailType = 'image' } = defineProps<{
@@ -200,10 +200,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-
-const containerClass = computed(() =>
-  cn('flex min-h-0 flex-1 flex-col gap-6', 'px-0 py-0')
-)
 
 function isThumbnailType(value: string): value is ThumbnailType {
   return value === 'image' || value === 'video' || value === 'imageComparison'
@@ -244,29 +240,14 @@ const thumbnailOptions = [
   }
 ]
 
-const thumbnailPreviewUrl = ref<string | null>(null)
+const thumbnailFile = shallowRef<File | null>(null)
+const thumbnailPreviewUrl = useObjectUrl(thumbnailFile)
 const isVideoFile = ref(false)
 
-onBeforeUnmount(() => {
-  if (thumbnailPreviewUrl.value) {
-    URL.revokeObjectURL(thumbnailPreviewUrl.value)
-  }
-})
-
 function setThumbnailPreview(file: File) {
-  if (thumbnailPreviewUrl.value) {
-    URL.revokeObjectURL(thumbnailPreviewUrl.value)
-  }
-  thumbnailPreviewUrl.value = URL.createObjectURL(file)
+  thumbnailFile.value = file
   isVideoFile.value = file.type.startsWith('video/')
   emit('update:thumbnailFile', file)
-}
-
-function clearThumbnailPreview() {
-  if (thumbnailPreviewUrl.value) {
-    URL.revokeObjectURL(thumbnailPreviewUrl.value)
-    thumbnailPreviewUrl.value = null
-  }
 }
 
 const hasBothComparisonImages = computed(
@@ -294,15 +275,13 @@ function clearAllPreviews() {
     return
   }
 
-  clearThumbnailPreview()
+  thumbnailFile.value = null
 }
 
 function handleFileSelect(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (file) {
-    setThumbnailPreview(file)
-  }
+  if (!(event.target instanceof HTMLInputElement)) return
+  const file = event.target.files?.[0]
+  if (file) setThumbnailPreview(file)
 }
 
 const singleDropRef = ref<HTMLElement | null>(null)
@@ -370,43 +349,30 @@ function setComparisonPreview(file: File, slot: ComparisonSlot) {
 }
 
 function handleComparisonSelect(event: Event, slot: ComparisonSlot) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (file) {
-    setComparisonPreview(file, slot)
-  }
+  if (!(event.target instanceof HTMLInputElement)) return
+  const file = event.target.files?.[0]
+  if (file) setComparisonPreview(file, slot)
 }
 
 const comparisonDropRefs = reactive<Record<ComparisonSlot, HTMLElement | null>>(
   { before: null, after: null }
 )
-const { isOverDropZone: isOverBefore } = useDropZone(
-  computed(() => comparisonDropRefs.before),
-  {
-    dataTypes: isImageType,
-    multiple: false,
-    onDrop(files) {
-      const file = files?.[0]
-      if (file) {
-        setComparisonPreview(file, 'before')
+function useComparisonDropZone(slot: ComparisonSlot) {
+  return useDropZone(
+    computed(() => comparisonDropRefs[slot]),
+    {
+      dataTypes: isImageType,
+      multiple: false,
+      onDrop(files) {
+        const file = files?.[0]
+        if (file) setComparisonPreview(file, slot)
       }
     }
-  }
-)
+  )
+}
 
-const { isOverDropZone: isOverAfter } = useDropZone(
-  computed(() => comparisonDropRefs.after),
-  {
-    dataTypes: isImageType,
-    multiple: false,
-    onDrop(files) {
-      const file = files?.[0]
-      if (file) {
-        setComparisonPreview(file, 'after')
-      }
-    }
-  }
-)
+const { isOverDropZone: isOverBefore } = useComparisonDropZone('before')
+const { isOverDropZone: isOverAfter } = useComparisonDropZone('after')
 
 const comparisonOverStates = computed(() => ({
   before: isOverBefore.value,

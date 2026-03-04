@@ -21,7 +21,7 @@
           {{ $t('comfyHubProfile.chooseProfilePicture') }}
         </span>
         <label
-          class="flex size-[51px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-[rgba(40,200,64,0.53)] to-[#00630f]"
+          class="flex size-[51px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-green-600/50 to-green-900"
         >
           <input
             type="file"
@@ -115,9 +115,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
+import { useObjectUrl } from '@vueuse/core'
 
 import { cn } from '@/utils/tailwindUtil'
 import Button from '@/components/ui/button/Button.vue'
@@ -144,7 +145,7 @@ const name = ref('')
 const username = ref('')
 const description = ref('')
 const profilePictureFile = ref<File | null>(null)
-const profilePreviewUrl = ref<string | null>(null)
+const profilePreviewUrl = useObjectUrl(profilePictureFile)
 const isCreating = ref(false)
 
 const profileInitial = computed(() => {
@@ -152,16 +153,10 @@ const profileInitial = computed(() => {
   return source ? source[0].toUpperCase() : 'C'
 })
 
-function setProfilePreview(file: File) {
-  if (profilePreviewUrl.value) URL.revokeObjectURL(profilePreviewUrl.value)
-  profilePictureFile.value = file
-  profilePreviewUrl.value = URL.createObjectURL(file)
-}
-
 function handleProfileSelect(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (file) setProfilePreview(file)
+  if (!(event.target instanceof HTMLInputElement)) return
+  const file = event.target.files?.[0]
+  if (file) profilePictureFile.value = file
 }
 
 async function handleCreate() {
@@ -185,8 +180,4 @@ async function handleCreate() {
     isCreating.value = false
   }
 }
-
-onBeforeUnmount(() => {
-  if (profilePreviewUrl.value) URL.revokeObjectURL(profilePreviewUrl.value)
-})
 </script>
