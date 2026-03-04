@@ -26,6 +26,7 @@ import { useQueueSettingsStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { resolveNode } from '@/utils/litegraphUtil'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -68,11 +69,7 @@ const mappedSelections = computed(() => {
       ([id]) => id === nodeId
     ).map(([, widgetName]) => widgetName)
     unprocessedInputs = unprocessedInputs.slice(inputGroup.length)
-    const node =
-      app.rootGraph.getNodeById(nodeId) ??
-      [...app.rootGraph.subgraphs.values()]
-        .flatMap((sg) => sg.nodes)
-        .find((n) => n.id == nodeId)
+    const node = resolveNode(nodeId)
     if (!node) continue
 
     const nodeData = nodeToNodeData(node)

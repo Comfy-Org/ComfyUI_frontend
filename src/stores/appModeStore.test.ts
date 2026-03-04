@@ -7,12 +7,22 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/scripts/app', () => ({
   app: {
     rootGraph: { extra: {} }
   }
+}))
+
+const mockResolveNode = vi.hoisted(() =>
+  vi.fn<(id: NodeId) => LGraphNode | undefined>(() => undefined)
+)
+vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+  ...(await importOriginal()),
+  resolveNode: mockResolveNode
 }))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -43,6 +53,7 @@ describe('appModeStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     vi.mocked(app.rootGraph).extra = {}
+    mockResolveNode.mockReturnValue(undefined)
   })
 
   describe('enterBuilder', () => {
@@ -90,6 +101,105 @@ describe('appModeStore', () => {
       store.enterBuilder()
 
       expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:select')
+    })
+  })
+
+  describe('loadSelections pruning', () => {
+    function mockNode(id: number) {
+      return { id }
+    }
+
+    function workflowWithLinearData(
+      inputs: [number, string][],
+      outputs: number[]
+    ) {
+      const workflow = createBuilderWorkflow('app')
+      workflow.changeTracker = createMockChangeTracker({
+        activeState: {
+          last_node_id: 0,
+          last_link_id: 0,
+          nodes: [],
+          links: [],
+          groups: [],
+          config: {},
+          version: 0.4,
+          extra: { linearData: { inputs, outputs } }
+        }
+      } as unknown as Partial<ChangeTracker>)
+      return workflow
+    }
+
+    it('removes inputs referencing deleted nodes on load', async () => {
+      const node1 = mockNode(1)
+      mockResolveNode.mockImplementation((id) =>
+        id == 1 ? (node1 as unknown as LGraphNode) : undefined
+      )
+
+      const workflowStore = useWorkflowStore()
+      const store = useAppModeStore()
+
+      workflowStore.activeWorkflow = workflowWithLinearData(
+        [
+          [1, 'prompt'],
+          [99, 'width']
+        ],
+        []
+      )
+      await nextTick()
+
+      expect(store.selectedInputs).toEqual([[1, 'prompt']])
+    })
+
+    it('keeps inputs for existing nodes even if widget is missing', async () => {
+      const node1 = mockNode(1)
+      mockResolveNode.mockImplementation((id) =>
+        id == 1 ? (node1 as unknown as LGraphNode) : undefined
+      )
+
+      const workflowStore = useWorkflowStore()
+      const store = useAppModeStore()
+
+      workflowStore.activeWorkflow = workflowWithLinearData(
+        [
+          [1, 'prompt'],
+          [1, 'deleted_widget']
+        ],
+        []
+      )
+      await nextTick()
+
+      expect(store.selectedInputs).toEqual([
+        [1, 'prompt'],
+        [1, 'deleted_widget']
+      ])
+    })
+
+    it('removes outputs referencing deleted nodes on load', async () => {
+      const node1 = mockNode(1)
+      mockResolveNode.mockImplementation((id) =>
+        id == 1 ? (node1 as unknown as LGraphNode) : undefined
+      )
+
+      const workflowStore = useWorkflowStore()
+      const store = useAppModeStore()
+
+      workflowStore.activeWorkflow = workflowWithLinearData([], [1, 99])
+      await nextTick()
+
+      expect(store.selectedOutputs).toEqual([1])
+    })
+
+    it('hasOutputs is false when all output nodes are deleted', async () => {
+      mockResolveNode.mockReturnValue(undefined)
+
+      const workflowStore = useWorkflowStore()
+      const store = useAppModeStore()
+
+      workflowStore.activeWorkflow = workflowWithLinearData([], [10, 20])
+      await nextTick()
+
+      expect(store.selectedOutputs).toEqual([])
+      expect(store.hasOutputs).toBe(false)
     })
   })
 
