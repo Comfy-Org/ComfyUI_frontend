@@ -55,8 +55,11 @@ function loadHistoricalReports(): PerfReport[] {
   const reports: PerfReport[] = []
   for (const dir of readdirSync(HISTORY_DIR)) {
     const filePath = join(HISTORY_DIR, dir, 'perf-metrics.json')
-    if (existsSync(filePath)) {
-      reports.push(JSON.parse(readFileSync(filePath, 'utf-8')))
+    if (!existsSync(filePath)) continue
+    try {
+      reports.push(JSON.parse(readFileSync(filePath, 'utf-8')) as PerfReport)
+    } catch {
+      console.warn(`Skipping malformed perf history: ${filePath}`)
     }
   }
   return reports
@@ -88,7 +91,8 @@ function formatValue(value: number, unit: string): string {
   return unit === 'ms' ? `${value.toFixed(0)}ms` : `${value.toFixed(0)}`
 }
 
-function formatDelta(pct: number): string {
+function formatDelta(pct: number | null): string {
+  if (pct === null) return '—'
   const sign = pct >= 0 ? '+' : ''
   return `${sign}${pct.toFixed(0)}%`
 }
@@ -132,7 +136,12 @@ function renderFullReport(
       }
 
       const baseVal = meanMetric(baseSamples, key)
-      const deltaPct = baseVal > 0 ? ((prMean - baseVal) / baseVal) * 100 : 0
+      const deltaPct =
+        baseVal === 0
+          ? prMean === 0
+            ? 0
+            : null
+          : ((prMean - baseVal) / baseVal) * 100
       const z = zScore(prMean, histStats)
       const sig = classifyChange(z, cv)
 
@@ -193,7 +202,12 @@ function renderColdStartReport(
       }
 
       const baseVal = meanMetric(baseSamples, key)
-      const deltaPct = baseVal > 0 ? ((prMean - baseVal) / baseVal) * 100 : 0
+      const deltaPct =
+        baseVal === 0
+          ? prMean === 0
+            ? 0
+            : null
+          : ((prMean - baseVal) / baseVal) * 100
       lines.push(
         `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prMean, unit)} | ${formatDelta(deltaPct)} |`
       )

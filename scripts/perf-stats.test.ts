@@ -69,6 +69,11 @@ describe('classifyChange', () => {
     expect(classifyChange(-3, 51)).toBe('noisy')
   })
 
+  it('does not classify as noisy when CV is exactly 50%', () => {
+    expect(classifyChange(3, 50)).toBe('regression')
+    expect(classifyChange(-3, 50)).toBe('improvement')
+  })
+
   it('returns neutral when z is null', () => {
     expect(classifyChange(null, 10)).toBe('neutral')
   })
