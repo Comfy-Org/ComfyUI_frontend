@@ -216,7 +216,7 @@ const label = computed(() => {
   </div>
   <SectionWidgets
     ref="sectionWidgetsRef"
-    v-model:collapse="firstSectionCollapsed"
+    :collapse="firstSectionCollapsed && !isSearching"
     :node
     :label
     :parents
@@ -229,7 +229,12 @@ const label = computed(() => {
         : t('rightSidePanel.inputsNoneTooltip')
     "
     class="border-b border-interface-stroke"
-    @update:collapse="nextTick(setDraggableState)"
+    @update:collapse="
+      (v) => {
+        firstSectionCollapsed = v
+        nextTick(setDraggableState)
+      }
+    "
   >
     <template #empty>
       <div class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15">

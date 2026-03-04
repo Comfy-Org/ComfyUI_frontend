@@ -38,7 +38,9 @@ const collapseMap = reactive<Record<string, boolean>>({})
 watch(
   () => workflowStore.activeWorkflow?.path,
   () => {
-    Object.keys(collapseMap).forEach((key) => delete collapseMap[key])
+    for (const key of Object.keys(collapseMap)) {
+      delete collapseMap[key]
+    }
   }
 )
 
