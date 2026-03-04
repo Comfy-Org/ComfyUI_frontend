@@ -200,9 +200,6 @@ describe('appModeStore', () => {
         id == 1 ? (node1 as unknown as LGraphNode) : undefined
       )
 
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
-
       workflowStore.activeWorkflow = workflowWithLinearData(
         [
           [1, 'prompt'],
@@ -220,9 +217,6 @@ describe('appModeStore', () => {
       mockResolveNode.mockImplementation((id) =>
         id == 1 ? (node1 as unknown as LGraphNode) : undefined
       )
-
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
 
       workflowStore.activeWorkflow = workflowWithLinearData(
         [
@@ -245,9 +239,6 @@ describe('appModeStore', () => {
         id == 1 ? (node1 as unknown as LGraphNode) : undefined
       )
 
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
-
       workflowStore.activeWorkflow = workflowWithLinearData([], [1, 99])
       await nextTick()
 
@@ -256,9 +247,6 @@ describe('appModeStore', () => {
 
     it('hasOutputs is false when all output nodes are deleted', async () => {
       mockResolveNode.mockReturnValue(undefined)
-
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
 
       workflowStore.activeWorkflow = workflowWithLinearData([], [10, 20])
       await nextTick()
