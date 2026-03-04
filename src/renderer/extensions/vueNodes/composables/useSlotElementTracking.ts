@@ -72,9 +72,11 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
   // share the same DOM transform, so their pixel difference divided by the
   // effective scale yields a correct canvas-space offset regardless of
   // whether the TransformPane has flushed its latest transform to the DOM.
-  const nodeEl = node.slots.values().next().value?.el.closest(
-    '[data-node-id]'
-  ) as HTMLElement | null
+  let nodeEl: HTMLElement | null = null
+  for (const [, entry] of node.slots) {
+    nodeEl = entry.el.closest('[data-node-id]') as HTMLElement | null
+    if (nodeEl) break
+  }
   const nodeRect = nodeEl?.getBoundingClientRect()
   const effectiveScale =
     nodeRect && nodeLayout.size.width > 0

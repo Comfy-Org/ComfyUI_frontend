@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs'
+import path from 'path'
+
 import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -20,22 +23,29 @@ test.describe(
     test('slot positions stay within node bounds after loading LG workflow', async ({
       comfyPage
     }) => {
-      // Load the basic-subgraph workflow, injecting workflowRendererVersion: "LG"
-      // to trigger the 1.2x scale in ensureCorrectLayoutScale.
-      const result = await comfyPage.page.evaluate(async () => {
+      // Read the workflow from Node.js and inject LG renderer version
+      const workflowPath = path.resolve(
+        __dirname,
+        '../assets/subgraphs/basic-subgraph.json'
+      )
+      const workflow = JSON.parse(
+        readFileSync(workflowPath, 'utf-8')
+      ) as ComfyWorkflowJSON
+      workflow.extra = {
+        ...workflow.extra,
+        workflowRendererVersion: 'LG'
+      }
+
+      const result = await comfyPage.page.evaluate(async (wf) => {
         const app = window.app!
-        const resp = await fetch('/browser_tests/assets/subgraphs/basic-subgraph.json')
-        const workflow = (await resp.json()) as ComfyWorkflowJSON
 
-        // Force LG renderer version to trigger ensureCorrectLayoutScale 1.2x
-        workflow.extra = {
-          ...workflow.extra,
-          workflowRendererVersion: 'LG'
-        }
-
-        await app.loadGraphData(workflow, true, true, null, {
-          openSource: 'template'
-        })
+        await app.loadGraphData(
+          wf as ComfyWorkflowJSON,
+          true,
+          true,
+          null,
+          { openSource: 'template' }
+        )
 
         // Wait for slot layout sync (RAF + nextTick)
         await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 50)))
@@ -100,7 +110,7 @@ test.describe(
         }
 
         return slotData
-      })
+      }, workflow)
 
       // Verify we found at least one node with slots (the SubgraphNode)
       expect(result.length).toBeGreaterThan(0)
