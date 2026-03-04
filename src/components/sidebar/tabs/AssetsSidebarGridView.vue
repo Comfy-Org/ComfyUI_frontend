@@ -81,7 +81,7 @@ const assetItems = computed<AssetGridItem[]>(() =>
 
 const gridStyle = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 30vw), 1fr))',
   padding: '0 0.5rem',
   gap: '0.5rem'
 }
