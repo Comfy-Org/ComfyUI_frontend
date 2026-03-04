@@ -1,6 +1,9 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col overflow-hidden bg-base-background">
-    <div
+  <form
+    class="flex min-h-0 flex-1 flex-col overflow-hidden bg-base-background"
+    @submit.prevent
+  >
+    <header
       v-if="showCloseButton"
       class="flex h-16 items-center justify-between px-6"
     >
@@ -10,20 +13,21 @@
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
         <i class="icon-[lucide--x] size-4" />
       </Button>
-    </div>
+    </header>
     <h2 v-else class="px-6 pt-6 text-base font-normal text-base-foreground">
       {{ $t('comfyHubProfile.createProfileTitle') }}
     </h2>
 
     <div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-4">
       <div class="flex flex-col gap-4">
-        <span class="text-sm text-muted-foreground">
+        <label for="profile-picture" class="text-sm text-muted-foreground">
           {{ $t('comfyHubProfile.chooseProfilePicture') }}
-        </span>
+        </label>
         <label
           class="flex size-13 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-green-600/50 to-green-900"
         >
           <input
+            id="profile-picture"
             type="file"
             accept="image/*"
             class="hidden"
@@ -92,7 +96,7 @@
       </div>
     </div>
 
-    <div
+    <footer
       class="flex items-center justify-end gap-4 border-t border-border-default px-6 py-4"
     >
       <Button size="lg" @click="onClose">
@@ -110,8 +114,8 @@
             : $t('comfyHubProfile.createProfile')
         }}
       </Button>
-    </div>
-  </div>
+    </footer>
+  </form>
 </template>
 
 <script setup lang="ts">

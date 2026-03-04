@@ -33,8 +33,8 @@
         :data-testid="`section-content-${section.id}`"
         class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
       >
-        <div class="max-h-25 overflow-y-auto px-6 pb-1 pt-0.5">
-          <div
+        <ul class="max-h-25 overflow-y-auto px-6 pb-1 pt-0.5">
+          <li
             v-for="item in section.items"
             :key="item.id"
             class="flex items-center gap-2 rounded-sm py-1"
@@ -55,8 +55,8 @@
             >
               {{ $t('shareWorkflow.inLibrary') }}
             </span>
-          </div>
-        </div>
+          </li>
+        </ul>
       </CollapsibleContent>
     </CollapsibleRoot>
   </div>

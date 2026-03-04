@@ -1,13 +1,13 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-6">
-    <div class="text-sm">
+    <p class="text-sm">
       {{
         $t('comfyHubPublish.examplesDescription', {
           selected: selectedExampleIds.length,
           total: MAX_EXAMPLES
         })
       }}
-    </div>
+    </p>
 
     <div class="grid grid-cols-4 gap-2.5 overflow-y-auto">
       <!-- Upload tile -->
@@ -25,12 +25,18 @@
           class="hidden"
           @change="handleFileSelect"
         />
-        <i class="icon-[lucide--plus] size-4 text-muted-foreground" />
+        <i
+          class="icon-[lucide--plus] size-4 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <span class="sr-only">{{
+          $t('comfyHubPublish.uploadExampleImage')
+        }}</span>
       </label>
 
       <!-- Example images -->
       <button
-        v-for="image in exampleImages"
+        v-for="(image, index) in exampleImages"
         :key="image.id"
         type="button"
         :class="
@@ -43,7 +49,7 @@
       >
         <img
           :src="image.url"
-          :alt="image.id"
+          :alt="$t('comfyHubPublish.exampleImage', { index: index + 1 })"
           class="h-full w-full object-cover"
         />
         <div

@@ -12,7 +12,7 @@
     </Button>
 
     <!-- Cover image -->
-    <div class="h-[229px] overflow-hidden rounded-t-lg">
+    <figure class="h-[229px] overflow-hidden rounded-t-lg">
       <img
         v-if="profile.coverImageUrl"
         :src="profile.coverImageUrl"
@@ -23,12 +23,12 @@
         v-else
         class="size-full bg-gradient-to-br from-blue-500 to-purple-600"
       />
-    </div>
+    </figure>
 
     <!-- Content -->
-    <div class="flex flex-col items-center gap-4 px-6 pb-6">
+    <section class="flex flex-col items-center gap-4 px-6 pb-6">
       <!-- Profile picture -->
-      <div
+      <figure
         class="-mt-15 size-30 shrink-0 overflow-hidden rounded-full border-4 border-base-background"
       >
         <img
@@ -38,7 +38,7 @@
           class="size-full object-cover"
         />
         <div v-else class="size-full bg-muted-background" />
-      </div>
+      </figure>
 
       <!-- Title -->
       <h2 class="text-center text-base font-semibold text-base-foreground">
@@ -70,7 +70,7 @@
       <Button variant="primary" size="lg" class="w-full" @click="onUpload">
         {{ $t('comfyHubProfile.uploadWorkflowButton') }}
       </Button>
-    </div>
+    </section>
   </div>
 </template>
 

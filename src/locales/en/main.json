@@ -3020,6 +3020,7 @@
     "publishedOn": "Published on {date}",
     "copyLink": "Copy",
     "linkCopied": "Copied!",
+    "shareUrlLabel": "Share URL",
     "loadFailed": "Failed to load shared workflow",
     "saveFailedTitle": "Save failed",
     "saveFailedDescription": "Failed to save workflow. Please try again.",
@@ -3084,6 +3085,9 @@
     "publishButton": "Publish to ComfyHub",
     "examplesDescription": "Add up to {total} additional sample images",
     "uploadAnImage": "Click to browse or drag an image",
+    "uploadExampleImage": "Upload example image",
+    "exampleImage": "Example image {index}",
+    "videoPreview": "Video thumbnail preview",
     "maxExamples": "You can select up to {max} examples",
     "createProfileToPublish": "Create a profile to publish to ComfyHub",
     "createProfileCta": "Create a profile"

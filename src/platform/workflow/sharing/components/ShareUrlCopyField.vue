@@ -3,6 +3,7 @@
     <Input
       readonly
       :model-value="url"
+      :aria-label="$t('shareWorkflow.shareUrlLabel')"
       class="flex-1"
       @focus="($event.target as HTMLInputElement).select()"
     />
@@ -15,7 +16,7 @@
       {{
         copied ? $t('shareWorkflow.linkCopied') : $t('shareWorkflow.copyLink')
       }}
-      <i class="icon-[lucide--link] size-3.5" />
+      <i class="icon-[lucide--link] size-3.5" aria-hidden="true" />
     </Button>
   </div>
 </template>

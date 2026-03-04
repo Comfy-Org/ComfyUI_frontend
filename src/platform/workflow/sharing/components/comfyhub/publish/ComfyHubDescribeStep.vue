@@ -23,7 +23,7 @@
       />
     </label>
 
-    <div class="flex flex-col gap-2">
+    <label class="flex flex-col gap-2">
       <span class="text-sm text-base-foreground">
         {{ $t('comfyHubPublish.workflowType') }}
       </span>
@@ -48,12 +48,12 @@
           </SelectItem>
         </SelectContent>
       </Select>
-    </div>
+    </label>
 
-    <div class="flex flex-col gap-2">
-      <span class="text-sm text-base-foreground">
+    <fieldset class="flex flex-col gap-2">
+      <legend class="text-sm text-base-foreground">
         {{ $t('comfyHubPublish.tagsDescription') }}
-      </span>
+      </legend>
       <TagsInput
         v-slot="{ isEmpty }"
         always-editing
@@ -103,7 +103,7 @@
           }}
         </Button>
       </TagsInput>
-    </div>
+    </fieldset>
   </div>
 </template>
 

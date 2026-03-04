@@ -9,6 +9,7 @@
         class="flex flex-1 items-center gap-2"
       >
         <Button
+          id="tab-share-link"
           role="tab"
           :aria-selected="dialogMode === 'shareLink'"
           :class="tabButtonClass('shareLink')"
@@ -17,12 +18,13 @@
           {{ $t('shareWorkflow.shareLinkTab') }}
         </Button>
         <Button
+          id="tab-publish"
           role="tab"
           :aria-selected="dialogMode === 'publishToHub'"
           :class="tabButtonClass('publishToHub')"
           @click="handleDialogModeChange('publishToHub')"
         >
-          <i class="icon-[lucide--globe] size-4" />
+          <i class="icon-[lucide--globe] size-4" aria-hidden="true" />
           {{ $t('shareWorkflow.publishToHubTab') }}
         </Button>
       </div>
@@ -38,6 +40,8 @@
       <div
         v-show="dialogMode === 'shareLink'"
         v-auto-animate
+        role="tabpanel"
+        aria-labelledby="tab-share-link"
         class="flex flex-col gap-4"
       >
         <template v-if="dialogState === 'loading'">
@@ -126,6 +130,8 @@
         v-if="showPublishToHubTab"
         v-show="dialogMode === 'publishToHub'"
         v-auto-animate
+        role="tabpanel"
+        aria-labelledby="tab-publish"
         data-testid="publish-tab-panel"
         class="min-h-0"
       >

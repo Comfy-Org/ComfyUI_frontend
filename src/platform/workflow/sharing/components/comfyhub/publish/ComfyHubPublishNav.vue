@@ -1,11 +1,11 @@
 <template>
-  <div class="flex flex-col gap-6 px-3 py-4">
-    <!-- Steps -->
-    <nav class="flex flex-col">
-      <div
+  <nav class="flex flex-col gap-6 px-3 py-4">
+    <ol class="flex flex-col">
+      <li
         v-for="step in steps"
         :key="step.name"
         v-auto-animate
+        :aria-current="isCurrentStep(step.name) ? 'step' : undefined"
         :class="
           cn(
             isProfileCreationFlow &&
@@ -57,9 +57,9 @@
             {{ $t('comfyHubProfile.profileCreationNav') }}
           </span>
         </div>
-      </div>
-    </nav>
-  </div>
+      </li>
+    </ol>
+  </nav>
 </template>
 
 <script setup lang="ts">

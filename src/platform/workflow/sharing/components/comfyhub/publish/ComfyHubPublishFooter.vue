@@ -1,5 +1,5 @@
 <template>
-  <div class="flex shrink items-center justify-between py-2">
+  <footer class="flex shrink items-center justify-between py-2">
     <div>
       <Button v-if="!isFirstStep" size="lg" @click="$emit('back')">
         {{ $t('comfyHubPublish.back') }}
@@ -21,7 +21,7 @@
         {{ $t('comfyHubPublish.publishButton') }}
       </Button>
     </div>
-  </div>
+  </footer>
 </template>
 
 <script setup lang="ts">

@@ -1,7 +1,7 @@
 <template>
   <div class="flex w-full flex-col overflow-hidden bg-base-background">
     <!-- Hero image with gradient fade -->
-    <div class="relative h-[229px] shrink-0 overflow-hidden rounded-t-xl">
+    <figure class="relative h-[229px] shrink-0 overflow-hidden rounded-t-xl">
       <img
         src="/assets/images/comfyhub/hub_profile_intro_hero.png"
         alt=""
@@ -20,10 +20,10 @@
       >
         <i class="icon-[lucide--x] size-4" />
       </Button>
-    </div>
+    </figure>
 
     <!-- Content -->
-    <div class="flex flex-col items-center gap-4 px-4 pb-6">
+    <section class="flex flex-col items-center gap-4 px-4 pb-6">
       <h2 class="m-0 text-base font-semibold text-base-foreground">
         {{ $t('comfyHubProfile.introTitle') }}
       </h2>
@@ -38,7 +38,7 @@
       >
         {{ $t('comfyHubProfile.startPublishingButton') }}
       </Button>
-    </div>
+    </section>
   </div>
 </template>
 

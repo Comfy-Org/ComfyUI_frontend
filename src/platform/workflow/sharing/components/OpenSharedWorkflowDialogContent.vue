@@ -3,9 +3,9 @@
     <header
       class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
     >
-      <span class="text-sm text-base-foreground">
+      <h2 class="text-sm text-base-foreground">
         {{ $t('openSharedWorkflow.dialogTitle') }}
-      </span>
+      </h2>
       <Button size="icon" :aria-label="$t('g.close')" @click="onCancel">
         <i class="icon-[lucide--x] size-4" />
       </Button>
@@ -32,7 +32,10 @@
 
     <template v-else-if="error">
       <main class="flex flex-col items-center gap-4 px-8 py-8">
-        <i class="icon-[lucide--circle-alert] size-8 text-warning-background" />
+        <i
+          class="icon-[lucide--circle-alert] size-8 text-warning-background"
+          aria-hidden="true"
+        />
         <p class="m-0 text-center text-sm text-muted-foreground">
           {{ $t('openSharedWorkflow.loadError') }}
         </p>
@@ -59,7 +62,10 @@
 
         <div v-if="hasAssets" class="flex w-84 shrink-0 flex-col gap-2 py-4">
           <div class="flex gap-2 items-start text-warning-background">
-            <i class="icon-[lucide--circle-alert] shrink-0 w-4 h-lh" />
+            <i
+              class="icon-[lucide--circle-alert] shrink-0 w-4 h-lh"
+              aria-hidden="true"
+            />
             <div class="m-0 p-0 text-sm">
               {{ $t('openSharedWorkflow.nonPublicAssetsWarningLine1') }}
               <br />

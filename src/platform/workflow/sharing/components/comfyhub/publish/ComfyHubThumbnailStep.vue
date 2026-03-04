@@ -1,9 +1,9 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-6">
-    <div class="flex flex-col gap-2">
-      <span class="text-sm text-base-foreground">
+    <fieldset class="flex flex-col gap-2">
+      <legend class="text-sm text-base-foreground">
         {{ $t('comfyHubPublish.selectAThumbnail') }}
-      </span>
+      </legend>
       <ToggleGroup
         type="single"
         :model-value="thumbnailType"
@@ -21,7 +21,7 @@
           </span>
         </ToggleGroupItem>
       </ToggleGroup>
-    </div>
+    </fieldset>
 
     <div class="flex min-h-0 flex-1 flex-col gap-2">
       <div class="flex items-center justify-between">
@@ -149,6 +149,7 @@
             <video
               v-if="isVideoFile"
               :src="thumbnailPreviewUrl"
+              :aria-label="$t('comfyHubPublish.videoPreview')"
               class="max-h-full max-w-full object-contain"
               muted
               loop
