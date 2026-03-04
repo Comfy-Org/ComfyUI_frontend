@@ -17,7 +17,7 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'

@@ -32,7 +32,7 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
