@@ -26,7 +26,7 @@ const {
     />
     <component
       :is="itemComponent"
-      v-else
+      v-else-if="item.visible !== false"
       :disabled="item.disabled"
       :class="
         cn(
