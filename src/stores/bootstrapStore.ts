@@ -35,17 +35,20 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     void workflowStore.loadWorkflows()
   }
 
+  /** Maximum time to wait for auth initialization before proceeding */
+  const AUTH_INIT_TIMEOUT = 10_000
+
   async function startStoreBootstrap() {
     const userStore = useUserStore()
     await userStore.initialize()
 
     if (isCloud) {
       const { isInitialized } = storeToRefs(useFirebaseAuthStore())
-      await until(isInitialized).toBe(true)
+      await until(isInitialized).toBe(true, { timeout: AUTH_INIT_TIMEOUT })
     }
 
     const { needsLogin } = storeToRefs(userStore)
-    await until(needsLogin).toBe(false)
+    await until(needsLogin).toBe(false, { timeout: AUTH_INIT_TIMEOUT })
 
     void loadI18n()
     loadAuthenticatedStores()
