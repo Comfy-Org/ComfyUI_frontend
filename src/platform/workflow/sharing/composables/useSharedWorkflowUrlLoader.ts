@@ -100,7 +100,13 @@ export function useSharedWorkflowUrlLoader() {
     const query = await ensureShareQueryFromIntent()
     const shareParam = query.share
 
-    if (!shareParam || typeof shareParam !== 'string') {
+    if (!shareParam) {
+      return 'not-present'
+    }
+
+    if (typeof shareParam !== 'string') {
+      cleanupUrlParams()
+      clearPreservedQuery(SHARE_NAMESPACE)
       return 'not-present'
     }
 

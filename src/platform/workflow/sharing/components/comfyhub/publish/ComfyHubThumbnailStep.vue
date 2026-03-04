@@ -194,9 +194,9 @@ const { thumbnailType = 'image' } = defineProps<{
 
 const emit = defineEmits<{
   'update:thumbnailType': [value: ThumbnailType]
-  'update:thumbnailFile': [value: File]
-  'update:comparisonBeforeFile': [value: File]
-  'update:comparisonAfterFile': [value: File]
+  'update:thumbnailFile': [value: File | null]
+  'update:comparisonBeforeFile': [value: File | null]
+  'update:comparisonAfterFile': [value: File | null]
 }>()
 
 const { t } = useI18n()
@@ -272,10 +272,13 @@ function clearAllPreviews() {
         comparisonPreviewUrls[slot] = null
       }
     }
+    emit('update:comparisonBeforeFile', null)
+    emit('update:comparisonAfterFile', null)
     return
   }
 
   thumbnailFile.value = null
+  emit('update:thumbnailFile', null)
 }
 
 function handleFileSelect(event: Event) {

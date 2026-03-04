@@ -36,7 +36,7 @@
         <div class="max-h-25 overflow-y-auto px-6 pb-1 pt-0.5">
           <div
             v-for="item in section.items"
-            :key="item.name"
+            :key="item.id"
             class="flex items-center gap-2 rounded-sm py-1"
           >
             <ShareAssetThumbnail

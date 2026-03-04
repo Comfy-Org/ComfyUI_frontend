@@ -97,7 +97,9 @@
             variant="primary"
             size="lg"
             :disabled="
-              isPublishing || (requiresAcknowledgment && !acknowledged)
+              isPublishing ||
+              isLoadingAssets ||
+              (requiresAcknowledgment && !acknowledged)
             "
             @click="handlePublish"
           >
@@ -296,10 +298,20 @@ async function refreshDialogState() {
     return
   }
 
-  const status = await shareService.getPublishStatus(workflow.path)
-  const resolved = resolveDialogStateFromStatus(status, workflow)
-  publishResult.value = resolved.publishResult
-  dialogState.value = resolved.dialogState
+  try {
+    const status = await shareService.getPublishStatus(workflow.path)
+    const resolved = resolveDialogStateFromStatus(status, workflow)
+    publishResult.value = resolved.publishResult
+    dialogState.value = resolved.dialogState
+  } catch (error) {
+    console.error('Failed to load publish status:', error)
+    publishResult.value = null
+    dialogState.value = 'ready'
+    toast.add({
+      severity: 'error',
+      summary: t('shareWorkflow.loadFailed')
+    })
+  }
 }
 
 onMounted(() => {
@@ -322,7 +334,7 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     }
 
     acknowledged.value = false
-    reloadAssets()
+    await reloadAssets()
 
     await refreshDialogState()
   },

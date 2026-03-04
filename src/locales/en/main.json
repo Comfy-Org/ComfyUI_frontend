@@ -3052,7 +3052,7 @@
     "workflowName": "Workflow name",
     "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
     "workflowDescription": "Workflow description",
-    "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people knows what to expect.",
+    "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
     "workflowType": "Workflow type",
     "workflowTypePlaceholder": "Select the type",
     "workflowTypeImageGeneration": "Image generation",
