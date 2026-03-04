@@ -1106,6 +1106,36 @@ describe('ChangeTracker', () => {
         expect(tracker.activeState).toEqual(final)
       })
 
+      it('suppresses captureCanvasState across nested beforeChange/afterChange calls', () => {
+        const tracker = createTracker(createState(1))
+
+        tracker.beforeChange()
+        tracker.beforeChange()
+
+        mockCanvasState(createState(2))
+        tracker.afterChange()
+        expect(tracker.undoQueue).toHaveLength(0)
+
+        mockCanvasState(createState(3))
+        tracker.afterChange()
+        expect(tracker.undoQueue).toHaveLength(1)
+      })
+
+      it('does not let an unpaired afterChange desync future transactions', () => {
+        const tracker = createTracker(createState(1))
+
+        // An unpaired afterChange (no matching beforeChange) must not drive
+        // changeCount negative, or every subsequent transaction is
+        // permanently suppressed.
+        tracker.afterChange()
+
+        tracker.beforeChange()
+        mockCanvasState(createState(2))
+        tracker.afterChange()
+
+        expect(tracker.undoQueue).toHaveLength(1)
+      })
+
       it('caps undoQueue at MAX_HISTORY', () => {
         const tracker = createTracker(createState(1))
         for (let i = 0; i < ChangeTracker.MAX_HISTORY; i++) {
