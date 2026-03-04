@@ -6573,7 +6573,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const ySizeFix = opts.posSizeFix[1] * LiteGraph.NODE_SLOT_HEIGHT
         const nodeX = opts.position[0] + opts.posAdd[0] + xSizeFix
         const nodeY = opts.position[1] + opts.posAdd[1] + ySizeFix
-        const pos = [nodeX, nodeY]
+        const pos: [number, number] = [nodeX, nodeY]
         const newNode = LiteGraph.createNode(nodeTypeStr, nodeNewOpts?.title, {
           pos
         })
