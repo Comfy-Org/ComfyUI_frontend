@@ -115,7 +115,7 @@ export class WorkflowJsonDataSource implements IMinimapDataSource {
     nodes: MinimapNodeData[]
   ): MinimapLinkData[] {
     if (!rawLinks || rawLinks.length === 0) return []
-    const nodeMap = new Map(nodes.map((n) => [String(n.id), n]))
+    const nodeMap = new Map(nodes.map((node) => [String(node.id), node]))
     const links: MinimapLinkData[] = []
 
     for (const link of rawLinks) {

@@ -965,7 +965,9 @@ function toTemplateInfo(submission: MarketplaceTemplate): TemplateInfo {
 }
 
 const approvedMarketplaceTemplates = computed(() =>
-  myTemplates.value.filter((t) => t.status === 'approved').map(toTemplateInfo)
+  myTemplates.value
+    .filter(({ status }) => status === 'approved')
+    .map(toTemplateInfo)
 )
 
 // Display templates (all when searching, paginated when not)

@@ -3,7 +3,7 @@
     <i class="icon-[lucide--chevron-right] size-5 text-muted" />
     <button
       v-if="index < currentStep - 1"
-      class="cursor-pointer border-none bg-transparent p-0 text-muted transition-colors hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
+      class="cursor-pointer border-none bg-transparent p-0 text-muted transition-colors [font:inherit] hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
       @click="emit('navigate', index + 1)"
     >
       {{ label }}
