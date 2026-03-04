@@ -5,13 +5,8 @@
       showDelay: 600
     }"
     class="subscribe-to-run-button whitespace-nowrap"
-    variant="primary"
+    variant="gradient"
     size="sm"
-    :style="{
-      background: 'var(--color-subscription-button-gradient)',
-      color: 'var(--color-white)',
-      borderColor: 'transparent'
-    }"
     data-testid="subscribe-to-run-button"
     @click="handleSubscribeToRun"
   >

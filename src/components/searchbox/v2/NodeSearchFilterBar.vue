@@ -53,6 +53,26 @@ const chips = computed<FilterChip[]>(() => {
   const searchService = nodeDefStore.nodeSearchService
   return [
     {
+      key: 'blueprints',
+      label: t('sideToolbar.nodeLibraryTab.filterOptions.blueprints'),
+      filter: searchService.nodeSourceFilter
+    },
+    {
+      key: 'partnerNodes',
+      label: t('sideToolbar.nodeLibraryTab.filterOptions.partnerNodes'),
+      filter: searchService.nodeSourceFilter
+    },
+    {
+      key: 'essentials',
+      label: t('g.essentials'),
+      filter: searchService.nodeSourceFilter
+    },
+    {
+      key: 'extensions',
+      label: t('g.extensions'),
+      filter: searchService.nodeSourceFilter
+    },
+    {
       key: 'input',
       label: t('g.input'),
       filter: searchService.inputTypeFilter
@@ -61,11 +81,6 @@ const chips = computed<FilterChip[]>(() => {
       key: 'output',
       label: t('g.output'),
       filter: searchService.outputTypeFilter
-    },
-    {
-      key: 'source',
-      label: t('g.source'),
-      filter: searchService.nodeSourceFilter
     }
   ]
 })

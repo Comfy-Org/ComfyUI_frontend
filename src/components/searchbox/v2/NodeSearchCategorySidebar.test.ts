@@ -50,7 +50,8 @@ describe('NodeSearchCategorySidebar', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
           name: 'EssentialNode',
-          essentials_category: 'basic'
+          essentials_category: 'basic',
+          python_module: 'comfy_essentials'
         })
       ])
       await nextTick()
@@ -58,9 +59,13 @@ describe('NodeSearchCategorySidebar', () => {
       const wrapper = await createWrapper()
 
       expect(wrapper.text()).toContain('Most relevant')
+      expect(wrapper.text()).toContain('Recents')
       expect(wrapper.text()).toContain('Favorites')
       expect(wrapper.text()).toContain('Essentials')
-      expect(wrapper.text()).toContain('Custom')
+      expect(wrapper.text()).toContain('Blueprints')
+      expect(wrapper.text()).toContain('Partner')
+      expect(wrapper.text()).toContain('Comfy')
+      expect(wrapper.text()).toContain('Extensions')
     })
 
     it('should mark the selected preset category as selected', async () => {

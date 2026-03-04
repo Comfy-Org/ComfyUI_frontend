@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { computed, ref, toValue } from 'vue'
+import { computed, provide, ref, toValue, watchEffect } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import Button from '@/components/ui/button/Button.vue'
+import WidgetItem from '@/components/rightSidePanel/parameters/WidgetItem.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -23,8 +23,10 @@ import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
+import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
+import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
@@ -36,13 +38,47 @@ const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
+const { isSelectMode, isArrangeMode } = useAppMode()
 const hoveringSelectable = ref(false)
+
+provide(HideLayoutFieldKey, true)
 
 workflowStore.activeWorkflow?.changeTracker?.reset()
 
+function resolveNode(nodeId: NodeId) {
+  return (
+    app.rootGraph.getNodeById(nodeId) ??
+    [...app.rootGraph.subgraphs.values()]
+      .flatMap((sg) => sg.nodes)
+      .find((n) => n.id == nodeId)
+  )
+}
+
+// Prune stale entries whose node/widget no longer exists, so the
+// DraggableList model always matches the rendered items.
+watchEffect(() => {
+  const valid = appModeStore.selectedInputs.filter(([nodeId, widgetName]) =>
+    resolveNode(nodeId)?.widgets?.some((w) => w.name === widgetName)
+  )
+  if (valid.length < appModeStore.selectedInputs.length) {
+    appModeStore.selectedInputs = valid
+  }
+})
+
+const arrangeInputs = computed(() =>
+  appModeStore.selectedInputs
+    .map(([nodeId, widgetName]) => {
+      const node = resolveNode(nodeId)
+      const widget = node?.widgets?.find((w) => w.name === widgetName)
+      if (!node || !widget) return null
+      return { nodeId, widgetName, node, widget }
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+)
+
 const inputsWithState = computed(() =>
   appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
-    const node = app.rootGraph.getNodeById(nodeId)
+    const node = resolveNode(nodeId)
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (!node || !widget) return { nodeId, widgetName }
 
@@ -140,14 +176,14 @@ function handleClick(e: MouseEvent) {
   if (!widget) {
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const index = appModeStore.selectedOutputs.findIndex((id) => id === node.id)
+    const index = appModeStore.selectedOutputs.findIndex((id) => id == node.id)
     if (index === -1) appModeStore.selectedOutputs.push(node.id)
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
 
   const index = appModeStore.selectedInputs.findIndex(
-    ([nodeId, widgetName]) => node.id === nodeId && widget.name === widgetName
+    ([nodeId, widgetName]) => node.id == nodeId && widget.name === widgetName
   )
   if (index === -1) appModeStore.selectedInputs.push([node.id, widget.name])
   else appModeStore.selectedInputs.splice(index, 1)
@@ -179,17 +215,39 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 </script>
 <template>
   <div class="flex font-bold p-2 border-border-subtle border-b items-center">
-    {{ t('linearMode.builder.title') }}
-    <Button class="ml-auto" @click="appModeStore.exitBuilder">
-      {{ t('linearMode.builder.exit') }}
-    </Button>
+    {{
+      isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
+    }}
   </div>
+  <DraggableList
+    v-if="isArrangeMode"
+    v-slot="{ dragClass }"
+    v-model="appModeStore.selectedInputs"
+  >
+    <div
+      v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
+      :key="`${nodeId}: ${widgetName}`"
+      :class="cn(dragClass, 'p-2 my-2 pointer-events-auto')"
+      :aria-label="`${widget.label ?? widgetName} — ${node.title}`"
+    >
+      <div class="pointer-events-none" inert>
+        <WidgetItem
+          :widget="widget"
+          :node="node"
+          show-node-name
+          hidden-widget-actions
+        />
+      </div>
+    </div>
+  </DraggableList>
   <PropertiesAccordionItem
+    v-else
     :label="t('nodeHelpPage.inputs')"
     enable-empty-state
     :disabled="!appModeStore.selectedInputs.length"
     class="border-border-subtle border-b"
     :tooltip="`${t('linearMode.builder.inputsDesc')}\n${t('linearMode.builder.inputsExample')}`"
+    :tooltip-delay="100"
   >
     <template #label>
       <div class="flex gap-3">
@@ -225,17 +283,19 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           () =>
             remove(
               appModeStore.selectedInputs,
-              ([id, name]) => nodeId === id && widgetName === name
+              ([id, name]) => nodeId == id && widgetName === name
             )
         "
       />
     </DraggableList>
   </PropertiesAccordionItem>
   <PropertiesAccordionItem
+    v-if="!isArrangeMode"
     :label="t('nodeHelpPage.outputs')"
     enable-empty-state
     :disabled="!appModeStore.selectedOutputs.length"
     :tooltip="`${t('linearMode.builder.outputsDesc')}\n${t('linearMode.builder.outputsExample')}`"
+    :tooltip-delay="100"
   >
     <template #label>
       <div class="flex gap-3">
@@ -269,12 +329,15 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         "
         :title
         :sub-title="String(key)"
-        :remove="() => remove(appModeStore.selectedOutputs, (k) => k === key)"
+        :remove="() => remove(appModeStore.selectedOutputs, (k) => k == key)"
       />
     </DraggableList>
   </PropertiesAccordionItem>
 
-  <Teleport to="body">
+  <Teleport
+    v-if="isSelectMode && !settingStore.get('Comfy.VueNodes.Enabled')"
+    to="body"
+  >
     <div
       :class="
         cn(
@@ -308,13 +371,19 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           <div class="absolute top-0 right-0 size-8">
             <div
               v-if="isSelected"
-              class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg"
+              class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg cursor-pointer pointer-events-auto"
+              @click.stop="
+                remove(appModeStore.selectedOutputs, (k) => k == key)
+              "
+              @pointerdown.stop
             >
               <i class="icon-[lucide--check] bg-text-foreground size-full" />
             </div>
             <div
               v-else
-              class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg"
+              class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg cursor-pointer pointer-events-auto"
+              @click.stop="appModeStore.selectedOutputs.push(key)"
+              @pointerdown.stop
             />
           </div>
         </div>

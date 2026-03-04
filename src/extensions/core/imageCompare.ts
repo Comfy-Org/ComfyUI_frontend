@@ -1,5 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeOutputWith } from '@/schemas/apiSchema'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
@@ -26,8 +27,11 @@ useExtensionService().registerExtension({
       const { a_images: aImages, b_images: bImages } = output
       const rand = app.getRandParam()
 
-      const toUrl = (params: Record<string, string>) =>
-        api.apiURL(`/view?${new URLSearchParams(params)}${rand}`)
+      const toUrl = (record: Record<string, string>) => {
+        const params = new URLSearchParams(record)
+        appendCloudResParam(params)
+        return api.apiURL(`/view?${params}${rand}`)
+      }
 
       const beforeImages =
         aImages && aImages.length > 0 ? aImages.map(toUrl) : []

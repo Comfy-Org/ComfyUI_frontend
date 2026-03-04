@@ -8,12 +8,14 @@ import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemp
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
+import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const workspaceStore = useWorkspaceStore()
-const appModeStore = useAppModeStore()
+const { enableAppBuilder } = useAppMode()
+const { enterBuilder } = useAppModeStore()
 const tooltipOptions = { showDelay: 300, hideDelay: 300 }
 
 const isAssetsActive = computed(
@@ -22,10 +24,6 @@ const isAssetsActive = computed(
 const isWorkflowsActive = computed(
   () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'workflows'
 )
-
-function enterBuilderMode() {
-  appModeStore.setMode('builder:select')
-}
 
 function openAssets() {
   void commandStore.execute('Workspace.ToggleSidebarTab.assets')
@@ -43,7 +41,7 @@ function openTemplates() {
 <template>
   <div class="flex flex-col gap-2 pointer-events-auto">
     <WorkflowActionsDropdown source="app_mode_toolbar">
-      <template #button>
+      <template #button="{ hasUnseenItems }">
         <Button
           v-tooltip.right="{
             value: t('sideToolbar.labels.menu'),
@@ -52,16 +50,21 @@ function openTemplates() {
           variant="secondary"
           size="unset"
           :aria-label="t('sideToolbar.labels.menu')"
-          class="h-10 rounded-lg pl-3 pr-2 gap-1 data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
+          class="relative h-10 rounded-lg pl-3 pr-2 gap-1 data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
         >
           <i class="icon-[lucide--panels-top-left] size-4" />
           <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
+          <span
+            v-if="hasUnseenItems"
+            aria-hidden="true"
+            class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
+          />
         </Button>
       </template>
     </WorkflowActionsDropdown>
 
     <Button
-      v-if="appModeStore.enableAppBuilder"
+      v-if="enableAppBuilder"
       v-tooltip.right="{
         value: t('linearMode.appModeToolbar.appBuilder'),
         ...tooltipOptions
@@ -70,7 +73,7 @@ function openTemplates() {
       size="unset"
       :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       class="size-10 rounded-lg"
-      @click="enterBuilderMode"
+      @click="enterBuilder"
     >
       <i class="icon-[lucide--hammer] size-4" />
     </Button>

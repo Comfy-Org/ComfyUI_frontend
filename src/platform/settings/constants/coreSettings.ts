@@ -857,6 +857,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.37.0'
   },
   {
+    id: 'Comfy.WorkflowActions.SeenItems',
+    name: 'Seen new workflow action items',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.41.5'
+  },
+  {
     id: 'Comfy.Execution.PreviewMethod',
     category: ['Comfy', 'Execution', 'PreviewMethod'],
     name: 'Live preview method',

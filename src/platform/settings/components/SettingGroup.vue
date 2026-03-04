@@ -2,6 +2,15 @@
   <div class="setting-group">
     <Divider v-if="divider" />
     <h3>
+      <span v-if="group.category" class="text-muted">
+        {{
+          $t(
+            `settingsCategories.${normalizeI18nKey(group.category)}`,
+            group.category
+          )
+        }}
+        &#8250;
+      </span>
       {{
         $t(`settingsCategories.${normalizeI18nKey(group.label)}`, group.label)
       }}
@@ -27,6 +36,7 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 defineProps<{
   group: {
     label: string
+    category?: string
     settings: SettingParams[]
   }
   divider?: boolean

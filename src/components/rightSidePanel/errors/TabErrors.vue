@@ -27,6 +27,11 @@
           :key="group.title"
           :collapse="collapseState[group.title] ?? false"
           class="border-b border-interface-stroke"
+          :size="
+            group.type === 'missing_node' || group.type === 'swap_nodes'
+              ? 'lg'
+              : 'default'
+          "
           @update:collapse="collapseState[group.title] = $event"
         >
           <template #label>
@@ -36,20 +41,79 @@
                   class="icon-[lucide--octagon-alert] size-4 text-destructive-background-hover shrink-0"
                 />
                 <span class="text-destructive-background-hover truncate">
-                  {{ group.title }}
+                  {{
+                    group.type === 'missing_node'
+                      ? `${group.title} (${missingPackGroups.length})`
+                      : group.type === 'swap_nodes'
+                        ? `${group.title} (${swapNodeGroups.length})`
+                        : group.title
+                  }}
                 </span>
                 <span
-                  v-if="group.cards.length > 1"
+                  v-if="group.type === 'execution' && group.cards.length > 1"
                   class="text-destructive-background-hover"
                 >
                   ({{ group.cards.length }})
                 </span>
               </span>
+              <Button
+                v-if="
+                  group.type === 'missing_node' &&
+                  missingNodePacks.length > 0 &&
+                  shouldShowInstallButton
+                "
+                variant="secondary"
+                size="sm"
+                class="shrink-0 mr-2 h-8 rounded-lg text-sm"
+                :disabled="isInstallingAll"
+                @click.stop="installAll"
+              >
+                <DotSpinner v-if="isInstallingAll" duration="1s" :size="12" />
+                {{
+                  isInstallingAll
+                    ? t('rightSidePanel.missingNodePacks.installing')
+                    : t('rightSidePanel.missingNodePacks.installAll')
+                }}
+              </Button>
+              <Button
+                v-else-if="group.type === 'swap_nodes'"
+                v-tooltip.top="
+                  t(
+                    'nodeReplacement.replaceAllWarning',
+                    'Replaces all available nodes in this group.'
+                  )
+                "
+                variant="secondary"
+                size="sm"
+                class="shrink-0 mr-2 h-8 rounded-lg text-sm"
+                @click.stop="handleReplaceAll()"
+              >
+                {{ t('nodeReplacement.replaceAll', 'Replace All') }}
+              </Button>
             </div>
           </template>
 
-          <!-- Cards in Group (default slot) -->
-          <div class="px-4 space-y-3">
+          <!-- Missing Node Packs -->
+          <MissingNodeCard
+            v-if="group.type === 'missing_node'"
+            :show-info-button="shouldShowManagerButtons"
+            :show-node-id-badge="showNodeIdBadge"
+            :missing-pack-groups="missingPackGroups"
+            @locate-node="handleLocateMissingNode"
+            @open-manager-info="handleOpenManagerInfo"
+          />
+
+          <!-- Swap Nodes -->
+          <SwapNodesCard
+            v-else-if="group.type === 'swap_nodes'"
+            :swap-node-groups="swapNodeGroups"
+            :show-node-id-badge="showNodeIdBadge"
+            @locate-node="handleLocateMissingNode"
+            @replace="handleReplaceGroup"
+          />
+
+          <!-- Execution Errors -->
+          <div v-else-if="group.type === 'execution'" class="px-4 space-y-3">
             <ErrorNodeCard
               v-for="card in group.cards"
               :key="card.id"
@@ -108,13 +172,22 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
+import MissingNodeCard from './MissingNodeCard.vue'
+import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DotSpinner from '@/components/common/DotSpinner.vue'
+import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
+import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorGroups } from './useErrorGroups'
+import type { SwapNodeGroup } from './useErrorGroups'
+import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
@@ -122,6 +195,12 @@ const { focusNode, enterSubgraph } = useFocusNode()
 const { staticUrls } = useExternalLink()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
+  useManagerState()
+const { missingNodePacks } = useMissingNodes()
+const { isInstalling: isInstallingAll, installAllPacks: installAll } =
+  usePackInstall(() => missingNodePacks.value)
+const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 
 const searchQuery = ref('')
 
@@ -136,7 +215,10 @@ const {
   filteredGroups,
   collapseState,
   isSingleNodeSelected,
-  errorNodeCache
+  errorNodeCache,
+  missingNodeCache,
+  missingPackGroups,
+  swapNodeGroups
 } = useErrorGroups(searchQuery, t)
 
 /**
@@ -151,11 +233,13 @@ watch(
     if (!graphNodeId) return
     const prefix = `${graphNodeId}:`
     for (const group of allErrorGroups.value) {
-      const hasMatch = group.cards.some(
-        (card) =>
-          card.graphNodeId === graphNodeId ||
-          (card.nodeId?.startsWith(prefix) ?? false)
-      )
+      const hasMatch =
+        group.type === 'execution' &&
+        group.cards.some(
+          (card) =>
+            card.graphNodeId === graphNodeId ||
+            (card.nodeId?.startsWith(prefix) ?? false)
+        )
       collapseState[group.title] = !hasMatch
     }
     rightSidePanelStore.focusedErrorNodeId = null
@@ -165,6 +249,27 @@ watch(
 
 function handleLocateNode(nodeId: string) {
   focusNode(nodeId, errorNodeCache.value)
+}
+
+function handleLocateMissingNode(nodeId: string) {
+  focusNode(nodeId, missingNodeCache.value)
+}
+
+function handleOpenManagerInfo(packId: string) {
+  const isKnownToRegistry = missingNodePacks.value.some((p) => p.id === packId)
+  if (isKnownToRegistry) {
+    openManager({ initialTab: ManagerTab.Missing, initialPackId: packId })
+  } else {
+    openManager({ initialTab: ManagerTab.All, initialPackId: packId })
+  }
+}
+
+function handleReplaceGroup(group: SwapNodeGroup) {
+  replaceGroup(group)
+}
+
+function handleReplaceAll() {
+  replaceAllGroups(swapNodeGroups.value)
 }
 
 function handleEnterSubgraph(nodeId: string) {

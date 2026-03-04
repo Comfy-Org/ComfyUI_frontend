@@ -2,7 +2,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { createMonotoneInterpolator } from '@/components/curve/curveUtils'
-import type { CurvePoint } from '@/lib/litegraph/src/types/widgets'
+import type { CurvePoint } from '@/components/curve/types'
 
 interface UseCurveEditorOptions {
   svgRef: Ref<SVGSVGElement | null>
@@ -21,11 +21,12 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
     const xMin = points[0][0]
     const xMax = points[points.length - 1][0]
     const segments = 128
+    const range = xMax - xMin
     const parts: string[] = []
     for (let i = 0; i <= segments; i++) {
-      const x = xMin + (xMax - xMin) * (i / segments)
+      const x = xMin + range * (i / segments)
       const y = 1 - interpolate(x)
-      parts.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(4)},${y.toFixed(4)}`)
+      parts.push(`${i === 0 ? 'M' : 'L'}${x},${y}`)
     }
     return parts.join('')
   })

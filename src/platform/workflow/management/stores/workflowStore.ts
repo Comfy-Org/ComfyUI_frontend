@@ -249,6 +249,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
         modified: Date.now(),
         size: -1
       })
+    workflow.initialMode = existingWorkflow.initialMode
     workflow.originalContent = workflow.content = JSON.stringify(state)
     workflowLookup.value[workflow.path] = workflow
     return workflow

@@ -56,43 +56,6 @@
               :queue-overlay-expanded="isQueueOverlayExpanded"
               @update:progress-target="updateProgressTarget"
             />
-            <Button
-              v-tooltip.bottom="queueHistoryTooltipConfig"
-              type="destructive"
-              size="md"
-              :aria-pressed="
-                isQueuePanelV2Enabled
-                  ? activeSidebarTabId === 'assets'
-                  : isQueueProgressOverlayEnabled
-                    ? isQueueOverlayExpanded
-                    : undefined
-              "
-              class="relative px-3"
-              data-testid="queue-overlay-toggle"
-              @click="toggleQueueOverlay"
-              @contextmenu.stop.prevent="showQueueContextMenu"
-            >
-              <span class="text-sm font-normal tabular-nums">
-                {{ activeJobsLabel }}
-              </span>
-              <StatusBadge
-                v-if="activeJobsCount > 0"
-                data-testid="active-jobs-indicator"
-                variant="dot"
-                class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-              />
-              <span class="sr-only">
-                {{
-                  isQueuePanelV2Enabled
-                    ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                    : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-                }}
-              </span>
-            </Button>
-            <ContextMenu
-              ref="queueContextMenu"
-              :model="queueContextMenuItems"
-            />
             <CurrentUserButton
               v-if="isLoggedIn && !isIntegratedTabBar"
               class="shrink-0"
@@ -127,13 +90,15 @@
         <div
           class="pointer-events-none absolute left-0 right-0 top-full mt-1 flex justify-end pr-1"
         >
-          <QueueInlineProgressSummary :hidden="isQueueOverlayExpanded" />
+          <QueueInlineProgressSummary
+            :hidden="shouldHideInlineProgressSummary"
+          />
         </div>
       </Teleport>
       <QueueInlineProgressSummary
         v-else-if="shouldShowInlineProgressSummary && !isActionbarFloating"
         class="pr-1"
-        :hidden="isQueueOverlayExpanded"
+        :hidden="shouldHideInlineProgressSummary"
       />
       <QueueNotificationBannerHost
         v-if="shouldShowQueueNotificationBanners"
@@ -146,14 +111,11 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
@@ -167,12 +129,9 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
+import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isDesktop } from '@/platform/distribution/types'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
@@ -185,17 +144,11 @@ const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
 const { isLoggedIn } = useCurrentUser()
-const { t, n } = useI18n()
+const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
-const commandStore = useCommandStore()
-const queueStore = useQueueStore()
-const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const queueUIStore = useQueueUIStore()
-const sidebarTabStore = useSidebarTabStore()
-const { activeJobsCount } = storeToRefs(queueStore)
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
-const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
@@ -208,14 +161,6 @@ const isActionbarEnabled = computed(
 const isActionbarFloating = computed(
   () => isActionbarEnabled.value && !isActionbarDocked.value
 )
-const activeJobsLabel = computed(() => {
-  const count = activeJobsCount.value
-  return t(
-    'sideToolbar.queueProgressOverlay.activeJobsShort',
-    { count: n(count) },
-    count
-  )
-})
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
 )
@@ -241,24 +186,12 @@ const inlineProgressSummaryTarget = computed(() => {
   }
   return progressTarget.value
 })
-const queueHistoryTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
+const shouldHideInlineProgressSummary = computed(
+  () => isQueueProgressOverlayEnabled.value && isQueueOverlayExpanded.value
 )
 const customNodesManagerTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.manageExtensions'))
 )
-const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
-const queueContextMenuItems = computed<MenuItem[]>(() => [
-  {
-    label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
-    icon: 'icon-[lucide--list-x] text-destructive-background',
-    class: '*:text-destructive-background',
-    disabled: queueStore.pendingTasks.length === 0,
-    command: () => {
-      void handleClearQueue()
-    }
-  }
-])
 
 const shouldShowRedDot = computed((): boolean => {
   return shouldShowConflictRedDot.value
@@ -280,27 +213,6 @@ onMounted(() => {
     legacyCommandsContainerRef.value.appendChild(app.menu.element)
   }
 })
-
-const toggleQueueOverlay = () => {
-  if (isQueuePanelV2Enabled.value) {
-    sidebarTabStore.toggleSidebarTab('assets')
-    return
-  }
-  commandStore.execute('Comfy.Queue.ToggleOverlay')
-}
-
-const showQueueContextMenu = (event: MouseEvent) => {
-  queueContextMenu.value?.show(event)
-}
-
-const handleClearQueue = async () => {
-  const pendingJobIds = queueStore.pendingTasks
-    .map((task) => task.jobId)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0)
-
-  await commandStore.execute('Comfy.ClearPendingTasks')
-  executionStore.clearInitializationByJobIds(pendingJobIds)
-}
 
 const openCustomNodeManager = async () => {
   try {

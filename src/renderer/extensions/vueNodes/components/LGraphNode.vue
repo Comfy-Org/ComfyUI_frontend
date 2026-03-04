@@ -50,6 +50,10 @@
     @dragleave="handleDragLeave"
     @drop.stop.prevent="handleDrop"
   >
+    <AppOutput
+      v-if="lgraphNode?.constructor?.nodeData?.output_node && isSelectMode"
+      :id="nodeData.id"
+    />
     <div
       v-if="displayHeader"
       class="flex flex-col justify-center items-center relative"
@@ -265,6 +269,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
+import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/unpromotedWidgetUtils'
 import { st } from '@/i18n'
@@ -284,6 +289,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -329,6 +335,7 @@ const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
 
+const { isSelectMode } = useAppMode()
 const settingStore = useSettingStore()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
@@ -356,7 +363,8 @@ const hasAnyError = computed((): boolean => {
     error ||
     executionErrorStore.getNodeErrors(nodeLocatorId.value) ||
     (lgraphNode.value &&
-      executionErrorStore.isContainerWithInternalError(lgraphNode.value))
+      (executionErrorStore.isContainerWithInternalError(lgraphNode.value) ||
+        executionErrorStore.isContainerWithMissingNode(lgraphNode.value)))
   )
 })
 

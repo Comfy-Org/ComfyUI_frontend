@@ -225,6 +225,7 @@
     "login": {
       "andText": "и",
       "backToLogin": "Вернуться к входу",
+      "backToSocialLogin": "Зарегистрируйтесь через Google или Github",
       "confirmPasswordLabel": "Подтвердите пароль",
       "confirmPasswordPlaceholder": "Введите тот же пароль еще раз",
       "didntReceiveEmail": "Не получили письмо? Свяжитесь с нами по адресу",
@@ -233,6 +234,9 @@
       "failed": "Вход не удался",
       "forgotPassword": "Забыли пароль?",
       "forgotPasswordError": "Не удалось отправить письмо для сброса пароля",
+      "freeTierBadge": "Доступен бесплатный тариф",
+      "freeTierDescription": "Зарегистрируйтесь через Google и получите {credits} бесплатных кредитов каждый месяц. Карта не требуется.",
+      "freeTierDescriptionGeneric": "Зарегистрируйтесь через Google и получайте бесплатные кредиты каждый месяц. Карта не требуется.",
       "insecureContextWarning": "Это соединение небезопасно (HTTP) — ваши учетные данные могут быть перехвачены злоумышленниками, если вы продолжите вход.",
       "loginButton": "Войти",
       "loginWithGithub": "Войти через Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "Отправить ссылку для сброса",
       "signInOrSignUp": "Войти / Зарегистрироваться",
       "signUp": "Зарегистрироваться",
+      "signUpFreeTierPromo": "Впервые здесь? {signUp} через Google и получите {credits} бесплатных кредитов каждый месяц.",
       "success": "Вход выполнен успешно",
       "termsLink": "Условиями использования",
       "termsText": "Нажимая \"Далее\" или \"Зарегистрироваться\", вы соглашаетесь с нашими",
       "title": "Войдите в свой аккаунт",
       "useApiKey": "Comfy API-ключ",
+      "useEmailInstead": "Использовать электронную почту",
       "userAvatar": "Аватар пользователя"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "Уже есть аккаунт?",
       "emailLabel": "Электронная почта",
+      "emailNotEligibleForFreeTier": "Регистрация по электронной почте не даёт права на бесплатный тариф.",
       "emailPlaceholder": "Введите вашу электронную почту",
       "passwordLabel": "Пароль",
       "passwordPlaceholder": "Введите новый пароль",
@@ -323,6 +330,10 @@
     "exitAppMode": "Выйти из режима приложения",
     "missingNodesWarning": "В рабочем процессе есть неподдерживаемые узлы (выделены красным).",
     "workflowActions": "Действия с рабочим процессом"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "Выйти из конструктора приложений",
+    "saveApp": "Сохранить приложение"
   },
   "builderToolbar": {
     "app": "Приложение",
@@ -692,6 +703,7 @@
     "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "ШАБЛОН_PIXVERSE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "RECRAFT_ЦВЕТ",
     "RECRAFT_CONTROLS": "RECRAFT_УПРАВЛЕНИЯ",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_СТИЛЬ",
@@ -951,6 +963,7 @@
     "imageUrl": "URL изображения",
     "import": "Импорт",
     "inProgress": "В процессе",
+    "inSubgraph": "в подграфе «{name}»",
     "increment": "Увеличить",
     "info": "Информация о ноде",
     "input": "Вход",
@@ -1018,6 +1031,7 @@
     "or": "или",
     "output": "Выход",
     "overwrite": "Перезаписать",
+    "partner": "Партнёр",
     "playPause": "Воспроизвести/Пауза",
     "playRecording": "Воспроизвести запись",
     "playbackSpeed": "Скорость воспроизведения",
@@ -1028,6 +1042,7 @@
     "progressCountOf": "из",
     "queued": "В очереди",
     "ready": "Готов",
+    "recents": "Недавние",
     "reconnected": "Переподключено",
     "reconnecting": "Переподключение",
     "refresh": "Обновить",
@@ -1108,6 +1123,7 @@
     "updated": "Обновлено",
     "updating": "Обновление",
     "upload": "Загрузить",
+    "uploadAlreadyInProgress": "Загрузка уже выполняется",
     "usageHint": "Подсказка по использованию",
     "use": "Использовать",
     "user": "Пользователь",
@@ -1331,10 +1347,29 @@
       "switchToSelectButton": "Переключиться на выбор"
     },
     "beta": "Режим приложения Бета - Оставить отзыв",
+    "builder": {
+      "exit": "Выйти из конструктора",
+      "exitConfirmMessage": "У вас есть несохранённые изменения, которые будут потеряны\nВыйти без сохранения?",
+      "exitConfirmTitle": "Выйти из конструктора приложений?",
+      "inputsDesc": "Пользователи будут взаимодействовать с этими параметрами и настраивать их для генерации результата.",
+      "inputsExample": "Примеры: «Загрузить изображение», «Текстовый промпт», «Шаги»",
+      "noInputs": "Входные данные ещё не добавлены",
+      "noOutputs": "Выходные узлы ещё не добавлены",
+      "outputsDesc": "Подключите хотя бы один выходной узел, чтобы пользователи видели результаты после запуска.",
+      "outputsExample": "Примеры: «Сохранить изображение» или «Сохранить видео»",
+      "promptAddInputs": "Нажмите на параметры узла, чтобы добавить их сюда как входные данные",
+      "promptAddOutputs": "Нажмите на выходные узлы, чтобы добавить их сюда. Это будут сгенерированные результаты.",
+      "title": "Режим конструктора приложений"
+    },
     "downloadAll": "Скачать всё",
     "dragAndDropImage": "Перетащите изображение",
+    "giveFeedback": "Оставить отзыв",
     "graphMode": "Графовый режим",
     "linearMode": "Режим приложения",
+    "queue": {
+      "clear": "Очистить очередь",
+      "clickToClear": "Нажмите, чтобы очистить очередь"
+    },
     "rerun": "Перезапустить",
     "reuseParameters": "Повторно использовать параметры",
     "runCount": "Количество запусков:",
@@ -1554,6 +1589,9 @@
     "nodePack": "Пакет Узлов",
     "nodePackInfo": "Информация о пакете узлов",
     "notAvailable": "Недоступно",
+    "packInstall": {
+      "nodeIdRequired": "Для установки требуется идентификатор узла"
+    },
     "packsSelected": "Выбрано пакетов",
     "repository": "Репозиторий",
     "restartToApplyChanges": "Чтобы применить изменения, пожалуйста, перезапустите ComfyUI",
@@ -1868,11 +1906,18 @@
     "showLinks": "Показать связи"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "Вам нужно найти и скачать их вручную. Поискать их можно в интернете (например, на Civitai или Hugging Face) или связаться с автором рабочего процесса.",
+    "customModelsWarning": "Некоторые из них — это пользовательские модели, которые нам не известны.",
+    "description": "Для этого рабочего процесса требуются модели, которые вы ещё не скачали.",
     "doNotAskAgain": "Больше не показывать это",
-    "missingModels": "Отсутствующие модели",
-    "missingModelsMessage": "При загрузке графа следующие модели не были найдены",
+    "downloadAll": "Скачать всё",
+    "downloadAvailable": "Доступно для загрузки",
+    "footerDescription": "Скачайте и поместите эти модели в нужную папку.\nУзлы с отсутствующими моделями выделены красным на холсте.",
+    "gotIt": "Понятно",
     "reEnableInSettings": "Включить снова в {link}",
-    "reEnableInSettingsLink": "Настройки"
+    "reEnableInSettingsLink": "Настройки",
+    "title": "В этом рабочем процессе отсутствуют модели",
+    "totalSize": "Общий размер загрузки:"
   },
   "missingNodes": {
     "cloud": {
@@ -2044,7 +2089,10 @@
     "openNodeManager": "Открыть Менеджер узлов",
     "quickFixAvailable": "Доступно быстрое исправление",
     "redHighlight": "красным",
+    "replaceAll": "Заменить все",
+    "replaceAllWarning": "Заменяет все доступные узлы в этой группе.",
     "replaceFailed": "Не удалось заменить узлы",
+    "replaceNode": "Заменить узел",
     "replaceSelected": "Заменить выбранные ({count})",
     "replaceWarning": "Это действие навсегда изменит рабочий процесс. Сохраните копию, если не уверены.",
     "replaceable": "Можно заменить",
@@ -2052,7 +2100,11 @@
     "replacedAllNodes": "Заменено {count} типов(а) узлов",
     "replacedNode": "Заменённый узел: {nodeType}",
     "selectAll": "Выбрать все",
-    "skipForNow": "Пропустить сейчас"
+    "skipForNow": "Пропустить сейчас",
+    "swapNodesGuide": "Следующие узлы могут быть автоматически заменены совместимыми альтернативами.",
+    "swapNodesTitle": "Заменить узлы",
+    "unknownNode": "Неизвестно",
+    "willBeReplacedBy": "Этот узел будет заменён на:"
   },
   "nodeTemplates": {
     "enterName": "Введите название",
@@ -2070,6 +2122,19 @@
       "windows": "Windows (Nvidia GPU с поддержкой CUDA)"
     },
     "title": "Ваше устройство не поддерживается"
+  },
+  "painter": {
+    "background": "Фон",
+    "brush": "Кисть",
+    "clear": "Очистить",
+    "color": "Палитра цветов",
+    "eraser": "Ластик",
+    "hardness": "Жёсткость",
+    "height": "Высота",
+    "size": "Размер курсора",
+    "tool": "Инструмент",
+    "uploadError": "Не удалось загрузить изображение: {status} - {statusText}",
+    "width": "Ширина"
   },
   "progressToast": {
     "allDownloadsCompleted": "Все загрузки завершены",
@@ -2191,6 +2256,22 @@
     "inputsNone": "НЕТ ВХОДОВ",
     "inputsNoneTooltip": "Узел не имеет входов",
     "locateNode": "Найти узел на холсте",
+    "missingNodePacks": {
+      "applyChanges": "Применить изменения",
+      "cloudMessage": "Для этого рабочего процесса требуются пользовательские узлы, которые ещё недоступны в Comfy Cloud.",
+      "collapse": "Свернуть",
+      "expand": "Развернуть",
+      "installAll": "Установить все",
+      "installNodePack": "Установить пакет узлов",
+      "installed": "Установлено",
+      "installing": "Установка...",
+      "ossMessage": "В этом рабочем процессе используются пользовательские узлы, которые вы ещё не установили.",
+      "searchInManager": "Поиск в менеджере узлов",
+      "title": "Отсутствующие пакеты узлов",
+      "unknownPack": "Неизвестный пакет",
+      "unsupportedTitle": "Неподдерживаемые пакеты узлов",
+      "viewInManager": "Просмотреть в менеджере"
+    },
     "mute": "Отключить",
     "noErrors": "Ошибок нет",
     "noSelection": "Выберите узел, чтобы увидеть его свойства и информацию.",
@@ -2550,8 +2631,16 @@
     "nodeLibrary": "Библиотека нод",
     "nodeLibraryTab": {
       "allNodes": "Все узлы",
+      "blueprints": "Чертежи",
       "custom": "Пользовательские",
       "essentials": "Основное",
+      "filter": "Фильтр",
+      "filterOptions": {
+        "blueprints": "Чертежи",
+        "comfyNodes": "Comfy-узлы",
+        "extensions": "Расширения",
+        "partnerNodes": "Узлы партнёров"
+      },
       "groupBy": "Группировать по",
       "groupStrategies": {
         "category": "Категория",
@@ -2561,10 +2650,18 @@
         "source": "Источник",
         "sourceDesc": "Группировать по типу источника (Core, Custom, API)"
       },
+      "noBookmarkedNodes": "Избранных пока нет",
       "resetView": "Сбросить вид по умолчанию",
       "sections": {
+        "bookmarked": "Избранное",
+        "comfyBlueprints": "Comfy-чертежи",
+        "comfyNodes": "Comfy-узлы",
+        "extensions": "Расширения",
         "favoriteNode": "Избранный узел",
         "favorites": "Избранное",
+        "myBlueprints": "Мои чертежи",
+        "partnerNodes": "Узлы партнёров",
+        "subgraphBlueprints": "Чертежи подграфов",
         "unfavoriteNode": "Удалить из избранного"
       },
       "sortBy": {
@@ -2684,7 +2781,9 @@
     "addCreditsLabel": "Добавляйте кредиты в любое время",
     "benefits": {
       "benefit1": "Ежемесячные кредиты для Партнёрских узлов — пополняйте по необходимости",
-      "benefit2": "До 30 минут выполнения на задание"
+      "benefit1FreeTier": "Больше кредитов в месяц, пополнение в любое время",
+      "benefit2": "До 30 минут выполнения на задание",
+      "benefit3": "Используйте свои модели (Creator & Pro)"
     },
     "beta": "БЕТА",
     "billedMonthly": "Оплата ежемесячно",
@@ -2722,6 +2821,21 @@
     "description": "Выберите лучший план для себя",
     "descriptionWorkspace": "Выберите лучший тариф для вашего рабочего пространства",
     "expiresDate": "Истекает {date}",
+    "freeTier": {
+      "description": "Ваш бесплатный тариф включает {credits} кредитов каждый месяц для использования Comfy Cloud.",
+      "descriptionGeneric": "Ваш бесплатный тариф включает ежемесячный лимит кредитов для использования Comfy Cloud.",
+      "nextRefresh": "Кредиты обновятся {date}.",
+      "outOfCredits": {
+        "subtitle": "Оформите подписку для пополнения и других возможностей",
+        "title": "У вас закончились бесплатные кредиты"
+      },
+      "subscribeCta": "Подписаться для большего",
+      "title": "Вы на бесплатном тарифе",
+      "topUpBlocked": {
+        "title": "Откройте пополнение и другие возможности"
+      },
+      "upgradeCta": "Посмотреть тарифы"
+    },
     "gpuLabel": "RTX 6000 Pro (96ГБ VRAM)",
     "haveQuestions": "Есть вопросы или интересует корпоративное решение?",
     "invoiceHistory": "История счетов",
@@ -2732,6 +2846,7 @@
     "maxDuration": {
       "creator": "30 мин",
       "founder": "30 мин",
+      "free": "30 мин",
       "pro": "1 ч",
       "standard": "30 мин"
     },
@@ -2790,6 +2905,7 @@
     "resubscribe": "Возобновить подписку",
     "resubscribeSuccess": "Подписка успешно возобновлена",
     "resubscribeTo": "Возобновить подписку на {plan}",
+    "subscribeForMore": "Обновить",
     "subscribeNow": "Подписаться сейчас",
     "subscribeTo": "Подписаться на {plan}",
     "subscribeToComfyCloud": "Подписаться на Comfy Cloud",
@@ -2804,6 +2920,9 @@
       "founder": {
         "name": "Founder's Edition"
       },
+      "free": {
+        "name": "Бесплатно"
+      },
       "pro": {
         "name": "Pro"
       },
@@ -2817,6 +2936,7 @@
     "upgrade": "УЛУЧШИТЬ",
     "upgradePlan": "Улучшить план",
     "upgradeTo": "Улучшить до {plan}",
+    "upgradeToAddCredits": "Обновите, чтобы добавить кредиты",
     "usdPerMonth": "USD / мес",
     "usdPerMonthPerMember": "USD / мес / участник",
     "videoEstimateExplanation": "Эти оценки основаны на шаблоне Wan 2.2 Image-to-Video с настройками по умолчанию (5 секунд, 640x640, 16 кадров/с, 4 шага семплирования).",

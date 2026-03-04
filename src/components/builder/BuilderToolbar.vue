@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing)*1.5)] left-1/2 z-[1000] -translate-x-1/2"
+    class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing)*1.5)] left-1/2 z-1000 -translate-x-1/2"
     :aria-label="t('builderToolbar.label')"
   >
     <div
@@ -20,7 +20,7 @@
             )
           "
           :aria-current="activeStep === step.id ? 'step' : undefined"
-          @click="appModeStore.setMode(step.id)"
+          @click="setMode(step.id)"
         >
           <StepBadge :step :index :model-value="activeStep" />
           <StepLabel :step />
@@ -29,15 +29,19 @@
         <div class="mx-1 h-px w-4 bg-border-default" role="separator" />
       </template>
 
-      <!-- Save -->
+      <!-- Default view -->
       <ConnectOutputPopover
-        v-if="!appModeStore.hasOutputs"
+        v-if="!hasOutputs"
         :is-select-active="activeStep === 'builder:select'"
-        @switch="appModeStore.setMode('builder:select')"
+        @switch="setMode('builder:select')"
       >
         <button :class="cn(stepClasses, 'opacity-30 bg-transparent')">
-          <StepBadge :step="saveStep" :index="2" :model-value="activeStep" />
-          <StepLabel :step="saveStep" />
+          <StepBadge
+            :step="defaultViewStep"
+            :index="2"
+            :model-value="activeStep"
+          />
+          <StepLabel :step="defaultViewStep" />
         </button>
       </ConnectOutputPopover>
       <button
@@ -45,47 +49,47 @@
         :class="
           cn(
             stepClasses,
-            activeStep === 'save'
+            activeStep === 'setDefaultView'
               ? 'bg-interface-builder-mode-background'
               : 'hover:bg-secondary-background bg-transparent'
           )
         "
-        @click="appModeStore.setBuilderSaving(true)"
+        @click="showDialog()"
       >
-        <StepBadge :step="saveStep" :index="2" :model-value="activeStep" />
-        <StepLabel :step="saveStep" />
+        <StepBadge
+          :step="defaultViewStep"
+          :index="2"
+          :model-value="activeStep"
+        />
+        <StepLabel :step="defaultViewStep" />
       </button>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useEventListener } from '@vueuse/core'
 
+import { useAppMode } from '@/composables/useAppMode'
+import type { AppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { AppMode } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ConnectOutputPopover from './ConnectOutputPopover.vue'
 import StepBadge from './StepBadge.vue'
 import StepLabel from './StepLabel.vue'
 import type { BuilderToolbarStep } from './types'
+import { useAppSetDefaultView } from './useAppSetDefaultView'
 
 const { t } = useI18n()
-const appModeStore = useAppModeStore()
-
-useEventListener(document, 'keydown', (e: KeyboardEvent) => {
-  if (e.key !== 'Escape') return
-
-  e.preventDefault()
-  e.stopPropagation()
-  void appModeStore.exitBuilder()
-})
+const { mode, setMode } = useAppMode()
+const { hasOutputs } = storeToRefs(useAppModeStore())
+const { settingView, showDialog } = useAppSetDefaultView()
 
 const activeStep = computed(() =>
-  appModeStore.isBuilderSaving ? 'save' : appModeStore.mode
+  settingView.value ? 'setDefaultView' : mode.value
 )
 
 const stepClasses =
@@ -105,10 +109,10 @@ const arrangeStep: BuilderToolbarStep<AppMode> = {
   icon: 'icon-[lucide--layout-panel-left]'
 }
 
-const saveStep: BuilderToolbarStep<'save'> = {
-  id: 'save',
-  title: t('builderToolbar.save'),
-  subtitle: t('builderToolbar.saveDescription'),
-  icon: 'icon-[lucide--cloud-upload]'
+const defaultViewStep: BuilderToolbarStep<'setDefaultView'> = {
+  id: 'setDefaultView',
+  title: t('builderToolbar.defaultView'),
+  subtitle: t('builderToolbar.defaultViewDescription'),
+  icon: 'icon-[lucide--eye]'
 }
 </script>

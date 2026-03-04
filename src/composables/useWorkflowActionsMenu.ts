@@ -13,6 +13,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import type {
   WorkflowMenuAction,
   WorkflowMenuItem
@@ -28,6 +29,7 @@ interface WorkflowActionsMenuOptions {
 }
 
 interface AddItemOptions {
+  id: string
   label: string
   icon: string
   command: () => void
@@ -51,6 +53,7 @@ export function useWorkflowActionsMenu(
   const menuItemStore = useMenuItemStore()
   const canvasStore = useCanvasStore()
   const { flags } = useFeatureFlags()
+  const { enterBuilder } = useAppModeStore()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -71,6 +74,7 @@ export function useWorkflowActionsMenu(
     const items: WorkflowMenuItem[] = []
 
     const addItem = ({
+      id,
       label,
       icon,
       command,
@@ -79,11 +83,12 @@ export function useWorkflowActionsMenu(
       prependSeparator = false,
       isNew = false
     }: AddItemOptions) => {
-      if (!visible) return
-      if (prependSeparator) items.push({ separator: true })
-      const item: WorkflowMenuAction = { label, icon, command, disabled }
+      if (prependSeparator && visible) items.push({ separator: true })
+      const item: WorkflowMenuAction = { id, label, icon, command, disabled }
+      if (!visible) item.visible = false
       if (isNew) {
-        item.badge = t('contextMenu.new')
+        item.badge = t('g.experimental')
+        item.isNew = true
       }
       items.push(item)
     }
@@ -93,7 +98,13 @@ export function useWorkflowActionsMenu(
       isRoot && (menuItemStore.hasSeenLinear || flags.linearToggleEnabled)
     const isBookmarked = bookmarkStore.isBookmarked(workflow?.path ?? '')
 
+    const toggleLinear = async () => {
+      await commandStore.execute('Comfy.ToggleLinear', {
+        metadata: { source: 'breadcrumb_menu' }
+      })
+    }
     addItem({
+      id: 'rename',
       label: t('g.rename'),
       icon: 'pi pi-pencil',
       command: async () => {
@@ -104,6 +115,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'duplicate',
       label: t('breadcrumbsMenu.duplicate'),
       icon: 'pi pi-copy',
       command: async () => {
@@ -115,6 +127,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'toggle-bookmark',
       label: isBookmarked
         ? t('tabMenu.removeFromBookmarks')
         : t('tabMenu.addToBookmarks'),
@@ -129,6 +142,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'save',
       label: t('menuLabels.Save'),
       icon: 'pi pi-save',
       command: async () => {
@@ -140,6 +154,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'save-as',
       label: t('menuLabels.Save As'),
       icon: 'pi pi-save',
       command: async () => {
@@ -150,6 +165,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'export',
       label: t('menuLabels.Export'),
       icon: 'pi pi-download',
       command: async () => {
@@ -161,6 +177,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'export-api',
       label: t('menuLabels.Export (API)'),
       icon: 'pi pi-download',
       command: async () => {
@@ -171,23 +188,35 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
-      label: isLinearMode
-        ? t('breadcrumbsMenu.exitAppMode')
-        : t('breadcrumbsMenu.enterAppMode'),
-      icon: isLinearMode
-        ? 'icon-[comfy--workflow]'
-        : 'icon-[lucide--panels-top-left]',
-      command: async () => {
-        await commandStore.execute('Comfy.ToggleLinear', {
-          metadata: { source: 'breadcrumb_menu' }
-        })
-      },
-      visible: showAppModeItems,
+      id: 'enter-app-mode',
+      label: t('breadcrumbsMenu.enterAppMode'),
+      icon: 'icon-[lucide--panels-top-left]',
+      command: toggleLinear,
+      visible: showAppModeItems && !isLinearMode,
       prependSeparator: true,
-      isNew: !isLinearMode
+      isNew: true
     })
 
     addItem({
+      id: 'exit-app-mode',
+      label: t('breadcrumbsMenu.exitAppMode'),
+      icon: 'icon-[comfy--workflow]',
+      command: toggleLinear,
+      visible: isLinearMode,
+      prependSeparator: true
+    })
+
+    addItem({
+      id: 'enter-builder-mode',
+      label: t('breadcrumbsMenu.enterBuilderMode'),
+      icon: 'icon-[lucide--hammer]',
+      command: () => enterBuilder(),
+      visible: showAppModeItems,
+      isNew: true
+    })
+
+    addItem({
+      id: 'clear-workflow',
       label: t('breadcrumbsMenu.clearWorkflow'),
       icon: 'pi pi-trash',
       command: async () => {
@@ -198,6 +227,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'publish',
       label: t('subgraphStore.publish'),
       icon: 'pi pi-upload',
       command: async () => {
@@ -210,6 +240,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'delete',
       label: isBlueprint
         ? t('breadcrumbsMenu.deleteBlueprint')
         : t('breadcrumbsMenu.deleteWorkflow'),

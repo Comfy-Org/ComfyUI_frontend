@@ -1,9 +1,8 @@
 <template>
   <div
-    ref="containerRef"
     :class="
       cn(
-        'comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col',
+        'comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col w-full',
         props.class
       )
     "
@@ -37,17 +36,9 @@
   </div>
 </template>
 
-<script lang="ts">
-import type { InjectionKey, Ref } from 'vue'
-
-export const SidebarContainerKey: InjectionKey<Ref<HTMLElement | null>> =
-  Symbol('SidebarContainer')
-</script>
-
 <script setup lang="ts">
 import ScrollPanel from 'primevue/scrollpanel'
 import Toolbar from 'primevue/toolbar'
-import { provide, ref } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
@@ -58,7 +49,4 @@ const props = defineProps<{
 const sidebarPt = {
   start: 'min-w-0 flex-1 overflow-hidden'
 }
-
-const containerRef = ref<HTMLElement | null>(null)
-provide(SidebarContainerKey, containerRef)
 </script>

@@ -18,10 +18,11 @@
         >
           <WorkflowTabs />
           <TopbarBadges />
+          <TopbarSubscribeButton />
         </div>
       </div>
     </template>
-    <template v-if="showUI && !appModeStore.isBuilderMode" #side-toolbar>
+    <template v-if="showUI && !isBuilderMode" #side-toolbar>
       <SideToolbar />
     </template>
     <template v-if="showUI" #side-bar-panel>
@@ -31,27 +32,24 @@
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
     </template>
-    <template v-if="showUI && !appModeStore.isBuilderMode" #topmenu>
+    <template v-if="showUI && !isBuilderMode" #topmenu>
       <TopMenuSection />
     </template>
     <template v-if="showUI" #bottom-panel>
       <BottomPanel />
     </template>
     <template v-if="showUI" #right-side-panel>
-      <AppBuilder v-if="appModeStore.mode === 'builder:select'" />
-      <NodePropertiesPanel v-else-if="!appModeStore.isBuilderMode" />
+      <AppBuilder v-if="mode === 'builder:select'" />
+      <NodePropertiesPanel v-else-if="!isBuilderMode" />
     </template>
     <template #graph-canvas-panel>
       <GraphCanvasMenu
-        v-if="canvasMenuEnabled && !appModeStore.isBuilderMode"
+        v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
       />
       <MiniMap
         v-if="
-          comfyAppReady &&
-          minimapEnabled &&
-          betaMenuEnabled &&
-          !appModeStore.isBuilderMode
+          comfyAppReady && minimapEnabled && betaMenuEnabled && !isBuilderMode
         "
         class="pointer-events-auto"
       />
@@ -127,10 +125,10 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
-import AppBuilder from '@/components/builder/AppBuilder.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
+import AppBuilder from '@/components/builder/AppBuilder.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
@@ -143,6 +141,7 @@ import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -184,7 +183,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -205,7 +204,7 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
-const appModeStore = useAppModeStore()
+const { mode, isBuilderMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const executionStore = useExecutionStore()
