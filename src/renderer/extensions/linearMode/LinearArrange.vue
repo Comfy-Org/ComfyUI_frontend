@@ -37,7 +37,7 @@ const { hasOutputs } = storeToRefs(useAppModeStore())
     </p>
 
     <div class="flex flex-col gap-1 text-muted-foreground w-lg text-[14px]">
-      <p class="mt-0 p-0">{{ t('linearMode.arrange.switchToSelect') }}</p>
+      <p class="mt-0 p-0">{{ t('linearMode.arrange.switchToOutputs') }}</p>
 
       <i18n-t keypath="linearMode.arrange.connectAtLeastOne" tag="div">
         <template #atLeastOne>
@@ -51,7 +51,7 @@ const { hasOutputs } = storeToRefs(useAppModeStore())
     </div>
     <div class="flex flex-row gap-2">
       <Button variant="primary" size="lg" @click="setMode('builder:outputs')">
-        {{ t('linearMode.arrange.switchToSelectButton') }}
+        {{ t('linearMode.arrange.switchToOutputsButton') }}
       </Button>
     </div>
   </div>
