@@ -2424,6 +2424,7 @@
       "actions": {
         "copyLink": "Copy invite link",
         "revokeInvite": "Revoke invite",
+        "changeRole": "Change role",
         "removeMember": "Remove member"
       },
       "upsellBannerSubscribe": "Subscribe to the Creator plan or above to invite team members to this workspace.",
@@ -2473,6 +2474,22 @@
       "selectMember": "New owner",
       "transfer": "Transfer ownership",
       "noEligibleMembers": "No eligible members to transfer ownership to. Invite a member first."
+    },
+    "changeRoleDialog": {
+      "title": "Change the role of {name}?",
+      "selectNewRole": "Select a new role",
+      "changeRole": "Change role",
+      "error": "Failed to change role",
+      "roles": {
+        "owner": {
+          "label": "Owner",
+          "description": "Has full administrative access to the entire workspace."
+        },
+        "member": {
+          "label": "Member",
+          "description": "Can use workspace credits and view other members in the workspace."
+        }
+      }
     },
     "dangerZone": {
       "title": "Danger zone",

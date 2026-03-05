@@ -313,17 +313,7 @@ const menuItems = computed(() => {
   }
 
   const action = uiConfig.value.workspaceMenuAction
-  if (action === 'delete') {
-    items.push({
-      label: t('workspacePanel.menu.deleteWorkspace'),
-      icon: 'pi pi-trash',
-      class: isDeleteDisabled.value
-        ? 'text-danger/50 cursor-not-allowed'
-        : 'text-danger',
-      disabled: isDeleteDisabled.value,
-      command: isDeleteDisabled.value ? undefined : handleDeleteWorkspace
-    })
-  } else if (action === 'leave') {
+  if (action === 'leave') {
     items.push({
       label: t('workspacePanel.menu.leaveWorkspace'),
       icon: 'pi pi-sign-out',

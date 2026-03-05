@@ -530,6 +530,24 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Update a member's role in the current workspace.
+   */
+  async function updateMemberRole(
+    userId: string,
+    role: 'owner' | 'member'
+  ): Promise<void> {
+    await workspaceApi.updateMemberRole(userId, role)
+    const current = activeWorkspace.value
+    if (current) {
+      updateActiveWorkspace({
+        members: current.members.map((m) =>
+          m.id === userId ? { ...m, role } : m
+        )
+      })
+    }
+  }
+
+  /**
    * Remove a member from the current workspace.
    */
   async function removeMember(userId: string): Promise<void> {
@@ -698,6 +716,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     // Member Actions
     fetchMembers,
+    updateMemberRole,
     removeMember,
 
     // Invite Actions
