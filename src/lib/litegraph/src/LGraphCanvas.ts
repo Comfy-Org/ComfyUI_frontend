@@ -6233,7 +6233,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } = {}
   ): void {
     if (this.linkRenderer) {
-      const context = this._cachedLinkRenderContext ?? this.buildLinkRenderContext()
+      const context =
+        this._cachedLinkRenderContext ?? this.buildLinkRenderContext()
       this.linkRenderer.renderLinkDirect(
         ctx,
         a,

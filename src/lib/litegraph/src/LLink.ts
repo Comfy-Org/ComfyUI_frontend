@@ -207,7 +207,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     linkSegment: LinkSegment
   ): Reroute[] {
     if (linkSegment.parentId === undefined) return EMPTY_REROUTES
-    return network.reroutes.get(linkSegment.parentId)?.getReroutes() ?? EMPTY_REROUTES
+    return (
+      network.reroutes.get(linkSegment.parentId)?.getReroutes() ??
+      EMPTY_REROUTES
+    )
   }
 
   static getFirstReroute(
