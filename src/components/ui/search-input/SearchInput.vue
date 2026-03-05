@@ -119,7 +119,6 @@ const placeholderText = computed(
 
 function clearSearch() {
   modelValue.value = ''
-  emit('search', '')
   focus()
 }
 
