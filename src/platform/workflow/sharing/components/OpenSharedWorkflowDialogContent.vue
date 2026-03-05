@@ -60,20 +60,42 @@
           </p>
         </div>
 
-        <div v-if="hasAssets" class="flex w-84 shrink-0 flex-col gap-2 py-4">
-          <div class="flex gap-2 items-start text-warning-background">
-            <i
-              class="icon-[lucide--circle-alert] shrink-0 w-4 h-lh"
-              aria-hidden="true"
-            />
-            <div class="m-0 p-0 text-sm">
-              {{ $t('openSharedWorkflow.nonPublicAssetsWarningLine1') }}
-              <br />
-              {{ $t('openSharedWorkflow.nonPublicAssetsWarningLine2') }}
-            </div>
-          </div>
+        <div v-if="hasAssets" class="flex w-96 shrink-0 flex-col gap-2 py-4">
+          <CollapsibleRoot
+            v-model:open="isWarningExpanded"
+            class="overflow-hidden rounded-lg bg-secondary-background"
+          >
+            <CollapsibleTrigger as-child>
+              <Button
+                variant="secondary"
+                class="w-full justify-between px-4 py-1 text-sm"
+              >
+                <i
+                  class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
+                  aria-hidden="true"
+                />
+                <span
+                  class="m-0 flex-1 text-left text-sm text-muted-foreground"
+                >
+                  {{ $t('openSharedWorkflow.nonPublicAssetsWarningLine1') }}
+                </span>
+                <i
+                  :class="
+                    cn(
+                      'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
+                      isWarningExpanded && 'rotate-90'
+                    )
+                  "
+                />
+              </Button>
+            </CollapsibleTrigger>
 
-          <AssetSectionList :items="nonOwnedAssets" class="rounded-lg pb-2" />
+            <CollapsibleContent
+              class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+            >
+              <AssetSectionList :items="nonOwnedAssets" />
+            </CollapsibleContent>
+          </CollapsibleRoot>
         </div>
       </main>
 
@@ -105,7 +127,12 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { computed } from 'vue'
+import {
+  CollapsibleContent,
+  CollapsibleRoot,
+  CollapsibleTrigger
+} from 'reka-ui'
+import { computed, ref } from 'vue'
 
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
@@ -122,6 +149,7 @@ const { shareId, onConfirm, onOpenWithoutImporting, onCancel } = defineProps<{
 }>()
 
 const workflowShareService = useWorkflowShareService()
+const isWarningExpanded = ref(true)
 
 const {
   state: sharedWorkflow,
