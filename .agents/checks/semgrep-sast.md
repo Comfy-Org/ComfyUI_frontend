@@ -18,6 +18,7 @@ Run Semgrep static analysis on changed files to detect security vulnerabilities,
    If not installed, skip this check and report: "Skipped: semgrep not installed. Install with: `pip3 install semgrep`"
 
 2. Identify changed files (`.ts`, `.js`, `.vue`) from the diff.
+   If none are found, skip and report: "Skipped: no changed JS/TS/Vue files."
 
 3. Run semgrep against changed files:
 

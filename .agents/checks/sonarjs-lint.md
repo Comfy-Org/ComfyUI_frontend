@@ -22,16 +22,13 @@ Run eslint-plugin-sonarjs analysis on changed files to detect bugs, code smells,
 3. Determine eslint config to use. This check uses a **strict sonarjs-specific config** (not the project's own eslint config, which is less strict):
    - Look for the colocated strict config at `.agents/checks/eslint.strict.config.js`
    - If found, run with `--config .agents/checks/eslint.strict.config.js`
-   - **Fallback:** if the strict config cannot be found or fails to load, run with `--no-config-lookup --plugin sonarjs` to load sonarjs rules directly.
+   - **Fallback:** if the strict config cannot be found or fails to load, skip this check and report: "Skipped: .agents/checks/eslint.strict.config.js missing; SonarJS rules require explicit config."
 
 4. Run eslint against changed files:
 
    ```bash
-   # Preferred: use the strict config
+   # Use the strict config
    pnpm dlx --yes eslint --no-config-lookup --config .agents/checks/eslint.strict.config.js --format json <changed_files> 2>/dev/null || true
-
-   # Fallback: if strict config is missing
-   pnpm dlx --yes --package eslint --package eslint-plugin-sonarjs eslint --no-config-lookup --plugin sonarjs --format json <changed_files> 2>/dev/null || true
    ```
 
 5. Parse the JSON array of file results. For each eslint message, map severity:
