@@ -48,7 +48,7 @@ function clearQueue(close: () => void) {
       </template>
     </Popover>
     <div
-      v-if="queueCount > 1"
+      v-if="queueCount > 0"
       aria-hidden="true"
       class="absolute top-0 right-0 min-w-4 h-4 flex justify-center items-center rounded-full bg-primary-background text-text-primary text-xs"
       v-text="queueCount"
