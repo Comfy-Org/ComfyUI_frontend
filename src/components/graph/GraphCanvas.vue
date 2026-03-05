@@ -39,8 +39,8 @@
       <BottomPanel />
     </template>
     <template v-if="showUI" #right-side-panel>
-      <AppBuilder v-if="mode === 'builder:select'" />
-      <NodePropertiesPanel v-else-if="!isBuilderMode" />
+      <AppBuilder v-if="isBuilderMode" />
+      <NodePropertiesPanel v-else />
     </template>
     <template #graph-canvas-panel>
       <GraphCanvasMenu
@@ -204,7 +204,7 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
-const { mode, isBuilderMode } = useAppMode()
+const { isBuilderMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const executionStore = useExecutionStore()

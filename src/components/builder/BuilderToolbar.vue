@@ -6,17 +6,14 @@
     <div
       class="inline-flex items-center gap-1 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
     >
-      <template
-        v-for="(step, index) in [selectStep, arrangeStep]"
-        :key="step.id"
-      >
+      <template v-for="(step, index) in steps" :key="step.id">
         <button
           :class="
             cn(
               stepClasses,
-              activeStep === step.id && 'bg-interface-builder-mode-background',
-              activeStep !== step.id &&
-                'hover:bg-secondary-background bg-transparent'
+              activeStep === step.id
+                ? 'bg-interface-builder-mode-background'
+                : 'hover:bg-secondary-background bg-transparent'
             )
           "
           :aria-current="activeStep === step.id ? 'step' : undefined"
@@ -32,13 +29,13 @@
       <!-- Default view -->
       <ConnectOutputPopover
         v-if="!hasOutputs"
-        :is-select-active="activeStep === 'builder:select'"
-        @switch="navigateToStep('builder:select')"
+        :is-select-active="isSelectStep"
+        @switch="navigateToStep('builder:outputs')"
       >
         <button :class="cn(stepClasses, 'opacity-30 bg-transparent')">
           <StepBadge
             :step="defaultViewStep"
-            :index="2"
+            :index="steps.length"
             :model-value="activeStep"
           />
           <StepLabel :step="defaultViewStep" />
@@ -58,7 +55,7 @@
       >
         <StepBadge
           :step="defaultViewStep"
-          :index="2"
+          :index="steps.length"
           :model-value="activeStep"
         />
         <StepLabel :step="defaultViewStep" />
@@ -84,15 +81,22 @@ import { useBuilderSteps } from './useBuilderSteps'
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
-const { activeStep, navigateToStep } = useBuilderSteps()
+const { activeStep, isSelectStep, navigateToStep } = useBuilderSteps()
 
 const stepClasses =
   'inline-flex h-14 min-h-8 cursor-pointer items-center gap-3 rounded-lg py-2 pr-4 pl-2 transition-colors border-none'
 
-const selectStep: BuilderToolbarStep<BuilderStepId> = {
-  id: 'builder:select',
-  title: t('builderToolbar.select'),
-  subtitle: t('builderToolbar.selectDescription'),
+const selectInputsStep: BuilderToolbarStep<BuilderStepId> = {
+  id: 'builder:inputs',
+  title: t('builderToolbar.inputs'),
+  subtitle: t('builderToolbar.inputsDescription'),
+  icon: 'icon-[lucide--mouse-pointer-click]'
+}
+
+const selectOutputsStep: BuilderToolbarStep<BuilderStepId> = {
+  id: 'builder:outputs',
+  title: t('builderToolbar.outputs'),
+  subtitle: t('builderToolbar.outputsDescription'),
   icon: 'icon-[lucide--mouse-pointer-click]'
 }
 
@@ -109,4 +113,5 @@ const defaultViewStep: BuilderToolbarStep<BuilderStepId> = {
   subtitle: t('builderToolbar.defaultViewDescription'),
   icon: 'icon-[lucide--eye]'
 }
+const steps = [selectInputsStep, selectOutputsStep, arrangeStep]
 </script>

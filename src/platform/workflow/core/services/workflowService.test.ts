@@ -441,14 +441,14 @@ describe('useWorkflowService', () => {
         })
         const workflow2 = createModeTestWorkflow({
           path: 'workflows/two.json',
-          activeMode: 'builder:select'
+          activeMode: 'builder:inputs'
         })
 
         workflowStore.activeWorkflow = workflow1
         expect(appMode.mode.value).toBe('app')
 
         workflowStore.activeWorkflow = workflow2
-        expect(appMode.mode.value).toBe('builder:select')
+        expect(appMode.mode.value).toBe('builder:inputs')
       })
     })
 
@@ -583,7 +583,7 @@ describe('useWorkflowService', () => {
       it('each workflow retains its own mode across tab switches', () => {
         const workflow1 = createModeTestWorkflow({
           path: 'workflows/one.json',
-          activeMode: 'builder:select'
+          activeMode: 'builder:inputs'
         })
         const workflow2 = createModeTestWorkflow({
           path: 'workflows/two.json',
@@ -591,13 +591,13 @@ describe('useWorkflowService', () => {
         })
 
         workflowStore.activeWorkflow = workflow1
-        expect(appMode.mode.value).toBe('builder:select')
+        expect(appMode.mode.value).toBe('builder:inputs')
 
         workflowStore.activeWorkflow = workflow2
         expect(appMode.mode.value).toBe('app')
 
         workflowStore.activeWorkflow = workflow1
-        expect(appMode.mode.value).toBe('builder:select')
+        expect(appMode.mode.value).toBe('builder:inputs')
       })
     })
   })

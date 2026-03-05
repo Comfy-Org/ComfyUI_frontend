@@ -39,7 +39,8 @@ const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
-const { isSelectMode, isArrangeMode } = useAppMode()
+const { isSelectMode, isSelectInputsMode, isSelectOutputsMode, isArrangeMode } =
+  useAppMode()
 const hoveringSelectable = ref(false)
 
 provide(HideLayoutFieldKey, true)
@@ -161,6 +162,7 @@ function handleClick(e: MouseEvent) {
   if (!node) return canvasInteractions.forwardEventToCanvas(e)
 
   if (!widget) {
+    if (!isSelectOutputsMode.value) return
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
     const index = appModeStore.selectedOutputs.findIndex((id) => id == node.id)
@@ -168,6 +170,7 @@ function handleClick(e: MouseEvent) {
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
+  if (!isSelectInputsMode.value) return
 
   const index = appModeStore.selectedInputs.findIndex(
     ([nodeId, widgetName]) => node.id == nodeId && widget.name === widgetName
@@ -234,7 +237,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     </div>
   </DraggableList>
   <PropertiesAccordionItem
-    v-else
+    v-if="isSelectInputsMode"
     :label="t('nodeHelpPage.inputs')"
     enable-empty-state
     :disabled="!appModeStore.selectedInputs.length"
@@ -283,7 +286,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     </DraggableList>
   </PropertiesAccordionItem>
   <PropertiesAccordionItem
-    v-if="!isArrangeMode"
+    v-if="isSelectOutputsMode"
     :label="t('nodeHelpPage.outputs')"
     enable-empty-state
     :disabled="!appModeStore.selectedOutputs.length"
@@ -344,42 +347,46 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <TransformPane :canvas="canvasStore.getCanvas()">
-        <div
-          v-for="[key, style] in renderedInputs"
-          :key
-          :style="toValue(style)"
-          class="fixed bg-primary-background/30 rounded-lg"
-        />
-        <div
-          v-for="[key, style, isSelected] in renderedOutputs"
-          :key
-          :style="toValue(style)"
-          :class="
-            cn(
-              'fixed ring-warning-background ring-5 rounded-2xl',
-              !isSelected && 'ring-warning-background/50'
-            )
-          "
-        >
-          <div class="absolute top-0 right-0 size-8">
-            <div
-              v-if="isSelected"
-              class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg cursor-pointer pointer-events-auto"
-              @click.stop="
-                remove(appModeStore.selectedOutputs, (k) => k == key)
-              "
-              @pointerdown.stop
-            >
-              <i class="icon-[lucide--check] bg-text-foreground size-full" />
+        <template v-if="isSelectInputsMode">
+          <div
+            v-for="[key, style] in renderedInputs"
+            :key
+            :style="toValue(style)"
+            class="fixed bg-primary-background/30 rounded-lg"
+          />
+        </template>
+        <template v-else>
+          <div
+            v-for="[key, style, isSelected] in renderedOutputs"
+            :key
+            :style="toValue(style)"
+            :class="
+              cn(
+                'fixed ring-warning-background ring-5 rounded-2xl',
+                !isSelected && 'ring-warning-background/50'
+              )
+            "
+          >
+            <div class="absolute top-0 right-0 size-8">
+              <div
+                v-if="isSelected"
+                class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg cursor-pointer pointer-events-auto"
+                @click.stop="
+                  remove(appModeStore.selectedOutputs, (k) => k == key)
+                "
+                @pointerdown.stop
+              >
+                <i class="icon-[lucide--check] bg-text-foreground size-full" />
+              </div>
+              <div
+                v-else
+                class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg cursor-pointer pointer-events-auto"
+                @click.stop="appModeStore.selectedOutputs.push(key)"
+                @pointerdown.stop
+              />
             </div>
-            <div
-              v-else
-              class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg cursor-pointer pointer-events-auto"
-              @click.stop="appModeStore.selectedOutputs.push(key)"
-              @pointerdown.stop
-            />
           </div>
-        </div>
+        </template>
       </TransformPane>
     </div>
   </Teleport>

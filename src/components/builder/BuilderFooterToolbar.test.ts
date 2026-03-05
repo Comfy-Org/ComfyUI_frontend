@@ -63,7 +63,7 @@ describe('BuilderFooterToolbar', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    mockState.mode = 'builder:select'
+    mockState.mode = 'builder:inputs'
     mockHasOutputs.value = true
     mockState.settingView = false
   })
@@ -87,7 +87,7 @@ describe('BuilderFooterToolbar', () => {
   }
 
   it('disables back on the first step', () => {
-    mockState.mode = 'builder:select'
+    mockState.mode = 'builder:inputs'
     const { back } = getButtons(mountComponent())
     expect(back.attributes('disabled')).toBeDefined()
   })
@@ -111,8 +111,8 @@ describe('BuilderFooterToolbar', () => {
     expect(next.attributes('disabled')).toBeDefined()
   })
 
-  it('enables next on select step', () => {
-    mockState.mode = 'builder:select'
+  it('enables next on inputs step', () => {
+    mockState.mode = 'builder:inputs'
     const { next } = getButtons(mountComponent())
     expect(next.attributes('disabled')).toBeUndefined()
   })
@@ -121,14 +121,14 @@ describe('BuilderFooterToolbar', () => {
     mockState.mode = 'builder:arrange'
     const { back } = getButtons(mountComponent())
     await back.trigger('click')
-    expect(mockSetMode).toHaveBeenCalledWith('builder:select')
+    expect(mockSetMode).toHaveBeenCalledWith('builder:outputs')
   })
 
-  it('calls setMode on next click from select step', async () => {
-    mockState.mode = 'builder:select'
+  it('calls setMode on next click from inputs step', async () => {
+    mockState.mode = 'builder:inputs'
     const { next } = getButtons(mountComponent())
     await next.trigger('click')
-    expect(mockSetMode).toHaveBeenCalledWith('builder:arrange')
+    expect(mockSetMode).toHaveBeenCalledWith('builder:outputs')
   })
 
   it('opens default view dialog on next click from arrange step', async () => {
