@@ -43,6 +43,12 @@ export const useCanvasStore = defineStore('canvas', () => {
 
   // Reactive scale percentage that syncs with app.canvas.ds.scale
   const appScalePercentage = ref(100)
+  const updateAppScalePercentage = (scale: number) => {
+    const newValue = Math.round(scale * 100)
+    if (newValue !== appScalePercentage.value) {
+      appScalePercentage.value = newValue
+    }
+  }
 
   const { isAppMode, setMode } = useAppMode()
   const linearMode = computed({
@@ -59,12 +65,12 @@ export const useCanvasStore = defineStore('canvas', () => {
     if (app.canvas?.ds) {
       // Initial sync
       originalOnChanged = app.canvas.ds.onChanged
-      appScalePercentage.value = Math.round(app.canvas.ds.scale * 100)
+      updateAppScalePercentage(app.canvas.ds.scale)
 
       // Set up continuous sync
       app.canvas.ds.onChanged = () => {
         if (app.canvas?.ds?.scale) {
-          appScalePercentage.value = Math.round(app.canvas.ds.scale * 100)
+          updateAppScalePercentage(app.canvas.ds.scale)
         }
         // Call original handler if exists
         originalOnChanged?.(app.canvas.ds.scale, app.canvas.ds.offset)
@@ -106,7 +112,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     app.canvas.setDirty(true, true)
 
     // Update reactive value immediately for UI consistency
-    appScalePercentage.value = Math.round(newScale * 100)
+    updateAppScalePercentage(newScale)
   }
 
   const currentGraph = shallowRef<LGraph | null>(null)
