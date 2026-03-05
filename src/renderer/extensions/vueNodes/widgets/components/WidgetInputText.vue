@@ -10,6 +10,7 @@
         )
       "
       :aria-label="widget.name"
+      :readonly="isReadOnly"
       size="small"
       :pt="{ root: 'truncate min-w-[4ch]' }"
     />
@@ -30,13 +31,17 @@ import {
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<string>
 }>()
 
 const modelValue = defineModel<string>({ default: '' })
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
+  filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
+)
+
+const isReadOnly = computed(
+  () => widget.options?.read_only ?? widget.options?.disabled ?? false
 )
 </script>
