@@ -63,6 +63,19 @@
           <i-comfy:mask class="h-4 w-4" />
         </button>
 
+        <!-- Clear Mask Button -->
+        <button
+          v-if="!hasMultipleImages"
+          :class="actionButtonClass"
+          :title="$t('g.clearMask')"
+          :aria-label="$t('g.clearMask')"
+          :disabled="isClearingMask"
+          @click.stop="handleClearMask"
+        >
+          <i v-if="isClearingMask" class="pi pi-spinner pi-spin h-4 w-4" />
+          <i v-else class="icon-[lucide--eraser] h-4 w-4" />
+        </button>
+
         <!-- Download Button -->
         <button
           :class="actionButtonClass"
@@ -144,6 +157,12 @@ const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useMaskEditorLoader } from '@/composables/maskeditor/useMaskEditorLoader'
+import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
+import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
+
 const actionButtonClass =
   'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'
 
@@ -154,6 +173,7 @@ const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
+const isClearingMask = ref(false)
 
 const imageWrapperEl = ref<HTMLDivElement>()
 
@@ -225,6 +245,40 @@ const handleEditMask = () => {
   const node = app.rootGraph?.getNodeById(Number(props.nodeId))
   if (!node) return
   maskEditor.openMaskEditor(node)
+}
+
+const handleClearMask = async () => {
+  if (!props.nodeId || isClearingMask.value) return
+  const node = app.rootGraph?.getNodeById(Number(props.nodeId))
+  if (!node) return
+
+  isClearingMask.value = true
+  const dataStore = useMaskEditorDataStore()
+  const editorStore = useMaskEditorStore()
+  const loader = useMaskEditorLoader()
+  const saver = useMaskEditorSaver()
+  const canvasTools = useCanvasTools()
+
+  try {
+    await loader.loadFromNode(node)
+
+    if (!dataStore.inputData) throw new Error('Failed to load image data')
+
+    canvasTools.clearMask()
+    await saver.save()
+  } catch (error) {
+    useToast().add({
+      severity: 'error',
+      summary: 'Error',
+      detail: t('g.errorLoadingImage'),
+      life: 3000,
+      group: 'image-preview'
+    })
+  } finally {
+    isClearingMask.value = false
+    dataStore.reset()
+    editorStore.resetState()
+  }
 }
 
 const handleDownload = () => {
