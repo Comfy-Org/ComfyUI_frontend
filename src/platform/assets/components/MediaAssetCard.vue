@@ -87,13 +87,15 @@
       <div v-if="loading" class="flex justify-between items-start">
         <div class="flex flex-col gap-1">
           <div
-            class="h-4 w-24 animate-pulse rounded bg-modal-card-background"
+            class="h-4 w-24 animate-pulse rounded-sm bg-modal-card-background"
           />
           <div
-            class="h-3 w-20 animate-pulse rounded bg-modal-card-background"
+            class="h-3 w-20 animate-pulse rounded-sm bg-modal-card-background"
           />
         </div>
-        <div class="h-6 w-12 animate-pulse rounded bg-modal-card-background" />
+        <div
+          class="h-6 w-12 animate-pulse rounded-sm bg-modal-card-background"
+        />
       </div>
 
       <!-- Content -->
@@ -113,7 +115,7 @@
         </div>
 
         <!-- Right side: Output count -->
-        <div v-if="showOutputCount" class="flex-shrink-0">
+        <div v-if="showOutputCount" class="shrink-0">
           <Button
             v-tooltip.top.pt:pointer-events-none="
               $t('mediaAsset.actions.seeMoreOutputs')

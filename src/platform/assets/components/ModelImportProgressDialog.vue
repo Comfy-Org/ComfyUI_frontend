@@ -4,6 +4,7 @@ import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Loader from '@/components/common/Loader.vue'
 import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -175,9 +176,7 @@ function closeDialog() {
       >
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <template v-if="isInProgress">
-            <i
-              class="icon-[lucide--loader-circle] size-4 flex-shrink-0 animate-spin text-muted-foreground"
-            />
+            <Loader size="sm" class="shrink-0 text-muted-foreground" />
             <span
               class="min-w-0 flex-1 truncate font-bold text-base-foreground"
             >
@@ -186,7 +185,7 @@ function closeDialog() {
           </template>
           <template v-else-if="failedJobs.length > 0">
             <i
-              class="icon-[lucide--circle-alert] size-4 flex-shrink-0 text-destructive-background"
+              class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
             />
             <span class="min-w-0 truncate font-bold text-base-foreground">
               {{
@@ -198,7 +197,7 @@ function closeDialog() {
           </template>
           <template v-else>
             <i
-              class="icon-[lucide--check-circle] size-4 flex-shrink-0 text-jade-600"
+              class="icon-[lucide--check-circle] size-4 shrink-0 text-jade-600"
             />
             <span class="min-w-0 truncate font-bold text-base-foreground">
               {{ t('progressToast.allDownloadsCompleted') }}
@@ -206,7 +205,7 @@ function closeDialog() {
           </template>
         </div>
 
-        <div class="flex flex-shrink-0 items-center gap-2">
+        <div class="flex shrink-0 items-center gap-2">
           <span
             v-if="isInProgress"
             class="whitespace-nowrap text-sm text-muted-foreground"

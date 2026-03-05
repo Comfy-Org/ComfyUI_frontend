@@ -305,7 +305,9 @@
     "profile": "Profile",
     "noItems": "No items",
     "recents": "Recents",
-    "partner": "Partner"
+    "partner": "Partner",
+    "collapseAll": "Collapse all",
+    "expandAll": "Expand all"
   },
   "manager": {
     "title": "Nodes Manager",
@@ -1786,7 +1788,8 @@
     "gotIt": "Ok, got it",
     "footerDescription": "Download and place these models in the correct folder.\nNodes with missing models are highlighted red on the canvas.",
     "customModelsWarning": "Some of these are custom models that we don't recognize.",
-    "customModelsInstruction": "You'll need to find and download them manually. Search for them online (try Civitai or HuggingFace) or contact the original workflow provider."
+    "customModelsInstruction": "You'll need to find and download them manually. Search for them online (try Civitai or HuggingFace) or contact the original workflow provider.",
+    "acceptTerms": "Accept terms"
   },
   "versionMismatchWarning": {
     "title": "Version Compatibility Warning",
@@ -3034,13 +3037,15 @@
     "downloadAll": "Download All",
     "viewJob": "View Job",
     "enterNodeGraph": "Enter node graph",
+    "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
+    "backToWorkflow": "Back to workflow",
+    "loadTemplate": "Load a template",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
       "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
       "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
       "getStarted": "Click {runButton} to get started.",
-      "backToWorkflow": "Back to workflow",
       "buildApp": "Build app"
     },
     "appModeToolbar": {
@@ -3051,11 +3056,11 @@
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
-      "switchToSelect": "Switch to the 'Select' step and click on output nodes to add them here.",
+      "switchToOutputs": "Switch to the 'Output' step and click on output nodes to add them here.",
       "connectAtLeastOne": "Connect {atLeastOne} output node so users can see results after running.",
       "atLeastOne": "at least one",
       "outputExamples": "Examples: 'Save Image' or 'Save Video'",
-      "switchToSelectButton": "Switch to Select",
+      "switchToOutputsButton": "Switch to Outputs",
       "outputs": "Outputs",
       "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
     },
@@ -3204,6 +3209,7 @@
       "unsupportedTitle": "Unsupported Node Packs",
       "cloudMessage": "This workflow requires custom nodes not yet available on Comfy Cloud.",
       "ossMessage": "This workflow uses custom nodes you haven't installed yet.",
+      "ossManagerDisabledHint": "To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.",
       "installAll": "Install All",
       "installNodePack": "Install node pack",
       "unknownPack": "Unknown pack",
@@ -3359,16 +3365,18 @@
   },
   "builderToolbar": {
     "label": "App Builder",
-    "select": "Select",
-    "selectDescription": "Choose inputs/outputs",
+    "inputs": "Inputs",
+    "outputs": "Outputs",
+    "inputsDescription": "Choose inputs",
+    "outputsDescription": "Choose outputs",
     "arrange": "Preview",
     "arrangeDescription": "Review app layout",
     "defaultView": "Set a default view",
     "defaultViewDescription": "Choose how this opens",
     "connectOutput": "Connect an output",
     "connectOutputBody1": "Your app needs at least one output to be connected before it can be saved.",
-    "connectOutputBody2": "Switch to the 'Select' step and click on output nodes to add them here.",
-    "switchToSelect": "Switch to Select",
+    "connectOutputBody2": "Switch to the 'Output' step and click on output nodes to add them here.",
+    "switchToOutputs": "Switch to Outputs",
     "defaultViewTitle": "Set the default view for this workflow",
     "defaultViewLabel": "By default, this workflow will open as:",
     "app": "App",
@@ -3382,10 +3390,7 @@
     "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
     "viewApp": "View app",
     "emptyWorkflowTitle": "This workflow has no nodes",
-    "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
-    "emptyWorkflowPrompt": "Do you want to start with a template?",
-    "backToWorkflow": "Back to workflow",
-    "loadTemplate": "Load a template"
+    "emptyWorkflowPrompt": "Do you want to start with a template?"
   },
   "builderMenu": {
     "exitAppBuilder": "Exit app builder"

@@ -9,6 +9,7 @@ catalog:
   '@iconify-json/lucide': ^1.1.178
   '@iconify/json': ^2.2.380
   '@iconify/tailwind4': ^1.2.0
+  '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.1.1
   '@lobehub/i18n-cli': ^1.26.1
   '@nx/eslint': 22.5.2
@@ -61,6 +62,7 @@ catalog:
   eslint: ^9.39.1
   eslint-config-prettier: ^10.1.8
   eslint-import-resolver-typescript: ^4.4.4
+  eslint-plugin-better-tailwindcss: ^4.3.1
   eslint-plugin-import-x: ^4.16.1
   eslint-plugin-oxlint: 1.25.0
   eslint-plugin-storybook: ^10.2.10

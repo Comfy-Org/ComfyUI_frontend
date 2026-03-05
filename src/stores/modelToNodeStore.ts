@@ -232,6 +232,158 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     // Empty key means the node auto-loads models without a widget selector
     quickRegister('FlashVSR', 'FlashVSRNode', '')
     quickRegister('FlashVSR-v1.1', 'FlashVSRNode', '')
+
+    // SEEDVR2 video upscaling (comfyui-seedvr2)
+    quickRegister('SEEDVR2', 'SeedVR2LoadDiTModel', 'model')
+
+    // Qwen VL vision-language models (comfyui-qwen-vl)
+    // Register each specific path to avoid LLM fallback catching unrelated models
+    // (e.g., LLM/llava-* should NOT map to AILab_QwenVL)
+    quickRegister(
+      'LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-2B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-2B-Thinking',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-4B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-4B-Thinking',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-8B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-8B-Thinking',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-32B-Instruct',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-VL-32B-Thinking',
+      'AILab_QwenVL',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-0.6B',
+      'AILab_QwenVL_PromptEnhancer',
+      'model_name'
+    )
+    quickRegister(
+      'LLM/Qwen-VL/Qwen3-4B-Instruct-2507',
+      'AILab_QwenVL_PromptEnhancer',
+      'model_name'
+    )
+    quickRegister('LLM/checkpoints', 'LoadChatGLM3', 'chatglm3_checkpoint')
+
+    // Qwen3 TTS speech models (ComfyUI-FunBox)
+    // Top-level 'qwen-tts' catches all qwen-tts/* subdirs via hierarchical fallback
+    quickRegister('qwen-tts', 'FB_Qwen3TTSVoiceClone', 'model_choice')
+
+    // DepthAnything V3 models (comfyui-depthanythingv2)
+    quickRegister(
+      'depthanything3',
+      'DownloadAndLoadDepthAnythingV3Model',
+      'model'
+    )
+
+    // LivePortrait face animation models (comfyui-liveportrait)
+    quickRegister('liveportrait', 'DownloadAndLoadLivePortraitModels', '')
+
+    // MimicMotion video generation models (ComfyUI-MimicMotionWrapper)
+    quickRegister('mimicmotion', 'DownloadAndLoadMimicMotionModel', 'model')
+    quickRegister('dwpose', 'MimicMotionGetPoses', '')
+
+    // Face parsing segmentation models (comfyui_face_parsing)
+    quickRegister('face_parsing', 'FaceParsingModelLoader(FaceParsing)', '')
+
+    // Kolors image generation models (ComfyUI-KolorsWrapper)
+    // Top-level 'diffusers' catches diffusers/Kolors/* subdirs
+    quickRegister('diffusers', 'DownloadAndLoadKolorsModel', 'model')
+
+    // CLIP models for HunyuanVideo (clip/clip-vit-large-patch14 subdir)
+    quickRegister('clip', 'CLIPVisionLoader', 'clip_name')
+
+    // RIFE video frame interpolation (ComfyUI-RIFE)
+    quickRegister('rife', 'RIFE VFI', 'ckpt_name')
+
+    // SAM3 3D segmentation models (comfyui-sam3)
+    quickRegister('sam3', 'LoadSAM3Model', 'model_path')
+
+    // UltraShape 3D model generation
+    quickRegister('UltraShape', 'UltraShapeLoadModel', 'checkpoint')
+
+    // SHaRP depth estimation
+    quickRegister('sharp', 'LoadSharpModel', 'checkpoint_path')
+
+    // ONNX upscale models (used by OnnxDetectionModelLoader and upscale nodes)
+    quickRegister('onnx', 'UpscaleModelLoader', 'model_name')
+
+    // Detection models (vitpose, yolo)
+    quickRegister('detection', 'OnnxDetectionModelLoader', 'yolo_model')
+
+    // HunyuanVideo text encoders (ComfyUI-HunyuanVideoWrapper)
+    quickRegister(
+      'LLM/llava-llama-3-8b-text-encoder-tokenizer',
+      'DownloadAndLoadHyVideoTextEncoder',
+      'llm_model'
+    )
+    quickRegister(
+      'LLM/llava-llama-3-8b-v1_1-transformers',
+      'DownloadAndLoadHyVideoTextEncoder',
+      'llm_model'
+    )
+
+    // CogVideoX models (comfyui-cogvideoxwrapper)
+    quickRegister('CogVideo/GGUF', 'DownloadAndLoadCogVideoGGUFModel', 'model')
+    quickRegister(
+      'CogVideo/ControlNet',
+      'DownloadAndLoadCogVideoControlNet',
+      'model'
+    )
+
+    // DynamiCrafter models (ComfyUI-DynamiCrafterWrapper)
+    quickRegister(
+      'checkpoints/dynamicrafter',
+      'DownloadAndLoadDynamiCrafterModel',
+      'model'
+    )
+    quickRegister(
+      'checkpoints/dynamicrafter/controlnet',
+      'DownloadAndLoadDynamiCrafterCNModel',
+      'model'
+    )
+
+    // LayerStyle models (ComfyUI_LayerStyle_Advance)
+    quickRegister('BEN', 'LS_LoadBenModel', 'model')
+    quickRegister('BiRefNet/pth', 'LS_LoadBiRefNetModel', 'model')
+    quickRegister('onnx/human-parts', 'LS_HumanPartsUltra', '')
+    quickRegister('lama', 'LaMa', 'lama_model')
   }
 
   return {

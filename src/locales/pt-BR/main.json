@@ -356,13 +356,15 @@
     "emptyWorkflowExplanation": "Seu fluxo de trabalho está vazio. Você precisa de alguns nós para começar a criar um aplicativo.",
     "emptyWorkflowPrompt": "Deseja começar com um modelo?",
     "emptyWorkflowTitle": "Este fluxo de trabalho não possui nós",
+    "inputs": "Entradas",
+    "inputsDescription": "Escolha as entradas",
     "label": "Construtor de aplicativos",
     "loadTemplate": "Carregar um modelo",
     "nodeGraph": "Grafo de nós",
     "nodeGraphDescription": "Abre como grafo de nós por padrão",
-    "select": "Selecionar",
-    "selectDescription": "Escolha entradas/saídas",
-    "switchToSelect": "Ir para Selecionar",
+    "outputs": "Saídas",
+    "outputsDescription": "Escolha as saídas",
+    "switchToOutputs": "Ir para Saídas",
     "viewApp": "Visualizar aplicativo"
   },
   "clipboard": {
@@ -1350,8 +1352,8 @@
       "outputExamples": "Exemplos: 'Salvar imagem' ou 'Salvar vídeo'",
       "outputs": "Saídas",
       "resultsLabel": "Os resultados gerados pelo(s) nó(s) de saída selecionado(s) serão exibidos aqui após a execução deste aplicativo",
-      "switchToSelect": "Altere para a etapa 'Selecionar' e clique nos nós de saída para adicioná-los aqui.",
-      "switchToSelectButton": "Ir para Selecionar"
+      "switchToOutputs": "Vá para a etapa 'Saída' e clique nos nós de saída para adicioná-los aqui.",
+      "switchToOutputsButton": "Ir para Saídas"
     },
     "beta": "Modo App Beta - Envie seu feedback",
     "builder": {
@@ -2740,6 +2742,7 @@
       "searchJobs": "Pesquisar...",
       "showAssets": "Mostrar ativos",
       "showAssetsPanel": "Mostrar painel de ativos",
+      "showRunProgressBar": "Mostrar barra de progresso da execução",
       "sortBy": "Ordenar por",
       "sortJobs": "Ordenar trabalhos",
       "stubClipTextEncode": "CLIP Text Encode:",

@@ -116,6 +116,7 @@
 
       <template v-if="tool === PAINTER_TOOLS.BRUSH">
         <div
+          v-if="!compact"
           class="flex w-28 items-center truncate text-sm text-muted-foreground"
         >
           {{ $t('painter.color') }}
@@ -158,6 +159,7 @@
         </div>
 
         <div
+          v-if="!compact"
           class="flex w-28 items-center truncate text-sm text-muted-foreground"
         >
           {{ $t('painter.hardness') }}
@@ -183,6 +185,7 @@
 
       <template v-if="!isImageInputConnected">
         <div
+          v-if="!compact"
           class="flex w-28 items-center truncate text-sm text-muted-foreground"
         >
           {{ $t('painter.width') }}
@@ -204,6 +207,7 @@
         </div>
 
         <div
+          v-if="!compact"
           class="flex w-28 items-center truncate text-sm text-muted-foreground"
         >
           {{ $t('painter.height') }}
@@ -225,6 +229,7 @@
         </div>
 
         <div
+          v-if="!compact"
           class="flex w-28 items-center truncate text-sm text-muted-foreground"
         >
           {{ $t('painter.background') }}

@@ -9,7 +9,7 @@
       :key="getOptionValue(option, index)"
       :class="
         cn(
-          'flex-1 min-w-0 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out truncate',
+          'flex-1 min-w-0 h-6 px-5 py-[5px] rounded-sm flex justify-center items-center gap-1 transition-all duration-150 ease-in-out truncate',
           'bg-transparent border-none',
           'text-center text-xs font-normal',
           {
@@ -63,7 +63,7 @@ const {
   options,
   optionLabel = 'label',
   optionValue = 'value',
-  disabled = false
+  disabled
 } = defineProps<Props>()
 
 const emit = defineEmits<Emits>()

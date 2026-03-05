@@ -17,8 +17,8 @@ import TopbarBadge from './TopbarBadge.vue'
 
 const {
   displayMode = 'full',
-  reverseOrder = false,
-  noPadding = false,
+  reverseOrder,
+  noPadding,
   backgroundColor = 'var(--comfy-menu-bg)'
 } = defineProps<{
   displayMode?: 'full' | 'compact' | 'icon-only'
