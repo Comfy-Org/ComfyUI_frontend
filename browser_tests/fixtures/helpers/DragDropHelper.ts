@@ -162,10 +162,8 @@ export class DragDropHelper {
       waitForUploadCount?: number
     } = {}
   ): Promise<void> {
-    const {
-      dropPosition = { x: 100, y: 100 },
-      waitForUploadCount = 0
-    } = options
+    const { dropPosition = { x: 100, y: 100 }, waitForUploadCount = 0 } =
+      options
 
     const files = fileNames.map((fileName) => {
       const filePath = this.assetPath(fileName)
