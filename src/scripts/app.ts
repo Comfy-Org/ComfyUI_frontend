@@ -1289,26 +1289,8 @@ export class ComfyApp {
       }
     }
 
-    try {
-      // @ts-expect-error Discrepancies between zod and litegraph - in progress
-      this.rootGraph.configure(graphData)
-
-      // Save original renderer version before scaling (it gets modified during scaling)
-      const originalMainGraphRenderer =
-        this.rootGraph.extra.workflowRendererVersion
-
-      // Scale main graph
-      ensureCorrectLayoutScale(originalMainGraphRenderer)
-
-      // Scale all subgraphs that were loaded with the workflow
-      // Use original main graph renderer as fallback (not the modified one)
-      for (const subgraph of this.rootGraph.subgraphs.values()) {
-        ensureCorrectLayoutScale(
-          subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
-          subgraph
-        )
-      }
-
+    const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
+    const fitView = () => {
       if (
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
@@ -1336,6 +1318,29 @@ export class ComfyApp {
           useLitegraphService().fitView()
         }
       }
+    }
+
+    try {
+      // @ts-expect-error Discrepancies between zod and litegraph - in progress
+      this.rootGraph.configure(graphData)
+
+      // Save original renderer version before scaling (it gets modified during scaling)
+      const originalMainGraphRenderer =
+        this.rootGraph.extra.workflowRendererVersion
+
+      // Scale main graph
+      ensureCorrectLayoutScale(originalMainGraphRenderer)
+
+      // Scale all subgraphs that were loaded with the workflow
+      // Use original main graph renderer as fallback (not the modified one)
+      for (const subgraph of this.rootGraph.subgraphs.values()) {
+        ensureCorrectLayoutScale(
+          subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
+          subgraph
+        )
+      }
+
+      if (canvasVisible) fitView()
     } catch (error) {
       useDialogService().showErrorDialog(error, {
         title: t('errorDialog.loadWorkflowTitle'),
@@ -1414,6 +1419,13 @@ export class ComfyApp {
       workflow,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
+
+    // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
+    // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
+    if (!canvasVisible && (!workflow || typeof workflow === 'string')) {
+      this.canvas.resize()
+      requestAnimationFrame(() => fitView())
+    }
 
     // Store pending warnings on the workflow for deferred display
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
