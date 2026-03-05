@@ -159,7 +159,7 @@ async function rerun(e: Event) {
     />
     <OutputHistory
       v-if="!isBuilderMode"
-      class="min-w-0"
+      class="min-w-0 z-10"
       @update-selection="handleSelection"
     />
     <LinearFeedback
