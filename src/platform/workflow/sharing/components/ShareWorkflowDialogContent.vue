@@ -40,8 +40,8 @@
       <div
         v-show="dialogMode === 'shareLink'"
         v-auto-animate
-        role="tabpanel"
-        aria-labelledby="tab-share-link"
+        :role="showPublishToHubTab ? 'tabpanel' : undefined"
+        :aria-labelledby="showPublishToHubTab ? 'tab-share-link' : undefined"
         class="flex flex-col gap-4"
       >
         <template v-if="dialogState === 'loading'">

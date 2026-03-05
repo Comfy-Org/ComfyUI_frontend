@@ -143,7 +143,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const workflowTypeOptions = [
+const workflowTypeOptions = computed(() => [
   {
     value: 'imageGeneration',
     label: t('comfyHubPublish.workflowTypeImageGeneration')
@@ -160,7 +160,7 @@ const workflowTypeOptions = [
     value: 'editing',
     label: t('comfyHubPublish.workflowTypeEditing')
   }
-]
+])
 
 const INITIAL_TAG_SUGGESTION_COUNT = 10
 

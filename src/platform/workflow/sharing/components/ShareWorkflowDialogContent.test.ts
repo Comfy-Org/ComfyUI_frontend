@@ -22,10 +22,10 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => mockWorkflowStore
 }))
 
+const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
+
 vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: vi.fn()
-  })
+  useToast: () => mockToast
 }))
 
 vi.mock('@formkit/auto-animate/vue', () => ({
@@ -101,7 +101,7 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close' },
+      g: { close: 'Close', error: 'Error' },
       shareWorkflow: {
         unsavedDescription: 'You must save your workflow before sharing.',
         shareLinkTab: 'Share',
@@ -119,7 +119,8 @@ const i18n = createI18n({
         publishedOn: 'Published on {date}',
         mediaLabel: '{count} Media File | {count} Media Files',
         modelsLabel: '{count} Model | {count} Models',
-        acknowledgeCheckbox: 'I understand these assets...'
+        acknowledgeCheckbox: 'I understand these assets...',
+        loadFailed: 'Failed to load publish status'
       },
       comfyHubProfile: {
         introTitle: 'Introducing ComfyHub',
@@ -458,6 +459,10 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(wrapper.text()).toContain('Create link')
+      expect(mockToast.add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'Failed to load publish status'
+      })
     })
 
     it('shows error toast when publishWorkflow rejects', async () => {
@@ -476,6 +481,12 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(wrapper.text()).not.toContain('Anyone with this link...')
+      expect(mockToast.add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Publish failed',
+        life: 5000
+      })
     })
 
     it('renders unsaved state when no active workflow exists', async () => {
