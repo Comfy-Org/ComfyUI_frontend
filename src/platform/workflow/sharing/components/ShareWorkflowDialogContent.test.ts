@@ -232,7 +232,7 @@ describe('ShareWorkflowDialogContent', () => {
     expect(wrapper.text()).toContain('Publish')
     const publishTabPanel = wrapper.find('[data-testid="publish-tab-panel"]')
     expect(publishTabPanel.exists()).toBe(true)
-    expect(publishTabPanel.isVisible()).toBe(false)
+    expect(publishTabPanel.attributes('style')).toContain('display: none')
   })
 
   it('hides the publish tab when comfy hub upload is disabled', async () => {

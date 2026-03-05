@@ -46,7 +46,7 @@ defineEmits<{
 const normalizedPreviewUrl = computed(() => {
   if (typeof previewUrl !== 'string' || previewUrl.length === 0) return null
   try {
-    const url = new URL(previewUrl)
+    const url = new URL(previewUrl, window.location.origin)
     if (
       !url.origin.includes('googleapis') &&
       url.searchParams.has('filename') &&

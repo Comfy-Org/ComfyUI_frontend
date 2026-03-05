@@ -15,6 +15,14 @@ vi.mock('@/scripts/app', () => ({
 const mockGetShareableAssets = vi.fn()
 const mockFetchApi = vi.fn()
 
+vi.mock(
+  '@/platform/workflow/validation/schemas/workflowSchema',
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    validateComfyWorkflow: vi.fn(async (json: unknown) => json)
+  })
+)
+
 vi.mock('@/scripts/api', () => ({
   api: {
     getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args),

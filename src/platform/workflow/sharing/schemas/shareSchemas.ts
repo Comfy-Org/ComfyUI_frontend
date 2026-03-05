@@ -4,10 +4,10 @@ import { zAssetInfo, zComfyHubProfile } from '@/schemas/apiSchema'
 
 export const zPublishRecordResponse = z.object({
   workflow_id: z.string(),
-  share_id: z.string(),
+  share_id: z.string().nullable(),
   listed: z.boolean(),
   publish_time: z.string().nullable(),
-  assets: z.array(zAssetInfo)
+  assets: z.array(zAssetInfo).optional()
 })
 
 export const zSharedWorkflowResponse = z.object({
