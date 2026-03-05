@@ -41,7 +41,7 @@ watch(
       cleanupFn?.()
     })
 
-    void searcher(debouncedSearchQuery.value, (cb) => (cleanupFn = cb))
+    searcher(debouncedSearchQuery.value, (cb) => (cleanupFn = cb))
       .catch((error) => {
         console.error('[SidePanelSearch] searcher failed', error)
       })

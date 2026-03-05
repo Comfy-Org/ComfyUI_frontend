@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Loader from '@/components/common/Loader.vue'
 import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AssetExport } from '@/stores/assetExportStore'
@@ -146,9 +147,7 @@ function closeDialog() {
                 </Button>
               </template>
               <template v-else-if="job.status === 'running'">
-                <i
-                  class="icon-[lucide--loader-circle] size-4 animate-spin text-base-foreground"
-                />
+                <Loader size="sm" class="text-base-foreground" />
                 <span class="text-xs text-base-foreground">
                   {{ progressPercent(job) }}%
                 </span>

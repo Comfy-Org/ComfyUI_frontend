@@ -305,7 +305,9 @@
     "profile": "Profile",
     "noItems": "No items",
     "recents": "Recents",
-    "partner": "Partner"
+    "partner": "Partner",
+    "collapseAll": "Collapse all",
+    "expandAll": "Expand all"
   },
   "manager": {
     "title": "Nodes Manager",
