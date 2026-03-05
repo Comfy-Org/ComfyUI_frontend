@@ -49,7 +49,7 @@
       >
         <!-- Error Message -->
         <p
-          v-if="error.message && !compact"
+          v-if="error.message"
           class="m-0 text-sm break-words whitespace-pre-wrap leading-relaxed px-0.5 max-h-[4lh] overflow-y-auto"
         >
           {{ error.message }}
