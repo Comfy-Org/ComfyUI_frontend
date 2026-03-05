@@ -282,7 +282,7 @@ onMounted(() => {
       >
         <Button
           size="sm"
-          class="rounded border-none px-3 py-0.5"
+          class="rounded-sm border-none px-3 py-0.5"
           @click.stop="showRecommended"
         >
           {{ $t('subgraphStore.showRecommended') }}

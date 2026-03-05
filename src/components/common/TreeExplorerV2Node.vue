@@ -27,7 +27,7 @@
       <button
         :class="
           cn(
-            'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded border-none bg-transparent text-muted-foreground hover:text-foreground',
+            'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent text-muted-foreground hover:text-foreground',
             'opacity-0 group-hover/tree-node:opacity-100'
           )
         "

@@ -33,7 +33,7 @@ const { hasOutputs } = storeToRefs(appModeStore)
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>
             <span
-              class="inline-flex items-center px-3.5 py-0.5 mx-0.5 transform -translate-y-0.5 rounded bg-primary-background text-base-foreground text-xxs font-medium cursor-default"
+              class="inline-flex items-center px-3.5 py-0.5 mx-0.5 transform -translate-y-0.5 rounded-sm bg-primary-background text-base-foreground text-xxs font-medium cursor-default"
             >
               {{ t('menu.run') }}
             </span>

@@ -136,7 +136,7 @@ function openFullSettings() {
           >
             <Slider
               :model-value="[gridSpacing]"
-              class="flex-grow text-xs"
+              class="grow text-xs"
               :min="GRID_SIZE_MIN"
               :max="GRID_SIZE_MAX"
               :step="GRID_SIZE_STEP"
