@@ -115,6 +115,9 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
           tex,
           0
         )
+        const status = ctx.checkFramebufferStatus(ctx.FRAMEBUFFER)
+        if (status !== ctx.FRAMEBUFFER_COMPLETE)
+          throw new Error(`Ping-pong framebuffer incomplete: ${status}`)
 
         fbos.push(fbo)
         textures.push(tex)
