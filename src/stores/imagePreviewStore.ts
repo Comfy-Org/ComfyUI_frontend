@@ -13,6 +13,7 @@ import type {
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { clone } from '@/scripts/utils'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isAnimatedOutput, isVideoNode } from '@/utils/litegraphUtil'
@@ -365,6 +366,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return hadOutputs
   }
 
+  function snapshotOutputs(): Record<string, ExecutedWsMessage['output']> {
+    return clone(app.nodeOutputs)
+  }
+
   function restoreOutputs(
     outputs: Record<string, ExecutedWsMessage['output']>
   ) {
@@ -455,6 +460,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     revokeAllPreviews,
     revokeSubgraphPreviews,
     removeNodeOutputs,
+    snapshotOutputs,
     restoreOutputs,
     resetAllOutputsAndPreviews,
 
