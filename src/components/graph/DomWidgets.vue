@@ -83,16 +83,30 @@ const updateWidgets = () => {
 
     if (widgetState.visible) {
       const margin = widget.margin
-      widgetState.pos = [
-        posNode.pos[0] + margin,
-        posNode.pos[1] + margin + posWidget.y
-      ]
-      widgetState.size = [
-        (posWidget.width ?? posNode.width) - margin * 2,
-        (posWidget.computedHeight ?? 50) - margin * 2
-      ]
-      widgetState.zIndex = getDomWidgetZIndex(posNode, currentGraph)
-      widgetState.readonly = lgCanvas.read_only
+      const newPosX = posNode.pos[0] + margin
+      const newPosY = posNode.pos[1] + margin + posWidget.y
+      if (widgetState.pos[0] !== newPosX || widgetState.pos[1] !== newPosY) {
+        widgetState.pos = [newPosX, newPosY]
+      }
+
+      const newWidth = (posWidget.width ?? posNode.width) - margin * 2
+      const newHeight = (posWidget.computedHeight ?? 50) - margin * 2
+      if (
+        widgetState.size[0] !== newWidth ||
+        widgetState.size[1] !== newHeight
+      ) {
+        widgetState.size = [newWidth, newHeight]
+      }
+
+      const newZIndex = getDomWidgetZIndex(posNode, currentGraph)
+      if (widgetState.zIndex !== newZIndex) {
+        widgetState.zIndex = newZIndex
+      }
+
+      const newReadonly = lgCanvas.read_only
+      if (widgetState.readonly !== newReadonly) {
+        widgetState.readonly = newReadonly
+      }
     }
   }
 
