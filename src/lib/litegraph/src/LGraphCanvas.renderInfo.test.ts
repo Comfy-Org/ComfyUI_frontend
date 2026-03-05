@@ -45,13 +45,17 @@ describe('LGraphCanvas.renderInfo', () => {
       configurable: true
     })
 
-    lgCanvas.renderInfo(ctx, 10, 0)
+    try {
+      lgCanvas.renderInfo(ctx, 10, 0)
 
-    expect(ctx.translate).toHaveBeenCalledWith(10, 2160 / 2 - 80)
-
-    Object.defineProperty(window, 'devicePixelRatio', {
-      value: originalDPR,
-      configurable: true
-    })
+      // lineCount = 5 (graph present, no info_text), lineHeight = 13
+      // y = canvas.height / DPR - (lineCount + 1) * lineHeight
+      expect(ctx.translate).toHaveBeenCalledWith(10, 2160 / 2 - 6 * 13)
+    } finally {
+      Object.defineProperty(window, 'devicePixelRatio', {
+        value: originalDPR,
+        configurable: true
+      })
+    }
   })
 })

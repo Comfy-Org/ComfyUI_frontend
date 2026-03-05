@@ -5261,7 +5261,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     x = x || 10
     y =
       y ||
-      this.canvas.height / (window.devicePixelRatio || 1) -
+      this.canvas.height /
+        ((this.canvas.ownerDocument.defaultView ?? window).devicePixelRatio ||
+          1) -
         (lineCount + 1) * lineHeight
 
     ctx.save()
