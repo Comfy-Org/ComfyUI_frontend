@@ -48,7 +48,7 @@ const existingOutput = computed(() => {
       <p class="text-base-foreground font-bold mb-0">
         {{ t('linearMode.arrange.outputs') }}
       </p>
-      <p>{{ t('linearMode.arrange.resultsLabel') }}</p>
+      <p class="text-center">{{ t('linearMode.arrange.resultsLabel') }}</p>
     </div>
   </div>
   <div
