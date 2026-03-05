@@ -1,6 +1,6 @@
 import { onScopeDispose } from 'vue'
 
-import { detectOutputCount, detectPassCount } from '@/renderer/glsl/glslUtils'
+import { detectPassCount } from '@/renderer/glsl/glslUtils'
 
 const VERTEX_SHADER_SOURCE = `#version 300 es
 out vec2 v_texCoord;
@@ -73,7 +73,6 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     length: maxInputs
   }).fill(null)
   const uniformLocations = new Map<string, WebGLUniformLocation | null>()
-  let outputCount = 1
   let passCount = 1
   let disposed = false
 
@@ -171,25 +170,29 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   function init(width: number, height: number): boolean {
     if (disposed) return false
 
-    canvas = new OffscreenCanvas(width, height)
-    const ctx = canvas.getContext('webgl2', {
-      alpha: true,
-      premultipliedAlpha: false,
-      preserveDrawingBuffer: true
-    })
-    if (!ctx) return false
+    try {
+      canvas = new OffscreenCanvas(width, height)
+      const ctx = canvas.getContext('webgl2', {
+        alpha: true,
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: true
+      })
+      if (!ctx) return false
 
-    gl = ctx
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
-    vertexShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE)
-    initPingPongFBOs(gl, width, height)
-    return true
+      gl = ctx
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+      vertexShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE)
+      initPingPongFBOs(gl, width, height)
+      return true
+    } catch {
+      dispose()
+      return false
+    }
   }
 
   function compileFragment(source: string): CompileResult {
     if (disposed || !gl) return { success: false, log: 'Engine disposed' }
 
-    outputCount = detectOutputCount(source)
     passCount = Math.min(detectPassCount(source), MAX_PASSES)
 
     if (fragmentShader) {
@@ -261,9 +264,15 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     image: HTMLImageElement | ImageBitmap
   ): void {
     if (disposed || !gl) return
+    if (index < 0 || index >= maxInputs) {
+      throw new Error(
+        `Input index ${index} out of range (max ${maxInputs - 1})`
+      )
+    }
 
     if (inputTextures[index]) {
       gl.deleteTexture(inputTextures[index])
+      inputTextures[index] = null
     }
 
     const texture = gl.createTexture()
@@ -324,14 +333,11 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
         gl.uniform1i(prevPassLoc, prevPassUnit)
       }
 
+      // Ping-pong FBOs have a single color attachment, so intermediate
+      // passes always target COLOR_ATTACHMENT0. MRT is only possible on
+      // the default framebuffer (last pass).
       if (isLastPass) {
         gl.drawBuffers([gl.BACK])
-      } else if (outputCount > 1) {
-        const buffers = Array.from(
-          { length: outputCount },
-          (_, i) => gl!.COLOR_ATTACHMENT0 + i
-        )
-        gl.drawBuffers(buffers)
       } else {
         gl.drawBuffers([gl.COLOR_ATTACHMENT0])
       }
