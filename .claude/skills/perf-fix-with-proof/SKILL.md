@@ -1,6 +1,6 @@
 ---
 name: perf-fix-with-proof
-description: "Ships performance fixes with CI-proven improvement using stacked PRs. PR1 adds a @perf test (establishes baseline on main), PR2 adds the fix (CI shows delta). Use when implementing a perf optimization and wanting to prove it in CI."
+description: 'Ships performance fixes with CI-proven improvement using stacked PRs. PR1 adds a @perf test (establishes baseline on main), PR2 adds the fix (CI shows delta). Use when implementing a perf optimization and wanting to prove it in CI.'
 ---
 
 # Performance Fix with Proof
@@ -27,6 +27,7 @@ git worktree add <worktree-path> -b perf/test-<name> origin/main
 Add a test to `browser_tests/tests/performance.spec.ts` (or a new file with `@perf` tag). The test should stress the specific bottleneck.
 
 **Test structure:**
+
 ```typescript
 test('<descriptive name>', async ({ comfyPage }) => {
   // 1. Load a workflow that exercises the bottleneck
@@ -49,12 +50,14 @@ test('<descriptive name>', async ({ comfyPage }) => {
 ```
 
 **Available metrics** (from `PerformanceHelper`):
+
 - `m.styleRecalcs` / `m.styleRecalcDurationMs` — style recalculation count and time
 - `m.layouts` / `m.layoutDurationMs` — forced layout count and time
 - `m.taskDurationMs` — total main-thread JS execution time
 - `m.heapDeltaBytes` — memory pressure delta
 
 **Key helpers** (from `ComfyPage`):
+
 - `comfyPage.perf.startMeasuring()` / `.stopMeasuring(name)` — CDP metrics capture
 - `comfyPage.nextFrame()` — wait one animation frame
 - `comfyPage.workflow.loadWorkflow(name)` — load a test workflow from `browser_tests/assets/`
@@ -105,6 +108,7 @@ git worktree add <worktree-path> -b perf/fix-<name> origin/main
 ```
 
 Implement the fix. The `@perf` test from PR1 is now on main and will run automatically. CI will:
+
 1. Run the test on the PR branch
 2. Download the baseline from main (which includes PR1's test results)
 3. Post a PR comment showing the delta
@@ -133,6 +137,7 @@ If Δ is negative for the target metric, the fix is proven.
 ## Examples
 
 **Testing DOM widget reactive mutations (backlog #8):**
+
 ```typescript
 test('DOM widget positioning recalculations', async ({ comfyPage }) => {
   await comfyPage.workflow.loadWorkflow('default')
@@ -147,6 +152,7 @@ test('DOM widget positioning recalculations', async ({ comfyPage }) => {
 ```
 
 **Testing measureText caching (backlog #4):**
+
 ```typescript
 test('canvas text rendering with many nodes', async ({ comfyPage }) => {
   await comfyPage.workflow.loadWorkflow('large-workflow-50-nodes')
@@ -161,13 +167,13 @@ test('canvas text rendering with many nodes', async ({ comfyPage }) => {
 
 ## Reference
 
-| Resource | Path |
-|----------|------|
-| Perf test file | `browser_tests/tests/performance.spec.ts` |
+| Resource          | Path                                                  |
+| ----------------- | ----------------------------------------------------- |
+| Perf test file    | `browser_tests/tests/performance.spec.ts`             |
 | PerformanceHelper | `browser_tests/fixtures/helpers/PerformanceHelper.ts` |
-| Perf reporter | `browser_tests/helpers/perfReporter.ts` |
-| CI workflow | `.github/workflows/ci-perf-report.yaml` |
-| Report generator | `scripts/perf-report.ts` |
-| Stats utilities | `scripts/perf-stats.ts` |
-| Backlog | `docs/perf/BACKLOG.md` |
-| Playbook | `docs/perf/PLAYBOOK.md` |
+| Perf reporter     | `browser_tests/helpers/perfReporter.ts`               |
+| CI workflow       | `.github/workflows/ci-perf-report.yaml`               |
+| Report generator  | `scripts/perf-report.ts`                              |
+| Stats utilities   | `scripts/perf-stats.ts`                               |
+| Backlog           | `docs/perf/BACKLOG.md`                                |
+| Playbook          | `docs/perf/PLAYBOOK.md`                               |
