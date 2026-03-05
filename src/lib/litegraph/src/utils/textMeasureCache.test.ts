@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  cachedMeasureText,
-  clearTextMeasureCache
-} from './textMeasureCache'
+import { cachedMeasureText, clearTextMeasureCache } from './textMeasureCache'
 
 function createMockCtx(font = '12px sans-serif'): CanvasRenderingContext2D {
   return {
