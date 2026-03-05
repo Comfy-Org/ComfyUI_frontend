@@ -550,19 +550,19 @@ const hasFooter = computed(() => {
   )
 })
 
-// Footer offset computed classes (single source of truth for footer height/border offsets)
-const footerStateOutlineBottomClass = computed(() => {
-  if (!hasFooter.value) return ''
-  return hasAnyError.value ? '-bottom-[35px]' : '-bottom-[34px]'
-})
+// Footer offset computed classes
+
+const footerStateOutlineBottomClass = computed(() =>
+  hasFooter.value ? '-bottom-[35px]' : ''
+)
 
 const footerRootBorderBottomClass = computed(() =>
-  hasFooter.value ? '-bottom-8' : 'bottom-0'
+  hasFooter.value ? '-bottom-8' : ''
 )
 
 const footerResizeHandleBottomClass = computed(() => {
   if (!hasFooter.value) return ''
-  return hasAnyError.value ? 'bottom-[-31px]' : 'bottom-[-33px]'
+  return hasAnyError.value ? 'bottom-[-31px]' : 'bottom-[-35px]'
 })
 
 const cursorClass = computed(() => {
