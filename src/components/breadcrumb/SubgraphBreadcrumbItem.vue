@@ -60,6 +60,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -70,7 +71,6 @@ import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { appendJsonExt } from '@/utils/formatUtil'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 interface Props {
@@ -78,7 +78,7 @@ interface Props {
   isActive?: boolean
 }
 
-const { item, isActive = false } = defineProps<Props>()
+const { item, isActive } = defineProps<Props>()
 
 const nodeDefStore = useNodeDefStore()
 const hasMissingNodes = computed(() =>
@@ -107,9 +107,10 @@ const rename = async (
       workflowStore.activeSubgraph.name = newName
     } else if (workflowStore.activeWorkflow) {
       try {
+        const suffix = getWorkflowSuffix(workflowStore.activeWorkflow.suffix)
         await workflowService.renameWorkflow(
           workflowStore.activeWorkflow,
-          ComfyWorkflow.basePath + appendJsonExt(newName)
+          ComfyWorkflow.basePath + ensureWorkflowSuffix(newName, suffix)
         )
       } catch (error) {
         console.error(error)

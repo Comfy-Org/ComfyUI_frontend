@@ -3,13 +3,17 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
 import type { ContextMenu } from './ContextMenu'
-import type { LGraphNode, NodeId } from './LGraphNode'
+import type { LGraphNode, NodeId, NodeProperty } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import type { SubgraphInput } from './subgraph/SubgraphInput'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
-import type { LinkDirection, RenderShape } from './types/globalEnums'
+import type {
+  LGraphEventMode,
+  LinkDirection,
+  RenderShape
+} from './types/globalEnums'
 import type { IBaseWidget } from './types/widgets'
 
 export type Dictionary<T> = { [key: string]: T }
@@ -371,6 +375,22 @@ export interface INodeOutputSlot extends INodeSlot {
   links: LinkId[] | null
   _data?: unknown
   slot_index?: number
+}
+
+/** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
+export interface CreateNodeOptions {
+  pos?: Point
+  size?: Size
+  properties?: Dictionary<NodeProperty | undefined>
+  flags?: Partial<INodeFlags>
+  mode?: LGraphEventMode
+  color?: string
+  bgcolor?: string
+  boxcolor?: string
+  title?: string
+  shape?: RenderShape
+  inputs?: Partial<INodeInputSlot>[]
+  outputs?: Partial<INodeOutputSlot>[]
 }
 
 /** Links */

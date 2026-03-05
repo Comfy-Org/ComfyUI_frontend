@@ -5,6 +5,7 @@ import type { ShallowRef } from 'vue'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import type { MinimapCanvas, MinimapSettingsKey } from '../types'
@@ -200,6 +201,18 @@ export function useMinimap({
       viewport.stopViewportSync()
     }
   })
+
+  const executionStore = useExecutionStore()
+  watch(
+    () => executionStore.nodeProgressStates,
+    () => {
+      if (visible.value) {
+        renderer.forceFullRedraw()
+        renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+      }
+    },
+    { deep: true }
+  )
 
   const toggle = async () => {
     visible.value = !visible.value
