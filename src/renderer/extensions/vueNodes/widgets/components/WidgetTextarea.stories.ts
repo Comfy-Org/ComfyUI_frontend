@@ -13,6 +13,7 @@ import WidgetTextarea from './WidgetTextarea.vue'
 interface StoryArgs extends ComponentPropsAndSlots<typeof WidgetTextarea> {
   readOnly: boolean
   disabled: boolean
+  invalid: boolean
 }
 
 const meta: Meta<StoryArgs> = {
@@ -33,11 +34,13 @@ const meta: Meta<StoryArgs> = {
   },
   argTypes: {
     readOnly: { control: 'boolean' },
-    disabled: { control: 'boolean' }
+    disabled: { control: 'boolean' },
+    invalid: { control: 'boolean' }
   },
   args: {
     readOnly: false,
-    disabled: false
+    disabled: false,
+    invalid: false
   },
   decorators: [
     (story) => ({
@@ -54,13 +57,16 @@ export const Default: Story = {
   render: (args) => ({
     components: { WidgetTextarea },
     setup() {
-      const { readOnly, disabled } = toRefs(args)
+      const { readOnly, disabled, invalid } = toRefs(args)
       const value = ref('A multi-line text area for entering prompts.')
       const widget = computed<SimplifiedWidget<string>>(() => ({
         name: 'prompt',
         type: 'STRING',
         value: '',
         label: 'Prompt',
+        borderStyle: invalid.value
+          ? 'border border-destructive-background'
+          : undefined,
         options: {
           read_only: readOnly.value,
           disabled: disabled.value
@@ -86,6 +92,28 @@ export const Disabled: Story = {
         value: '',
         label: 'Locked Field',
         options: { disabled: disabled.value }
+      }))
+      return { value, widget }
+    },
+    template: '<WidgetTextarea :widget="widget" v-model="value" />'
+  })
+}
+
+export const Invalid: Story = {
+  args: { invalid: true },
+  render: (args) => ({
+    components: { WidgetTextarea },
+    setup() {
+      const { invalid } = toRefs(args)
+      const value = ref('Invalid textarea content.')
+      const widget = computed<SimplifiedWidget<string>>(() => ({
+        name: 'prompt',
+        type: 'STRING',
+        value: '',
+        label: 'Prompt',
+        borderStyle: invalid.value
+          ? 'border border-destructive-background'
+          : undefined
       }))
       return { value, widget }
     },
