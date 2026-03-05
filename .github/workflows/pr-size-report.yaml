@@ -52,7 +52,7 @@ jobs:
           script: |
             const fs = require('fs');
 
-            // workflow_dispatch: trust direct inputs (only repo admins can trigger)
+            // workflow_dispatch: validate artifact metadata against API-resolved PR
             if (context.eventName === 'workflow_dispatch') {
               const pullNumber = Number('${{ inputs.pr_number }}');
               const { data: dispatchPr } = await github.rest.pulls.get({
@@ -60,6 +60,19 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: pullNumber,
               });
+
+              const artifactPr = Number(fs.readFileSync('temp/size/number.txt', 'utf8').trim());
+              const artifactBase = fs.readFileSync('temp/size/base.txt', 'utf8').trim();
+
+              if (artifactPr !== dispatchPr.number) {
+                core.setFailed(`Artifact PR number (${artifactPr}) does not match dispatch PR (${dispatchPr.number}).`);
+                return;
+              }
+              if (artifactBase !== dispatchPr.base.ref) {
+                core.setFailed(`Artifact base (${artifactBase}) does not match dispatch PR base (${dispatchPr.base.ref}).`);
+                return;
+              }
+
               core.setOutput('number', String(dispatchPr.number));
               core.setOutput('base', dispatchPr.base.ref);
               return;
