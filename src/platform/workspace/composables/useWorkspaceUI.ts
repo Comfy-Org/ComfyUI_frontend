@@ -13,6 +13,7 @@ interface WorkspacePermissions {
   canRemoveMembers: boolean
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
+  canTransferOwnership: boolean
   canManageSubscription: boolean
   canTopUp: boolean
 }
@@ -45,6 +46,7 @@ function getPermissions(
       canRemoveMembers: false,
       canLeaveWorkspace: false,
       canAccessWorkspaceMenu: false,
+      canTransferOwnership: false,
       canManageSubscription: true,
       canTopUp: true
     }
@@ -59,6 +61,7 @@ function getPermissions(
       canRemoveMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
+      canTransferOwnership: true,
       canManageSubscription: true,
       canTopUp: true
     }
@@ -73,6 +76,7 @@ function getPermissions(
     canRemoveMembers: false,
     canLeaveWorkspace: true,
     canAccessWorkspaceMenu: true,
+    canTransferOwnership: false,
     canManageSubscription: false,
     canTopUp: false
   }

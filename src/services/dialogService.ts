@@ -452,6 +452,16 @@ export const useDialogService = () => {
     })
   }
 
+  async function showTransferOwnershipDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/TransferOwnershipDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'transfer-ownership',
+      component,
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
   async function showLeaveWorkspaceDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/LeaveWorkspaceDialogContent.vue')
@@ -565,6 +575,7 @@ export const useDialogService = () => {
     showLayoutDialog,
     showSmallLayoutDialog,
     showDeleteWorkspaceDialog,
+    showTransferOwnershipDialog,
     showCreateWorkspaceDialog,
     showLeaveWorkspaceDialog,
     showEditWorkspaceDialog,

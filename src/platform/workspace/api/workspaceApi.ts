@@ -444,6 +444,23 @@ export const workspaceApi = {
   },
 
   /**
+   * Transfer workspace ownership to another member.
+   * POST /api/workspace/transfer-ownership
+   */
+  async transferOwnership(targetUserId: string): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.post(
+        api.apiURL('/workspace/transfer-ownership'),
+        { target_user_id: targetUserId },
+        { headers }
+      )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
    * List pending invites for the workspace.
    * GET /api/workspace/invites
    */
