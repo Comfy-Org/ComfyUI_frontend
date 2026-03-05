@@ -5,6 +5,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
@@ -22,6 +23,7 @@ const { source, align = 'start' } = defineProps<{
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
+const dropdownOpen = ref(false)
 
 const { menuItems } = useWorkflowActionsMenu(
   () => useCommandStore().execute('Comfy.RenameWorkflow'),
@@ -42,6 +44,7 @@ function handleOpen(open: boolean) {
 }
 
 function toggleLinearMode() {
+  dropdownOpen.value = false
   void useCommandStore().execute('Comfy.ToggleLinear', {
     metadata: { source: 'menu_button' }
   })
@@ -49,7 +52,7 @@ function toggleLinearMode() {
 </script>
 
 <template>
-  <DropdownMenuRoot @update:open="handleOpen">
+  <DropdownMenuRoot v-model:open="dropdownOpen" @update:open="handleOpen">
     <slot name="button" :has-unseen-items="hasUnseenItems">
       <div
         class="inline-flex items-center rounded-lg bg-secondary-background pointer-events-auto"
