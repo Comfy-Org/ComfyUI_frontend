@@ -326,35 +326,40 @@
     "deleteWorkflow": "İş Akışını Sil",
     "duplicate": "Çoğalt",
     "enterAppMode": "Uygulama moduna gir",
+    "enterBuilderMode": "Uygulama oluşturucuya gir",
     "enterNewName": "Yeni isim girin",
     "exitAppMode": "Uygulama modundan çık",
     "missingNodesWarning": "İş akışında desteklenmeyen düğümler var (kırmızı ile vurgulanmış).",
     "workflowActions": "İş akışı işlemleri"
   },
   "builderMenu": {
-    "exitAppBuilder": "Uygulama oluşturucudan çık",
-    "saveApp": "Uygulamayı kaydet"
+    "exitAppBuilder": "Uygulama oluşturucudan çık"
   },
   "builderToolbar": {
     "app": "Uygulama",
     "appDescription": "Varsayılan olarak uygulama olarak açılır",
     "arrange": "Önizleme",
     "arrangeDescription": "Uygulama düzenini gözden geçir",
+    "backToWorkflow": "İş akışına geri dön",
     "connectOutput": "Bir çıktı bağla",
     "connectOutputBody1": "Uygulamanızın kaydedilebilmesi için en az bir çıktı bağlanmalıdır.",
     "connectOutputBody2": "'Seç' adımına geçin ve çıktı düğümlerine tıklayarak buraya ekleyin.",
-    "filename": "Dosya adı",
+    "defaultModeAppliedAppBody": "Bu iş akışı artık varsayılan olarak Uygulama Modunda açılacak.",
+    "defaultModeAppliedAppPrompt": "Şimdi görüntülemek ister misiniz?",
+    "defaultModeAppliedGraphBody": "Bu iş akışı artık varsayılan olarak bir düğüm grafiği olarak açılacak.",
+    "defaultModeAppliedGraphPrompt": "Uygulamayı yine de görüntülemek ister misiniz?",
+    "defaultModeAppliedTitle": "Başarıyla ayarlandı",
+    "defaultView": "Varsayılan görünümü ayarla",
+    "defaultViewDescription": "Nasıl açılacağını seçin",
+    "defaultViewLabel": "Varsayılan olarak, bu iş akışı şu şekilde açılacak:",
+    "defaultViewTitle": "Bu iş akışı için varsayılan görünümü ayarla",
+    "emptyWorkflowExplanation": "İş akışınız boş. Bir uygulama oluşturmaya başlamak için önce bazı düğümlere ihtiyacınız var.",
+    "emptyWorkflowPrompt": "Bir şablonla başlamak ister misiniz?",
+    "emptyWorkflowTitle": "Bu iş akışında düğüm yok",
     "label": "Uygulama Oluşturucu",
+    "loadTemplate": "Şablon yükle",
     "nodeGraph": "Düğüm grafiği",
     "nodeGraphDescription": "Varsayılan olarak düğüm grafiği olarak açılır",
-    "save": "Kaydet",
-    "saveAs": "Farklı kaydet",
-    "saveAsLabel": "Bu iş akışını farklı kaydet ...",
-    "saveDescription": "Kaydet ve bitir",
-    "saveSuccess": "Başarıyla kaydedildi",
-    "saveSuccessAppMessage": "'{name}' kaydedildi. Artık varsayılan olarak Uygulama Modunda açılacak.",
-    "saveSuccessAppPrompt": "Şimdi görüntülemek ister misiniz?",
-    "saveSuccessGraphMessage": "'{name}' kaydedildi. Varsayılan olarak düğüm grafiği olarak açılacak.",
     "select": "Seç",
     "selectDescription": "Girdi/çıktı seçin",
     "switchToSelect": "Seç'e Geç",
@@ -1334,7 +1339,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "Uygulama oluşturucu",
-      "apps": "Uygulamalar"
+      "apps": "Uygulamalar",
+      "appsEmptyMessage": "Kaydedilen uygulamalar burada görünecek.\nİlk uygulamanızı oluşturmak için aşağıya tıklayın.",
+      "enterAppMode": "Uygulama moduna gir"
     },
     "arrange": {
       "atLeastOne": "en az bir",
@@ -1359,13 +1366,16 @@
       "outputsExample": "Örnekler: “Resmi Kaydet” veya “Videoyu Kaydet”",
       "promptAddInputs": "Girdi olarak eklemek için düğüm parametrelerine tıklayın",
       "promptAddOutputs": "Çıktı olarak eklemek için çıktı düğümlerine tıklayın. Bunlar oluşturulan sonuçlar olacak.",
-      "title": "Uygulama oluşturucu modu"
+      "title": "Uygulama oluşturucu modu",
+      "unknownWidget": "Widget görünür değil"
     },
     "downloadAll": "Tümünü İndir",
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
+    "enterNodeGraph": "Düğüm grafiğine gir",
     "giveFeedback": "Geri bildirim ver",
     "graphMode": "Grafik Modu",
     "linearMode": "Uygulama Modu",
+    "mobileControls": "Düzenle ve Çalıştır",
     "queue": {
       "clear": "Kuyruğu temizle",
       "clickToClear": "Kuyruğu temizlemek için tıklayın"
@@ -1373,6 +1383,7 @@
     "rerun": "Tekrar Çalıştır",
     "reuseParameters": "Parametreleri Yeniden Kullan",
     "runCount": "Çalıştırma sayısı:",
+    "viewJob": "İşi Görüntüle",
     "welcome": {
       "backToWorkflow": "İş akışına geri dön",
       "buildApp": "Uygulama oluştur",
@@ -1749,6 +1760,7 @@
     "disabled": "Devre Dışı",
     "disabledTooltip": "İş akışı otomatik olarak kuyruğa alınmayacak",
     "execute": "Yürüt",
+    "fullscreen": "Tam ekran",
     "help": "Yardım",
     "helpAndFeedback": "Yardım ve Geri Bildirim",
     "hideMenu": "Menüyü Gizle",
@@ -1896,7 +1908,8 @@
     "Workflows": "İş Akışları",
     "Zoom In": "Yakınlaştır",
     "Zoom Out": "Uzaklaştır",
-    "Zoom to fit": "Sığdırmak için yakınlaştır"
+    "Zoom to fit": "Sığdırmak için yakınlaştır",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "Düğüm Renkleri",
@@ -3202,7 +3215,9 @@
     "enterFilename": "Dosya adını girin",
     "enterFilenamePrompt": "Dosya adını girin:",
     "exportWorkflow": "İş Akışını Dışa Aktar",
-    "saveWorkflow": "İş akışını kaydet"
+    "saveWorkflow": "İş akışını kaydet",
+    "savedAsApp": "Uygulama iş akışına dönüştürüldü",
+    "savedAsWorkflow": "Yalnızca düğüm grafiği iş akışına dönüştürüldü"
   },
   "workspace": {
     "addedToWorkspace": "{workspaceName} çalışma alanına eklendiniz",

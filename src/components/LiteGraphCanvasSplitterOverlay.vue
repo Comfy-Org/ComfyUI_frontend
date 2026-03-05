@@ -64,7 +64,7 @@
             layout="vertical"
             :pt:gutter="
               cn(
-                'rounded-tl-lg rounded-tr-lg ',
+                'rounded-tl-lg rounded-tr-lg',
                 !(bottomPanelVisible && !focusMode) && 'hidden'
               )
             "

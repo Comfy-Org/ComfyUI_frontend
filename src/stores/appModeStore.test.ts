@@ -50,7 +50,7 @@ vi.mock('@/components/builder/useEmptyWorkflowDialog', () => ({
 import { useAppModeStore } from './appModeStore'
 
 function createBuilderWorkflow(
-  activeMode: string = 'builder:select'
+  activeMode: string = 'builder:inputs'
 ): LoadedComfyWorkflow {
   const workflow = new ComfyWorkflowClass({
     path: 'workflows/test.json',
@@ -88,29 +88,29 @@ describe('appModeStore', () => {
       expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:arrange')
     })
 
-    it('navigates to builder:select when in app mode without outputs', () => {
+    it('navigates to builder:inputs when in app mode without outputs', () => {
       workflowStore.activeWorkflow = createBuilderWorkflow('app')
 
       store.enterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:select')
+      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:inputs')
     })
 
-    it('navigates to builder:select when in graph mode with outputs', () => {
+    it('navigates to builder:inputs when in graph mode with outputs', () => {
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
       store.selectedOutputs.push(1)
 
       store.enterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:select')
+      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:inputs')
     })
 
-    it('navigates to builder:select when in graph mode without outputs', () => {
+    it('navigates to builder:inputs when in graph mode without outputs', () => {
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
 
       store.enterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:select')
+      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:inputs')
     })
 
     it('shows empty workflow dialog when graph has no nodes', () => {
@@ -141,7 +141,7 @@ describe('appModeStore', () => {
       const options = getDialogOptions()
 
       // Move to builder so onDismiss must actually transition back
-      workflowStore.activeWorkflow!.activeMode = 'builder:select'
+      workflowStore.activeWorkflow!.activeMode = 'builder:inputs'
 
       options.onDismiss()
 
@@ -156,7 +156,7 @@ describe('appModeStore', () => {
 
       options.onEnterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:select')
+      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:inputs')
     })
 
     it('onEnterBuilder shows dialog again when no nodes', () => {

@@ -296,11 +296,13 @@ describe('TopMenuSection', () => {
   describe('inline progress summary', () => {
     const configureSettings = (
       pinia: ReturnType<typeof createTestingPinia>,
-      qpoV2Enabled: boolean
+      qpoV2Enabled: boolean,
+      showRunProgressBar = true
     ) => {
       const settingStore = useSettingStore(pinia)
       vi.mocked(settingStore.get).mockImplementation((key) => {
         if (key === 'Comfy.Queue.QPOV2') return qpoV2Enabled
+        if (key === 'Comfy.Queue.ShowRunProgressBar') return showRunProgressBar
         if (key === 'Comfy.UseNewMenu') return 'Top'
         return undefined
       })
@@ -322,6 +324,19 @@ describe('TopMenuSection', () => {
     it('does not render inline progress summary when QPO V2 is disabled', async () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, false)
+
+      const wrapper = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        wrapper.findComponent({ name: 'QueueInlineProgressSummary' }).exists()
+      ).toBe(false)
+    })
+
+    it('does not render inline progress summary when run progress bar is disabled', async () => {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      configureSettings(pinia, true, false)
 
       const wrapper = createWrapper({ pinia })
 
