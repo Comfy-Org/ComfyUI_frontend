@@ -24,6 +24,9 @@ catalogs:
     '@iconify/tailwind4':
       specifier: ^1.2.0
       version: 1.2.1
+    '@iconify/utils':
+      specifier: ^3.1.0
+      version: 3.1.0
     '@intlify/eslint-plugin-vue-i18n':
       specifier: ^4.1.1
       version: 4.1.1
@@ -850,6 +853,9 @@ importers:
       '@iconify/tailwind4':
         specifier: 'catalog:'
         version: 1.2.1(tailwindcss@4.2.0)
+      '@iconify/utils':
+        specifier: 'catalog:'
+        version: 3.1.0
     devDependencies:
       tailwindcss:
         specifier: 'catalog:'
