@@ -215,6 +215,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         v-if="isArrangeMode"
         v-slot="{ dragClass }"
         v-model="appModeStore.selectedInputs"
+        class="overflow-x-clip"
       >
         <div
           v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
