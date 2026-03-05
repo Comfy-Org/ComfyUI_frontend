@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useAttrs, useTemplateRef } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
 import ZoomPane from '@/components/ui/ZoomPane.vue'
 import { cn } from '@/utils/tailwindUtil'
@@ -11,7 +11,6 @@ const { src } = defineProps<{
   mobile?: boolean
 }>()
 
-const attrs = useAttrs()
 const imageRef = useTemplateRef('imageRef')
 const width = ref('')
 const height = ref('')
@@ -20,7 +19,7 @@ const height = ref('')
   <ZoomPane
     v-if="!mobile"
     v-slot="slotProps"
-    :class="cn('flex-1 w-full', attrs.class as string)"
+    :class="cn('flex-1 w-full', $attrs.class as string)"
   >
     <img
       ref="imageRef"
