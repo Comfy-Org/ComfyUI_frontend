@@ -14,13 +14,13 @@ import { createMockWidget as createWidget } from './widgetTestUtils'
 describe('WidgetInputText Value Binding', () => {
   const createMockWidget = (
     value: string = 'default',
-    options: Partial<InputTextProps> = {},
+    options: Partial<InputTextProps> & IWidgetOptions = {},
     callback?: (value: string) => void
   ) =>
     createWidget<string>({
       value,
       name: 'test_input',
-      options: options as IWidgetOptions,
+      options,
       callback
     })
 

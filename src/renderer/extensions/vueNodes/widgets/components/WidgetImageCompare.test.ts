@@ -10,7 +10,7 @@ import { createMockWidget as createWidget } from './widgetTestUtils'
 describe('WidgetImageCompare Display', () => {
   const createMockWidget = (
     value: ImageCompareValue | string,
-    options: Record<string, unknown> = {}
+    options: SimplifiedWidget<ImageCompareValue | string>['options'] = {}
   ) =>
     createWidget<ImageCompareValue | string>({
       value,

@@ -16,7 +16,7 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
 
 function createMockWidget(
   value: string = 'default text',
-  options: Record<string, unknown> = {},
+  options: SimplifiedWidget<string>['options'] = {},
   callback?: (value: string) => void
 ) {
   return createWidget<string>({

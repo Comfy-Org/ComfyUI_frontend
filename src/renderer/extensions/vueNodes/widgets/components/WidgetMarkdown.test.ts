@@ -27,12 +27,13 @@ vi.mock('@/utils/markdownRendererUtil', () => ({
 describe('WidgetMarkdown Dual Mode Display', () => {
   const createMockWidget = (
     value: string = '# Default Heading\nSome **bold** text.',
-    options: Record<string, unknown> = {},
+    options: SimplifiedWidget<string>['options'] = {},
     callback?: (value: string) => void
   ) =>
     createWidget<string>({
       value,
       name: 'test_markdown',
+      type: 'string',
       options,
       callback
     })
