@@ -89,7 +89,7 @@ function getDropIndicator(node: LGraphNode) {
   const buildImageUrl = () => {
     if (!filename) return undefined
     const params = new URLSearchParams(resultItem)
-    appendCloudResParam(params, String(filename))
+    appendCloudResParam(params, resultItem.filename)
     return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
   }
 

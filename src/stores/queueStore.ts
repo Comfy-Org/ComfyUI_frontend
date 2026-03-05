@@ -159,11 +159,11 @@ export class ResultItemImpl {
   }
 
   get isVideoBySuffix(): boolean {
-    return this.isWebm || this.isMp4
+    return getMediaTypeFromFilename(this.filename) === 'video'
   }
 
   get isImageBySuffix(): boolean {
-    return this.isGif || this.isWebp
+    return getMediaTypeFromFilename(this.filename) === 'image'
   }
 
   get isMp3(): boolean {
@@ -183,7 +183,7 @@ export class ResultItemImpl {
   }
 
   get isAudioBySuffix(): boolean {
-    return this.isMp3 || this.isWav || this.isOgg || this.isFlac
+    return getMediaTypeFromFilename(this.filename) === 'audio'
   }
 
   get isVideo(): boolean {
