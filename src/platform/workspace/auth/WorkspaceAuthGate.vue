@@ -4,7 +4,7 @@
     v-else
     class="fixed inset-0 z-[1100] flex items-center justify-center bg-[var(--p-mask-background)]"
   >
-    <LoadingSpinner size="lg" class="text-white" />
+    <Loader size="lg" class="text-white" />
   </div>
 </template>
 
@@ -22,7 +22,7 @@
  * instead of workspace tokens when the workspace feature is enabled.
  */
 import { promiseTimeout, until } from '@vueuse/core'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import Loader from '@/components/common/Loader.vue'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 

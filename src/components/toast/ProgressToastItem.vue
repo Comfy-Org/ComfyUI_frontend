@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import Loader from '@/components/common/Loader.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { cn } from '@/utils/tailwindUtil'
@@ -48,7 +48,7 @@ const isPending = computed(() => job.status === 'created')
       </template>
 
       <template v-else-if="isRunning">
-        <LoadingSpinner size="sm" class="text-base-foreground" />
+        <Loader size="sm" class="text-base-foreground" />
         <span class="text-xs text-base-foreground">
           {{ progressPercent }}%
         </span>

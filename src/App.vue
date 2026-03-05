@@ -4,7 +4,7 @@
     v-if="isLoading"
     class="absolute inset-0 flex items-center justify-center"
   >
-    <LoadingSpinner size="lg" class="text-white" />
+    <Loader size="lg" class="text-white" />
   </div>
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
@@ -15,7 +15,7 @@ import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
 import { computed, onMounted } from 'vue'
 
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import Loader from '@/components/common/Loader.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

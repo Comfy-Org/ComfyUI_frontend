@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import LoadingSpinner from './LoadingSpinner.vue'
+import Loader from './Loader.vue'
 
-const meta: Meta<typeof LoadingSpinner> = {
-  title: 'Components/Common/LoadingSpinner',
-  component: LoadingSpinner,
+const meta: Meta<typeof Loader> = {
+  title: 'Components/Common/Loader',
+  component: Loader,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered'
@@ -37,12 +37,12 @@ export const Large: Story = {
 
 export const CustomColor: Story = {
   render: (args) => ({
-    components: { LoadingSpinner },
+    components: { Loader },
     setup() {
       return { args }
     },
     template:
-      '<div class="flex gap-4 items-center"><LoadingSpinner size="lg" class="text-white" /><LoadingSpinner size="md" class="text-muted-foreground" /><LoadingSpinner size="sm" class="text-base-foreground" /></div>'
+      '<div class="flex gap-4 items-center"><Loader size="lg" class="text-white" /><Loader size="md" class="text-muted-foreground" /><Loader size="sm" class="text-base-foreground" /></div>'
   }),
   parameters: {
     backgrounds: { default: 'dark' }

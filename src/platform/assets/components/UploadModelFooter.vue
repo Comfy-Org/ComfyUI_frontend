@@ -49,7 +49,7 @@
       :disabled="!canFetchMetadata || isFetchingMetadata"
       @click="emit('fetchMetadata')"
     >
-      <LoadingSpinner v-if="isFetchingMetadata" />
+      <Loader v-if="isFetchingMetadata" />
       <span>{{ $t('g.continue') }}</span>
     </Button>
     <Button
@@ -60,7 +60,7 @@
       :disabled="!canUploadModel || isUploading"
       @click="emit('upload')"
     >
-      <LoadingSpinner v-if="isUploading" />
+      <Loader v-if="isUploading" />
       <span>{{ $t('assetBrowser.upload') }}</span>
     </Button>
     <template
@@ -106,7 +106,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import Loader from '@/components/common/Loader.vue'
 import Button from '@/components/ui/button/Button.vue'
 import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
 
