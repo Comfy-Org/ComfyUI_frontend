@@ -1340,7 +1340,6 @@ export class ComfyApp {
         )
       }
 
-      console.log('before', this.canvasEl.width, this.canvasEl.height)
       if (canvasVisible) fitView()
     } catch (error) {
       useDialogService().showErrorDialog(error, {
