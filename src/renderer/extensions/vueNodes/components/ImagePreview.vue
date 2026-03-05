@@ -7,7 +7,12 @@
     <!-- Image Wrapper -->
     <div
       ref="imageWrapperEl"
-      class="min-h-0 flex-1 flex w-full overflow-hidden rounded-[5px] bg-muted-background relative"
+      :class="
+        cn(
+          'min-h-0 flex-1 flex w-full overflow-hidden rounded-[5px] relative',
+          showCheckerboard && 'bg-checkerboard'
+        )
+      "
       tabindex="0"
       role="img"
       :aria-label="$t('g.imagePreview')"
@@ -128,8 +133,10 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { cn } from '@/utils/tailwindUtil'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -143,6 +150,9 @@ const props = defineProps<ImagePreviewProps>()
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
+const showCheckerboard = computed(() =>
+  useSettingStore().get('Comfy.Preview.CheckerboardBackground')
+)
 
 const actionButtonClass =
   'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'

@@ -290,6 +290,8 @@
   --border-subtle: var(--color-smoke-400);
   --muted-background: var(--color-smoke-700);
   --accent-background: var(--color-smoke-800);
+  --checkerboard-color-1: var(--color-white);
+  --checkerboard-color-2: #cccccc;
 
   /* Component/Node tokens from design system light */
   --component-node-background: var(--color-white);
@@ -437,6 +439,8 @@
   --border-subtle: var(--color-charcoal-300);
   --muted-background: var(--color-charcoal-100);
   --accent-background: var(--color-charcoal-100);
+  --checkerboard-color-1: #3a3a3a;
+  --checkerboard-color-2: #2a2a2a;
 
   /* Component/Node tokens from design dark system */
   --component-node-background: var(--color-charcoal-600);
@@ -666,6 +670,14 @@
   }
 }
 /* =================== End Custom Scrollbar (cross-browser) =================== */
+
+@utility bg-checkerboard {
+  background-image: repeating-conic-gradient(
+    var(--checkerboard-color-1) 0% 25%,
+    var(--checkerboard-color-2) 0% 50%
+  );
+  background-size: 16px 16px;
+}
 
 /* Everthing below here to be cleaned up over time. */
 

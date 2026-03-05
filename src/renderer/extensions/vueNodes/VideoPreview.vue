@@ -7,7 +7,12 @@
     <!-- Video Wrapper -->
     <div
       ref="videoWrapperEl"
-      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
+      :class="
+        cn(
+          'relative flex flex-1 overflow-hidden rounded-[5px]',
+          showCheckerboard && 'bg-checkerboard'
+        )
+      "
       tabindex="0"
       role="region"
       :aria-label="$t('g.videoPreview')"
@@ -123,6 +128,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -137,6 +143,9 @@ const props = defineProps<VideoPreviewProps>()
 
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
+const showCheckerboard = computed(() =>
+  useSettingStore().get('Comfy.Preview.CheckerboardBackground')
+)
 
 const actionButtonClass =
   'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'

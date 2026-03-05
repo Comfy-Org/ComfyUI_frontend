@@ -347,6 +347,7 @@ const zSettings = z.object({
   'Comfy.Pointer.ClickBufferTime': z.number(),
   'Comfy.Pointer.ClickDrift': z.number(),
   'Comfy.Pointer.DoubleClickTime': z.number(),
+  'Comfy.Preview.CheckerboardBackground': z.boolean(),
   'Comfy.PreviewFormat': z.string(),
   'Comfy.PromptFilename': z.boolean(),
   'Comfy.Sidebar.Location': z.enum(['left', 'right']),

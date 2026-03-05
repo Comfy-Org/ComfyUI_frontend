@@ -1248,6 +1248,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.40.0'
   },
   {
+    id: 'Comfy.Preview.CheckerboardBackground',
+    category: ['Comfy', 'Preview'],
+    name: 'Show checkerboard background on previews',
+    tooltip:
+      'Display a checkerboard pattern behind image and video previews to visualize transparency and alpha channels.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.41.11'
+  },
+  {
     id: 'Comfy.RightSidePanel.ShowErrorsTab',
     category: ['Comfy', 'Error System'],
     name: 'Show errors tab in side panel',
