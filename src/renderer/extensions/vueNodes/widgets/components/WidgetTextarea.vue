@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'group relative rounded-lg focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+        'group relative rounded-lg hover:bg-component-node-widget-background-hovered focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
         widget.borderStyle
       )
     "
@@ -37,13 +37,13 @@
       v-if="isReadOnly"
       variant="textonly"
       size="icon"
-      class="invisible absolute top-1.5 right-1.5 z-10 hover:bg-base-foreground/10 group-hover:visible"
+      class="invisible absolute top-1.5 right-1.5 z-10 hover:bg-base-foreground/10 group-hover:visible group-focus-within:visible"
       :title="$t('g.copyToClipboard')"
       :aria-label="$t('g.copyToClipboard')"
       @click="handleCopy"
       @pointerdown.capture.stop
     >
-      <i class="icon-[lucide--copy] size-4" />
+      <i class="icon-[lucide--copy] size-4 text-component-node-foreground" />
     </Button>
   </div>
 </template>
@@ -81,8 +81,8 @@ const filteredProps = computed(() =>
 const displayName = computed(() => widget.label || widget.name)
 const id = useId()
 
-const isReadOnly = computed(
-  () => widget.options?.read_only ?? widget.options?.disabled ?? false
+const isReadOnly = computed(() =>
+  Boolean(widget.options?.read_only || widget.options?.disabled)
 )
 
 function handleCopy() {
