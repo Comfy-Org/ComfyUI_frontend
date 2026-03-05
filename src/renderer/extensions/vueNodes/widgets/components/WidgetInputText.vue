@@ -3,7 +3,12 @@
     <InputText
       v-model="modelValue"
       v-bind="filteredProps"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs py-2 px-4')"
+      :class="
+        cn(
+          WidgetInputBaseClass,
+          'w-full text-xs py-2 px-4 hover:bg-component-node-widget-background-hovered'
+        )
+      "
       :aria-label="widget.name"
       size="small"
       :pt="{ root: 'truncate min-w-[4ch]' }"
