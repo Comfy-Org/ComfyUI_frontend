@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { WorkspaceStore } from '../types/globals'
 
 test.describe('Batch Image Import', () => {
   test('Dropping multiple images creates LoadImage nodes and a BatchImagesNode', async ({
@@ -51,12 +52,10 @@ test.describe('Batch Image Import', () => {
       { waitForUploadCount: 2 }
     )
 
-    // Wait for nodes to be created
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 10000 })
       .toBe(initialCount + 3)
 
-    // The batch should produce exactly one undo entry
     await expect
       .poll(() => comfyPage.workflow.getUndoQueueSize(), { timeout: 5000 })
       .toBe((initialUndoSize ?? 0) + 1)
@@ -76,10 +75,13 @@ test.describe('Batch Image Import', () => {
       .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 10000 })
       .toBe(initialCount + 3)
 
-    // Focus canvas and undo
-    await comfyPage.canvas.click()
+    // Call undo directly on the change tracker to avoid keyboard focus issues
+    await comfyPage.page.evaluate(async () => {
+      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow
+      await workflow?.changeTracker.undo()
+    })
     await comfyPage.nextFrame()
-    await comfyPage.keyboard.undo()
 
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 10000 })
