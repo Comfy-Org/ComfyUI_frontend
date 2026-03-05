@@ -3034,7 +3034,7 @@
     "runCount": "Number of runs",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
-    "downloadAll": "Download All",
+    "downloadAll": "Download {count} assets from this run",
     "viewJob": "View Job",
     "enterNodeGraph": "Enter node graph",
     "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",

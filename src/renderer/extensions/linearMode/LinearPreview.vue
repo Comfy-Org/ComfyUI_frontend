@@ -116,12 +116,18 @@ async function rerun(e: Event) {
     <Popover
       v-if="selectedItem"
       :entries="[
-        {
-          icon: 'icon-[lucide--download]',
-          label: t('linearMode.downloadAll'),
-          command: () => downloadAsset(selectedItem)
-        },
-        { separator: true },
+        ...(allOutputs(selectedItem).length > 1
+          ? [
+              {
+                icon: 'icon-[lucide--download]',
+                label: t('linearMode.downloadAll', {
+                  count: allOutputs(selectedItem).length
+                }),
+                command: () => downloadAsset(selectedItem)
+              },
+              { separator: true }
+            ]
+          : []),
         {
           icon: 'icon-[lucide--trash-2]',
           label: t('queue.jobMenu.deleteAsset'),
