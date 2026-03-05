@@ -15,7 +15,7 @@ import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
 import { computed, onMounted } from 'vue'
 
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

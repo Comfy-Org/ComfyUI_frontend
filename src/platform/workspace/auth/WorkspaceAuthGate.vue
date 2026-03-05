@@ -22,7 +22,7 @@
  * instead of workspace tokens when the workspace feature is enabled.
  */
 import { promiseTimeout, until } from '@vueuse/core'
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 

@@ -4,7 +4,7 @@ import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
