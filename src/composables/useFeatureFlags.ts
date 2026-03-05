@@ -135,10 +135,12 @@ export function useFeatureFlags() {
       )
     },
     get workflowSharingEnabled() {
+      // UI is also gated on `isCloud` in TopMenuSection; default false
+      // to match other flags' opt-in convention.
       return resolveFlag(
         ServerFeatureFlag.WORKFLOW_SHARING_ENABLED,
         remoteConfig.value.workflow_sharing_enabled,
-        true
+        false
       )
     },
     get comfyHubUploadEnabled() {

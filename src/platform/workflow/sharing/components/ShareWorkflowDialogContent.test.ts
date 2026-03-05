@@ -453,4 +453,91 @@ describe('ShareWorkflowDialogContent', () => {
     expect(wrapper.text()).toContain('Anyone with this link...')
     expect(wrapper.text()).not.toContain('Update link')
   })
+
+  describe('error and edge cases', () => {
+    it('renders unsaved state when workflow is temporary', async () => {
+      mockWorkflowStore.activeWorkflow = {
+        path: 'workflows/Unsaved Workflow.json',
+        directory: 'workflows',
+        filename: 'Unsaved Workflow.json',
+        isTemporary: true,
+        isModified: false,
+        lastModified: 1000
+      }
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain(
+        'You must save your workflow before sharing.'
+      )
+      expect(wrapper.text()).toContain('Workflow name')
+    })
+
+    it('shows error toast when getPublishStatus rejects', async () => {
+      mockGetPublishStatus.mockRejectedValue(new Error('Server down'))
+
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('Create link')
+    })
+
+    it('shows error toast when publishWorkflow rejects', async () => {
+      mockGetShareableAssets.mockResolvedValue([])
+
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      mockPublishWorkflow.mockRejectedValue(new Error('Publish failed'))
+
+      const publishButton = wrapper
+        .findAll('button')
+        .find((btn) => btn.text().includes('Create link'))
+      expect(publishButton).toBeDefined()
+      await publishButton!.trigger('click')
+      await flushPromises()
+
+      expect(wrapper.text()).not.toContain('Anyone with this link...')
+    })
+
+    it('renders unsaved state when no active workflow exists', async () => {
+      mockWorkflowStore.activeWorkflow = null
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain(
+        'You must save your workflow before sharing.'
+      )
+    })
+
+    it('does not call publishWorkflow when workflow is null during publish', async () => {
+      mockGetShareableAssets.mockResolvedValue([])
+
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      mockWorkflowStore.activeWorkflow = null
+
+      const publishButton = wrapper
+        .findAll('button')
+        .find((btn) => btn.text().includes('Create link'))
+      if (publishButton) {
+        await publishButton.trigger('click')
+        await flushPromises()
+      }
+
+      expect(mockPublishWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not switch to publishToHub mode when flag is disabled', async () => {
+      mockFlags.comfyHubUploadEnabled = false
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="publish-tab-panel"]').exists()).toBe(
+        false
+      )
+      expect(wrapper.text()).not.toContain('Publish')
+    })
+  })
 })

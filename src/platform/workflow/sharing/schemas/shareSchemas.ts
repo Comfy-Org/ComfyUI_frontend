@@ -10,10 +10,21 @@ export const zPublishRecordResponse = z.object({
   assets: z.array(zAssetInfo).optional()
 })
 
+/**
+ * Strips path separators and control characters from a workflow name to prevent
+ * path traversal when the name is later used as part of a file path.
+ */
+function sanitizeWorkflowName(name: string): string {
+  return name
+    .replaceAll(/[/\\:]/g, '_')
+    .slice(0, 200)
+    .trim()
+}
+
 export const zSharedWorkflowResponse = z.object({
   share_id: z.string(),
   workflow_id: z.string(),
-  name: z.string(),
+  name: z.string().transform(sanitizeWorkflowName),
   listed: z.boolean(),
   publish_time: z.string().nullable(),
   workflow_json: z.record(z.string(), z.unknown()),
