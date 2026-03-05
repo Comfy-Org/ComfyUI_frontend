@@ -68,7 +68,7 @@
             @keydown.space.prevent="toggleSelectAll"
           >
             <div
-              class="flex size-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
               :class="
                 isAllSelected || isSomeSelected
                   ? 'bg-primary-background'
@@ -113,7 +113,7 @@
             @keydown.space.prevent="toggleNode(node.label)"
           >
             <div
-              class="flex size-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
               :class="
                 replacedTypes.has(node.label) || selectedTypes.has(node.label)
                   ? 'bg-primary-background'
