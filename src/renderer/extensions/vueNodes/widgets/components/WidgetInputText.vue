@@ -1,9 +1,10 @@
 <template>
   <WidgetLayoutField :widget="layoutWidget">
     <div class="relative">
-      <i
+      <Loader
         v-if="loading"
-        class="icon-[lucide--loader-circle] absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-component-node-foreground"
+        size="sm"
+        class="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-component-node-foreground"
       />
       <InputText
         v-model="modelValue"
@@ -18,7 +19,7 @@
         "
         :aria-label="widget.name"
         :readonly="isReadOnly"
-        :size="size === 'large' ? undefined : 'small'"
+        size="small"
         :pt="{ root: 'truncate min-w-[4ch]' }"
       />
     </div>
@@ -29,6 +30,7 @@
 import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 
+import Loader from '@/components/common/Loader.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
