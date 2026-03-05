@@ -2,6 +2,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
+import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
+
 /**
  * The step value for numeric widgets.
  * Use {@link IWidgetOptions.step2} if available, otherwise fallback to
@@ -12,17 +14,13 @@ export function getWidgetStep(options: IWidgetOptions<unknown>): number {
 }
 
 export function evaluateInput(input: string): number | undefined {
-  // Check if v is a valid equation or a number
-  if (/^[\d\s.()*+/-]+$/.test(input)) {
-    // Solve the equation if possible
-    try {
-      input = eval(input)
-    } catch {
-      // Ignore eval errors
-    }
+  const result = evaluateMathExpression(input)
+  if (result !== undefined) {
+    if (!isFinite(result)) return undefined
+    return result
   }
   const newValue = Number(input)
-  if (isNaN(newValue)) return undefined
+  if (!isFinite(newValue)) return undefined
   return newValue
 }
 

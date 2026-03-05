@@ -21,8 +21,8 @@ const tooltipOptions = { showDelay: 300, hideDelay: 300 }
 const isAssetsActive = computed(
   () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'assets'
 )
-const isWorkflowsActive = computed(
-  () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'workflows'
+const isAppsActive = computed(
+  () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'apps'
 )
 
 function openAssets() {
@@ -30,7 +30,7 @@ function openAssets() {
 }
 
 function showApps() {
-  void commandStore.execute('Workspace.ToggleSidebarTab.workflows')
+  void commandStore.execute('Workspace.ToggleSidebarTab.apps')
 }
 
 function openTemplates() {
@@ -104,9 +104,7 @@ function openTemplates() {
         variant="textonly"
         size="unset"
         :aria-label="t('linearMode.appModeToolbar.apps')"
-        :class="
-          cn('size-10', isWorkflowsActive && 'bg-secondary-background-hover')
-        "
+        :class="cn('size-10', isAppsActive && 'bg-secondary-background-hover')"
         @click="showApps"
       >
         <i class="icon-[lucide--panels-top-left] size-4" />
