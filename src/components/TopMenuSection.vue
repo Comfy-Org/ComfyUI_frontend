@@ -67,7 +67,7 @@
               v-tooltip.bottom="shareTooltipConfig"
               variant="secondary"
               :aria-label="t('actionbar.shareTooltip')"
-              @click="openShareDialog"
+              @click="() => openShareDialog().catch(toastErrorHandler)"
               @pointerenter="prefetchShareDialog"
             >
               <i class="icon-[lucide--share-2] size-4" />
@@ -150,6 +150,10 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  openShareDialog,
+  prefetchShareDialog
+} from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -235,25 +239,6 @@ onMounted(() => {
     legacyCommandsContainerRef.value.appendChild(app.menu.element)
   }
 })
-
-function importShareDialog() {
-  return import('@/platform/workflow/sharing/composables/useShareDialog')
-}
-
-function prefetchShareDialog() {
-  importShareDialog().catch((error) => {
-    console.error(error)
-  })
-}
-
-async function openShareDialog() {
-  try {
-    const { useShareDialog } = await importShareDialog()
-    useShareDialog().show()
-  } catch (error) {
-    toastErrorHandler(error)
-  }
-}
 
 const openCustomNodeManager = async () => {
   try {
