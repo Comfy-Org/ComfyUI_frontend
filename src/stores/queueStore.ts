@@ -114,6 +114,9 @@ export class ResultItemImpl {
     if (this.isMp4) {
       return 'video/mp4'
     }
+    if (this.filename.endsWith('.mov')) {
+      return 'video/quicktime'
+    }
 
     if (this.isVhsFormat) {
       if (this.format?.endsWith('webm')) {
@@ -140,14 +143,6 @@ export class ResultItemImpl {
       return 'audio/flac'
     }
     return undefined
-  }
-
-  get isGif(): boolean {
-    return this.filename.endsWith('.gif')
-  }
-
-  get isWebp(): boolean {
-    return this.filename.endsWith('.webp')
   }
 
   get isWebm(): boolean {
