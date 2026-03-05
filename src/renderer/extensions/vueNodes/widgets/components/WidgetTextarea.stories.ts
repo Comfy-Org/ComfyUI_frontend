@@ -28,7 +28,7 @@ const meta: Meta<typeof WidgetTextarea> = {
         component: [
           'Multi-line text input with optional label.',
           'Captures wheel, pointer, and context menu events to prevent canvas interference.',
-          'Shows a copy-to-clipboard button on hover when in read-only mode.'
+          'Shows a copy-to-clipboard button on hover.'
         ].join(' ')
       }
     }
@@ -103,7 +103,7 @@ export const ReadOnly: Story = {
     docs: {
       description: {
         story:
-          'When read-only, a copy-to-clipboard button appears on hover in the top-right corner.'
+          'A copy-to-clipboard button appears on hover in the top-right corner.'
       }
     }
   }

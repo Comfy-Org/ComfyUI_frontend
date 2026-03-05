@@ -75,6 +75,21 @@ export const ReadOnly: Story = {
   })
 }
 
+export const Disabled: Story = {
+  render: () => ({
+    components: { WidgetInputText },
+    setup() {
+      const value = ref('This text is disabled')
+      const widget = createWidget({
+        name: 'locked',
+        options: { disabled: true }
+      })
+      return { value, widget }
+    },
+    template: '<WidgetInputText :widget="widget" v-model="value" />'
+  })
+}
+
 export const WithLabel: Story = {
   render: () => ({
     components: { WidgetInputText },
