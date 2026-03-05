@@ -22,18 +22,21 @@
 </template>
 
 <script setup lang="ts">
-import { useClipboard } from '@vueuse/core'
+import { refAutoReset } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
 const { url } = defineProps<{
   url: string
 }>()
 
-const { copy, copied } = useClipboard({ copiedDuring: 2000 })
+const { copyToClipboard } = useCopyToClipboard()
+const copied = refAutoReset(false, 2000)
 
 async function handleCopy() {
-  await copy(url)
+  await copyToClipboard(url)
+  copied.value = true
 }
 </script>
