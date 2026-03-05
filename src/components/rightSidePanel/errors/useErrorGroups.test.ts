@@ -323,6 +323,90 @@ describe('useErrorGroups', () => {
       )
       expect(promptGroup).toBeDefined()
     })
+
+    it('sorts cards within an execution group by nodeId numerically', async () => {
+      const { store, groups } = createErrorGroups()
+      store.lastNodeErrors = {
+        '10': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'err', message: 'Error', details: '' }]
+        },
+        '2': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'err', message: 'Error', details: '' }]
+        },
+        '1': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'err', message: 'Error', details: '' }]
+        }
+      }
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      const nodeIds = execGroup?.cards.map((c) => c.nodeId)
+      expect(nodeIds).toEqual(['1', '2', '10'])
+    })
+
+    it('sorts cards with subpath nodeIds before higher root IDs', async () => {
+      const { store, groups } = createErrorGroups()
+      store.lastNodeErrors = {
+        '2': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'err', message: 'Error', details: '' }]
+        },
+        '1:20': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'err', message: 'Error', details: '' }]
+        },
+        '1': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'err', message: 'Error', details: '' }]
+        }
+      }
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      const nodeIds = execGroup?.cards.map((c) => c.nodeId)
+      expect(nodeIds).toEqual(['1', '1:20', '2'])
+    })
+
+    it('sorts deeply nested nodeIds by each segment numerically', async () => {
+      const { store, groups } = createErrorGroups()
+      store.lastNodeErrors = {
+        '10:11:99': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'err', message: 'Error', details: '' }]
+        },
+        '10:11:12': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'err', message: 'Error', details: '' }]
+        },
+        '10:2': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'err', message: 'Error', details: '' }]
+        }
+      }
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      const nodeIds = execGroup?.cards.map((c) => c.nodeId)
+      expect(nodeIds).toEqual(['10:2', '10:11:12', '10:11:99'])
+    })
   })
 
   describe('filteredGroups', () => {
