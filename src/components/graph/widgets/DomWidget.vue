@@ -118,16 +118,13 @@ function refreshStyle() {
   }
 }
 
-watch(
-  [() => widgetState.pos, () => widgetState.size, left, top],
-  () => {
-    updatePosition(widgetState)
-    if (enableDomClipping.value) {
-      updateDomClipping()
-    }
-    refreshStyle()
+watch([() => widgetState.pos, () => widgetState.size, left, top], () => {
+  updatePosition(widgetState)
+  if (enableDomClipping.value) {
+    updateDomClipping()
   }
-)
+  refreshStyle()
+})
 
 watch(
   [
