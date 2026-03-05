@@ -12,7 +12,7 @@
         />
         <div
           v-if="timeLabel"
-          class="absolute bottom-2 left-2 rounded px-2 py-0.5 text-xs text-text-primary"
+          class="absolute bottom-2 left-2 rounded-sm px-2 py-0.5 text-xs text-text-primary"
           :style="{
             background: 'rgba(217, 217, 217, 0.40)',
             backdropFilter: 'blur(2px)'

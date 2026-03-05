@@ -346,6 +346,44 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
 
     // Detection models (vitpose, yolo)
     quickRegister('detection', 'OnnxDetectionModelLoader', 'yolo_model')
+
+    // HunyuanVideo text encoders (ComfyUI-HunyuanVideoWrapper)
+    quickRegister(
+      'LLM/llava-llama-3-8b-text-encoder-tokenizer',
+      'DownloadAndLoadHyVideoTextEncoder',
+      'llm_model'
+    )
+    quickRegister(
+      'LLM/llava-llama-3-8b-v1_1-transformers',
+      'DownloadAndLoadHyVideoTextEncoder',
+      'llm_model'
+    )
+
+    // CogVideoX models (comfyui-cogvideoxwrapper)
+    quickRegister('CogVideo/GGUF', 'DownloadAndLoadCogVideoGGUFModel', 'model')
+    quickRegister(
+      'CogVideo/ControlNet',
+      'DownloadAndLoadCogVideoControlNet',
+      'model'
+    )
+
+    // DynamiCrafter models (ComfyUI-DynamiCrafterWrapper)
+    quickRegister(
+      'checkpoints/dynamicrafter',
+      'DownloadAndLoadDynamiCrafterModel',
+      'model'
+    )
+    quickRegister(
+      'checkpoints/dynamicrafter/controlnet',
+      'DownloadAndLoadDynamiCrafterCNModel',
+      'model'
+    )
+
+    // LayerStyle models (ComfyUI_LayerStyle_Advance)
+    quickRegister('BEN', 'LS_LoadBenModel', 'model')
+    quickRegister('BiRefNet/pth', 'LS_LoadBiRefNetModel', 'model')
+    quickRegister('onnx/human-parts', 'LS_HumanPartsUltra', '')
+    quickRegister('lama', 'LaMa', 'lama_model')
   }
 
   return {
