@@ -183,7 +183,7 @@ useResizeObserver(outputsRef, () => {
 })
 watch(
   [
-    () => store.inProgressItems.length,
+    () => store.activeWorkflowInProgressItems.length,
     () => visibleHistory.value[0]?.id,
     queueCount
   ],
