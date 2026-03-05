@@ -40,8 +40,7 @@ GitHub Action by creating a labeled PR from `origin/main`.
    new, unique poem every time. Short (4–8 lines). Can be funny, wistful,
    epic, haiku-style, limerick, sonnet fragment — vary the form.
 
-6. **Create the PR** with the poem as the body, labeled to trigger the
-   GitHub Action.
+6. **Create the PR** with the poem as the body (no label yet).
 
    Write the poem to a temp file and use `--body-file`:
 
@@ -52,11 +51,23 @@ GitHub Action by creating a labeled PR from `origin/main`.
      --base main \
      --head regen-screenshots/<datetime> \
      --title "test: regenerate screenshot expectations" \
-     --body-file <temp-file> \
-     --label "New Browser Test Expectations"
+     --body-file <temp-file>
    ```
 
-7. **Report the result** to the user:
+7. **Add the label** as a separate step to trigger the GitHub Action.
+
+   The `labeled` event only fires when a label is added after PR
+   creation, not when applied during creation via `--label`.
+
+   Use the GitHub API directly (`gh pr edit --add-label` fails due to
+   deprecated Projects Classic GraphQL errors):
+
+   ```bash
+   gh api repos/{owner}/{repo}/issues/<pr-number>/labels \
+     -f "labels[]=New Browser Test Expectations" --method POST
+   ```
+
+8. **Report the result** to the user:
    - PR URL
    - Branch name
    - Note that the GitHub Action will run automatically and commit
