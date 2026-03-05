@@ -1,0 +1,99 @@
+# Description: Automated QA of ComfyUI frontend using Claude + Playwright MCP
+# Triggers on PRs from sno-skills or qa-* branches, or via 'qa-run' label
+name: 'QA: Claude Frontend QA'
+
+on:
+  pull_request:
+    types: [opened, synchronize, labeled]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event.label.name == 'qa-run' ||
+      startsWith(github.head_ref, 'sno-skills') ||
+      startsWith(github.head_ref, 'qa-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      packages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Setup and start ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'true'
+
+      - name: Wait for ComfyUI server
+        run: |
+          echo "Waiting for ComfyUI server on port 8188..."
+          timeout 120 bash -c 'until curl -sf http://127.0.0.1:8188/api/system_stats > /dev/null 2>&1; do sleep 2; done'
+          echo "ComfyUI server is ready"
+
+      - name: Install Playwright for MCP
+        run: |
+          pnpm exec playwright install chromium --with-deps
+
+      - name: Run Claude QA
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are running an automated QA pass on the ComfyUI frontend.
+
+            Read the file `skills/comfy-qa/SKILL.md` and follow the QA test plan.
+
+            Environment details:
+            - CI=true
+            - Server URL: http://127.0.0.1:8188
+            - Branch: ${{ github.head_ref || github.ref_name }}
+            - PR: #${{ github.event.pull_request.number || 'N/A' }}
+            - Commit: ${{ github.sha }}
+
+            Instructions:
+            1. Use the playwright MCP tools to navigate http://127.0.0.1:8188
+            2. Run through the FULL QA test plan from the skill file
+            3. Take screenshots of any failures or notable states
+            4. Generate a QA report following the template in the skill file
+            5. Save the report to docs/qa/ with today's date
+            6. Commit and push the report to this branch
+            7. Post a summary comment on this PR (#${{ github.event.pull_request.number }})
+               using: gh pr comment ${{ github.event.pull_request.number }} --body "..."
+
+            Do NOT create a new PR. Commit directly to this branch.
+            Be thorough but efficient — skip tests that require features not
+            available in CI (e.g., file upload dialogs, real GPU execution).
+          claude_args: >-
+            --max-turns 128
+            --mcp-config '{"mcpServers":{"playwright":{"command":"npx","args":["@playwright/mcp@latest","--headless"]}}}'
+            --allowedTools "mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot,mcp__playwright__browser_click,mcp__playwright__browser_type,mcp__playwright__browser_press_key,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_hover,mcp__playwright__browser_drag,mcp__playwright__browser_select_option,mcp__playwright__browser_handle_dialog,mcp__playwright__browser_tab_list,mcp__playwright__browser_tab_new,mcp__playwright__browser_tab_select,mcp__playwright__browser_tab_close,mcp__playwright__browser_console_messages,mcp__playwright__browser_resize,mcp__playwright__browser_wait_for,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git log:*),Bash(git diff:*),Bash(git checkout:*),Bash(gh pr comment:*),Bash(gh pr view:*),Bash(date:*),Bash(ls:*),Bash(mkdir:*),Bash(cat:*),Read,Write,Edit,Glob,Grep"
+        env:
+          CI: 'true'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Remove qa-run label
+        if: always() && github.event.label.name == 'qa-run'
+        run: gh pr edit ${{ github.event.pull_request.number }} --remove-label "qa-run"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
