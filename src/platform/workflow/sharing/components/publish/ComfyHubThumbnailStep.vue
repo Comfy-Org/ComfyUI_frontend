@@ -14,7 +14,7 @@
           v-for="option in thumbnailOptions"
           :key="option.value"
           :value="option.value"
-          class="h-auto w-full rounded bg-node-component-surface p-2 data-[state=on]:bg-muted-background"
+          class="h-auto w-full rounded-sm bg-node-component-surface p-2 data-[state=on]:bg-muted-background"
         >
           <span class="text-center text-sm font-bold text-base-foreground">
             {{ option.label }}

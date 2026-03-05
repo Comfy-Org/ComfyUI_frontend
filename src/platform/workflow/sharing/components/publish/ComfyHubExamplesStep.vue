@@ -48,7 +48,7 @@
         size="unset"
         :class="
           cn(
-            'relative h-25 cursor-pointer overflow-hidden rounded p-0',
+            'relative h-25 cursor-pointer overflow-hidden rounded-sm p-0',
             isSelected(image.id) ? 'ring-2 ring-ring' : 'ring-0'
           )
         "
