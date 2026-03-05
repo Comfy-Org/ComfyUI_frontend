@@ -19,7 +19,7 @@
       <img
         :src="imageUrl"
         :alt="$t('g.liveSamplingPreview')"
-        class="pointer-events-none w-full object-contain contain-size"
+        class="pointer-events-none h-full w-full object-contain contain-size"
         @load="handleImageLoad"
         @error="handleImageError"
       />
