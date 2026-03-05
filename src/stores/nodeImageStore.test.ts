@@ -305,6 +305,25 @@ describe(useNodeImageStore, () => {
     })
   })
 
+  describe('DEFAULT_STATE immutability', () => {
+    it('default imageRects is frozen and cannot be mutated', () => {
+      const node = createMockNode()
+      mockNodeToNodeLocatorId.mockReturnValue(locatorA)
+
+      store.installPropertyProjection(node)
+
+      // Read default imageRects without triggering state creation
+      const nodeB = createMockNode()
+      mockNodeToNodeLocatorId.mockReturnValue(locatorB)
+      store.installPropertyProjection(nodeB)
+
+      // Default arrays should be frozen (no state entry exists yet)
+      expect(() => {
+        ;(nodeB.imageRects as unknown[]).push([0, 0, 10, 10])
+      }).toThrow()
+    })
+  })
+
   describe('null-to-null transitions', () => {
     it('imageIndex null → null works', () => {
       const node = createMockNode()

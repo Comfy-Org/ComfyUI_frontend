@@ -17,8 +17,6 @@ interface NodeImageState {
   overIndex: number | null
 }
 
-const DEFAULT_STATE = Object.freeze(createDefaultState())
-
 function createDefaultState(): NodeImageState {
   return {
     imgs: [],
@@ -28,6 +26,12 @@ function createDefaultState(): NodeImageState {
     overIndex: null
   }
 }
+
+const DEFAULT_STATE: Readonly<NodeImageState> = Object.freeze({
+  ...createDefaultState(),
+  imgs: Object.freeze([]) as unknown as HTMLImageElement[],
+  imageRects: Object.freeze([]) as unknown as Rect[]
+})
 
 /**
  * Module-scoped resolver for converting nodes to locator IDs.
