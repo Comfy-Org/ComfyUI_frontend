@@ -344,6 +344,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "Odak Modunu Aç/Kapat"
   },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "Uygulamalar Kenar Çubuğunu Aç/Kapat",
+    "tooltip": "Uygulamalar"
+  },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "Varlıklar Kenar Çubuğunu Aç/Kapat",
     "tooltip": "Varlıklar"

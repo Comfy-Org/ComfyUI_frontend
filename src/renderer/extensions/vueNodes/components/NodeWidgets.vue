@@ -53,7 +53,7 @@
           />
         </div>
         <!-- Widget Component -->
-        <AppInput :id="widget.id" :name="widget.name" :is-select-mode>
+        <AppInput :id="widget.id" :name="widget.name" :is-select-inputs-mode>
           <component
             :is="widget.vueComponent"
             v-model="widget.value"
@@ -123,7 +123,7 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
-const { isSelectMode } = useAppMode()
+const { isSelectInputsMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
 const promotionStore = usePromotionStore()
@@ -215,9 +215,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
 
-    // Build options from store state, with slot-linked override for disabled
+    // Build options from store state, with disabled override for
+    // slot-linked widgets or widgets with disabled state (e.g. display-only)
     const storeOptions = widgetState?.options ?? {}
-    const widgetOptions = slotMetadata?.linked
+    const isDisabled = slotMetadata?.linked || widgetState?.disabled
+    const widgetOptions = isDisabled
       ? { ...storeOptions, disabled: true }
       : storeOptions
 

@@ -1,32 +1,16 @@
 <template>
-  <BuilderDialog @close="onClose">
+  <BuilderDialog @close="$emit('close')">
     <template #title>
-      {{ $t('builderToolbar.saveAs') }}
+      {{ $t('builderToolbar.defaultViewTitle') }}
     </template>
 
-    <!-- Filename -->
-    <div class="flex flex-col gap-2">
-      <label :for="inputId" class="text-sm text-muted-foreground">
-        {{ $t('builderToolbar.filename') }}
-      </label>
-      <input
-        :id="inputId"
-        v-model="filename"
-        autofocus
-        type="text"
-        class="flex h-10 min-h-8 items-center self-stretch rounded-lg border-none bg-secondary-background pl-4 text-sm text-base-foreground focus:outline-none"
-        @keydown.enter="filename.trim() && onSave(filename.trim(), openAsApp)"
-      />
-    </div>
-
-    <!-- Save as type -->
     <div class="flex flex-col gap-2">
       <label class="text-sm text-muted-foreground">
-        {{ $t('builderToolbar.saveAsLabel') }}
+        {{ $t('builderToolbar.defaultViewLabel') }}
       </label>
       <div role="radiogroup" class="flex flex-col gap-2">
         <Button
-          v-for="option in saveTypeOptions"
+          v-for="option in viewTypeOptions"
           :key="option.value.toString()"
           role="radio"
           :aria-checked="openAsApp === option.value"
@@ -61,23 +45,18 @@
     </div>
 
     <template #footer>
-      <Button variant="muted-textonly" size="lg" @click="onClose">
+      <Button variant="muted-textonly" size="lg" @click="$emit('close')">
         {{ $t('g.cancel') }}
       </Button>
-      <Button
-        variant="secondary"
-        size="lg"
-        :disabled="!filename.trim()"
-        @click="onSave(filename.trim(), openAsApp)"
-      >
-        {{ $t('g.save') }}
+      <Button variant="secondary" size="lg" @click="$emit('apply', openAsApp)">
+        {{ $t('g.apply') }}
       </Button>
     </template>
   </BuilderDialog>
 </template>
 
 <script setup lang="ts">
-import { ref, useId } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -87,17 +66,18 @@ import BuilderDialog from './BuilderDialog.vue'
 
 const { t } = useI18n()
 
-const { defaultFilename, onSave, onClose } = defineProps<{
-  defaultFilename: string
-  onSave: (filename: string, openAsApp: boolean) => void
-  onClose: () => void
+const { initialOpenAsApp = true } = defineProps<{
+  initialOpenAsApp?: boolean
 }>()
 
-const inputId = useId()
-const filename = ref(defaultFilename)
-const openAsApp = ref(true)
+defineEmits<{
+  apply: [openAsApp: boolean]
+  close: []
+}>()
 
-const saveTypeOptions = [
+const openAsApp = ref(initialOpenAsApp)
+
+const viewTypeOptions = [
   {
     value: true,
     icon: 'icon-[lucide--app-window]',

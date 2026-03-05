@@ -8,6 +8,7 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -55,10 +56,13 @@ function makeWorkflowData(
   }
 }
 
-const { mockShowMissingNodes, mockShowMissingModels } = vi.hoisted(() => ({
-  mockShowMissingNodes: vi.fn(),
-  mockShowMissingModels: vi.fn()
-}))
+const { mockShowMissingNodes, mockShowMissingModels, mockConfirm } = vi.hoisted(
+  () => ({
+    mockShowMissingNodes: vi.fn(),
+    mockShowMissingModels: vi.fn(),
+    mockConfirm: vi.fn()
+  })
+)
 
 vi.mock('@/composables/useMissingNodesDialog', () => ({
   useMissingNodesDialog: () => ({ show: mockShowMissingNodes, hide: vi.fn() })
@@ -71,7 +75,7 @@ vi.mock('@/composables/useMissingModelsDialog', () => ({
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     prompt: vi.fn(),
-    confirm: vi.fn()
+    confirm: mockConfirm
   })
 }))
 
@@ -361,14 +365,14 @@ describe('useWorkflowService', () => {
         })
         const workflow2 = createModeTestWorkflow({
           path: 'workflows/two.json',
-          activeMode: 'builder:select'
+          activeMode: 'builder:inputs'
         })
 
         workflowStore.activeWorkflow = workflow1
         expect(appMode.mode.value).toBe('app')
 
         workflowStore.activeWorkflow = workflow2
-        expect(appMode.mode.value).toBe('builder:select')
+        expect(appMode.mode.value).toBe('builder:inputs')
       })
     })
 
@@ -463,17 +467,6 @@ describe('useWorkflowService', () => {
         expect(appMode.mode.value).toBe('app')
       })
 
-      it('syncs linearMode to rootGraph.extra for draft persistence', async () => {
-        const workflow = createModeTestWorkflow({ loaded: false })
-
-        await service.afterLoadNewGraph(
-          workflow,
-          makeWorkflowData({ linearMode: true })
-        )
-
-        expect(app.rootGraph.extra.linearMode).toBe(true)
-      })
-
       it('reads initialMode from file when draft lacks linearMode (restoration)', async () => {
         const filePath = 'workflows/saved-app.json'
         const fileInitialState = makeWorkflowData({ linearMode: true })
@@ -507,7 +500,6 @@ describe('useWorkflowService', () => {
 
         // initialMode should come from the file, not the draft
         expect(persistedWorkflow.initialMode).toBe('app')
-        expect(app.rootGraph.extra.linearMode).toBe(true)
       })
     })
 
@@ -515,7 +507,7 @@ describe('useWorkflowService', () => {
       it('each workflow retains its own mode across tab switches', () => {
         const workflow1 = createModeTestWorkflow({
           path: 'workflows/one.json',
-          activeMode: 'builder:select'
+          activeMode: 'builder:inputs'
         })
         const workflow2 = createModeTestWorkflow({
           path: 'workflows/two.json',
@@ -523,14 +515,204 @@ describe('useWorkflowService', () => {
         })
 
         workflowStore.activeWorkflow = workflow1
-        expect(appMode.mode.value).toBe('builder:select')
+        expect(appMode.mode.value).toBe('builder:inputs')
 
         workflowStore.activeWorkflow = workflow2
         expect(appMode.mode.value).toBe('app')
 
         workflowStore.activeWorkflow = workflow1
-        expect(appMode.mode.value).toBe('builder:select')
+        expect(appMode.mode.value).toBe('builder:inputs')
       })
+    })
+  })
+
+  describe('saveWorkflowAs', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let service: ReturnType<typeof useWorkflowService>
+
+    beforeEach(() => {
+      workflowStore = useWorkflowStore()
+      service = useWorkflowService()
+      vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+    })
+
+    function createTemporaryWorkflow(
+      directory: string = 'workflows'
+    ): LoadedComfyWorkflow {
+      const workflow = new ComfyWorkflowClass({
+        path: directory + '/temp.json',
+        modified: Date.now(),
+        size: 100
+      })
+      workflow.changeTracker = createMockChangeTracker()
+      workflow.content = '{}'
+      workflow.originalContent = '{}'
+      Object.defineProperty(workflow, 'isTemporary', { get: () => true })
+      return workflow as LoadedComfyWorkflow
+    }
+
+    it('appends .app.json extension when initialMode is app', async () => {
+      const workflow = createTemporaryWorkflow()
+      workflow.initialMode = 'app'
+
+      await service.saveWorkflowAs(workflow, { filename: 'my-workflow' })
+
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/my-workflow.app.json'
+      )
+    })
+
+    it('appends .json extension when initialMode is graph', async () => {
+      const workflow = createTemporaryWorkflow()
+      workflow.initialMode = 'graph'
+
+      await service.saveWorkflowAs(workflow, { filename: 'my-workflow' })
+
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/my-workflow.json'
+      )
+    })
+
+    it('appends .json extension when initialMode is not set', async () => {
+      const workflow = createTemporaryWorkflow()
+
+      await service.saveWorkflowAs(workflow, { filename: 'my-workflow' })
+
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/my-workflow.json'
+      )
+    })
+  })
+
+  describe('saveWorkflow', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let toastStore: ReturnType<typeof useToastStore>
+    let service: ReturnType<typeof useWorkflowService>
+
+    beforeEach(() => {
+      workflowStore = useWorkflowStore()
+      toastStore = useToastStore()
+      service = useWorkflowService()
+      vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+    })
+
+    function createSaveableWorkflow(path: string): LoadedComfyWorkflow {
+      const workflow = new ComfyWorkflowClass({
+        path,
+        modified: Date.now(),
+        size: 100
+      })
+      workflow.changeTracker = createMockChangeTracker()
+      workflow.content = '{}'
+      workflow.originalContent = '{}'
+      return workflow as LoadedComfyWorkflow
+    }
+
+    it('renames .json to .app.json when initialMode is app', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.json')
+      workflow.initialMode = 'app'
+
+      await service.saveWorkflow(workflow)
+
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/test.app.json'
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('renames .app.json to .json when initialMode is graph', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.app.json')
+      workflow.initialMode = 'graph'
+
+      await service.saveWorkflow(workflow)
+
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/test.json'
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('does not rename when extension already matches', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.app.json')
+      workflow.initialMode = 'app'
+
+      await service.saveWorkflow(workflow)
+
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('shows toast only when rename occurs', async () => {
+      const addSpy = vi.spyOn(toastStore, 'add')
+
+      const workflow = createSaveableWorkflow('workflows/test.json')
+      workflow.initialMode = 'app'
+
+      await service.saveWorkflow(workflow)
+
+      expect(addSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'info' })
+      )
+    })
+
+    it('does not show toast when no rename occurs', async () => {
+      const addSpy = vi.spyOn(toastStore, 'add')
+
+      const workflow = createSaveableWorkflow('workflows/test.app.json')
+      workflow.initialMode = 'app'
+
+      await service.saveWorkflow(workflow)
+
+      expect(addSpy).not.toHaveBeenCalled()
+    })
+
+    it('does not rename when initialMode is not set', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.json')
+
+      await service.saveWorkflow(workflow)
+
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('prompts for overwrite when target path already exists', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.json')
+      workflow.initialMode = 'app'
+
+      const existing = createSaveableWorkflow('workflows/test.app.json')
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      mockConfirm.mockResolvedValue(true)
+
+      await service.saveWorkflow(workflow)
+
+      expect(mockConfirm).toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/test.app.json'
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('saves without renaming when user declines overwrite', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.json')
+      workflow.initialMode = 'app'
+
+      const existing = createSaveableWorkflow('workflows/test.app.json')
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
+      mockConfirm.mockResolvedValue(false)
+
+      await service.saveWorkflow(workflow)
+
+      expect(mockConfirm).toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
   })
 })

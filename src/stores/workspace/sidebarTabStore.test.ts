@@ -84,6 +84,15 @@ vi.mock(
   })
 )
 
+vi.mock('@/platform/workflow/management/composables/useAppsSidebarTab', () => ({
+  useAppsSidebarTab: () => ({
+    id: 'apps',
+    title: 'apps',
+    type: 'vue',
+    component: {}
+  })
+}))
+
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -105,9 +114,10 @@ describe('useSidebarTabStore', () => {
       'assets',
       'node-library',
       'model-library',
-      'workflows'
+      'workflows',
+      'apps'
     ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(5)
+    expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
   })
 
   it('does not register the job history tab when QPO V2 is disabled', () => {
@@ -122,9 +132,10 @@ describe('useSidebarTabStore', () => {
       'assets',
       'node-library',
       'model-library',
-      'workflows'
+      'workflows',
+      'apps'
     ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(4)
+    expect(mockRegisterCommand).toHaveBeenCalledTimes(5)
   })
 
   it('prepends the job history tab when QPO V2 is toggled on', async () => {
@@ -144,8 +155,9 @@ describe('useSidebarTabStore', () => {
       'assets',
       'node-library',
       'model-library',
-      'workflows'
+      'workflows',
+      'apps'
     ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(5)
+    expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
   })
 })
