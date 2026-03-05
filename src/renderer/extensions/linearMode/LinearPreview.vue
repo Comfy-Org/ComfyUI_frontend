@@ -24,8 +24,6 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
-import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
@@ -67,17 +65,12 @@ async function loadWorkflow(item: AssetItem | undefined) {
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
   if (!changeTracker) return app.loadGraphData(workflow)
   changeTracker.redoQueue = []
-  changeTracker.updateState([workflow], changeTracker.undoQueue)
+  await changeTracker.updateState([workflow], changeTracker.undoQueue)
 }
 
 async function rerun(e: Event) {
   if (!runButtonClick) return
   await loadWorkflow(selectedItem.value)
-  //FIXME don't use timeouts here
-  //Currently seeds fail to properly update even with timeouts?
-  await new Promise((r) => setTimeout(r, 500))
-  executeWidgetsCallback(collectAllNodes(app.rootGraph), 'afterQueued')
-
   runButtonClick(e)
 }
 </script>
