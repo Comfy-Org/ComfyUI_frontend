@@ -854,6 +854,7 @@
       "clearQueued": "Clear queued",
       "clearHistory": "Clear job history",
       "dockedJobHistory": "Docked Job History",
+      "showRunProgressBar": "Show run progress bar",
       "clearHistoryMenuAssetsNote": "Media assets won't be deleted.",
       "filterJobs": "Filter jobs",
       "filterBy": "Filter by",
@@ -966,7 +967,8 @@
     "settings": "Settings",
     "help": "Help",
     "helpAndFeedback": "Help & Feedback",
-    "queue": "Queue Panel"
+    "queue": "Queue Panel",
+    "fullscreen": "Fullscreen"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -1075,7 +1077,9 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
-    "saveWorkflow": "Save workflow"
+    "saveWorkflow": "Save workflow",
+    "savedAsApp": "Converted to app workflow",
+    "savedAsWorkflow": "Converted to node graph only workflow"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -1347,6 +1351,7 @@
     "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
     "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
     "Focus Mode": "Focus Mode",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps",
     "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
@@ -2589,6 +2594,7 @@
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",
+    "enterBuilderMode": "App builder",
     "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
@@ -3021,10 +3027,13 @@
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
+    "mobileControls": "Edit & Run",
     "runCount": "Number of runs",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
     "downloadAll": "Download All",
+    "viewJob": "View Job",
+    "enterNodeGraph": "Enter node graph",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
@@ -3036,15 +3045,17 @@
     },
     "appModeToolbar": {
       "appBuilder": "App builder",
-      "apps": "Apps"
+      "apps": "Apps",
+      "appsEmptyMessage": "Saved apps will show up here.\nClick below to build your first app.",
+      "enterAppMode": "Enter app mode"
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
-      "switchToSelect": "Switch to the 'Select' step and click on output nodes to add them here.",
+      "switchToOutputs": "Switch to the 'Output' step and click on output nodes to add them here.",
       "connectAtLeastOne": "Connect {atLeastOne} output node so users can see results after running.",
       "atLeastOne": "at least one",
       "outputExamples": "Examples: 'Save Image' or 'Save Video'",
-      "switchToSelectButton": "Switch to Select",
+      "switchToOutputsButton": "Switch to Outputs",
       "outputs": "Outputs",
       "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
     },
@@ -3060,7 +3071,8 @@
       "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
       "noOutputs": "No output nodes added yet",
       "outputsDesc": "Connect at least one output node so users can see results after running.",
-      "outputsExample": "Examples: “Save Image” or “Save Video”"
+      "outputsExample": "Examples: “Save Image” or “Save Video”",
+      "unknownWidget": "Widget not visible"
     },
     "queue": {
       "clickToClear": "Click to clear queue",
@@ -3347,31 +3359,37 @@
   },
   "builderToolbar": {
     "label": "App Builder",
-    "select": "Select",
-    "selectDescription": "Choose inputs/outputs",
+    "inputs": "Inputs",
+    "outputs": "Outputs",
+    "inputsDescription": "Choose inputs",
+    "outputsDescription": "Choose outputs",
     "arrange": "Preview",
     "arrangeDescription": "Review app layout",
-    "save": "Save",
-    "saveDescription": "Save and finish",
+    "defaultView": "Set a default view",
+    "defaultViewDescription": "Choose how this opens",
     "connectOutput": "Connect an output",
     "connectOutputBody1": "Your app needs at least one output to be connected before it can be saved.",
-    "connectOutputBody2": "Switch to the 'Select' step and click on output nodes to add them here.",
-    "switchToSelect": "Switch to Select",
-    "saveAs": "Save as",
-    "filename": "Filename",
-    "saveAsLabel": "Save this workflow as a ...",
+    "connectOutputBody2": "Switch to the 'Output' step and click on output nodes to add them here.",
+    "switchToOutputs": "Switch to Outputs",
+    "defaultViewTitle": "Set the default view for this workflow",
+    "defaultViewLabel": "By default, this workflow will open as:",
     "app": "App",
     "appDescription": "Opens as an app by default",
     "nodeGraph": "Node graph",
     "nodeGraphDescription": "Opens as node graph by default",
-    "saveSuccess": "Successfully saved",
-    "saveSuccessAppMessage": "'{name}' has been saved. It will open in App Mode by default from now on.",
-    "saveSuccessAppPrompt": "Would you like to view it now?",
-    "saveSuccessGraphMessage": "'{name}' has been saved. It will open as a node graph by default.",
-    "viewApp": "View app"
+    "defaultModeAppliedTitle": "Successfully set",
+    "defaultModeAppliedAppBody": "This workflow will open in App Mode by default from now on.",
+    "defaultModeAppliedAppPrompt": "Would you like to view it now?",
+    "defaultModeAppliedGraphBody": "This workflow will open as a node graph by default from now on.",
+    "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
+    "viewApp": "View app",
+    "emptyWorkflowTitle": "This workflow has no nodes",
+    "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
+    "emptyWorkflowPrompt": "Do you want to start with a template?",
+    "backToWorkflow": "Back to workflow",
+    "loadTemplate": "Load a template"
   },
   "builderMenu": {
-    "saveApp": "Save app",
     "exitAppBuilder": "Exit app builder"
   }
 }

@@ -1,9 +1,17 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
+
+const mockCopyToClipboard = vi.hoisted(() => vi.fn())
+
+vi.mock('@/composables/useCopyToClipboard', () => ({
+  useCopyToClipboard: vi.fn().mockReturnValue({
+    copyToClipboard: mockCopyToClipboard
+  })
+}))
 
 function createMockWidget(
   value: string = 'default text',
@@ -31,6 +39,11 @@ function mountComponent(
       modelValue,
       readonly,
       placeholder
+    },
+    global: {
+      mocks: {
+        $t: (msg: string) => msg
+      }
     }
   })
 }
@@ -188,6 +201,41 @@ describe('WidgetTextarea Value Binding', () => {
 
       const textarea = wrapper.find('textarea')
       expect(textarea.attributes('placeholder')).toBe('Custom placeholder')
+    })
+  })
+  describe('Copy Button Behavior', () => {
+    beforeEach(() => {
+      mockCopyToClipboard.mockClear()
+    })
+
+    it('hides copy button when not read-only', async () => {
+      const widget = createMockWidget('test')
+      const wrapper = mountComponent(widget, 'test', false)
+
+      const button = wrapper.find('button')
+      expect(button.exists()).toBe(false)
+    })
+
+    it('copy button has invisible class by default when read-only', () => {
+      const widget = createMockWidget('test', { read_only: true })
+      const wrapper = mountComponent(widget, 'test', true)
+
+      const button = wrapper.find('button')
+      expect(button.exists()).toBe(true)
+      expect(button.classes()).toContain('invisible')
+    })
+
+    it('copy button has group-hover:visible class when read-only, and copies on click', async () => {
+      const widget = createMockWidget('test value', { read_only: true })
+      const wrapper = mountComponent(widget, 'test value', true)
+
+      const button = wrapper.find('button')
+      expect(button.exists()).toBe(true)
+      expect(button.classes()).toContain('group-hover:visible')
+
+      await button.trigger('click')
+
+      expect(mockCopyToClipboard).toHaveBeenCalledWith('test value')
     })
   })
 

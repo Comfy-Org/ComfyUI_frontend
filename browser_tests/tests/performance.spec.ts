@@ -67,4 +67,66 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     recordMeasurement(m)
     console.log(`Clipping: ${m.layouts} forced layouts`)
   })
+
+  test('subgraph idle style recalculations', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('subgraphs/nested-subgraph')
+    await comfyPage.perf.startMeasuring()
+
+    for (let i = 0; i < 120; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('subgraph-idle')
+    recordMeasurement(m)
+    console.log(
+      `Subgraph idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts`
+    )
+  })
+
+  test('subgraph mouse interaction style recalculations', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('subgraphs/nested-subgraph')
+    await comfyPage.perf.startMeasuring()
+
+    const canvas = comfyPage.canvas
+    const box = await canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+
+    for (let i = 0; i < 100; i++) {
+      await comfyPage.page.mouse.move(
+        box.x + (box.width * i) / 100,
+        box.y + (box.height * (i % 3)) / 3
+      )
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('subgraph-mouse-sweep')
+    recordMeasurement(m)
+    console.log(
+      `Subgraph mouse sweep: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts`
+    )
+  })
+
+  test('subgraph DOM widget clipping during node selection', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('subgraphs/nested-subgraph')
+    await comfyPage.perf.startMeasuring()
+
+    const canvas = comfyPage.canvas
+    const box = await canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+
+    for (let i = 0; i < 20; i++) {
+      await comfyPage.page.mouse.click(
+        box.x + box.width / 3 + (i % 5) * 30,
+        box.y + box.height / 3 + (i % 4) * 30
+      )
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('subgraph-dom-widget-clipping')
+    recordMeasurement(m)
+    console.log(`Subgraph clipping: ${m.layouts} forced layouts`)
+  })
 })

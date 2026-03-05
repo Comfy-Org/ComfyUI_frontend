@@ -199,7 +199,7 @@
       #3e1ffc 65.17%,
       #009dff 103.86%
     ),
-    var(--color-button-surface, #2d2e32);
+    linear-gradient(var(--color-button-surface, #2d2e32));
 
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
@@ -358,26 +358,6 @@
   --button-active-surface: var(--color-charcoal-600);
   --button-icon: var(--color-smoke-800);
 
-  --subscription-button-gradient:
-    linear-gradient(
-      315deg,
-      rgb(105 230 255 / 0.15) 0%,
-      rgb(99 73 233 / 0.5) 100%
-    ),
-    radial-gradient(
-      70.71% 70.71% at 50% 50%,
-      rgb(62 99 222 / 0.15) 0.01%,
-      rgb(66 0 123 / 0.5) 100%
-    ),
-    linear-gradient(
-      92deg,
-      #d000ff 0.38%,
-      #b009fe 37.07%,
-      #3e1ffc 65.17%,
-      #009dff 103.86%
-    ),
-    var(--color-button-surface, #2d2e32);
-
   --dialog-surface: var(--color-neutral-700);
 
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
@@ -490,7 +470,6 @@
   --color-button-icon: var(--button-icon);
   --color-button-surface: var(--button-surface);
   --color-button-surface-contrast: var(--button-surface-contrast);
-  --color-subscription-button-gradient: var(--subscription-button-gradient);
 
   --color-modal-card-background: var(--modal-card-background);
   --color-modal-card-background-hovered: var(--modal-card-background-hovered);
@@ -632,10 +611,6 @@
   .dark-theme & {
     @slot;
   }
-}
-
-@utility bg-subscription-gradient {
-  background: var(--color-subscription-button-gradient);
 }
 
 @utility highlight {

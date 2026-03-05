@@ -13,6 +13,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import type {
   WorkflowMenuAction,
   WorkflowMenuItem
@@ -52,6 +53,7 @@ export function useWorkflowActionsMenu(
   const menuItemStore = useMenuItemStore()
   const canvasStore = useCanvasStore()
   const { flags } = useFeatureFlags()
+  const { enterBuilder } = useAppModeStore()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -81,9 +83,9 @@ export function useWorkflowActionsMenu(
       prependSeparator = false,
       isNew = false
     }: AddItemOptions) => {
-      if (!visible) return
-      if (prependSeparator) items.push({ separator: true })
+      if (prependSeparator && visible) items.push({ separator: true })
       const item: WorkflowMenuAction = { id, label, icon, command, disabled }
+      if (!visible) item.visible = false
       if (isNew) {
         item.badge = t('g.experimental')
         item.isNew = true
@@ -96,6 +98,11 @@ export function useWorkflowActionsMenu(
       isRoot && (menuItemStore.hasSeenLinear || flags.linearToggleEnabled)
     const isBookmarked = bookmarkStore.isBookmarked(workflow?.path ?? '')
 
+    const toggleLinear = async () => {
+      await commandStore.execute('Comfy.ToggleLinear', {
+        metadata: { source: 'breadcrumb_menu' }
+      })
+    }
     addItem({
       id: 'rename',
       label: t('g.rename'),
@@ -181,21 +188,40 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
-      id: 'toggle-app-mode',
-      label: isLinearMode
-        ? t('breadcrumbsMenu.exitAppMode')
-        : t('breadcrumbsMenu.enterAppMode'),
-      icon: isLinearMode
-        ? 'icon-[comfy--workflow]'
-        : 'icon-[lucide--panels-top-left]',
-      command: async () => {
-        await commandStore.execute('Comfy.ToggleLinear', {
-          metadata: { source: 'breadcrumb_menu' }
-        })
-      },
-      visible: showAppModeItems,
+      id: 'share',
+      label: t('menuLabels.Share'),
+      icon: 'icon-[comfy--send]',
+      command: async () => {},
+      disabled: true,
+      visible: isRoot
+    })
+
+    addItem({
+      id: 'enter-app-mode',
+      label: t('breadcrumbsMenu.enterAppMode'),
+      icon: 'icon-[lucide--panels-top-left]',
+      command: toggleLinear,
+      visible: showAppModeItems && !isLinearMode,
       prependSeparator: true,
-      isNew: !isLinearMode
+      isNew: true
+    })
+
+    addItem({
+      id: 'exit-app-mode',
+      label: t('breadcrumbsMenu.exitAppMode'),
+      icon: 'icon-[comfy--workflow]',
+      command: toggleLinear,
+      visible: isLinearMode,
+      prependSeparator: true
+    })
+
+    addItem({
+      id: 'enter-builder-mode',
+      label: t('breadcrumbsMenu.enterBuilderMode'),
+      icon: 'icon-[lucide--hammer]',
+      command: () => enterBuilder(),
+      visible: showAppModeItems,
+      isNew: true
     })
 
     addItem({
