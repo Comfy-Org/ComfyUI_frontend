@@ -57,7 +57,7 @@
       option: ({ context }: SelectPassThroughMethodOptions<SelectOption>) => ({
         class: cn(
           // Row layout
-          'flex items-center justify-between gap-3 px-2 py-3 rounded',
+          'flex items-center justify-between gap-3 px-2 py-3 rounded-sm',
           'hover:bg-secondary-background-hover',
           // Add focus state for keyboard navigation
           context.focused && 'bg-secondary-background-hover',
