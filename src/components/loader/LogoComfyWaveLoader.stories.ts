@@ -15,6 +15,10 @@ const meta: Meta<typeof LogoComfyWaveLoader> = {
       control: 'select',
       options: ['sm', 'md', 'lg', 'xl']
     },
+    color: {
+      control: 'select',
+      options: ['yellow', 'blue', 'white', 'black']
+    },
     bordered: {
       control: 'boolean'
     }
@@ -49,20 +53,20 @@ export const BrandColors: Story = {
       <div class="flex flex-col items-center gap-12">
         <div class="flex flex-col items-center gap-2">
           <span class="text-xs text-neutral-400">#F0FF41 (Yellow)</span>
-          <LogoComfyWaveLoader size="lg" class="text-[#F0FF41]" />
+          <LogoComfyWaveLoader size="lg" color="yellow" />
         </div>
         <div class="flex flex-col items-center gap-2">
           <span class="text-xs text-neutral-400">#172DD7 (Blue)</span>
-          <LogoComfyWaveLoader size="lg" class="text-[#172DD7]" />
+          <LogoComfyWaveLoader size="lg" color="blue" />
         </div>
         <div class="flex flex-col items-center gap-2">
           <span class="text-xs text-neutral-400">White</span>
-          <LogoComfyWaveLoader size="lg" class="text-white" />
+          <LogoComfyWaveLoader size="lg" color="white" />
         </div>
         <div class="p-4 bg-white rounded" style="background: white">
           <div class="flex flex-col items-center gap-2">
             <span class="text-xs text-neutral-600">Black</span>
-            <LogoComfyWaveLoader size="lg" class="text-black" />
+            <LogoComfyWaveLoader size="lg" color="black" />
           </div>
         </div>
       </div>
@@ -75,10 +79,10 @@ export const AllSizes: Story = {
     components: { LogoComfyWaveLoader },
     template: `
       <div class="flex flex-col items-center gap-8">
-        <LogoComfyWaveLoader size="sm" class="text-[#F0FF41]" />
-        <LogoComfyWaveLoader size="md" class="text-[#F0FF41]" />
-        <LogoComfyWaveLoader size="lg" class="text-[#F0FF41]" />
-        <LogoComfyWaveLoader size="xl" class="text-[#F0FF41]" />
+        <LogoComfyWaveLoader size="sm" color="yellow" />
+        <LogoComfyWaveLoader size="md" color="yellow" />
+        <LogoComfyWaveLoader size="lg" color="yellow" />
+        <LogoComfyWaveLoader size="xl" color="yellow" />
       </div>
     `
   })
