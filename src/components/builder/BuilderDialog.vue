@@ -1,5 +1,7 @@
 <template>
-  <div class="flex w-full min-w-96 flex-col rounded-2xl bg-base-background">
+  <div
+    class="flex min-h-80 w-full min-w-116 flex-col rounded-2xl bg-base-background"
+  >
     <!-- Header -->
     <div
       class="flex h-12 items-center justify-between border-b border-border-default px-4"
@@ -11,6 +13,7 @@
         </h2>
       </div>
       <Button
+        v-if="showClose"
         variant="muted-textonly"
         class="-mr-1"
         :aria-label="$t('g.close')"
@@ -21,7 +24,7 @@
     </div>
 
     <!-- Body -->
-    <div class="flex flex-col gap-4 px-4 py-4">
+    <div class="flex flex-1 flex-col gap-4 px-4 py-4">
       <slot />
     </div>
 
@@ -34,6 +37,10 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
+
+const { showClose = true } = defineProps<{
+  showClose?: boolean
+}>()
 
 defineEmits<{
   close: []

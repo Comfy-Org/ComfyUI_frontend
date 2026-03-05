@@ -344,6 +344,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "포커스 모드 토글"
   },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "앱 사이드바 전환",
+    "tooltip": "앱"
+  },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "에셋 사이드바 전환",
     "tooltip": "에셋"

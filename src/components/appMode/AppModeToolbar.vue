@@ -9,30 +9,28 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const workspaceStore = useWorkspaceStore()
-const { enableAppBuilder, setMode } = useAppMode()
+const { enableAppBuilder } = useAppMode()
+const { enterBuilder } = useAppModeStore()
 const tooltipOptions = { showDelay: 300, hideDelay: 300 }
 
 const isAssetsActive = computed(
   () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'assets'
 )
-const isWorkflowsActive = computed(
-  () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'workflows'
+const isAppsActive = computed(
+  () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'apps'
 )
-
-function enterBuilderMode() {
-  setMode('builder:select')
-}
 
 function openAssets() {
   void commandStore.execute('Workspace.ToggleSidebarTab.assets')
 }
 
 function showApps() {
-  void commandStore.execute('Workspace.ToggleSidebarTab.workflows')
+  void commandStore.execute('Workspace.ToggleSidebarTab.apps')
 }
 
 function openTemplates() {
@@ -75,7 +73,7 @@ function openTemplates() {
       size="unset"
       :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       class="size-10 rounded-lg"
-      @click="enterBuilderMode"
+      @click="enterBuilder"
     >
       <i class="icon-[lucide--hammer] size-4" />
     </Button>
@@ -106,9 +104,7 @@ function openTemplates() {
         variant="textonly"
         size="unset"
         :aria-label="t('linearMode.appModeToolbar.apps')"
-        :class="
-          cn('size-10', isWorkflowsActive && 'bg-secondary-background-hover')
-        "
+        :class="cn('size-10', isAppsActive && 'bg-secondary-background-hover')"
         @click="showApps"
       >
         <i class="icon-[lucide--panels-top-left] size-4" />

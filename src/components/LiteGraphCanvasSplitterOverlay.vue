@@ -64,7 +64,7 @@
             layout="vertical"
             :pt:gutter="
               cn(
-                'rounded-tl-lg rounded-tr-lg ',
+                'rounded-tl-lg rounded-tr-lg',
                 !(bottomPanelVisible && !focusMode) && 'hidden'
               )
             "
@@ -155,7 +155,7 @@ const unifiedWidth = computed(() =>
 
 const { focusMode } = storeToRefs(workspaceStore)
 
-const { isSelectMode } = useAppMode()
+const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
@@ -163,7 +163,9 @@ const showOffsideSplitter = computed(
   () => rightSidePanelVisible.value || isSelectMode.value
 )
 
-const sidebarPanelVisible = computed(() => activeSidebarTab.value !== null)
+const sidebarPanelVisible = computed(
+  () => activeSidebarTab.value !== null && !isBuilderMode.value
+)
 
 const sidebarStateKey = computed(() => {
   return unifiedWidth.value

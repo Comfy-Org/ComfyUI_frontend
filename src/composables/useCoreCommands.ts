@@ -53,6 +53,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
@@ -207,7 +208,9 @@ export function useCoreCommands(): ComfyCommand[] {
         })
         if (!newName || newName === workflow.filename) return
 
-        const newPath = workflow.directory + '/' + newName + '.json'
+        const suffix = getWorkflowSuffix(workflow.suffix)
+        const newPath =
+          workflow.directory + '/' + ensureWorkflowSuffix(newName, suffix)
         await workflowService.renameWorkflow(workflow, newPath)
       }
     },

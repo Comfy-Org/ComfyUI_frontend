@@ -26,11 +26,42 @@ export function formatCamelCase(str: string): string {
   return processedWords.join(' ')
 }
 
+// Metadata cannot be associated with workflows, so extension encodes the mode.
+const JSON_SUFFIX = 'json'
+const APP_JSON_SUFFIX = `app.${JSON_SUFFIX}`
+const JSON_EXT = `.${JSON_SUFFIX}`
+const APP_JSON_EXT = `.${APP_JSON_SUFFIX}`
+
 export function appendJsonExt(path: string) {
-  if (!path.toLowerCase().endsWith('.json')) {
-    path += '.json'
+  if (!path.toLowerCase().endsWith(JSON_EXT)) {
+    path += JSON_EXT
   }
   return path
+}
+
+export type WorkflowSuffix = typeof JSON_SUFFIX | typeof APP_JSON_SUFFIX
+
+export function getWorkflowSuffix(
+  suffix: string | null | undefined
+): WorkflowSuffix {
+  return suffix === APP_JSON_SUFFIX ? APP_JSON_SUFFIX : JSON_SUFFIX
+}
+
+export function appendWorkflowJsonExt(path: string, isApp: boolean): string {
+  return ensureWorkflowSuffix(path, isApp ? APP_JSON_SUFFIX : JSON_SUFFIX)
+}
+
+export function ensureWorkflowSuffix(
+  name: string,
+  suffix: WorkflowSuffix
+): string {
+  const lower = name.toLowerCase()
+  if (lower.endsWith(APP_JSON_EXT)) {
+    name = name.slice(0, -APP_JSON_EXT.length)
+  } else if (lower.endsWith(JSON_EXT)) {
+    name = name.slice(0, -JSON_EXT.length)
+  }
+  return name + '.' + suffix
 }
 
 export function highlightQuery(
@@ -96,19 +127,27 @@ export function formatCommitHash(value: string): string {
 
 /**
  * Returns various filename components.
+ * Recognises compound extensions like `.app.json`.
  * Example:
- * - fullFilename: 'file.txt'
- * - filename: 'file'
- * - suffix: 'txt'
+ * - fullFilename: 'file.txt'       → { filename: 'file',  suffix: 'txt' }
+ * - fullFilename: 'file.app.json'  → { filename: 'file',  suffix: 'app.json' }
  */
 export function getFilenameDetails(fullFilename: string) {
-  if (fullFilename.includes('.')) {
+  const lower = fullFilename.toLowerCase()
+  if (
+    lower.endsWith(APP_JSON_EXT) &&
+    fullFilename.length > APP_JSON_EXT.length
+  ) {
     return {
-      filename: fullFilename.split('.').slice(0, -1).join('.'),
-      suffix: fullFilename.split('.').pop() ?? null
+      filename: fullFilename.slice(0, -APP_JSON_EXT.length),
+      suffix: APP_JSON_SUFFIX
     }
-  } else {
-    return { filename: fullFilename, suffix: null }
+  }
+  const dotIndex = fullFilename.lastIndexOf('.')
+  if (dotIndex <= 0) return { filename: fullFilename, suffix: null }
+  return {
+    filename: fullFilename.slice(0, dotIndex),
+    suffix: fullFilename.slice(dotIndex + 1)
   }
 }
 
