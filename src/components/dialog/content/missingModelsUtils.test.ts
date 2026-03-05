@@ -5,15 +5,9 @@ import { fetchModelMetadata } from './missingModelsUtils'
 const fetchMock = vi.fn()
 vi.stubGlobal('fetch', fetchMock)
 
-vi.mock('@/utils/formatUtil', () => ({
-  isCivitaiModelUrl: (url: string) =>
-    url.includes('civitai.com/api/download/models/'),
-  downloadUrlToHfRepoUrl: (url: string) => {
-    const match = /^(.*?)(?:\/resolve\/|\/blob\/|$)/.exec(new URL(url).pathname)
-    const repoPath = match?.[1]?.replace(/^\//, '') || ''
-    return `https://huggingface.co/${repoPath}`
-  }
-}))
+vi.mock('@/utils/formatUtil', async () => {
+  return await vi.importActual('@/utils/formatUtil')
+})
 
 vi.mock('@/platform/distribution/types', () => ({ isDesktop: false }))
 vi.mock('@/stores/electronDownloadStore', () => ({}))
@@ -68,8 +62,8 @@ describe('fetchModelMetadata', () => {
     expect(metadata.fileSize).toBe(2048)
   })
 
-  it('returns gatedRepoUrl for failed HuggingFace HEAD requests', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false })
+  it('returns gatedRepoUrl for gated HuggingFace HEAD requests (403)', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 403 })
 
     const metadata = await fetchModelMetadata(
       `https://huggingface.co/bfl/FLUX.1/resolve/main/gated-${testId}.safetensors`

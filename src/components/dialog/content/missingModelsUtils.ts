@@ -102,10 +102,15 @@ const inflight = new Map<string, Promise<ModelMetadata>>()
 
 async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
   try {
-    const modelId = new URL(url).pathname.split('/').pop()
-    if (!modelId) return { fileSize: null, gatedRepoUrl: null }
+    const pathname = new URL(url).pathname
+    const versionIdMatch =
+      pathname.match(/^\/api\/download\/models\/(\d+)$/) ??
+      pathname.match(/^\/api\/v1\/models-versions\/(\d+)$/)
 
-    const apiUrl = `https://civitai.com/api/v1/model-versions/${modelId}`
+    if (!versionIdMatch) return fetchHeadMetadata(url)
+
+    const [, modelVersionId] = versionIdMatch
+    const apiUrl = `https://civitai.com/api/v1/model-versions/${modelVersionId}`
     const res = await fetch(apiUrl)
     if (!res.ok) return fetchHeadMetadata(url)
 
@@ -120,11 +125,16 @@ async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
   }
 }
 
+const GATED_STATUS_CODES = new Set([401, 403, 451])
+
 async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
   try {
     const response = await fetch(url, { method: 'HEAD' })
     if (!response.ok) {
-      if (url.includes('huggingface.co')) {
+      if (
+        url.includes('huggingface.co') &&
+        GATED_STATUS_CODES.has(response.status)
+      ) {
         return { fileSize: null, gatedRepoUrl: downloadUrlToHfRepoUrl(url) }
       }
       return { fileSize: null, gatedRepoUrl: null }
@@ -135,9 +145,6 @@ async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
       gatedRepoUrl: null
     }
   } catch {
-    if (url.includes('huggingface.co')) {
-      return { fileSize: null, gatedRepoUrl: downloadUrlToHfRepoUrl(url) }
-    }
     return { fileSize: null, gatedRepoUrl: null }
   }
 }
