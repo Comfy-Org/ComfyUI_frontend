@@ -84,39 +84,47 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     const fbos: WebGLFramebuffer[] = []
     const textures: WebGLTexture[] = []
 
-    for (let i = 0; i < 2; i++) {
-      const tex = ctx.createTexture()
-      if (!tex) throw new Error('Failed to create ping-pong texture')
-      ctx.bindTexture(ctx.TEXTURE_2D, tex)
-      ctx.texImage2D(
-        ctx.TEXTURE_2D,
-        0,
-        ctx.RGBA8,
-        width,
-        height,
-        0,
-        ctx.RGBA,
-        ctx.UNSIGNED_BYTE,
-        null
-      )
-      ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.LINEAR)
-      ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.LINEAR)
-      ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE)
-      ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE)
+    try {
+      for (let i = 0; i < 2; i++) {
+        const tex = ctx.createTexture()
+        if (!tex) throw new Error('Failed to create ping-pong texture')
+        ctx.bindTexture(ctx.TEXTURE_2D, tex)
+        ctx.texImage2D(
+          ctx.TEXTURE_2D,
+          0,
+          ctx.RGBA8,
+          width,
+          height,
+          0,
+          ctx.RGBA,
+          ctx.UNSIGNED_BYTE,
+          null
+        )
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.LINEAR)
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.LINEAR)
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE)
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE)
 
-      const fbo = ctx.createFramebuffer()
-      if (!fbo) throw new Error('Failed to create ping-pong framebuffer')
-      ctx.bindFramebuffer(ctx.FRAMEBUFFER, fbo)
-      ctx.framebufferTexture2D(
-        ctx.FRAMEBUFFER,
-        ctx.COLOR_ATTACHMENT0,
-        ctx.TEXTURE_2D,
-        tex,
-        0
-      )
+        const fbo = ctx.createFramebuffer()
+        if (!fbo) throw new Error('Failed to create ping-pong framebuffer')
+        ctx.bindFramebuffer(ctx.FRAMEBUFFER, fbo)
+        ctx.framebufferTexture2D(
+          ctx.FRAMEBUFFER,
+          ctx.COLOR_ATTACHMENT0,
+          ctx.TEXTURE_2D,
+          tex,
+          0
+        )
 
-      fbos.push(fbo)
-      textures.push(tex)
+        fbos.push(fbo)
+        textures.push(tex)
+      }
+    } catch (error) {
+      for (const fbo of fbos) ctx.deleteFramebuffer(fbo)
+      for (const tex of textures) ctx.deleteTexture(tex)
+      ctx.bindFramebuffer(ctx.FRAMEBUFFER, null)
+      ctx.bindTexture(ctx.TEXTURE_2D, null)
+      throw error
     }
 
     ctx.bindFramebuffer(ctx.FRAMEBUFFER, null)
