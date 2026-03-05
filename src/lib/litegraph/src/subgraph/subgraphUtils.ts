@@ -1,8 +1,9 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import type { LinkId, ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import {
@@ -51,6 +52,12 @@ export function splitPositionables(
 
   for (const item of items) {
     switch (true) {
+      case item instanceof SubgraphInputNode:
+        subgraphInputNodes.add(item)
+        break
+      case item instanceof SubgraphOutputNode:
+        subgraphOutputNodes.add(item)
+        break
       case item instanceof LGraphNode:
         nodes.add(item)
         break
@@ -59,12 +66,6 @@ export function splitPositionables(
         break
       case item instanceof Reroute:
         reroutes.add(item)
-        break
-      case item instanceof SubgraphInputNode:
-        subgraphInputNodes.add(item)
-        break
-      case item instanceof SubgraphOutputNode:
-        subgraphOutputNodes.add(item)
         break
       default:
         unknown.add(item)
@@ -88,6 +89,64 @@ interface BoundaryLinks {
   internalLinks: LLink[]
   boundaryInputLinks: LLink[]
   boundaryOutputLinks: LLink[]
+}
+
+interface SubgraphBoundaryNodeView {
+  id: NodeId
+  inputs: Array<{ link?: LinkId | null }>
+  outputs: Array<{ links?: LinkId[] | null }>
+}
+
+interface SubgraphBoundaryOutputEndpoint {
+  targetId: NodeId
+  targetSlot: number
+  externalParentId: RerouteId | undefined
+}
+
+interface SubgraphBoundaryInputEndpoint {
+  originId: NodeId
+  originSlot: number
+  externalParentId: RerouteId | undefined
+}
+
+export const subgraphBoundaryAdapter = {
+  remapInputBoundaryForUnpack(
+    link: LLink,
+    subgraphNode: SubgraphBoundaryNodeView,
+    links: Map<LinkId, LLink>
+  ): SubgraphBoundaryInputEndpoint | undefined {
+    const outerLinkId = subgraphNode.inputs[link.origin_slot]?.link
+    if (outerLinkId == null) return
+
+    const outerLink = links.get(outerLinkId)
+    if (!outerLink) return
+
+    return {
+      originId: outerLink.origin_id,
+      originSlot: outerLink.origin_slot,
+      externalParentId: outerLink.parentId
+    }
+  },
+
+  resolveOutputBoundaryForUnpack(
+    link: LLink,
+    subgraphNode: SubgraphBoundaryNodeView,
+    links: Map<LinkId, LLink>
+  ): SubgraphBoundaryOutputEndpoint[] {
+    const results: SubgraphBoundaryOutputEndpoint[] = []
+    for (const linkId of subgraphNode.outputs[link.target_slot]?.links ?? []) {
+      const outerLink = links.get(linkId)
+      if (!outerLink) continue
+
+      results.push({
+        targetId: outerLink.target_id,
+        targetSlot: outerLink.target_slot,
+        externalParentId: outerLink.parentId
+      })
+    }
+
+    return results
+  }
 }
 
 export function getBoundaryLinks(
@@ -263,7 +322,7 @@ export function groupResolvedByOutput(
 function mapReroutes(
   link: SerialisableLLink,
   reroutes: Map<RerouteId, Reroute>
-) {
+): RerouteId | undefined {
   let child: SerialisableLLink | Reroute = link
   let nextReroute =
     child.parentId === undefined ? undefined : reroutes.get(child.parentId)

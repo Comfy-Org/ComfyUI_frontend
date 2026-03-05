@@ -5,8 +5,7 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { addAfterConfigureHandler } from '@/utils/graphConfigureUtil'
 
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -91,7 +90,6 @@ import {
 import {
   executeWidgetsCallback,
   createNode,
-  fixLinkInputSlots,
   isImageNode,
   isVideoNode
 } from '@/utils/litegraphUtil'
@@ -795,37 +793,6 @@ export class ComfyApp {
     }
   }
 
-  private addAfterConfigureHandler(graph: LGraph) {
-    const { onConfigure } = graph
-    graph.onConfigure = function (...args) {
-      // Set pending sync flag to suppress link rendering until slots are synced
-      if (LiteGraph.vueNodesMode) {
-        layoutStore.setPendingSlotSync(true)
-      }
-
-      try {
-        fixLinkInputSlots(this)
-
-        // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-        triggerCallbackOnAllNodes(this, 'onGraphConfigured')
-
-        const r = onConfigure?.apply(this, args)
-
-        // Fire after onConfigure, used by primitives to generate widget using input nodes config
-        triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
-
-        return r
-      } finally {
-        // Flush pending slot layout syncs to fix link alignment after undo/redo
-        // Using finally ensures links aren't permanently suppressed if an error occurs
-        if (LiteGraph.vueNodesMode) {
-          flushScheduledSlotLayoutSync()
-          app.canvas?.setDirty(true, true)
-        }
-      }
-    }
-  }
-
   /**
    * Set up the app on the page
    */
@@ -864,7 +831,7 @@ export class ComfyApp {
       }
     })
 
-    this.addAfterConfigureHandler(graph)
+    addAfterConfigureHandler(graph, () => this.canvas)
 
     this.rootGraphInternal = graph
     this.canvas = new LGraphCanvas(canvasEl, graph)

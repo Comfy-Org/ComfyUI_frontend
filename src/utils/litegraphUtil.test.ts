@@ -13,6 +13,7 @@ import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
   compressWidgetInputSlots,
   createNode,
+  fixLinkInputSlots,
   isAnimatedOutput,
   isVideoOutput,
   migrateWidgetsValues,
@@ -24,6 +25,10 @@ vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => ({
   LiteGraph: {
     createNode: vi.fn()
   }
+}))
+
+vi.mock('@/lib/litegraph/src/utils/feedback', () => ({
+  warnDeprecated: vi.fn()
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -388,6 +393,82 @@ describe('compressWidgetInputSlots', () => {
 
     expect(graph.nodes).toEqual([])
     expect(graph.links).toEqual([])
+  })
+})
+
+function createGraphWithLinks(options: {
+  targetSlot: number
+  inputLink: number | null
+  nestedTargetSlot?: number
+  nestedInputLink?: number | null
+}) {
+  const nestedGraph = {
+    nodes: [
+      {
+        inputs: [{ link: options.nestedInputLink ?? null }],
+        isSubgraphNode: vi.fn(() => false)
+      }
+    ],
+    links: new Map(
+      options.nestedInputLink
+        ? [
+            [
+              options.nestedInputLink,
+              { target_slot: options.nestedTargetSlot ?? 0 }
+            ]
+          ]
+        : []
+    )
+  }
+
+  const graph = {
+    nodes: [
+      {
+        inputs: [{ link: options.inputLink }],
+        isSubgraphNode: vi.fn(() => true),
+        subgraph: nestedGraph
+      }
+    ],
+    links: new Map(
+      options.inputLink
+        ? [[options.inputLink, { target_slot: options.targetSlot }]]
+        : []
+    )
+  }
+
+  return {
+    graph: graph as unknown as LGraph,
+    nestedGraph
+  }
+}
+
+describe('fixLinkInputSlots', () => {
+  it('repairs stale target slot indices recursively', () => {
+    const { graph, nestedGraph } = createGraphWithLinks({
+      targetSlot: 4,
+      inputLink: 11,
+      nestedTargetSlot: 3,
+      nestedInputLink: 22
+    })
+
+    const result = fixLinkInputSlots(graph)
+
+    expect(result).toBe(true)
+    expect(graph.links.get(11)?.target_slot).toBe(0)
+    expect(nestedGraph.links.get(22)?.target_slot).toBe(0)
+  })
+
+  it('returns false when no repair is needed', () => {
+    const { graph } = createGraphWithLinks({
+      targetSlot: 0,
+      inputLink: 11,
+      nestedTargetSlot: 0,
+      nestedInputLink: 22
+    })
+
+    const result = fixLinkInputSlots(graph)
+
+    expect(result).toBe(false)
   })
 })
 

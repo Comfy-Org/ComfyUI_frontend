@@ -1,8 +1,7 @@
-import { pull } from 'es-toolkit/compat'
-
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import { graphLifecycleEventDispatcher } from '@/lib/litegraph/src/infrastructure/GraphLifecycleEventDispatcher'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -11,6 +10,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutputNode } from './SubgraphOutputNode'
@@ -52,66 +52,53 @@ export class SubgraphOutput extends SubgraphSlot {
     )
       return
 
-    // Link should not be present, but just in case, disconnect it
-    const existingLink = this.getLinks().at(0)
-    if (existingLink != null) {
-      subgraph.beforeChange()
+    subgraph.beforeChange()
+    try {
+      // Link should not be present, but just in case, disconnect it
+      const existingLink = this.getLinks().at(0)
+      if (existingLink != null) {
+        const { outputNode } = existingLink.resolve(subgraph)
+        if (!outputNode)
+          throw new Error('Expected output node for existing link')
 
-      existingLink.disconnect(subgraph, 'input')
-      const resolved = existingLink.resolve(subgraph)
-      const links = resolved.output?.links
-      if (links) pull(links, existingLink.id)
-    }
+        subgraph.disconnectSubgraphOutputLink(
+          this,
+          outputNode,
+          existingLink.origin_slot,
+          existingLink
+        )
 
-    const link = new LLink(
-      ++subgraph.state.lastLinkId,
-      slot.type,
-      node.id,
-      outputIndex,
-      this.parent.id,
-      this.parent.slots.indexOf(this),
-      afterRerouteId
-    )
-
-    // Add to graph links list
-    subgraph._links.set(link.id, link)
-
-    // Set link ID in each slot
-    this.linkIds[0] = link.id
-    slot.links ??= []
-    slot.links.push(link.id)
-
-    // Reroutes
-    const reroutes = LLink.getReroutes(subgraph, link)
-    for (const reroute of reroutes) {
-      reroute.linkIds.add(link.id)
-      if (reroute.floating) delete reroute.floating
-      reroute._dragging = undefined
-    }
-
-    // If this is the terminus of a floating link, remove it
-    const lastReroute = reroutes.at(-1)
-    if (lastReroute) {
-      for (const linkId of lastReroute.floatingLinkIds) {
-        const link = subgraph.floatingLinks.get(linkId)
-        if (link?.parentId === lastReroute.id) {
-          subgraph.removeFloatingLink(link)
-        }
+        graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+          node: outputNode,
+          slotType: NodeSlotType.OUTPUT,
+          slotIndex: existingLink.origin_slot,
+          connected: false,
+          link: existingLink,
+          slot: this
+        })
       }
+
+      const link = subgraph.connectSubgraphOutputSlot(
+        node,
+        outputIndex,
+        this,
+        afterRerouteId
+      )
+      if (!link) return
+
+      graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+        node,
+        slotType: NodeSlotType.OUTPUT,
+        slotIndex: outputIndex,
+        connected: true,
+        link,
+        slot
+      })
+
+      return link
+    } finally {
+      subgraph.afterChange()
     }
-    subgraph._version++
-
-    node.onConnectionsChange?.(
-      NodeSlotType.OUTPUT,
-      outputIndex,
-      true,
-      link,
-      slot
-    )
-
-    subgraph.afterChange()
-
-    return link
   }
 
   get labelPos(): Point {
@@ -153,24 +140,42 @@ export class SubgraphOutput extends SubgraphSlot {
 
     return false
   }
+  private static _disconnectDeprecationWarned = false
+
   override disconnect() {
     const { subgraph } = this.parent
-    //should never have more than one connection
-    for (const linkId of this.linkIds) {
-      const link = subgraph.links[linkId]
-      if (!link) continue
-      subgraph.removeLink(linkId)
-      const { output, outputNode } = link.resolve(subgraph)
-      if (output)
-        output.links = output.links?.filter((id) => id !== linkId) ?? null
-      outputNode?.onConnectionsChange?.(
-        NodeSlotType.OUTPUT,
-        link.origin_slot,
-        false,
-        link,
-        this
+    if (!SubgraphOutput._disconnectDeprecationWarned) {
+      SubgraphOutput._disconnectDeprecationWarned = true
+      warnDeprecated(
+        '[DEPRECATED] SubgraphOutput.disconnect now dispatches onConnectionsChange for output-node disconnect parity. Remedy: update extension handlers to treat OUTPUT/disconnected callbacks as the canonical disconnect signal and no-op safely if already detached.'
       )
     }
+
+    //should never have more than one connection
+    for (const linkId of [...this.linkIds]) {
+      const link = subgraph.links.get(linkId)
+      if (!link) continue
+
+      const { outputNode } = link.resolve(subgraph)
+      if (!outputNode) continue
+
+      subgraph.disconnectSubgraphOutputLink(
+        this,
+        outputNode,
+        link.origin_slot,
+        link
+      )
+
+      graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+        node: outputNode,
+        slotType: NodeSlotType.OUTPUT,
+        slotIndex: link.origin_slot,
+        connected: false,
+        link,
+        slot: this
+      })
+    }
+
     this.linkIds.length = 0
   }
 }

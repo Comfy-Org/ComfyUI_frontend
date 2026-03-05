@@ -1,9 +1,10 @@
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { graphLifecycleEventDispatcher } from '@/lib/litegraph/src/infrastructure/GraphLifecycleEventDispatcher'
 import type {
   DefaultConnectionColors,
   INodeInputSlot,
@@ -91,31 +92,6 @@ export class SubgraphInputNode
     return inputNode.canConnectTo(this, input, fromSlot)
   }
 
-  connectSlots(
-    fromSlot: SubgraphInput,
-    inputNode: LGraphNode,
-    input: INodeInputSlot,
-    afterRerouteId: RerouteId | undefined
-  ): LLink {
-    const { subgraph } = this
-
-    const outputIndex = this.slots.indexOf(fromSlot)
-    const inputIndex = inputNode.inputs.indexOf(input)
-
-    if (outputIndex === -1 || inputIndex === -1)
-      throw new Error('Invalid slot indices.')
-
-    return new LLink(
-      ++subgraph.state.lastLinkId,
-      input.type || fromSlot.type,
-      this.id,
-      outputIndex,
-      inputNode.id,
-      inputIndex,
-      afterRerouteId
-    )
-  }
-
   // #region Legacy LGraphNode compatibility
 
   connectByType(
@@ -170,52 +146,57 @@ export class SubgraphInputNode
   ): void {
     const { subgraph } = this
 
-    // Break floating links
-    if (input._floatingLinks?.size) {
-      for (const link of input._floatingLinks) {
-        subgraph.removeFloatingLink(link)
-      }
+    const slotIndex = node.inputs.findIndex((inp) => inp === input)
+    if (slotIndex === -1) {
+      console.warn('disconnectNodeInput: target input slot not found', this)
+      return
     }
 
-    input.link = null
-    subgraph.setDirtyCanvas(false, true)
-
-    if (!link) return
-
-    const subgraphInputIndex = link.origin_slot
-    link.disconnect(subgraph, 'output')
-    subgraph._version++
-
-    const subgraphInput = this.slots.at(subgraphInputIndex)
+    const subgraphInput = link ? this.slots.at(link.origin_slot) : undefined
     if (!subgraphInput) {
       console.warn(
         'disconnectNodeInput: subgraphInput not found',
         this,
-        subgraphInputIndex
+        link?.origin_slot
       )
+
+      if (input._floatingLinks?.size) {
+        for (const floatingLink of input._floatingLinks) {
+          subgraph.removeFloatingLink(floatingLink)
+        }
+      }
+
+      input.link = null
+      if (link) {
+        subgraph.disconnectLink(link, 'output')
+        subgraph._version++
+      }
+      subgraph.setDirtyCanvas(false, true)
+      graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+        node,
+        slotType: NodeSlotType.INPUT,
+        slotIndex,
+        connected: false,
+        link,
+        slot: input
+      })
       return
     }
 
-    // search in the inputs list for this link
-    const index = subgraphInput.linkIds.indexOf(link.id)
-    if (index !== -1) {
-      subgraphInput.linkIds.splice(index, 1)
-    } else {
-      console.warn(
-        'disconnectNodeInput: link ID not found in subgraphInput linkIds',
-        link.id
-      )
-    }
-    const slotIndex = node.inputs.findIndex((inp) => inp === input)
-    if (slotIndex !== -1) {
-      node.onConnectionsChange?.(
-        NodeSlotType.INPUT,
-        slotIndex,
-        false,
-        link,
-        subgraphInput
-      )
-    }
+    subgraph.disconnectSubgraphInputLink(subgraphInput, node, slotIndex, link)
+    subgraph.setDirtyCanvas(false, true)
+
+    // Compat: onConnectionsChange 5th arg is now the INodeInputSlot (previously
+    // passed the SubgraphInput). Extensions relying on the old type should
+    // adapt to accept INodeInputSlot.
+    graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+      node,
+      slotType: NodeSlotType.INPUT,
+      slotIndex,
+      connected: false,
+      link,
+      slot: input
+    })
   }
 
   override drawProtected(

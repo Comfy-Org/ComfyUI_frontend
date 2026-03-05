@@ -380,7 +380,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const existingInput = this.inputs.find((i) => i.name === name)
         if (existingInput) {
           const linkId = subgraphInput.linkIds[0]
-          const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
+          const link = subgraph.links.get(linkId)
+          if (!link) return
+
+          const { inputNode, input } = link.resolve(subgraph)
           const widget = inputNode?.widgets?.find?.((w) => w.name === name)
           if (widget && inputNode)
             this._setWidget(
@@ -430,14 +433,18 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       { signal }
     )
 
+    // Compat: `.name` now changes on rename (previously only `.label` changed).
+    // Extensions that key on `input.name` should be aware of this.
     subgraphEvents.addEventListener(
       'renaming-input',
       (e) => {
-        const { index, newName } = e.detail
+        const { index, newName, canonicalName } = e.detail
         const input = this.inputs.at(index)
         if (!input) throw new Error('Subgraph input not found')
 
+        input.name = canonicalName
         input.label = newName
+        if (input.widget) input.widget.name = input.name
         if (input._widget) {
           input._widget.label = newName
         }
@@ -448,10 +455,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphEvents.addEventListener(
       'renaming-output',
       (e) => {
-        const { index, newName } = e.detail
+        const { index, newName, canonicalName } = e.detail
         const output = this.outputs.at(index)
         if (!output) throw new Error('Subgraph output not found')
 
+        output.name = canonicalName
         output.label = newName
       },
       { signal }

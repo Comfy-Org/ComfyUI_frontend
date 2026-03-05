@@ -1,17 +1,241 @@
 // TODO: Fix these tests after migration
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
-import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import {
+  LinkDirection,
+  NodeSlotType
+} from '@/lib/litegraph/src/types/globalEnums'
+import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
+  createTestSubgraphData,
   createTestSubgraph,
   createTestSubgraphNode
 } from './__fixtures__/subgraphHelpers'
 
+describe('SubgraphIO - Slot Identity Normalization', () => {
+  subgraphTest(
+    'adds duplicate input/output names with stable canonical names while preserving display labels',
+    ({ simpleSubgraph }) => {
+      const inputA = simpleSubgraph.addInput('duplicate', 'number')
+      const inputB = simpleSubgraph.addInput('duplicate', 'string')
+      const outputA = simpleSubgraph.addOutput('duplicate', 'number')
+      const outputB = simpleSubgraph.addOutput('duplicate', 'string')
+
+      expect(inputA.name).toBe('duplicate')
+      expect(inputA.displayName).toBe('duplicate')
+      expect(inputB.name).toBe(`duplicate__${inputB.id}`)
+      expect(inputB.label).toBe('duplicate')
+      expect(inputB.displayName).toBe('duplicate')
+
+      expect(outputA.name).toBe('duplicate')
+      expect(outputA.displayName).toBe('duplicate')
+      expect(outputB.name).toBe(`duplicate__${outputB.id}`)
+      expect(outputB.label).toBe('duplicate')
+      expect(outputB.displayName).toBe('duplicate')
+    }
+  )
+
+  subgraphTest(
+    'renaming to an existing slot name preserves display labels while assigning stable canonical identities',
+    ({ simpleSubgraph }) => {
+      const inputA = simpleSubgraph.addInput('source', 'number')
+      const inputB = simpleSubgraph.addInput('target', 'number')
+      const outputA = simpleSubgraph.addOutput('source', 'number')
+      const outputB = simpleSubgraph.addOutput('target', 'number')
+
+      simpleSubgraph.renameInput(inputB, 'source')
+      simpleSubgraph.renameOutput(outputB, 'source')
+
+      expect(inputA.name).toBe('source')
+      expect(inputB.name).toBe(`source__${inputB.id}`)
+      expect(inputB.displayName).toBe('source')
+
+      expect(outputA.name).toBe('source')
+      expect(outputB.name).toBe(`source__${outputB.id}`)
+      expect(outputB.displayName).toBe('source')
+    }
+  )
+
+  it('normalizes legacy duplicate slot names into stable canonical identities on configure', () => {
+    const rootGraph = new LGraph()
+    const inputIdA = createUuidv4()
+    const inputIdB = createUuidv4()
+    const outputIdA = createUuidv4()
+    const outputIdB = createUuidv4()
+
+    const subgraph = rootGraph.createSubgraph(
+      createTestSubgraphData({
+        inputs: [
+          { id: inputIdA, name: 'legacy', type: 'number' },
+          { id: inputIdB, name: 'legacy', type: 'number' }
+        ],
+        outputs: [
+          { id: outputIdA, name: 'legacy', type: 'number' },
+          { id: outputIdB, name: 'legacy', type: 'number' }
+        ]
+      })
+    )
+
+    expect(subgraph.inputs.map((slot) => slot.name)).toEqual([
+      'legacy',
+      `legacy__${inputIdB}`
+    ])
+    expect(subgraph.outputs.map((slot) => slot.name)).toEqual([
+      'legacy',
+      `legacy__${outputIdB}`
+    ])
+    expect(subgraph.inputs.map((slot) => slot.displayName)).toEqual([
+      'legacy',
+      'legacy'
+    ])
+    expect(subgraph.outputs.map((slot) => slot.displayName)).toEqual([
+      'legacy',
+      'legacy'
+    ])
+  })
+})
+
 describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
+  subgraphTest(
+    'connect callback payload keeps current subgraph-input asymmetry',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const internalNode = new LGraphNode('Internal Target')
+      internalNode.addInput('in', '*')
+      subgraph.add(internalNode)
+
+      const inputCallback = vi.fn()
+      internalNode.onConnectionsChange = inputCallback
+
+      const subgraphInput = subgraph.inputNode.slots[0]
+      const nodeInput = internalNode.inputs[0]
+      const link = subgraphInput.connect(nodeInput, internalNode)
+
+      expect(link).toBeDefined()
+      expect(link?.origin_id).toBe(SUBGRAPH_INPUT_ID)
+      expect(link?.target_id).toBe(internalNode.id)
+      expect(inputCallback).toHaveBeenCalledTimes(1)
+      expect(inputCallback).toHaveBeenLastCalledWith(
+        NodeSlotType.INPUT,
+        0,
+        true,
+        link,
+        nodeInput
+      )
+    }
+  )
+
+  subgraphTest(
+    'disconnect callback payload keeps current subgraph-input asymmetry',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const internalNode = new LGraphNode('Internal Target')
+      internalNode.addInput('in', '*')
+      subgraph.add(internalNode)
+
+      const inputCallback = vi.fn()
+      internalNode.onConnectionsChange = inputCallback
+
+      const subgraphInput = subgraph.inputNode.slots[0]
+      const link = subgraphInput.connect(internalNode.inputs[0], internalNode)
+      if (!link) throw new Error('Expected link')
+
+      new ToInputFromIoNodeLink(
+        subgraph,
+        subgraph.inputNode,
+        subgraphInput,
+        undefined,
+        LinkDirection.CENTER,
+        link
+      ).disconnect()
+
+      expect(inputCallback).toHaveBeenNthCalledWith(
+        1,
+        NodeSlotType.INPUT,
+        0,
+        true,
+        link,
+        internalNode.inputs[0]
+      )
+      expect(inputCallback).toHaveBeenNthCalledWith(
+        2,
+        NodeSlotType.INPUT,
+        0,
+        false,
+        link,
+        internalNode.inputs[0]
+      )
+      expect(internalNode.inputs[0].link).toBeNull()
+      expect(subgraphInput.linkIds).toEqual([])
+      expect(subgraph.links.get(link.id)).toBeUndefined()
+    }
+  )
+
+  subgraphTest(
+    'connect lifecycle keeps input-connected event before node callback',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const internalNode = new LGraphNode('Internal Target')
+      internalNode.addInput('in', '*')
+      internalNode.addWidget('number', 'in-widget', 0, null)
+      internalNode.inputs[0].widget = { name: 'in-widget' }
+      subgraph.add(internalNode)
+
+      const subgraphInput = subgraph.inputNode.slots[0]
+      const callbackOrder: string[] = []
+      subgraphInput.events.addEventListener('input-connected', () => {
+        callbackOrder.push('event:input-connected')
+      })
+      internalNode.onConnectionsChange = () => {
+        callbackOrder.push('callback:node-connected')
+      }
+
+      subgraphInput.connect(internalNode.inputs[0], internalNode)
+
+      expect(callbackOrder).toEqual([
+        'event:input-connected',
+        'callback:node-connected'
+      ])
+    }
+  )
+
+  subgraphTest(
+    'disconnect lifecycle keeps node callback before input-disconnected event',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const internalNode = new LGraphNode('Internal Target')
+      internalNode.addInput('in', '*')
+      subgraph.add(internalNode)
+
+      const subgraphInput = subgraph.inputNode.slots[0]
+      subgraphInput.connect(internalNode.inputs[0], internalNode)
+
+      const callbackOrder: string[] = []
+      internalNode.onConnectionsChange = (...args) => {
+        if (args[2]) return
+        callbackOrder.push('callback:node-disconnected')
+      }
+      subgraphInput.events.addEventListener('input-disconnected', () => {
+        callbackOrder.push('event:input-disconnected')
+      })
+
+      subgraphInput.disconnect()
+
+      expect(callbackOrder).toEqual([
+        'callback:node-disconnected',
+        'event:input-disconnected'
+      ])
+    }
+  )
+
   subgraphTest(
     'input accepts external connections from parent graph',
     ({ subgraphWithNode }) => {
@@ -102,6 +326,35 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
   })
 
   subgraphTest(
+    'disconnects subgraph-input links even when link origin_slot points to a missing slot',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const internalNode = new LGraphNode('Internal Target')
+      internalNode.addInput('in', '*')
+      subgraph.add(internalNode)
+
+      const subgraphInput = subgraph.inputNode.slots[0]
+      const link = subgraphInput.connect(internalNode.inputs[0], internalNode)
+      if (!link) throw new Error('Expected link')
+
+      // Simulate stale legacy/corrupt topology where the slot index no longer resolves.
+      link.origin_slot = 999
+
+      new ToInputFromIoNodeLink(
+        subgraph,
+        subgraph.inputNode,
+        subgraphInput,
+        undefined,
+        LinkDirection.CENTER,
+        link
+      ).disconnect()
+
+      expect(internalNode.inputs[0].link).toBeNull()
+      expect(subgraph.links.get(link.id)).toBeUndefined()
+    }
+  )
+
+  subgraphTest(
     'handles slot renaming with active connections',
     ({ subgraphWithNode }) => {
       const { subgraph, subgraphNode, parentGraph } = subgraphWithNode
@@ -128,6 +381,75 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
 })
 
 describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
+  subgraphTest(
+    'connect callback payload keeps current subgraph-output asymmetry',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+
+      const internalNode = new LGraphNode('Internal Source')
+      internalNode.addOutput('out', '*')
+      subgraph.add(internalNode)
+
+      const outputCallback = vi.fn()
+      internalNode.onConnectionsChange = outputCallback
+
+      const subgraphOutput = subgraph.outputNode.slots[0]
+      const nodeOutput = internalNode.outputs[0]
+      const link = subgraphOutput.connect(nodeOutput, internalNode)
+
+      expect(link).toBeDefined()
+      expect(link?.origin_id).toBe(internalNode.id)
+      expect(link?.target_id).toBe(SUBGRAPH_OUTPUT_ID)
+      expect(outputCallback).toHaveBeenLastCalledWith(
+        NodeSlotType.OUTPUT,
+        0,
+        true,
+        link,
+        nodeOutput
+      )
+    }
+  )
+
+  subgraphTest(
+    'disconnect callback payload keeps current subgraph-output asymmetry',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+
+      const internalNode = new LGraphNode('Internal Source')
+      internalNode.addOutput('out', '*')
+      subgraph.add(internalNode)
+
+      const outputCallback = vi.fn()
+      internalNode.onConnectionsChange = outputCallback
+
+      const subgraphOutput = subgraph.outputNode.slots[0]
+      const link = subgraphOutput.connect(internalNode.outputs[0], internalNode)
+      if (!link) throw new Error('Expected link')
+
+      subgraphOutput.disconnect()
+
+      expect(outputCallback).toHaveBeenNthCalledWith(
+        1,
+        NodeSlotType.OUTPUT,
+        0,
+        true,
+        link,
+        internalNode.outputs[0]
+      )
+      expect(outputCallback).toHaveBeenNthCalledWith(
+        2,
+        NodeSlotType.OUTPUT,
+        0,
+        false,
+        link,
+        subgraphOutput
+      )
+      expect(subgraph.links.get(link.id)).toBeUndefined()
+      expect(subgraphOutput.linkIds).toEqual([])
+      expect(internalNode.outputs[0].links).toEqual([])
+    }
+  )
+
   subgraphTest(
     'output provides connections to parent graph',
     ({ subgraphWithNode }) => {
@@ -216,6 +538,54 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
       expect(externalNode.inputs[0].link).not.toBe(null)
       expect(subgraph.outputs[0].label).toBe('new_name')
       expect(subgraph.outputs[0].displayName).toBe('new_name')
+    }
+  )
+
+  subgraphTest(
+    'cleans stale subgraph-output linkIds while disconnecting active output links',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+
+      const internalNode = new LGraphNode('Internal Source')
+      internalNode.addOutput('out', '*')
+      subgraph.add(internalNode)
+
+      const subgraphOutput = subgraph.outputNode.slots[0]
+      const link = subgraphOutput.connect(internalNode.outputs[0], internalNode)
+      if (!link) throw new Error('Expected link')
+
+      // Simulate stale/corrupt bookkeeping where a dead link id remains.
+      const staleLinkId = 999_999
+      subgraphOutput.linkIds.push(staleLinkId)
+
+      subgraphOutput.disconnect()
+
+      expect(subgraphOutput.linkIds).toEqual([])
+      expect(subgraph.links.get(link.id)).toBeUndefined()
+      expect(internalNode.outputs[0].links).toEqual([])
+    }
+  )
+
+  subgraphTest(
+    'disconnect is idempotent and keeps output endpoints detached',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+
+      const internalNode = new LGraphNode('Internal Source')
+      internalNode.addOutput('out', '*')
+      subgraph.add(internalNode)
+
+      const subgraphOutput = subgraph.outputNode.slots[0]
+      const link = subgraphOutput.connect(internalNode.outputs[0], internalNode)
+      if (!link) throw new Error('Expected link')
+
+      subgraphOutput.disconnect()
+      subgraphOutput.disconnect()
+
+      expect(subgraph.getLink(link.id)).toBeUndefined()
+      expect(subgraphOutput.getLinks()).toEqual([])
+      expect(subgraphOutput.linkIds).toEqual([])
+      expect(internalNode.outputs[0].links).toEqual([])
     }
   )
 })

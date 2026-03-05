@@ -99,4 +99,90 @@ describe('remapClipboardSubgraphNodeIds', () => {
       [String(remappedInteriorId), 'seed']
     ])
   })
+
+  it('preserves non-remapped proxy widget refs and rewrites internal link endpoints', () => {
+    const rootGraph = new LGraph()
+    const existingNodeA = new LGraphNode('existing-a')
+    existingNodeA.id = 1
+    rootGraph.add(existingNodeA)
+
+    const existingNodeB = new LGraphNode('existing-b')
+    existingNodeB.id = 2
+    rootGraph.add(existingNodeB)
+
+    const subgraphId = createUuidv4()
+    const pastedSubgraph: ExportedSubgraph = {
+      id: subgraphId,
+      version: 1,
+      revision: 0,
+      state: {
+        lastNodeId: 0,
+        lastLinkId: 0,
+        lastGroupId: 0,
+        lastRerouteId: 0
+      },
+      config: {},
+      name: 'Pasted Subgraph',
+      inputNode: {
+        id: -10,
+        bounding: [0, 0, 10, 10]
+      },
+      outputNode: {
+        id: -20,
+        bounding: [0, 0, 10, 10]
+      },
+      inputs: [],
+      outputs: [],
+      widgets: [],
+      nodes: [
+        createSerialisedNode(1, 'test/node'),
+        createSerialisedNode(2, 'test/node')
+      ],
+      links: [
+        {
+          id: 1,
+          type: '*',
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0
+        }
+      ],
+      groups: []
+    }
+
+    const parsed: ClipboardItems = {
+      nodes: [
+        createSerialisedNode(99, subgraphId, [
+          ['1', 'seed'],
+          ['external', 'label']
+        ])
+      ],
+      groups: [],
+      reroutes: [],
+      links: [],
+      subgraphs: [pastedSubgraph]
+    }
+
+    remapClipboardSubgraphNodeIds(parsed, rootGraph)
+
+    const remappedSubgraph = parsed.subgraphs?.[0]
+    if (!remappedSubgraph) throw new Error('Expected remapped subgraph')
+    const [firstInterior, secondInterior] = remappedSubgraph.nodes ?? []
+    if (!firstInterior || !secondInterior)
+      throw new Error('Expected remapped interior nodes')
+
+    expect(firstInterior.id).not.toBe(1)
+    expect(secondInterior.id).not.toBe(2)
+
+    const remappedLink = remappedSubgraph.links?.[0]
+    expect(remappedLink?.origin_id).toBe(firstInterior.id)
+    expect(remappedLink?.target_id).toBe(secondInterior.id)
+
+    const remappedNode = parsed.nodes?.[0]
+    expect(remappedNode?.properties?.proxyWidgets).toStrictEqual([
+      [String(firstInterior.id), 'seed'],
+      ['external', 'label']
+    ])
+  })
 })

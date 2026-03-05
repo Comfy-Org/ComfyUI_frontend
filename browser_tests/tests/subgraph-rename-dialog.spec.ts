@@ -87,9 +87,9 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
     // Get the current value in the prompt dialog
     const dialogValue = await comfyPage.page.inputValue(SELECTORS.promptDialog)
 
-    // This should show the current label (RENAMED_NAME), not the original name
+    // This should show the current renamed value and stay aligned with slot identity.
     expect(dialogValue).toBe(RENAMED_NAME)
-    expect(dialogValue).not.toBe(afterFirstRename.name) // Should not show the original slot.name
+    expect(dialogValue).toBe(afterFirstRename.name)
 
     // Complete the second rename to ensure everything still works
     await comfyPage.page.fill(SELECTORS.promptDialog, '')

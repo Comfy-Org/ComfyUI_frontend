@@ -10,11 +10,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
-import {
-  commonType,
-  isNodeBindable,
-  toClass
-} from '@/lib/litegraph/src/utils/type'
+import { isNodeBindable, toClass } from '@/lib/litegraph/src/utils/type'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { DragAndScale } from './DragAndScale'
@@ -27,6 +23,7 @@ import { LLink } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
+import { graphLifecycleEventDispatcher } from './infrastructure/GraphLifecycleEventDispatcher'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -2866,8 +2863,6 @@ export class LGraphNode
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    const layoutMutations = useLayoutMutations()
-
     const outputIndex = this.outputs.indexOf(output)
     if (outputIndex === -1) {
       console.warn('connectSlots: output not found')
@@ -2913,84 +2908,23 @@ export class LGraphNode
       inputNode.disconnectInput(inputIndex, true)
     }
 
-    const maybeCommonType =
-      input.type && output.type && commonType(input.type, output.type)
-
-    const link = new LLink(
-      ++graph.state.lastLinkId,
-      maybeCommonType || input.type || output.type,
-      this.id,
+    const link = graph.connectSlots(
+      this,
       outputIndex,
-      inputNode.id,
+      inputNode,
       inputIndex,
       afterRerouteId
     )
 
-    // add to graph links list
-    graph._links.set(link.id, link)
-
-    // Register link in Layout Store for spatial tracking
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createLink(
-      link.id,
-      this.id,
-      outputIndex,
-      inputNode.id,
-      inputIndex
-    )
-
-    // connect in output
-    output.links ??= []
-    output.links.push(link.id)
-    // connect in input
-    const targetInput = inputNode.inputs[inputIndex]
-    targetInput.link = link.id
-    if (targetInput.widget) {
-      graph.trigger('node:slot-links:changed', {
-        nodeId: inputNode.id,
-        slotType: NodeSlotType.INPUT,
-        slotIndex: inputIndex,
-        connected: true,
-        linkId: link.id
-      })
-    }
-
-    // Reroutes
-    const reroutes = LLink.getReroutes(graph, link)
-    for (const reroute of reroutes) {
-      reroute.linkIds.add(link.id)
-      if (reroute.floating) reroute.floating = undefined
-      reroute._dragging = undefined
-    }
-
-    // If this is the terminus of a floating link, remove it
-    const lastReroute = reroutes.at(-1)
-    if (lastReroute) {
-      for (const linkId of lastReroute.floatingLinkIds) {
-        const link = graph.floatingLinks.get(linkId)
-        if (link?.parentId === lastReroute.id) {
-          graph.removeFloatingLink(link)
-        }
-      }
-    }
-    graph._version++
-
-    // link has been created now, so its updated
-    this.onConnectionsChange?.(
-      NodeSlotType.OUTPUT,
-      outputIndex,
-      true,
-      link,
-      output
-    )
-
-    inputNode.onConnectionsChange?.(
-      NodeSlotType.INPUT,
-      inputIndex,
-      true,
-      link,
-      input
-    )
+    graphLifecycleEventDispatcher.dispatchConnectNodePair({
+      sourceNode: this,
+      sourceSlotIndex: outputIndex,
+      sourceSlot: output,
+      targetNode: inputNode,
+      targetSlotIndex: inputIndex,
+      targetSlot: input,
+      link
+    })
 
     this.setDirtyCanvas(false, true)
     graph.afterChange()
@@ -3110,35 +3044,29 @@ export class LGraphNode
         const input = target.inputs[link_info.target_slot]
         // remove there
         input.link = null
-        if (input.widget) {
-          graph.trigger('node:slot-links:changed', {
-            nodeId: target.id,
-            slotType: NodeSlotType.INPUT,
-            slotIndex: link_info.target_slot,
-            connected: false,
-            linkId: link_info.id
-          })
-        }
+        graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+          graph,
+          nodeId: target.id,
+          slotType: NodeSlotType.INPUT,
+          slotIndex: link_info.target_slot,
+          connected: false,
+          linkId: link_info.id,
+          hasWidget: !!input.widget
+        })
 
         // remove the link from the links pool
-        link_info.disconnect(graph, 'input')
+        graph.disconnectLink(link_info, 'input')
         graph._version++
 
-        // link_info hasn't been modified so its ok
-        target.onConnectionsChange?.(
-          NodeSlotType.INPUT,
-          link_info.target_slot,
-          false,
-          link_info,
-          input
-        )
-        this.onConnectionsChange?.(
-          NodeSlotType.OUTPUT,
-          slot,
-          false,
-          link_info,
-          output
-        )
+        graphLifecycleEventDispatcher.dispatchDisconnectNodePair({
+          sourceNode: this,
+          sourceSlotIndex: slot,
+          sourceSlot: output,
+          targetNode: target,
+          targetSlotIndex: link_info.target_slot,
+          targetSlot: input,
+          link: link_info
+        })
 
         break
       }
@@ -3153,7 +3081,24 @@ export class LGraphNode
         ) {
           const targetSlot = graph.outputNode.slots[link_info.target_slot]
           if (targetSlot) {
-            targetSlot.linkIds.length = 0
+            graph.disconnectSubgraphOutputLink(
+              targetSlot,
+              this,
+              slot,
+              link_info
+            )
+            // Compat: onConnectionsChange now fires for subgraph output
+            // disconnects (previously did not). Extensions should handle
+            // OUTPUT/disconnected callbacks idempotently.
+            graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+              node: this,
+              slotType: NodeSlotType.OUTPUT,
+              slotIndex: slot,
+              connected: false,
+              link: link_info,
+              slot: output
+            })
+            continue
           } else {
             console.error('Missing subgraphOutput slot when disconnecting link')
           }
@@ -3166,35 +3111,39 @@ export class LGraphNode
           const input = target.inputs[link_info.target_slot]
           // remove other side link
           input.link = null
-          if (input.widget) {
-            graph.trigger('node:slot-links:changed', {
-              nodeId: target.id,
-              slotType: NodeSlotType.INPUT,
-              slotIndex: link_info.target_slot,
-              connected: false,
-              linkId: link_info.id
-            })
-          }
+          graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+            graph,
+            nodeId: target.id,
+            slotType: NodeSlotType.INPUT,
+            slotIndex: link_info.target_slot,
+            connected: false,
+            linkId: link_info.id,
+            hasWidget: !!input.widget
+          })
 
-          // link_info hasn't been modified so its ok
-          target.onConnectionsChange?.(
-            NodeSlotType.INPUT,
-            link_info.target_slot,
-            false,
-            link_info,
-            input
-          )
+          graph.disconnectLink(link_info, 'input')
+
+          graphLifecycleEventDispatcher.dispatchDisconnectNodePair({
+            sourceNode: this,
+            sourceSlotIndex: slot,
+            sourceSlot: output,
+            targetNode: target,
+            targetSlotIndex: link_info.target_slot,
+            targetSlot: input,
+            link: link_info
+          })
+        } else {
+          graph.disconnectLink(link_info, 'input')
+
+          graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+            node: this,
+            slotType: NodeSlotType.OUTPUT,
+            slotIndex: slot,
+            connected: false,
+            link: link_info,
+            slot: output
+          })
         }
-        // remove the link from the links pool
-        link_info.disconnect(graph, 'input')
-
-        this.onConnectionsChange?.(
-          NodeSlotType.OUTPUT,
-          slot,
-          false,
-          link_info,
-          output
-        )
       }
       output.links = null
     }
@@ -3244,15 +3193,15 @@ export class LGraphNode
     const link_id = this.inputs[slot].link
     if (link_id != null) {
       this.inputs[slot].link = null
-      if (input.widget) {
-        graph.trigger('node:slot-links:changed', {
-          nodeId: this.id,
-          slotType: NodeSlotType.INPUT,
-          slotIndex: slot,
-          connected: false,
-          linkId: link_id
-        })
-      }
+      graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+        graph,
+        nodeId: this.id,
+        slotType: NodeSlotType.INPUT,
+        slotIndex: slot,
+        connected: false,
+        linkId: link_id,
+        hasWidget: !!input.widget
+      })
 
       // remove other side
       const link_info = graph._links.get(link_id)
@@ -3287,23 +3236,18 @@ export class LGraphNode
           }
         }
 
-        link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
+        graph.disconnectLink(link_info, keepReroutes ? 'output' : undefined)
         if (graph) graph._version++
 
-        this.onConnectionsChange?.(
-          NodeSlotType.INPUT,
-          slot,
-          false,
-          link_info,
-          input
-        )
-        target_node.onConnectionsChange?.(
-          NodeSlotType.OUTPUT,
-          i,
-          false,
-          link_info,
-          output
-        )
+        graphLifecycleEventDispatcher.dispatchDisconnectNodePair({
+          sourceNode: target_node,
+          sourceSlotIndex: link_info.origin_slot,
+          sourceSlot: output,
+          targetNode: this,
+          targetSlotIndex: slot,
+          targetSlot: input,
+          link: link_info
+        })
       }
     }
 

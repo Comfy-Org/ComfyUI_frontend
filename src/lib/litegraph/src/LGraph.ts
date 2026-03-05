@@ -4,11 +4,16 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import {
+  normalizeLegacySlotIdentity,
+  resolveCanonicalSlotName
+} from '@/lib/litegraph/src/utils/slotIdentity'
+import { commonType, isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -24,6 +29,8 @@ import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
+import { graphLifecycleEventDispatcher } from './infrastructure/GraphLifecycleEventDispatcher'
+import { graphPersistenceAdapter } from './infrastructure/GraphPersistenceAdapter'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 import type {
@@ -33,6 +40,7 @@ import type {
   IContextMenuValue,
   INodeInputSlot,
   INodeOutputSlot,
+  ISlotType,
   LinkNetwork,
   LinkSegment,
   MethodNames,
@@ -58,9 +66,10 @@ import {
   mapSubgraphInputsAndLinks,
   mapSubgraphOutputsAndLinks,
   multiClone,
+  subgraphBoundaryAdapter,
   splitPositionables
 } from './subgraph/subgraphUtils'
-import { Alignment, LGraphEventMode } from './types/globalEnums'
+import { Alignment, LGraphEventMode, NodeSlotType } from './types/globalEnums'
 import type {
   LGraphTriggerAction,
   LGraphTriggerEvent,
@@ -78,10 +87,7 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 
-export type {
-  LGraphTriggerAction,
-  LGraphTriggerParam
-} from './types/graphTriggers'
+export type { LGraphTriggerParam } from './types/graphTriggers'
 
 export type RendererType = 'LG' | 'Vue'
 
@@ -269,7 +275,16 @@ export class LGraph
   /** Internal only.  Not required for serialisation; calculated on deserialise. */
   private _lastFloatingLinkId: number = 0
 
+  /** Stable instance key for the link store — never changes once created. */
+  readonly linkStoreKey: UUID = createUuidv4()
+
+  private _linkStoreCache?: ReturnType<typeof useLinkStore>
+  private get linkStore() {
+    return (this._linkStoreCache ??= useLinkStore())
+  }
+
   private readonly floatingLinksInternal: Map<LinkId, LLink> = new Map()
+
   get floatingLinks(): ReadonlyMap<LinkId, LLink> {
     return this.floatingLinksInternal
   }
@@ -359,6 +374,7 @@ export class LGraph
       usePromotionStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
     }
+    this.linkStore.clearGraph(this.linkStoreKey)
 
     this.id = zeroUuid
     this.revision = 0
@@ -393,6 +409,7 @@ export class LGraph
     this._links.clear()
     this.reroutes.clear()
     this.floatingLinksInternal.clear()
+    this.rehydrateLinkStore()
 
     this._lastFloatingLinkId = 0
 
@@ -427,6 +444,14 @@ export class LGraph
     this.change()
 
     this.canvasAction((c) => c.clear())
+  }
+
+  private rehydrateLinkStore(): void {
+    this.linkStore.rehydrate(this.linkStoreKey, {
+      links: this._links,
+      floatingLinks: this.floatingLinksInternal,
+      reroutes: this.reroutesInternal
+    })
   }
 
   get subgraphs(): Map<UUID, Subgraph> {
@@ -1446,7 +1471,7 @@ export class LGraph
   getLink(id: null | undefined): undefined
   getLink(id: LinkId | null | undefined): LLink | undefined
   getLink(id: LinkId | null | undefined): LLink | undefined {
-    return id == null ? undefined : this._links.get(id)
+    return this.linkStore.getLink(this.linkStoreKey, id)
   }
 
   /**
@@ -1457,7 +1482,7 @@ export class LGraph
   getReroute(id: null | undefined): undefined
   getReroute(id: RerouteId | null | undefined): Reroute | undefined
   getReroute(id: RerouteId | null | undefined): Reroute | undefined {
-    return id == null ? undefined : this.reroutes.get(id)
+    return this.linkStore.getReroute(this.linkStoreKey, id)
   }
 
   /**
@@ -1605,9 +1630,232 @@ export class LGraph
     if (!link) return
 
     const node = this.getNodeById(link.target_id)
-    node?.disconnectInput(link.target_slot, false)
+    if (node?.disconnectInput(link.target_slot, false)) {
+      return
+    }
 
-    link.disconnect(this)
+    this.disconnectLink(link)
+  }
+
+  disconnectLink(link: LLink, keepReroutes?: 'input' | 'output'): void {
+    link.disconnect(this, keepReroutes)
+  }
+
+  private finalizeConnectedLink(link: LLink): void {
+    const reroutes = LLink.getReroutes(this, link)
+    for (const reroute of reroutes) {
+      reroute.linkIds.add(link.id)
+      if (reroute.floating) reroute.floating = undefined
+      reroute._dragging = undefined
+    }
+
+    const lastReroute = reroutes.at(-1)
+    if (lastReroute) {
+      for (const floatingLinkId of lastReroute.floatingLinkIds) {
+        const floatingLink = this.floatingLinks.get(floatingLinkId)
+        if (floatingLink?.parentId === lastReroute.id) {
+          this.removeFloatingLink(floatingLink)
+        }
+      }
+    }
+
+    this._version++
+  }
+
+  private _createAndRegisterLink(
+    type: ISlotType,
+    originId: NodeId,
+    originSlot: number,
+    targetId: NodeId,
+    targetSlot: number,
+    afterRerouteId?: RerouteId
+  ): LLink {
+    const link = new LLink(
+      ++this.state.lastLinkId,
+      type,
+      originId,
+      originSlot,
+      targetId,
+      targetSlot,
+      afterRerouteId
+    )
+    this._links.set(link.id, link)
+
+    const layoutMutations = useLayoutMutations()
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createLink(
+      link.id,
+      originId,
+      originSlot,
+      targetId,
+      targetSlot
+    )
+    return link
+  }
+
+  /**
+   * Always returns a valid LLink — callers rely on non-nullable return.
+   *
+   * Note: This method does NOT dispatch `dispatchConnectNodePair`.
+   * Callers (e.g. `LGraphNode.connectSlots`) are responsible for dispatching
+   * connection callbacks after this returns.
+   */
+  connectSlots(
+    sourceNode: LGraphNode,
+    outputIndex: number,
+    targetNode: LGraphNode,
+    inputIndex: number,
+    afterRerouteId?: RerouteId
+  ): LLink {
+    const output = sourceNode.outputs[outputIndex]
+    const input = targetNode.inputs[inputIndex]
+
+    const maybeCommonType =
+      input.type && output.type && commonType(input.type, output.type)
+    const link = this._createAndRegisterLink(
+      maybeCommonType || input.type || output.type,
+      sourceNode.id,
+      outputIndex,
+      targetNode.id,
+      inputIndex,
+      afterRerouteId
+    )
+
+    output.links ??= []
+    output.links.push(link.id)
+    input.link = link.id
+    graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+      graph: this,
+      nodeId: targetNode.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: inputIndex,
+      connected: true,
+      linkId: link.id,
+      hasWidget: !!input.widget
+    })
+
+    this.finalizeConnectedLink(link)
+    return link
+  }
+
+  connectSubgraphInputSlot(
+    subgraphInput: SubgraphInput,
+    targetNode: LGraphNode,
+    targetSlotIndex: number,
+    afterRerouteId?: RerouteId
+  ): LLink {
+    const targetInput = targetNode.inputs[targetSlotIndex]
+    const subgraphInputIndex = subgraphInput.parent.slots.indexOf(subgraphInput)
+    const link = this._createAndRegisterLink(
+      targetInput.type,
+      subgraphInput.parent.id,
+      subgraphInputIndex,
+      targetNode.id,
+      targetSlotIndex,
+      afterRerouteId
+    )
+
+    subgraphInput.linkIds.push(link.id)
+    targetInput.link = link.id
+    graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+      graph: this,
+      nodeId: targetNode.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: targetSlotIndex,
+      connected: true,
+      linkId: link.id,
+      hasWidget: !!targetInput.widget
+    })
+
+    this.finalizeConnectedLink(link)
+    return link
+  }
+
+  connectSubgraphOutputSlot(
+    sourceNode: LGraphNode,
+    sourceSlotIndex: number,
+    subgraphOutput: SubgraphOutput,
+    afterRerouteId?: RerouteId
+  ): LLink {
+    const sourceOutput = sourceNode.outputs[sourceSlotIndex]
+    const subgraphOutputIndex =
+      subgraphOutput.parent.slots.indexOf(subgraphOutput)
+    const link = this._createAndRegisterLink(
+      sourceOutput.type,
+      sourceNode.id,
+      sourceSlotIndex,
+      subgraphOutput.parent.id,
+      subgraphOutputIndex,
+      afterRerouteId
+    )
+
+    subgraphOutput.linkIds[0] = link.id
+    sourceOutput.links ??= []
+    sourceOutput.links.push(link.id)
+    graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+      graph: this,
+      nodeId: sourceNode.id,
+      slotType: NodeSlotType.OUTPUT,
+      slotIndex: sourceSlotIndex,
+      connected: true,
+      linkId: link.id,
+      hasWidget: false
+    })
+
+    this.finalizeConnectedLink(link)
+    return link
+  }
+
+  // Versioning: `disconnectLink` / `link.disconnect()` does not increment
+  // `_version`. Each disconnect method is responsible for its own increment.
+  disconnectSubgraphInputLink(
+    subgraphInput: SubgraphInput,
+    targetNode: LGraphNode,
+    targetSlotIndex: number,
+    link: LLink | undefined
+  ): void {
+    const targetInput = targetNode.inputs[targetSlotIndex]
+    if (targetInput._floatingLinks?.size) {
+      for (const floatingLink of targetInput._floatingLinks) {
+        this.removeFloatingLink(floatingLink)
+      }
+    }
+
+    targetInput.link = null
+    if (!link) return
+
+    this.disconnectLink(link, 'output')
+    this._version++
+
+    const index = subgraphInput.linkIds.indexOf(link.id)
+    if (index === -1) {
+      console.warn(
+        'disconnectSubgraphInputLink: link ID not found in subgraph input',
+        link.id
+      )
+      return
+    }
+    subgraphInput.linkIds.splice(index, 1)
+  }
+
+  disconnectSubgraphOutputLink(
+    subgraphOutput: SubgraphOutput,
+    sourceNode: LGraphNode,
+    sourceSlotIndex: number,
+    link: LLink
+  ): void {
+    const sourceOutput = sourceNode.outputs[sourceSlotIndex]
+    this.disconnectLink(link, 'input')
+    this._version++
+
+    if (sourceOutput.links) {
+      sourceOutput.links = sourceOutput.links.filter((id) => id !== link.id)
+    }
+
+    const subgraphLinkIndex = subgraphOutput.linkIds.indexOf(link.id)
+    if (subgraphLinkIndex !== -1) {
+      subgraphOutput.linkIds.splice(subgraphLinkIndex, 1)
+    }
   }
 
   /**
@@ -1798,7 +2046,7 @@ export class LGraph
 
       // Special handling: Subgraph input node
       i++
-      if (link.origin_id === SUBGRAPH_INPUT_ID) {
+      if (link.originIsIoNode) {
         link.target_id = subgraphNode.id
         link.target_slot = i - 1
         if (subgraphInput instanceof SubgraphInput) {
@@ -1812,7 +2060,7 @@ export class LGraph
         }
 
         for (const resolved of others) {
-          resolved.link.disconnect(this)
+          this.disconnectLink(resolved.link)
         }
         continue
       }
@@ -1839,7 +2087,7 @@ export class LGraph
       for (const connection of connections) {
         const { input, inputNode, link, subgraphOutput } = connection
         // Special handling: Subgraph output node
-        if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+        if (link.targetIsIoNode) {
           link.origin_id = subgraphNode.id
           link.origin_slot = i - 1
           this.links.set(link.id, link)
@@ -1850,7 +2098,7 @@ export class LGraph
               link.parentId
             )
           } else {
-            throw new TypeError('Subgraph input node is not a SubgraphInput')
+            throw new TypeError('Subgraph output node is not a SubgraphOutput')
           }
           continue
         }
@@ -2011,16 +2259,20 @@ export class LGraph
     }[] = []
     for (const [, link] of subgraphNode.subgraph._links) {
       let externalParentId: RerouteId | undefined
-      if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        const outerLinkId = subgraphNode.inputs[link.origin_slot].link
-        if (!outerLinkId) {
+      if (link.originIsIoNode) {
+        const endpoint = subgraphBoundaryAdapter.remapInputBoundaryForUnpack(
+          link,
+          subgraphNode,
+          this.links
+        )
+        if (!endpoint) {
           console.error('Missing Link ID when unpacking')
           continue
         }
-        const outerLink = this.links[outerLinkId]
-        link.origin_id = outerLink.origin_id
-        link.origin_slot = outerLink.origin_slot
-        externalParentId = outerLink.parentId
+
+        link.origin_id = endpoint.originId
+        link.origin_slot = endpoint.originSlot
+        externalParentId = endpoint.externalParentId
       } else {
         const origin_id = nodeIdMap.get(link.origin_id)
         if (!origin_id) {
@@ -2029,22 +2281,37 @@ export class LGraph
         }
         link.origin_id = origin_id
       }
-      if (link.target_id === SUBGRAPH_OUTPUT_ID) {
-        for (const linkId of subgraphNode.outputs[link.target_slot].links ??
-          []) {
-          const sublink = this.links[linkId]
+      if (link.targetIsIoNode) {
+        const outputEndpoints =
+          subgraphBoundaryAdapter.resolveOutputBoundaryForUnpack(
+            link,
+            subgraphNode,
+            this.links
+          )
+        if (outputEndpoints.length === 0) {
+          console.error('Missing Link ID when unpacking')
+          continue
+        }
+
+        for (const endpoint of outputEndpoints) {
           newLinks.push({
             oid: link.origin_id,
             oslot: link.origin_slot,
-            tid: sublink.target_id,
-            tslot: sublink.target_slot,
+            tid: endpoint.targetId,
+            tslot: endpoint.targetSlot,
             id: link.id,
             iparent: link.parentId,
-            eparent: sublink.parentId,
+            eparent: endpoint.externalParentId,
             externalFirst: true
           })
-          sublink.parentId = undefined
         }
+
+        for (const linkId of subgraphNode.outputs[link.target_slot].links ??
+          []) {
+          const sublink = this.links.get(linkId)
+          if (sublink) sublink.parentId = undefined
+        }
+
         continue
       } else {
         const target_id = nodeIdMap.get(link.target_id)
@@ -2403,59 +2670,12 @@ export class LGraph
 
       this._configureBase(data)
 
-      let reroutes: SerialisableReroute[] | undefined
-
-      // TODO: Determine whether this should this fall back to 0.4.
-      if (data.version === 0.4) {
-        const { extra } = data
-        // Deprecated - old schema version, links are arrays
-        if (Array.isArray(data.links)) {
-          for (const linkData of data.links) {
-            const link = LLink.createFromArray(linkData)
-            this._links.set(link.id, link)
-          }
-        }
-        // #region `extra` embeds for v0.4
-
-        // LLink parentIds
-        if (Array.isArray(extra?.linkExtensions)) {
-          for (const linkEx of extra.linkExtensions) {
-            const link = this._links.get(linkEx.id)
-            if (link) link.parentId = linkEx.parentId
-          }
-        }
-
-        // Reroutes
-        reroutes = extra?.reroutes
-
-        // #endregion `extra` embeds for v0.4
-      } else {
-        // New schema - one version so far, no check required.
-
-        // State - use max to prevent ID collisions across root and subgraphs
-        if (data.state) {
-          const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
-            data.state
-          const { state } = this
-          if (lastGroupId != null)
-            state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
-          if (lastLinkId != null)
-            state.lastLinkId = Math.max(state.lastLinkId, lastLinkId)
-          if (lastNodeId != null)
-            state.lastNodeId = Math.max(state.lastNodeId, lastNodeId)
-          if (lastRerouteId != null)
-            state.lastRerouteId = Math.max(state.lastRerouteId, lastRerouteId)
-        }
-
-        // Links
-        if (Array.isArray(data.links)) {
-          for (const linkData of data.links) {
-            const link = LLink.create(linkData)
-            this._links.set(link.id, link)
-          }
-        }
-
-        reroutes = data.reroutes
+      const { links, reroutes } = graphPersistenceAdapter.toConfiguredTopology(
+        data,
+        this.state
+      )
+      for (const link of links) {
+        this._links.set(link.id, link)
       }
 
       // Reroutes
@@ -2578,6 +2798,7 @@ export class LGraph
       this.setDirtyCanvas(true, true)
       return error
     } finally {
+      this.rehydrateLinkStore()
       this.events.dispatch('configured')
     }
   }
@@ -2620,8 +2841,14 @@ export class LGraph
       }
 
       if (remappedIds.size > 0) {
-        patchLinkNodeIds(graph._links, remappedIds)
-        patchLinkNodeIds(graph.floatingLinksInternal, remappedIds)
+        graphPersistenceAdapter.patchLinkNodeIds(
+          graph._links.values(),
+          remappedIds
+        )
+        graphPersistenceAdapter.patchLinkNodeIds(
+          graph.floatingLinksInternal.values(),
+          remappedIds
+        )
       }
     }
   }
@@ -2751,8 +2978,11 @@ export class Subgraph
       for (const input of inputs) {
         const subgraphInput = new SubgraphInput(input, this.inputNode)
         this.inputs.push(subgraphInput)
-        this.events.dispatch('input-added', { input: subgraphInput })
       }
+
+      normalizeLegacySlotIdentity(this.inputs)
+      for (const subgraphInput of this.inputs)
+        this.events.dispatch('input-added', { input: subgraphInput })
     }
 
     if (outputs) {
@@ -2760,6 +2990,8 @@ export class Subgraph
       for (const output of outputs) {
         this.outputs.push(new SubgraphOutput(output, this.outputNode))
       }
+
+      normalizeLegacySlotIdentity(this.outputs)
     }
 
     if (widgets) {
@@ -2798,10 +3030,14 @@ export class Subgraph
 
     this.events.dispatch('adding-input', { name, type })
 
+    const id = createUuidv4()
+    const canonicalName = resolveCanonicalSlotName(this.inputs, name, id)
+
     const input = new SubgraphInput(
       {
-        id: createUuidv4(),
-        name,
+        id,
+        name: canonicalName,
+        label: canonicalName === name ? undefined : name,
         type
       },
       this.inputNode
@@ -2820,10 +3056,14 @@ export class Subgraph
 
     this.events.dispatch('adding-output', { name, type })
 
+    const id = createUuidv4()
+    const canonicalName = resolveCanonicalSlotName(this.outputs, name, id)
+
     const output = new SubgraphOutput(
       {
-        id: createUuidv4(),
-        name,
+        id,
+        name: canonicalName,
+        label: canonicalName === name ? undefined : name,
         type
       },
       this.outputNode
@@ -2845,13 +3085,16 @@ export class Subgraph
     if (index === -1) throw new Error('Input not found')
 
     const oldName = input.displayName
+    const canonicalName = resolveCanonicalSlotName(this.inputs, name, input.id)
     this.events.dispatch('renaming-input', {
       input,
       index,
       oldName,
-      newName: name
+      newName: name,
+      canonicalName
     })
 
+    input.name = canonicalName
     input.label = name
   }
 
@@ -2865,13 +3108,20 @@ export class Subgraph
     if (index === -1) throw new Error('Output not found')
 
     const oldName = output.displayName
+    const canonicalName = resolveCanonicalSlotName(
+      this.outputs,
+      name,
+      output.id
+    )
     this.events.dispatch('renaming-output', {
       output,
       index,
       oldName,
-      newName: name
+      newName: name,
+      canonicalName
     })
 
+    output.name = canonicalName
     output.label = name
   }
 
@@ -2970,18 +3220,5 @@ export class Subgraph
         : undefined,
       extra: this.extra
     }
-  }
-}
-
-function patchLinkNodeIds(
-  links: Map<LinkId, LLink>,
-  remappedIds: Map<NodeId, NodeId>
-): void {
-  for (const link of links.values()) {
-    const newOrigin = remappedIds.get(link.origin_id)
-    if (newOrigin !== undefined) link.origin_id = newOrigin
-
-    const newTarget = remappedIds.get(link.target_id)
-    if (newTarget !== undefined) link.target_id = newTarget
   }
 }

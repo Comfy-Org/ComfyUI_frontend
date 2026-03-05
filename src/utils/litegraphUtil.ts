@@ -10,6 +10,7 @@ import {
   Reroute,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
+import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
@@ -218,11 +219,10 @@ export function migrateWidgetsValues<TWidgetValue>(
  *
  * @param graph - The graph to fix links for.
  */
-export function fixLinkInputSlots(graph: LGraph) {
-  // Note: We can't use forEachNode here because we need access to the graph's
-  // links map at each level. Links are stored in their respective graph/subgraph.
+export function fixLinkInputSlots(graph: LGraph, isRoot = true): boolean {
+  let hasMismatch = false
+
   for (const node of graph.nodes) {
-    // Fix links for the current node
     for (const [inputIndex, input] of node.inputs.entries()) {
       const linkId = input.link
       if (!linkId) continue
@@ -230,14 +230,24 @@ export function fixLinkInputSlots(graph: LGraph) {
       const link = graph.links.get(linkId)
       if (!link) continue
 
-      link.target_slot = inputIndex
+      if (link.target_slot !== inputIndex) {
+        link.target_slot = inputIndex
+        hasMismatch = true
+      }
     }
 
-    // Recursively fix links in subgraphs
     if (node.isSubgraphNode?.() && node.subgraph) {
-      fixLinkInputSlots(node.subgraph)
+      if (fixLinkInputSlots(node.subgraph, false)) hasMismatch = true
     }
   }
+
+  if (isRoot && hasMismatch) {
+    warnDeprecated(
+      '[DEPRECATED] Legacy slot-index repair (fixLinkInputSlots) now narrows to connected inputs only. Remedy: resave workflows in the current frontend to persist canonical link target slots and remove reliance on migration repair.'
+    )
+  }
+
+  return hasMismatch
 }
 
 /**

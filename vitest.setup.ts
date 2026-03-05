@@ -1,5 +1,9 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { vi } from 'vitest'
 import 'vue'
+
+setActivePinia(createTestingPinia({ stubActions: false }))
 
 // Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js
 vi.mock('@sparkjsdev/spark', () => ({

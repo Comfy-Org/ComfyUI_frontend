@@ -1,7 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import { graphLifecycleEventDispatcher } from '@/lib/litegraph/src/infrastructure/GraphLifecycleEventDispatcher'
 import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
 import type {
   INodeInputSlot,
@@ -97,44 +98,21 @@ export class SubgraphInput extends SubgraphSlot {
       })
     }
 
-    const link = new LLink(
-      ++subgraph.state.lastLinkId,
-      slot.type,
-      this.parent.id,
-      this.parent.slots.indexOf(this),
-      node.id,
+    const link = subgraph.connectSubgraphInputSlot(
+      this,
+      node,
       inputIndex,
       afterRerouteId
     )
 
-    // Add to graph links list
-    subgraph._links.set(link.id, link)
-
-    // Set link ID in each slot
-    this.linkIds.push(link.id)
-    slot.link = link.id
-
-    // Reroutes
-    const reroutes = LLink.getReroutes(subgraph, link)
-    for (const reroute of reroutes) {
-      reroute.linkIds.add(link.id)
-      if (reroute.floating) delete reroute.floating
-      reroute._dragging = undefined
-    }
-
-    // If this is the terminus of a floating link, remove it
-    const lastReroute = reroutes.at(-1)
-    if (lastReroute) {
-      for (const linkId of lastReroute.floatingLinkIds) {
-        const link = subgraph.floatingLinks.get(linkId)
-        if (link?.parentId === lastReroute.id) {
-          subgraph.removeFloatingLink(link)
-        }
-      }
-    }
-    subgraph._version++
-
-    node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
+    graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+      node,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: inputIndex,
+      connected: true,
+      link,
+      slot
+    })
 
     subgraph.afterChange()
 

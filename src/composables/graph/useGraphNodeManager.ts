@@ -29,7 +29,6 @@ import type {
   LGraph,
   LGraphBadge,
   LGraphNode,
-  LGraphTriggerAction,
   LGraphTriggerEvent,
   LGraphTriggerParam
 } from '@/lib/litegraph/src/litegraph'
@@ -48,9 +47,7 @@ export interface WidgetSlotMetadata {
  */
 export interface SafeWidgetData {
   nodeId?: NodeId
-  storeNodeId?: NodeId
   name: string
-  storeName?: string
   type: string
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
   callback?: ((value: unknown) => void) | undefined
@@ -162,33 +159,16 @@ function getSharedWidgetEnhancements(
   }
 }
 
-/**
- * Validates that a value is a valid WidgetValue type
- */
 function normalizeWidgetValue(value: unknown): WidgetValue {
-  if (value === null || value === undefined || value === void 0) {
-    return undefined
-  }
   if (
+    value == null ||
     typeof value === 'string' ||
     typeof value === 'number' ||
-    typeof value === 'boolean'
+    typeof value === 'boolean' ||
+    typeof value === 'object'
   ) {
-    return value
+    return value as WidgetValue
   }
-  if (typeof value === 'object') {
-    // Check if it's a File array
-    if (
-      Array.isArray(value) &&
-      value.length > 0 &&
-      value.every((item): item is File => item instanceof File)
-    ) {
-      return value
-    }
-    // Otherwise it's a generic object
-    return value
-  }
-  // If none of the above, return undefined
   console.warn(`Invalid widget value type: ${typeof value}`, value)
   return undefined
 }
@@ -273,56 +253,55 @@ function safeWidgetMapper(
         node.widgets?.forEach((w) => w.triggerDraw?.())
       }
 
+      const isPromoted = isPromotedWidgetView(widget)
       const isPromotedPseudoWidget =
-        isPromotedWidgetView(widget) && widget.sourceWidgetName.startsWith('$$')
+        isPromoted && widget.sourceWidgetName.startsWith('$$')
 
-      // Extract only render-critical options (canvasOnly, advanced, read_only)
-      const options = extractWidgetDisplayOptions(widget)
       const subgraphId = node.isSubgraphNode() && node.subgraph.id
 
-      const resolvedSourceResult =
-        isPromotedWidgetView(widget) && promotedSource
+      const resolved =
+        isPromoted && promotedSource
           ? resolveConcretePromotedWidget(
               node,
               promotedSource.sourceNodeId,
               promotedSource.sourceWidgetName
             )
           : null
-      const resolvedSource =
-        resolvedSourceResult?.status === 'resolved'
-          ? resolvedSourceResult.resolved
-          : undefined
-      const sourceWidget = resolvedSource?.widget
-      const sourceNode = resolvedSource?.node
+      const { widget: sourceWidget, node: sourceNode } =
+        resolved?.status === 'resolved'
+          ? resolved.resolved
+          : { widget: undefined, node: undefined }
 
       const effectiveWidget = sourceWidget ?? widget
 
-      const localId = isPromotedWidgetView(widget)
+      const localId = isPromoted
         ? String(sourceNode?.id ?? promotedSource?.sourceNodeId)
         : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined
-      const storeName = isPromotedWidgetView(widget)
-        ? (sourceWidget?.name ?? promotedSource?.sourceWidgetName)
-        : undefined
-      const name = storeName ?? displayName
+      const name = isPromoted
+        ? (sourceWidget?.name ??
+          promotedSource?.sourceWidgetName ??
+          displayName)
+        : displayName
+
+      const options =
+        effectiveWidget !== widget
+          ? (extractWidgetDisplayOptions(effectiveWidget) ??
+            extractWidgetDisplayOptions(widget))
+          : extractWidgetDisplayOptions(widget)
 
       return {
         nodeId,
-        storeNodeId: nodeId,
         name,
-        storeName,
         type: effectiveWidget.type,
         ...sharedEnhancements,
         callback,
         hasLayoutSize: typeof effectiveWidget.computeLayoutSize === 'function',
         isDOMWidget: isDOMWidget(widget) || isPromotedDOMWidget(widget),
         options: isPromotedPseudoWidget
-          ? {
-              ...(extractWidgetDisplayOptions(effectiveWidget) ?? options),
-              canvasOnly: true
-            }
-          : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
+          ? { ...options, canvasOnly: true }
+          : options,
         slotMetadata: slotInfo,
         slotName: name !== widget.name ? widget.name : undefined
       }
@@ -335,6 +314,18 @@ function safeWidgetMapper(
   }
 }
 
+function buildSlotMetadata(
+  inputs: INodeInputSlot[] | undefined
+): Map<string, WidgetSlotMetadata> {
+  const slotMetadata = new Map<string, WidgetSlotMetadata>()
+  inputs?.forEach((input, index) => {
+    const slotInfo = { index, linked: input.link != null }
+    if (input.name) slotMetadata.set(input.name, slotInfo)
+    if (input.widget?.name) slotMetadata.set(input.widget.name, slotInfo)
+  })
+  return slotMetadata
+}
+
 // Extract safe data from LiteGraph node for Vue consumption
 export function extractVueNodeData(node: LGraphNode): VueNodeData {
   // Determine subgraph ID - null for root graph, string for subgraphs
@@ -342,8 +333,6 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
       ? String(node.graph.id)
       : null
-  // Extract safe widget data
-  const slotMetadata = new Map<string, WidgetSlotMetadata>()
 
   const existingWidgetsDescriptor = Object.getOwnPropertyDescriptor(
     node,
@@ -391,16 +380,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
     const widgetsSnapshot = node.widgets ?? []
-
-    slotMetadata.clear()
-    node.inputs?.forEach((input, index) => {
-      const slotInfo = {
-        index,
-        linked: input.link != null
-      }
-      if (input.name) slotMetadata.set(input.name, slotInfo)
-      if (input.widget?.name) slotMetadata.set(input.widget.name, slotInfo)
-    })
+    const slotMetadata = buildSlotMetadata(node.inputs)
     return widgetsSnapshot.map(safeWidgetMapper(node, slotMetadata))
   })
 
@@ -453,19 +433,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     if (!nodeRef || !currentData) return
 
-    // Only extract slot-related data instead of full node re-extraction
-    const slotMetadata = new Map<string, WidgetSlotMetadata>()
+    const slotMetadata = buildSlotMetadata(nodeRef.inputs)
 
-    nodeRef.inputs?.forEach((input, index) => {
-      const slotInfo = {
-        index,
-        linked: input.link != null
-      }
-      if (input.name) slotMetadata.set(input.name, slotInfo)
-      if (input.widget?.name) slotMetadata.set(input.widget.name, slotInfo)
-    })
-
-    // Update only widgets with new slot metadata, keeping other widget data intact
     for (const widget of currentData.widgets ?? []) {
       const slotInfo = slotMetadata.get(widget.slotName ?? widget.name)
       if (slotInfo) widget.slotMetadata = slotInfo
@@ -475,31 +444,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get access to original LiteGraph node (non-reactive)
   const getNode = (id: string): LGraphNode | undefined => {
     return nodeRefs.get(id)
-  }
-
-  const syncWithGraph = () => {
-    if (!graph?._nodes) return
-
-    const currentNodes = new Set(graph._nodes.map((n) => String(n.id)))
-
-    // Remove deleted nodes
-    for (const id of Array.from(vueNodeData.keys())) {
-      if (!currentNodes.has(id)) {
-        nodeRefs.delete(id)
-        vueNodeData.delete(id)
-      }
-    }
-
-    // Add/update existing nodes
-    graph._nodes.forEach((node) => {
-      const id = String(node.id)
-
-      // Store non-reactive reference
-      nodeRefs.set(id, node)
-
-      // Extract and store safe data for Vue
-      vueNodeData.set(id, extractVueNodeData(node))
-    })
   }
 
   /**
@@ -626,122 +570,79 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       handleNodeRemoved(node, originalOnNodeRemoved)
     }
 
-    const triggerHandlers: {
-      [K in LGraphTriggerAction]: (event: LGraphTriggerParam<K>) => void
-    } = {
-      'node:property:changed': (propertyEvent) => {
-        const nodeId = String(propertyEvent.nodeId)
-        const currentData = vueNodeData.get(nodeId)
+    const handlePropertyChanged = (
+      propertyEvent: LGraphTriggerParam<'node:property:changed'>
+    ) => {
+      const nodeId = String(propertyEvent.nodeId)
+      const currentData = vueNodeData.get(nodeId)
+      if (!currentData) return
 
-        if (currentData) {
-          switch (propertyEvent.property) {
-            case 'title':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                title: String(propertyEvent.newValue)
-              })
-              break
-            case 'flags.collapsed':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                flags: {
-                  ...currentData.flags,
-                  collapsed: Boolean(propertyEvent.newValue)
-                }
-              })
-              break
-            case 'flags.ghost':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                flags: {
-                  ...currentData.flags,
-                  ghost: Boolean(propertyEvent.newValue)
-                }
-              })
-              break
-            case 'flags.pinned':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                flags: {
-                  ...currentData.flags,
-                  pinned: Boolean(propertyEvent.newValue)
-                }
-              })
-              break
-            case 'mode':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                mode:
-                  typeof propertyEvent.newValue === 'number'
-                    ? propertyEvent.newValue
-                    : 0
-              })
-              break
-            case 'color':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                color:
-                  typeof propertyEvent.newValue === 'string'
-                    ? propertyEvent.newValue
-                    : undefined
-              })
-              break
-            case 'bgcolor':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                bgcolor:
-                  typeof propertyEvent.newValue === 'string'
-                    ? propertyEvent.newValue
-                    : undefined
-              })
-              break
-            case 'shape':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                shape:
-                  typeof propertyEvent.newValue === 'number'
-                    ? propertyEvent.newValue
-                    : undefined
-              })
-              break
-            case 'showAdvanced':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                showAdvanced: Boolean(propertyEvent.newValue)
-              })
-              break
-          }
+      const { property, newValue } = propertyEvent
+
+      switch (property) {
+        case 'title':
+          vueNodeData.set(nodeId, {
+            ...currentData,
+            title: String(newValue)
+          })
+          break
+        case 'flags.collapsed':
+        case 'flags.ghost':
+        case 'flags.pinned': {
+          const flagName = property.split('.')[1] as
+            | 'collapsed'
+            | 'ghost'
+            | 'pinned'
+          vueNodeData.set(nodeId, {
+            ...currentData,
+            flags: { ...currentData.flags, [flagName]: Boolean(newValue) }
+          })
+          break
         }
-      },
-      'node:slot-errors:changed': (slotErrorsEvent) => {
-        refreshNodeSlots(String(slotErrorsEvent.nodeId))
-      },
-      'node:slot-links:changed': (slotLinksEvent) => {
-        if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
-          refreshNodeSlots(String(slotLinksEvent.nodeId))
-        }
+        case 'mode':
+          vueNodeData.set(nodeId, {
+            ...currentData,
+            mode: typeof newValue === 'number' ? newValue : 0
+          })
+          break
+        case 'color':
+        case 'bgcolor':
+          vueNodeData.set(nodeId, {
+            ...currentData,
+            [property]: typeof newValue === 'string' ? newValue : undefined
+          })
+          break
+        case 'shape':
+          vueNodeData.set(nodeId, {
+            ...currentData,
+            shape: typeof newValue === 'number' ? newValue : undefined
+          })
+          break
+        case 'showAdvanced':
+          vueNodeData.set(nodeId, {
+            ...currentData,
+            showAdvanced: Boolean(newValue)
+          })
+          break
       }
     }
 
     graph.onTrigger = (event: LGraphTriggerEvent) => {
       switch (event.type) {
         case 'node:property:changed':
-          triggerHandlers['node:property:changed'](event)
+          handlePropertyChanged(event)
           break
         case 'node:slot-errors:changed':
-          triggerHandlers['node:slot-errors:changed'](event)
+          refreshNodeSlots(String(event.nodeId))
           break
         case 'node:slot-links:changed':
-          triggerHandlers['node:slot-links:changed'](event)
+          if (event.slotType === NodeSlotType.INPUT) {
+            refreshNodeSlots(String(event.nodeId))
+          }
           break
       }
-
-      // Chain to original handler
       originalOnTrigger?.(event)
     }
-
-    // Initialize state
-    syncWithGraph()
 
     // Return cleanup function
     return createCleanupFunction(
