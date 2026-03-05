@@ -3,7 +3,7 @@ import { isCloud, isNightly } from '@/platform/distribution/types'
 /**
  * Zendesk ticket form field IDs.
  */
-export const ZENDESK_FIELDS = {
+const ZENDESK_FIELDS = {
   /** Distribution tag (cloud vs OSS) */
   DISTRIBUTION: 'tf_42243568391700',
   /** User email (anonymous requester) */
@@ -18,7 +18,7 @@ export const ZENDESK_FIELDS = {
  * Gets the distribution identifier for Zendesk tracking.
  * Helps distinguish feedback from different build types.
  */
-export function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
+function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
   if (isCloud) return 'ccloud'
   if (isNightly) return 'oss-nightly'
   return 'oss'

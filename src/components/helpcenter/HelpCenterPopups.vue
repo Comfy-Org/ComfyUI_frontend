@@ -5,14 +5,10 @@
       v-if="isHelpCenterVisible"
       class="help-center-popup"
       :class="{
-        'sidebar-left':
-          triggerLocation === 'sidebar' && sidebarLocation === 'left',
-        'sidebar-right':
-          triggerLocation === 'sidebar' && sidebarLocation === 'right',
-        'topbar-trigger': triggerLocation === 'topbar',
+        'sidebar-left': sidebarLocation === 'left',
+        'sidebar-right': sidebarLocation === 'right',
         'small-sidebar': isSmall
       }"
-      :style="popupStyles"
     >
       <HelpCenterMenuContent @close="closeHelpCenter" />
     </div>
@@ -52,9 +48,6 @@
 </template>
 
 <script setup lang="ts">
-import type { CSSProperties } from 'vue'
-import { computed } from 'vue'
-
 import { useHelpCenter } from '@/composables/useHelpCenter'
 import ReleaseNotificationToast from '@/platform/updates/components/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/platform/updates/components/WhatsNewPopup.vue'
@@ -67,27 +60,10 @@ const { isSmall = false } = defineProps<{
 
 const {
   isHelpCenterVisible,
-  triggerLocation,
-  triggerElement,
   sidebarLocation,
   closeHelpCenter,
   handleWhatsNewDismissed
 } = useHelpCenter()
-
-const popupStyles = computed<CSSProperties | undefined>(() => {
-  if (
-    !isHelpCenterVisible.value ||
-    triggerLocation.value !== 'topbar' ||
-    !triggerElement.value
-  ) {
-    return undefined
-  }
-  const rect = triggerElement.value.getBoundingClientRect()
-  return {
-    top: `${rect.bottom}px`,
-    right: `${window.innerWidth - rect.right}px`
-  }
-})
 </script>
 
 <style scoped>
@@ -119,23 +95,6 @@ const popupStyles = computed<CSSProperties | undefined>(() => {
 
 .help-center-popup.sidebar-right {
   right: 1rem;
-}
-
-.help-center-popup.topbar-trigger {
-  bottom: auto;
-  animation: slideInDown 0.2s ease-out;
-}
-
-@keyframes slideInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 @keyframes slideInUp {
