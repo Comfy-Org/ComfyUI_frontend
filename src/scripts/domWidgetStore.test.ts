@@ -34,11 +34,7 @@ describe('DOMWidgetImpl store integration', () => {
         getValue: () => element.value as string,
         setValue: (v: string) => {
           element.value = v
-          const state = store.getWidget(
-            graph.id,
-            node.id,
-            'system_prompt'
-          )
+          const state = store.getWidget(graph.id, node.id, 'system_prompt')
           if (state) state.value = v
         }
       }
