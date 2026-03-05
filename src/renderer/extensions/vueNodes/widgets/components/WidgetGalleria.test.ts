@@ -9,7 +9,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetGalleria from './WidgetGalleria.vue'
 import type { GalleryImage, GalleryValue } from './WidgetGalleria.vue'
-import { createMockWidget as createWidget } from './widgetTestUtils'
+import { createMockWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -46,11 +46,11 @@ const TEST_IMAGE_OBJECTS: readonly GalleryImage[] = Object.freeze([
 ])
 
 // Helper functions outside describe blocks for better clarity
-function createMockWidget(
+function createGalleriaWidget(
   value: GalleryValue = [],
   options: Partial<GalleriaProps> = {}
 ) {
-  return createWidget<GalleryValue>({
+  return createMockWidget<GalleryValue>({
     value,
     name: 'test_galleria',
     type: 'array',
@@ -86,7 +86,7 @@ function createGalleriaWrapper(
   images: GalleryValue,
   options: Partial<GalleriaProps> = {}
 ) {
-  const widget = createMockWidget(images, options)
+  const widget = createGalleriaWidget(images, options)
   return mountComponent(widget, images)
 }
 
@@ -102,7 +102,7 @@ describe('WidgetGalleria Image Display', () => {
     })
 
     it('displays empty gallery when no images provided', () => {
-      const widget = createMockWidget([])
+      const widget = createGalleriaWidget([])
       const wrapper = mountComponent(widget, [])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -110,7 +110,7 @@ describe('WidgetGalleria Image Display', () => {
     })
 
     it('handles null or undefined value gracefully', () => {
-      const widget = createMockWidget([])
+      const widget = createGalleriaWidget([])
       const wrapper = mountComponent(widget, [])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -120,7 +120,7 @@ describe('WidgetGalleria Image Display', () => {
 
   describe('String Array Input', () => {
     it('converts string array to image objects', () => {
-      const widget = createMockWidget([...TEST_IMAGES_SMALL])
+      const widget = createGalleriaWidget([...TEST_IMAGES_SMALL])
       const wrapper = mountComponent(widget, [...TEST_IMAGES_SMALL])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -135,7 +135,7 @@ describe('WidgetGalleria Image Display', () => {
     })
 
     it('handles single string image', () => {
-      const widget = createMockWidget([...TEST_IMAGES_SINGLE])
+      const widget = createGalleriaWidget([...TEST_IMAGES_SINGLE])
       const wrapper = mountComponent(widget, [...TEST_IMAGES_SINGLE])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -152,7 +152,7 @@ describe('WidgetGalleria Image Display', () => {
 
   describe('Object Array Input', () => {
     it('preserves image objects as-is', () => {
-      const widget = createMockWidget([...TEST_IMAGE_OBJECTS])
+      const widget = createGalleriaWidget([...TEST_IMAGE_OBJECTS])
       const wrapper = mountComponent(widget, [...TEST_IMAGE_OBJECTS])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -167,7 +167,7 @@ describe('WidgetGalleria Image Display', () => {
         { itemImageSrc: 'https://example.com/image2.jpg' },
         { thumbnailImageSrc: 'https://example.com/thumb3.jpg' }
       ]
-      const widget = createMockWidget(images)
+      const widget = createGalleriaWidget(images)
       const wrapper = mountComponent(widget, images)
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -228,7 +228,7 @@ describe('WidgetGalleria Image Display', () => {
 
     it('respects widget option to hide navigation buttons', () => {
       const images = createImageStrings(3)
-      const widget = createMockWidget(images, { showItemNavigators: false })
+      const widget = createGalleriaWidget(images, { showItemNavigators: false })
       const wrapper = mountComponent(widget, images)
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -237,7 +237,7 @@ describe('WidgetGalleria Image Display', () => {
 
     it('shows navigation buttons when explicitly enabled for multiple images', () => {
       const images = createImageStrings(3)
-      const widget = createMockWidget(images, { showItemNavigators: true })
+      const widget = createGalleriaWidget(images, { showItemNavigators: true })
       const wrapper = mountComponent(widget, images)
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -248,7 +248,7 @@ describe('WidgetGalleria Image Display', () => {
   describe('Widget Options Handling', () => {
     it('passes through valid widget options', () => {
       const images = createImageStrings(2)
-      const widget = createMockWidget(images, {
+      const widget = createGalleriaWidget(images, {
         circular: true,
         autoPlay: true,
         transitionInterval: 3000
@@ -263,7 +263,7 @@ describe('WidgetGalleria Image Display', () => {
 
     it('applies custom styling props', () => {
       const images = createImageStrings(2)
-      const widget = createMockWidget(images)
+      const widget = createGalleriaWidget(images)
       const wrapper = mountComponent(widget, images)
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -275,7 +275,7 @@ describe('WidgetGalleria Image Display', () => {
   describe('Active Index Management', () => {
     it('initializes with zero active index', () => {
       const images = createImageStrings(3)
-      const widget = createMockWidget(images)
+      const widget = createGalleriaWidget(images)
       const wrapper = mountComponent(widget, images)
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -284,7 +284,7 @@ describe('WidgetGalleria Image Display', () => {
 
     it('can update active index', async () => {
       const images = createImageStrings(3)
-      const widget = createMockWidget(images)
+      const widget = createGalleriaWidget(images)
       const wrapper = mountComponent(widget, images)
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -305,7 +305,7 @@ describe('WidgetGalleria Image Display', () => {
         },
         { src: 'https://example.com/only-src.jpg' }
       ]
-      const widget = createMockWidget(images)
+      const widget = createGalleriaWidget(images)
       const wrapper = mountComponent(widget, images)
 
       // The template logic should prioritize itemImageSrc > src > fallback to the item itself
@@ -321,7 +321,7 @@ describe('WidgetGalleria Image Display', () => {
         },
         { src: 'https://example.com/only-src.jpg' }
       ]
-      const widget = createMockWidget(images)
+      const widget = createGalleriaWidget(images)
       const wrapper = mountComponent(widget, images)
 
       // The template logic should prioritize thumbnailImageSrc > src > fallback to the item itself
@@ -332,7 +332,7 @@ describe('WidgetGalleria Image Display', () => {
 
   describe('Edge Cases', () => {
     it('handles empty array gracefully', () => {
-      const widget = createMockWidget([])
+      const widget = createGalleriaWidget([])
       const wrapper = mountComponent(widget, [])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -348,7 +348,7 @@ describe('WidgetGalleria Image Display', () => {
         null, // Null value
         undefined // Undefined value
       ]
-      const widget = createMockWidget(malformedImages as string[])
+      const widget = createGalleriaWidget(malformedImages as string[])
       const wrapper = mountComponent(widget, malformedImages as string[])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -359,7 +359,7 @@ describe('WidgetGalleria Image Display', () => {
 
     it('handles very large image arrays', () => {
       const largeImageArray = createImageStrings(100)
-      const widget = createMockWidget(largeImageArray)
+      const widget = createGalleriaWidget(largeImageArray)
       const wrapper = mountComponent(widget, largeImageArray)
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -375,7 +375,7 @@ describe('WidgetGalleria Image Display', () => {
         { itemImageSrc: 'https://example.com/object.jpg' },
         'https://example.com/another-string.jpg'
       ]
-      const widget = createMockWidget(mixedArray as string[])
+      const widget = createGalleriaWidget(mixedArray as string[])
 
       // The component expects consistent typing, but let's test it handles mixed input
       expect(() => mountComponent(widget, mixedArray as string[])).not.toThrow()
@@ -383,7 +383,7 @@ describe('WidgetGalleria Image Display', () => {
 
     it('handles invalid URL strings', () => {
       const invalidUrls = ['not-a-url', '', ' ', 'http://', 'ftp://invalid']
-      const widget = createMockWidget(invalidUrls)
+      const widget = createGalleriaWidget(invalidUrls)
       const wrapper = mountComponent(widget, invalidUrls)
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -394,7 +394,7 @@ describe('WidgetGalleria Image Display', () => {
   describe('Styling and Layout', () => {
     it('applies max-width constraint', () => {
       const images = createImageStrings(2)
-      const widget = createMockWidget(images)
+      const widget = createGalleriaWidget(images)
       const wrapper = mountComponent(widget, images)
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
@@ -404,7 +404,7 @@ describe('WidgetGalleria Image Display', () => {
 
     it('applies passthrough props for thumbnails', () => {
       const images = createImageStrings(3)
-      const widget = createMockWidget(images)
+      const widget = createGalleriaWidget(images)
       const wrapper = mountComponent(widget, images)
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
