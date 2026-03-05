@@ -22,15 +22,22 @@ const meta: Meta<StoryArgs> = {
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
   argTypes: {
+    size: {
+      control: 'select',
+      options: ['medium', 'large']
+    },
     readOnly: { control: 'boolean' },
     disabled: { control: 'boolean' },
     invalid: { control: 'boolean' },
+    loading: { control: 'boolean' },
     placeholder: { control: 'text' }
   },
   args: {
+    size: 'medium',
     readOnly: false,
     disabled: false,
     invalid: false,
+    loading: false,
     placeholder: ''
   },
   decorators: [
@@ -49,24 +56,23 @@ export const Default: Story = {
   render: (args) => ({
     components: { WidgetInputText },
     setup() {
-      const { readOnly, disabled, invalid, placeholder } = toRefs(args)
+      const { size, readOnly, disabled, invalid, loading, placeholder } =
+        toRefs(args)
       const value = ref('Hello world')
       const widget = computed<SimplifiedWidget<string>>(() => ({
         name: 'text',
         type: 'STRING',
         value: '',
-        borderStyle: invalid.value
-          ? 'border border-destructive-background'
-          : undefined,
         options: {
           read_only: readOnly.value,
           disabled: disabled.value,
           ...(placeholder.value ? { placeholder: placeholder.value } : {})
         }
       }))
-      return { value, widget }
+      return { value, widget, size, invalid, loading }
     },
-    template: '<WidgetInputText :widget="widget" v-model="value" />'
+    template:
+      '<WidgetInputText :widget="widget" :size="size" :invalid="invalid" :loading="loading" v-model="value" />'
   })
 }
 
@@ -96,17 +102,34 @@ export const Invalid: Story = {
     setup() {
       const { invalid } = toRefs(args)
       const value = ref('Invalid input value')
-      const widget = computed<SimplifiedWidget<string>>(() => ({
+      const widget: SimplifiedWidget<string> = {
         name: 'text',
         type: 'STRING',
-        value: '',
-        borderStyle: invalid.value
-          ? 'border border-destructive-background'
-          : undefined
-      }))
-      return { value, widget }
+        value: ''
+      }
+      return { value, widget, invalid }
     },
-    template: '<WidgetInputText :widget="widget" v-model="value" />'
+    template:
+      '<WidgetInputText :widget="widget" :invalid="invalid" v-model="value" />'
+  })
+}
+
+export const Status: Story = {
+  args: { loading: true },
+  render: (args) => ({
+    components: { WidgetInputText },
+    setup() {
+      const { loading } = toRefs(args)
+      const value = ref('Loading...')
+      const widget: SimplifiedWidget<string> = {
+        name: 'text',
+        type: 'STRING',
+        value: ''
+      }
+      return { value, widget, loading }
+    },
+    template:
+      '<WidgetInputText :widget="widget" :loading="loading" v-model="value" />'
   })
 }
 
