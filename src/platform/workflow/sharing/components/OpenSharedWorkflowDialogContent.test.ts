@@ -91,13 +91,12 @@ describe('OpenSharedWorkflowDialogContent', () => {
       expect(
         wrapper.findAllComponents({ name: 'Skeleton' }).length
       ).toBeGreaterThan(0)
-      expect(wrapper.find('h2').exists()).toBe(false)
     })
 
     it('shows dialog title in header while loading', () => {
       mockGetSharedWorkflow.mockReturnValue(new Promise(() => {}))
       const wrapper = mountComponent()
-      const header = wrapper.find('header span')
+      const header = wrapper.find('header h2')
       expect(header.text()).toBe('Open shared workflow')
     })
   })
@@ -145,7 +144,7 @@ describe('OpenSharedWorkflowDialogContent', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      expect(wrapper.find('h2').text()).toBe('My Workflow')
+      expect(wrapper.find('main h2').text()).toBe('My Workflow')
     })
 
     it('shows "Open workflow" as primary CTA', async () => {
