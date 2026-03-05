@@ -2,9 +2,12 @@ import { useMouse } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+
+interface SearchBoxPopover {
+  showSearchBox(e: CanvasPointerEvent): void
+}
 
 export const useSearchBoxStore = defineStore('searchBox', () => {
   const settingStore = useSettingStore()
@@ -18,13 +21,9 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
     () => settingStore.get('Comfy.NodeSearchBoxImpl') !== 'litegraph (legacy)'
   )
 
-  const popoverRef = shallowRef<InstanceType<
-    typeof NodeSearchBoxPopover
-  > | null>(null)
+  const popoverRef = shallowRef<SearchBoxPopover | null>(null)
 
-  function setPopoverRef(
-    popover: InstanceType<typeof NodeSearchBoxPopover> | null
-  ) {
+  function setPopoverRef(popover: SearchBoxPopover | null) {
     popoverRef.value = popover
   }
 

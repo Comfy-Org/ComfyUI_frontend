@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-import Load3dUtils from './Load3dUtils'
+import { getResourceURL, splitFilePath } from './load3dFileUtils'
 import {
   type BackgroundRenderModeType,
   type EventManagerInterface,
@@ -148,7 +148,7 @@ export class SceneManager implements SceneManagerInterface {
     this.eventManager.emitEvent('backgroundImageLoadingStart', null)
 
     let type = 'input'
-    let pathParts = Load3dUtils.splitFilePath(uploadPath)
+    let pathParts = splitFilePath(uploadPath)
     let subfolder = pathParts[0]
     let filename = pathParts[1]
 
@@ -160,7 +160,7 @@ export class SceneManager implements SceneManagerInterface {
       pathParts = ['', filename]
     }
 
-    let imageUrl = Load3dUtils.getResourceURL(...pathParts, type)
+    let imageUrl = getResourceURL(...pathParts, type)
 
     if (!imageUrl.startsWith('/api')) {
       imageUrl = '/api' + imageUrl

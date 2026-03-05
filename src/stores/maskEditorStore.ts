@@ -80,7 +80,29 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   const isPanning = ref<boolean>(false)
   const brushPreviewGradientVisible = ref<boolean>(false)
 
-  const canvasHistory = useCanvasHistory(20)
+  const canvasHistory = useCanvasHistory(
+    {
+      get maskCanvas() {
+        return maskCanvas.value
+      },
+      get maskCtx() {
+        return maskCtx.value
+      },
+      get rgbCanvas() {
+        return rgbCanvas.value
+      },
+      get rgbCtx() {
+        return rgbCtx.value
+      },
+      get imgCanvas() {
+        return imgCanvas.value
+      },
+      get imgCtx() {
+        return imgCtx.value
+      }
+    },
+    20
+  )
 
   const tgpuRoot = ref<TgpuRoot | null>(null)
 
