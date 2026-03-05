@@ -1,6 +1,6 @@
 <template>
   <Avatar
-    class="bg-interface-panel-selected-surface"
+    class="bg-interface-panel-selected-surface aspect-square"
     :image="photoUrl ?? undefined"
     :icon="hasAvatar ? undefined : 'icon-[lucide--user]'"
     :pt:icon:class="{ 'size-4': !hasAvatar }"
