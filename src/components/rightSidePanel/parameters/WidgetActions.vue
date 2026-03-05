@@ -5,11 +5,12 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import {
   demoteWidget,
   promoteWidget
-} from '@/core/graph/subgraph/proxyWidgetUtils'
+} from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -80,26 +81,14 @@ async function handleRename() {
 function handleHideInput() {
   if (!parents?.length) return
 
-  // For proxy widgets (already promoted), we need to find the original interior node and widget
-  if (isProxyWidget(widget)) {
-    const subgraph = parents[0].subgraph
-    const interiorNode = subgraph.getNodeById(parseInt(widget._overlay.nodeId))
-
-    if (!interiorNode) {
-      console.error('Could not find interior node for proxy widget')
+  if (isPromotedWidgetView(widget)) {
+    const sourceWidget = resolvePromotedWidgetSource(node, widget)
+    if (!sourceWidget) {
+      console.error('Could not resolve source widget for promoted widget')
       return
     }
 
-    const originalWidget = interiorNode.widgets?.find(
-      (w) => w.name === widget._overlay.widgetName
-    )
-
-    if (!originalWidget) {
-      console.error('Could not find original widget for proxy widget')
-      return
-    }
-
-    demoteWidget(interiorNode, originalWidget, parents)
+    demoteWidget(sourceWidget.node, sourceWidget.widget, parents)
   } else {
     // For regular widgets (not yet promoted), use them directly
     demoteWidget(node, widget, parents)

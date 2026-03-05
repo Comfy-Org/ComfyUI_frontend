@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 import type { Keybinding } from '../../src/platform/keybindings/types'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
+import { TestIds } from '../fixtures/selectors'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -15,8 +16,9 @@ test.describe('Load workflow warning', { tag: '@ui' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
 
-    // Wait for the element with the .comfy-missing-nodes selector to be visible
-    const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
+    const missingNodesWarning = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodes
+    )
     await expect(missingNodesWarning).toBeVisible()
   })
 
@@ -25,8 +27,9 @@ test.describe('Load workflow warning', { tag: '@ui' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes_in_subgraph')
 
-    // Wait for the element with the .comfy-missing-nodes selector to be visible
-    const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
+    const missingNodesWarning = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodes
+    )
     await expect(missingNodesWarning).toBeVisible()
 
     // Verify the missing node text includes subgraph context
@@ -38,13 +41,14 @@ test.describe('Load workflow warning', { tag: '@ui' }, () => {
 
 test('Does not report warning on undo/redo', async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
+  const missingNodesWarning = comfyPage.page.getByTestId(
+    TestIds.dialogs.missingNodes
+  )
 
   await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
-  await comfyPage.page
-    .locator('.p-dialog')
-    .getByRole('button', { name: 'Close' })
-    .click({ force: true })
-  await comfyPage.page.locator('.p-dialog').waitFor({ state: 'hidden' })
+  await expect(missingNodesWarning).toBeVisible()
+  await comfyPage.page.keyboard.press('Escape')
+  await expect(missingNodesWarning).not.toBeVisible()
 
   // Wait for any async operations to complete after dialog closes
   await comfyPage.nextFrame()
@@ -55,9 +59,14 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
 
   // Undo and redo the change
   await comfyPage.keyboard.undo()
-  await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+  await expect(async () => {
+    await expect(missingNodesWarning).not.toBeVisible()
+  }).toPass({ timeout: 5000 })
+
   await comfyPage.keyboard.redo()
-  await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+  await expect(async () => {
+    await expect(missingNodesWarning).not.toBeVisible()
+  }).toPass({ timeout: 5000 })
 })
 
 test.describe('Execution error', () => {
@@ -401,7 +410,7 @@ test.describe('Signin dialog', () => {
   test('Paste content to signin dialog should not paste node on canvas', async ({
     comfyPage
   }) => {
-    const nodeNum = (await comfyPage.nodeOps.getNodes()).length
+    const nodeNum = await comfyPage.nodeOps.getNodeCount()
     await comfyPage.canvas.click({
       position: DefaultGraphPositions.emptyLatentWidgetClick
     })
@@ -424,6 +433,6 @@ test.describe('Signin dialog', () => {
     await input.press('Control+v')
     await expect(input).toHaveValue('test_password')
 
-    expect(await comfyPage.nodeOps.getNodes()).toHaveLength(nodeNum)
+    expect(await comfyPage.nodeOps.getNodeCount()).toBe(nodeNum)
   })
 })

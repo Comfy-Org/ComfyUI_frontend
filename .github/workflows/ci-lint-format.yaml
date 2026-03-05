@@ -26,6 +26,14 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      - name: Detect browser_tests changes
+        id: changed-paths
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: |
+            browser_tests:
+              - 'browser_tests/**'
+
       - name: Run ESLint with auto-fix
         run: pnpm lint:fix
 
@@ -59,6 +67,10 @@ jobs:
           pnpm stylelint
           pnpm format:check
           pnpm knip
+
+      - name: Typecheck browser tests
+        if: steps.changed-paths.outputs.browser_tests == 'true'
+        run: pnpm typecheck:browser
 
       - name: Comment on PR about auto-fix
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository

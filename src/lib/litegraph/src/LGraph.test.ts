@@ -1,12 +1,17 @@
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { NodeId, Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphNode,
   LiteGraph,
   LLink
 } from '@/lib/litegraph/src/litegraph'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { usePromotionStore } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
   createTestSubgraphData,
   createTestSubgraphNode
@@ -225,9 +230,48 @@ describe('Graph Clearing and Callbacks', () => {
     // Verify nodes were actually removed
     expect(graph.nodes.length).toBe(0)
   })
+
+  test('clear() removes graph-scoped promotion and widget-value state', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const graph = new LGraph()
+    const graphId = 'graph-clear-cleanup' as UUID
+    graph.id = graphId
+
+    const promotionStore = usePromotionStore()
+    promotionStore.promote(graphId, 1 as NodeId, '10', 'seed')
+
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.registerWidget(graphId, {
+      nodeId: '10' as NodeId,
+      name: 'seed',
+      type: 'number',
+      value: 1,
+      options: {},
+      label: undefined,
+      serialize: undefined,
+      disabled: undefined
+    })
+
+    expect(promotionStore.isPromotedByAny(graphId, '10', 'seed')).toBe(true)
+    expect(widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')).toEqual(
+      expect.objectContaining({ value: 1 })
+    )
+
+    graph.clear()
+
+    expect(promotionStore.isPromotedByAny(graphId, '10', 'seed')).toBe(false)
+    expect(
+      widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')
+    ).toBeUndefined()
+  })
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
   function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
     const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
 

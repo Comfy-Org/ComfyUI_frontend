@@ -14,6 +14,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { generateUUID } from '@/utils/formatUtil'
 
@@ -126,6 +127,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   declare readonly name: string
   declare readonly options: DOMWidgetOptions<V>
   declare callback?: (value: V) => void
+  readonly promotionStore = usePromotionStore()
 
   readonly id: string
 
@@ -158,7 +160,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     super.setNodeId(nodeId)
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
-    const state = useWidgetValueStore().getWidget(nodeId, this.name)
+    const state = useWidgetValueStore().getWidget(graphId, nodeId, this.name)
     if (state) state.value = resolvedValue
   }
 
@@ -178,7 +180,9 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     widget_height: number,
     lowQuality?: boolean
   ): void {
-    if (this.options.hideOnZoom && lowQuality && this.isVisible()) {
+    const isVisible = this.isVisible()
+
+    if (this.options.hideOnZoom && lowQuality && isVisible) {
       // Draw a placeholder rectangle
       const originalFillStyle = ctx.fillStyle
       ctx.beginPath()
@@ -191,7 +195,25 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       )
       ctx.fill()
       ctx.fillStyle = originalFillStyle
-    } else if (this.promoted && this.isVisible()) {
+    } else {
+      if (!isVisible) {
+        this.options.onDraw?.(this)
+        return
+      }
+
+      const graphId = this.node.graph?.rootGraph.id
+      const isPromoted =
+        graphId &&
+        this.promotionStore.isPromotedByAny(
+          graphId,
+          String(this.node.id),
+          this.name
+        )
+      if (!isPromoted) {
+        this.options.onDraw?.(this)
+        return
+      }
+
       ctx.save()
       const adjustedMargin = this.margin - 1
       ctx.beginPath()

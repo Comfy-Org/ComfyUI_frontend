@@ -6,6 +6,7 @@ import { useNodePricing } from '@/composables/node/useNodePricing'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
+import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
@@ -54,10 +55,12 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
         // Access only the widget values that affect pricing (from widgetValueStore)
         const relevantNames = relevantPricingWidgets.value
         const widgetStore = useWidgetValueStore()
+        const graphId = app.canvas?.graph?.rootGraph.id
         if (relevantNames.length > 0 && nodeData?.id != null) {
           for (const name of relevantNames) {
             // Access value from store to create reactive dependency
-            void widgetStore.getWidget(nodeData.id, name)?.value
+            if (!graphId) continue
+            void widgetStore.getWidget(graphId, nodeData.id, name)?.value
           }
         }
         // Access input connections for regular inputs
