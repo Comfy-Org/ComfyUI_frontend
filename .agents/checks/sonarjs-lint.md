@@ -28,7 +28,7 @@ Run eslint-plugin-sonarjs analysis on changed files to detect bugs, code smells,
 
    ```bash
    # Use the strict config
-   pnpm dlx --yes eslint --no-config-lookup --config .agents/checks/eslint.strict.config.js --format json <changed_files> 2>/dev/null || true
+   pnpm dlx --yes --package eslint-plugin-sonarjs eslint --no-config-lookup --config .agents/checks/eslint.strict.config.js --format json <changed_files> 2>/dev/null || true
    ```
 
 5. Parse the JSON array of file results. For each eslint message, map severity:

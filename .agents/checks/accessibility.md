@@ -15,7 +15,7 @@ Check for:
 4. **Focus management** - modals/dialogs that don't trap focus, dynamic content that doesn't move focus appropriately, removed elements without focus recovery
 5. **ARIA misuse** - invalid `aria-*` attributes, roles without required children/properties, `aria-hidden` on focusable elements
 6. **Color as sole indicator** - using color alone to convey meaning (errors, status) without text/icon alternative
-7. **Touch targets** - interactive elements smaller than 44x44px (WCAG 2.5.8)
+7. **Touch targets** - interactive elements smaller than 24x24 CSS pixels (WCAG 2.2 SC 2.5.8)
 8. **Screen reader support** - dynamic content changes without `aria-live` announcements, unlabeled icon buttons, links with only "click here"
 9. **Heading hierarchy** - skipped heading levels (h1 → h3), missing page landmarks
 
