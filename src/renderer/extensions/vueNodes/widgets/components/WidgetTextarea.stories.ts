@@ -1,23 +1,21 @@
-import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { provide, ref } from 'vue'
+import type {
+  ComponentPropsAndSlots,
+  Meta,
+  StoryObj
+} from '@storybook/vue3-vite'
+import { computed, provide, ref, toRefs } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import WidgetTextarea from './WidgetTextarea.vue'
 
-function createWidget(
-  overrides: Partial<SimplifiedWidget<string>> = {}
-): SimplifiedWidget<string> {
-  return {
-    name: 'text',
-    type: 'STRING',
-    value: '',
-    ...overrides
-  }
+interface StoryArgs extends ComponentPropsAndSlots<typeof WidgetTextarea> {
+  readOnly: boolean
+  disabled: boolean
 }
 
-const meta: Meta<typeof WidgetTextarea> = {
+const meta: Meta<StoryArgs> = {
   title: 'Widgets/WidgetTextarea',
   component: WidgetTextarea,
   tags: ['autodocs'],
@@ -33,6 +31,14 @@ const meta: Meta<typeof WidgetTextarea> = {
       }
     }
   },
+  argTypes: {
+    readOnly: { control: 'boolean' },
+    disabled: { control: 'boolean' }
+  },
+  args: {
+    readOnly: false,
+    disabled: false
+  },
   decorators: [
     (story) => ({
       components: { story },
@@ -45,11 +51,21 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { WidgetTextarea },
     setup() {
+      const { readOnly, disabled } = toRefs(args)
       const value = ref('A multi-line text area for entering prompts.')
-      const widget = createWidget({ name: 'prompt', label: 'Prompt' })
+      const widget = computed<SimplifiedWidget<string>>(() => ({
+        name: 'prompt',
+        type: 'STRING',
+        value: '',
+        label: 'Prompt',
+        options: {
+          read_only: readOnly.value,
+          disabled: disabled.value
+        }
+      }))
       return { value, widget }
     },
     template:
@@ -57,15 +73,20 @@ export const Default: Story = {
   })
 }
 
-export const WithLabelVisible: Story = {
-  render: () => ({
+export const Disabled: Story = {
+  args: { disabled: true },
+  render: (args) => ({
     components: { WidgetTextarea },
     setup() {
-      const value = ref('beautiful landscape, mountains, sunset, 4k, detailed')
-      const widget = createWidget({
-        name: 'positive',
-        label: 'Positive Prompt'
-      })
+      const { disabled } = toRefs(args)
+      const value = ref('This textarea is disabled via widget options.')
+      const widget = computed<SimplifiedWidget<string>>(() => ({
+        name: 'locked',
+        type: 'STRING',
+        value: '',
+        label: 'Locked Field',
+        options: { disabled: disabled.value }
+      }))
       return { value, widget }
     },
     template: '<WidgetTextarea :widget="widget" v-model="value" />'
@@ -78,47 +99,12 @@ export const HiddenLabel: Story = {
     setup() {
       provide(HideLayoutFieldKey, true)
       const value = ref('Label is hidden via HideLayoutFieldKey injection.')
-      const widget = createWidget({ name: 'notes', label: 'Notes' })
-      return { value, widget }
-    },
-    template: '<WidgetTextarea :widget="widget" v-model="value" />'
-  })
-}
-
-export const ReadOnly: Story = {
-  render: () => ({
-    components: { WidgetTextarea },
-    setup() {
-      const value = ref('This text is read-only. Hover to see the copy button.')
-      const widget = createWidget({
-        name: 'output',
-        label: 'Output',
-        options: { read_only: true }
-      })
-      return { value, widget }
-    },
-    template: '<WidgetTextarea :widget="widget" v-model="value" />'
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'A copy-to-clipboard button appears on hover in the top-right corner.'
+      const widget: SimplifiedWidget<string> = {
+        name: 'notes',
+        type: 'STRING',
+        value: '',
+        label: 'Notes'
       }
-    }
-  }
-}
-
-export const Disabled: Story = {
-  render: () => ({
-    components: { WidgetTextarea },
-    setup() {
-      const value = ref('This textarea is disabled via widget options.')
-      const widget = createWidget({
-        name: 'locked',
-        label: 'Locked Field',
-        options: { disabled: true }
-      })
       return { value, widget }
     },
     template: '<WidgetTextarea :widget="widget" v-model="value" />'
@@ -130,10 +116,12 @@ export const WithPlaceholder: Story = {
     components: { WidgetTextarea },
     setup() {
       const value = ref('')
-      const widget = createWidget({
+      const widget: SimplifiedWidget<string> = {
         name: 'negative',
+        type: 'STRING',
+        value: '',
         label: 'Negative Prompt'
-      })
+      }
       return { value, widget }
     },
     template:

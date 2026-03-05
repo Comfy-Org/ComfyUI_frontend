@@ -1,26 +1,35 @@
-import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { ref } from 'vue'
+import type {
+  ComponentPropsAndSlots,
+  Meta,
+  StoryObj
+} from '@storybook/vue3-vite'
+import { computed, ref, toRefs } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputText from './WidgetInputText.vue'
 
-function createWidget(
-  overrides: Partial<SimplifiedWidget<string>> = {}
-): SimplifiedWidget<string> {
-  return {
-    name: 'prompt',
-    type: 'STRING',
-    value: '',
-    ...overrides
-  }
+interface StoryArgs extends ComponentPropsAndSlots<typeof WidgetInputText> {
+  readOnly: boolean
+  disabled: boolean
+  placeholder: string
 }
 
-const meta: Meta<typeof WidgetInputText> = {
+const meta: Meta<StoryArgs> = {
   title: 'Widgets/WidgetInputText',
   component: WidgetInputText,
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
+  argTypes: {
+    readOnly: { control: 'boolean' },
+    disabled: { control: 'boolean' },
+    placeholder: { control: 'text' }
+  },
+  args: {
+    readOnly: false,
+    disabled: false,
+    placeholder: ''
+  },
   decorators: [
     (story) => ({
       components: { story },
@@ -34,41 +43,21 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { WidgetInputText },
     setup() {
+      const { readOnly, disabled, placeholder } = toRefs(args)
       const value = ref('Hello world')
-      const widget = createWidget({ name: 'text' })
-      return { value, widget }
-    },
-    template: '<WidgetInputText :widget="widget" v-model="value" />'
-  })
-}
-
-export const WithPlaceholder: Story = {
-  render: () => ({
-    components: { WidgetInputText },
-    setup() {
-      const value = ref('')
-      const widget = createWidget({
-        name: 'prompt',
-        options: { placeholder: 'Enter your prompt here...' }
-      })
-      return { value, widget }
-    },
-    template: '<WidgetInputText :widget="widget" v-model="value" />'
-  })
-}
-
-export const ReadOnly: Story = {
-  render: () => ({
-    components: { WidgetInputText },
-    setup() {
-      const value = ref('This text cannot be edited')
-      const widget = createWidget({
-        name: 'output',
-        options: { read_only: true }
-      })
+      const widget = computed<SimplifiedWidget<string>>(() => ({
+        name: 'text',
+        type: 'STRING',
+        value: '',
+        options: {
+          read_only: readOnly.value,
+          disabled: disabled.value,
+          ...(placeholder.value ? { placeholder: placeholder.value } : {})
+        }
+      }))
       return { value, widget }
     },
     template: '<WidgetInputText :widget="widget" v-model="value" />'
@@ -76,14 +65,39 @@ export const ReadOnly: Story = {
 }
 
 export const Disabled: Story = {
-  render: () => ({
+  args: { disabled: true },
+  render: (args) => ({
     components: { WidgetInputText },
     setup() {
+      const { disabled } = toRefs(args)
       const value = ref('This text is disabled')
-      const widget = createWidget({
+      const widget = computed<SimplifiedWidget<string>>(() => ({
         name: 'locked',
-        options: { disabled: true }
-      })
+        type: 'STRING',
+        value: '',
+        options: { disabled: disabled.value }
+      }))
+      return { value, widget }
+    },
+    template: '<WidgetInputText :widget="widget" v-model="value" />'
+  })
+}
+
+export const WithPlaceholder: Story = {
+  args: { placeholder: 'Enter your prompt here...' },
+  render: (args) => ({
+    components: { WidgetInputText },
+    setup() {
+      const { placeholder } = toRefs(args)
+      const value = ref('')
+      const widget = computed<SimplifiedWidget<string>>(() => ({
+        name: 'prompt',
+        type: 'STRING',
+        value: '',
+        options: {
+          ...(placeholder.value ? { placeholder: placeholder.value } : {})
+        }
+      }))
       return { value, widget }
     },
     template: '<WidgetInputText :widget="widget" v-model="value" />'
@@ -95,10 +109,12 @@ export const WithLabel: Story = {
     components: { WidgetInputText },
     setup() {
       const value = ref('Some value')
-      const widget = createWidget({
+      const widget: SimplifiedWidget<string> = {
         name: 'seed',
+        type: 'STRING',
+        value: '',
         label: 'Random Seed'
-      })
+      }
       return { value, widget }
     },
     template: '<WidgetInputText :widget="widget" v-model="value" />'
