@@ -1,3 +1,28 @@
+export const RESERVED_BY_BROWSER = new Set([
+  'Ctrl + t',
+  'Ctrl + w',
+  'Ctrl + n',
+  'Ctrl + Shift + n',
+  'Ctrl + Tab',
+  'Ctrl + Shift + Tab',
+  'Ctrl + Shift + Delete',
+  'Ctrl + h',
+  'Ctrl + j',
+  'Ctrl + d',
+  'Ctrl + Shift + b',
+  'Ctrl + Shift + o',
+  'Ctrl + Shift + i',
+  'Ctrl + Shift + j',
+  'F5',
+  'Ctrl + F5',
+  'Ctrl + r',
+  'Ctrl + Shift + r',
+  'F7',
+  'F11',
+  'F12',
+  'Alt + F4'
+])
+
 export const RESERVED_BY_TEXT_INPUT = new Set([
   'Ctrl + a',
   'Ctrl + c',

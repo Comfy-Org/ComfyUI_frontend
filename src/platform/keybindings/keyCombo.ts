@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 
-import { RESERVED_BY_TEXT_INPUT } from './reserved'
+import { RESERVED_BY_BROWSER, RESERVED_BY_TEXT_INPUT } from './reserved'
 import type { KeyCombo } from './types'
 
 export class KeyComboImpl implements KeyCombo {
@@ -59,6 +59,10 @@ export class KeyComboImpl implements KeyCombo {
 
   get isShiftOnly(): boolean {
     return this.shift && this.modifierCount === 1
+  }
+
+  get isBrowserReserved(): boolean {
+    return RESERVED_BY_BROWSER.has(this.toString())
   }
 
   get isReservedByTextInput(): boolean {

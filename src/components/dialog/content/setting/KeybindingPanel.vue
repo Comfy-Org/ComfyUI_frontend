@@ -110,6 +110,9 @@
           fluid
           @keydown.stop.prevent="captureKeybinding"
         />
+        <Message v-if="newBindingKeyCombo?.isBrowserReserved" severity="warn">
+          {{ $t('g.browserReservedKeybinding') }}
+        </Message>
         <Message v-if="existingKeybindingOnCombo" severity="warn">
           {{ $t('g.keybindingAlreadyExists') }}
           <Tag
