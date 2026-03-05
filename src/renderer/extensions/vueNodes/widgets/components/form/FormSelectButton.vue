@@ -63,7 +63,7 @@ const {
   options,
   optionLabel = 'label',
   optionValue = 'value',
-  disabled = false
+  disabled
 } = defineProps<Props>()
 
 const emit = defineEmits<Emits>()
