@@ -107,11 +107,11 @@ async function rerun(e: Event) {
     <Button
       v-if="!executionStore.isIdle && !selectedItem"
       variant="destructive"
-      size="icon"
-      :aria-label="t('menu.interrupt')"
+      :aria-label="t('linearMode.cancelThisRun')"
       @click="commandStore.execute('Comfy.Interrupt')"
     >
       <i class="icon-[lucide--x]" />
+      {{ t('linearMode.cancelThisRun') }}
     </Button>
     <Popover
       v-if="selectedItem"

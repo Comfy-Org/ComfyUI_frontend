@@ -3040,6 +3040,7 @@
     "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
     "backToWorkflow": "Back to workflow",
     "loadTemplate": "Load a template",
+    "cancelThisRun": "Cancel this run",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
