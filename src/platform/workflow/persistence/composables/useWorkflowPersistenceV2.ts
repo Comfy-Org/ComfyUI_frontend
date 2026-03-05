@@ -243,7 +243,7 @@ export function useWorkflowPersistenceV2() {
     }
   })
 
-  const restoreWorkflowTabsState = async () => {
+  const restoreWorkflowTabsState = () => {
     if (!workflowPersistenceEnabled.value) {
       tabStateRestored = true
       return
@@ -260,22 +260,22 @@ export function useWorkflowPersistenceV2() {
     const isRestorable = storedWorkflows.length > 0 && storedActiveIndex >= 0
     if (!isRestorable) return
 
-    for (const path of storedWorkflows) {
-      if (workflowStore.getWorkflowByPath(path)) continue
+    storedWorkflows.forEach((path: string) => {
+      if (workflowStore.getWorkflowByPath(path)) return
       const draft = draftStore.getDraft(path)
-      if (!draft?.isTemporary) continue
+      if (!draft?.isTemporary) return
       try {
         const workflowData = JSON.parse(draft.data)
-        await workflowStore.createTemporary(draft.name, workflowData)
+        workflowStore.createTemporary(draft.name, workflowData)
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',
           err
         )
         draftStore.removeDraft(path)
-        await workflowStore.createTemporary(draft.name)
+        workflowStore.createTemporary(draft.name)
       }
-    }
+    })
 
     workflowStore.openWorkflowsInBackground({
       left: storedWorkflows.slice(0, storedActiveIndex),

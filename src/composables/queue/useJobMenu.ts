@@ -62,7 +62,7 @@ export function useJobMenu(
     const data = await getJobWorkflow(target.id)
     if (!data) return
     const filename = `Job ${target.id}.json`
-    const temp = await workflowStore.createTemporary(filename, data)
+    const temp = workflowStore.createTemporary(filename, data)
     await workflowService.openWorkflow(temp)
   }
 

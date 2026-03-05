@@ -465,9 +465,7 @@ describe('useWorkflowService', () => {
       const tempWorkflow = createModeTestWorkflow({
         path: 'workflows/repeat (2).json'
       })
-      vi.mocked(workflowStore.createNewTemporary).mockResolvedValue(
-        tempWorkflow
-      )
+      vi.mocked(workflowStore.createNewTemporary).mockReturnValue(tempWorkflow)
       vi.mocked(workflowStore.openWorkflow).mockResolvedValue(tempWorkflow)
 
       await useWorkflowService().afterLoadNewGraph('repeat', {
@@ -623,7 +621,7 @@ describe('useWorkflowService', () => {
       })
 
       it('sets initialMode to app for fresh string-based loads with linearMode', async () => {
-        vi.spyOn(workflowStore, 'createNewTemporary').mockResolvedValue(
+        vi.spyOn(workflowStore, 'createNewTemporary').mockReturnValue(
           createModeTestWorkflow()
         )
 

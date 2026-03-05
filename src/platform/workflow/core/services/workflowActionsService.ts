@@ -104,7 +104,7 @@ export function useWorkflowActionsService() {
     }
 
     try {
-      const temp = await workflowStore.createTemporary(filename, workflow)
+      const temp = workflowStore.createTemporary(filename, workflow)
       await workflowService.openWorkflow(temp)
       return { success: true }
     } catch (error) {
