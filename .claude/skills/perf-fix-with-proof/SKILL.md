@@ -120,9 +120,9 @@ The `ci-perf-report.yaml` posts a comment like:
 ```markdown
 ## ⚡ Performance Report
 
-| Metric | Baseline | PR (n=3) | Δ | Sig |
-|--------|----------|----------|---|-----|
-| <name>: style recalcs | 450 | 12 | -97% | 🟢 |
+| Metric                | Baseline | PR (n=3) | Δ    | Sig |
+| --------------------- | -------- | -------- | ---- | --- |
+| <name>: style recalcs | 450      | 12       | -97% | 🟢  |
 ```
 
 If Δ is negative for the target metric, the fix is proven.
