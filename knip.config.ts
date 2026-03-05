@@ -45,7 +45,9 @@ const config: KnipConfig = {
     // Workflow files contain license names that knip misinterprets as binaries
     '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
-    'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue'
+    'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
+    // Agent review check config, not part of the build
+    '.agents/checks/eslint.strict.config.js'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
