@@ -1,6 +1,6 @@
 ---
 name: regenerating-screenshots
-description: "Creates a PR to regenerate Playwright screenshot expectations. Use when screenshot tests are failing on main or PRs due to stale golden images. Triggers on: regen screenshots, regenerate screenshots, update expectations, fix screenshot tests."
+description: 'Creates a PR to regenerate Playwright screenshot expectations. Use when screenshot tests are failing on main or PRs due to stale golden images. Triggers on: regen screenshots, regenerate screenshots, update expectations, fix screenshot tests.'
 ---
 
 # Regenerating Playwright Screenshot Expectations
