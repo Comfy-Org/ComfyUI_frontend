@@ -110,7 +110,7 @@ describe('useWorkflowThumbnail', () => {
       useWorkflowThumbnail()
 
     // Create a temporary workflow
-    const workflow = workflowStore.createTemporary('test-workflow.json')
+    const workflow = await workflowStore.createTemporary('test-workflow.json')
     const originalKey = workflow.key
 
     // Store thumbnail for the workflow
@@ -167,7 +167,7 @@ describe('useWorkflowThumbnail', () => {
       useWorkflowThumbnail()
 
     // Create a workflow and store thumbnail
-    const workflow = workflowStore.createTemporary('test-delete.json')
+    const workflow = await workflowStore.createTemporary('test-delete.json')
     await storeThumbnail(workflow)
 
     expect(getThumbnail(workflow.key)).toBe('data:image/png;base64,test')
@@ -189,7 +189,7 @@ describe('useWorkflowThumbnail', () => {
       useWorkflowThumbnail()
 
     // Create a temporary workflow and store thumbnail
-    const workflow = workflowStore.createTemporary('temp-workflow.json')
+    const workflow = await workflowStore.createTemporary('temp-workflow.json')
     await storeThumbnail(workflow)
 
     expect(getThumbnail(workflow.key)).toBe('data:image/png;base64,test')
@@ -211,7 +211,7 @@ describe('useWorkflowThumbnail', () => {
       useWorkflowThumbnail()
 
     // Create workflow and store thumbnail
-    const workflow = workflowStore.createTemporary('original.json')
+    const workflow = await workflowStore.createTemporary('original.json')
     await storeThumbnail(workflow)
     const originalKey = workflow.key
 

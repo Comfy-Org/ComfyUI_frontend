@@ -90,7 +90,7 @@ describe('useWorkflowStore', () => {
     })
 
     it('should exclude temporary workflows', async () => {
-      const workflow = store.createTemporary('c.json')
+      const workflow = await store.createTemporary('c.json')
       await syncRemoteWorkflows(['a.json', 'b.json'])
       expect(store.workflows.length).toBe(3)
       expect(store.workflows.filter((w) => w.isTemporary)).toEqual([workflow])
@@ -170,35 +170,35 @@ describe('useWorkflowStore', () => {
   })
 
   describe('createTemporary', () => {
-    it('should create a temporary workflow with a unique path', () => {
-      const workflow = store.createTemporary()
+    it('should create a temporary workflow with a unique path', async () => {
+      const workflow = await store.createTemporary()
       expect(workflow.path).toBe('workflows/Unsaved Workflow.json')
 
-      const workflow2 = store.createTemporary()
+      const workflow2 = await store.createTemporary()
       expect(workflow2.path).toBe('workflows/Unsaved Workflow (2).json')
     })
 
     it('should create a temporary workflow not clashing with persisted workflows', async () => {
       await syncRemoteWorkflows(['a.json'])
-      const workflow = store.createTemporary('a.json')
+      const workflow = await store.createTemporary('a.json')
       expect(workflow.path).toBe('workflows/a (2).json')
     })
 
-    it('should assign a workflow id to newly created temporary workflows', () => {
-      const workflow = store.createTemporary('id-test.json')
+    it('should assign a workflow id to newly created temporary workflows', async () => {
+      const workflow = await store.createTemporary('id-test.json')
       const state = JSON.parse(workflow.content!)
 
       expect(typeof state.id).toBe('string')
       expect(state.id.length).toBeGreaterThan(0)
     })
 
-    it('should assign an id when temporary workflow data is missing one', () => {
+    it('should assign an id when temporary workflow data is missing one', async () => {
       const workflowDataWithoutId = {
         ...defaultGraph,
         id: undefined
       }
 
-      const workflow = store.createTemporary(
+      const workflow = await store.createTemporary(
         'missing-id.json',
         workflowDataWithoutId
       )
@@ -213,7 +213,7 @@ describe('useWorkflowStore', () => {
   describe('openWorkflow', () => {
     it('should load and open a temporary workflow', async () => {
       // Create a test workflow
-      const workflow = store.createTemporary('test.json')
+      const workflow = await store.createTemporary('test.json')
 
       // Mock the load response
       vi.spyOn(workflow, 'load').mockImplementation(async () => {
@@ -234,7 +234,7 @@ describe('useWorkflowStore', () => {
     })
 
     it('should not reload an already active workflow', async () => {
-      const workflow = await store.createTemporary('test.json').load()
+      const workflow = await (await store.createTemporary('test.json')).load()
       vi.spyOn(workflow, 'load')
 
       // Set as active workflow
@@ -387,7 +387,7 @@ describe('useWorkflowStore', () => {
 
   describe('renameWorkflow', () => {
     it('should rename workflow and update bookmarks', async () => {
-      const workflow = store.createTemporary('dir/test.json')
+      const workflow = await store.createTemporary('dir/test.json')
 
       // Set up initial bookmark
       expect(workflow.path).toBe('workflows/dir/test.json')
@@ -413,7 +413,7 @@ describe('useWorkflowStore', () => {
     })
 
     it('should rename workflow without affecting bookmarks if not bookmarked', async () => {
-      const workflow = store.createTemporary('test.json')
+      const workflow = await store.createTemporary('test.json')
 
       // Verify not bookmarked initially
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
@@ -439,7 +439,7 @@ describe('useWorkflowStore', () => {
 
   describe('closeWorkflow', () => {
     it('should close a workflow', async () => {
-      const workflow = store.createTemporary('test.json')
+      const workflow = await store.createTemporary('test.json')
       await store.openWorkflow(workflow)
       expect(store.isOpen(workflow)).toBe(true)
       expect(store.getWorkflowByPath(workflow.path)).not.toBeNull()
@@ -451,7 +451,7 @@ describe('useWorkflowStore', () => {
 
   describe('deleteWorkflow', () => {
     it('should close and delete an open workflow', async () => {
-      const workflow = store.createTemporary('test.json')
+      const workflow = await store.createTemporary('test.json')
 
       // Mock the necessary methods
       vi.spyOn(workflow, 'delete').mockResolvedValue()
@@ -467,7 +467,7 @@ describe('useWorkflowStore', () => {
     })
 
     it('should remove bookmark when deleting a bookmarked workflow', async () => {
-      const workflow = store.createTemporary('test.json')
+      const workflow = await store.createTemporary('test.json')
 
       // Mock delete method
       vi.spyOn(workflow, 'delete').mockResolvedValue()
@@ -585,7 +585,9 @@ describe('useWorkflowStore', () => {
       }) as typeof comfyApp.canvas
 
       // Setup an active workflow as updateActiveGraph depends on it
-      const workflow = store.createTemporary('test-subgraph-workflow.json')
+      const workflow = await store.createTemporary(
+        'test-subgraph-workflow.json'
+      )
       // Mock load to avoid actual file operations/parsing
       vi.spyOn(workflow, 'load').mockImplementation(async () => {
         workflow.changeTracker = createMockChangeTracker({
@@ -679,7 +681,7 @@ describe('useWorkflowStore', () => {
       expect(store.activeSubgraph).toEqual(initialSubgraph)
 
       // Act: Change the active workflow
-      const workflow2 = store.createTemporary('workflow2.json')
+      const workflow2 = await store.createTemporary('workflow2.json')
       // Mock load for the second workflow
       vi.spyOn(workflow2, 'load').mockImplementation(async () => {
         workflow2.changeTracker = createMockChangeTracker({
@@ -959,7 +961,7 @@ describe('useWorkflowStore', () => {
 
     it('should remove draft for temporary workflows on close', async () => {
       const draftStore = useWorkflowDraftStore()
-      const workflow = store.createTemporary('temp.json')
+      const workflow = await store.createTemporary('temp.json')
 
       draftStore.saveDraft(workflow.path, {
         data: '{"dirty":true}',

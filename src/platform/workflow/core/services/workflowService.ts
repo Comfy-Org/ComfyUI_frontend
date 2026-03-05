@@ -454,7 +454,7 @@ export const useWorkflowService = () => {
         }
       }
 
-      const tempWorkflow = workflowStore.createNewTemporary(
+      const tempWorkflow = await workflowStore.createNewTemporary(
         path ? appendJsonExt(path) : undefined,
         workflowData
       )

@@ -13,6 +13,7 @@ import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
@@ -56,11 +57,11 @@ interface WorkflowStore {
   createTemporary: (
     path?: string,
     workflowData?: ComfyWorkflowJSON
-  ) => ComfyWorkflow
+  ) => Promise<ComfyWorkflow>
   createNewTemporary: (
     path?: string,
     workflowData?: ComfyWorkflowJSON
-  ) => ComfyWorkflow
+  ) => Promise<ComfyWorkflow>
   renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
   deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
@@ -255,12 +256,20 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return workflow
   }
 
-  const ensureWorkflowId = (
+  async function ensureWorkflowId(
     workflowData?: ComfyWorkflowJSON
-  ): ComfyWorkflowJSON => {
-    const base = workflowData
-      ? (JSON.parse(JSON.stringify(workflowData)) as ComfyWorkflowJSON)
-      : (JSON.parse(defaultGraphJSON) as ComfyWorkflowJSON)
+  ): Promise<ComfyWorkflowJSON> {
+    const raw = workflowData
+      ? JSON.parse(JSON.stringify(workflowData))
+      : JSON.parse(defaultGraphJSON)
+
+    let validationError: string | undefined
+    const base = await validateComfyWorkflow(raw, (error) => {
+      validationError = error
+    })
+    if (!base) {
+      throw new Error(validationError ?? 'Invalid workflow data')
+    }
 
     if (!base.id) {
       base.id = generateUUID()
@@ -269,22 +278,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return base
   }
 
-  /**
-   * Helper to create a new temporary workflow
-   */
-  const createNewWorkflow = (
+  function initWorkflow(
     path: string,
-    workflowData?: ComfyWorkflowJSON
-  ): ComfyWorkflow => {
+    validatedData: ComfyWorkflowJSON
+  ): ComfyWorkflow {
     const workflow = new ComfyWorkflow({
       path,
       modified: Date.now(),
       size: -1
     })
 
-    const initialWorkflowData = ensureWorkflowId(workflowData)
-    workflow.originalContent = workflow.content =
-      JSON.stringify(initialWorkflowData)
+    workflow.originalContent = workflow.content = JSON.stringify(validatedData)
 
     workflowLookup.value[workflow.path] = workflow
     return workflow
@@ -293,13 +297,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * Create a temporary workflow, attempting to reuse an existing workflow if conditions match
    */
-  const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
+  async function createTemporary(
+    path?: string,
+    workflowData?: ComfyWorkflowJSON
+  ): Promise<ComfyWorkflow> {
     const fullPath = getUnconflictedPath(
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
 
     const normalizedWorkflowData = workflowData
-      ? ensureWorkflowId(workflowData)
+      ? await ensureWorkflowId(workflowData)
       : undefined
 
     // Try to reuse an existing loaded workflow with the same filename
@@ -319,20 +326,22 @@ export const useWorkflowStore = defineStore('workflow', () => {
       }
     }
 
-    return createNewWorkflow(fullPath, normalizedWorkflowData)
+    const validatedData = normalizedWorkflowData ?? (await ensureWorkflowId())
+    return initWorkflow(fullPath, validatedData)
   }
 
   /**
    * Create a new temporary workflow without attempting to reuse existing workflows
    */
-  const createNewTemporary = (
+  async function createNewTemporary(
     path?: string,
     workflowData?: ComfyWorkflowJSON
-  ): ComfyWorkflow => {
+  ): Promise<ComfyWorkflow> {
     const fullPath = getUnconflictedPath(
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
-    return createNewWorkflow(fullPath, workflowData)
+    const validatedData = await ensureWorkflowId(workflowData)
+    return initWorkflow(fullPath, validatedData)
   }
 
   const closeWorkflow = async (workflow: ComfyWorkflow) => {
