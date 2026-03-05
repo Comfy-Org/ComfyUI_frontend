@@ -356,13 +356,15 @@
     "emptyWorkflowExplanation": "İş akışınız boş. Bir uygulama oluşturmaya başlamak için önce bazı düğümlere ihtiyacınız var.",
     "emptyWorkflowPrompt": "Bir şablonla başlamak ister misiniz?",
     "emptyWorkflowTitle": "Bu iş akışında düğüm yok",
+    "inputs": "Girdiler",
+    "inputsDescription": "Girdileri seçin",
     "label": "Uygulama Oluşturucu",
     "loadTemplate": "Şablon yükle",
     "nodeGraph": "Düğüm grafiği",
     "nodeGraphDescription": "Varsayılan olarak düğüm grafiği olarak açılır",
-    "select": "Seç",
-    "selectDescription": "Girdi/çıktı seçin",
-    "switchToSelect": "Seç'e Geç",
+    "outputs": "Çıktılar",
+    "outputsDescription": "Çıktıları seçin",
+    "switchToOutputs": "Çıktılara Geç",
     "viewApp": "Uygulamayı görüntüle"
   },
   "clipboard": {
@@ -1350,8 +1352,8 @@
       "outputExamples": "Örnekler: 'Görseli Kaydet' veya 'Videoyu Kaydet'",
       "outputs": "Çıktılar",
       "resultsLabel": "Seçili çıktı düğüm(ler)inden üretilen sonuçlar bu uygulama çalıştırıldıktan sonra burada gösterilecektir.",
-      "switchToSelect": "'Seç' adımına geçin ve çıktı düğümlerine tıklayarak buraya ekleyin.",
-      "switchToSelectButton": "Seç'e Geç"
+      "switchToOutputs": "'Çıktı' adımına geçin ve buraya eklemek için çıktı düğümlerine tıklayın.",
+      "switchToOutputsButton": "Çıktılara Geç"
     },
     "beta": "Uygulama Modu Beta - Geri Bildirim Verin",
     "builder": {
@@ -2728,6 +2730,7 @@
       "searchJobs": "Ara...",
       "showAssets": "Varlıkları göster",
       "showAssetsPanel": "Varlık panelini göster",
+      "showRunProgressBar": "Çalışma ilerleme çubuğunu göster",
       "sortBy": "Sırala",
       "sortJobs": "İşleri sırala",
       "stubClipTextEncode": "CLIP Metin Kodlama:",
