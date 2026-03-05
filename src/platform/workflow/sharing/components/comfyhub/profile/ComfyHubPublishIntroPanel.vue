@@ -1,29 +1,19 @@
 <template>
   <div class="flex w-full flex-col overflow-hidden bg-base-background">
-    <!-- Hero image with gradient fade -->
-    <figure class="relative h-[229px] shrink-0 overflow-hidden rounded-t-xl">
-      <img
-        src="/assets/images/comfyhub/hub_profile_intro_hero.png"
-        alt=""
-        class="h-full w-3/2 object-cover -translate-x-1/4"
-      />
-      <div
-        class="absolute inset-0 bg-gradient-to-b from-transparent from-[53%] to-base-background to-[76%]"
-      />
-      <!-- Close button -->
+    <!-- Close button -->
+    <div v-if="showCloseButton" class="flex justify-end px-2 pt-2">
       <Button
-        v-if="showCloseButton"
         size="icon"
-        class="absolute right-2 top-2 z-10 rounded-full bg-black/30 text-white hover:bg-black/50"
+        class="rounded-full"
         :aria-label="$t('g.close')"
         @click="onClose"
       >
         <i class="icon-[lucide--x] size-4" />
       </Button>
-    </figure>
+    </div>
 
     <!-- Content -->
-    <section class="flex flex-col items-center gap-4 px-4 pb-6">
+    <section class="flex flex-col items-center gap-4 px-4 pb-6 pt-4">
       <h2 class="m-0 text-base font-semibold text-base-foreground">
         {{ $t('comfyHubProfile.introTitle') }}
       </h2>
