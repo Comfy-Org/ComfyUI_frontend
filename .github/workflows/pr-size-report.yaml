@@ -54,8 +54,14 @@ jobs:
 
             // workflow_dispatch: trust direct inputs (only repo admins can trigger)
             if (context.eventName === 'workflow_dispatch') {
-              core.setOutput('number', '${{ inputs.pr_number }}');
-              core.setOutput('base', 'main');
+              const pullNumber = Number('${{ inputs.pr_number }}');
+              const { data: dispatchPr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+              });
+              core.setOutput('number', String(dispatchPr.number));
+              core.setOutput('base', dispatchPr.base.ref);
               return;
             }
 
@@ -65,12 +71,12 @@ jobs:
 
             let pr = context.payload.workflow_run.pull_requests?.[0];
             if (!pr) {
-              const { data: prs } = await github.rest.pulls.list({
+              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                state: 'open',
+                commit_sha: context.payload.workflow_run.head_sha,
               });
-              pr = prs.find(p => p.head.sha === context.payload.workflow_run.head_sha);
+              pr = prs.find(p => p.state === 'open');
             }
 
             if (!pr) {
@@ -83,8 +89,14 @@ jobs:
               return;
             }
 
+            const trustedBase = pr.base?.ref;
+            if (!trustedBase || artifactBase !== trustedBase) {
+              core.setFailed(`Artifact base (${artifactBase}) does not match trusted context (${trustedBase}).`);
+              return;
+            }
+
             core.setOutput('number', String(pr.number));
-            core.setOutput('base', artifactBase);
+            core.setOutput('base', trustedBase);
 
       - name: Download previous size data
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
