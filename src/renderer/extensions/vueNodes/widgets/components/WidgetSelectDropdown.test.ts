@@ -13,6 +13,7 @@ import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+import { createMockWidget as createWidget } from './widgetTestUtils'
 
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 vi.mock(
@@ -49,16 +50,17 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       getOptionLabel?: (value?: string | null) => string
     } = {},
     spec?: ComboInputSpec
-  ): SimplifiedWidget<string | undefined> => ({
-    name: 'test_image_select',
-    type: 'combo',
-    value,
-    options: {
-      values: ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
-      ...options
-    },
-    spec
-  })
+  ) =>
+    createWidget<string | undefined>({
+      value,
+      name: 'test_image_select',
+      type: 'combo',
+      options: {
+        values: ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
+        ...options
+      },
+      spec
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<string | undefined>,

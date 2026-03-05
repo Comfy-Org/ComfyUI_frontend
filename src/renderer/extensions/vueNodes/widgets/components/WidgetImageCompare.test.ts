@@ -5,17 +5,19 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetImageCompare from './WidgetImageCompare.vue'
 import type { ImageCompareValue } from './WidgetImageCompare.vue'
+import { createMockWidget as createWidget } from './widgetTestUtils'
 
 describe('WidgetImageCompare Display', () => {
   const createMockWidget = (
     value: ImageCompareValue | string,
-    options: SimplifiedWidget['options'] = {}
-  ): SimplifiedWidget<ImageCompareValue | string> => ({
-    name: 'test_imagecompare',
-    type: 'object',
-    value,
-    options
-  })
+    options: Record<string, unknown> = {}
+  ) =>
+    createWidget<ImageCompareValue | string>({
+      value,
+      name: 'test_imagecompare',
+      type: 'object',
+      options
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<ImageCompareValue | string>,

@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetColorPicker from './WidgetColorPicker.vue'
+import { createMockWidget as createWidget } from './widgetTestUtils'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 describe('WidgetColorPicker Value Binding', () => {
@@ -14,13 +15,14 @@ describe('WidgetColorPicker Value Binding', () => {
     value: string = '#000000',
     options: Partial<ColorPickerProps> = {},
     callback?: (value: string) => void
-  ): SimplifiedWidget<string> => ({
-    name: 'test_color_picker',
-    type: 'color',
-    value,
-    options,
-    callback
-  })
+  ) =>
+    createWidget<string>({
+      value,
+      name: 'test_color_picker',
+      type: 'color',
+      options,
+      callback
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<string>,

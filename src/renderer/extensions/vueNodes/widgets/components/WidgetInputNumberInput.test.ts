@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
+import { createMockWidget as createWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -17,13 +18,13 @@ function createMockWidget(
   options: SimplifiedWidget['options'] = {},
   callback?: (value: number) => void
 ): SimplifiedWidget<number> {
-  return {
+  return createWidget<number>({
+    value,
     name: 'test_input_number',
     type,
-    value,
     options,
     callback
-  }
+  })
 }
 
 function mountComponent(widget: SimplifiedWidget<number>, modelValue: number) {

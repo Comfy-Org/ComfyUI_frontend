@@ -7,19 +7,20 @@ import Slider from '@/components/ui/slider/Slider.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
+import { createMockWidget as createWidget } from './widgetTestUtils'
 
 function createMockWidget(
   value: number = 5,
   options: SimplifiedWidget['options'] = {},
   callback?: (value: number) => void
 ): SimplifiedWidget<number> {
-  return {
+  return createWidget<number>({
+    value,
     name: 'test_slider',
     type: 'float',
-    value,
     options: { min: 0, max: 100, step: 1, precision: 0, ...options },
     callback
-  }
+  })
 }
 
 function mountComponent(

@@ -9,6 +9,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetGalleria from './WidgetGalleria.vue'
 import type { GalleryImage, GalleryValue } from './WidgetGalleria.vue'
+import { createMockWidget as createWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -48,13 +49,13 @@ const TEST_IMAGE_OBJECTS: readonly GalleryImage[] = Object.freeze([
 function createMockWidget(
   value: GalleryValue = [],
   options: Partial<GalleriaProps> = {}
-): SimplifiedWidget<GalleryValue> {
-  return {
+) {
+  return createWidget<GalleryValue>({
+    value,
     name: 'test_galleria',
     type: 'array',
-    value,
     options
-  }
+  })
 }
 
 function mountComponent(

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
+import { createMockWidget as createWidget } from './widgetTestUtils'
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 
@@ -15,16 +16,15 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
 
 function createMockWidget(
   value: string = 'default text',
-  options: SimplifiedWidget['options'] = {},
+  options: Record<string, unknown> = {},
   callback?: (value: string) => void
-): SimplifiedWidget<string> {
-  return {
-    name: 'test_textarea',
-    type: 'string',
+) {
+  return createWidget<string>({
     value,
+    name: 'test_textarea',
     options,
     callback
-  }
+  })
 }
 
 function mountComponent(

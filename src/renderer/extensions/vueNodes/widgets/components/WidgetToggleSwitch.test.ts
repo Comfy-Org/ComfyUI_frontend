@@ -9,6 +9,7 @@ import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
+import { createMockWidget as createWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -30,13 +31,14 @@ describe('WidgetToggleSwitch Value Binding', () => {
     value: boolean = false,
     options: IWidgetOptions = {},
     callback?: (value: boolean) => void
-  ): SimplifiedWidget<boolean, IWidgetOptions> => ({
-    name: 'test_toggle',
-    type: 'boolean',
-    value,
-    options,
-    callback
-  })
+  ) =>
+    createWidget<boolean>({
+      value,
+      name: 'test_toggle',
+      type: 'boolean',
+      options,
+      callback
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<boolean>,

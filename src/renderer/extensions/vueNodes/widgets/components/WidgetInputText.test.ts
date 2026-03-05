@@ -9,19 +9,20 @@ import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputText from './WidgetInputText.vue'
+import { createMockWidget as createWidget } from './widgetTestUtils'
 
 describe('WidgetInputText Value Binding', () => {
   const createMockWidget = (
     value: string = 'default',
     options: Partial<InputTextProps> = {},
     callback?: (value: string) => void
-  ): SimplifiedWidget<string> => ({
-    name: 'test_input',
-    type: 'string',
-    value,
-    options: options as IWidgetOptions,
-    callback
-  })
+  ) =>
+    createWidget<string>({
+      value,
+      name: 'test_input',
+      options: options as IWidgetOptions,
+      callback
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<string>,

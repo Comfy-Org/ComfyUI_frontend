@@ -9,6 +9,7 @@ import enMessages from '@/locales/en/main.json'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetMarkdown from './WidgetMarkdown.vue'
+import { createMockWidget as createWidget } from './widgetTestUtils'
 
 // Mock the markdown renderer utility
 vi.mock('@/utils/markdownRendererUtil', () => ({
@@ -28,13 +29,13 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     value: string = '# Default Heading\nSome **bold** text.',
     options: Record<string, unknown> = {},
     callback?: (value: string) => void
-  ): SimplifiedWidget<string> => ({
-    name: 'test_markdown',
-    type: 'string',
-    value,
-    options,
-    callback
-  })
+  ) =>
+    createWidget<string>({
+      value,
+      name: 'test_markdown',
+      options,
+      callback
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<string>,

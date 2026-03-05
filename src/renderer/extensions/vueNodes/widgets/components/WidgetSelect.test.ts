@@ -17,6 +17,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+import { createMockWidget as createWidget } from './widgetTestUtils'
 
 // Mock state for asset service
 const mockShouldUseAssetBrowser = vi.hoisted(() => vi.fn(() => false))
@@ -43,17 +44,18 @@ describe('WidgetSelect Value Binding', () => {
     > = {},
     callback?: (value: string | undefined) => void,
     spec?: ComboInputSpec
-  ): SimplifiedWidget<string | undefined> => ({
-    name: 'test_select',
-    type: 'combo',
-    value,
-    options: {
-      values: ['option1', 'option2', 'option3'],
-      ...options
-    },
-    callback,
-    spec
-  })
+  ) =>
+    createWidget<string | undefined>({
+      value,
+      name: 'test_select',
+      type: 'combo',
+      options: {
+        values: ['option1', 'option2', 'option3'],
+        ...options
+      },
+      callback,
+      spec
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<string | undefined>,

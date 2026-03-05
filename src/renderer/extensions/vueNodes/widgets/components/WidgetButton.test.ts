@@ -5,18 +5,21 @@ import Button from '@/components/ui/button/Button.vue'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
+import { createMockWidget as createWidget } from './widgetTestUtils'
+
 describe('WidgetButton Interactions', () => {
   const createMockWidget = (
     options: Record<string, unknown> = {},
     callback?: () => void,
     name: string = 'test_button'
-  ): SimplifiedWidget<void> => ({
-    name,
-    type: 'button',
-    value: undefined,
-    options,
-    callback
-  })
+  ) =>
+    createWidget<void>({
+      value: undefined,
+      name,
+      type: 'button',
+      options,
+      callback
+    })
 
   const mountComponent = (widget: SimplifiedWidget<void>, readonly = false) => {
     return mount(WidgetButton, {
