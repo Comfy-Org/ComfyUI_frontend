@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { zHubProfileResponse } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
@@ -19,6 +20,7 @@ function mapHubProfileResponse(payload: unknown): ComfyHubProfile | null {
 
 export function useComfyHubProfileGate() {
   const { resolvedUserInfo } = useCurrentUser()
+  const { toastErrorHandler } = useErrorHandling()
 
   function syncCachedProfileWithCurrentUser(): void {
     const currentUserId = resolvedUserInfo.value?.id ?? null
@@ -58,9 +60,8 @@ export function useComfyHubProfileGate() {
       hasProfile.value = true
       profile.value = nextProfile
       return nextProfile
-    } catch {
-      hasProfile.value = false
-      profile.value = null
+    } catch (error) {
+      toastErrorHandler(error)
       return null
     } finally {
       isFetchingProfile.value = false

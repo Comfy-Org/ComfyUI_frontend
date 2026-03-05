@@ -64,6 +64,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import ComfyHubCreateProfileForm from '@/platform/workflow/sharing/components/profile/ComfyHubCreateProfileForm.vue'
@@ -101,6 +102,7 @@ const {
   onGateClose?: () => void
 }>()
 
+const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const { checkProfile, hasProfile } = useComfyHubProfileGate()
 const isResolvingPublishAccess = ref(false)
@@ -124,7 +126,7 @@ async function handlePublish() {
     try {
       profileExists = await checkProfile()
     } catch (error) {
-      console.error('Failed to check profile:', error)
+      toastErrorHandler(error)
       return
     }
 

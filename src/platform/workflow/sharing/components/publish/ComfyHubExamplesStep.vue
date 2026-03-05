@@ -76,6 +76,10 @@ import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import {
+  isFileTooLarge,
+  MAX_IMAGE_SIZE_MB
+} from '@/platform/workflow/sharing/utils/validateFileSize'
 import { cn } from '@/utils/tailwindUtil'
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -114,6 +118,7 @@ function toggleSelection(id: string) {
 function addImages(files: FileList) {
   const newImages: ExampleImage[] = Array.from(files)
     .filter((f) => f.type.startsWith('image/'))
+    .filter((f) => !isFileTooLarge(f, MAX_IMAGE_SIZE_MB))
     .map((file) => ({
       id: uuidv4(),
       url: URL.createObjectURL(file),

@@ -128,6 +128,10 @@ import { cn } from '@/utils/tailwindUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import {
+  isFileTooLarge,
+  MAX_IMAGE_SIZE_MB
+} from '@/platform/workflow/sharing/utils/validateFileSize'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 
@@ -160,7 +164,8 @@ const profileInitial = computed(() => {
 function handleProfileSelect(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) return
   const file = event.target.files?.[0]
-  if (file) profilePictureFile.value = file
+  if (!file || isFileTooLarge(file, MAX_IMAGE_SIZE_MB)) return
+  profilePictureFile.value = file
 }
 
 async function handleCreate() {

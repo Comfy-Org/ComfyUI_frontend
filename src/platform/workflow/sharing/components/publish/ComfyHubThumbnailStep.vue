@@ -184,9 +184,14 @@ import Button from '@/components/ui/button/Button.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useSliderFromMouse } from '@/platform/workflow/sharing/composables/useSliderFromMouse'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import {
+  isFileTooLarge,
+  MAX_IMAGE_SIZE_MB,
+  MAX_VIDEO_SIZE_MB
+} from '@/platform/workflow/sharing/utils/validateFileSize'
 import { cn } from '@/utils/tailwindUtil'
 import { useDropZone, useObjectUrl } from '@vueuse/core'
-import { computed, onBeforeUnmount, reactive, ref, shallowRef } from 'vue'
+import { computed, reactive, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { thumbnailType = 'image' } = defineProps<{
@@ -208,6 +213,8 @@ function isThumbnailType(value: string): value is ThumbnailType {
 
 function handleThumbnailTypeChange(value: unknown) {
   if (typeof value === 'string' && isThumbnailType(value)) {
+    comparisonBeforeFile.value = null
+    comparisonAfterFile.value = null
     emit('update:thumbnailFile', null)
     emit('update:comparisonBeforeFile', null)
     emit('update:comparisonAfterFile', null)
@@ -249,10 +256,21 @@ const thumbnailPreviewUrl = useObjectUrl(thumbnailFile)
 const isVideoFile = ref(false)
 
 function setThumbnailPreview(file: File) {
+  const maxSize = file.type.startsWith('video/')
+    ? MAX_VIDEO_SIZE_MB
+    : MAX_IMAGE_SIZE_MB
+  if (isFileTooLarge(file, maxSize)) return
   thumbnailFile.value = file
   isVideoFile.value = file.type.startsWith('video/')
   emit('update:thumbnailFile', file)
 }
+
+const comparisonBeforeFile = shallowRef<File | null>(null)
+const comparisonAfterFile = shallowRef<File | null>(null)
+const comparisonPreviewUrls = reactive({
+  before: useObjectUrl(comparisonBeforeFile),
+  after: useObjectUrl(comparisonAfterFile)
+})
 
 const hasBothComparisonImages = computed(
   () => !!(comparisonPreviewUrls.before && comparisonPreviewUrls.after)
@@ -270,12 +288,8 @@ const hasThumbnailContent = computed(() => {
 
 function clearAllPreviews() {
   if (thumbnailType === 'imageComparison') {
-    for (const slot of ['before', 'after'] as const) {
-      if (comparisonPreviewUrls[slot]) {
-        URL.revokeObjectURL(comparisonPreviewUrls[slot]!)
-        comparisonPreviewUrls[slot] = null
-      }
-    }
+    comparisonBeforeFile.value = null
+    comparisonAfterFile.value = null
     emit('update:comparisonBeforeFile', null)
     emit('update:comparisonAfterFile', null)
     return
@@ -329,30 +343,18 @@ const comparisonSlots = [
   }
 ]
 
-const comparisonPreviewUrls = reactive<Record<ComparisonSlot, string | null>>({
-  before: null,
-  after: null
-})
-
-onBeforeUnmount(() => {
-  for (const url of Object.values(comparisonPreviewUrls)) {
-    if (url) {
-      URL.revokeObjectURL(url)
-    }
-  }
-})
+const comparisonFiles: Record<ComparisonSlot, typeof comparisonBeforeFile> = {
+  before: comparisonBeforeFile,
+  after: comparisonAfterFile
+}
 
 function setComparisonPreview(file: File, slot: ComparisonSlot) {
-  if (comparisonPreviewUrls[slot]) {
-    URL.revokeObjectURL(comparisonPreviewUrls[slot]!)
-  }
-
-  comparisonPreviewUrls[slot] = URL.createObjectURL(file)
+  if (isFileTooLarge(file, MAX_IMAGE_SIZE_MB)) return
+  comparisonFiles[slot].value = file
   if (slot === 'before') {
     emit('update:comparisonBeforeFile', file)
     return
   }
-
   emit('update:comparisonAfterFile', file)
 }
 

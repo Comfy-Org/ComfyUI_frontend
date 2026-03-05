@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 
 const mockFetchApi = vi.hoisted(() => vi.fn())
+const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockResolvedUserInfo = vi.hoisted(() => ({
   value: { id: 'user-a' }
 }))
@@ -16,6 +17,12 @@ vi.mock('@/scripts/api', () => ({
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
     resolvedUserInfo: mockResolvedUserInfo
+  })
+}))
+
+vi.mock('@/composables/useErrorHandling', () => ({
+  useErrorHandling: () => ({
+    toastErrorHandler: mockToastErrorHandler
   })
 }))
 
