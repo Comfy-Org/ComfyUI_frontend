@@ -55,6 +55,13 @@ describe('MapProxyHandler', () => {
       delete (proxy as Record<string, unknown>)['key']
       expect(map.has('key')).toBe(false)
     })
+
+    it('deletes numeric keys via numeric-string property names', () => {
+      const { map, proxy } = createProxy<string>()
+      map.set(7, 'seven')
+      delete (proxy as Record<string, unknown>)['7']
+      expect(map.has(7)).toBe(false)
+    })
   })
 
   describe('ownKeys trap', () => {

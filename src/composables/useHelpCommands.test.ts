@@ -79,7 +79,11 @@ describe('useHelpCommands', () => {
       (c) => c.id === 'Comfy.Help.OpenComfyUIIssues'
     )!
     void issuesCommand.function()
-    expect(openSpy).toHaveBeenCalledWith(expect.any(String), '_blank')
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.any(String),
+      '_blank',
+      'noopener,noreferrer'
+    )
 
     openSpy.mockRestore()
   })

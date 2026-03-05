@@ -52,7 +52,10 @@ export class MapProxyHandler<V> implements ProxyHandler<
   }
 
   deleteProperty(target: Map<number | string, V>, p: string | symbol): boolean {
-    return target.delete(p as number | string)
+    if (typeof p === 'symbol') return false
+
+    const int = parseInt(p, 10)
+    return target.delete(!isNaN(int) ? int : p)
   }
 
   static bindAllMethods(map: Map<unknown, unknown>): void {

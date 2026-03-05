@@ -23,7 +23,7 @@ export function useHelpCommands(): ComfyCommand[] {
           is_external: true,
           source: 'menu'
         })
-        window.open(staticUrls.githubIssues, '_blank')
+        window.open(staticUrls.githubIssues, '_blank', 'noopener,noreferrer')
       }
     },
     {
@@ -38,7 +38,11 @@ export function useHelpCommands(): ComfyCommand[] {
           is_external: true,
           source: 'menu'
         })
-        window.open(buildDocsUrl('/', { includeLocale: true }), '_blank')
+        window.open(
+          buildDocsUrl('/', { includeLocale: true }),
+          '_blank',
+          'noopener,noreferrer'
+        )
       }
     },
     {
@@ -53,7 +57,7 @@ export function useHelpCommands(): ComfyCommand[] {
           is_external: true,
           source: 'menu'
         })
-        window.open(staticUrls.discord, '_blank')
+        window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
       }
     },
     {
@@ -78,7 +82,7 @@ export function useHelpCommands(): ComfyCommand[] {
           is_external: true,
           source: 'menu'
         })
-        window.open(staticUrls.forum, '_blank')
+        window.open(staticUrls.forum, '_blank', 'noopener,noreferrer')
       }
     },
     {
