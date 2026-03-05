@@ -2,7 +2,7 @@
   <div class="px-4 pb-2">
     <!-- Sub-label: cloud or OSS message shown above all pack groups -->
     <p
-      class="m-0 text-sm/relaxed text-muted-foreground"
+      class="m-0 text-sm text-muted-foreground leading-relaxed"
       :class="showManagerHint ? 'pb-3' : 'pb-5'"
     >
       {{
@@ -17,17 +17,17 @@
       v-if="showManagerHint"
       keypath="rightSidePanel.missingNodePacks.ossManagerDisabledHint"
       tag="p"
-      class="m-0 pb-5 text-sm/relaxed text-muted-foreground"
+      class="m-0 pb-5 text-sm text-muted-foreground leading-relaxed"
     >
       <template #pipCmd>
         <code
-          class="rounded-sm bg-comfy-menu-bg px-1 py-0.5 font-mono text-xs text-comfy-input-foreground"
+          class="px-1 py-0.5 rounded-sm text-xs font-mono bg-comfy-menu-bg text-comfy-input-foreground"
           >pip install -U --pre comfyui-manager</code
         >
       </template>
       <template #flag>
         <code
-          class="rounded-sm bg-comfy-menu-bg px-1 py-0.5 font-mono text-xs text-comfy-input-foreground"
+          class="px-1 py-0.5 rounded-sm text-xs font-mono bg-comfy-menu-bg text-comfy-input-foreground"
           >--enable-manager</code
         >
       </template>
@@ -49,12 +49,12 @@
       v-if="hasInstalledPacksPendingRestart"
       variant="primary"
       :disabled="isRestarting"
-      class="mt-2 h-9 w-full justify-center gap-2 text-sm font-semibold"
+      class="w-full h-9 justify-center gap-2 text-sm font-semibold mt-2"
       @click="applyChanges()"
     >
       <DotSpinner v-if="isRestarting" duration="1s" :size="14" />
       <i v-else class="icon-[lucide--refresh-cw] size-4 shrink-0" />
-      <span class="min-w-0 truncate">{{
+      <span class="truncate min-w-0">{{
         t('rightSidePanel.missingNodePacks.applyChanges')
       }}</span>
     </Button>
