@@ -3051,7 +3051,8 @@
     "appModeToolbar": {
       "appBuilder": "App builder",
       "apps": "Apps",
-      "appsEmptyMessage": "Saved apps will show up here.\nClick below to build your first app.",
+      "appsEmptyMessage": "Saved apps will show up here.",
+      "appsEmptyMessageAction": "Click below to build your first app.",
       "enterAppMode": "Enter app mode"
     },
     "arrange": {
