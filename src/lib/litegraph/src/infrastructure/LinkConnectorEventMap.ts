@@ -15,6 +15,10 @@ import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 export interface LinkConnectorEventMap {
   reset: boolean
 
+  connecting: {
+    connectingTo: 'input' | 'output'
+  }
+
   'before-drop-links': {
     renderLinks: RenderLink[]
     event: CanvasPointerEvent
@@ -44,6 +48,7 @@ export interface LinkConnectorEventMap {
     node: SubgraphInputNode | SubgraphOutputNode
     event: CanvasPointerEvent
   }
+  'before-drop-on-canvas': CanvasPointerEvent
   'dropped-on-canvas': CanvasPointerEvent
 
   'dropped-on-widget': {
