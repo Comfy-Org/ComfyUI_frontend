@@ -65,6 +65,11 @@ function toggleLinearMode() {
             showDelay: 300,
             hideDelay: 300
           }"
+          :aria-label="
+            canvasStore.linearMode
+              ? t('breadcrumbsMenu.enterNodeGraph')
+              : t('breadcrumbsMenu.enterAppMode')
+          "
           variant="base"
           class="m-1"
           @pointerdown.stop
