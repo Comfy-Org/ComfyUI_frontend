@@ -52,7 +52,7 @@
           isSelected
             ? 'border-node-component-outline'
             : 'border-node-stroke-executing',
-          hasFooter && (hasAnyError ? '-bottom-[35px]' : '-bottom-[34px]')
+          footerStateOutlineBottomClass
         )
       "
     />
@@ -63,7 +63,7 @@
           'absolute pointer-events-none border-1 border-solid border-component-node-border',
           rootBorderShapeClass,
           hasAnyError ? '-inset-1' : 'inset-0',
-          hasFooter ? '-bottom-8' : 'bottom-0'
+          footerRootBorderBottomClass
         )
       "
     />
@@ -191,8 +191,8 @@
       :header-color="applyLightThemeColor(nodeData?.color)"
       :shape="nodeData.shape"
       @enter-subgraph="handleEnterSubgraph"
-      @open-errors="useRightSidePanelStore().openPanel('errors')"
-      @toggle-advanced="showAdvancedState = !showAdvancedState"
+      @open-errors="handleOpenErrors"
+      @toggle-advanced="handleToggleAdvanced"
     />
     <template
       v-if="!isCollapsed && nodeData.resizable !== false && !isSelectMode"
@@ -206,9 +206,8 @@
           cn(
             baseResizeHandleClasses,
             handle.positionClasses,
-            hasFooter &&
-              (handle.corner === 'SE' || handle.corner === 'SW') &&
-              (hasAnyError ? 'bottom-[-31px]' : 'bottom-[-33px]'),
+            (handle.corner === 'SE' || handle.corner === 'SW') &&
+              footerResizeHandleBottomClass,
             handle.cursorClass,
             'group-hover/node:opacity-100'
           )
@@ -551,6 +550,21 @@ const hasFooter = computed(() => {
   )
 })
 
+// Footer offset computed classes (single source of truth for footer height/border offsets)
+const footerStateOutlineBottomClass = computed(() => {
+  if (!hasFooter.value) return ''
+  return hasAnyError.value ? '-bottom-[35px]' : '-bottom-[34px]'
+})
+
+const footerRootBorderBottomClass = computed(() =>
+  hasFooter.value ? '-bottom-8' : 'bottom-0'
+)
+
+const footerResizeHandleBottomClass = computed(() => {
+  if (!hasFooter.value) return ''
+  return hasAnyError.value ? 'bottom-[-31px]' : 'bottom-[-33px]'
+})
+
 const cursorClass = computed(() => {
   if (nodeData.flags?.pinned) return 'cursor-default'
   return layoutStore.isDraggingVueNodes.value
@@ -627,6 +641,16 @@ const handleCollapse = () => {
 
 const handleHeaderTitleUpdate = (newTitle: string) => {
   handleNodeTitleUpdate(nodeData.id, newTitle)
+}
+
+const rightSidePanelStore = useRightSidePanelStore()
+
+const handleOpenErrors = () => {
+  rightSidePanelStore.openPanel('errors')
+}
+
+const handleToggleAdvanced = () => {
+  showAdvancedState.value = !showAdvancedState.value
 }
 
 const handleEnterSubgraph = () => {
@@ -708,7 +732,6 @@ const showAdvancedState = customRef((track, trigger) => {
 
       if (node instanceof SubgraphNode) {
         // Do not modify internalState for subgraph nodes
-        const rightSidePanelStore = useRightSidePanelStore()
         if (value) {
           rightSidePanelStore.focusSection('advanced-inputs')
         } else {
