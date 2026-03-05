@@ -22,7 +22,16 @@ import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { appendJsonExt } from '@/utils/formatUtil'
+import {
+  appendJsonExt,
+  appendWorkflowJsonExt,
+  generateUUID
+} from '@/utils/formatUtil'
+
+function linearModeToAppMode(linearMode: unknown): AppMode | null {
+  if (typeof linearMode !== 'boolean') return null
+  return linearMode ? 'app' : 'graph'
+}
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
@@ -361,10 +370,24 @@ export const useWorkflowService = () => {
         const fullPath = ComfyWorkflow.basePath + appendJsonExt(path)
         const existingWorkflow = workflowStore.getWorkflowByPath(fullPath)
 
-        // If the workflow exists and is NOT loaded yet (restoration case),
-        // use the existing workflow instead of creating a new one.
-        // If it IS loaded, this is a re-import case - create new with suffix.
-        if (existingWorkflow?.isPersisted && !existingWorkflow.isLoaded) {
+        // Reuse an existing workflow when this is a restoration case
+        // (persisted but currently unloaded) or an idempotent repeated load
+        // of the currently active same-path workflow.
+        //
+        // This prevents accidental duplicate tabs when startup/load flows
+        // invoke loadGraphData more than once for the same workflow name.
+        const isSameActiveWorkflowLoad =
+          !!existingWorkflow &&
+          workflowStore.isActive(existingWorkflow) &&
+          (existingWorkflow.activeState?.id === undefined ||
+            workflowData.id === undefined ||
+            existingWorkflow.activeState.id === workflowData.id)
+
+        if (
+          existingWorkflow &&
+          ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
+            isSameActiveWorkflowLoad)
+        ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
           loadedWorkflow.changeTracker.reset(workflowData)
@@ -435,7 +458,10 @@ export const useWorkflowService = () => {
    * Takes an existing workflow and duplicates it with a new name
    */
   const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
+    if (!workflow.isLoaded) await workflow.load()
     const state = JSON.parse(JSON.stringify(workflow.activeState))
+    // Ensure duplicates are always treated as distinct workflows.
+    if (state) state.id = generateUUID()
     const suffix = workflow.isPersisted ? ' (Copy)' : ''
     // Remove the suffix `(2)` or similar
     const filename = workflow.filename.replace(/\s*\(\d+\)$/, '') + suffix
