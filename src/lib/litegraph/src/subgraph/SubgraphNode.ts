@@ -1028,7 +1028,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (!low_quality) {
       ctx.translate(25, 23)
       ctx.scale(-1.5, 1.5)
-      ctx.drawImage(workflowSvg, 0, -title_height, box_size, box_size)
+      ctx.drawImage(
+        workflowBitmapCache.get(),
+        0,
+        -title_height,
+        box_size,
+        box_size
+      )
     }
     ctx.restore()
   }

@@ -2061,7 +2061,6 @@ export class LGraph
       })
     }
     this.remove(subgraphNode)
-    this.subgraphs.delete(subgraphNode.subgraph.id)
 
     // Deduplicate links by (oid, oslot, tid, tslot) to prevent repeated
     // disconnect/reconnect cycles on widget inputs that can shift slot indices.
