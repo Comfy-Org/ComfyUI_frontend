@@ -6,12 +6,14 @@ import { zHubProfileResponse } from '@/platform/workflow/sharing/schemas/shareSc
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
+// TODO: Migrate to a Pinia store for proper singleton state management
 // User-scoped, session-cached profile state (module-level singleton)
 const hasProfile = ref<boolean | null>(null)
 const isCheckingProfile = ref(false)
 const isFetchingProfile = ref(false)
 const profile = ref<ComfyHubProfile | null>(null)
 const cachedUserId = ref<string | null>(null)
+let inflightFetch: Promise<ComfyHubProfile | null> | null = null
 
 function mapHubProfileResponse(payload: unknown): ComfyHubProfile | null {
   const result = zHubProfileResponse.safeParse(payload)
@@ -33,15 +35,7 @@ export function useComfyHubProfileGate() {
     cachedUserId.value = currentUserId
   }
 
-  async function fetchProfile(options?: {
-    force?: boolean
-  }): Promise<ComfyHubProfile | null> {
-    syncCachedProfileWithCurrentUser()
-
-    if (!options?.force && profile.value) {
-      return profile.value
-    }
-
+  async function performFetch(): Promise<ComfyHubProfile | null> {
     isFetchingProfile.value = true
     try {
       const response = await api.fetchApi('/hub/profile')
@@ -65,7 +59,23 @@ export function useComfyHubProfileGate() {
       return null
     } finally {
       isFetchingProfile.value = false
+      inflightFetch = null
     }
+  }
+
+  function fetchProfile(options?: {
+    force?: boolean
+  }): Promise<ComfyHubProfile | null> {
+    syncCachedProfileWithCurrentUser()
+
+    if (!options?.force && profile.value) {
+      return Promise.resolve(profile.value)
+    }
+
+    if (!options?.force && inflightFetch) return inflightFetch
+
+    inflightFetch = performFetch()
+    return inflightFetch
   }
 
   async function checkProfile(): Promise<boolean> {

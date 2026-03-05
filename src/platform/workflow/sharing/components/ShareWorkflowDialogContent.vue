@@ -368,10 +368,9 @@ const {
     const workflow = workflowStore.activeWorkflow
     if (!workflow) return null
 
-    const publishableAssets = await shareService.getShareableAssets()
+    const publishableAssets = assetInfo.value
 
     if (publishableAssets.length > 0 && !acknowledged.value) {
-      assetInfo.value = publishableAssets
       return null
     }
 

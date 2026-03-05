@@ -18,6 +18,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 type SharedWorkflowUrlLoadStatus =
   | 'not-present'
   | 'loaded'
+  | 'loaded-without-assets'
   | 'cancelled'
   | 'failed'
 
@@ -166,9 +167,11 @@ export function useSharedWorkflowUrlLoader() {
         toast.add({
           severity: 'error',
           summary: t('g.error'),
-          detail: t('openSharedWorkflow.importFailed'),
-          life: 5000
+          detail: t('openSharedWorkflow.importFailed')
         })
+        cleanupUrlParams()
+        clearPreservedQuery(SHARE_NAMESPACE)
+        return 'loaded-without-assets'
       }
     }
 

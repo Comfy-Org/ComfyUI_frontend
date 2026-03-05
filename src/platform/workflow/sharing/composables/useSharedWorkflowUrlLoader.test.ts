@@ -240,7 +240,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(mockImportPublishedAssets).not.toHaveBeenCalled()
   })
 
-  it('shows toast on import failure but still returns loaded', async () => {
+  it('shows toast on import failure and returns loaded-without-assets', async () => {
     mockQueryParams = { share: 'share-id-1' }
     const payload = makePayload({
       assets: [
@@ -263,7 +263,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
     const loaded = await loadSharedWorkflowFromUrl()
 
-    expect(loaded).toBe('loaded')
+    expect(loaded).toBe('loaded-without-assets')
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',

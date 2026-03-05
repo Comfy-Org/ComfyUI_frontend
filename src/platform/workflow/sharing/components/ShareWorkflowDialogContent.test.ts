@@ -334,7 +334,7 @@ describe('ShareWorkflowDialogContent', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('publishes using refreshed shareable assets payload', async () => {
+  it('publishes using acknowledged assets from initial load', async () => {
     const initialShareableAssets = [
       {
         id: 'local-photo-id',
@@ -355,30 +355,8 @@ describe('ShareWorkflowDialogContent', () => {
         in_library: false
       }
     ]
-    const refinedShareableAssets = [
-      {
-        id: 'backend-photo-id',
-        name: 'photo.png',
-        preview_url: '',
-        storage_url: '',
-        model: false,
-        public: false,
-        in_library: false
-      },
-      {
-        id: 'backend-model-id',
-        name: 'model.safetensors',
-        preview_url: '',
-        storage_url: '',
-        model: true,
-        public: false,
-        in_library: false
-      }
-    ]
 
-    mockGetShareableAssets
-      .mockResolvedValueOnce(initialShareableAssets)
-      .mockResolvedValueOnce(refinedShareableAssets)
+    mockGetShareableAssets.mockResolvedValueOnce(initialShareableAssets)
 
     const wrapper = createWrapper()
     await flushPromises()
@@ -395,10 +373,10 @@ describe('ShareWorkflowDialogContent', () => {
     await publishButton!.trigger('click')
     await flushPromises()
 
-    expect(mockGetShareableAssets).toHaveBeenCalledTimes(2)
+    expect(mockGetShareableAssets).toHaveBeenCalledTimes(1)
     expect(mockPublishWorkflow).toHaveBeenCalledWith(
       'workflows/test.json',
-      refinedShareableAssets
+      initialShareableAssets
     )
   })
 
