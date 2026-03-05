@@ -29,14 +29,24 @@
             </span>
           </div>
           <div class="flex shrink-0 items-center gap-2">
+            <Skeleton v-if="showSkeleton(model)" class="h-4 w-12" />
             <span
-              v-if="model.isDownloadable && fileSizes.get(model.url)"
-              class="text-xs text-muted-foreground"
+              v-else-if="model.isDownloadable && fileSizes.get(model.url)"
+              class="pl-1.5 text-xs text-muted-foreground"
             >
               {{ formatSize(fileSizes.get(model.url)) }}
             </span>
+            <a
+              v-if="gatedModelUrls.has(model.url)"
+              :href="gatedModelUrls.get(model.url)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-xs text-primary hover:underline"
+            >
+              {{ $t('missingModelsDialog.acceptTerms') }}
+            </a>
             <Button
-              v-if="model.isDownloadable"
+              v-else-if="model.isDownloadable"
               variant="textonly"
               size="icon"
               :title="model.url"
@@ -100,15 +110,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { formatSize } from '@/utils/formatUtil'
 
 import type { ModelWithUrl } from './missingModelsUtils'
 import {
   downloadModel,
+  fetchModelMetadata,
   getBadgeLabel,
   hasValidDirectory,
   isModelDownloadable
@@ -142,6 +154,7 @@ const hasCustomModels = computed(() =>
   processedModels.value.some((m) => !m.isDownloadable)
 )
 
+const loading = ref(true)
 const fileSizes = reactive(new Map<string, number>())
 
 const totalDownloadSize = computed(() =>
@@ -150,6 +163,17 @@ const totalDownloadSize = computed(() =>
     .reduce((total, model) => total + (fileSizes.get(model.url) ?? 0), 0)
 )
 
+const gatedModelUrls = reactive(new Map<string, string>())
+
+function showSkeleton(model: ProcessedModel): boolean {
+  return (
+    model.isDownloadable &&
+    loading.value &&
+    !fileSizes.get(model.url) &&
+    !gatedModelUrls.has(model.url)
+  )
+}
+
 onMounted(async () => {
   const downloadableUrls = processedModels.value
     .filter((m) => m.isDownloadable)
@@ -157,16 +181,12 @@ onMounted(async () => {
 
   await Promise.allSettled(
     downloadableUrls.map(async (url) => {
-      try {
-        const response = await fetch(url, { method: 'HEAD' })
-        if (!response.ok) return
-        const size = response.headers.get('content-length')
-        if (size) fileSizes.set(url, parseInt(size, 10))
-      } catch {
-        // Silently skip size fetch failures
-      }
+      const metadata = await fetchModelMetadata(url)
+      if (metadata.fileSize) fileSizes.set(url, metadata.fileSize)
+      if (metadata.gatedRepoUrl) gatedModelUrls.set(url, metadata.gatedRepoUrl)
     })
   )
+  loading.value = false
 })
 
 const { copyToClipboard } = useCopyToClipboard()

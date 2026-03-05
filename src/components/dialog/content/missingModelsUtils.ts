@@ -1,3 +1,4 @@
+import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 
@@ -79,5 +80,94 @@ export function downloadModel(
       savePath: modelPaths[0],
       filename: model.name
     })
+  }
+}
+
+export interface ModelMetadata {
+  fileSize: number | null
+  gatedRepoUrl: string | null
+}
+
+interface CivitaiModelFile {
+  sizeKB: number
+  downloadUrl: string
+}
+
+interface CivitaiModelVersionResponse {
+  files: CivitaiModelFile[]
+}
+
+const metadataCache = new Map<string, ModelMetadata>()
+const inflight = new Map<string, Promise<ModelMetadata>>()
+
+async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
+  try {
+    const modelId = new URL(url).pathname.split('/').pop()
+    if (!modelId) return { fileSize: null, gatedRepoUrl: null }
+
+    const apiUrl = `https://civitai.com/api/v1/model-versions/${modelId}`
+    const res = await fetch(apiUrl)
+    if (!res.ok) return fetchHeadMetadata(url)
+
+    const data: CivitaiModelVersionResponse = await res.json()
+    const matchingFile = data.files?.find(
+      (file) => file.downloadUrl && url.startsWith(file.downloadUrl)
+    )
+    const fileSize = matchingFile?.sizeKB ? matchingFile.sizeKB * 1024 : null
+    return { fileSize, gatedRepoUrl: null }
+  } catch {
+    return { fileSize: null, gatedRepoUrl: null }
+  }
+}
+
+async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
+  try {
+    const response = await fetch(url, { method: 'HEAD' })
+    if (!response.ok) {
+      if (url.includes('huggingface.co')) {
+        return { fileSize: null, gatedRepoUrl: downloadUrlToHfRepoUrl(url) }
+      }
+      return { fileSize: null, gatedRepoUrl: null }
+    }
+    const size = response.headers.get('content-length')
+    return {
+      fileSize: size ? parseInt(size, 10) : null,
+      gatedRepoUrl: null
+    }
+  } catch {
+    if (url.includes('huggingface.co')) {
+      return { fileSize: null, gatedRepoUrl: downloadUrlToHfRepoUrl(url) }
+    }
+    return { fileSize: null, gatedRepoUrl: null }
+  }
+}
+
+function isComplete(metadata: ModelMetadata): boolean {
+  return metadata.fileSize !== null || metadata.gatedRepoUrl !== null
+}
+
+export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
+  const cached = metadataCache.get(url)
+  if (cached !== undefined) return cached
+
+  const existing = inflight.get(url)
+  if (existing) return existing
+
+  const promise = (async () => {
+    const metadata = isCivitaiModelUrl(url)
+      ? await fetchCivitaiMetadata(url)
+      : await fetchHeadMetadata(url)
+
+    if (isComplete(metadata)) {
+      metadataCache.set(url, metadata)
+    }
+    return metadata
+  })()
+
+  inflight.set(url, promise)
+  try {
+    return await promise
+  } finally {
+    inflight.delete(url)
   }
 }
