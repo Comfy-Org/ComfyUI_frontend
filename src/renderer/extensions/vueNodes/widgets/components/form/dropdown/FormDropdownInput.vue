@@ -85,7 +85,7 @@ const theButtonStyle = computed(() =>
         class="icon-[lucide--chevron-down]"
         :class="
           cn(
-            'mr-2 size-4 transition-transform duration-200 flex-shrink-0 text-component-node-foreground-secondary',
+            'mr-2 size-4 transition-transform duration-200 shrink-0 text-component-node-foreground-secondary',
             isOpen && 'rotate-180'
           )
         "

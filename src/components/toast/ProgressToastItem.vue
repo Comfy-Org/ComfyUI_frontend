@@ -34,7 +34,7 @@ const isPending = computed(() => job.status === 'created')
       }}</span>
     </div>
 
-    <div class="flex flex-shrink-0 items-center gap-2">
+    <div class="flex shrink-0 items-center gap-2">
       <template v-if="isFailed">
         <i
           class="icon-[lucide--circle-alert] size-4 text-destructive-background"

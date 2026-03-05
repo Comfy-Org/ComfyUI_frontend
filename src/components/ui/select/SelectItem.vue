@@ -16,7 +16,7 @@ const { class: className, ...restProps } = defineProps<
     :class="
       cn(
         'relative flex w-full cursor-pointer select-none items-center justify-between',
-        'gap-3 rounded px-2 py-3 text-sm outline-none',
+        'gap-3 rounded-sm px-2 py-3 text-sm outline-none',
         'hover:bg-secondary-background-hover',
         'focus:bg-secondary-background-hover',
         'data-[state=checked]:bg-secondary-background-selected',

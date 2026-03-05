@@ -176,7 +176,7 @@ function closeDialog() {
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <template v-if="isInProgress">
             <i
-              class="icon-[lucide--loader-circle] size-4 flex-shrink-0 animate-spin text-muted-foreground"
+              class="icon-[lucide--loader-circle] size-4 shrink-0 animate-spin text-muted-foreground"
             />
             <span
               class="min-w-0 flex-1 truncate font-bold text-base-foreground"
@@ -186,7 +186,7 @@ function closeDialog() {
           </template>
           <template v-else-if="failedJobs.length > 0">
             <i
-              class="icon-[lucide--circle-alert] size-4 flex-shrink-0 text-destructive-background"
+              class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
             />
             <span class="min-w-0 truncate font-bold text-base-foreground">
               {{
@@ -198,7 +198,7 @@ function closeDialog() {
           </template>
           <template v-else>
             <i
-              class="icon-[lucide--check-circle] size-4 flex-shrink-0 text-jade-600"
+              class="icon-[lucide--check-circle] size-4 shrink-0 text-jade-600"
             />
             <span class="min-w-0 truncate font-bold text-base-foreground">
               {{ t('progressToast.allDownloadsCompleted') }}
@@ -206,7 +206,7 @@ function closeDialog() {
           </template>
         </div>
 
-        <div class="flex flex-shrink-0 items-center gap-2">
+        <div class="flex shrink-0 items-center gap-2">
           <span
             v-if="isInProgress"
             class="whitespace-nowrap text-sm text-muted-foreground"
