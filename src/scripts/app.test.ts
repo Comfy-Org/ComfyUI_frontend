@@ -159,7 +159,9 @@ function createMockCanvas(): Partial<LGraphCanvas> {
     draw: vi.fn(),
     selectItems: vi.fn(),
     setDirty: vi.fn(),
-    setGraph: vi.fn()
+    setGraph: vi.fn(),
+    emitBeforeChange: vi.fn(),
+    emitAfterChange: vi.fn()
   }
 }
 
@@ -2251,13 +2253,9 @@ describe('ComfyApp', () => {
 
       expect(pasteImageNodes).toHaveBeenCalledWith(mockCanvas, files)
       expect(createNode).toHaveBeenCalledWith(mockCanvas, 'BatchImagesNode')
-      expect(mockCanvas.selectItems).toHaveBeenCalledWith([
-        mockNode1,
-        mockNode2,
-        mockBatchNode
-      ])
       expect(mockNode1.connect).toHaveBeenCalledWith(0, mockBatchNode, 0)
       expect(mockNode2.connect).toHaveBeenCalledWith(0, mockBatchNode, 1)
+      expect(mockCanvas.selectItems).not.toHaveBeenCalled()
     })
 
     it('should select single image node without batch node', async () => {
