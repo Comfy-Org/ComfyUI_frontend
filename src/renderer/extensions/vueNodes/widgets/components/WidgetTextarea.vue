@@ -34,6 +34,7 @@
       @contextmenu.capture.stop
     />
     <Button
+      v-if="isReadOnly"
       variant="textonly"
       size="icon"
       class="invisible absolute top-1.5 right-1.5 z-10 hover:bg-base-foreground/10 group-hover:visible group-focus-within:visible"
