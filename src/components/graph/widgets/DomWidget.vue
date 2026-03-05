@@ -134,6 +134,9 @@ watch(
     enableDomClipping
   ],
   () => {
+    if (enableDomClipping.value) {
+      updateDomClipping()
+    }
     refreshStyle()
   }
 )
