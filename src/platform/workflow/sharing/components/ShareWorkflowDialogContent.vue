@@ -153,7 +153,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubPublishIntroPanel.vue'
+import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/profile/ComfyHubPublishIntroPanel.vue'
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'

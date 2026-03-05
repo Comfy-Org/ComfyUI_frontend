@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishDialog.vue'
+import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
 
 const mockFetchProfile = vi.hoisted(() => vi.fn())
 const mockGoToStep = vi.hoisted(() => vi.fn())

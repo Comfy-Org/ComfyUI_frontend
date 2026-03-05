@@ -1,11 +1,10 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <ComfyHubProfileGateStepper
+    <ComfyHubCreateProfileForm
       v-if="currentStep === 'profileCreation'"
       data-testid="publish-gate-flow"
-      :on-complete="onGateComplete"
+      :on-profile-created="() => onGateComplete()"
       :on-close="onGateClose"
-      initial-step="create"
       :show-close-button="false"
     />
     <div v-else class="flex min-h-0 flex-1 flex-col px-6 pb-2 pt-4">
@@ -67,7 +66,7 @@ import { computed, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
-import ComfyHubProfileGateStepper from '@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubProfileGateStepper.vue'
+import ComfyHubCreateProfileForm from '@/platform/workflow/sharing/components/profile/ComfyHubCreateProfileForm.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
