@@ -20,7 +20,7 @@
           variant="textonly"
           size="unset"
           :aria-label="$t('g.playPause')"
-          class="size-6 rounded"
+          class="size-6 rounded-sm"
           @click="togglePlayPause"
         >
           <i
@@ -61,7 +61,7 @@
           variant="textonly"
           size="unset"
           :aria-label="$t('g.volume')"
-          class="size-6 rounded"
+          class="size-6 rounded-sm"
           @click="toggleMute"
         >
           <i
@@ -94,7 +94,7 @@
           variant="textonly"
           size="unset"
           :aria-label="$t('g.moreOptions')"
-          class="size-6 rounded"
+          class="size-6 rounded-sm"
           @click="toggleOptionsMenu"
         >
           <i class="text-secondary icon-[lucide--more-vertical] size-4" />

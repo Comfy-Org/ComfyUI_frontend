@@ -305,7 +305,9 @@
     "profile": "Profile",
     "noItems": "No items",
     "recents": "Recents",
-    "partner": "Partner"
+    "partner": "Partner",
+    "collapseAll": "Collapse all",
+    "expandAll": "Expand all"
   },
   "manager": {
     "title": "Nodes Manager",
@@ -1786,7 +1788,8 @@
     "gotIt": "Ok, got it",
     "footerDescription": "Download and place these models in the correct folder.\nNodes with missing models are highlighted red on the canvas.",
     "customModelsWarning": "Some of these are custom models that we don't recognize.",
-    "customModelsInstruction": "You'll need to find and download them manually. Search for them online (try Civitai or HuggingFace) or contact the original workflow provider."
+    "customModelsInstruction": "You'll need to find and download them manually. Search for them online (try Civitai or HuggingFace) or contact the original workflow provider.",
+    "acceptTerms": "Accept terms"
   },
   "versionMismatchWarning": {
     "title": "Version Compatibility Warning",
@@ -3204,6 +3207,7 @@
       "unsupportedTitle": "Unsupported Node Packs",
       "cloudMessage": "This workflow requires custom nodes not yet available on Comfy Cloud.",
       "ossMessage": "This workflow uses custom nodes you haven't installed yet.",
+      "ossManagerDisabledHint": "To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.",
       "installAll": "Install All",
       "installNodePack": "Install node pack",
       "unknownPack": "Unknown pack",

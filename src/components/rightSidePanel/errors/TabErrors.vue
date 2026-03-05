@@ -1,38 +1,43 @@
 <template>
   <div class="flex flex-col h-full min-w-0">
-    <!-- Search bar -->
+    <!-- Search bar + collapse toggle -->
     <div
-      class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke shrink-0 min-w-0"
+      class="px-4 pt-1 pb-4 flex items-center border-b border-interface-stroke shrink-0 min-w-0"
     >
-      <FormSearchInput v-model="searchQuery" />
+      <FormSearchInput v-model="searchQuery" class="flex-1" />
+      <CollapseToggleButton
+        v-model="isAllCollapsed"
+        :show="!isSearching && tabErrorGroups.length > 1"
+      />
     </div>
 
     <!-- Scrollable content -->
     <div class="flex-1 overflow-y-auto min-w-0">
-      <div
-        v-if="filteredGroups.length === 0"
-        class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15"
-      >
-        {{
-          searchQuery.trim()
-            ? t('rightSidePanel.noneSearchDesc')
-            : t('rightSidePanel.noErrors')
-        }}
-      </div>
+      <TransitionGroup tag="div" name="list-scale" class="relative">
+        <div
+          v-if="filteredGroups.length === 0"
+          key="empty"
+          class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15"
+        >
+          {{
+            searchQuery.trim()
+              ? t('rightSidePanel.noneSearchDesc')
+              : t('rightSidePanel.noErrors')
+          }}
+        </div>
 
-      <div v-else>
         <!-- Group by Class Type -->
         <PropertiesAccordionItem
           v-for="group in filteredGroups"
           :key="group.title"
-          :collapse="collapseState[group.title] ?? false"
+          :collapse="isSectionCollapsed(group.title) && !isSearching"
           class="border-b border-interface-stroke"
           :size="
             group.type === 'missing_node' || group.type === 'swap_nodes'
               ? 'lg'
               : 'default'
           "
-          @update:collapse="collapseState[group.title] = $event"
+          @update:collapse="setSectionCollapsed(group.title, $event)"
         >
           <template #label>
             <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -126,7 +131,7 @@
             />
           </div>
         </PropertiesAccordionItem>
-      </div>
+      </TransitionGroup>
     </div>
 
     <!-- Fixed Footer: Help Links -->
@@ -177,6 +182,7 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import CollapseToggleButton from '../layout/CollapseToggleButton.vue'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
@@ -203,6 +209,7 @@ const { isInstalling: isInstallingAll, installAllPacks: installAll } =
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 
 const searchQuery = ref('')
+const isSearching = computed(() => searchQuery.value.trim() !== '')
 
 const showNodeIdBadge = computed(
   () =>
@@ -212,6 +219,7 @@ const showNodeIdBadge = computed(
 
 const {
   allErrorGroups,
+  tabErrorGroups,
   filteredGroups,
   collapseState,
   isSingleNodeSelected,
@@ -220,6 +228,26 @@ const {
   missingPackGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
+
+const isAllCollapsed = computed({
+  get() {
+    return filteredGroups.value.every((g) => isSectionCollapsed(g.title))
+  },
+  set(collapse: boolean) {
+    for (const group of tabErrorGroups.value) {
+      setSectionCollapsed(group.title, collapse)
+    }
+  }
+})
+
+function isSectionCollapsed(title: string): boolean {
+  // Defaults to expanded when not explicitly set by the user
+  return collapseState[title] ?? false
+}
+
+function setSectionCollapsed(title: string, collapsed: boolean) {
+  collapseState[title] = collapsed
+}
 
 /**
  * When an external trigger (e.g. "See Error" button in SectionWidgets)
@@ -240,7 +268,7 @@ watch(
             card.graphNodeId === graphNodeId ||
             (card.nodeId?.startsWith(prefix) ?? false)
         )
-      collapseState[group.title] = !hasMatch
+      setSectionCollapsed(group.title, !hasMatch)
     }
     rightSidePanelStore.focusedErrorNodeId = null
   },
