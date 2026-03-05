@@ -33,26 +33,7 @@ test.describe(
       test(`Load workflow in ${fileName} (drop from filesystem)`, async ({
         comfyPage
       }) => {
-        // no_workflow.webp has no embedded workflow, so the drop handler
-        // uploads it and creates a LoadImage node. The upload triggers an
-        // async image preview load (/view). Wait for the upload and the
-        // subsequent preview response so the canvas renders deterministically.
-        if (fileName === 'no_workflow.webp') {
-          const viewResponse = comfyPage.page.waitForResponse(
-            (resp) => resp.url().includes('/view'),
-            { timeout: 10000 }
-          )
-          await comfyPage.dragDrop.dragAndDropFile(
-            `workflowInMedia/${fileName}`,
-            { waitForUpload: true }
-          )
-          await viewResponse
-          await comfyPage.nextFrame()
-        } else {
-          await comfyPage.dragDrop.dragAndDropFile(
-            `workflowInMedia/${fileName}`
-          )
-        }
+        await comfyPage.dragDrop.dragAndDropFile(`workflowInMedia/${fileName}`)
         await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
       })
     })
