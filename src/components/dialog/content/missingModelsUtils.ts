@@ -107,16 +107,16 @@ async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
       pathname.match(/^\/api\/download\/models\/(\d+)$/) ??
       pathname.match(/^\/api\/v1\/models-versions\/(\d+)$/)
 
-    if (!versionIdMatch) return fetchHeadMetadata(url)
+    if (!versionIdMatch) return { fileSize: null, gatedRepoUrl: null }
 
     const [, modelVersionId] = versionIdMatch
     const apiUrl = `https://civitai.com/api/v1/model-versions/${modelVersionId}`
     const res = await fetch(apiUrl)
-    if (!res.ok) return fetchHeadMetadata(url)
+    if (!res.ok) return { fileSize: null, gatedRepoUrl: null }
 
     const data: CivitaiModelVersionResponse = await res.json()
     const matchingFile = data.files?.find(
-      (file) => file.downloadUrl && url.startsWith(file.downloadUrl)
+      (file) => file.downloadUrl && file.downloadUrl.startsWith(url)
     )
     const fileSize = matchingFile?.sizeKB ? matchingFile.sizeKB * 1024 : null
     return { fileSize, gatedRepoUrl: null }

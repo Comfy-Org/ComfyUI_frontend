@@ -5,10 +5,6 @@ import { fetchModelMetadata } from './missingModelsUtils'
 const fetchMock = vi.fn()
 vi.stubGlobal('fetch', fetchMock)
 
-vi.mock('@/utils/formatUtil', async () => {
-  return await vi.importActual('@/utils/formatUtil')
-})
-
 vi.mock('@/platform/distribution/types', () => ({ isDesktop: false }))
 vi.mock('@/stores/electronDownloadStore', () => ({}))
 
@@ -50,16 +46,15 @@ describe('fetchModelMetadata', () => {
     )
   })
 
-  it('falls back to HEAD request when Civitai API fails', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false }).mockResolvedValueOnce({
-      ok: true,
-      headers: new Headers({ 'content-length': '2048' })
-    })
+  it('returns null fileSize when Civitai API fails', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false })
 
     const metadata = await fetchModelMetadata(
       `https://civitai.com/api/download/models/${testId}`
     )
-    expect(metadata.fileSize).toBe(2048)
+    expect(metadata.fileSize).toBeNull()
+    expect(metadata.gatedRepoUrl).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('returns gatedRepoUrl for gated HuggingFace HEAD requests (403)', async () => {
@@ -82,16 +77,12 @@ describe('fetchModelMetadata', () => {
     expect(metadata.fileSize).toBeNull()
   })
 
-  it('falls back to HEAD for /api/v1/models/:id Civitai URLs', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      headers: new Headers({ 'content-length': '4096' })
-    })
-
+  it('returns null for unrecognized Civitai URL patterns', async () => {
     const url = `https://civitai.com/api/v1/models/${testId}`
     const metadata = await fetchModelMetadata(url)
-    expect(metadata.fileSize).toBe(4096)
-    expect(fetchMock).toHaveBeenCalledWith(url, { method: 'HEAD' })
+    expect(metadata.fileSize).toBeNull()
+    expect(metadata.gatedRepoUrl).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('returns cached metadata on second call', async () => {

@@ -37,7 +37,7 @@
               {{ formatSize(fileSizes.get(model.url)) }}
             </span>
             <a
-              v-if="gatedModelUrls.has(model.url)"
+              v-else-if="gatedModelUrls.has(model.url)"
               :href="gatedModelUrls.get(model.url)"
               target="_blank"
               rel="noopener noreferrer"
@@ -169,7 +169,7 @@ function showSkeleton(model: ProcessedModel): boolean {
   return (
     model.isDownloadable &&
     loading.value &&
-    !fileSizes.get(model.url) &&
+    !fileSizes.has(model.url) &&
     !gatedModelUrls.has(model.url)
   )
 }
@@ -182,7 +182,7 @@ onMounted(async () => {
   await Promise.allSettled(
     downloadableUrls.map(async (url) => {
       const metadata = await fetchModelMetadata(url)
-      if (metadata.fileSize) fileSizes.set(url, metadata.fileSize)
+      if (metadata.fileSize !== null) fileSizes.set(url, metadata.fileSize)
       if (metadata.gatedRepoUrl) gatedModelUrls.set(url, metadata.gatedRepoUrl)
     })
   )
