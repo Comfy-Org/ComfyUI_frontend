@@ -10,19 +10,6 @@ vi.mock('vue', async () => {
   }
 })
 
-describe('GLSLRendererConfig', () => {
-  it('exports a valid config interface type', () => {
-    const config: GLSLRendererConfig = {
-      maxInputs: 3,
-      maxFloatUniforms: 4,
-      maxIntUniforms: 2
-    }
-    expect(config.maxInputs).toBe(3)
-    expect(config.maxFloatUniforms).toBe(4)
-    expect(config.maxIntUniforms).toBe(2)
-  })
-})
-
 describe('useGLSLRenderer', () => {
   it('returns renderer API with expected methods', async () => {
     const { useGLSLRenderer } = await import('@/renderer/glsl/useGLSLRenderer')
@@ -40,7 +27,26 @@ describe('useGLSLRenderer', () => {
     expect(renderer).toHaveProperty('dispose')
   })
 
-  it('accepts custom config', async () => {
+  it('init returns false when WebGL2 is unavailable', async () => {
+    const { useGLSLRenderer } = await import('@/renderer/glsl/useGLSLRenderer')
+    const renderer = useGLSLRenderer()
+    expect(renderer.init(256, 256)).toBe(false)
+  })
+
+  it('compileFragment reports error before initialization', async () => {
+    const { useGLSLRenderer } = await import('@/renderer/glsl/useGLSLRenderer')
+    const renderer = useGLSLRenderer()
+    const result = renderer.compileFragment('void main() {}')
+    expect(result.success).toBe(false)
+  })
+
+  it('toBlob rejects before initialization', async () => {
+    const { useGLSLRenderer } = await import('@/renderer/glsl/useGLSLRenderer')
+    const renderer = useGLSLRenderer()
+    await expect(renderer.toBlob()).rejects.toThrow('Renderer not initialized')
+  })
+
+  it('accepts custom config without error', async () => {
     const { useGLSLRenderer } = await import('@/renderer/glsl/useGLSLRenderer')
     const config: GLSLRendererConfig = {
       maxInputs: 3,
@@ -48,6 +54,6 @@ describe('useGLSLRenderer', () => {
       maxIntUniforms: 1
     }
     const renderer = useGLSLRenderer(config)
-    expect(renderer).toBeDefined()
+    expect(renderer.init(256, 256)).toBe(false)
   })
 })

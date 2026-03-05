@@ -1,8 +1,9 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref, shallowRef } from 'vue'
 
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -150,16 +151,46 @@ describe('useGLSLPreview', () => {
   })
 
   describe('autogrow config extraction', () => {
-    it('uses default limits when node has no comfyDynamic', () => {
-      const node = createMockNode()
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function triggerRender(node: LGraphNode) {
       mockGetNodeOutputs.mockReturnValue({
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
       })
-      useGLSLPreview(wrapNode(node))
-      expect(mockRendererFactory.lastConfig.value).toBeUndefined()
+      const store = useWidgetValueStore() as unknown as {
+        _widgetMap: Map<string, { value: unknown }>
+      }
+      store._widgetMap.set('fragment_shader', {
+        value: 'void main() {}'
+      })
+
+      const nodeRef = shallowRef<LGraphNode | null>(null)
+      useGLSLPreview(nodeRef)
+
+      nodeRef.value = node
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      await nextTick()
+    }
+
+    it('passes default config when node has no comfyDynamic', async () => {
+      const node = createMockNode()
+      await triggerRender(node)
+
+      expect(mockRendererFactory.lastConfig.value).toEqual({
+        maxInputs: 5,
+        maxFloatUniforms: 5,
+        maxIntUniforms: 5
+      })
     })
 
-    it('extracts autogrow limits from node comfyDynamic', () => {
+    it('extracts autogrow limits from node comfyDynamic', async () => {
       const node = createMockNode({
         comfyDynamic: {
           autogrow: {
@@ -169,12 +200,13 @@ describe('useGLSLPreview', () => {
           }
         }
       })
-      mockGetNodeOutputs.mockReturnValue({
-        images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
-      })
+      await triggerRender(node)
 
-      const { isActive } = useGLSLPreview(wrapNode(node))
-      expect(isActive.value).toBe(true)
+      expect(mockRendererFactory.lastConfig.value).toEqual({
+        maxInputs: 3,
+        maxFloatUniforms: 8,
+        maxIntUniforms: 4
+      })
     })
   })
 })

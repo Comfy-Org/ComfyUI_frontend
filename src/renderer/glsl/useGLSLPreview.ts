@@ -48,6 +48,12 @@ function getAutogrowLimits(node: LGraphNode): GLSLRendererConfig {
   }
 }
 
+function normalizeDimension(value: unknown): number {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_SIZE
+  return parsed
+}
+
 function clampResolution(w: number, h: number): [number, number] {
   const maxDim = Math.max(w, h)
   if (maxDim <= MAX_PREVIEW_DIMENSION) return [w, h]
@@ -65,6 +71,7 @@ export function useGLSLPreview(
   let renderer: ReturnType<typeof useGLSLRenderer> | null = null
   let rendererReady = false
   let currentBlobUrl: string | null = null
+  let renderRequestId = 0
 
   const nodeRef = computed(() => toValue(nodeMaybe) ?? null)
 
@@ -185,8 +192,8 @@ export function useGLSLPreview(
       )
       if (widthWidget && heightWidget) {
         return clampResolution(
-          Number(widthWidget.value) || DEFAULT_SIZE,
-          Number(heightWidget.value) || DEFAULT_SIZE
+          normalizeDimension(widthWidget.value),
+          normalizeDimension(heightWidget.value)
         )
       }
     }
@@ -202,48 +209,56 @@ export function useGLSLPreview(
   }
 
   async function renderPreview(): Promise<void> {
+    const requestId = ++renderRequestId
     const source = shaderSource.value
     if (!source || !isActive.value) return
 
     const r = ensureRenderer()
 
-    if (!rendererReady) {
-      const [w, h] = getResolution()
-      if (!r.init(w, h)) {
-        lastError.value = 'WebGL2 not available'
+    try {
+      if (!rendererReady) {
+        const [w, h] = getResolution()
+        if (!r.init(w, h)) {
+          lastError.value = 'WebGL2 not available'
+          return
+        }
+        rendererReady = true
+      }
+
+      const result = r.compileFragment(source)
+      if (!result.success) {
+        lastError.value = result.log
         return
       }
-      rendererReady = true
-    }
+      lastError.value = null
 
-    const result = r.compileFragment(source)
-    if (!result.success) {
-      lastError.value = result.log
-      return
-    }
-    lastError.value = null
+      const [w, h] = getResolution()
+      r.setResolution(w, h)
 
-    const [w, h] = getResolution()
-    r.setResolution(w, h)
+      loadInputImages()
 
-    loadInputImages()
+      for (let i = 0; i < floatValues.value.length; i++) {
+        r.setFloatUniform(i, floatValues.value[i])
+      }
+      for (let i = 0; i < intValues.value.length; i++) {
+        r.setIntUniform(i, intValues.value[i])
+      }
 
-    for (let i = 0; i < floatValues.value.length; i++) {
-      r.setFloatUniform(i, floatValues.value[i])
-    }
-    for (let i = 0; i < intValues.value.length; i++) {
-      r.setIntUniform(i, intValues.value[i])
-    }
+      r.render()
 
-    r.render()
+      const blob = await r.toBlob()
+      if (requestId !== renderRequestId) return
+      revokeBlobUrl()
+      currentBlobUrl = URL.createObjectURL(blob)
 
-    const blob = await r.toBlob()
-    revokeBlobUrl()
-    currentBlobUrl = URL.createObjectURL(blob)
-
-    const nId = nodeId.value
-    if (nId != null) {
-      nodeOutputStore.setNodePreviewsByNodeId(nId, [currentBlobUrl])
+      const nId = nodeId.value
+      if (nId != null) {
+        nodeOutputStore.setNodePreviewsByNodeId(nId, [currentBlobUrl])
+      }
+    } catch (error) {
+      if (requestId !== renderRequestId) return
+      lastError.value =
+        error instanceof Error ? error.message : 'Failed to render preview'
     }
   }
 
