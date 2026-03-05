@@ -154,6 +154,7 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -183,6 +184,7 @@ const {
 }>()
 
 const { t } = useI18n()
+const { isAppMode } = useAppMode()
 
 const applyFilter = (workflows: ComfyWorkflow[]) =>
   filter ? workflows.filter(filter) : workflows
@@ -304,14 +306,18 @@ const renderTreeNode = (
             },
         contextMenuItems() {
           return [
-            {
-              label: t('g.insert'),
-              icon: 'pi pi-file-export',
-              command: async () => {
-                const workflow = node.data
-                await workflowService.insertWorkflow(workflow)
-              }
-            },
+            ...(isAppMode.value
+              ? []
+              : [
+                  {
+                    label: t('g.insert'),
+                    icon: 'pi pi-file-export',
+                    command: async () => {
+                      const workflow = node.data
+                      await workflowService.insertWorkflow(workflow)
+                    }
+                  }
+                ]),
             {
               label: t('g.duplicate'),
               icon: 'pi pi-file-export',
