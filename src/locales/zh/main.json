@@ -356,13 +356,15 @@
     "emptyWorkflowExplanation": "你的工作流为空。你需要先添加一些节点来开始构建应用。",
     "emptyWorkflowPrompt": "要使用模板开始吗？",
     "emptyWorkflowTitle": "此工作流没有节点",
+    "inputs": "输入",
+    "inputsDescription": "选择输入",
     "label": "应用构建器",
     "loadTemplate": "加载模板",
     "nodeGraph": "节点图",
     "nodeGraphDescription": "默认以节点图方式打开",
-    "select": "选择",
-    "selectDescription": "选择输入/输出",
-    "switchToSelect": "切换到选择",
+    "outputs": "输出",
+    "outputsDescription": "选择输出",
+    "switchToOutputs": "切换到输出",
     "viewApp": "查看应用"
   },
   "clipboard": {
@@ -1350,8 +1352,8 @@
       "outputExamples": "示例：“保存图像”或“保存视频”",
       "outputs": "输出",
       "resultsLabel": "运行此应用后，所选输出节点生成的结果将在此显示",
-      "switchToSelect": "切换到“选择”步骤，点击输出节点将其添加到此处。",
-      "switchToSelectButton": "切换到选择"
+      "switchToOutputs": "切换到“输出”步骤，并点击输出节点将其添加到此处。",
+      "switchToOutputsButton": "切换到输出"
     },
     "beta": "App 模式测试版 - 提供反馈",
     "builder": {
@@ -2740,6 +2742,7 @@
       "searchJobs": "搜索...",
       "showAssets": "显示资产",
       "showAssetsPanel": "显示资产面板",
+      "showRunProgressBar": "显示运行进度条",
       "sortBy": "排序方式",
       "sortJobs": "排序任务",
       "stubClipTextEncode": "CLIP文本编码：",
