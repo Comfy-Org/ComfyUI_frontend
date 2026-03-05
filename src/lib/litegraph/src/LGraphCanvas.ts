@@ -4809,6 +4809,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!this.canvas || this.canvas.width == 0 || this.canvas.height == 0)
       return
 
+    // Reset per-frame caches so stale data is never used if a code path is skipped.
+    this._cachedLinkRenderContext = null
+
     // fps counting
     const now = LiteGraph.getTime()
     this.render_time = (now - this.last_draw_time) * 0.001
