@@ -2603,7 +2603,10 @@
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
     "enterNewName": "Enter new name",
-    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red)."
+    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red).",
+    "graph": "Graph",
+    "app": "App",
+    "enterNodeGraph": "Enter node graph"
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",

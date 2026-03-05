@@ -40,22 +40,32 @@ function handleOpen(open: boolean) {
     })
   }
 }
+
+function toggleLinearMode() {
+  void useCommandStore().execute('Comfy.ToggleLinear', {
+    metadata: { source: 'menu_button' }
+  })
+}
 </script>
 
 <template>
   <DropdownMenuRoot @update:open="handleOpen">
-    <DropdownMenuTrigger as-child>
-      <slot name="button" :has-unseen-items="hasUnseenItems">
+    <slot name="button" :has-unseen-items="hasUnseenItems">
+      <div
+        class="inline-flex items-center rounded-lg bg-secondary-background pointer-events-auto"
+      >
         <Button
           v-tooltip="{
-            value: t('breadcrumbsMenu.workflowActions'),
+            value: canvasStore.linearMode
+              ? t('breadcrumbsMenu.enterNodeGraph')
+              : t('breadcrumbsMenu.enterAppMode'),
             showDelay: 300,
             hideDelay: 300
           }"
-          variant="secondary"
-          size="unset"
-          :aria-label="t('breadcrumbsMenu.workflowActions')"
-          class="relative h-10 rounded-lg pl-3 pr-2 pointer-events-auto gap-1 data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
+          variant="base"
+          class="m-1"
+          @pointerdown.stop
+          @click="toggleLinearMode"
         >
           <i
             class="size-4"
@@ -65,15 +75,36 @@ function handleOpen(open: boolean) {
                 : 'icon-[comfy--workflow]'
             "
           />
-          <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
-          <span
-            v-if="hasUnseenItems"
-            aria-hidden="true"
-            class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
-          />
         </Button>
-      </slot>
-    </DropdownMenuTrigger>
+        <DropdownMenuTrigger as-child>
+          <Button
+            v-tooltip="{
+              value: t('breadcrumbsMenu.workflowActions'),
+              showDelay: 300,
+              hideDelay: 300
+            }"
+            variant="secondary"
+            size="unset"
+            :aria-label="t('breadcrumbsMenu.workflowActions')"
+            class="relative h-10 rounded-lg pl-2.5 pr-2 gap-1 text-center data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
+          >
+            <span>{{
+              canvasStore.linearMode
+                ? t('breadcrumbsMenu.app')
+                : t('breadcrumbsMenu.graph')
+            }}</span>
+            <i
+              class="icon-[lucide--chevron-down] size-4 text-muted-foreground"
+            />
+            <span
+              v-if="hasUnseenItems"
+              aria-hidden="true"
+              class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
+            />
+          </Button>
+        </DropdownMenuTrigger>
+      </div>
+    </slot>
     <DropdownMenuPortal>
       <DropdownMenuContent
         :align
