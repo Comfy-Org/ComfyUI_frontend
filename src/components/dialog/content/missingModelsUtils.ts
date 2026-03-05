@@ -83,7 +83,7 @@ export function downloadModel(
   }
 }
 
-export interface ModelMetadata {
+interface ModelMetadata {
   fileSize: number | null
   gatedRepoUrl: string | null
 }
