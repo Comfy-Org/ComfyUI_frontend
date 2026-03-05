@@ -86,6 +86,7 @@ catalog:
   picocolors: ^1.1.1
   pinia: ^3.0.4
   postcss-html: ^1.8.0
+  posthog-js: ^1.358.1
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: ^4.2.5
