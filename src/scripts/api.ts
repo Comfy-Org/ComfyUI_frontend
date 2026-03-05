@@ -1183,6 +1183,20 @@ export class ComfyApi extends EventTarget {
     return resp
   }
 
+  async moveUserDataDir(source: string, dest: string) {
+    return this.fetchApi('/userdata/dir/move', {
+      method: 'POST',
+      body: JSON.stringify({ source, dest }),
+      headers: { 'Content-Type': 'application/json' }
+    })
+  }
+
+  async deleteUserDataDir(path: string) {
+    return this.fetchApi(`/userdata/dir?path=${encodeURIComponent(path)}`, {
+      method: 'DELETE'
+    })
+  }
+
   async listUserDataFullInfo(dir: string): Promise<UserDataFullInfo[]> {
     const trimmedDir = trimEnd(dir, '/')
     const resp = await this.fetchApi(

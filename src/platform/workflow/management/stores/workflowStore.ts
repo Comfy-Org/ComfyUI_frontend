@@ -62,8 +62,15 @@ interface WorkflowStore {
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
   renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
+  moveWorkflowToFolder: (
+    workflow: ComfyWorkflow,
+    destDir: string
+  ) => Promise<void>
   deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  renameFolder: (oldPath: string, newPath: string) => Promise<void>
+  deleteFolder: (path: string) => Promise<void>
+  createFolder: (folderPath: string) => Promise<void>
 
   workflows: ComfyWorkflow[]
   bookmarkedWorkflows: ComfyWorkflow[]
@@ -521,6 +528,67 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  const moveWorkflowToFolder = async (
+    workflow: ComfyWorkflow,
+    destDir: string
+  ) => {
+    const newPath = destDir + '/' + workflow.fullFilename
+    await renameWorkflow(workflow, newPath)
+  }
+
+  const renameFolder = async (oldPath: string, newPath: string) => {
+    isBusy.value = true
+    try {
+      const resp = await api.moveUserDataDir(oldPath, newPath)
+      if (resp.status !== 200) {
+        throw new Error(
+          `Failed to rename folder: ${resp.status} ${resp.statusText}`
+        )
+      }
+      await syncWorkflows()
+    } finally {
+      isBusy.value = false
+    }
+  }
+
+  const deleteFolder = async (path: string) => {
+    isBusy.value = true
+    try {
+      const prefix = path.endsWith('/') ? path : path + '/'
+      for (const w of [...openWorkflows.value]) {
+        if (w.path.startsWith(prefix)) {
+          await closeWorkflow(w)
+        }
+      }
+      const resp = await api.deleteUserDataDir(path)
+      if (resp.status !== 200) {
+        throw new Error(
+          `Failed to delete folder: ${resp.status} ${resp.statusText}`
+        )
+      }
+      await syncWorkflows()
+    } finally {
+      isBusy.value = false
+    }
+  }
+
+  const createFolder = async (folderPath: string) => {
+    isBusy.value = true
+    try {
+      const normalizedPath = folderPath.endsWith('/')
+        ? folderPath
+        : folderPath + '/'
+      await api.storeUserData(normalizedPath, '', {
+        overwrite: false,
+        stringify: false,
+        throwOnError: true
+      })
+      await syncWorkflows()
+    } finally {
+      isBusy.value = false
+    }
+  }
+
   /**
    * Save a workflow.
    * @param workflow The workflow to save.
@@ -755,9 +823,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
     createTemporary,
     createNewTemporary,
     renameWorkflow,
+    moveWorkflowToFolder,
     deleteWorkflow,
     saveAs,
     saveWorkflow,
+    renameFolder,
+    deleteFolder,
+    createFolder,
     reorderWorkflows,
 
     workflows,

@@ -10,6 +10,15 @@
     </template>
     <template #tool-buttons>
       <Button
+        v-tooltip.bottom="$t('g.newFolder')"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('g.newFolder')"
+        @click="browseTreeRef?.addFolderCommand('root')"
+      >
+        <i class="icon-[lucide--folder-plus] size-4" />
+      </Button>
+      <Button
         v-tooltip.bottom="$t('g.refresh')"
         variant="muted-textonly"
         size="icon"
@@ -107,7 +116,7 @@
             class="ml-2"
           />
           <TreeExplorer
-            v-if="filteredPersistedWorkflows.length > 0"
+            ref="browseTreeRef"
             v-model:expanded-keys="expandedKeys"
             :root="renderTreeNode(workflowsTree, WorkflowTreeType.Browse)"
             :selection-keys="selectionKeys"
@@ -116,7 +125,10 @@
               <WorkflowTreeLeaf :node="node" />
             </template>
           </TreeExplorer>
-          <slot v-else name="empty-state">
+          <slot
+            v-if="filteredPersistedWorkflows.length === 0"
+            name="empty-state"
+          >
             <NoResultsPlaceholder
               icon="pi pi-folder"
               :title="$t('g.empty')"
@@ -162,7 +174,11 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
+import type {
+  TreeExplorerDragAndDropData,
+  TreeExplorerNode,
+  TreeNode
+} from '@/types/treeExplorerTypes'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 
@@ -193,6 +209,9 @@ const workflowTabsPosition = computed(() =>
 )
 
 const searchBoxRef = ref()
+const browseTreeRef = ref<{ addFolderCommand: (key: string) => void } | null>(
+  null
+)
 
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.length > 0)
@@ -324,7 +343,53 @@ const renderTreeNode = (
         },
         draggable: true
       }
-    : { handleClick }
+    : type === WorkflowTreeType.Browse
+      ? {
+          handleClick,
+          ...(node.key !== 'root'
+            ? {
+                handleRename: async (newName: string) => {
+                  const folderKey = node.key.replace(/^root\//, '')
+                  const parentKey = folderKey.substring(
+                    0,
+                    folderKey.lastIndexOf('/')
+                  )
+                  const newFolderKey = parentKey
+                    ? parentKey + '/' + newName
+                    : newName
+                  await workflowStore.renameFolder(
+                    'workflows/' + folderKey,
+                    'workflows/' + newFolderKey
+                  )
+                },
+                handleDelete: async () => {
+                  const folderKey = node.key.replace(/^root\//, '')
+                  await workflowStore.deleteFolder('workflows/' + folderKey)
+                }
+              }
+            : {}),
+          handleAddFolder: async (name: string) => {
+            const folderPath =
+              node.key === 'root'
+                ? 'workflows/' + name
+                : 'workflows/' + node.key.replace(/^root\//, '') + '/' + name
+            await workflowStore.createFolder(folderPath)
+          },
+          droppable: true,
+          handleDrop: async (
+            data: TreeExplorerDragAndDropData<ComfyWorkflow>
+          ) => {
+            const droppedWorkflow = data.data.data
+            if (droppedWorkflow) {
+              const destDir =
+                node.key === 'root'
+                  ? 'workflows'
+                  : 'workflows/' + node.key.replace(/^root\//, '')
+              await workflowStore.moveWorkflowToFolder(droppedWorkflow, destDir)
+            }
+          }
+        }
+      : { handleClick }
 
   const label =
     node.leaf && labelTransform ? labelTransform(node.label) : node.label
