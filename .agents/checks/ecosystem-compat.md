@@ -32,7 +32,8 @@ Check whether this PR introduces breaking changes to exported symbols that downs
 | 5+ consumers    | critical | Must address before merge  |
 | 2-4 consumers   | high     | Should address or document |
 | 1 consumer      | medium   | Note in PR, author decides |
-| 0 or unknown    | low      | Note potential risk only   |
+| 0 consumers     | low      | Note potential risk only                              |
+| Unknown usage   | medium   | Require explicit note that external usage was not verifiable |
 
 ## Suggestion Template
 

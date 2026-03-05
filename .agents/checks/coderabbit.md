@@ -41,7 +41,7 @@ Run CodeRabbit CLI review on the current changes.
 
 ## Rate Limiting
 
-CodeRabbit Pro allows 8 reviews/hour. If the rate limit is hit, skip and note it.
+If a rate limit is hit, skip and note it. Prefer reading the current quota from CLI/API output rather than assuming a fixed reviews/hour limit.
 
 ## Error Handling
 

@@ -5,8 +5,8 @@
  * This config is NOT used for regular development linting — only for the
  * code review checks' static analysis pass.
  *
- * Install: pnpm dlx eslint-plugin-sonarjs
- * Run:     pnpm dlx eslint --no-eslintrc --config .agents/checks/eslint.strict.config.js --ext .ts,.js,.vue {files}
+ * Install: pnpm add -D eslint eslint-plugin-sonarjs
+ * Run:     pnpm dlx eslint --no-config-lookup --config .agents/checks/eslint.strict.config.js --ext .ts,.js,.vue {files}
  */
 
 import sonarjs from 'eslint-plugin-sonarjs'

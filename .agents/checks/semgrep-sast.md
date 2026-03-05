@@ -22,7 +22,7 @@ Run Semgrep static analysis on changed files to detect security vulnerabilities,
 3. Run semgrep against changed files:
 
    ```bash
-   semgrep --config=auto --json --quiet <changed_files> 2>/dev/null || true
+   semgrep --config=auto --json --quiet <changed_files>
    ```
 
 4. Parse the JSON output (`.results[]` array). For each finding, map severity:

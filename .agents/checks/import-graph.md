@@ -13,7 +13,7 @@ Run dependency-cruiser import graph analysis on changed files to detect circular
 
 1. Check if dependency-cruiser is available:
    ```bash
-   pnpm dlx depcruise --version
+   pnpm dlx dependency-cruiser --version
    ```
    If not available, skip this check and report: "Skipped: dependency-cruiser not available. Install with: `pnpm add -D dependency-cruiser`"
 
@@ -24,17 +24,17 @@ Run dependency-cruiser import graph analysis on changed files to detect circular
 3. Determine config to use:
    - If `.dependency-cruiser.js` or `.dependency-cruiser.cjs` exists in the repo root, use it (dependency-cruiser auto-detects it). This config may enforce layer architecture rules (e.g., base → platform → workbench → renderer import direction):
      ```bash
-     pnpm dlx depcruise --output-type json <changed_directories> 2>/dev/null
+     pnpm dlx dependency-cruiser --output-type json <changed_directories> 2>/dev/null
      ```
    - If no config exists, run with built-in defaults:
      ```bash
-     pnpm dlx depcruise --no-config --output-type json --validate <changed_directories> 2>/dev/null
+     pnpm dlx dependency-cruiser --no-config --output-type json <changed_directories> 2>/dev/null
      ```
 
 4. Also check for circular dependencies specifically across `src/`:
 
    ```bash
-   pnpm dlx depcruise --no-config --output-type json --do-not-follow "node_modules" --include-only "^src" src 2>/dev/null
+   pnpm dlx dependency-cruiser --no-config --output-type json --do-not-follow "node_modules" --include-only "^src" src 2>/dev/null
    ```
 
    Look for modules where `.circular == true` in the output.
@@ -67,6 +67,6 @@ Run dependency-cruiser import graph analysis on changed files to detect circular
 ## Error Handling
 
 - If pnpm dlx is not available, skip and report the error.
-- If the config file fails to parse, fall back to `--no-config --validate`.
+- If the config file fails to parse, fall back to `--no-config`.
 - If there are more than 50 violations, report the first 20 and note the total count.
 - If no violations are found, report "No issues found."
