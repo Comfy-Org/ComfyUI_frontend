@@ -57,8 +57,8 @@ const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
 )
 
-const isReadOnly = computed(
-  () => widget.options?.read_only ?? widget.options?.disabled ?? false
+const isReadOnly = computed(() =>
+  Boolean(widget.options?.read_only || widget.options?.disabled)
 )
 
 const layoutWidget = computed(() => ({
