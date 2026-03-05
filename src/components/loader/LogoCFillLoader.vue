@@ -23,10 +23,10 @@
       <g :mask="`url(#${maskId})`">
         <rect
           class="c-fill-rect"
-          x="0"
-          y="0"
-          width="185"
-          height="201"
+          x="-1"
+          y="-1"
+          width="187"
+          height="203"
           fill="currentColor"
         />
       </g>
@@ -55,15 +55,16 @@ const C_PATH =
 
 <style scoped>
 .c-fill-rect {
-  animation: c-fill-up 2.5s ease-in-out forwards;
+  animation: c-fill-up 2.5s cubic-bezier(0.25, 0, 0.3, 1) forwards;
+  will-change: transform;
 }
 
 @keyframes c-fill-up {
   0% {
-    transform: translateY(201px);
+    transform: translateY(203px);
   }
   100% {
-    transform: translateY(0);
+    transform: translateY(-1px);
   }
 }
 
