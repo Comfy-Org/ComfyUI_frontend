@@ -123,7 +123,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { cn } from '@/utils/tailwindUtil'
 
 interface VideoPreviewProps {

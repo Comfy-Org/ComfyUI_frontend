@@ -11,7 +11,7 @@ import {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 import { api } from './api'

@@ -8,7 +8,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
@@ -26,7 +26,7 @@ const useNodeOutputStoreMock = vi.hoisted(() =>
   vi.fn<() => MockNodeOutputStore>()
 )
 
-vi.mock('@/stores/imagePreviewStore', () => {
+vi.mock('@/stores/nodeOutputStore', () => {
   return {
     useNodeOutputStore: useNodeOutputStoreMock
   }

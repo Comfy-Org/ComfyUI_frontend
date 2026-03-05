@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group relative flex flex-col items-center justify-center py-3 px-2 rounded-lg cursor-pointer select-none transition-colors duration-150 box-content bg-component-node-background hover:bg-secondary-background-hover border border-component-node-border"
+    class="group relative flex flex-col items-center justify-center py-3 px-2 rounded-lg cursor-pointer select-none transition-colors duration-150 box-content bg-component-node-background hover:bg-secondary-background-hover"
     :data-node-name="node.label"
     draggable="true"
     @click="handleClick"

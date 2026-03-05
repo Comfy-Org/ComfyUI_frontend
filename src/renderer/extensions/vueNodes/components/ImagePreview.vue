@@ -129,7 +129,7 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
