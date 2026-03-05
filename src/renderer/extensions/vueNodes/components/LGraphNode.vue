@@ -35,6 +35,12 @@
     @drop.stop.prevent="handleDrop"
   >
     <!-- Selection/Execution Outline Overlay -->
+    <AppOutput
+      v-if="
+        lgraphNode?.constructor?.nodeData?.output_node && isSelectOutputsMode
+      "
+      :id="nodeData.id"
+    />
     <div
       v-if="isSelected || executing"
       data-testid="node-state-outline-overlay"
@@ -188,7 +194,9 @@
       @open-errors="useRightSidePanelStore().openPanel('errors')"
       @toggle-advanced="showAdvancedState = !showAdvancedState"
     />
-    <template v-if="!isCollapsed && nodeData.resizable !== false">
+    <template
+      v-if="!isCollapsed && nodeData.resizable !== false && !isSelectMode"
+    >
       <div
         v-for="handle in RESIZE_HANDLES"
         :key="handle.corner"
@@ -310,7 +318,7 @@ const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
 
-const { isSelectMode } = useAppMode()
+const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =

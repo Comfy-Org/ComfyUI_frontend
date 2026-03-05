@@ -158,7 +158,7 @@ export type WorkflowOpenSource = NonNullable<
  * Template library metadata
  */
 export interface TemplateLibraryMetadata {
-  source: 'sidebar' | 'menu' | 'command'
+  source: 'sidebar' | 'menu' | 'command' | 'appbuilder'
 }
 
 /**

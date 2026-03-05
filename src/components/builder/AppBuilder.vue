@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { computed, provide, ref, toValue, watchEffect } from 'vue'
+import { computed, provide, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -25,6 +25,7 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
@@ -38,39 +39,20 @@ const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
-const { isSelectMode, isArrangeMode } = useAppMode()
+const { isSelectMode, isSelectInputsMode, isSelectOutputsMode, isArrangeMode } =
+  useAppMode()
 const hoveringSelectable = ref(false)
 
 provide(HideLayoutFieldKey, true)
 
 workflowStore.activeWorkflow?.changeTracker?.reset()
 
-function resolveNode(nodeId: NodeId) {
-  return (
-    app.rootGraph.getNodeById(nodeId) ??
-    [...app.rootGraph.subgraphs.values()]
-      .flatMap((sg) => sg.nodes)
-      .find((n) => n.id == nodeId)
-  )
-}
-
-// Prune stale entries whose node/widget no longer exists, so the
-// DraggableList model always matches the rendered items.
-watchEffect(() => {
-  const valid = appModeStore.selectedInputs.filter(([nodeId, widgetName]) =>
-    resolveNode(nodeId)?.widgets?.some((w) => w.name === widgetName)
-  )
-  if (valid.length < appModeStore.selectedInputs.length) {
-    appModeStore.selectedInputs = valid
-  }
-})
-
 const arrangeInputs = computed(() =>
   appModeStore.selectedInputs
     .map(([nodeId, widgetName]) => {
       const node = resolveNode(nodeId)
-      const widget = node?.widgets?.find((w) => w.name === widgetName)
-      if (!node || !widget) return null
+      if (!node) return null
+      const widget = node.widgets?.find((w) => w.name === widgetName)
       return { nodeId, widgetName, node, widget }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
@@ -80,7 +62,13 @@ const inputsWithState = computed(() =>
   appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
     const node = resolveNode(nodeId)
     const widget = node?.widgets?.find((w) => w.name === widgetName)
-    if (!node || !widget) return { nodeId, widgetName }
+    if (!node || !widget) {
+      return {
+        nodeId,
+        widgetName,
+        subLabel: t('linearMode.builder.unknownWidget')
+      }
+    }
 
     const input = node.inputs.find((i) => i.widget?.name === widget.name)
     const rename = input && (() => renameWidget(widget, input))
@@ -174,6 +162,7 @@ function handleClick(e: MouseEvent) {
   if (!node) return canvasInteractions.forwardEventToCanvas(e)
 
   if (!widget) {
+    if (!isSelectOutputsMode.value) return
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
     const index = appModeStore.selectedOutputs.findIndex((id) => id == node.id)
@@ -181,6 +170,7 @@ function handleClick(e: MouseEvent) {
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
+  if (!isSelectInputsMode.value) return
 
   const index = appModeStore.selectedInputs.findIndex(
     ([nodeId, widgetName]) => node.id == nodeId && widget.name === widgetName
@@ -228,9 +218,9 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
       :key="`${nodeId}: ${widgetName}`"
       :class="cn(dragClass, 'p-2 my-2 pointer-events-auto')"
-      :aria-label="`${widget.label ?? widgetName} — ${node.title}`"
+      :aria-label="`${widget?.label ?? widgetName} — ${node.title}`"
     >
-      <div class="pointer-events-none" inert>
+      <div v-if="widget" class="pointer-events-none" inert>
         <WidgetItem
           :widget="widget"
           :node="node"
@@ -238,10 +228,16 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           hidden-widget-actions
         />
       </div>
+      <div v-else class="text-muted-foreground text-sm p-1 pointer-events-none">
+        {{ widgetName }}
+        <p class="text-xs italic">
+          ({{ t('linearMode.builder.unknownWidget') }})
+        </p>
+      </div>
     </div>
   </DraggableList>
   <PropertiesAccordionItem
-    v-else
+    v-if="isSelectInputsMode"
     :label="t('nodeHelpPage.inputs')"
     enable-empty-state
     :disabled="!appModeStore.selectedInputs.length"
@@ -290,7 +286,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     </DraggableList>
   </PropertiesAccordionItem>
   <PropertiesAccordionItem
-    v-if="!isArrangeMode"
+    v-if="isSelectOutputsMode"
     :label="t('nodeHelpPage.outputs')"
     enable-empty-state
     :disabled="!appModeStore.selectedOutputs.length"
@@ -351,42 +347,46 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <TransformPane :canvas="canvasStore.getCanvas()">
-        <div
-          v-for="[key, style] in renderedInputs"
-          :key
-          :style="toValue(style)"
-          class="fixed bg-primary-background/30 rounded-lg"
-        />
-        <div
-          v-for="[key, style, isSelected] in renderedOutputs"
-          :key
-          :style="toValue(style)"
-          :class="
-            cn(
-              'fixed ring-warning-background ring-5 rounded-2xl',
-              !isSelected && 'ring-warning-background/50'
-            )
-          "
-        >
-          <div class="absolute top-0 right-0 size-8">
-            <div
-              v-if="isSelected"
-              class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg cursor-pointer pointer-events-auto"
-              @click.stop="
-                remove(appModeStore.selectedOutputs, (k) => k == key)
-              "
-              @pointerdown.stop
-            >
-              <i class="icon-[lucide--check] bg-text-foreground size-full" />
+        <template v-if="isSelectInputsMode">
+          <div
+            v-for="[key, style] in renderedInputs"
+            :key
+            :style="toValue(style)"
+            class="fixed bg-primary-background/30 rounded-lg"
+          />
+        </template>
+        <template v-else>
+          <div
+            v-for="[key, style, isSelected] in renderedOutputs"
+            :key
+            :style="toValue(style)"
+            :class="
+              cn(
+                'fixed ring-warning-background ring-5 rounded-2xl',
+                !isSelected && 'ring-warning-background/50'
+              )
+            "
+          >
+            <div class="absolute top-0 right-0 size-8">
+              <div
+                v-if="isSelected"
+                class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg cursor-pointer pointer-events-auto"
+                @click.stop="
+                  remove(appModeStore.selectedOutputs, (k) => k == key)
+                "
+                @pointerdown.stop
+              >
+                <i class="icon-[lucide--check] bg-text-foreground size-full" />
+              </div>
+              <div
+                v-else
+                class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg cursor-pointer pointer-events-auto"
+                @click.stop="appModeStore.selectedOutputs.push(key)"
+                @pointerdown.stop
+              />
             </div>
-            <div
-              v-else
-              class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg cursor-pointer pointer-events-auto"
-              @click.stop="appModeStore.selectedOutputs.push(key)"
-              @pointerdown.stop
-            />
           </div>
-        </div>
+        </template>
       </TransformPane>
     </div>
   </Teleport>

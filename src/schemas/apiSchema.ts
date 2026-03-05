@@ -411,6 +411,7 @@ const zSettings = z.object({
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),
+  'Comfy.Queue.ShowRunProgressBar': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
