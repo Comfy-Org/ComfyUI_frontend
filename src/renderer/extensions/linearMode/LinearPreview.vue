@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -15,11 +15,10 @@ import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
 import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
+import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
-import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
-import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -27,11 +26,6 @@ import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
-
-// Lazy-loaded to avoid pulling THREE.js into the main bundle
-const Preview3d = defineAsyncComponent(
-  () => import('@/renderer/extensions/linearMode/Preview3d.vue')
-)
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
@@ -143,32 +137,14 @@ async function rerun(e: Event) {
     />
   </section>
   <ImagePreview
-    v-if="
-      (canShowPreview && latentPreview) ||
-      getMediaType(selectedOutput) === 'images'
-    "
+    v-if="canShowPreview && latentPreview"
     :mobile
-    :src="(canShowPreview && latentPreview) || selectedOutput!.url"
+    :src="latentPreview"
   />
-  <VideoPreview
-    v-else-if="getMediaType(selectedOutput) === 'video'"
-    :src="selectedOutput!.url"
-    class="object-contain flex-1 md:contain-size md:p-3"
-  />
-  <audio
-    v-else-if="getMediaType(selectedOutput) === 'audio'"
-    class="w-full m-auto"
-    controls
-    :src="selectedOutput!.url"
-  />
-  <article
-    v-else-if="getMediaType(selectedOutput) === 'text'"
-    class="w-full max-w-128 m-auto my-12 overflow-y-auto"
-    v-text="selectedOutput!.url"
-  />
-  <Preview3d
-    v-else-if="getMediaType(selectedOutput) === '3d'"
-    :model-url="selectedOutput!.url"
+  <MediaOutputPreview
+    v-else-if="selectedOutput"
+    :output="selectedOutput"
+    :mobile
   />
   <LatentPreview v-else-if="queueStore.runningTasks.length > 0" />
   <LinearArrange v-else-if="isArrangeMode" />

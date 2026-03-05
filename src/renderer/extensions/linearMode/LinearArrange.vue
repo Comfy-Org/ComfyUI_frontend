@@ -1,18 +1,43 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAppMode } from '@/composables/useAppMode'
-import { useAppModeStore } from '@/stores/appModeStore'
-import Button from '@/components/ui/button/Button.vue'
 import { storeToRefs } from 'pinia'
+
+import Button from '@/components/ui/button/Button.vue'
+import { useAppMode } from '@/composables/useAppMode'
+import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
+import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 const { t } = useI18n()
 const { setMode } = useAppMode()
-const { hasOutputs } = storeToRefs(useAppModeStore())
+const appModeStore = useAppModeStore()
+const { hasOutputs } = storeToRefs(appModeStore)
+const nodeOutputStore = useNodeOutputStore()
+const { nodeIdToNodeLocatorId } = useWorkflowStore()
+
+const existingOutput = computed(() => {
+  for (const nodeId of appModeStore.selectedOutputs) {
+    const locatorId = nodeIdToNodeLocatorId(nodeId)
+    const nodeOutput = nodeOutputStore.nodeOutputs[locatorId]
+    if (!nodeOutput) continue
+    const results = flattenNodeOutput([nodeId, nodeOutput])
+    if (results.length > 0) return results[0]
+  }
+  return undefined
+})
 </script>
 
 <template>
+  <MediaOutputPreview
+    v-if="existingOutput"
+    :output="existingOutput"
+    class="px-12 py-24"
+  />
   <div
-    v-if="hasOutputs"
+    v-else-if="hasOutputs"
     role="article"
     data-testid="arrange-preview"
     class="flex flex-col items-center justify-center h-full w-3/4 gap-6 p-8 mx-auto"
