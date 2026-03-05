@@ -121,16 +121,27 @@ function composeStyle() {
   }
 }
 
+watch([() => widgetState.pos, () => widgetState.size, left, top], () => {
+  updatePosition(widgetState)
+  if (enableDomClipping.value) {
+    updateDomClipping()
+  }
+  composeStyle()
+})
+
 watch(
-  [() => widgetState, left, top, enableDomClipping],
-  ([widgetState]) => {
-    updatePosition(widgetState)
+  [
+    () => widgetState.zIndex,
+    () => widgetState.readonly,
+    () => widgetState.positionOverride,
+    enableDomClipping
+  ],
+  () => {
     if (enableDomClipping.value) {
       updateDomClipping()
     }
     composeStyle()
-  },
-  { deep: true }
+  }
 )
 
 // Recompose style when clippingStyle updates asynchronously via RAF.
