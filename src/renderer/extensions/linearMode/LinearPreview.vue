@@ -107,7 +107,6 @@ async function rerun(e: Event) {
     <Button
       v-if="!executionStore.isIdle && !selectedItem"
       variant="destructive"
-      :aria-label="t('linearMode.cancelThisRun')"
       @click="commandStore.execute('Comfy.Interrupt')"
     >
       <i class="icon-[lucide--x]" />
