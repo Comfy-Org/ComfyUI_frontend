@@ -102,28 +102,43 @@ const updateDomClipping = () => {
  * and update the position of the widget accordingly.
  */
 const { left, top } = useElementBounding(canvasStore.getCanvas().canvas)
+
+function refreshStyle() {
+  const override = widgetState.positionOverride
+  const isDisabled = override
+    ? (override.widget.computedDisabled ?? widget.computedDisabled)
+    : widget.computedDisabled
+
+  style.value = {
+    ...positionStyle.value,
+    ...(enableDomClipping.value ? clippingStyle.value : {}),
+    zIndex: widgetState.zIndex,
+    pointerEvents: widgetState.readonly || isDisabled ? 'none' : 'auto',
+    opacity: isDisabled ? 0.5 : 1
+  }
+}
+
 watch(
-  [() => widgetState, left, top],
-  ([widgetState, _, __]) => {
+  [() => widgetState.pos, () => widgetState.size, left, top],
+  () => {
     updatePosition(widgetState)
     if (enableDomClipping.value) {
       updateDomClipping()
     }
+    refreshStyle()
+  }
+)
 
-    const override = widgetState.positionOverride
-    const isDisabled = override
-      ? (override.widget.computedDisabled ?? widget.computedDisabled)
-      : widget.computedDisabled
-
-    style.value = {
-      ...positionStyle.value,
-      ...(enableDomClipping.value ? clippingStyle.value : {}),
-      zIndex: widgetState.zIndex,
-      pointerEvents: widgetState.readonly || isDisabled ? 'none' : 'auto',
-      opacity: isDisabled ? 0.5 : 1
-    }
-  },
-  { deep: true }
+watch(
+  [
+    () => widgetState.zIndex,
+    () => widgetState.readonly,
+    () => widgetState.positionOverride,
+    enableDomClipping
+  ],
+  () => {
+    refreshStyle()
+  }
 )
 
 watch(
