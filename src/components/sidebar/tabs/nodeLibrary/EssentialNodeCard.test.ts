@@ -89,22 +89,22 @@ describe('EssentialNodeCard', () => {
   })
 
   describe('icon generation', () => {
-    it('should use kebab-case of node name for icon', () => {
+    it('should use override icon for LoadImage', () => {
       const wrapper = mountComponent(createMockNode({ name: 'LoadImage' }))
       const icon = wrapper.find('i')
-      expect(icon.classes()).toContain('icon-[comfy--load-image]')
+      expect(icon.classes()).toContain('icon-s1.3-[lucide--image-up]')
     })
 
-    it('should use kebab-case for SaveImage', () => {
+    it('should use override icon for SaveImage', () => {
       const wrapper = mountComponent(createMockNode({ name: 'SaveImage' }))
       const icon = wrapper.find('i')
-      expect(icon.classes()).toContain('icon-[comfy--save-image]')
+      expect(icon.classes()).toContain('icon-s1.3-[lucide--image-down]')
     })
 
-    it('should use kebab-case for ImageCrop', () => {
+    it('should use override icon for ImageCrop', () => {
       const wrapper = mountComponent(createMockNode({ name: 'ImageCrop' }))
       const icon = wrapper.find('i')
-      expect(icon.classes()).toContain('icon-[comfy--image-crop]')
+      expect(icon.classes()).toContain('icon-s1.3-[lucide--crop]')
     })
 
     it('should use kebab-case for complex node names', () => {

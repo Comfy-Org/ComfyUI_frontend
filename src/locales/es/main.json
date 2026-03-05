@@ -356,13 +356,15 @@
     "emptyWorkflowExplanation": "Tu flujo de trabajo está vacío. Necesitas algunos nodos para empezar a crear una aplicación.",
     "emptyWorkflowPrompt": "¿Quieres empezar con una plantilla?",
     "emptyWorkflowTitle": "Este flujo de trabajo no tiene nodos",
+    "inputs": "Entradas",
+    "inputsDescription": "Elige entradas",
     "label": "Constructor de aplicaciones",
     "loadTemplate": "Cargar una plantilla",
     "nodeGraph": "Grafo de nodos",
     "nodeGraphDescription": "Se abre como grafo de nodos por defecto",
-    "select": "Seleccionar",
-    "selectDescription": "Elegir entradas/salidas",
-    "switchToSelect": "Cambiar a Seleccionar",
+    "outputs": "Salidas",
+    "outputsDescription": "Elige salidas",
+    "switchToOutputs": "Cambiar a Salidas",
     "viewApp": "Ver aplicación"
   },
   "clipboard": {
@@ -1350,8 +1352,8 @@
       "outputExamples": "Ejemplos: 'Guardar imagen' o 'Guardar video'",
       "outputs": "Salidas",
       "resultsLabel": "Los resultados generados por el/los nodo(s) de salida seleccionados se mostrarán aquí después de ejecutar esta aplicación",
-      "switchToSelect": "Cambia al paso 'Seleccionar' y haz clic en los nodos de salida para agregarlos aquí.",
-      "switchToSelectButton": "Cambiar a Seleccionar"
+      "switchToOutputs": "Cambia al paso 'Salida' y haz clic en los nodos de salida para agregarlos aquí.",
+      "switchToOutputsButton": "Cambiar a Salidas"
     },
     "beta": "Modo App Beta - Enviar comentarios",
     "builder": {
@@ -2728,6 +2730,7 @@
       "searchJobs": "Buscar...",
       "showAssets": "Mostrar recursos",
       "showAssetsPanel": "Mostrar panel de recursos",
+      "showRunProgressBar": "Mostrar barra de progreso de ejecución",
       "sortBy": "Ordenar por",
       "sortJobs": "Ordenar trabajos",
       "stubClipTextEncode": "CLIP Text Encode:",

@@ -75,7 +75,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 type OverlayState = 'hidden' | 'active' | 'expanded'
 
-const { expanded, menuHovered = false } = defineProps<{
+const { expanded, menuHovered } = defineProps<{
   expanded?: boolean
   menuHovered?: boolean
 }>()
