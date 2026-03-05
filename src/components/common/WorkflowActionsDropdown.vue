@@ -46,7 +46,7 @@ function handleOpen(open: boolean) {
 function toggleLinearMode() {
   dropdownOpen.value = false
   void useCommandStore().execute('Comfy.ToggleLinear', {
-    metadata: { source: 'menu_button' }
+    metadata: { source }
   })
 }
 </script>
