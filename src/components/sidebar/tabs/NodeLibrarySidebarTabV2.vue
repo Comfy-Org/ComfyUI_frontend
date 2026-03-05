@@ -106,7 +106,7 @@
         <Separator decorative class="border border-dashed border-comfy-input" />
         <!-- Tab list in header (fixed) -->
         <TabsList
-          class="flex gap-4 border-b border-comfy-input bg-background p-4 justify-between"
+          class="flex gap-4 border-b border-comfy-input bg-background p-4"
         >
           <TabsTrigger
             v-for="tab in tabs"
