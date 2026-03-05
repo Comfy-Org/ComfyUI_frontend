@@ -497,21 +497,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
       const draftStore = useWorkflowDraftStore()
 
-      try {
-        await workflow.rename(newPath)
-      } catch (error) {
-        // Ensure workflow is still findable after a partial rename failure
-        if (workflow.path !== oldPath) {
-          delete workflowLookup.value[oldPath]
-          workflowLookup.value[workflow.path] = workflow
-
-          const openIndex = openWorkflowPaths.value.indexOf(oldPath)
-          if (openIndex !== -1) {
-            openWorkflowPaths.value.splice(openIndex, 1, workflow.path)
-          }
-        }
-        throw error
-      }
+      await workflow.rename(newPath)
 
       // Synchronously swap old path for new path in lookup and open paths
       // to avoid a tab flicker caused by an async gap between detach/attach.

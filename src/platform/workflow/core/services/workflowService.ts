@@ -428,9 +428,9 @@ export const useWorkflowService = () => {
         const isSameActiveWorkflowLoad =
           !!existingWorkflow &&
           workflowStore.isActive(existingWorkflow) &&
-          existingWorkflow.activeState?.id !== undefined &&
-          workflowData.id !== undefined &&
-          existingWorkflow.activeState.id === workflowData.id
+          (existingWorkflow.activeState?.id === undefined ||
+            workflowData.id === undefined ||
+            existingWorkflow.activeState.id === workflowData.id)
 
         if (
           existingWorkflow &&

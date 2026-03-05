@@ -311,38 +311,103 @@ describe('useWorkflowService', () => {
     })
   })
 
-  describe('afterLoadNewGraph', () => {
-    it('should reuse the active workflow when loading the same path repeatedly', async () => {
-      const reset = vi.fn()
-      const restore = vi.fn()
-      const existingWorkflow = {
-        path: 'workflows/repeat.json',
-        isPersisted: true,
-        isLoaded: true,
-        activeState: {
-          id: 'same-id'
-        },
-        changeTracker: {
-          reset,
-          restore
-        }
-      } as unknown as ComfyWorkflow
+  describe('saveWorkflow', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
 
-      const workflowStore = useWorkflowStore()
-      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(
+    beforeEach(() => {
+      setActivePinia(createTestingPinia())
+      workflowStore = useWorkflowStore()
+    })
+
+    it('should delegate to workflowStore.saveWorkflow for persisted workflows', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/persisted.json'
+      })
+      vi.mocked(workflowStore.saveWorkflow).mockResolvedValue()
+
+      await useWorkflowService().saveWorkflow(workflow)
+
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('should call saveWorkflowAs for temporary workflows', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/Unsaved Workflow.json'
+      })
+      Object.defineProperty(workflow, 'isTemporary', { get: () => true })
+      vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
+
+      await useWorkflowService().saveWorkflow(workflow)
+
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('saveWorkflowAs', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+
+    beforeEach(() => {
+      setActivePinia(createTestingPinia())
+      workflowStore = useWorkflowStore()
+    })
+
+    it('should rename then save when workflow is temporary', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/Unsaved Workflow.json'
+      })
+      Object.defineProperty(workflow, 'isTemporary', { get: () => true })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue()
+      vi.mocked(workflowStore.saveWorkflow).mockResolvedValue()
+
+      const result = await useWorkflowService().saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(true)
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/my-workflow.json'
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('should return false when no filename is provided', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
+
+      const result = await useWorkflowService().saveWorkflowAs(workflow)
+
+      expect(result).toBe(false)
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('afterLoadNewGraph', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let existingWorkflow: LoadedComfyWorkflow
+
+    beforeEach(() => {
+      setActivePinia(createTestingPinia())
+      workflowStore = useWorkflowStore()
+      existingWorkflow = createModeTestWorkflow({
+        path: 'workflows/repeat.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(
         existingWorkflow
       )
-      vi.spyOn(workflowStore, 'isActive').mockReturnValue(true)
-      vi.spyOn(workflowStore, 'openWorkflow').mockResolvedValue(
-        existingWorkflow as LoadedComfyWorkflow
-      )
-      const createNewTemporarySpy = vi.spyOn(
-        workflowStore,
-        'createNewTemporary'
-      )
+      vi.mocked(workflowStore.isActive).mockReturnValue(true)
+      vi.mocked(workflowStore.openWorkflow).mockResolvedValue(existingWorkflow)
+    })
+
+    it('should reuse the active workflow when loading the same path repeatedly', async () => {
+      const workflowId = 'repeat-workflow-id'
+      existingWorkflow.changeTracker.activeState.id = workflowId
 
       await useWorkflowService().afterLoadNewGraph('repeat', {
-        id: 'same-id',
+        id: workflowId,
         nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
       } as never)
 
@@ -350,40 +415,65 @@ describe('useWorkflowService', () => {
         'workflows/repeat.json'
       )
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
-      expect(reset).toHaveBeenCalled()
-      expect(restore).toHaveBeenCalled()
-      expect(createNewTemporarySpy).not.toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.restore).toHaveBeenCalled()
+      expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
     })
 
-    it('should create a new temporary workflow when active workflow id differs', async () => {
-      const existingWorkflow = {
-        path: 'workflows/repeat.json',
-        isPersisted: true,
-        isLoaded: true,
-        activeState: {
-          id: 'active-id'
-        }
-      } as unknown as ComfyWorkflow
+    it('should reuse active workflow for repeated same-path loads without ids', async () => {
+      await useWorkflowService().afterLoadNewGraph('repeat', {
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
 
-      const workflowStore = useWorkflowStore()
-      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(
-        existingWorkflow
+      expect(workflowStore.getWorkflowByPath).toHaveBeenCalledWith(
+        'workflows/repeat.json'
       )
-      vi.spyOn(workflowStore, 'isActive').mockReturnValue(true)
-      const openWorkflowSpy = vi
-        .spyOn(workflowStore, 'openWorkflow')
-        .mockResolvedValue(existingWorkflow as LoadedComfyWorkflow)
-      const createNewTemporarySpy = vi
-        .spyOn(workflowStore, 'createNewTemporary')
-        .mockReturnValue(existingWorkflow)
+      expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.restore).toHaveBeenCalled()
+      expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
+    })
 
+    it('should reuse active workflow when only one side has an id', async () => {
+      existingWorkflow.changeTracker.activeState.id = 'existing-id'
+
+      await useWorkflowService().afterLoadNewGraph('repeat', {
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.restore).toHaveBeenCalled()
+      expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
+    })
+
+    it('should reuse active workflow when only workflowData has an id', async () => {
       await useWorkflowService().afterLoadNewGraph('repeat', {
         id: 'incoming-id',
         nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
       } as never)
 
-      expect(createNewTemporarySpy).toHaveBeenCalled()
-      expect(openWorkflowSpy).toHaveBeenCalledWith(existingWorkflow)
+      expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.restore).toHaveBeenCalled()
+      expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
+    })
+
+    it('should create new temporary when ids differ', async () => {
+      existingWorkflow.changeTracker.activeState.id = 'existing-id'
+
+      const tempWorkflow = createModeTestWorkflow({
+        path: 'workflows/repeat (2).json'
+      })
+      vi.mocked(workflowStore.createNewTemporary).mockReturnValue(tempWorkflow)
+      vi.mocked(workflowStore.openWorkflow).mockResolvedValue(tempWorkflow)
+
+      await useWorkflowService().afterLoadNewGraph('repeat', {
+        id: 'different-id',
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(workflowStore.createNewTemporary).toHaveBeenCalled()
     })
   })
 
