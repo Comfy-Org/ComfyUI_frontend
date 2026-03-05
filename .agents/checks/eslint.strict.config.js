@@ -15,7 +15,7 @@ export default [
   sonarjs.configs.recommended,
   {
     plugins: {
-      sonarjs,
+      sonarjs
     },
     rules: {
       // Bug detection
@@ -40,12 +40,12 @@ export default [
       'sonarjs/prefer-immediate-return': 'error',
       'sonarjs/prefer-single-boolean-return': 'error',
       'sonarjs/no-inverted-boolean-check': 'error',
-      'sonarjs/no-nested-template-literals': 'error',
+      'sonarjs/no-nested-template-literals': 'error'
     },
     languageOptions: {
       ecmaVersion: 2024,
-      sourceType: 'module',
-    },
+      sourceType: 'module'
+    }
   },
   {
     ignores: [
@@ -54,7 +54,7 @@ export default [
       '**/build/**',
       '**/*.config.*',
       '**/*.test.*',
-      '**/*.spec.*',
-    ],
-  },
+      '**/*.spec.*'
+    ]
+  }
 ]

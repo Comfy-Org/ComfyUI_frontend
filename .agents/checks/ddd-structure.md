@@ -27,12 +27,12 @@ This repo uses a VSCode-style layered architecture with strict unidirectional im
 base → platform → workbench → renderer
 ```
 
-| Layer | Purpose | Can Import From |
-|-------|---------|-----------------|
-| `base/` | Pure utilities, no framework deps | Nothing |
-| `platform/` | Core domain services, business logic | `base/` |
-| `workbench/` | Features, workspace orchestration | `base/`, `platform/` |
-| `renderer/` | UI layer (Vue components, composables) | `base/`, `platform/`, `workbench/` |
+| Layer        | Purpose                                | Can Import From                    |
+| ------------ | -------------------------------------- | ---------------------------------- |
+| `base/`      | Pure utilities, no framework deps      | Nothing                            |
+| `platform/`  | Core domain services, business logic   | `base/`                            |
+| `workbench/` | Features, workspace orchestration      | `base/`, `platform/`               |
+| `renderer/`  | UI layer (Vue components, composables) | `base/`, `platform/`, `workbench/` |
 
 ### Import Direction Violations to Check
 
@@ -77,10 +77,10 @@ Do NOT flag modifications to existing files in legacy folders — only flag NEW 
 
 ## Severity Guidelines
 
-| Issue | Severity |
-|-------|----------|
-| Import direction violation (lower layer imports higher layer) | high |
-| New file in legacy flat folder when domain folders exist | medium |
-| Business logic in UI component | medium |
-| Missing domain boundary (cross-cutting import into internals) | low |
-| Naming uses technical role instead of domain concept | low |
+| Issue                                                         | Severity |
+| ------------------------------------------------------------- | -------- |
+| Import direction violation (lower layer imports higher layer) | high     |
+| New file in legacy flat folder when domain folders exist      | medium   |
+| Business logic in UI component                                | medium   |
+| Missing domain boundary (cross-cutting import into internals) | low      |
+| Naming uses technical role instead of domain concept          | low      |

@@ -10,21 +10,27 @@ Run CodeRabbit CLI review on the current changes.
 ## Steps
 
 1. Check if CodeRabbit CLI is installed:
+
    ```bash
    which coderabbit
    ```
+
    If not installed, skip this check and report:
    "Skipped: CodeRabbit CLI not installed. Install and authenticate:
+
    ```
    npm install -g coderabbit
    coderabbit auth login
    ```
+
    See https://docs.coderabbit.ai/guides/cli for setup."
 
 2. Run review:
+
    ```bash
    coderabbit --prompt-only --type uncommitted
    ```
+
    If there are committed but unpushed changes, use `--type committed` instead.
 
 3. Parse CodeRabbit's output. Each finding should include:

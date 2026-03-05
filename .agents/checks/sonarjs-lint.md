@@ -10,9 +10,11 @@ Run eslint-plugin-sonarjs analysis on changed files to detect bugs, code smells,
 ## Steps
 
 1. Check if eslint is available:
+
    ```bash
    pnpm dlx eslint --version
    ```
+
    If pnpm dlx or eslint is unavailable, skip this check and report: "Skipped: eslint not available. Ensure Node.js and pnpm dlx are installed."
 
 2. Identify changed files (`.ts`, `.js`, `.vue`) from the diff.
@@ -23,6 +25,7 @@ Run eslint-plugin-sonarjs analysis on changed files to detect bugs, code smells,
    - **Fallback:** if the strict config cannot be found or fails to load, run with `--no-eslintrc --plugin sonarjs` to load sonarjs rules directly.
 
 4. Run eslint against changed files:
+
    ```bash
    # Preferred: use the strict config
    pnpm dlx --yes eslint --no-eslintrc --config .agents/checks/eslint.strict.config.js --format json <changed_files> 2>/dev/null || true

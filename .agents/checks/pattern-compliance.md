@@ -8,11 +8,13 @@ tools: [Read, Grep]
 Check code against repository conventions and framework patterns.
 
 Steps:
+
 1. Read AGENTS.md (and any directory-specific guidance files) for project-specific conventions
 2. Read each changed file
 3. Check against the conventions found in AGENTS.md and these standard patterns:
 
 ### TypeScript
+
 - No `any` types or `as any` assertions
 - No `@ts-ignore` without explanatory comment
 - Separate type imports (`import type { ... }`)
@@ -22,6 +24,7 @@ Steps:
 - Never use `z.any()` in Zod schemas — use `z.unknown()` and narrow
 
 ### Vue (if applicable)
+
 - Composition API with `<script setup lang="ts">`
 - Reactive props destructuring (not `withDefaults` pattern)
 - New components must use `<script setup lang="ts">` with reactive props destructuring (Vue 3.5 style): `const { color = 'blue' } = defineProps<Props>()`
@@ -29,6 +32,7 @@ Steps:
 - All user-facing strings must use `vue-i18n` (`$t()` in templates, `t()` in script). Flag hardcoded English strings in templates that should be translated. The locale file is `src/locales/en/main.json`
 
 ### Tailwind (if applicable)
+
 - No `dark:` variants (use semantic theme tokens)
 - Use `cn()` utility for conditional classes
 - No `!important` in utility classes
@@ -37,11 +41,13 @@ Steps:
 - No `<style>` blocks in Vue SFCs — use inline Tailwind only
 
 ### Testing
+
 - Behavioral tests, not change detectors
 - No mock-heavy tests that don't test real behavior
 - Test names describe behavior, not implementation
 
 ### General
+
 - No commented-out code
 - No `console.log` in production code (unless intentional logging)
 - No hardcoded URLs, credentials, or environment-specific values
@@ -49,5 +55,6 @@ Steps:
 - Sanitize HTML with `DOMPurify.sanitize()`, never raw `innerHTML` or `v-html` without it
 
 Rules:
+
 - Only flag ACTUAL violations, not hypothetical ones
 - AGENTS.md conventions take priority over default patterns if they conflict

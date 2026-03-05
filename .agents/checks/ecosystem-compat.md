@@ -37,6 +37,7 @@ Check whether this PR introduces breaking changes to exported symbols that downs
 ## Suggestion Template
 
 When a breaking change is found, suggest:
+
 - Keeping the old export alongside the new one
 - Adding a deprecation wrapper
 - Explicitly noting this as a breaking change in the PR description so consumers can update
@@ -46,6 +47,7 @@ When a breaking change is found, suggest:
 This check works best with the ComfyUI code search MCP tool, which searches across all custom node repositories for usage of changed symbols.
 
 If the `mcp__comfy_codesearch__search_code` tool is not available, install it:
+
 ```
 amp mcp add comfy-codesearch https://comfy-codesearch.vercel.app/api/mcp
 # OR for Claude Code:

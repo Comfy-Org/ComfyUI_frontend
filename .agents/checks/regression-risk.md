@@ -24,6 +24,7 @@ Perform regression risk analysis on the current changes using git blame.
 ## What to Report
 
 For each finding, include:
+
 - The file and line number
 - The original bugfix commit (short SHA and subject)
 - The date of the original fix
@@ -35,9 +36,9 @@ When working with shallow clones, `git blame` may not have full history. If blam
 
 ## Edge Cases
 
-| Situation                | Action                            |
-| ------------------------ | --------------------------------- |
-| Shallow clone (no blame) | Report what succeeds, note limit  |
-| Blame shows PR's own SHA | Skip finding (false positive)     |
-| File renamed             | Try blame with `--follow`         |
-| Binary file              | Skip file                         |
+| Situation                | Action                           |
+| ------------------------ | -------------------------------- |
+| Shallow clone (no blame) | Report what succeeds, note limit |
+| Blame shows PR's own SHA | Skip finding (false positive)    |
+| File renamed             | Try blame with `--follow`        |
+| Binary file              | Skip file                        |

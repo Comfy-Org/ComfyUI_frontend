@@ -32,9 +32,11 @@ Run dependency-cruiser import graph analysis on changed files to detect circular
      ```
 
 4. Also check for circular dependencies specifically across `src/`:
+
    ```bash
    pnpm dlx depcruise --no-config --output-type json --do-not-follow "node_modules" --include-only "^src" src 2>/dev/null
    ```
+
    Look for modules where `.circular == true` in the output.
 
 5. Parse the JSON output. Each violation has:
@@ -54,13 +56,13 @@ Run dependency-cruiser import graph analysis on changed files to detect circular
 
 ## What It Catches
 
-| Rule                     | What It Detects                                         |
-| ------------------------ | ------------------------------------------------------- |
-| `no-circular`            | Circular dependency chains (A → B → C → A)              |
-| `no-orphans`             | Modules with no incoming or outgoing dependencies       |
-| `not-to-dev-dep`         | Production code importing devDependencies               |
-| `no-duplicate-dep-types` | Same dependency in multiple sections of package.json    |
-| Custom layer rules       | Import direction violations (e.g., base → platform)     |
+| Rule                     | What It Detects                                      |
+| ------------------------ | ---------------------------------------------------- |
+| `no-circular`            | Circular dependency chains (A → B → C → A)           |
+| `no-orphans`             | Modules with no incoming or outgoing dependencies    |
+| `not-to-dev-dep`         | Production code importing devDependencies            |
+| `no-duplicate-dep-types` | Same dependency in multiple sections of package.json |
+| Custom layer rules       | Import direction violations (e.g., base → platform)  |
 
 ## Error Handling
 
