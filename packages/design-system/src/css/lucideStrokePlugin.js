@@ -18,7 +18,7 @@ import { matchIconName } from '@iconify/utils/lib/icon/name'
  * The default class remains stroke-width: 2.
  */
 
-const STROKE_WIDTHS = ['1', '1.5', '2', '2.5']
+const STROKE_WIDTHS = ['1', '1.3', '1.5', '2', '2.5']
 
 const SCALE = 1.2
 
