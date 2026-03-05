@@ -6,7 +6,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 vi.mock('@/utils/litegraphUtil', () => ({
@@ -49,7 +49,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   }))
 }))
 
-describe('imagePreviewStore setNodeOutputsByExecutionId with merge', () => {
+describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
@@ -110,7 +110,7 @@ describe('imagePreviewStore setNodeOutputsByExecutionId with merge', () => {
   })
 })
 
-describe('imagePreviewStore restoreOutputs', () => {
+describe('nodeOutputStore restoreOutputs', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
@@ -151,7 +151,7 @@ describe('imagePreviewStore restoreOutputs', () => {
   })
 })
 
-describe('imagePreviewStore getPreviewParam', () => {
+describe('nodeOutputStore getPreviewParam', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
@@ -221,7 +221,7 @@ describe('imagePreviewStore getPreviewParam', () => {
   })
 })
 
-describe('imagePreviewStore syncLegacyNodeImgs', () => {
+describe('nodeOutputStore syncLegacyNodeImgs', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
