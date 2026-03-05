@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group relative flex flex-col items-center justify-center py-3 px-2 rounded-2xl cursor-pointer select-none transition-colors duration-150 box-content bg-component-node-background hover:bg-secondary-background-hover border border-component-node-border"
+    class="group relative flex flex-col items-center justify-center py-3 px-2 rounded-lg cursor-pointer select-none transition-colors duration-150 box-content bg-component-node-background hover:bg-secondary-background-hover border border-component-node-border"
     :data-node-name="node.label"
     draggable="true"
     @click="handleClick"
@@ -12,7 +12,7 @@
     <i :class="cn(nodeIcon, 'size-6 text-muted-foreground')" />
 
     <TextTickerMultiLine
-      class="shrink-0 h-7 w-full text-xs font-medium text-foreground leading-4 mt-2"
+      class="shrink-0 h-7 w-full text-xs font-normal text-foreground leading-normal mt-2"
     >
       {{ node.label }}
     </TextTickerMultiLine>
