@@ -72,6 +72,28 @@ describe('fetchModelMetadata', () => {
     expect(metadata.fileSize).toBeNull()
   })
 
+  it('does not treat HuggingFace 404/500 as gated', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 404 })
+
+    const metadata = await fetchModelMetadata(
+      `https://huggingface.co/org/model/resolve/main/notfound-${testId}.safetensors`
+    )
+    expect(metadata.gatedRepoUrl).toBeNull()
+    expect(metadata.fileSize).toBeNull()
+  })
+
+  it('falls back to HEAD for /api/v1/models/:id Civitai URLs', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-length': '4096' })
+    })
+
+    const url = `https://civitai.com/api/v1/models/${testId}`
+    const metadata = await fetchModelMetadata(url)
+    expect(metadata.fileSize).toBe(4096)
+    expect(fetchMock).toHaveBeenCalledWith(url, { method: 'HEAD' })
+  })
+
   it('returns cached metadata on second call', async () => {
     const url = `https://huggingface.co/org/model/resolve/main/cached-${testId}.safetensors`
 

@@ -29,7 +29,7 @@
             </span>
           </div>
           <div class="flex shrink-0 items-center gap-2">
-            <Skeleton v-if="showSkeleton(model)" class="h-4 w-12" />
+            <Skeleton v-if="showSkeleton(model)" class="ml-1.5 h-4 w-12" />
             <span
               v-else-if="model.isDownloadable && fileSizes.get(model.url)"
               class="pl-1.5 text-xs text-muted-foreground"
