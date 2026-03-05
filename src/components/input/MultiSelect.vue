@@ -154,7 +154,7 @@
         :style="popoverStyle"
       >
         <div
-          class="flex size-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+          class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
           :class="
             slotProps.selected
               ? 'bg-primary-background'

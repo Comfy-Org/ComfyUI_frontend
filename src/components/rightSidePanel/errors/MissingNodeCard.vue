@@ -1,13 +1,37 @@
 <template>
   <div class="px-4 pb-2">
     <!-- Sub-label: cloud or OSS message shown above all pack groups -->
-    <p class="m-0 pb-5 text-sm text-muted-foreground leading-relaxed">
+    <p
+      class="m-0 text-sm text-muted-foreground leading-relaxed"
+      :class="showManagerHint ? 'pb-3' : 'pb-5'"
+    >
       {{
         isCloud
           ? t('rightSidePanel.missingNodePacks.cloudMessage')
           : t('rightSidePanel.missingNodePacks.ossMessage')
       }}
     </p>
+
+    <!-- Manager disabled hint: shown on OSS when manager is not active -->
+    <i18n-t
+      v-if="showManagerHint"
+      keypath="rightSidePanel.missingNodePacks.ossManagerDisabledHint"
+      tag="p"
+      class="m-0 pb-5 text-sm text-muted-foreground leading-relaxed"
+    >
+      <template #pipCmd>
+        <code
+          class="px-1 py-0.5 rounded-sm text-xs font-mono bg-comfy-menu-bg text-comfy-input-foreground"
+          >pip install -U --pre comfyui-manager</code
+        >
+      </template>
+      <template #flag>
+        <code
+          class="px-1 py-0.5 rounded-sm text-xs font-mono bg-comfy-menu-bg text-comfy-input-foreground"
+          >--enable-manager</code
+        >
+      </template>
+    </i18n-t>
     <MissingPackGroupRow
       v-for="group in missingPackGroups"
       :key="group.packId ?? '__unknown__'"
@@ -65,6 +89,13 @@ const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
 const { isRestarting, applyChanges } = useApplyChanges()
 const { shouldShowManagerButtons } = useManagerState()
+
+/**
+ * Show the --enable-manager hint when:
+ * - Not on Cloud (OSS/local only)
+ * - Manager is disabled (showInfoButton is false)
+ */
+const showManagerHint = computed(() => !isCloud && !props.showInfoButton)
 
 /**
  * Show Apply Changes when any pack from the error group is already installed

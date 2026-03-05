@@ -102,7 +102,7 @@
         <article
           v-for="release in releaseStore.recentReleases"
           :key="release.id || release.version"
-          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded p-2 transition-colors hover:bg-interface-menu-component-surface-hovered"
+          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-interface-menu-component-surface-hovered"
           role="button"
           tabindex="0"
           @click="onReleaseClick(release)"

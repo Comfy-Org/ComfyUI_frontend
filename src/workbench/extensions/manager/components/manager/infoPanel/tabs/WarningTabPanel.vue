@@ -7,7 +7,10 @@
     >
       <!-- Import failed conflicts show detailed error message -->
       <template v-if="conflict.type === 'import_failed'">
-        <div v-if="conflict.required_value" class="overflow-x-hidden rounded">
+        <div
+          v-if="conflict.required_value"
+          class="overflow-x-hidden rounded-sm"
+        >
           <p class="m-0 text-xs text-muted-foreground break-all font-mono">
             {{ conflict.required_value }}
           </p>

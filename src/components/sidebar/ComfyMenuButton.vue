@@ -60,7 +60,7 @@
         />
         <span
           v-if="item?.comfyCommand?.keybinding"
-          class="keybinding-tag ml-auto rounded border border-surface p-1 text-xs text-nowrap text-muted"
+          class="keybinding-tag ml-auto rounded-sm border border-surface p-1 text-xs text-nowrap text-muted"
         >
           {{ item.comfyCommand.keybinding.combo.toString() }}
         </span>
