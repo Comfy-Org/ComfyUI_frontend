@@ -653,4 +653,70 @@ describe('LGraphNode', () => {
       )
     })
   })
+
+  describe('_slotsDirty flag', () => {
+    test('starts dirty', () => {
+      const n = new LGraphNode('Test')
+      expect(n._slotsDirty).toBe(true)
+    })
+
+    test('is cleared by _setConcreteSlots', () => {
+      const n = new LGraphNode('Test')
+      n._setConcreteSlots()
+      expect(n._slotsDirty).toBe(false)
+    })
+
+    test('skips work when clean', () => {
+      const n = new LGraphNode('Test')
+      n.addInput('in', 'number')
+      n._setConcreteSlots()
+      expect(n._slotsDirty).toBe(false)
+
+      const mapSpy = vi.spyOn(n.inputs, 'map')
+      n._setConcreteSlots()
+      expect(mapSpy).not.toHaveBeenCalled()
+    })
+
+    test('is set by addInput', () => {
+      const n = new LGraphNode('Test')
+      n._setConcreteSlots()
+      n.addInput('in', 'number')
+      expect(n._slotsDirty).toBe(true)
+    })
+
+    test('is set by removeInput', () => {
+      const n = new LGraphNode('Test')
+      n.addInput('in', 'number')
+      n._setConcreteSlots()
+      n.removeInput(0)
+      expect(n._slotsDirty).toBe(true)
+    })
+
+    test('is set by addOutput', () => {
+      const n = new LGraphNode('Test')
+      n._setConcreteSlots()
+      n.addOutput('out', 'number')
+      expect(n._slotsDirty).toBe(true)
+    })
+
+    test('is set by removeOutput', () => {
+      const n = new LGraphNode('Test')
+      n.addOutput('out', 'number')
+      n._setConcreteSlots()
+      n.removeOutput(0)
+      expect(n._slotsDirty).toBe(true)
+    })
+
+    test('is set by configure', () => {
+      const n = new LGraphNode('Test')
+      n._setConcreteSlots()
+      n.configure(
+        getMockISerialisedNode({
+          inputs: [{ name: 'a', type: 'number', link: null }],
+          outputs: [{ name: 'b', type: 'number', links: null }]
+        })
+      )
+      expect(n._slotsDirty).toBe(true)
+    })
+  })
 })
