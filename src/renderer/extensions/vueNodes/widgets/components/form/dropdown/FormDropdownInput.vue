@@ -20,7 +20,7 @@ interface Props {
 }
 
 const {
-  isOpen = false,
+  isOpen,
   placeholder = 'Select...',
   items,
   displayItems,
@@ -56,7 +56,7 @@ const theButtonStyle = computed(() =>
   <div
     :class="
       cn(WidgetInputBaseClass, 'flex text-base leading-none', {
-        'opacity-50 cursor-not-allowed outline-zinc-300/10': disabled
+        'opacity-50 cursor-not-allowed outline-node-component-border': disabled
       })
     "
   >
@@ -85,7 +85,7 @@ const theButtonStyle = computed(() =>
         class="icon-[lucide--chevron-down]"
         :class="
           cn(
-            'mr-2 size-4 transition-transform duration-200 flex-shrink-0 text-component-node-foreground-secondary',
+            'mr-2 size-4 transition-transform duration-200 shrink-0 text-component-node-foreground-secondary',
             isOpen && 'rotate-180'
           )
         "
@@ -97,7 +97,7 @@ const theButtonStyle = computed(() =>
         cn(
           theButtonStyle,
           'relative',
-          'size-8 flex justify-center items-center border-l rounded-r-lg border-zinc-300/10'
+          'size-8 flex justify-center items-center border-l rounded-r-lg border-node-component-border'
         )
       "
     >

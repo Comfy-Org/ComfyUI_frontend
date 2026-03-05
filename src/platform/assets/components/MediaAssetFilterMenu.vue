@@ -24,7 +24,7 @@ TODO: Extract checkbox pattern into reusable Checkbox component
       @keydown.space.prevent="toggleMediaType(filter.type)"
     >
       <div
-        class="flex h-4 w-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+        class="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
         :class="
           mediaTypeFilters.includes(filter.type)
             ? 'bg-primary-background border-primary-background'

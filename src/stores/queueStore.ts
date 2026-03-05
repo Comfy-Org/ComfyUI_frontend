@@ -14,6 +14,7 @@ import type {
   StatusWsMessageStatus,
   TaskOutput
 } from '@/schemas/apiSchema'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
@@ -89,6 +90,13 @@ export class ResultItemImpl {
 
   get url(): string {
     return api.apiURL('/view?' + this.urlParams)
+  }
+
+  get previewUrl(): string {
+    if (!this.isImage) return this.url
+    const params = new URLSearchParams(this.urlParams)
+    appendCloudResParam(params, this.filename)
+    return api.apiURL('/view?' + params)
   }
 
   get urlWithTimestamp(): string {
@@ -312,10 +320,6 @@ export class TaskItemImpl {
     return this.jobId + this.displayStatus
   }
 
-  get queueIndex() {
-    return this.job.priority
-  }
-
   get jobId() {
     return this.job.id
   }
@@ -499,8 +503,8 @@ export const useQueueStore = defineStore('queue', () => {
     tasks.value.flatMap((task: TaskItemImpl) => task.flatten())
   )
 
-  const lastHistoryQueueIndex = computed<number>(() =>
-    historyTasks.value.length ? historyTasks.value[0].queueIndex : -1
+  const lastJobHistoryPriority = computed<number>(() =>
+    historyTasks.value.length ? historyTasks.value[0].job.priority : -1
   )
 
   const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
@@ -611,7 +615,7 @@ export const useQueueStore = defineStore('queue', () => {
 
     tasks,
     flatTasks,
-    lastHistoryQueueIndex,
+    lastJobHistoryPriority,
     hasPendingTasks,
     activeJobsCount,
 

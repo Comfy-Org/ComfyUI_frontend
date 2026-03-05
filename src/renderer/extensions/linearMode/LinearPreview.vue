@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
@@ -14,10 +14,10 @@ import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
+import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
+import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
-// Lazy-loaded to avoid pulling THREE.js into the main bundle
-const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
 import { app } from '@/scripts/app'
@@ -27,16 +27,23 @@ import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
-import { useAppModeStore } from '@/stores/appModeStore'
+
+// Lazy-loaded to avoid pulling THREE.js into the main bundle
+const Preview3d = defineAsyncComponent(
+  () => import('@/renderer/extensions/linearMode/Preview3d.vue')
+)
+
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const mediaActions = useMediaAssetActions()
 const queueStore = useQueueStore()
-const appModeStore = useAppModeStore()
-const { runButtonClick } = defineProps<{
+const { isBuilderMode, isArrangeMode } = useAppMode()
+const { allOutputs } = useOutputHistory()
+const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
+  typeformWidgetId?: string
 }>()
 
 const selectedItem = ref<AssetItem>()
@@ -52,8 +59,7 @@ function handleSelection(sel: OutputSelection) {
 }
 
 function downloadAsset(item?: AssetItem) {
-  const user_metadata = getOutputAssetMetadata(item?.user_metadata)
-  for (const output of user_metadata?.allOutputs ?? [])
+  for (const output of allOutputs(item))
     downloadFile(output.url, output.filename)
 }
 
@@ -125,7 +131,7 @@ async function rerun(e: Event) {
         {
           icon: 'icon-[lucide--download]',
           label: t('linearMode.downloadAll'),
-          command: () => downloadAsset(selectedItem!)
+          command: () => downloadAsset(selectedItem)
         },
         { separator: true },
         {
@@ -165,7 +171,30 @@ async function rerun(e: Event) {
     :model-url="selectedOutput!.url"
   />
   <LatentPreview v-else-if="queueStore.runningTasks.length > 0" />
-  <LinearArrange v-else-if="appModeStore.mode === 'builder:arrange'" />
+  <LinearArrange v-else-if="isArrangeMode" />
   <LinearWelcome v-else />
-  <OutputHistory @update-selection="handleSelection" />
+  <div
+    v-if="!mobile"
+    class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
+  >
+    <LinearFeedback
+      v-if="typeformWidgetId"
+      side="left"
+      :widget-id="typeformWidgetId"
+    />
+    <OutputHistory
+      v-if="!isBuilderMode"
+      class="min-w-0"
+      @update-selection="handleSelection"
+    />
+    <LinearFeedback
+      v-if="typeformWidgetId"
+      side="right"
+      :widget-id="typeformWidgetId"
+    />
+  </div>
+  <OutputHistory
+    v-else-if="!isBuilderMode"
+    @update-selection="handleSelection"
+  />
 </template>

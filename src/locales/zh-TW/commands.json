@@ -344,6 +344,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "切換專注模式"
   },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "切換應用程式側邊欄",
+    "tooltip": "應用程式"
+  },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "切換資源側邊欄",
     "tooltip": "資源"

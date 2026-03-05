@@ -34,6 +34,7 @@ const {
   node,
   isDraggable = false,
   hiddenFavoriteIndicator = false,
+  hiddenWidgetActions = false,
   showNodeName = false,
   parents = [],
   isShownOnParents = false
@@ -42,6 +43,7 @@ const {
   node: LGraphNode
   isDraggable?: boolean
   hiddenFavoriteIndicator?: boolean
+  hiddenWidgetActions?: boolean
   showNodeName?: boolean
   parents?: SubgraphNode[]
   isShownOnParents?: boolean
@@ -170,7 +172,10 @@ const displayLabel = customRef((track, trigger) => {
       >
         {{ sourceNodeName }}
       </span>
-      <div class="flex items-center gap-1 shrink-0 pointer-events-auto">
+      <div
+        v-if="!hiddenWidgetActions"
+        class="flex items-center gap-1 shrink-0 pointer-events-auto"
+      >
         <WidgetActions
           v-model:label="displayLabel"
           :widget="widget"

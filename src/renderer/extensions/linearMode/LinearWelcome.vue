@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useAppMode } from '@/composables/useAppMode'
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useAppModeStore } from '@/stores/appModeStore'
 import Button from '@/components/ui/button/Button.vue'
+import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
+const { setMode } = useAppMode()
 const appModeStore = useAppModeStore()
+const { hasOutputs, hasNodes } = storeToRefs(appModeStore)
+const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
 </script>
 
 <template>
@@ -24,12 +30,12 @@ const appModeStore = useAppModeStore()
       <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
       <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
     </div>
-    <div v-if="appModeStore.hasOutputs" class="flex flex-row gap-2 text-[14px]">
+    <div v-if="hasOutputs" class="flex flex-row gap-2 text-[14px]">
       <p class="mt-0 text-base-foreground">
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>
             <span
-              class="inline-flex items-center px-3.5 py-0.5 mx-0.5 transform -translate-y-0.5 rounded bg-primary-background text-base-foreground text-xxs font-medium cursor-default"
+              class="inline-flex items-center px-3.5 py-0.5 mx-0.5 transform -translate-y-0.5 rounded-sm bg-primary-background text-base-foreground text-xxs font-medium cursor-default"
             >
               {{ t('menu.run') }}
             </span>
@@ -37,27 +43,37 @@ const appModeStore = useAppModeStore()
         </i18n-t>
       </p>
     </div>
-    <div v-else class="flex flex-row gap-2">
-      <Button
-        variant="textonly"
-        size="lg"
-        @click="appModeStore.setMode('graph')"
-      >
-        {{ t('linearMode.welcome.backToWorkflow') }}
-      </Button>
-      <Button
-        variant="primary"
-        size="lg"
-        @click="appModeStore.setMode('builder:select')"
-      >
-        <i class="icon-[lucide--hammer]" />
-        {{ t('linearMode.welcome.buildApp') }}
-        <div
-          class="bg-base-foreground text-base-background text-xxs rounded-full absolute -top-2 -right-2 px-1"
+    <template v-else>
+      <p v-if="!hasNodes" class="mt-0 text-base-foreground text-sm max-w-md">
+        {{ t('linearMode.emptyWorkflowExplanation') }}
+      </p>
+      <div class="flex flex-row gap-2">
+        <Button variant="textonly" size="lg" @click="setMode('graph')">
+          {{ t('linearMode.backToWorkflow') }}
+        </Button>
+        <Button
+          v-if="!hasNodes"
+          variant="secondary"
+          size="lg"
+          @click="templateSelectorDialog.show('appbuilder')"
         >
-          {{ t('g.experimental') }}
-        </div>
-      </Button>
-    </div>
+          {{ t('linearMode.loadTemplate') }}
+        </Button>
+        <Button
+          v-else
+          variant="primary"
+          size="lg"
+          @click="appModeStore.enterBuilder()"
+        >
+          <i class="icon-[lucide--hammer]" />
+          {{ t('linearMode.welcome.buildApp') }}
+          <div
+            class="bg-base-foreground text-base-background text-xxs rounded-full absolute -top-2 -right-2 px-1"
+          >
+            {{ t('g.experimental') }}
+          </div>
+        </Button>
+      </div>
+    </template>
   </div>
 </template>

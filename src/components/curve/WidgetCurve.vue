@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import type { CurvePoint } from '@/lib/litegraph/src/types/widgets'
+import type { CurvePoint } from './types'
 
 import CurveEditor from './CurveEditor.vue'
 

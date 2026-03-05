@@ -32,3 +32,11 @@ export function hasImageType({ type }: File): boolean {
 export function hasAudioType({ type }: File): boolean {
   return type.startsWith('audio')
 }
+
+export function hasVideoType({ type }: File): boolean {
+  return type.startsWith('video')
+}
+
+export function isMediaFile(file: File): boolean {
+  return hasImageType(file) || hasAudioType(file) || hasVideoType(file)
+}

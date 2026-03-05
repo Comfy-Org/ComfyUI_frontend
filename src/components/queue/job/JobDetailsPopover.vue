@@ -82,7 +82,7 @@
           </Button>
         </div>
         <div
-          class="col-span-2 mt-2 rounded bg-interface-panel-hover-surface px-4 py-2 text-[0.75rem] leading-normal text-text-secondary"
+          class="col-span-2 mt-2 rounded-sm bg-interface-panel-hover-surface px-4 py-2 text-[0.75rem] leading-normal text-text-secondary"
         >
           {{ errorMessageValue }}
         </div>
@@ -166,16 +166,16 @@ const queuedAtValue = computed(() =>
     : ''
 )
 
-const currentQueueIndex = computed<number | null>(() => {
+const currentJobPriority = computed<number | null>(() => {
   const task = taskForJob.value
-  return task ? Number(task.queueIndex) : null
+  return task ? Number(task.job.priority) : null
 })
 
 const jobsAhead = computed<number | null>(() => {
-  const idx = currentQueueIndex.value
+  const idx = currentJobPriority.value
   if (idx == null) return null
   const ahead = queueStore.pendingTasks.filter(
-    (t: TaskItemImpl) => Number(t.queueIndex) < idx
+    (t: TaskItemImpl) => Number(t.job.priority) < idx
   )
   return ahead.length
 })

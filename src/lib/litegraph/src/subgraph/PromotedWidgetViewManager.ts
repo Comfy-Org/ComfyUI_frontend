@@ -1,6 +1,7 @@
 type PromotionEntry = {
   interiorNodeId: string
   widgetName: string
+  viewKey?: string
 }
 
 type CreateView<TView> = (entry: PromotionEntry) => TView
@@ -14,20 +15,28 @@ type CreateView<TView> = (entry: PromotionEntry) => TView
 export class PromotedWidgetViewManager<TView> {
   private viewCache = new Map<string, TView>()
   private cachedViews: TView[] | null = null
-  private cachedEntriesRef: readonly PromotionEntry[] | null = null
+  private cachedEntryKeys: string[] | null = null
 
   reconcile(
     entries: readonly PromotionEntry[],
     createView: CreateView<TView>
   ): TView[] {
-    if (this.cachedViews && entries === this.cachedEntriesRef)
+    const entryKeys = entries.map((entry) =>
+      this.makeKey(entry.interiorNodeId, entry.widgetName, entry.viewKey)
+    )
+
+    if (this.cachedViews && this.areEntryKeysEqual(entryKeys))
       return this.cachedViews
 
     const views: TView[] = []
     const seenKeys = new Set<string>()
 
     for (const entry of entries) {
-      const key = this.makeKey(entry.interiorNodeId, entry.widgetName)
+      const key = this.makeKey(
+        entry.interiorNodeId,
+        entry.widgetName,
+        entry.viewKey
+      )
       if (seenKeys.has(key)) continue
       seenKeys.add(key)
 
@@ -47,16 +56,17 @@ export class PromotedWidgetViewManager<TView> {
     }
 
     this.cachedViews = views
-    this.cachedEntriesRef = entries
+    this.cachedEntryKeys = entryKeys
     return views
   }
 
   getOrCreate(
     interiorNodeId: string,
     widgetName: string,
-    createView: () => TView
+    createView: () => TView,
+    viewKey?: string
   ): TView {
-    const key = this.makeKey(interiorNodeId, widgetName)
+    const key = this.makeKey(interiorNodeId, widgetName, viewKey)
     const cached = this.viewCache.get(key)
     if (cached) return cached
 
@@ -70,6 +80,15 @@ export class PromotedWidgetViewManager<TView> {
     this.invalidateMemoizedList()
   }
 
+  removeByViewKey(
+    interiorNodeId: string,
+    widgetName: string,
+    viewKey: string
+  ): void {
+    this.viewCache.delete(this.makeKey(interiorNodeId, widgetName, viewKey))
+    this.invalidateMemoizedList()
+  }
+
   clear(): void {
     this.viewCache.clear()
     this.invalidateMemoizedList()
@@ -77,10 +96,25 @@ export class PromotedWidgetViewManager<TView> {
 
   invalidateMemoizedList(): void {
     this.cachedViews = null
-    this.cachedEntriesRef = null
+    this.cachedEntryKeys = null
   }
 
-  private makeKey(interiorNodeId: string, widgetName: string): string {
-    return `${interiorNodeId}:${widgetName}`
+  private areEntryKeysEqual(entryKeys: string[]): boolean {
+    if (!this.cachedEntryKeys) return false
+    if (this.cachedEntryKeys.length !== entryKeys.length) return false
+
+    for (let index = 0; index < entryKeys.length; index += 1) {
+      if (this.cachedEntryKeys[index] !== entryKeys[index]) return false
+    }
+    return true
+  }
+
+  private makeKey(
+    interiorNodeId: string,
+    widgetName: string,
+    viewKey?: string
+  ): string {
+    const baseKey = `${interiorNodeId}:${widgetName}`
+    return viewKey ? `${baseKey}:${viewKey}` : baseKey
   }
 }

@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import Button from '@/components/ui/button/Button.vue'
+import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
-const appModeStore = useAppModeStore()
+const { setMode } = useAppMode()
+const { hasOutputs } = storeToRefs(useAppModeStore())
 </script>
 
 <template>
   <div
-    v-if="appModeStore.hasOutputs"
+    v-if="hasOutputs"
     role="article"
     data-testid="arrange-preview"
     class="flex flex-col items-center justify-center h-full w-3/4 gap-6 p-8 mx-auto"
@@ -34,7 +37,7 @@ const appModeStore = useAppModeStore()
     </p>
 
     <div class="flex flex-col gap-1 text-muted-foreground w-lg text-[14px]">
-      <p class="mt-0 p-0">{{ t('linearMode.arrange.switchToSelect') }}</p>
+      <p class="mt-0 p-0">{{ t('linearMode.arrange.switchToOutputs') }}</p>
 
       <i18n-t keypath="linearMode.arrange.connectAtLeastOne" tag="div">
         <template #atLeastOne>
@@ -47,12 +50,8 @@ const appModeStore = useAppModeStore()
       <p class="mt-0 p-0">{{ t('linearMode.arrange.outputExamples') }}</p>
     </div>
     <div class="flex flex-row gap-2">
-      <Button
-        variant="primary"
-        size="lg"
-        @click="appModeStore.setMode('builder:select')"
-      >
-        {{ t('linearMode.arrange.switchToSelectButton') }}
+      <Button variant="primary" size="lg" @click="setMode('builder:outputs')">
+        {{ t('linearMode.arrange.switchToOutputsButton') }}
       </Button>
     </div>
   </div>

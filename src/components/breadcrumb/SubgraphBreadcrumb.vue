@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="subgraph-breadcrumb"
-    class="subgraph-breadcrumb flex w-auto drop-shadow-(--interface-panel-drop-shadow) items-center"
+    class="subgraph-breadcrumb flex w-auto drop-shadow-(--interface-panel-drop-shadow) items-center -mt-4 pt-4"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,
       'subgraph-breadcrumb-overflow': overflowingTabs
@@ -195,8 +195,6 @@ onUpdated(() => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .subgraph-breadcrumb:not(:empty) {
   flex: auto;
   flex-shrink: 10000;
@@ -205,7 +203,7 @@ onUpdated(() => {
 
 .subgraph-breadcrumb,
 :deep(.p-breadcrumb) {
-  @apply overflow-hidden;
+  overflow: hidden;
 }
 
 :deep(.p-breadcrumb) {
@@ -214,7 +212,10 @@ onUpdated(() => {
 }
 
 :deep(.p-breadcrumb-item) {
-  @apply flex items-center overflow-hidden h-8;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  height: calc(var(--spacing) * 8);
   min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem);
   border: 1px solid transparent;
   background-color: transparent;
@@ -236,7 +237,7 @@ onUpdated(() => {
 }
 
 :deep(.p-breadcrumb-item:hover) {
-  @apply rounded-lg;
+  border-radius: var(--radius-lg);
   border-color: var(--interface-stroke);
   background-color: var(--comfy-menu-bg);
 }
@@ -270,18 +271,16 @@ onUpdated(() => {
 </style>
 
 <style>
-@reference '../../assets/css/style.css';
-
 .subgraph-breadcrumb-collapse .p-breadcrumb-list {
   .p-breadcrumb-item,
   .p-breadcrumb-separator {
-    @apply hidden;
+    display: none;
   }
 
   .p-breadcrumb-item:nth-last-child(3),
   .p-breadcrumb-separator:nth-last-child(2),
   .p-breadcrumb-item:nth-last-child(1) {
-    @apply flex;
+    display: flex;
   }
 }
 </style>

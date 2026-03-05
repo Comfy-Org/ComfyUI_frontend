@@ -225,6 +225,7 @@
     "login": {
       "andText": "و",
       "backToLogin": "بازگشت به ورود",
+      "backToSocialLogin": "ثبت‌نام با Google یا Github",
       "confirmPasswordLabel": "تأیید رمز عبور",
       "confirmPasswordPlaceholder": "رمز عبور را مجدداً وارد کنید",
       "didntReceiveEmail": "ایمیلی دریافت نکردید؟ با ما تماس بگیرید:",
@@ -233,6 +234,9 @@
       "failed": "ورود ناموفق بود",
       "forgotPassword": "رمز عبور را فراموش کرده‌اید؟",
       "forgotPasswordError": "ارسال ایمیل بازیابی رمز عبور ناموفق بود",
+      "freeTierBadge": "واجد شرایط طرح رایگان",
+      "freeTierDescription": "با ثبت‌نام از طریق Google هر ماه {credits} اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
+      "freeTierDescriptionGeneric": "با ثبت‌نام از طریق Google هر ماه اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
       "insecureContextWarning": "این اتصال ناامن است (HTTP) - در صورت ادامه ورود، اطلاعات شما ممکن است توسط مهاجمان رهگیری شود.",
       "loginButton": "ورود",
       "loginWithGithub": "ورود با Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "ارسال لینک بازیابی",
       "signInOrSignUp": "ورود / ثبت‌نام",
       "signUp": "ثبت‌نام",
+      "signUpFreeTierPromo": "جدید هستید؟ با {signUp} از طریق Google هر ماه {credits} اعتبار رایگان دریافت کنید.",
       "success": "ورود موفقیت‌آمیز بود",
       "termsLink": "شرایط استفاده",
       "termsText": "با کلیک بر روی «بعدی» یا «ثبت‌نام»، شما با",
       "title": "ورود به حساب کاربری",
       "useApiKey": "کلید Comfy API",
+      "useEmailInstead": "استفاده از ایمیل به جای آن",
       "userAvatar": "آواتار کاربر"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "قبلاً حساب کاربری دارید؟",
       "emailLabel": "ایمیل",
+      "emailNotEligibleForFreeTier": "ثبت‌نام با ایمیل شامل طرح رایگان نمی‌شود.",
       "emailPlaceholder": "ایمیل خود را وارد کنید",
       "passwordLabel": "رمز عبور",
       "passwordPlaceholder": "رمز عبور جدید را وارد کنید",
@@ -293,6 +300,9 @@
       "signUpWithGoogle": "ثبت‌نام با Google",
       "title": "ایجاد حساب کاربری"
     }
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "billingOperation": {
     "subscriptionFailed": "به‌روزرسانی اشتراک ناموفق بود",
@@ -315,8 +325,47 @@
     "deleteBlueprint": "حذف blueprint",
     "deleteWorkflow": "حذف workflow",
     "duplicate": "تکرار",
+    "enterAppMode": "ورود به حالت اپلیکیشن",
+    "enterBuilderMode": "ورود به حالت سازنده اپلیکیشن",
     "enterNewName": "نام جدید را وارد کنید",
-    "missingNodesWarning": "workflow شامل نودهای پشتیبانی‌نشده است (با رنگ قرمز مشخص شده‌اند)."
+    "exitAppMode": "خروج از حالت اپلیکیشن",
+    "missingNodesWarning": "workflow شامل نودهای پشتیبانی‌نشده است (با رنگ قرمز مشخص شده‌اند).",
+    "workflowActions": "عملیات گردش‌کار"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "خروج از سازنده برنامه"
+  },
+  "builderToolbar": {
+    "app": "اپلیکیشن",
+    "appDescription": "به طور پیش‌فرض به صورت اپلیکیشن باز می‌شود",
+    "arrange": "پیش‌نمایش",
+    "arrangeDescription": "بررسی چیدمان اپلیکیشن",
+    "backToWorkflow": "بازگشت به ورک‌فلو",
+    "connectOutput": "اتصال خروجی",
+    "connectOutputBody1": "اپلیکیشن شما باید حداقل یک خروجی متصل داشته باشد تا بتوان آن را ذخیره کرد.",
+    "connectOutputBody2": "به مرحله «انتخاب» بروید و روی nodeهای خروجی کلیک کنید تا اینجا اضافه شوند.",
+    "defaultModeAppliedAppBody": "این ورک‌فلو از این پس به طور پیش‌فرض در حالت اپلیکیشن باز خواهد شد.",
+    "defaultModeAppliedAppPrompt": "آیا مایل هستید اکنون آن را مشاهده کنید؟",
+    "defaultModeAppliedGraphBody": "این ورک‌فلو از این پس به طور پیش‌فرض به صورت گراف node باز خواهد شد.",
+    "defaultModeAppliedGraphPrompt": "آیا همچنان مایل به مشاهده اپلیکیشن هستید؟",
+    "defaultModeAppliedTitle": "با موفقیت تنظیم شد",
+    "defaultView": "تنظیم نمای پیش‌فرض",
+    "defaultViewDescription": "انتخاب نحوه باز شدن",
+    "defaultViewLabel": "به طور پیش‌فرض، این گردش‌کار به صورت زیر باز می‌شود:",
+    "defaultViewTitle": "تنظیم نمای پیش‌فرض برای این گردش‌کار",
+    "emptyWorkflowExplanation": "ورک‌فلو شما خالی است. ابتدا باید چند node اضافه کنید تا بتوانید اپلیکیشن بسازید.",
+    "emptyWorkflowPrompt": "آیا می‌خواهید با یک قالب شروع کنید؟",
+    "emptyWorkflowTitle": "این ورک‌فلو هیچ node ندارد",
+    "inputs": "ورودی‌ها",
+    "inputsDescription": "انتخاب ورودی‌ها",
+    "label": "سازنده اپلیکیشن",
+    "loadTemplate": "بارگذاری قالب",
+    "nodeGraph": "گراف node",
+    "nodeGraphDescription": "به طور پیش‌فرض به صورت گراف node باز می‌شود",
+    "outputs": "خروجی‌ها",
+    "outputsDescription": "انتخاب خروجی‌ها",
+    "switchToOutputs": "رفتن به خروجی‌ها",
+    "viewApp": "مشاهده اپلیکیشن"
   },
   "clipboard": {
     "errorMessage": "کپی به کلیپ‌بورد ناموفق بود",
@@ -661,6 +710,7 @@
     "OPENAI_INPUT_FILES": "فایل‌های ورودی OpenAI",
     "PHOTOMAKER": "photomaker",
     "PIXVERSE_TEMPLATE": "قالب Pixverse",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "رنگ Recraft",
     "RECRAFT_CONTROLS": "کنترل‌های Recraft",
     "RECRAFT_V3_STYLE": "سبک Recraft V3",
@@ -879,6 +929,7 @@
     "enableSelected": "فعال‌سازی انتخاب‌شده‌ها",
     "enabled": "فعال",
     "enabling": "در حال فعال‌سازی {id}",
+    "enter": "ورود",
     "enterBaseName": "نام پایه را وارد کنید",
     "enterNewName": "نام جدید را وارد کنید",
     "enterNewNamePrompt": "نام جدید را وارد کنید:",
@@ -919,6 +970,7 @@
     "imageUrl": "آدرس تصویر",
     "import": "وارد کردن",
     "inProgress": "در حال انجام",
+    "inSubgraph": "در زیرگراف «{name}»",
     "increment": "افزایش",
     "info": "اطلاعات node",
     "input": "ورودی",
@@ -986,6 +1038,7 @@
     "or": "یا",
     "output": "خروجی",
     "overwrite": "جایگزینی",
+    "partner": "همکار",
     "playPause": "پخش/توقف",
     "playRecording": "پخش ضبط",
     "playbackSpeed": "سرعت پخش",
@@ -996,6 +1049,7 @@
     "progressCountOf": "از",
     "queued": "در صف",
     "ready": "آماده",
+    "recents": "اخیراً",
     "reconnected": "اتصال مجدد برقرار شد",
     "reconnecting": "در حال اتصال مجدد",
     "refresh": "بازنشانی",
@@ -1076,6 +1130,7 @@
     "updated": "به‌روزرسانی شد",
     "updating": "در حال به‌روزرسانی {id}",
     "upload": "بارگذاری",
+    "uploadAlreadyInProgress": "بارگذاری در حال انجام است",
     "usageHint": "راهنمای استفاده",
     "use": "استفاده",
     "user": "کاربر",
@@ -1149,6 +1204,8 @@
     "star": "ستاره"
   },
   "imageCompare": {
+    "batchLabelA": "A:",
+    "batchLabelB": "B:",
     "noImages": "تصویری برای مقایسه وجود ندارد"
   },
   "imageCrop": {
@@ -1282,20 +1339,61 @@
     "helpFix": "کمک به رفع این مشکل"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "سازنده اپلیکیشن",
+      "apps": "اپلیکیشن‌ها",
+      "appsEmptyMessage": "اپلیکیشن‌های ذخیره‌شده اینجا نمایش داده می‌شوند.\nبرای ساخت اولین اپلیکیشن خود، روی دکمه زیر کلیک کنید.",
+      "enterAppMode": "ورود به حالت اپلیکیشن"
+    },
+    "arrange": {
+      "atLeastOne": "یک",
+      "connectAtLeastOne": "حداقل {atLeastOne} node خروجی را متصل کنید تا کاربران پس از اجرا نتایج را مشاهده کنند.",
+      "noOutputs": "هنوز هیچ خروجی اضافه نشده است",
+      "outputExamples": "مثال‌ها: «ذخیره تصویر» یا «ذخیره ویدیو»",
+      "outputs": "خروجی‌ها",
+      "resultsLabel": "نتایج تولیدشده از node(های) خروجی انتخاب‌شده پس از اجرای این اپلیکیشن اینجا نمایش داده می‌شوند.",
+      "switchToOutputs": "به مرحله «خروجی» بروید و روی نودهای خروجی کلیک کنید تا اینجا اضافه شوند.",
+      "switchToOutputsButton": "رفتن به خروجی‌ها"
+    },
     "beta": "حالت برنامه بتا - ارسال بازخورد",
+    "builder": {
+      "exit": "خروج از حالت ساخت",
+      "exitConfirmMessage": "تغییرات ذخیره‌نشده شما از بین خواهد رفت\nخروج بدون ذخیره؟",
+      "exitConfirmTitle": "خروج از حالت ساخت اپلیکیشن؟",
+      "inputsDesc": "کاربران می‌توانند این موارد را تنظیم کنند تا خروجی مورد نظر خود را تولید نمایند.",
+      "inputsExample": "مثال‌ها: «بارگذاری تصویر»، «متن راهنما»، «تعداد مراحل»",
+      "noInputs": "هنوز ورودی‌ای اضافه نشده است",
+      "noOutputs": "هنوز گره خروجی اضافه نشده است",
+      "outputsDesc": "حداقل یک گره خروجی متصل کنید تا کاربران پس از اجرا نتایج را مشاهده کنند.",
+      "outputsExample": "مثال‌ها: «ذخیره تصویر» یا «ذخیره ویدیو»",
+      "promptAddInputs": "برای افزودن پارامترها به عنوان ورودی، روی پارامترهای گره کلیک کنید",
+      "promptAddOutputs": "برای افزودن خروجی، روی گره‌های خروجی کلیک کنید. این‌ها نتایج تولیدشده خواهند بود.",
+      "title": "حالت ساخت اپلیکیشن",
+      "unknownWidget": "ویجت قابل مشاهده نیست"
+    },
     "downloadAll": "دانلود همه",
     "dragAndDropImage": "تصویر را بکشید و رها کنید",
+    "enterNodeGraph": "ورود به گراف node",
+    "giveFeedback": "ارسال بازخورد",
     "graphMode": "حالت گراف",
     "linearMode": "حالت برنامه",
+    "mobileControls": "ویرایش و اجرا",
+    "queue": {
+      "clear": "پاک‌سازی صف",
+      "clickToClear": "برای پاک‌سازی صف کلیک کنید"
+    },
     "rerun": "اجرای مجدد",
     "reuseParameters": "استفاده مجدد از پارامترها",
     "runCount": "تعداد اجرا: ",
+    "viewJob": "مشاهده وظیفه",
     "welcome": {
-      "intro": "نمایی ساده‌شده که گراف node را پنهان می‌کند تا بتوانید بر خلق تمرکز کنید.",
-      "layout": "در سمت چپ، تصاویر، ویدیوها و خروجی‌های تولیدشده خود را می‌بینید. در سمت راست، فقط کنترل‌های مورد نیاز شما قرار دارند. همه چیزهای پیچیده از دید پنهان می‌مانند.",
+      "backToWorkflow": "بازگشت به گردش‌کار",
+      "buildApp": "ساخت اپلیکیشن",
+      "controls": "خروجی‌های شما در پایین نمایش داده می‌شوند و کنترل‌ها در سمت راست قرار دارند. سایر موارد خارج از دید باقی می‌مانند.",
+      "getStarted": "برای شروع روی {runButton} کلیک کنید.",
+      "message": "نمای ساده‌شده‌ای که گراف node را مخفی می‌کند تا بتوانید بر خلق تمرکز کنید.",
       "sharing": "اشتراک‌گذاری آسان است: workflow خود را بسازید، حالت App را باز کنید، روی تب راست‌کلیک کنید و خروجی بگیرید. وقتی دیگران فایل شما را باز می‌کنند، مستقیماً وارد این نمای ساده می‌شوند. می‌توانید workflowهای قدرتمند را به ابزارهای ساده تبدیل و به اشتراک بگذارید بدون اینکه کسی نیاز به درک گراف node داشته باشد.",
-      "title": "به حالت App خوش آمدید",
-      "widget": "اگر می‌خواهید کنترل کنید کدام تنظیمات نمایش داده شوند، nodeهای سطح بالای خود را به یک subgraph تبدیل کنید، سپس با استفاده از ابزارک promotion در جعبه‌ابزار بالای آن، موارد قابل نمایش را انتخاب کنید."
+      "title": "به حالت App خوش آمدید"
     }
   },
   "load3d": {
@@ -1504,6 +1602,9 @@
     "nodePack": "بسته نود",
     "nodePackInfo": "اطلاعات Node Pack",
     "notAvailable": "در دسترس نیست",
+    "packInstall": {
+      "nodeIdRequired": "شناسه node برای نصب الزامی است"
+    },
     "packsSelected": "بسته انتخاب شد",
     "repository": "مخزن",
     "restartToApplyChanges": "برای اعمال تغییرات، لطفاً ComfyUI را مجدداً راه‌اندازی کنید",
@@ -1661,6 +1762,7 @@
     "disabled": "غیرفعال",
     "disabledTooltip": "workflow به صورت خودکار در صف قرار نمی‌گیرد",
     "execute": "اجرا",
+    "fullscreen": "تمام‌صفحه",
     "help": "راهنما",
     "helpAndFeedback": "راهنما و بازخورد",
     "hideMenu": "مخفی کردن منو",
@@ -1808,7 +1910,8 @@
     "Workflows": "Workflowها",
     "Zoom In": "بزرگ‌نمایی",
     "Zoom Out": "کوچک‌نمایی",
-    "Zoom to fit": "بزرگ‌نمایی برای تطبیق"
+    "Zoom to fit": "بزرگ‌نمایی برای تطبیق",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "رنگ‌های نود",
@@ -1818,11 +1921,18 @@
     "showLinks": "نمایش پیوندها"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "باید این مدل‌ها را به صورت دستی پیدا و دانلود کنید. آن‌ها را به صورت آنلاین جستجو کنید (Civitai یا Hugging Face را امتحان کنید) یا با ارائه‌دهنده اصلی گردش‌کار تماس بگیرید.",
+    "customModelsWarning": "برخی از این مدل‌ها سفارشی هستند و ما آن‌ها را نمی‌شناسیم.",
+    "description": "این گردش‌کار به مدل‌هایی نیاز دارد که هنوز آن‌ها را دانلود نکرده‌اید.",
     "doNotAskAgain": "دیگر نمایش داده نشود",
-    "missingModels": "مدل‌های مفقود",
-    "missingModelsMessage": "هنگام بارگذاری گراف، مدل‌های زیر یافت نشدند",
+    "downloadAll": "دانلود همه",
+    "downloadAvailable": "دانلود موجود",
+    "footerDescription": "این مدل‌ها را دانلود کرده و در پوشه صحیح قرار دهید.\nگره‌هایی که مدل آن‌ها موجود نیست، روی بوم به رنگ قرمز نمایش داده می‌شوند.",
+    "gotIt": "متوجه شدم",
     "reEnableInSettings": "فعال‌سازی مجدد در {link}",
-    "reEnableInSettingsLink": "تنظیمات"
+    "reEnableInSettingsLink": "تنظیمات",
+    "title": "این گردش‌کار فاقد مدل‌ها است",
+    "totalSize": "حجم کل دانلود:"
   },
   "missingNodes": {
     "cloud": {
@@ -1844,6 +1954,14 @@
       "label": "نسخه پیش‌نمایش",
       "tooltip": "شما در حال استفاده از نسخه شبانه ComfyUI هستید. لطفاً با استفاده از دکمه بازخورد، نظرات خود را درباره این قابلیت‌ها به اشتراک بگذارید."
     }
+  },
+  "nightlySurvey": {
+    "accept": "بله، کمک می‌کنم!",
+    "description": "شما از این قابلیت استفاده کرده‌اید. آیا مایل هستید بازخورد خود را با ما به اشتراک بگذارید؟",
+    "dontAskAgain": "دیگر نمایش نده",
+    "loadError": "بارگذاری نظرسنجی ناموفق بود. لطفاً بعداً دوباره تلاش کنید.",
+    "notNow": "فعلاً نه",
+    "title": "به ما در بهبود کمک کنید"
   },
   "nodeCategories": {
     "": "",
@@ -1986,7 +2104,10 @@
     "openNodeManager": "باز کردن Node Manager",
     "quickFixAvailable": "رفع سریع در دسترس است",
     "redHighlight": "قرمز",
+    "replaceAll": "جایگزینی همه",
+    "replaceAllWarning": "همه گره‌های موجود در این گروه جایگزین خواهند شد.",
     "replaceFailed": "جایگزینی نودها ناموفق بود",
+    "replaceNode": "جایگزینی گره",
     "replaceSelected": "جایگزینی انتخاب‌شده‌ها ({count})",
     "replaceWarning": "این کار workflow را به طور دائمی تغییر می‌دهد. اگر مطمئن نیستید، ابتدا یک نسخه ذخیره کنید.",
     "replaceable": "قابل جایگزینی",
@@ -1994,7 +2115,11 @@
     "replacedAllNodes": "{count} نوع نود جایگزین شد",
     "replacedNode": "نود جایگزین شد: {nodeType}",
     "selectAll": "انتخاب همه",
-    "skipForNow": "فعلاً رد شود"
+    "skipForNow": "فعلاً رد شود",
+    "swapNodesGuide": "گره‌های زیر می‌توانند به‌صورت خودکار با گزینه‌های سازگار جایگزین شوند.",
+    "swapNodesTitle": "جایگزینی گره‌ها",
+    "unknownNode": "ناشناخته",
+    "willBeReplacedBy": "این گره جایگزین خواهد شد با:"
   },
   "nodeTemplates": {
     "enterName": "نام را وارد کنید",
@@ -2012,6 +2137,19 @@
       "windows": "Windows (کارت گرافیک Nvidia با پشتیبانی CUDA)"
     },
     "title": "دستگاه شما پشتیبانی نمی‌شود"
+  },
+  "painter": {
+    "background": "پس‌زمینه",
+    "brush": "براش",
+    "clear": "پاک‌سازی",
+    "color": "انتخاب رنگ",
+    "eraser": "پاک‌کن",
+    "hardness": "سختی",
+    "height": "ارتفاع",
+    "size": "اندازه نشانگر",
+    "tool": "ابزار",
+    "uploadError": "بارگذاری تصویر painter ناموفق بود: {status} - {statusText}",
+    "width": "عرض"
   },
   "progressToast": {
     "allDownloadsCompleted": "همه دانلودها تکمیل شدند",
@@ -2133,6 +2271,22 @@
     "inputsNone": "بدون ورودی",
     "inputsNoneTooltip": "این نود ورودی ندارد",
     "locateNode": "یافتن node در canvas",
+    "missingNodePacks": {
+      "applyChanges": "اعمال تغییرات",
+      "cloudMessage": "این workflow به nodeهای سفارشی نیاز دارد که هنوز در Comfy Cloud موجود نیستند.",
+      "collapse": "جمع کردن",
+      "expand": "باز کردن",
+      "installAll": "نصب همه",
+      "installNodePack": "نصب پک node",
+      "installed": "نصب شد",
+      "installing": "در حال نصب...",
+      "ossMessage": "این workflow از nodeهای سفارشی استفاده می‌کند که هنوز نصب نکرده‌اید.",
+      "searchInManager": "جستجو در Node Manager",
+      "title": "پک‌های node مفقود",
+      "unknownPack": "پک ناشناخته",
+      "unsupportedTitle": "پک‌های node پشتیبانی‌نشده",
+      "viewInManager": "مشاهده در Manager"
+    },
     "mute": "بی‌صدا",
     "noErrors": "بدون خطا",
     "noSelection": "یک نود را انتخاب کنید تا ویژگی‌ها و اطلاعات آن نمایش داده شود.",
@@ -2504,8 +2658,16 @@
     "nodeLibrary": "کتابخانه Node",
     "nodeLibraryTab": {
       "allNodes": "همه nodeها",
+      "blueprints": "بلوپرینت‌ها",
       "custom": "سفارشی",
       "essentials": "ضروریات",
+      "filter": "فیلتر",
+      "filterOptions": {
+        "blueprints": "بلوپرینت‌ها",
+        "comfyNodes": "گره‌های Comfy",
+        "extensions": "افزونه‌ها",
+        "partnerNodes": "گره‌های همکار"
+      },
       "groupBy": "گروه‌بندی بر اساس",
       "groupStrategies": {
         "category": "دسته‌بندی",
@@ -2515,10 +2677,18 @@
         "source": "منبع",
         "sourceDesc": "گروه‌بندی بر اساس نوع منبع (Core، Custom، API)"
       },
+      "noBookmarkedNodes": "هنوز مورد علاقه‌ای وجود ندارد",
       "resetView": "بازنشانی نمای پیش‌فرض",
       "sections": {
+        "bookmarked": "نشان‌شده‌ها",
+        "comfyBlueprints": "بلوپرینت‌های Comfy",
+        "comfyNodes": "گره‌های Comfy",
+        "extensions": "افزونه‌ها",
         "favoriteNode": "گره مورد علاقه",
         "favorites": "علاقه‌مندی‌ها",
+        "myBlueprints": "بلوپرینت‌های من",
+        "partnerNodes": "گره‌های همکار",
+        "subgraphBlueprints": "بلوپرینت‌های زیرگراف",
         "unfavoriteNode": "حذف از علاقه‌مندی‌ها"
       },
       "sortBy": {
@@ -2572,6 +2742,7 @@
       "searchJobs": "جستجو...",
       "showAssets": "نمایش دارایی‌ها",
       "showAssetsPanel": "نمایش پنل دارایی‌ها",
+      "showRunProgressBar": "نمایش نوار پیشرفت اجرا",
       "sortBy": "مرتب‌سازی بر اساس",
       "sortJobs": "مرتب‌سازی کارها",
       "stubClipTextEncode": "CLIP Text Encode:",
@@ -2611,14 +2782,17 @@
     "cannotDeleteGlobal": "امکان حذف blueprints نصب‌شده وجود ندارد",
     "confirmDelete": "این عمل باعث حذف دائمی بلوپرینت از کتابخانه شما می‌شود",
     "confirmDeleteTitle": "حذف بلوپرینت؟",
+    "disconnected": "قطع ارتباط",
     "enterDescription": "توضیحی وارد کنید",
     "enterSearchAliases": "نام‌های مستعار جستجو را وارد کنید (با ویرگول جدا کنید)",
     "hidden": "پارامترهای مخفی / تو در تو",
     "hideAll": "مخفی‌سازی همه",
+    "linked": "(متصل)",
     "loadFailure": "بارگذاری بلوپرینت‌های زیرگراف ناموفق بود",
     "overwriteBlueprint": "ذخیره باعث جایگزینی بلوپرینت فعلی با تغییرات شما می‌شود",
     "overwriteBlueprintTitle": "جایگزینی بلوپرینت موجود؟",
     "promoteOutsideSubgraph": "امکان ارتقاء ویجت خارج از زیرگراف وجود ندارد",
+    "promoteWidget": "ارتقاء ویجت: {name}",
     "publish": "انتشار زیرگراف",
     "publishSuccess": "در کتابخانه گره‌ها ذخیره شد",
     "publishSuccessMessage": "می‌توانید بلوپرینت زیرگراف خود را در کتابخانه گره‌ها در بخش \"بلوپرینت‌های زیرگراف\" پیدا کنید",
@@ -2626,7 +2800,8 @@
     "searchAliases": "جستجوی نام‌های مستعار",
     "showAll": "نمایش همه",
     "showRecommended": "نمایش ویجت‌های پیشنهادی",
-    "shown": "نمایش روی گره"
+    "shown": "نمایش روی گره",
+    "unpromoteWidget": "لغو ارتقاء ویجت: {name}"
   },
   "subscription": {
     "addApiCredits": "افزودن اعتبار API",
@@ -2634,7 +2809,9 @@
     "addCreditsLabel": "هر زمان اعتبار بیشتری اضافه کنید",
     "benefits": {
       "benefit1": "۱۰ دلار اعتبار ماهانه برای Partner Nodes — در صورت نیاز شارژ کنید",
-      "benefit2": "تا ۳۰ دقیقه زمان اجرا برای هر کار"
+      "benefit1FreeTier": "اعتبار ماهانه بیشتر، شارژ مجدد در هر زمان",
+      "benefit2": "تا ۳۰ دقیقه زمان اجرا برای هر کار",
+      "benefit3": "امکان استفاده از مدل‌های شخصی (Creator و Pro)"
     },
     "beta": "بتا",
     "billedMonthly": "صورتحساب ماهانه",
@@ -2672,6 +2849,21 @@
     "description": "بهترین طرح را برای خود انتخاب کنید",
     "descriptionWorkspace": "بهترین طرح را برای فضای کاری خود انتخاب کنید",
     "expiresDate": "انقضا در {date}",
+    "freeTier": {
+      "description": "طرح رایگان شما شامل {credits} اعتبار در هر ماه برای استفاده از Comfy Cloud است.",
+      "descriptionGeneric": "طرح رایگان شما شامل اعتبار ماهانه برای استفاده از Comfy Cloud است.",
+      "nextRefresh": "اعتبار شما در تاریخ {date} به‌روزرسانی می‌شود.",
+      "outOfCredits": {
+        "subtitle": "با اشتراک، امکان شارژ مجدد و امکانات بیشتر را فعال کنید",
+        "title": "اعتبار رایگان شما تمام شده است"
+      },
+      "subscribeCta": "اشتراک برای اعتبار بیشتر",
+      "title": "شما در طرح رایگان هستید",
+      "topUpBlocked": {
+        "title": "امکان شارژ مجدد و امکانات بیشتر را فعال کنید"
+      },
+      "upgradeCta": "مشاهده طرح‌ها"
+    },
     "gpuLabel": "RTX 6000 Pro (۹۶ گیگابایت VRAM)",
     "haveQuestions": "سوالی دارید یا به دنبال راهکار سازمانی هستید؟",
     "invoiceHistory": "تاریخچه فاکتورها",
@@ -2682,6 +2874,7 @@
     "maxDuration": {
       "creator": "۳۰ دقیقه",
       "founder": "۳۰ دقیقه",
+      "free": "۳۰ دقیقه",
       "pro": "۱ ساعت",
       "standard": "۳۰ دقیقه"
     },
@@ -2740,6 +2933,7 @@
     "resubscribe": "تمدید اشتراک",
     "resubscribeSuccess": "اشتراک با موفقیت فعال شد",
     "resubscribeTo": "تمدید اشتراک {plan}",
+    "subscribeForMore": "ارتقاء",
     "subscribeNow": "هم‌اکنون اشتراک بگیرید",
     "subscribeTo": "اشتراک در {plan}",
     "subscribeToComfyCloud": "اشتراک در Comfy Cloud",
@@ -2754,6 +2948,9 @@
       "founder": {
         "name": "نسخه بنیان‌گذاران"
       },
+      "free": {
+        "name": "رایگان"
+      },
       "pro": {
         "name": "حرفه‌ای"
       },
@@ -2767,6 +2964,7 @@
     "upgrade": "ارتقا",
     "upgradePlan": "ارتقا طرح",
     "upgradeTo": "ارتقا به {plan}",
+    "upgradeToAddCredits": "برای افزودن اعتبار ارتقاء دهید",
     "usdPerMonth": "دلار آمریکا / ماه",
     "usdPerMonthPerMember": "دلار آمریکا / ماه / هر عضو",
     "videoEstimateExplanation": "این تخمین‌ها بر اساس قالب Wan 2.2 Image-to-Video با تنظیمات پیش‌فرض (۵ ثانیه، ۶۴۰×۶۴۰، ۱۶ فریم بر ثانیه، ۴ مرحله نمونه‌گیری) است.",
@@ -2864,6 +3062,7 @@
     "emptyCanvas": "بوم خالی است",
     "errorCopyImage": "خطا در کپی تصویر: {error}",
     "errorLoadingModel": "خطا در بارگذاری مدل",
+    "errorOpenImage": "خطا در باز کردن تصویر: {error}",
     "errorSaveSetting": "خطا در ذخیره تنظیمات {id}: {err}",
     "exportSuccess": "مدل با موفقیت با فرمت {format} صادر شد",
     "failedExecutionPathResolution": "مسیر اجرای nodeهای انتخاب‌شده قابل شناسایی نیست",
@@ -3031,7 +3230,9 @@
     "enterFilename": "نام فایل را وارد کنید",
     "enterFilenamePrompt": "نام فایل را وارد کنید:",
     "exportWorkflow": "خروجی گرفتن از workflow",
-    "saveWorkflow": "ذخیره workflow"
+    "saveWorkflow": "ذخیره workflow",
+    "savedAsApp": "به گردش‌کار اپلیکیشن تبدیل شد",
+    "savedAsWorkflow": "به گردش‌کار فقط گراف node تبدیل شد"
   },
   "workspace": {
     "addedToWorkspace": "شما به {workspaceName} اضافه شدید",

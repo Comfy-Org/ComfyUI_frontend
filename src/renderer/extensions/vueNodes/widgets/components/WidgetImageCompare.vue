@@ -92,9 +92,15 @@ watch([elementX, elementWidth, isOutside], ([x, width, outside]) => {
   }
 })
 
+function isSingleImage(
+  value: ImageCompareValue | string | undefined
+): value is string {
+  return typeof value === 'string'
+}
+
 const parsedValue = computed(() => {
   const value = props.widget.value
-  return typeof value === 'string' ? null : value
+  return isSingleImage(value) ? null : value
 })
 
 const beforeBatchCount = computed(
@@ -126,26 +132,26 @@ watch(
 
 const beforeImage = computed(() => {
   const value = props.widget.value
-  if (typeof value === 'string') return value
+  if (isSingleImage(value)) return value
   return value?.beforeImages?.[beforeIndex.value] ?? ''
 })
 
 const afterImage = computed(() => {
   const value = props.widget.value
-  if (typeof value === 'string') return ''
+  if (isSingleImage(value)) return ''
   return value?.afterImages?.[afterIndex.value] ?? ''
 })
 
 const beforeAlt = computed(() => {
   const value = props.widget.value
-  return typeof value === 'object' && value?.beforeAlt
+  return !isSingleImage(value) && value?.beforeAlt
     ? value.beforeAlt
     : 'Before image'
 })
 
 const afterAlt = computed(() => {
   const value = props.widget.value
-  return typeof value === 'object' && value?.afterAlt
+  return !isSingleImage(value) && value?.afterAlt
     ? value.afterAlt
     : 'After image'
 })

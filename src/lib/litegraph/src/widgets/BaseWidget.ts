@@ -27,6 +27,8 @@ export interface DrawWidgetOptions {
   showText?: boolean
   /** When true, suppresses the promoted outline color (e.g. for projected copies on SubgraphNode). */
   suppressPromotedOutline?: boolean
+  /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
+  previewImages?: HTMLImageElement[]
 }
 
 interface DrawTruncatingTextOptions extends DrawWidgetOptions {
@@ -140,6 +142,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     this._state = useWidgetValueStore().registerWidget(graphId, {
       ...this._state,
+      // BaseWidget: this.value getter returns this._state.value. So value: this.value === value: this._state.value.
+      // BaseDOMWidgetImpl: this.value getter returns options.getValue?.() ?? ''. Resolves the correct initial value instead of undefined.
+      // I.e., calls overriden getter -> options.getValue() -> correct value (https://github.com/Comfy-Org/ComfyUI_frontend/issues/9194).
+      value: this.value,
       nodeId
     })
   }

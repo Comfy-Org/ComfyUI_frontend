@@ -144,6 +144,7 @@
                 <!-- Active state: show Manage Payment, Upgrade, and menu -->
                 <template v-else>
                   <Button
+                    v-if="!isFreeTierPlan"
                     size="lg"
                     variant="secondary"
                     class="rounded-lg px-4 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
@@ -155,11 +156,12 @@
                     size="lg"
                     variant="primary"
                     class="rounded-lg px-4 text-sm font-normal text-text-primary"
-                    @click="showSubscriptionDialog"
+                    @click="handleUpgrade"
                   >
                     {{ $t('subscription.upgradePlan') }}
                   </Button>
                   <Button
+                    v-if="!isFreeTierPlan"
                     v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                     variant="secondary"
                     size="lg"
@@ -250,9 +252,18 @@
                     !showZeroState &&
                     permissions.canTopUp
                   "
-                  class="flex items-center justify-between"
+                  class="flex flex-col gap-3"
                 >
                   <Button
+                    v-if="isFreeTierPlan"
+                    variant="gradient"
+                    class="p-2 min-h-8 rounded-lg text-sm font-normal w-full"
+                    @click="handleUpgradeToAddCredits"
+                  >
+                    {{ $t('subscription.upgradeToAddCredits') }}
+                  </Button>
+                  <Button
+                    v-else
                     variant="secondary"
                     class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                     @click="handleAddApiCredits"
@@ -366,9 +377,11 @@ import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
   getTierCredits,
-  getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@/utils/tailwindUtil'
@@ -385,6 +398,7 @@ const isSettingUp = computed(() => billingOperationStore.isSettingUp)
 
 const {
   isActiveSubscription,
+  isFreeTier: isFreeTierPlan,
   subscription,
   showSubscriptionDialog,
   manageSubscription,
@@ -394,6 +408,7 @@ const {
 } = useBillingContext()
 
 const { showCancelSubscriptionDialog } = useDialogService()
+const { showPricingTable } = useSubscriptionDialog()
 
 const isResubscribing = ref(false)
 
@@ -453,6 +468,14 @@ const showZeroState = computed(
 // Subscribe workspace - opens the subscription dialog (personal or workspace variant)
 function handleSubscribeWorkspace() {
   showSubscriptionDialog()
+}
+
+function handleUpgrade() {
+  isFreeTierPlan.value ? showPricingTable() : showSubscriptionDialog()
+}
+
+function handleUpgradeToAddCredits() {
+  showPricingTable()
 }
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
 const isYearlySubscription = computed(
@@ -524,16 +547,29 @@ const refillsDate = computed(() => {
 
 const creditsRemainingLabel = computed(() =>
   isYearlySubscription.value
-    ? t('subscription.creditsRemainingThisYear', {
-        date: refillsDate.value
-      })
-    : t('subscription.creditsRemainingThisMonth', {
-        date: refillsDate.value
-      })
+    ? t(
+        'subscription.creditsRemainingThisYear',
+        {
+          date: refillsDate.value
+        },
+        {
+          escapeParameter: false
+        }
+      )
+    : t(
+        'subscription.creditsRemainingThisMonth',
+        {
+          date: refillsDate.value
+        },
+        {
+          escapeParameter: false
+        }
+      )
 )
 
 const planTotalCredits = computed(() => {
   const credits = getTierCredits(tierKey.value)
+  if (credits === null) return '—'
   const total = isYearlySubscription.value ? credits * 12 : credits
   return n(total)
 })
@@ -542,21 +578,9 @@ const includedCreditsDisplay = computed(
   () => `${monthlyBonusCredits.value} / ${planTotalCredits.value}`
 )
 
-// Tier benefits for v-for loop
-type BenefitType = 'metric' | 'feature' | 'icon'
-
-interface Benefit {
-  key: string
-  type: BenefitType
-  label: string
-  value?: string
-  icon?: string
-}
-
-const tierBenefits = computed((): Benefit[] => {
+const tierBenefits = computed((): TierBenefit[] => {
   const key = tierKey.value
-
-  const benefits: Benefit[] = []
+  const benefits: TierBenefit[] = []
 
   if (!isInPersonalWorkspace.value) {
     benefits.push({
@@ -567,33 +591,7 @@ const tierBenefits = computed((): Benefit[] => {
     })
   }
 
-  benefits.push(
-    {
-      key: 'maxDuration',
-      type: 'metric',
-      value: t(`subscription.maxDuration.${key}`),
-      label: t('subscription.maxDurationLabel')
-    },
-    {
-      key: 'gpu',
-      type: 'feature',
-      label: t('subscription.gpuLabel')
-    },
-    {
-      key: 'addCredits',
-      type: 'feature',
-      label: t('subscription.addCreditsLabel')
-    }
-  )
-
-  if (getTierFeatures(key).customLoRAs) {
-    benefits.push({
-      key: 'customLoRAs',
-      type: 'feature',
-      label: t('subscription.customLoRAsLabel')
-    })
-  }
-
+  benefits.push(...getCommonTierBenefits(key, t, n))
   return benefits
 })
 

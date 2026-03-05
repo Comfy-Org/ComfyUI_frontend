@@ -298,14 +298,14 @@ import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
-type CheckoutTierKey = Exclude<TierKey, 'founder'>
+type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 interface Props {
   isLoading?: boolean
   loadingTier?: CheckoutTierKey | null
 }
 
-const { isLoading = false, loadingTier = null } = defineProps<Props>()
+const { isLoading, loadingTier = null } = defineProps<Props>()
 
 const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]

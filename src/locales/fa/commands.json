@@ -344,6 +344,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "تغییر حالت تمرکز"
   },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "نمایش/پنهان کردن نوار کناری اپلیکیشن‌ها",
+    "tooltip": "اپلیکیشن‌ها"
+  },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "تغییر نوار کناری دارایی‌ها",
     "tooltip": "دارایی‌ها"

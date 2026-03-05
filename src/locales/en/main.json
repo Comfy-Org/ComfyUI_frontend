@@ -71,6 +71,7 @@
     "error": "Error",
     "enter": "Enter",
     "enterSubgraph": "Enter Subgraph",
+    "inSubgraph": "in subgraph '{name}'",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
@@ -174,6 +175,7 @@
     "control_after_generate": "control after generate",
     "control_before_generate": "control before generate",
     "choose_file_to_upload": "choose file to upload",
+    "uploadAlreadyInProgress": "Upload already in progress",
     "capture": "capture",
     "nodes": "Nodes",
     "nodesCount": "{count} nodes | {count} node | {count} nodes",
@@ -301,7 +303,11 @@
     "beta": "BETA",
     "nightly": "NIGHTLY",
     "profile": "Profile",
-    "noItems": "No items"
+    "noItems": "No items",
+    "recents": "Recents",
+    "partner": "Partner",
+    "collapseAll": "Collapse all",
+    "expandAll": "Expand all"
   },
   "manager": {
     "title": "Nodes Manager",
@@ -449,6 +455,9 @@
         "import_failed": "Import Failed"
       },
       "warningTooltip": "This package may have compatibility issues with your current environment"
+    },
+    "packInstall": {
+      "nodeIdRequired": "Node ID is required for installation"
     }
   },
   "importFailed": {
@@ -785,8 +794,16 @@
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
       "essentials": "Essentials",
-      "allNodes": "All nodes",
+      "allNodes": "All",
+      "blueprints": "Blueprints",
       "custom": "Custom",
+      "filter": "Filter",
+      "filterOptions": {
+        "blueprints": "Blueprints",
+        "partnerNodes": "Partner Nodes",
+        "comfyNodes": "Comfy Nodes",
+        "extensions": "Extensions"
+      },
       "groupBy": "Group By",
       "sortMode": "Sort Mode",
       "resetView": "Reset View to Default",
@@ -799,16 +816,24 @@
         "sourceDesc": "Group by source type (Core, Custom, API)"
       },
       "sortBy": {
-        "original": "Original",
+        "original": "Categorized",
         "originalDesc": "Keep original order",
-        "alphabetical": "Alphabetical",
+        "alphabetical": "A-Z",
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
       "sections": {
         "favorites": "Favorites",
         "favoriteNode": "Favorite Node",
-        "unfavoriteNode": "Unfavorite Node"
-      }
+        "unfavoriteNode": "Unfavorite Node",
+        "bookmarked": "Bookmarked",
+        "subgraphBlueprints": "Subgraph Blueprints",
+        "myBlueprints": "My Blueprints",
+        "comfyBlueprints": "Comfy Blueprints",
+        "partnerNodes": "Partner Nodes",
+        "comfyNodes": "Comfy Nodes",
+        "extensions": "Extensions"
+      },
+      "noBookmarkedNodes": "No favorites yet"
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
@@ -831,6 +856,7 @@
       "clearQueued": "Clear queued",
       "clearHistory": "Clear job history",
       "dockedJobHistory": "Docked Job History",
+      "showRunProgressBar": "Show run progress bar",
       "clearHistoryMenuAssetsNote": "Media assets won't be deleted.",
       "filterJobs": "Filter jobs",
       "filterBy": "Filter by",
@@ -943,7 +969,8 @@
     "settings": "Settings",
     "help": "Help",
     "helpAndFeedback": "Help & Feedback",
-    "queue": "Queue Panel"
+    "queue": "Queue Panel",
+    "fullscreen": "Fullscreen"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -1052,7 +1079,9 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
-    "saveWorkflow": "Save workflow"
+    "saveWorkflow": "Save workflow",
+    "savedAsApp": "Converted to app workflow",
+    "savedAsWorkflow": "Converted to node graph only workflow"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -1154,8 +1183,8 @@
   "queue": {
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
-    "jobAddedToQueue": "Job added to queue",
-    "jobQueueing": "Job queueing",
+    "jobAddedToQueue": "Job queued",
+    "jobQueueing": "Job queuing",
     "completedIn": "Finished in {duration}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
@@ -1324,6 +1353,7 @@
     "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
     "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
     "Focus Mode": "Focus Mode",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps",
     "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
@@ -1698,6 +1728,7 @@
     "OPENAI_INPUT_FILES": "OPENAI_INPUT_FILES",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PIXVERSE_TEMPLATE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "RECRAFT_COLOR",
     "RECRAFT_CONTROLS": "RECRAFT_CONTROLS",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
@@ -1749,8 +1780,16 @@
     "doNotAskAgain": "Don't show this again",
     "reEnableInSettings": "Re-enable in {link}",
     "reEnableInSettingsLink": "Settings",
-    "missingModels": "Missing Models",
-    "missingModelsMessage": "When loading the graph, the following models were not found"
+    "title": "This workflow is missing models",
+    "description": "This workflow requires models you haven't downloaded yet.",
+    "totalSize": "Total download size:",
+    "downloadAll": "Download all",
+    "downloadAvailable": "Download available",
+    "gotIt": "Ok, got it",
+    "footerDescription": "Download and place these models in the correct folder.\nNodes with missing models are highlighted red on the canvas.",
+    "customModelsWarning": "Some of these are custom models that we don't recognize.",
+    "customModelsInstruction": "You'll need to find and download them manually. Search for them online (try Civitai or HuggingFace) or contact the original workflow provider.",
+    "acceptTerms": "Accept terms"
   },
   "versionMismatchWarning": {
     "title": "Version Compatibility Warning",
@@ -1876,6 +1915,19 @@
     "unlockRatio": "Unlock aspect ratio",
     "custom": "Custom"
   },
+  "painter": {
+    "tool": "Tool",
+    "brush": "Brush",
+    "eraser": "Eraser",
+    "size": "Cursor Size",
+    "color": "Color Picker",
+    "hardness": "Hardness",
+    "width": "Width",
+    "height": "Height",
+    "background": "Background",
+    "clear": "Clear",
+    "uploadError": "Failed to upload painter image: {status} - {statusText}"
+  },
   "boundingBox": {
     "x": "X",
     "y": "Y",
@@ -1980,6 +2032,7 @@
       "newUser": "New here?",
       "userAvatar": "User Avatar",
       "signUp": "Sign up",
+      "signUpFreeTierPromo": "New here? {signUp} with Google to get {credits} free credits every month.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -2004,7 +2057,12 @@
       "failed": "Login failed",
       "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.",
       "questionsContactPrefix": "Questions? Contact us at",
-      "noAssociatedUser": "There is no Comfy user associated with the provided API key"
+      "noAssociatedUser": "There is no Comfy user associated with the provided API key",
+      "useEmailInstead": "Use email instead",
+      "freeTierBadge": "Eligible for Free Tier",
+      "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
+      "freeTierDescriptionGeneric": "Sign up with Google to get free credits every month. No card needed.",
+      "backToSocialLogin": "Sign up with Google or Github instead"
     },
     "signup": {
       "title": "Create an account",
@@ -2018,7 +2076,8 @@
       "signUpWithGoogle": "Sign up with Google",
       "signUpWithGithub": "Sign up with Github",
       "regionRestrictionChina": "In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China.",
-      "personalDataConsentLabel": "I agree to the processing of my personal data."
+      "personalDataConsentLabel": "I agree to the processing of my personal data.",
+      "emailNotEligibleForFreeTier": "Email sign-up is not eligible for Free Tier."
     },
     "signOut": {
       "signOut": "Log Out",
@@ -2209,10 +2268,15 @@
     "invoiceHistory": "Invoice history",
     "benefits": {
       "benefit1": "Monthly credits for Partner Nodes — top up when needed",
-      "benefit2": "Up to 30 min runtime per job"
+      "benefit1FreeTier": "More monthly credits, top up anytime",
+      "benefit2": "Up to 1 hour runtime per job on Pro",
+      "benefit3": "Bring your own models (Creator & Pro)"
     },
     "yearlyDiscount": "20% DISCOUNT",
     "tiers": {
+      "free": {
+        "name": "Free"
+      },
       "founder": {
         "name": "Founder's Edition"
       },
@@ -2236,6 +2300,8 @@
     },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
+    "subscribeForMore": "Upgrade",
+    "upgradeToAddCredits": "Upgrade to add credits",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
@@ -2246,6 +2312,21 @@
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
     "viewEnterprise": "View enterprise",
+    "freeTier": {
+      "title": "You're on the Free plan",
+      "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
+      "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
+      "nextRefresh": "Your credits refresh on {date}.",
+      "subscribeCta": "Subscribe for more",
+      "outOfCredits": {
+        "title": "You're out of free credits",
+        "subtitle": "Subscribe to unlock top-ups and more"
+      },
+      "topUpBlocked": {
+        "title": "Unlock top-ups and more"
+      },
+      "upgradeCta": "View plans"
+    },
     "partnerNodesCredits": "Partner nodes pricing",
     "plansAndPricing": "Plans & pricing",
     "managePlan": "Manage plan",
@@ -2273,6 +2354,7 @@
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
     "maxDuration": {
+      "free": "30 min",
       "standard": "30 min",
       "creator": "30 min",
       "pro": "1 hr",
@@ -2515,6 +2597,7 @@
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",
+    "enterBuilderMode": "App builder",
     "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
@@ -2943,35 +3026,62 @@
   },
   "linearMode": {
     "linearMode": "App Mode",
-    "beta": "App Mode in Beta - Feedback",
+    "beta": "App mode in beta",
+    "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
+    "mobileControls": "Edit & Run",
     "runCount": "Number of runs",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
     "downloadAll": "Download All",
+    "viewJob": "View Job",
+    "enterNodeGraph": "Enter node graph",
+    "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
+    "backToWorkflow": "Back to workflow",
+    "loadTemplate": "Load a template",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
       "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
       "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
       "getStarted": "Click {runButton} to get started.",
-      "backToWorkflow": "Back to workflow",
       "buildApp": "Build app"
     },
     "appModeToolbar": {
       "appBuilder": "App builder",
-      "apps": "Apps"
+      "apps": "Apps",
+      "appsEmptyMessage": "Saved apps will show up here.\nClick below to build your first app.",
+      "enterAppMode": "Enter app mode"
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
-      "switchToSelect": "Switch to the 'Select' step and click on output nodes to add them here.",
+      "switchToOutputs": "Switch to the 'Output' step and click on output nodes to add them here.",
       "connectAtLeastOne": "Connect {atLeastOne} output node so users can see results after running.",
       "atLeastOne": "at least one",
       "outputExamples": "Examples: 'Save Image' or 'Save Video'",
-      "switchToSelectButton": "Switch to Select",
+      "switchToOutputsButton": "Switch to Outputs",
       "outputs": "Outputs",
       "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
+    },
+    "builder": {
+      "title": "App builder mode",
+      "exit": "Exit builder",
+      "exitConfirmTitle": "Exit app builder?",
+      "exitConfirmMessage": "You have unsaved changes that will be lost\nExit without saving?",
+      "promptAddInputs": "Click on node parameters to add them here as inputs",
+      "noInputs": "No inputs added yet",
+      "inputsDesc": "Users will interact and adjust these to generate their outputs.",
+      "inputsExample": "Examples: “Load image”, “Text prompt”, “Steps”",
+      "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
+      "noOutputs": "No output nodes added yet",
+      "outputsDesc": "Connect at least one output node so users can see results after running.",
+      "outputsExample": "Examples: “Save Image” or “Save Video”",
+      "unknownWidget": "Widget not visible"
+    },
+    "queue": {
+      "clickToClear": "Click to clear queue",
+      "clear": "Clear queue"
     }
   },
   "missingNodes": {
@@ -3006,7 +3116,14 @@
     "openNodeManager": "Open Node Manager",
     "skipForNow": "Skip for Now",
     "installMissingNodes": "Install Missing Nodes",
-    "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure."
+    "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure.",
+    "swapNodesGuide": "The following nodes can be automatically replaced with compatible alternatives.",
+    "willBeReplacedBy": "This node will be replaced by:",
+    "replaceNode": "Replace Node",
+    "replaceAll": "Replace All",
+    "unknownNode": "Unknown",
+    "replaceAllWarning": "Replaces all available nodes in this group.",
+    "swapNodesTitle": "Swap Nodes"
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
@@ -3086,7 +3203,24 @@
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
     "resetToDefault": "Reset to default",
-    "resetAllParameters": "Reset all parameters"
+    "resetAllParameters": "Reset all parameters",
+    "missingNodePacks": {
+      "title": "Missing Node Packs",
+      "unsupportedTitle": "Unsupported Node Packs",
+      "cloudMessage": "This workflow requires custom nodes not yet available on Comfy Cloud.",
+      "ossMessage": "This workflow uses custom nodes you haven't installed yet.",
+      "ossManagerDisabledHint": "To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.",
+      "installAll": "Install All",
+      "installNodePack": "Install node pack",
+      "unknownPack": "Unknown pack",
+      "installing": "Installing...",
+      "installed": "Installed",
+      "applyChanges": "Apply Changes",
+      "searchInManager": "Search in Node Manager",
+      "viewInManager": "View in Manager",
+      "collapse": "Collapse",
+      "expand": "Expand"
+    }
   },
   "errorOverlay": {
     "errorCount": "{count} ERRORS | {count} ERROR | {count} ERRORS",
@@ -3231,27 +3365,34 @@
   },
   "builderToolbar": {
     "label": "App Builder",
-    "select": "Select",
-    "selectDescription": "Choose inputs/outputs",
+    "inputs": "Inputs",
+    "outputs": "Outputs",
+    "inputsDescription": "Choose inputs",
+    "outputsDescription": "Choose outputs",
     "arrange": "Preview",
     "arrangeDescription": "Review app layout",
-    "save": "Save",
-    "saveDescription": "Save and finish",
+    "defaultView": "Set a default view",
+    "defaultViewDescription": "Choose how this opens",
     "connectOutput": "Connect an output",
     "connectOutputBody1": "Your app needs at least one output to be connected before it can be saved.",
-    "connectOutputBody2": "Switch to the 'Select' step and click on output nodes to add them here.",
-    "switchToSelect": "Switch to Select",
-    "saveAs": "Save as",
-    "filename": "Filename",
-    "saveAsLabel": "Save this workflow as a ...",
+    "connectOutputBody2": "Switch to the 'Output' step and click on output nodes to add them here.",
+    "switchToOutputs": "Switch to Outputs",
+    "defaultViewTitle": "Set the default view for this workflow",
+    "defaultViewLabel": "By default, this workflow will open as:",
     "app": "App",
     "appDescription": "Opens as an app by default",
     "nodeGraph": "Node graph",
     "nodeGraphDescription": "Opens as node graph by default",
-    "saveSuccess": "Successfully saved",
-    "saveSuccessAppMessage": "'{name}' has been saved. It will open in App Mode by default from now on.",
-    "saveSuccessAppPrompt": "Would you like to view it now?",
-    "saveSuccessGraphMessage": "'{name}' has been saved. It will open as a node graph by default.",
-    "viewApp": "View app"
+    "defaultModeAppliedTitle": "Successfully set",
+    "defaultModeAppliedAppBody": "This workflow will open in App Mode by default from now on.",
+    "defaultModeAppliedAppPrompt": "Would you like to view it now?",
+    "defaultModeAppliedGraphBody": "This workflow will open as a node graph by default from now on.",
+    "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
+    "viewApp": "View app",
+    "emptyWorkflowTitle": "This workflow has no nodes",
+    "emptyWorkflowPrompt": "Do you want to start with a template?"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "Exit app builder"
   }
 }

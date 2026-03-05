@@ -27,12 +27,15 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON,
+  ModelFile,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON,
-  type ModelFile,
-  type NodeId,
-  isSubgraphDefinition
+  isSubgraphDefinition,
+  buildSubgraphExecutionPaths
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   ExecutionErrorWsMessage,
@@ -51,7 +54,6 @@ import {
   DOMWidgetImpl
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -77,11 +79,12 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
-import type { MissingNodeTypeExtraInfo } from '@/workbench/extensions/manager/types/missingNodeErrorTypes'
-import { createMissingNodeTypeFromError } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
+import { getCnrIdFromProperties } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
+import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
-import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
+  collectAllNodes,
+  forEachNode,
   getNodeByExecutionId,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
@@ -114,14 +117,18 @@ import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/
 import {
   extractFilesFromDragEvent,
   hasAudioType,
-  hasImageType
+  hasImageType,
+  hasVideoType,
+  isMediaFile
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import {
   pasteAudioNode,
   pasteAudioNodes,
   pasteImageNode,
-  pasteImageNodes
+  pasteImageNodes,
+  pasteVideoNode,
+  pasteVideoNodes
 } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
@@ -571,7 +578,9 @@ export class ComfyApp {
           workspace.spinner = true
           const imageFiles = files.filter(hasImageType)
           const audioFiles = files.filter(hasAudioType)
-          const totalMedia = imageFiles.length + audioFiles.length
+          const videoFiles = files.filter(hasVideoType)
+          const totalMedia =
+            imageFiles.length + audioFiles.length + videoFiles.length
           const hasMultipleMedia = totalMedia > 1
 
           if (hasMultipleMedia) {
@@ -581,8 +590,10 @@ export class ComfyApp {
             if (audioFiles.length > 0) {
               await this.handleAudioFileList(audioFiles)
             }
-            const handled = new Set([...imageFiles, ...audioFiles])
-            for (const file of files.filter((f) => !handled.has(f))) {
+            if (videoFiles.length > 0) {
+              await this.handleVideoFileList(videoFiles)
+            }
+            for (const file of files.filter((f) => !isMediaFile(f))) {
               await this.handleFile(file, 'file_drop', {
                 deferWarnings: true
               })
@@ -733,12 +744,9 @@ export class ComfyApp {
           'Payment Required: Please add credits to your account to use this node.'
         )
       ) {
-        const { isActiveSubscription } = useBillingContext()
-        if (isActiveSubscription.value) {
-          useDialogService().showTopUpCreditsDialog({
-            isInsufficientCredits: true
-          })
-        }
+        useDialogService().showTopUpCreditsDialog({
+          isInsufficientCredits: true
+        })
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
         useExecutionErrorStore().showErrorOverlay()
       } else {
@@ -753,7 +761,7 @@ export class ComfyApp {
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
       const blobUrl = createSharedObjectUrl(blob)
-      useJobPreviewStore().setPreviewUrl(jobId, blobUrl)
+      useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
       // Ensure clean up if `executing` event is missed.
       revokePreviewsByExecutionId(displayNodeId)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
@@ -1091,9 +1099,13 @@ export class ComfyApp {
   }
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
+    // Remove modal once Node Replacement is implemented in TabErrors.
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       useMissingNodesDialog().show({ missingNodeTypes })
     }
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.surfaceMissingNodes(missingNodeTypes)
   }
 
   async loadGraphData(
@@ -1172,15 +1184,16 @@ export class ComfyApp {
     const embeddedModels: ModelFile[] = []
 
     const nodeReplacementStore = useNodeReplacementStore()
-
+    await nodeReplacementStore.load()
     const collectMissingNodesAndModels = (
       nodes: ComfyWorkflowJSON['nodes'],
-      path: string = ''
+      pathPrefix: string = '',
+      displayName: string = ''
     ) => {
       if (!Array.isArray(nodes)) {
         console.warn(
           'Workflow nodes data is missing or invalid, skipping node processing',
-          { nodes, path }
+          { nodes, pathPrefix }
         )
         return
       }
@@ -1189,9 +1202,23 @@ export class ComfyApp {
         if (!(n.type in LiteGraph.registered_node_types)) {
           const replacement = nodeReplacementStore.getReplacementFor(n.type)
 
+          // To access missing node information in the error tab
+          // we collect the cnr_id and execution_id here.
+          const cnrId = getCnrIdFromProperties(
+            n.properties as Record<string, unknown> | undefined
+          )
+
+          const executionId = pathPrefix
+            ? `${pathPrefix}:${n.id}`
+            : String(n.id)
+
           missingNodeTypes.push({
             type: n.type,
-            ...(path && { hint: `in subgraph '${path}'` }),
+            nodeId: executionId,
+            cnrId,
+            ...(displayName && {
+              hint: t('g.inSubgraph', { name: displayName })
+            }),
             isReplaceable: replacement !== null,
             replacement: replacement ?? undefined
           })
@@ -1210,14 +1237,25 @@ export class ComfyApp {
     // Process nodes at the top level
     collectMissingNodesAndModels(graphData.nodes)
 
+    // Build map: subgraph definition UUID → full execution path prefix.
+    // Handles arbitrary nesting depth (e.g. root node 11 → "11", node 14 in sg 11 → "11:14").
+    const subgraphContainerIdMap = buildSubgraphExecutionPaths(
+      graphData.nodes,
+      graphData.definitions?.subgraphs ?? []
+    )
+
     // Process nodes in subgraphs
     if (graphData.definitions?.subgraphs) {
       for (const subgraph of graphData.definitions.subgraphs) {
         if (isSubgraphDefinition(subgraph)) {
-          collectMissingNodesAndModels(
-            subgraph.nodes,
-            subgraph.name || subgraph.id
-          )
+          const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
+          for (const pathPrefix of paths) {
+            collectMissingNodesAndModels(
+              subgraph.nodes,
+              pathPrefix,
+              subgraph.name || subgraph.id
+            )
+          }
         }
       }
     }
@@ -1249,26 +1287,8 @@ export class ComfyApp {
       }
     }
 
-    try {
-      // @ts-expect-error Discrepancies between zod and litegraph - in progress
-      this.rootGraph.configure(graphData)
-
-      // Save original renderer version before scaling (it gets modified during scaling)
-      const originalMainGraphRenderer =
-        this.rootGraph.extra.workflowRendererVersion
-
-      // Scale main graph
-      ensureCorrectLayoutScale(originalMainGraphRenderer)
-
-      // Scale all subgraphs that were loaded with the workflow
-      // Use original main graph renderer as fallback (not the modified one)
-      for (const subgraph of this.rootGraph.subgraphs.values()) {
-        ensureCorrectLayoutScale(
-          subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
-          subgraph
-        )
-      }
-
+    const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
+    const fitView = () => {
       if (
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
@@ -1296,6 +1316,29 @@ export class ComfyApp {
           useLitegraphService().fitView()
         }
       }
+    }
+
+    try {
+      // @ts-expect-error Discrepancies between zod and litegraph - in progress
+      this.rootGraph.configure(graphData)
+
+      // Save original renderer version before scaling (it gets modified during scaling)
+      const originalMainGraphRenderer =
+        this.rootGraph.extra.workflowRendererVersion
+
+      // Scale main graph
+      ensureCorrectLayoutScale(originalMainGraphRenderer)
+
+      // Scale all subgraphs that were loaded with the workflow
+      // Use original main graph renderer as fallback (not the modified one)
+      for (const subgraph of this.rootGraph.subgraphs.values()) {
+        ensureCorrectLayoutScale(
+          subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
+          subgraph
+        )
+      }
+
+      if (canvasVisible) fitView()
     } catch (error) {
       useDialogService().showErrorDialog(error, {
         title: t('errorDialog.loadWorkflowTitle'),
@@ -1375,6 +1418,13 @@ export class ComfyApp {
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
 
+    // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
+    // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
+    if (!canvasVisible && (!workflow || typeof workflow === 'string')) {
+      this.canvas.resize()
+      requestAnimationFrame(() => fitView())
+    }
+
     // Store pending warnings on the workflow for deferred display
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
     if (activeWf) {
@@ -1451,6 +1501,10 @@ export class ComfyApp {
             }
           })
 
+          // Capture workflow before await — activeWorkflow may change if the
+          // user switches tabs while the request is in flight.
+          const queuedWorkflow = useWorkspaceStore().workflow
+            .activeWorkflow as ComfyWorkflow
           const p = await this.graphToPrompt(this.rootGraph)
           const queuedNodes = collectAllNodes(this.rootGraph)
           try {
@@ -1471,8 +1525,7 @@ export class ComfyApp {
                   executionStore.storeJob({
                     id: res.prompt_id,
                     nodes: Object.keys(p.output),
-                    workflow: useWorkspaceStore().workflow
-                      .activeWorkflow as ComfyWorkflow
+                    workflow: queuedWorkflow
                   })
                 }
               } catch (error) {}
@@ -1483,10 +1536,8 @@ export class ComfyApp {
               typeof error.response.error === 'object' &&
               error.response.error?.type === 'missing_node_type'
             ) {
-              const extraInfo = (error.response.error.extra_info ??
-                {}) as MissingNodeTypeExtraInfo
-              const missingNodeType = createMissingNodeTypeFromError(extraInfo)
-              this.showMissingNodesError([missingNodeType])
+              // Re-scan the full graph instead of using the server's single-node response.
+              rescanAndSurfaceMissingNodes(this.rootGraph)
             } else if (
               !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||
               !(error instanceof PromptExecutionError)
@@ -1579,17 +1630,21 @@ export class ComfyApp {
     const { workflow, prompt, parameters, templates } = workflowData ?? {}
 
     if (!(workflow || prompt || parameters || templates)) {
-      if (file.type.startsWith('image')) {
+      const mediaNodeTypes: Record<string, [string, typeof pasteImageNode]> = {
+        image: ['LoadImage', pasteImageNode],
+        audio: ['LoadAudio', pasteAudioNode],
+        video: ['LoadVideo', pasteVideoNode]
+      }
+
+      const mediaType = Object.keys(mediaNodeTypes).find((t) =>
+        file.type.startsWith(t)
+      )
+      if (mediaType) {
+        const [nodeType, pasteFn] = mediaNodeTypes[mediaType]
         const transfer = new DataTransfer()
         transfer.items.add(file)
-        const imageNode = await createNode(this.canvas, 'LoadImage')
-        await pasteImageNode(this.canvas, transfer.items, imageNode)
-        return
-      } else if (file.type.startsWith('audio')) {
-        const transfer = new DataTransfer()
-        transfer.items.add(file)
-        const audioNode = await createNode(this.canvas, 'LoadAudio')
-        await pasteAudioNode(this.canvas, transfer.items, audioNode)
+        const node = await createNode(this.canvas, nodeType)
+        await pasteFn(this.canvas, transfer.items, node)
         return
       }
 
@@ -1699,6 +1754,14 @@ export class ComfyApp {
 
     this.positionNodes(audioNodes)
     this.canvas.selectItems(audioNodes)
+  }
+
+  async handleVideoFileList(fileList: File[]) {
+    const videoNodes = await pasteVideoNodes(this.canvas, fileList)
+    if (videoNodes.length === 0) return
+
+    this.positionNodes(videoNodes)
+    this.canvas.selectItems(videoNodes)
   }
 
   /**

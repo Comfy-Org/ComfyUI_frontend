@@ -225,6 +225,7 @@
     "login": {
       "andText": "및",
       "backToLogin": "로그인으로 돌아가기",
+      "backToSocialLogin": "Google 또는 Github로 가입하기",
       "confirmPasswordLabel": "비밀번호 확인",
       "confirmPasswordPlaceholder": "동일한 비밀번호를 다시 입력하세요",
       "didntReceiveEmail": "이메일을 받지 못하셨나요? 다음으로 문의하세요:",
@@ -233,6 +234,9 @@
       "failed": "로그인 실패",
       "forgotPassword": "비밀번호를 잊으셨나요?",
       "forgotPasswordError": "비밀번호 재설정 이메일 전송에 실패했습니다",
+      "freeTierBadge": "무료 등급 가능",
+      "freeTierDescription": "Google로 가입하면 매월 {credits} 무료 크레딧을 받을 수 있습니다. 카드 필요 없음.",
+      "freeTierDescriptionGeneric": "Google로 가입하면 매월 무료 크레딧을 받을 수 있습니다. 카드 필요 없음.",
       "insecureContextWarning": "이 연결은 안전하지 않습니다(HTTP) - 로그인을 계속하면 자격 증명이 공격자에게 가로채질 수 있습니다.",
       "loginButton": "로그인",
       "loginWithGithub": "Github로 로그인",
@@ -251,11 +255,13 @@
       "sendResetLink": "재설정 링크 보내기",
       "signInOrSignUp": "로그인 / 회원가입",
       "signUp": "가입하기",
+      "signUpFreeTierPromo": "처음이신가요? Google로 {signUp} 하여 매월 {credits} 무료 크레딧을 받으세요.",
       "success": "로그인 성공",
       "termsLink": "이용 약관",
       "termsText": "\"다음\" 또는 \"가입하기\"를 클릭하면 우리의",
       "title": "계정에 로그인",
       "useApiKey": "Comfy API 키",
+      "useEmailInstead": "이메일로 계속하기",
       "userAvatar": "사용자 아바타"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "이미 계정이 있으신가요?",
       "emailLabel": "이메일",
+      "emailNotEligibleForFreeTier": "이메일 가입은 무료 등급에 해당되지 않습니다.",
       "emailPlaceholder": "이메일을 입력하세요",
       "passwordLabel": "비밀번호",
       "passwordPlaceholder": "새 비밀번호를 입력하세요",
@@ -293,6 +300,9 @@
       "signUpWithGoogle": "구글로 가입하기",
       "title": "계정 생성"
     }
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "billingOperation": {
     "subscriptionFailed": "구독 업데이트에 실패했습니다",
@@ -315,8 +325,47 @@
     "deleteBlueprint": "블루프린트 삭제",
     "deleteWorkflow": "워크플로 삭제",
     "duplicate": "복제",
+    "enterAppMode": "앱 모드로 진입",
+    "enterBuilderMode": "앱 빌더로 진입",
     "enterNewName": "새 이름 입력",
-    "missingNodesWarning": "워크플로우에 지원되지 않는 노드가 포함되어 있습니다(빨간색으로 표시됨)."
+    "exitAppMode": "앱 모드 종료",
+    "missingNodesWarning": "워크플로우에 지원되지 않는 노드가 포함되어 있습니다(빨간색으로 표시됨).",
+    "workflowActions": "워크플로우 작업"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "앱 빌더 종료"
+  },
+  "builderToolbar": {
+    "app": "앱",
+    "appDescription": "기본적으로 앱으로 열립니다",
+    "arrange": "미리보기",
+    "arrangeDescription": "앱 레이아웃 검토",
+    "backToWorkflow": "워크플로우로 돌아가기",
+    "connectOutput": "출력 연결",
+    "connectOutputBody1": "앱을 저장하려면 최소 한 개의 출력이 연결되어야 합니다.",
+    "connectOutputBody2": "'선택' 단계로 전환한 후 출력 노드를 클릭하여 여기에 추가하세요.",
+    "defaultModeAppliedAppBody": "이 워크플로우는 앞으로 기본적으로 앱 모드에서 열립니다.",
+    "defaultModeAppliedAppPrompt": "지금 확인하시겠습니까?",
+    "defaultModeAppliedGraphBody": "이 워크플로우는 앞으로 기본적으로 노드 그래프로 열립니다.",
+    "defaultModeAppliedGraphPrompt": "앱을 계속 보시겠습니까?",
+    "defaultModeAppliedTitle": "성공적으로 설정됨",
+    "defaultView": "기본 보기 설정",
+    "defaultViewDescription": "이 워크플로우가 어떻게 열릴지 선택하세요",
+    "defaultViewLabel": "기본적으로 이 워크플로우는 다음과 같이 열립니다:",
+    "defaultViewTitle": "이 워크플로우의 기본 보기 설정",
+    "emptyWorkflowExplanation": "워크플로우가 비어 있습니다. 앱을 만들려면 먼저 노드가 필요합니다.",
+    "emptyWorkflowPrompt": "템플릿으로 시작하시겠습니까?",
+    "emptyWorkflowTitle": "이 워크플로우에는 노드가 없습니다",
+    "inputs": "입력",
+    "inputsDescription": "입력 선택",
+    "label": "앱 빌더",
+    "loadTemplate": "템플릿 불러오기",
+    "nodeGraph": "노드 그래프",
+    "nodeGraphDescription": "기본적으로 노드 그래프로 열립니다",
+    "outputs": "출력",
+    "outputsDescription": "출력 선택",
+    "switchToOutputs": "출력으로 전환",
+    "viewApp": "앱 보기"
   },
   "clipboard": {
     "errorMessage": "클립보드에 복사하지 못했습니다",
@@ -661,6 +710,7 @@
     "OPENAI_INPUT_FILES": "OpenAI 입력 파일",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "Pixverse 템플릿",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "Recraft 색상",
     "RECRAFT_CONTROLS": "Recraft 컨트롤",
     "RECRAFT_V3_STYLE": "Recraft V3 스타일",
@@ -879,6 +929,7 @@
     "enableSelected": "선택 항목 활성화",
     "enabled": "활성화됨",
     "enabling": "활성화 중",
+    "enter": "입력",
     "enterBaseName": "기본 이름 입력",
     "enterNewName": "새 이름 입력",
     "enterNewNamePrompt": "새 이름을 입력하세요:",
@@ -919,6 +970,7 @@
     "imageUrl": "이미지 URL",
     "import": "가져오기",
     "inProgress": "진행 중",
+    "inSubgraph": "서브그래프 '{name}'에 있음",
     "increment": "증가",
     "info": "노드 정보",
     "input": "입력",
@@ -986,6 +1038,7 @@
     "or": "또는",
     "output": "출력",
     "overwrite": "덮어쓰기",
+    "partner": "파트너",
     "playPause": "재생/일시정지",
     "playRecording": "녹음 재생",
     "playbackSpeed": "재생 속도",
@@ -996,6 +1049,7 @@
     "progressCountOf": "중",
     "queued": "대기 중",
     "ready": "준비됨",
+    "recents": "최근 항목",
     "reconnected": "재연결됨",
     "reconnecting": "재연결 중",
     "refresh": "새로 고침",
@@ -1076,6 +1130,7 @@
     "updated": "업데이트 됨",
     "updating": "업데이트 중",
     "upload": "업로드",
+    "uploadAlreadyInProgress": "업로드가 이미 진행 중입니다",
     "usageHint": "사용 힌트",
     "use": "사용",
     "user": "사용자",
@@ -1149,6 +1204,8 @@
     "star": "별"
   },
   "imageCompare": {
+    "batchLabelA": "A:",
+    "batchLabelB": "B:",
     "noImages": "비교할 이미지가 없습니다"
   },
   "imageCrop": {
@@ -1282,20 +1339,61 @@
     "helpFix": "이 문제 해결에 도움을 주세요"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "앱 빌더",
+      "apps": "앱",
+      "appsEmptyMessage": "저장된 앱이 여기에 표시됩니다.\n아래를 클릭하여 첫 번째 앱을 만들어보세요.",
+      "enterAppMode": "앱 모드로 들어가기"
+    },
+    "arrange": {
+      "atLeastOne": "최소 한 개",
+      "connectAtLeastOne": "사용자가 실행 후 결과를 볼 수 있도록 {atLeastOne}개의 출력 노드를 연결하세요.",
+      "noOutputs": "아직 출력이 추가되지 않았습니다",
+      "outputExamples": "예시: '이미지 저장' 또는 '비디오 저장'",
+      "outputs": "출력",
+      "resultsLabel": "선택한 출력 노드에서 생성된 결과가 이곳에 표시됩니다.",
+      "switchToOutputs": "'출력' 단계로 전환한 후 출력 노드를 클릭하여 여기에 추가하세요.",
+      "switchToOutputsButton": "출력으로 전환"
+    },
     "beta": "앱 모드 베타 - 피드백 보내기",
+    "builder": {
+      "exit": "빌더 종료",
+      "exitConfirmMessage": "저장되지 않은 변경사항이 사라집니다\n저장하지 않고 종료하시겠습니까?",
+      "exitConfirmTitle": "앱 빌더를 종료할까요?",
+      "inputsDesc": "사용자가 이 항목을 조정하여 결과를 생성할 수 있습니다.",
+      "inputsExample": "예시: “이미지 불러오기”, “텍스트 프롬프트”, “스텝 수”",
+      "noInputs": "아직 입력값이 추가되지 않았습니다",
+      "noOutputs": "아직 출력 노드가 추가되지 않았습니다",
+      "outputsDesc": "최소 한 개 이상의 출력 노드를 연결해야 실행 후 결과를 볼 수 있습니다.",
+      "outputsExample": "예시: “이미지 저장” 또는 “비디오 저장”",
+      "promptAddInputs": "노드 파라미터를 클릭하여 입력값으로 추가하세요",
+      "promptAddOutputs": "출력 노드를 클릭하여 여기에 추가하세요. 이들이 생성된 결과가 됩니다.",
+      "title": "앱 빌더 모드",
+      "unknownWidget": "위젯이 표시되지 않습니다"
+    },
     "downloadAll": "모두 다운로드",
     "dragAndDropImage": "이미지를 드래그 앤 드롭하세요",
+    "enterNodeGraph": "노드 그래프로 진입",
+    "giveFeedback": "피드백 보내기",
     "graphMode": "그래프 모드",
     "linearMode": "앱 모드",
+    "mobileControls": "편집 및 실행",
+    "queue": {
+      "clear": "대기열 비우기",
+      "clickToClear": "클릭하여 대기열 비우기"
+    },
     "rerun": "다시 실행",
     "reuseParameters": "파라미터 재사용",
     "runCount": "실행 횟수:",
+    "viewJob": "작업 보기",
     "welcome": {
-      "intro": "노드 그래프를 숨겨 창작에 집중할 수 있는 간소화된 보기입니다.",
-      "layout": "왼쪽에는 생성된 이미지, 비디오, 출력물이 표시됩니다. 오른쪽에는 필요한 컨트롤만 있습니다. 복잡한 모든 것은 보이지 않습니다.",
+      "backToWorkflow": "워크플로우로 돌아가기",
+      "buildApp": "앱 만들기",
+      "controls": "출력은 하단에, 컨트롤은 오른쪽에 표시됩니다. 나머지는 모두 숨겨집니다.",
+      "getStarted": "{runButton}을(를) 클릭하여 시작하세요.",
+      "message": "노드 그래프를 숨겨 창작에 집중할 수 있는 간소화된 보기입니다.",
       "sharing": "공유는 간단합니다: 워크플로우를 만들고, 앱 모드를 열고, 탭을 우클릭한 후 내보내기를 선택하세요. 다른 사람이 파일을 열면 이 깔끔한 뷰로 바로 시작됩니다. 복잡한 노드 그래프를 몰라도 강력한 워크플로우를 간단한 도구로 공유할 수 있습니다.",
-      "title": "앱 모드에 오신 것을 환영합니다",
-      "widget": "어떤 설정이 표시될지 제어하려면, 최상위 노드를 서브그래프로 변환한 후 위의 툴박스에서 위젯 프로모션을 사용해 노출할 항목을 선택하세요."
+      "title": "앱 모드에 오신 것을 환영합니다"
     }
   },
   "load3d": {
@@ -1504,6 +1602,9 @@
     "nodePack": "노드 팩",
     "nodePackInfo": "노드 팩 정보",
     "notAvailable": "사용 불가",
+    "packInstall": {
+      "nodeIdRequired": "설치를 위해 노드 ID가 필요합니다"
+    },
     "packsSelected": "선택한 노드 팩",
     "repository": "저장소",
     "restartToApplyChanges": "변경 사항을 적용하려면 ComfyUI를 재시작해 주세요",
@@ -1661,6 +1762,7 @@
     "disabled": "비활성화됨",
     "disabledTooltip": "워크플로 작업을 자동으로 실행 대기열에 추가하지 않습니다.",
     "execute": "실행",
+    "fullscreen": "전체 화면",
     "help": "도움말",
     "helpAndFeedback": "도움말 및 피드백",
     "hideMenu": "메뉴 숨기기",
@@ -1808,7 +1910,8 @@
     "Workflows": "워크플로",
     "Zoom In": "확대",
     "Zoom Out": "축소",
-    "Zoom to fit": "화면에 맞추기"
+    "Zoom to fit": "화면에 맞추기",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "노드 색상",
@@ -1818,11 +1921,18 @@
     "showLinks": "링크 표시"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "직접 찾아서 수동으로 다운로드해야 합니다. 온라인에서 검색해보세요(예: Civitai 또는 Hugging Face) 또는 원래 워크플로우 제공자에게 문의하세요.",
+    "customModelsWarning": "이 중 일부는 인식되지 않는 커스텀 모델입니다.",
+    "description": "이 워크플로우에는 아직 다운로드하지 않은 모델이 필요합니다.",
     "doNotAskAgain": "다시 보지 않기",
-    "missingModels": "모델이 없습니다",
-    "missingModelsMessage": "그래프를 로드할 때 다음 모델을 찾을 수 없었습니다",
+    "downloadAll": "모두 다운로드",
+    "downloadAvailable": "다운로드 가능",
+    "footerDescription": "이 모델들을 다운로드하여 올바른 폴더에 넣으세요.\n모델이 누락된 노드는 캔버스에서 빨간색으로 표시됩니다.",
+    "gotIt": "확인",
     "reEnableInSettings": "{link}에서 다시 활성화",
-    "reEnableInSettingsLink": "설정"
+    "reEnableInSettingsLink": "설정",
+    "title": "이 워크플로우에 모델이 누락되었습니다",
+    "totalSize": "총 다운로드 크기:"
   },
   "missingNodes": {
     "cloud": {
@@ -1844,6 +1954,14 @@
       "label": "미리보기 버전",
       "tooltip": "현재 ComfyUI의 나이트리 버전을 사용 중입니다. 이 기능들에 대한 의견을 피드백 버튼을 통해 공유해 주세요."
     }
+  },
+  "nightlySurvey": {
+    "accept": "네, 도와드릴게요!",
+    "description": "이 기능을 사용해 주셨네요. 잠시 시간을 내어 피드백을 남겨주시겠어요?",
+    "dontAskAgain": "다시 묻지 않기",
+    "loadError": "설문을 불러오지 못했습니다. 나중에 다시 시도해 주세요.",
+    "notNow": "나중에",
+    "title": "개선에 도움을 주세요"
   },
   "nodeCategories": {
     "": "",
@@ -1986,7 +2104,10 @@
     "openNodeManager": "Node Manager 열기",
     "quickFixAvailable": "빠른 수정 가능",
     "redHighlight": "빨간색",
+    "replaceAll": "모두 교체",
+    "replaceAllWarning": "이 그룹의 사용 가능한 모든 노드를 교체합니다.",
     "replaceFailed": "노드 교체 실패",
+    "replaceNode": "노드 교체",
     "replaceSelected": "선택한 항목 교체 ({count})",
     "replaceWarning": "이 작업은 워크플로를 영구적으로 수정합니다. 확실하지 않으면 먼저 복사본을 저장하세요.",
     "replaceable": "교체 가능",
@@ -1994,7 +2115,11 @@
     "replacedAllNodes": "{count}개 노드 유형 교체됨",
     "replacedNode": "교체된 노드: {nodeType}",
     "selectAll": "전체 선택",
-    "skipForNow": "일단 건너뛰기"
+    "skipForNow": "일단 건너뛰기",
+    "swapNodesGuide": "다음 노드는 호환 가능한 대체 노드로 자동 교체할 수 있습니다.",
+    "swapNodesTitle": "노드 교체",
+    "unknownNode": "알 수 없음",
+    "willBeReplacedBy": "이 노드는 다음으로 교체됩니다:"
   },
   "nodeTemplates": {
     "enterName": "이름 입력",
@@ -2012,6 +2137,19 @@
       "windows": "Windows (CUDA 지원 Nvidia GPU)"
     },
     "title": "이 장치는 지원되지 않습니다."
+  },
+  "painter": {
+    "background": "배경",
+    "brush": "브러시",
+    "clear": "지우기",
+    "color": "색상 선택기",
+    "eraser": "지우개",
+    "hardness": "경도",
+    "height": "높이",
+    "size": "커서 크기",
+    "tool": "도구",
+    "uploadError": "페인터 이미지를 업로드하지 못했습니다: {status} - {statusText}",
+    "width": "너비"
   },
   "progressToast": {
     "allDownloadsCompleted": "모든 다운로드가 완료되었습니다",
@@ -2133,6 +2271,22 @@
     "inputsNone": "입력 없음",
     "inputsNoneTooltip": "노드에 입력이 없습니다",
     "locateNode": "캔버스에서 노드 찾기",
+    "missingNodePacks": {
+      "applyChanges": "변경 사항 적용",
+      "cloudMessage": "이 워크플로우에는 Comfy Cloud에서 아직 사용할 수 없는 커스텀 노드가 필요합니다.",
+      "collapse": "접기",
+      "expand": "펼치기",
+      "installAll": "모두 설치",
+      "installNodePack": "노드 팩 설치",
+      "installed": "설치됨",
+      "installing": "설치 중...",
+      "ossMessage": "이 워크플로우에는 아직 설치하지 않은 커스텀 노드를 사용합니다.",
+      "searchInManager": "노드 매니저에서 검색",
+      "title": "누락된 노드 팩",
+      "unknownPack": "알 수 없는 팩",
+      "unsupportedTitle": "지원되지 않는 노드 팩",
+      "viewInManager": "매니저에서 보기"
+    },
     "mute": "음소거",
     "noErrors": "오류 없음",
     "noSelection": "노드를 선택하면 속성과 정보를 볼 수 있습니다.",
@@ -2492,8 +2646,16 @@
     "nodeLibrary": "노드 라이브러리",
     "nodeLibraryTab": {
       "allNodes": "모든 노드",
+      "blueprints": "블루프린트",
       "custom": "사용자 정의",
       "essentials": "필수",
+      "filter": "필터",
+      "filterOptions": {
+        "blueprints": "블루프린트",
+        "comfyNodes": "Comfy 노드",
+        "extensions": "확장 프로그램",
+        "partnerNodes": "파트너 노드"
+      },
       "groupBy": "그룹 기준",
       "groupStrategies": {
         "category": "카테고리",
@@ -2503,10 +2665,18 @@
         "source": "소스",
         "sourceDesc": "소스 유형(Core, Custom, API)별로 그룹화"
       },
+      "noBookmarkedNodes": "아직 즐겨찾기가 없습니다",
       "resetView": "기본 보기로 재설정",
       "sections": {
+        "bookmarked": "즐겨찾기",
+        "comfyBlueprints": "Comfy 블루프린트",
+        "comfyNodes": "Comfy 노드",
+        "extensions": "확장 프로그램",
         "favoriteNode": "즐겨찾는 노드",
         "favorites": "즐겨찾기",
+        "myBlueprints": "내 블루프린트",
+        "partnerNodes": "파트너 노드",
+        "subgraphBlueprints": "서브그래프 블루프린트",
         "unfavoriteNode": "즐겨찾기 해제 노드"
       },
       "sortBy": {
@@ -2560,6 +2730,7 @@
       "searchJobs": "검색...",
       "showAssets": "에셋 보기",
       "showAssetsPanel": "에셋 패널 보기",
+      "showRunProgressBar": "실행 진행률 표시줄 표시",
       "sortBy": "정렬 기준",
       "sortJobs": "작업 정렬",
       "stubClipTextEncode": "CLIP 텍스트 인코드:",
@@ -2599,14 +2770,17 @@
     "cannotDeleteGlobal": "설치된 블루프린트는 삭제할 수 없습니다",
     "confirmDelete": "이 작업은 라이브러리에서 블루프린트를 영구적으로 제거합니다",
     "confirmDeleteTitle": "블루프린트를 삭제하시겠습니까?",
+    "disconnected": "연결 해제됨",
     "enterDescription": "설명을 입력하세요",
     "enterSearchAliases": "검색 별칭을 입력하세요 (쉼표로 구분)",
     "hidden": "숨김 / 중첩 매개변수",
     "hideAll": "모두 숨김",
+    "linked": "(연결됨)",
     "loadFailure": "서브그래프 블루프린트 로드 실패",
     "overwriteBlueprint": "저장하면 현재 블루프린트가 변경사항으로 덮어쓰여집니다",
     "overwriteBlueprintTitle": "기존 블루프린트를 덮어쓰시겠습니까?",
     "promoteOutsideSubgraph": "하위 그래프가 아닐 때 위젯을 승격할 수 없음",
+    "promoteWidget": "위젯 승격: {name}",
     "publish": "서브그래프 게시",
     "publishSuccess": "노드 라이브러리에 저장됨",
     "publishSuccessMessage": "노드 라이브러리의 \"서브그래프 블루프린트\" 아래에서 서브그래프 블루프린트를 찾을 수 있습니다",
@@ -2614,7 +2788,8 @@
     "searchAliases": "별칭 검색",
     "showAll": "모두 표시",
     "showRecommended": "권장 위젯 표시",
-    "shown": "노드에 표시됨"
+    "shown": "노드에 표시됨",
+    "unpromoteWidget": "위젯 승격 해제: {name}"
   },
   "subscription": {
     "addApiCredits": "API 크레딧 추가",
@@ -2622,7 +2797,9 @@
     "addCreditsLabel": "언제든지 크레딧 추가 가능",
     "benefits": {
       "benefit1": "파트너 노드 월간 크레딧 — 필요 시 충전",
-      "benefit2": "작업당 최대 30분 실행 시간"
+      "benefit1FreeTier": "더 많은 월간 크레딧, 언제든지 충전 가능",
+      "benefit2": "작업당 최대 30분 실행 시간",
+      "benefit3": "직접 모델 가져오기(Creator & Pro)"
     },
     "beta": "베타",
     "billedMonthly": "매월 결제",
@@ -2660,6 +2837,21 @@
     "description": "가장 적합한 플랜을 선택하세요",
     "descriptionWorkspace": "워크스페이스에 가장 적합한 플랜을 선택하세요",
     "expiresDate": "만료일 {date}",
+    "freeTier": {
+      "description": "무료 플랜에는 Comfy Cloud를 체험할 수 있도록 매월 {credits} 크레딧이 포함되어 있습니다.",
+      "descriptionGeneric": "무료 플랜에는 Comfy Cloud를 체험할 수 있는 월간 크레딧이 포함되어 있습니다.",
+      "nextRefresh": "크레딧은 {date}에 새로 고침됩니다.",
+      "outOfCredits": {
+        "subtitle": "충전 및 추가 혜택을 위해 구독하세요",
+        "title": "무료 크레딧이 모두 소진되었습니다"
+      },
+      "subscribeCta": "더 많은 혜택 구독하기",
+      "title": "무료 플랜을 사용 중입니다",
+      "topUpBlocked": {
+        "title": "충전 및 추가 혜택 잠금 해제"
+      },
+      "upgradeCta": "플랜 보기"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "질문이 있거나 엔터프라이즈가 궁금하신가요?",
     "invoiceHistory": "청구서 기록",
@@ -2670,6 +2862,7 @@
     "maxDuration": {
       "creator": "30분",
       "founder": "30분",
+      "free": "30분",
       "pro": "1시간",
       "standard": "30분"
     },
@@ -2728,6 +2921,7 @@
     "resubscribe": "다시 구독하기",
     "resubscribeSuccess": "구독이 성공적으로 재활성화되었습니다",
     "resubscribeTo": "{plan} 다시 구독하기",
+    "subscribeForMore": "업그레이드",
     "subscribeNow": "지금 구독하기",
     "subscribeTo": "{plan} 구독하기",
     "subscribeToComfyCloud": "Comfy Cloud 구독",
@@ -2742,6 +2936,9 @@
       "founder": {
         "name": "Founder's Edition"
       },
+      "free": {
+        "name": "무료"
+      },
       "pro": {
         "name": "Pro"
       },
@@ -2755,6 +2952,7 @@
     "upgrade": "업그레이드",
     "upgradePlan": "플랜 업그레이드",
     "upgradeTo": "{plan}로 업그레이드",
+    "upgradeToAddCredits": "크레딧 추가를 위해 업그레이드하세요",
     "usdPerMonth": "USD / 월",
     "usdPerMonthPerMember": "USD / 월 / 멤버",
     "videoEstimateExplanation": "이 추정치는 기본 설정(5초, 640x640, 16fps, 4단계 샘플링)을 사용한 Wan 2.2 이미지-투-비디오 템플릿을 기준으로 합니다.",
@@ -2852,6 +3050,7 @@
     "emptyCanvas": "빈 캔버스",
     "errorCopyImage": "이미지 복사 오류: {error}",
     "errorLoadingModel": "모델 로딩 오류",
+    "errorOpenImage": "이미지를 여는 중 오류가 발생했습니다: {error}",
     "errorSaveSetting": "설정 {id} 저장 오류: {err}",
     "exportSuccess": "모델을 {format} 형식으로 성공적으로 내보냄",
     "failedExecutionPathResolution": "선택한 노드의 경로를 확인할 수 없음",
@@ -3019,7 +3218,9 @@
     "enterFilename": "파일 이름 입력",
     "enterFilenamePrompt": "파일 이름을 입력하세요:",
     "exportWorkflow": "워크플로 내보내기",
-    "saveWorkflow": "워크플로 저장"
+    "saveWorkflow": "워크플로 저장",
+    "savedAsApp": "앱 워크플로우로 변환됨",
+    "savedAsWorkflow": "노드 그래프 전용 워크플로우로 변환됨"
   },
   "workspace": {
     "addedToWorkspace": "{workspaceName} 워크스페이스에 추가되었습니다",

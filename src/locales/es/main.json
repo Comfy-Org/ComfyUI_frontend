@@ -225,6 +225,7 @@
     "login": {
       "andText": "y",
       "backToLogin": "Volver al inicio de sesión",
+      "backToSocialLogin": "Regístrate con Google o Github en su lugar",
       "confirmPasswordLabel": "Confirmar contraseña",
       "confirmPasswordPlaceholder": "Ingresa la misma contraseña nuevamente",
       "didntReceiveEmail": "¿No recibiste el correo? Contáctanos en",
@@ -233,6 +234,9 @@
       "failed": "Inicio de sesión fallido",
       "forgotPassword": "¿Olvidaste tu contraseña?",
       "forgotPasswordError": "No se pudo enviar el correo electrónico para restablecer la contraseña",
+      "freeTierBadge": "Elegible para el plan gratuito",
+      "freeTierDescription": "Regístrate con Google para obtener {credits} créditos gratis cada mes. No se necesita tarjeta.",
+      "freeTierDescriptionGeneric": "Regístrate con Google para obtener créditos gratis cada mes. No se necesita tarjeta.",
       "insecureContextWarning": "Esta conexión no es segura (HTTP): tus credenciales pueden ser interceptadas por atacantes si continúas con el inicio de sesión.",
       "loginButton": "Iniciar sesión",
       "loginWithGithub": "Iniciar sesión con Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "Enviar enlace de restablecimiento",
       "signInOrSignUp": "Iniciar sesión / Registrarse",
       "signUp": "Regístrate",
+      "signUpFreeTierPromo": "¿Nuevo aquí? {signUp} con Google para obtener {credits} créditos gratis cada mes.",
       "success": "Inicio de sesión exitoso",
       "termsLink": "Términos de uso",
       "termsText": "Al hacer clic en \"Siguiente\" o \"Registrarse\", aceptas nuestros",
       "title": "Inicia sesión en tu cuenta",
       "useApiKey": "Clave API de Comfy",
+      "useEmailInstead": "Usar correo electrónico en su lugar",
       "userAvatar": "Avatar de usuario"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "¿Ya tienes una cuenta?",
       "emailLabel": "Correo electrónico",
+      "emailNotEligibleForFreeTier": "El registro por correo electrónico no es elegible para el plan gratuito.",
       "emailPlaceholder": "Ingresa tu correo electrónico",
       "passwordLabel": "Contraseña",
       "passwordPlaceholder": "Ingresa una nueva contraseña",
@@ -293,6 +300,9 @@
       "signUpWithGoogle": "Registrarse con Google",
       "title": "Crea una cuenta"
     }
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "billingOperation": {
     "subscriptionFailed": "Error al actualizar la suscripción",
@@ -315,8 +325,47 @@
     "deleteBlueprint": "Eliminar Plano",
     "deleteWorkflow": "Eliminar flujo de trabajo",
     "duplicate": "Duplicar",
+    "enterAppMode": "Entrar en modo aplicación",
+    "enterBuilderMode": "Entrar al constructor de aplicaciones",
     "enterNewName": "Ingrese un nuevo nombre",
-    "missingNodesWarning": "El flujo de trabajo contiene nodos no compatibles (resaltados en rojo)."
+    "exitAppMode": "Salir del modo aplicación",
+    "missingNodesWarning": "El flujo de trabajo contiene nodos no compatibles (resaltados en rojo).",
+    "workflowActions": "Acciones del flujo de trabajo"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "Salir del constructor de aplicaciones"
+  },
+  "builderToolbar": {
+    "app": "Aplicación",
+    "appDescription": "Se abre como una aplicación por defecto",
+    "arrange": "Vista previa",
+    "arrangeDescription": "Revisar el diseño de la aplicación",
+    "backToWorkflow": "Volver al flujo de trabajo",
+    "connectOutput": "Conectar una salida",
+    "connectOutputBody1": "Tu aplicación necesita al menos una salida conectada antes de poder guardarse.",
+    "connectOutputBody2": "Cambia al paso 'Seleccionar' y haz clic en los nodos de salida para agregarlos aquí.",
+    "defaultModeAppliedAppBody": "Este flujo de trabajo se abrirá en Modo de Aplicación por defecto a partir de ahora.",
+    "defaultModeAppliedAppPrompt": "¿Te gustaría verlo ahora?",
+    "defaultModeAppliedGraphBody": "Este flujo de trabajo se abrirá como un grafo de nodos por defecto a partir de ahora.",
+    "defaultModeAppliedGraphPrompt": "¿Aún quieres ver la aplicación?",
+    "defaultModeAppliedTitle": "Configurado correctamente",
+    "defaultView": "Establecer vista predeterminada",
+    "defaultViewDescription": "Elige cómo se abre esto",
+    "defaultViewLabel": "Por defecto, este flujo de trabajo se abrirá como:",
+    "defaultViewTitle": "Establecer la vista predeterminada para este flujo de trabajo",
+    "emptyWorkflowExplanation": "Tu flujo de trabajo está vacío. Necesitas algunos nodos para empezar a crear una aplicación.",
+    "emptyWorkflowPrompt": "¿Quieres empezar con una plantilla?",
+    "emptyWorkflowTitle": "Este flujo de trabajo no tiene nodos",
+    "inputs": "Entradas",
+    "inputsDescription": "Elige entradas",
+    "label": "Constructor de aplicaciones",
+    "loadTemplate": "Cargar una plantilla",
+    "nodeGraph": "Grafo de nodos",
+    "nodeGraphDescription": "Se abre como grafo de nodos por defecto",
+    "outputs": "Salidas",
+    "outputsDescription": "Elige salidas",
+    "switchToOutputs": "Cambiar a Salidas",
+    "viewApp": "Ver aplicación"
   },
   "clipboard": {
     "errorMessage": "Error al copiar al portapapeles",
@@ -661,6 +710,7 @@
     "OPENAI_INPUT_FILES": "ARCHIVOS_ENTRADA_OPENAI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PLANTILLA PIXVERSE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "COLOR RECRAFT",
     "RECRAFT_CONTROLS": "CONTROLES RECRAFT",
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
@@ -879,6 +929,7 @@
     "enableSelected": "Habilitar seleccionados",
     "enabled": "Habilitado",
     "enabling": "Habilitando",
+    "enter": "Entrar",
     "enterBaseName": "Introduce el nombre base",
     "enterNewName": "Introduce el nuevo nombre",
     "enterNewNamePrompt": "Introduce un nuevo nombre:",
@@ -919,6 +970,7 @@
     "imageUrl": "URL de la imagen",
     "import": "Importar",
     "inProgress": "En progreso",
+    "inSubgraph": "en subgrafo '{name}'",
     "increment": "Incrementar",
     "info": "Información del Nodo",
     "input": "Entrada",
@@ -986,6 +1038,7 @@
     "or": "o",
     "output": "Salida",
     "overwrite": "Sobrescribir",
+    "partner": "Socio",
     "playPause": "Reproducir/Pausar",
     "playRecording": "Reproducir grabación",
     "playbackSpeed": "Velocidad de reproducción",
@@ -996,6 +1049,7 @@
     "progressCountOf": "de",
     "queued": "En cola",
     "ready": "Listo",
+    "recents": "Recientes",
     "reconnected": "Reconectado",
     "reconnecting": "Reconectando",
     "refresh": "Actualizar",
@@ -1076,6 +1130,7 @@
     "updated": "Actualizado",
     "updating": "Actualizando",
     "upload": "Subir",
+    "uploadAlreadyInProgress": "La carga ya está en curso",
     "usageHint": "Sugerencia de uso",
     "use": "Usar",
     "user": "Usuario",
@@ -1149,6 +1204,8 @@
     "star": "Estrella"
   },
   "imageCompare": {
+    "batchLabelA": "A:",
+    "batchLabelB": "B:",
     "noImages": "No hay imágenes para comparar"
   },
   "imageCrop": {
@@ -1282,20 +1339,61 @@
     "helpFix": "Ayuda a Solucionar Esto"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "Constructor de aplicaciones",
+      "apps": "Aplicaciones",
+      "appsEmptyMessage": "Las aplicaciones guardadas aparecerán aquí.\nHaz clic abajo para crear tu primera aplicación.",
+      "enterAppMode": "Entrar en modo de aplicación"
+    },
+    "arrange": {
+      "atLeastOne": "al menos uno",
+      "connectAtLeastOne": "Conecta {atLeastOne} nodo de salida para que los usuarios puedan ver los resultados después de ejecutar.",
+      "noOutputs": "Aún no se han añadido salidas",
+      "outputExamples": "Ejemplos: 'Guardar imagen' o 'Guardar video'",
+      "outputs": "Salidas",
+      "resultsLabel": "Los resultados generados por el/los nodo(s) de salida seleccionados se mostrarán aquí después de ejecutar esta aplicación",
+      "switchToOutputs": "Cambia al paso 'Salida' y haz clic en los nodos de salida para agregarlos aquí.",
+      "switchToOutputsButton": "Cambiar a Salidas"
+    },
     "beta": "Modo App Beta - Enviar comentarios",
+    "builder": {
+      "exit": "Salir del constructor",
+      "exitConfirmMessage": "Tienes cambios sin guardar que se perderán\n¿Salir sin guardar?",
+      "exitConfirmTitle": "¿Salir del constructor de aplicaciones?",
+      "inputsDesc": "Los usuarios interactuarán y ajustarán estos para generar sus resultados.",
+      "inputsExample": "Ejemplos: “Cargar imagen”, “Prompt de texto”, “Pasos”",
+      "noInputs": "Aún no se han agregado entradas",
+      "noOutputs": "Aún no se han agregado nodos de salida",
+      "outputsDesc": "Conecta al menos un nodo de salida para que los usuarios vean los resultados después de ejecutar.",
+      "outputsExample": "Ejemplos: “Guardar imagen” o “Guardar video”",
+      "promptAddInputs": "Haz clic en los parámetros del nodo para agregarlos aquí como entradas",
+      "promptAddOutputs": "Haz clic en los nodos de salida para agregarlos aquí. Estos serán los resultados generados.",
+      "title": "Modo constructor de aplicaciones",
+      "unknownWidget": "Widget no visible"
+    },
     "downloadAll": "Descargar todo",
     "dragAndDropImage": "Arrastra y suelta una imagen",
+    "enterNodeGraph": "Entrar al grafo de nodos",
+    "giveFeedback": "Enviar comentarios",
     "graphMode": "Modo gráfico",
     "linearMode": "Modo App",
+    "mobileControls": "Editar y ejecutar",
+    "queue": {
+      "clear": "Limpiar cola",
+      "clickToClear": "Haz clic para limpiar la cola"
+    },
     "rerun": "Volver a ejecutar",
     "reuseParameters": "Reutilizar parámetros",
     "runCount": "Número de ejecuciones:",
+    "viewJob": "Ver tarea",
     "welcome": {
-      "intro": "Una vista simplificada que oculta el grafo de nodos para que puedas concentrarte en crear.",
-      "layout": "A la izquierda, verás tus imágenes, videos y resultados generados. A la derecha, solo los controles necesarios. Todo lo complejo queda fuera de la vista.",
+      "backToWorkflow": "Volver al flujo de trabajo",
+      "buildApp": "Crear aplicación",
+      "controls": "Tus resultados aparecen abajo, tus controles están a la derecha. Todo lo demás se mantiene fuera del camino.",
+      "getStarted": "Haz clic en {runButton} para comenzar.",
+      "message": "Una vista simplificada que oculta el grafo de nodos para que puedas concentrarte en crear.",
       "sharing": "Compartir es fácil: crea tu flujo de trabajo, abre el Modo App, haz clic derecho en la pestaña y exporta. Cuando otros abran tu archivo, se lanzará directamente en esta vista limpia. Puedes compartir flujos de trabajo potentes como herramientas simples sin que nadie tenga que entender grafos de nodos.",
-      "title": "Bienvenido al Modo App",
-      "widget": "Si quieres controlar qué ajustes aparecen, convierte tus nodos principales en un subgrafo y luego usa la promoción de widgets en la barra de herramientas sobre él para elegir qué se expone."
+      "title": "Bienvenido al Modo App"
     }
   },
   "load3d": {
@@ -1504,6 +1602,9 @@
     "nodePack": "Paquete de Nodos",
     "nodePackInfo": "Información del paquete de nodos",
     "notAvailable": "No Disponible",
+    "packInstall": {
+      "nodeIdRequired": "Se requiere el ID del nodo para la instalación"
+    },
     "packsSelected": "Paquetes Seleccionados",
     "repository": "Repositorio",
     "restartToApplyChanges": "Para aplicar los cambios, por favor reinicia ComfyUI",
@@ -1661,6 +1762,7 @@
     "disabled": "Deshabilitado",
     "disabledTooltip": "El flujo de trabajo no se encolará automáticamente",
     "execute": "Ejecutar",
+    "fullscreen": "Pantalla completa",
     "help": "Ayuda",
     "helpAndFeedback": "Ayuda y comentarios",
     "hideMenu": "Ocultar menú",
@@ -1808,7 +1910,8 @@
     "Workflows": "Flujos de trabajo",
     "Zoom In": "Acercar",
     "Zoom Out": "Alejar",
-    "Zoom to fit": "Ajustar al tamaño"
+    "Zoom to fit": "Ajustar al tamaño",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "Colores de nodos",
@@ -1818,11 +1921,18 @@
     "showLinks": "Mostrar enlaces"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "Tendrás que encontrarlos y descargarlos manualmente. Búscalos en línea (prueba Civitai o Hugging Face) o contacta al proveedor original del flujo de trabajo.",
+    "customModelsWarning": "Algunos de estos son modelos personalizados que no reconocemos.",
+    "description": "Este flujo de trabajo requiere modelos que aún no has descargado.",
     "doNotAskAgain": "No mostrar esto de nuevo",
-    "missingModels": "Modelos faltantes",
-    "missingModelsMessage": "Al cargar el gráfico, no se encontraron los siguientes modelos",
+    "downloadAll": "Descargar todo",
+    "downloadAvailable": "Descargar disponibles",
+    "footerDescription": "Descarga y coloca estos modelos en la carpeta correcta.\nLos nodos con modelos faltantes están resaltados en rojo en el lienzo.",
+    "gotIt": "Entendido",
     "reEnableInSettings": "Vuelve a habilitar en {link}",
-    "reEnableInSettingsLink": "Configuración"
+    "reEnableInSettingsLink": "Configuración",
+    "title": "Faltan modelos en este flujo de trabajo",
+    "totalSize": "Tamaño total de descarga:"
   },
   "missingNodes": {
     "cloud": {
@@ -1844,6 +1954,14 @@
       "label": "Versión preliminar",
       "tooltip": "Estás usando una versión nightly de ComfyUI. Por favor, utiliza el botón de comentarios para compartir tus opiniones sobre estas funciones."
     }
+  },
+  "nightlySurvey": {
+    "accept": "¡Claro, ayudaré!",
+    "description": "Has estado usando esta función. ¿Te tomarías un momento para compartir tus comentarios?",
+    "dontAskAgain": "No preguntar de nuevo",
+    "loadError": "No se pudo cargar la encuesta. Por favor, inténtalo de nuevo más tarde.",
+    "notNow": "Ahora no",
+    "title": "Ayúdanos a mejorar"
   },
   "nodeCategories": {
     "": "",
@@ -1986,7 +2104,10 @@
     "openNodeManager": "Abrir Administrador de Nodos",
     "quickFixAvailable": "Solución rápida disponible",
     "redHighlight": "rojo",
+    "replaceAll": "Reemplazar todo",
+    "replaceAllWarning": "Reemplaza todos los nodos disponibles en este grupo.",
     "replaceFailed": "Error al reemplazar nodos",
+    "replaceNode": "Reemplazar nodo",
     "replaceSelected": "Reemplazar seleccionados ({count})",
     "replaceWarning": "Esto modificará permanentemente el flujo de trabajo. Guarda una copia primero si no estás seguro.",
     "replaceable": "Reemplazable",
@@ -1994,7 +2115,11 @@
     "replacedAllNodes": "Reemplazados {count} tipo(s) de nodo",
     "replacedNode": "Nodo reemplazado: {nodeType}",
     "selectAll": "Seleccionar todo",
-    "skipForNow": "Omitir por ahora"
+    "skipForNow": "Omitir por ahora",
+    "swapNodesGuide": "Los siguientes nodos pueden ser reemplazados automáticamente por alternativas compatibles.",
+    "swapNodesTitle": "Intercambiar nodos",
+    "unknownNode": "Desconocido",
+    "willBeReplacedBy": "Este nodo será reemplazado por:"
   },
   "nodeTemplates": {
     "enterName": "Introduzca el nombre",
@@ -2012,6 +2137,19 @@
       "windows": "Windows (GPU Nvidia con soporte CUDA)"
     },
     "title": "Tu dispositivo no es compatible"
+  },
+  "painter": {
+    "background": "Fondo",
+    "brush": "Pincel",
+    "clear": "Limpiar",
+    "color": "Selector de color",
+    "eraser": "Borrador",
+    "hardness": "Dureza",
+    "height": "Alto",
+    "size": "Tamaño del cursor",
+    "tool": "Herramienta",
+    "uploadError": "Error al cargar la imagen del pintor: {status} - {statusText}",
+    "width": "Ancho"
   },
   "progressToast": {
     "allDownloadsCompleted": "Todas las descargas completadas",
@@ -2133,6 +2271,22 @@
     "inputsNone": "SIN ENTRADAS",
     "inputsNoneTooltip": "El nodo no tiene entradas",
     "locateNode": "Localizar nodo en el lienzo",
+    "missingNodePacks": {
+      "applyChanges": "Aplicar cambios",
+      "cloudMessage": "Este flujo de trabajo requiere nodos personalizados que aún no están disponibles en Comfy Cloud.",
+      "collapse": "Colapsar",
+      "expand": "Expandir",
+      "installAll": "Instalar todo",
+      "installNodePack": "Instalar paquete de nodos",
+      "installed": "Instalado",
+      "installing": "Instalando...",
+      "ossMessage": "Este flujo de trabajo utiliza nodos personalizados que aún no has instalado.",
+      "searchInManager": "Buscar en el Gestor de Nodos",
+      "title": "Paquetes de nodos faltantes",
+      "unknownPack": "Paquete desconocido",
+      "unsupportedTitle": "Paquetes de nodos no compatibles",
+      "viewInManager": "Ver en el Gestor"
+    },
     "mute": "Silenciar",
     "noErrors": "Sin errores",
     "noSelection": "Selecciona un nodo para ver sus propiedades e información.",
@@ -2492,8 +2646,16 @@
     "nodeLibrary": "Biblioteca de nodos",
     "nodeLibraryTab": {
       "allNodes": "Todos los nodos",
+      "blueprints": "Planos",
       "custom": "Personalizado",
       "essentials": "Esenciales",
+      "filter": "Filtrar",
+      "filterOptions": {
+        "blueprints": "Planos",
+        "comfyNodes": "Nodos Comfy",
+        "extensions": "Extensiones",
+        "partnerNodes": "Nodos de socios"
+      },
       "groupBy": "Agrupar por",
       "groupStrategies": {
         "category": "Categoría",
@@ -2503,10 +2665,18 @@
         "source": "Fuente",
         "sourceDesc": "Agrupar por tipo de fuente (Core, Custom, API)"
       },
+      "noBookmarkedNodes": "Aún no hay favoritos",
       "resetView": "Restablecer vista a la predeterminada",
       "sections": {
+        "bookmarked": "Favoritos",
+        "comfyBlueprints": "Planos Comfy",
+        "comfyNodes": "Nodos Comfy",
+        "extensions": "Extensiones",
         "favoriteNode": "Nodo favorito",
         "favorites": "Favoritos",
+        "myBlueprints": "Mis planos",
+        "partnerNodes": "Nodos de socios",
+        "subgraphBlueprints": "Planos de subgráficos",
         "unfavoriteNode": "Quitar de favoritos"
       },
       "sortBy": {
@@ -2560,6 +2730,7 @@
       "searchJobs": "Buscar...",
       "showAssets": "Mostrar recursos",
       "showAssetsPanel": "Mostrar panel de recursos",
+      "showRunProgressBar": "Mostrar barra de progreso de ejecución",
       "sortBy": "Ordenar por",
       "sortJobs": "Ordenar trabajos",
       "stubClipTextEncode": "CLIP Text Encode:",
@@ -2599,14 +2770,17 @@
     "cannotDeleteGlobal": "No se pueden eliminar los blueprints instalados",
     "confirmDelete": "Esta acción eliminará permanentemente el subgrafo de tu biblioteca",
     "confirmDeleteTitle": "¿Eliminar subgrafo?",
+    "disconnected": "Desconectado",
     "enterDescription": "Introduce una descripción",
     "enterSearchAliases": "Introduce alias de búsqueda (separados por comas)",
     "hidden": "Parámetros ocultos/anidados",
     "hideAll": "Ocultar todo",
+    "linked": "(Vinculado)",
     "loadFailure": "No se pudieron cargar los subgrafos",
     "overwriteBlueprint": "Guardar sobrescribirá el subgrafo actual con tus cambios",
     "overwriteBlueprintTitle": "¿Sobrescribir subgrafo existente?",
     "promoteOutsideSubgraph": "No se puede promocionar widget cuando no está en subgrafo",
+    "promoteWidget": "Promocionar widget: {name}",
     "publish": "Publicar subgrafo",
     "publishSuccess": "Guardado en la biblioteca de nodos",
     "publishSuccessMessage": "Puedes encontrar tu subgrafo en la biblioteca de nodos bajo \"Subgraph Blueprints\"",
@@ -2614,7 +2788,8 @@
     "searchAliases": "Buscar alias",
     "showAll": "Mostrar todo",
     "showRecommended": "Mostrar widgets recomendados",
-    "shown": "Mostrado en el nodo"
+    "shown": "Mostrado en el nodo",
+    "unpromoteWidget": "Dejar de promocionar widget: {name}"
   },
   "subscription": {
     "addApiCredits": "Agregar créditos de API",
@@ -2622,7 +2797,9 @@
     "addCreditsLabel": "Agrega más créditos cuando quieras",
     "benefits": {
       "benefit1": "Créditos mensuales para Nodos de Socio — recarga cuando sea necesario",
-      "benefit2": "Hasta 30 min de tiempo de ejecución por trabajo"
+      "benefit1FreeTier": "Más créditos mensuales, recarga en cualquier momento",
+      "benefit2": "Hasta 30 min de tiempo de ejecución por trabajo",
+      "benefit3": "Usa tus propios modelos (Creator & Pro)"
     },
     "beta": "BETA",
     "billedMonthly": "Facturado mensualmente",
@@ -2660,6 +2837,21 @@
     "description": "Elige el mejor plan para ti",
     "descriptionWorkspace": "Elige el mejor plan para tu espacio de trabajo",
     "expiresDate": "Caduca el {date}",
+    "freeTier": {
+      "description": "Tu plan gratuito incluye {credits} créditos cada mes para probar Comfy Cloud.",
+      "descriptionGeneric": "Tu plan gratuito incluye una asignación mensual de créditos para probar Comfy Cloud.",
+      "nextRefresh": "Tus créditos se renovarán el {date}.",
+      "outOfCredits": {
+        "subtitle": "Suscríbete para desbloquear recargas y más",
+        "title": "Te has quedado sin créditos gratuitos"
+      },
+      "subscribeCta": "Suscríbete para más",
+      "title": "Estás en el plan gratuito",
+      "topUpBlocked": {
+        "title": "Desbloquea recargas y más"
+      },
+      "upgradeCta": "Ver planes"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "¿Tienes preguntas o buscas soluciones empresariales?",
     "invoiceHistory": "Historial de facturas",
@@ -2670,6 +2862,7 @@
     "maxDuration": {
       "creator": "30 min",
       "founder": "30 min",
+      "free": "30 min",
       "pro": "1 h",
       "standard": "30 min"
     },
@@ -2728,6 +2921,7 @@
     "resubscribe": "Volver a suscribirse",
     "resubscribeSuccess": "¡Suscripción reactivada correctamente!",
     "resubscribeTo": "Volver a suscribirse a {plan}",
+    "subscribeForMore": "Mejorar",
     "subscribeNow": "Suscribirse Ahora",
     "subscribeTo": "Suscribirse a {plan}",
     "subscribeToComfyCloud": "Suscribirse a Comfy Cloud",
@@ -2742,6 +2936,9 @@
       "founder": {
         "name": "Edición Fundador"
       },
+      "free": {
+        "name": "Gratis"
+      },
       "pro": {
         "name": "Pro"
       },
@@ -2755,6 +2952,7 @@
     "upgrade": "MEJORAR",
     "upgradePlan": "Mejorar plan",
     "upgradeTo": "Mejorar a {plan}",
+    "upgradeToAddCredits": "Mejorar para añadir créditos",
     "usdPerMonth": "USD / mes",
     "usdPerMonthPerMember": "USD / mes / miembro",
     "videoEstimateExplanation": "Estas estimaciones se basan en la plantilla Wan 2.2 Imagen a Video usando la configuración predeterminada (5 segundos, 640x640, 16fps, muestreo de 4 pasos).",
@@ -2852,6 +3050,7 @@
     "emptyCanvas": "Lienzo vacío",
     "errorCopyImage": "Error al copiar la imagen: {error}",
     "errorLoadingModel": "Error al cargar el modelo",
+    "errorOpenImage": "Error al abrir la imagen: {error}",
     "errorSaveSetting": "Error al guardar la configuración {id}: {err}",
     "exportSuccess": "Modelo exportado exitosamente como {format}",
     "failedExecutionPathResolution": "No se pudo resolver la ruta a los nodos seleccionados",
@@ -3019,7 +3218,9 @@
     "enterFilename": "Introduzca el nombre del archivo",
     "enterFilenamePrompt": "Introduce el nombre del archivo:",
     "exportWorkflow": "Exportar flujo de trabajo",
-    "saveWorkflow": "Guardar flujo de trabajo"
+    "saveWorkflow": "Guardar flujo de trabajo",
+    "savedAsApp": "Convertido a flujo de trabajo de aplicación",
+    "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos"
   },
   "workspace": {
     "addedToWorkspace": "Has sido añadido a {workspaceName}",

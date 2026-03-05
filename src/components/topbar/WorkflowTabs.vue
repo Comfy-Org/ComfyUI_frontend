@@ -300,63 +300,72 @@ onUpdated(() => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .workflow-tabs-container {
   background-color: var(--comfy-menu-bg);
 }
 
 :deep(.p-togglebutton) {
-  @apply p-0 bg-transparent rounded-none shrink relative border-0 border-r border-solid;
+  position: relative;
+  flex-shrink: 1;
+  border: 0;
+  border-right-style: solid;
+  border-right-width: 1px;
+  border-radius: 0;
+  background-color: transparent;
+  padding: 0;
   border-right-color: var(--border-color);
   min-width: 90px;
 }
 
 .overflow-arrow {
-  @apply px-2 rounded-none;
+  border-radius: 0;
+  padding-inline: calc(var(--spacing) * 2);
 }
 
 .overflow-arrow[disabled] {
-  @apply opacity-25;
+  opacity: 0.25;
 }
 
 :deep(.p-togglebutton > .p-togglebutton-content) {
-  @apply max-w-full;
+  max-width: 100%;
 }
 
 :deep(.workflow-tab) {
-  @apply max-w-full;
+  max-width: 100%;
 }
 
 :deep(.p-togglebutton::before) {
-  @apply hidden;
+  display: none;
 }
 
 :deep(.p-togglebutton:first-child) {
-  @apply border-l border-solid;
+  border-left-style: solid;
+  border-left-width: 1px;
   border-left-color: var(--border-color);
 }
 
 :deep(.p-togglebutton:not(:first-child)) {
-  @apply border-l-0;
+  border-left-width: 0;
 }
 
 :deep(.p-togglebutton.p-togglebutton-checked) {
-  @apply border-b border-solid h-full;
+  height: 100%;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
   border-bottom-color: var(--p-button-text-primary-color);
 }
 
 :deep(.p-togglebutton:not(.p-togglebutton-checked)) {
-  @apply opacity-75;
+  opacity: 0.75;
 }
 
 :deep(.p-togglebutton-checked) .close-button,
 :deep(.p-togglebutton:hover) .close-button {
-  @apply visible;
+  visibility: visible;
 }
 
 :deep(.p-scrollpanel-content) {
-  @apply h-full;
+  height: 100%;
 }
 
 :deep(.workflow-tabs) {
@@ -366,11 +375,12 @@ onUpdated(() => {
 /* Scrollbar half opacity to avoid blocking the active tab bottom border */
 :deep(.p-scrollpanel:hover .p-scrollpanel-bar),
 :deep(.p-scrollpanel:active .p-scrollpanel-bar) {
-  @apply opacity-50;
+  opacity: 0.5;
 }
 
 :deep(.p-selectbutton) {
-  @apply rounded-none h-full;
+  height: 100%;
+  border-radius: 0;
 }
 
 .workflow-tabs-container-desktop {
@@ -378,7 +388,7 @@ onUpdated(() => {
 }
 
 .window-actions-spacer {
-  @apply flex-auto;
+  flex: auto;
   /* If we are using custom titlebar, then we need to add a gap for the user to drag the window */
   --window-actions-spacer-width: min(75px, env(titlebar-area-width, 0) * 9999);
   min-width: var(--window-actions-spacer-width);

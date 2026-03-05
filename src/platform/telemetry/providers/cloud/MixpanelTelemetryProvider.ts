@@ -35,6 +35,7 @@ import type {
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
+  SubscriptionMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
@@ -222,13 +223,16 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
 
-  trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
+  trackSubscription(
+    event: 'modal_opened' | 'subscribe_clicked',
+    metadata?: SubscriptionMetadata
+  ): void {
     const eventName =
       event === 'modal_opened'
         ? TelemetryEvents.SUBSCRIPTION_REQUIRED_MODAL_OPENED
         : TelemetryEvents.SUBSCRIBE_NOW_BUTTON_CLICKED
 
-    this.trackEvent(eventName)
+    this.trackEvent(eventName, metadata)
   }
 
   trackAddApiCreditButtonClicked(): void {

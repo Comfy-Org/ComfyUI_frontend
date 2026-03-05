@@ -82,14 +82,15 @@ describe('EssentialNodesPanel', () => {
 
   function mountComponent(
     root = createMockRoot(),
-    expandedKeys: string[] = []
+    expandedKeys: string[] = [],
+    flatNodes: RenderedTreeExplorerNode<ComfyNodeDefImpl>[] = []
   ) {
     const WrapperComponent = {
-      template: `<EssentialNodesPanel :root="root" v-model:expandedKeys="keys" />`,
+      template: `<EssentialNodesPanel :root="root" :flat-nodes="flatNodes" v-model:expandedKeys="keys" />`,
       components: { EssentialNodesPanel },
       setup() {
         const keys = ref(expandedKeys)
-        return { root, keys }
+        return { root, flatNodes, keys }
       }
     }
     return mount(WrapperComponent, {
@@ -202,6 +203,22 @@ describe('EssentialNodesPanel', () => {
       const wrapper = mountComponent(createMockRoot(), ['folder-images'])
       const cards = wrapper.findAllComponents({ name: 'EssentialNodeCard' })
       expect(cards.length).toBeGreaterThanOrEqual(2)
+    })
+  })
+
+  describe('flat nodes mode', () => {
+    it('should render flat grid without collapsible folders when flatNodes is provided', () => {
+      const flatNodes = [
+        createMockNode('LoadAudio'),
+        createMockNode('LoadImage'),
+        createMockNode('SaveImage')
+      ]
+      const wrapper = mountComponent(createMockRoot(), [], flatNodes)
+
+      expect(wrapper.findAll('.collapsible-root')).toHaveLength(0)
+
+      const cards = wrapper.findAllComponents({ name: 'EssentialNodeCard' })
+      expect(cards).toHaveLength(3)
     })
   })
 })

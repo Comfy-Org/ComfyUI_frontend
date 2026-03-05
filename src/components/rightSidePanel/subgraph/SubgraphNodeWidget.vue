@@ -27,10 +27,9 @@ function getIcon() {
   <div
     :class="
       cn(
-        'flex py-1 px-2 break-all rounded items-center gap-1',
+        'flex py-1 px-2 break-all rounded-sm items-center gap-1',
         'bg-node-component-surface',
-        props.isDraggable &&
-          'draggable-item drag-handle cursor-grab [&.is-draggable]:cursor-grabbing hover:ring-1 ring-accent-background',
+        props.isDraggable && 'hover:ring-1 ring-accent-background',
         props.class
       )
     "

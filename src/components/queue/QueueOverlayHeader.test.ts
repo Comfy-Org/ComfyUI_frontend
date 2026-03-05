@@ -1,7 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 import { defineComponent, h } from 'vue'
+
+import { i18n } from '@/i18n'
 
 const popoverCloseSpy = vi.fn()
 
@@ -23,16 +24,27 @@ vi.mock('@/components/ui/Popover.vue', () => {
   return { default: PopoverStub }
 })
 
-const mockGetSetting = vi.fn((key: string) =>
-  key === 'Comfy.Queue.QPOV2' ? true : undefined
+const mockGetSetting = vi.fn<(key: string) => boolean | undefined>((key) =>
+  key === 'Comfy.Queue.QPOV2' || key === 'Comfy.Queue.ShowRunProgressBar'
+    ? true
+    : undefined
 )
 const mockSetSetting = vi.fn()
+const mockSetMany = vi.fn()
+const mockSidebarTabStore = {
+  activeSidebarTabId: null as string | null
+}
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: mockGetSetting,
-    set: mockSetSetting
+    set: mockSetSetting,
+    setMany: mockSetMany
   })
+}))
+
+vi.mock('@/stores/workspace/sidebarTabStore', () => ({
+  useSidebarTabStore: () => mockSidebarTabStore
 }))
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
@@ -42,27 +54,6 @@ const tooltipDirectiveStub = {
   mounted: vi.fn(),
   updated: vi.fn()
 }
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: { more: 'More' },
-      sideToolbar: {
-        queueProgressOverlay: {
-          queuedSuffix: 'queued',
-          clearQueued: 'Clear queued',
-          clearQueueTooltip: 'Clear queue',
-          clearAllJobsTooltip: 'Cancel all running jobs',
-          moreOptions: 'More options',
-          clearHistory: 'Clear history',
-          dockedJobHistory: 'Docked Job History'
-        }
-      }
-    }
-  }
-})
 
 const mountHeader = (props = {}) =>
   mount(QueueOverlayHeader, {
@@ -79,8 +70,14 @@ const mountHeader = (props = {}) =>
 
 describe('QueueOverlayHeader', () => {
   beforeEach(() => {
+    i18n.global.locale.value = 'en'
     popoverCloseSpy.mockClear()
     mockSetSetting.mockClear()
+    mockSetMany.mockClear()
+    mockSidebarTabStore.activeSidebarTabId = null
+    mockGetSetting.mockImplementation((key: string) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
   })
 
   it('renders header title', () => {
@@ -125,7 +122,7 @@ describe('QueueOverlayHeader', () => {
     expect(wrapper.emitted('clearHistory')).toHaveLength(1)
   })
 
-  it('toggles docked job history setting from the menu', async () => {
+  it('opens floating queue progress overlay when disabling from the menu', async () => {
     const wrapper = mountHeader()
 
     const dockedJobHistoryButton = wrapper.get(
@@ -133,7 +130,79 @@ describe('QueueOverlayHeader', () => {
     )
     await dockedJobHistoryButton.trigger('click')
 
+    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
+    expect(mockSetMany).toHaveBeenCalledTimes(1)
+    expect(mockSetMany).toHaveBeenCalledWith({
+      'Comfy.Queue.QPOV2': false,
+      'Comfy.Queue.History.Expanded': true
+    })
+    expect(mockSetSetting).not.toHaveBeenCalled()
+    expect(mockSidebarTabStore.activeSidebarTabId).toBe(null)
+  })
+
+  it('opens docked job history sidebar when enabling from the menu', async () => {
+    mockGetSetting.mockImplementation((key: string) =>
+      key === 'Comfy.Queue.QPOV2' ? false : undefined
+    )
+    const wrapper = mountHeader()
+
+    const dockedJobHistoryButton = wrapper.get(
+      '[data-testid="docked-job-history-action"]'
+    )
+    await dockedJobHistoryButton.trigger('click')
+
+    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
     expect(mockSetSetting).toHaveBeenCalledTimes(1)
-    expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', false)
+    expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', true)
+    expect(mockSetMany).not.toHaveBeenCalled()
+    expect(mockSidebarTabStore.activeSidebarTabId).toBe('job-history')
+  })
+
+  it('keeps docked target open even when enabling persistence fails', async () => {
+    mockGetSetting.mockImplementation((key: string) =>
+      key === 'Comfy.Queue.QPOV2' ? false : undefined
+    )
+    mockSetSetting.mockRejectedValueOnce(new Error('persistence failed'))
+    const wrapper = mountHeader()
+
+    const dockedJobHistoryButton = wrapper.get(
+      '[data-testid="docked-job-history-action"]'
+    )
+    await dockedJobHistoryButton.trigger('click')
+
+    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
+    expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', true)
+    expect(mockSidebarTabStore.activeSidebarTabId).toBe('job-history')
+  })
+
+  it('closes the menu when disabling persistence fails', async () => {
+    mockSetMany.mockRejectedValueOnce(new Error('persistence failed'))
+    const wrapper = mountHeader()
+
+    const dockedJobHistoryButton = wrapper.get(
+      '[data-testid="docked-job-history-action"]'
+    )
+    await dockedJobHistoryButton.trigger('click')
+
+    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
+    expect(mockSetMany).toHaveBeenCalledWith({
+      'Comfy.Queue.QPOV2': false,
+      'Comfy.Queue.History.Expanded': true
+    })
+  })
+
+  it('toggles show run progress bar setting from the menu', async () => {
+    const wrapper = mountHeader()
+
+    const showRunProgressBarButton = wrapper.get(
+      '[data-testid="show-run-progress-bar-action"]'
+    )
+    await showRunProgressBarButton.trigger('click')
+
+    expect(mockSetSetting).toHaveBeenCalledTimes(1)
+    expect(mockSetSetting).toHaveBeenCalledWith(
+      'Comfy.Queue.ShowRunProgressBar',
+      false
+    )
   })
 })

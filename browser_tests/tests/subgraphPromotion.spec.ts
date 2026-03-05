@@ -555,6 +555,74 @@ test.describe(
       })
     })
 
+    test.describe('Nested Promoted Widget Disabled State', () => {
+      test('Externally linked promoted widget is disabled, unlinked ones are not', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-nested-promotion'
+        )
+        await comfyPage.nextFrame()
+
+        // Node 5 (Sub 0) has 4 promoted widgets. The first (string_a) has its
+        // slot connected externally from the Outer node, so it should be
+        // disabled. The remaining promoted textarea widgets (value, value_1)
+        // are unlinked and should be enabled.
+        const promotedNames = await getPromotedWidgetNames(comfyPage, '5')
+        expect(promotedNames).toContain('string_a')
+        expect(promotedNames).toContain('value')
+
+        const disabledState = await comfyPage.page.evaluate(() => {
+          const node = window.app!.canvas.graph!.getNodeById('5')
+          return (node?.widgets ?? []).map((w) => ({
+            name: w.name,
+            disabled: !!w.computedDisabled
+          }))
+        })
+
+        const linkedWidget = disabledState.find((w) => w.name === 'string_a')
+        expect(linkedWidget?.disabled).toBe(true)
+
+        const unlinkedWidgets = disabledState.filter(
+          (w) => w.name !== 'string_a'
+        )
+        for (const w of unlinkedWidgets) {
+          expect(w.disabled).toBe(false)
+        }
+      })
+
+      test('Unlinked promoted textarea widgets are editable on the subgraph exterior', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-nested-promotion'
+        )
+        await comfyPage.nextFrame()
+
+        // The promoted textareas that are NOT externally linked should be
+        // fully opaque and interactive.
+        const textareas = comfyPage.page.getByTestId(
+          TestIds.widgets.domWidgetTextarea
+        )
+        await expect(textareas.first()).toBeVisible()
+
+        const count = await textareas.count()
+        for (let i = 0; i < count; i++) {
+          const textarea = textareas.nth(i)
+          const wrapper = textarea.locator('..')
+          const opacity = await wrapper.evaluate(
+            (el) => getComputedStyle(el).opacity
+          )
+
+          if (opacity === '1' && (await textarea.isEditable())) {
+            const testContent = `nested-promotion-edit-${i}`
+            await textarea.fill(testContent)
+            await expect(textarea).toHaveValue(testContent)
+          }
+        }
+      })
+    })
+
     test.describe('Promotion Cleanup', () => {
       test('Removing subgraph node clears promotion store entries', async ({
         comfyPage
