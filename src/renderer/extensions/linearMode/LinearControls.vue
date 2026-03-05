@@ -44,7 +44,7 @@ const props = defineProps<{
   mobile?: boolean
 }>()
 
-defineEmits<{ navigateAssets: [] }>()
+defineEmits<{ navigateOutputs: [] }>()
 
 //NOTE: due to batching, will never be greater than 2
 const pendingJobQueues = ref(0)
@@ -261,7 +261,7 @@ defineExpose({ runButtonClick })
             <Button
               v-if="mobile"
               variant="inverted"
-              @click="$emit('navigateAssets')"
+              @click="$emit('navigateOutputs')"
             >
               {{ t('linearMode.viewJob') }}
             </Button>
