@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import Loader from '@/components/common/Loader.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCommandStore } from '@/stores/commandStore'
@@ -31,9 +32,7 @@ function clearQueue(close: () => void) {
           size="unset"
           class="size-10 rounded-sm bg-secondary-background flex items-center justify-center"
         >
-          <i
-            class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
-          />
+          <Loader size="sm" class="text-muted-foreground" />
         </Button>
       </template>
       <template #default="{ close }">
