@@ -326,38 +326,45 @@
     "deleteWorkflow": "حذف سير العمل",
     "duplicate": "تكرار",
     "enterAppMode": "الدخول إلى وضع التطبيق",
+    "enterBuilderMode": "دخول وضع بناء التطبيق",
     "enterNewName": "أدخل اسمًا جديدًا",
     "exitAppMode": "الخروج من وضع التطبيق",
     "missingNodesWarning": "يحتوي سير العمل على عقد غير مدعومة (مظللة باللون الأحمر).",
     "workflowActions": "إجراءات سير العمل"
   },
   "builderMenu": {
-    "exitAppBuilder": "الخروج من مُنشئ التطبيق",
-    "saveApp": "حفظ التطبيق"
+    "exitAppBuilder": "الخروج من مُنشئ التطبيق"
   },
   "builderToolbar": {
     "app": "تطبيق",
     "appDescription": "يفتح كتطبيق بشكل افتراضي",
     "arrange": "معاينة",
     "arrangeDescription": "مراجعة تخطيط التطبيق",
+    "backToWorkflow": "العودة إلى سير العمل",
     "connectOutput": "توصيل مخرج",
     "connectOutputBody1": "يجب توصيل مخرج واحد على الأقل قبل حفظ التطبيق.",
     "connectOutputBody2": "انتقل إلى خطوة 'تحديد' وانقر على عقد المخرجات لإضافتها هنا.",
-    "filename": "اسم الملف",
+    "defaultModeAppliedAppBody": "سيفتح سير العمل هذا في وضع التطبيق بشكل افتراضي من الآن فصاعدًا.",
+    "defaultModeAppliedAppPrompt": "هل ترغب في عرضه الآن؟",
+    "defaultModeAppliedGraphBody": "سيفتح سير العمل هذا كـمخطط عقد بشكل افتراضي من الآن فصاعدًا.",
+    "defaultModeAppliedGraphPrompt": "هل ترغب في عرض التطبيق مع ذلك؟",
+    "defaultModeAppliedTitle": "تم التعيين بنجاح",
+    "defaultView": "تعيين العرض الافتراضي",
+    "defaultViewDescription": "اختر كيفية الفتح",
+    "defaultViewLabel": "افتراضيًا، سيتم فتح سير العمل هذا كـ:",
+    "defaultViewTitle": "تعيين العرض الافتراضي لهذا سير العمل",
+    "emptyWorkflowExplanation": "سير العمل الخاص بك فارغ. تحتاج إلى بعض العقد أولاً للبدء في بناء تطبيق.",
+    "emptyWorkflowPrompt": "هل ترغب في البدء بقالب؟",
+    "emptyWorkflowTitle": "لا يحتوي سير العمل هذا على أي عقد",
+    "inputs": "المدخلات",
+    "inputsDescription": "اختر المدخلات",
     "label": "منشئ التطبيقات",
+    "loadTemplate": "تحميل قالب",
     "nodeGraph": "رسم العقد",
     "nodeGraphDescription": "يفتح كرسم عقد بشكل افتراضي",
-    "save": "حفظ",
-    "saveAs": "حفظ باسم",
-    "saveAsLabel": "احفظ سير العمل هذا كـ ...",
-    "saveDescription": "حفظ وإنهاء",
-    "saveSuccess": "تم الحفظ بنجاح",
-    "saveSuccessAppMessage": "تم حفظ '{name}'. سيفتح في وضع التطبيق بشكل افتراضي من الآن فصاعدًا.",
-    "saveSuccessAppPrompt": "هل ترغب في عرضه الآن؟",
-    "saveSuccessGraphMessage": "تم حفظ '{name}'. سيفتح كرسم عقد بشكل افتراضي.",
-    "select": "تحديد",
-    "selectDescription": "اختيار المدخلات/المخرجات",
-    "switchToSelect": "الانتقال إلى التحديد",
+    "outputs": "المخرجات",
+    "outputsDescription": "اختر المخرجات",
+    "switchToOutputs": "الانتقال إلى المخرجات",
     "viewApp": "عرض التطبيق"
   },
   "clipboard": {
@@ -1334,7 +1341,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "منشئ التطبيقات",
-      "apps": "التطبيقات"
+      "apps": "التطبيقات",
+      "appsEmptyMessage": "سيتم عرض التطبيقات المحفوظة هنا.\nانقر أدناه لبناء تطبيقك الأول.",
+      "enterAppMode": "الدخول إلى وضع التطبيق"
     },
     "arrange": {
       "atLeastOne": "عقدة واحدة على الأقل",
@@ -1343,8 +1352,8 @@
       "outputExamples": "أمثلة: 'حفظ صورة' أو 'حفظ فيديو'",
       "outputs": "المخرجات",
       "resultsLabel": "سيتم عرض النتائج الناتجة من عقدة/عقد المخرجات المحددة هنا بعد تشغيل هذا التطبيق",
-      "switchToSelect": "انتقل إلى خطوة 'تحديد' وانقر على عقد المخرجات لإضافتها هنا.",
-      "switchToSelectButton": "الانتقال إلى التحديد"
+      "switchToOutputs": "انتقل إلى خطوة 'المخرجات' وانقر على عقد المخرجات لإضافتها هنا.",
+      "switchToOutputsButton": "الانتقال إلى المخرجات"
     },
     "beta": "وضع التطبيق تجريبي - أرسل ملاحظاتك",
     "builder": {
@@ -1359,13 +1368,16 @@
       "outputsExample": "أمثلة: \"حفظ صورة\" أو \"حفظ فيديو\"",
       "promptAddInputs": "انقر على معلمات العقدة لإضافتها هنا كمدخلات",
       "promptAddOutputs": "انقر على عقد الإخراج لإضافتها هنا. هذه ستكون النتائج المُولدة.",
-      "title": "وضع بناء التطبيق"
+      "title": "وضع بناء التطبيق",
+      "unknownWidget": "عنصر الواجهة غير مرئي"
     },
     "downloadAll": "تنزيل الكل",
     "dragAndDropImage": "اسحب وأسقط صورة",
+    "enterNodeGraph": "دخول مخطط العقد",
     "giveFeedback": "إعطاء ملاحظات",
     "graphMode": "وضع الرسم البياني",
     "linearMode": "وضع التطبيق",
+    "mobileControls": "تعديل وتشغيل",
     "queue": {
       "clear": "مسح قائمة الانتظار",
       "clickToClear": "انقر لمسح قائمة الانتظار"
@@ -1373,6 +1385,7 @@
     "rerun": "تشغيل مجدد",
     "reuseParameters": "إعادة استخدام المعلمات",
     "runCount": "عدد مرات التشغيل:",
+    "viewJob": "عرض المهمة",
     "welcome": {
       "backToWorkflow": "العودة إلى سير العمل",
       "buildApp": "إنشاء تطبيق",
@@ -1749,6 +1762,7 @@
     "disabled": "معطل",
     "disabledTooltip": "لن يتم وضع سير العمل في قائمة الانتظار تلقائيًا",
     "execute": "تنفيذ",
+    "fullscreen": "ملء الشاشة",
     "help": "مساعدة",
     "helpAndFeedback": "المساعدة والتعليقات",
     "hideMenu": "إخفاء القائمة",
@@ -1896,7 +1910,8 @@
     "Workflows": "سير العمل",
     "Zoom In": "تكبير",
     "Zoom Out": "تصغير",
-    "Zoom to fit": "تكبير لتناسب"
+    "Zoom to fit": "تكبير لتناسب",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "ألوان العقد",
@@ -2715,6 +2730,7 @@
       "searchJobs": "بحث...",
       "showAssets": "عرض الأصول",
       "showAssetsPanel": "عرض لوحة الأصول",
+      "showRunProgressBar": "عرض شريط تقدم التشغيل",
       "sortBy": "ترتيب حسب",
       "sortJobs": "ترتيب المهام",
       "stubClipTextEncode": "CLIP ترميز النص:",
@@ -3202,7 +3218,9 @@
     "enterFilename": "أدخل اسم الملف",
     "enterFilenamePrompt": "أدخل اسم الملف:",
     "exportWorkflow": "تصدير سير العمل",
-    "saveWorkflow": "حفظ سير العمل"
+    "saveWorkflow": "حفظ سير العمل",
+    "savedAsApp": "تم التحويل إلى سير عمل تطبيق",
+    "savedAsWorkflow": "تم التحويل إلى سير عمل مخطط العقد فقط"
   },
   "workspace": {
     "addedToWorkspace": "تمت إضافتك إلى {workspaceName}",

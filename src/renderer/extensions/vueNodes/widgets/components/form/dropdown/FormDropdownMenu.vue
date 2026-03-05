@@ -62,13 +62,23 @@ type LayoutConfig = {
 }
 
 const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
-  grid: { maxColumns: 4, itemHeight: 120, itemWidth: 89, gap: '1rem 0.5rem' },
-  list: { maxColumns: 1, itemHeight: 64, itemWidth: 380, gap: '0.5rem' },
+  grid: {
+    maxColumns: 4,
+    itemHeight: 120,
+    itemWidth: 89,
+    gap: 'var(--spacing-4) var(--spacing-2)'
+  },
+  list: {
+    maxColumns: 1,
+    itemHeight: 64,
+    itemWidth: 380,
+    gap: 'var(--spacing-2)'
+  },
   'list-small': {
     maxColumns: 1,
     itemHeight: 40,
     itemWidth: 380,
-    gap: '0.25rem'
+    gap: 'var(--spacing-1)'
   }
 }
 

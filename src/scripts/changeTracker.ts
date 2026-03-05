@@ -77,6 +77,7 @@ export class ChangeTracker {
       scale: app.canvas.ds.scale,
       offset: [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
     }
+    this.nodeOutputs = useNodeOutputStore().snapshotOutputs()
     const navigation = useSubgraphNavigationStore().exportState()
     // Always store the navigation state, even if empty (root level)
     this.subgraphState = { navigation }
