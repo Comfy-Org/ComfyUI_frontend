@@ -5,7 +5,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { Bounds } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 type ResizeDirection =
   | 'top'
