@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 
@@ -62,8 +63,11 @@ describe('WorkspaceAuthGate', () => {
     mockWorkspaceStoreInitialize.mockResolvedValue(undefined)
   })
 
+  const i18n = createI18n({ legacy: false })
+
   const mountComponent = () =>
     mount(WorkspaceAuthGate, {
+      global: { plugins: [i18n] },
       slots: {
         default: '<div data-testid="slot-content">App Content</div>'
       }
@@ -77,7 +81,7 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(true)
-      expect(wrapper.find('.animate-spin').exists()).toBe(false)
+      expect(wrapper.find('[role="status"]').exists()).toBe(false)
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
   })
@@ -88,7 +92,7 @@ describe('WorkspaceAuthGate', () => {
 
       const wrapper = mountComponent()
 
-      expect(wrapper.find('.animate-spin').exists()).toBe(true)
+      expect(wrapper.find('[role="status"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(false)
     })
 
@@ -96,7 +100,7 @@ describe('WorkspaceAuthGate', () => {
       mockIsInitialized.value = false
 
       const wrapper = mountComponent()
-      expect(wrapper.find('.animate-spin').exists()).toBe(true)
+      expect(wrapper.find('[role="status"]').exists()).toBe(true)
 
       mockIsInitialized.value = true
       mockCurrentUser.value = null
@@ -176,7 +180,7 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       // Still showing spinner before timeout
-      expect(wrapper.find('.animate-spin').exists()).toBe(true)
+      expect(wrapper.find('[role="status"]').exists()).toBe(true)
 
       // Advance past the 10 second timeout
       await vi.advanceTimersByTimeAsync(10_001)

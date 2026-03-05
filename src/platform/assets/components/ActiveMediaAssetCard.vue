@@ -24,9 +24,10 @@
         class="absolute inset-0 flex items-center justify-center bg-modal-card-placeholder-background"
       >
         <!-- Spinner for queued/initialization states -->
-        <i
+        <LoadingSpinner
           v-if="isQueued"
-          class="icon-[lucide--loader-circle] size-8 animate-spin text-muted-foreground"
+          size="md"
+          class="text-muted-foreground"
         />
         <!-- Error icon for failed state -->
         <i
@@ -34,10 +35,7 @@
           class="icon-[lucide--circle-alert] size-8 text-red-500"
         />
         <!-- Spinner for running without preview -->
-        <i
-          v-else
-          class="icon-[lucide--loader-circle] size-8 animate-spin text-muted-foreground"
-        />
+        <LoadingSpinner v-else size="md" class="text-muted-foreground" />
       </div>
       <!-- Cancel/Delete button overlay -->
       <Button
@@ -80,6 +78,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
