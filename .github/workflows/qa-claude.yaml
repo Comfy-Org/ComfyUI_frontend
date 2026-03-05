@@ -69,31 +69,19 @@ jobs:
           }
           MCPEOF
 
-      - name: Run Claude QA
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CI: 'true'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Write QA prompt
         run: |
-          BRANCH="${{ github.head_ref || github.ref_name }}"
-          PR_NUM="${{ github.event.pull_request.number }}"
-          SHA="${{ github.sha }}"
-
-          claude --print --verbose \
-            --max-turns 128 \
-            --mcp-config /tmp/mcp-config.json \
-            --allowedTools "mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot,mcp__playwright__browser_click,mcp__playwright__browser_type,mcp__playwright__browser_press_key,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_hover,mcp__playwright__browser_drag,mcp__playwright__browser_select_option,mcp__playwright__browser_handle_dialog,mcp__playwright__browser_tab_list,mcp__playwright__browser_tab_new,mcp__playwright__browser_tab_select,mcp__playwright__browser_tab_close,mcp__playwright__browser_console_messages,mcp__playwright__browser_resize,mcp__playwright__browser_wait_for,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git log:*),Bash(git diff:*),Bash(gh pr comment:*),Bash(gh pr view:*),Bash(date:*),Bash(ls:*),Bash(mkdir:*),Read,Write,Edit,Glob,Grep" \
-            "You are running an automated QA pass on the ComfyUI frontend.
+          cat > /tmp/qa-prompt.txt <<PROMPT
+          You are running an automated QA pass on the ComfyUI frontend.
 
           Read the file skills/comfy-qa/SKILL.md and follow the QA test plan.
 
           Environment details:
           - CI=true
           - Server URL: http://127.0.0.1:8188
-          - Branch: ${BRANCH}
-          - PR: #${PR_NUM}
-          - Commit: ${SHA}
+          - Branch: ${{ github.head_ref || github.ref_name }}
+          - PR: #${{ github.event.pull_request.number }}
+          - Commit: ${{ github.sha }}
 
           Instructions:
           1. Use the playwright MCP tools to navigate http://127.0.0.1:8188
@@ -103,11 +91,24 @@ jobs:
           5. Save the report to docs/qa/ with today's date
           6. Commit and push the report to this branch
           7. Post a summary comment on this PR using:
-             gh pr comment ${PR_NUM} --body '<your summary>'
+             gh pr comment ${{ github.event.pull_request.number }} --body '<your summary>'
 
           Do NOT create a new PR. Commit directly to this branch.
           Be thorough but efficient — skip tests that require features not
-          available in CI (e.g., file upload dialogs, real GPU execution)."
+          available in CI (e.g., file upload dialogs, real GPU execution).
+          PROMPT
+
+      - name: Run Claude QA
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CI: 'true'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat /tmp/qa-prompt.txt | claude --print --verbose \
+            --max-turns 128 \
+            --mcp-config /tmp/mcp-config.json \
+            --allowedTools "mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot,mcp__playwright__browser_click,mcp__playwright__browser_type,mcp__playwright__browser_press_key,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_hover,mcp__playwright__browser_drag,mcp__playwright__browser_select_option,mcp__playwright__browser_handle_dialog,mcp__playwright__browser_tab_list,mcp__playwright__browser_tab_new,mcp__playwright__browser_tab_select,mcp__playwright__browser_tab_close,mcp__playwright__browser_console_messages,mcp__playwright__browser_resize,mcp__playwright__browser_wait_for,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git log:*),Bash(git diff:*),Bash(gh pr comment:*),Bash(gh pr view:*),Bash(date:*),Bash(ls:*),Bash(mkdir:*),Read,Write,Edit,Glob,Grep"
 
       - name: Remove qa-run label
         if: always() && github.event.label.name == 'qa-run'
