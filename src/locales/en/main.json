@@ -178,7 +178,7 @@
     "uploadAlreadyInProgress": "Upload already in progress",
     "capture": "capture",
     "nodes": "Nodes",
-    "nodesCount": "{count} nodes | {count} node | {count} nodes",
+    "nodesCount": "{count} node | {count} nodes",
     "addNode": "Add a node...",
     "filterBy": "Filter by:",
     "filterByType": "Filter by {type}...",
@@ -222,7 +222,7 @@
     "failed": "Failed",
     "cancelled": "Cancelled",
     "job": "Job",
-    "asset": "{count} assets | {count} asset | {count} assets",
+    "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",
     "emDash": "—",
     "enabling": "Enabling {id}",
@@ -1262,6 +1262,7 @@
     "Move Selected Nodes Right": "Move Selected Nodes Right",
     "Move Selected Nodes Up": "Move Selected Nodes Up",
     "Paste": "Paste",
+    "Paste with Connect": "Paste with Connect",
     "Reset View": "Reset View",
     "Resize Selected Nodes": "Resize Selected Nodes",
     "Select All": "Select All",
@@ -2606,7 +2607,8 @@
     "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red).",
     "graph": "Graph",
     "app": "App",
-    "enterNodeGraph": "Enter node graph"
+    "enterNodeGraph": "Enter node graph",
+    "share": "Share"
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",
@@ -3350,7 +3352,7 @@
     }
   },
   "errorOverlay": {
-    "errorCount": "{count} ERRORS | {count} ERROR | {count} ERRORS",
+    "errorCount": "{count} ERROR | {count} ERRORS",
     "seeErrors": "See Errors"
   },
   "help": {
@@ -3360,7 +3362,7 @@
   "progressToast": {
     "importingModels": "Importing Models",
     "downloadingModel": "Downloading model...",
-    "downloadsFailed": "{count} downloads failed | {count} download failed | {count} downloads failed",
+    "downloadsFailed": "{count} download failed | {count} downloads failed",
     "allDownloadsCompleted": "All downloads completed",
     "noImportsInQueue": "No {filter} in queue",
     "failed": "Failed",
@@ -3377,7 +3379,7 @@
     "exportingAssets": "Exporting Assets",
     "preparingExport": "Preparing export...",
     "exportError": "Export failed",
-    "exportFailed": "{count} export failed | {count} export failed | {count} exports failed",
+    "exportFailed": "{count} export failed | {count} exports failed",
     "allExportsCompleted": "All exports completed",
     "noExportsInQueue": "No {filter} exports in queue",
     "exportStarted": "Preparing ZIP download...",

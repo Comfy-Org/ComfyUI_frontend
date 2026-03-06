@@ -208,5 +208,52 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'Escape'
     },
     commandId: 'Comfy.Graph.ExitSubgraph'
+  },
+  {
+    combo: {
+      ctrl: true,
+      key: 'a'
+    },
+    commandId: 'Comfy.Canvas.SelectAll',
+    targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
+      ctrl: true,
+      key: 'c'
+    },
+    commandId: 'Comfy.Canvas.CopySelected',
+    targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
+      ctrl: true,
+      key: 'v'
+    },
+    commandId: 'Comfy.Canvas.PasteFromClipboard',
+    targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
+      ctrl: true,
+      shift: true,
+      key: 'v'
+    },
+    commandId: 'Comfy.Canvas.PasteFromClipboardWithConnect',
+    targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
+      key: 'Delete'
+    },
+    commandId: 'Comfy.Canvas.DeleteSelectedItems',
+    targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
+      key: 'Backspace'
+    },
+    commandId: 'Comfy.Canvas.DeleteSelectedItems',
+    targetElementId: 'graph-canvas-container'
   }
 ]
