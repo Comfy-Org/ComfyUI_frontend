@@ -1262,6 +1262,7 @@
     "Move Selected Nodes Right": "Move Selected Nodes Right",
     "Move Selected Nodes Up": "Move Selected Nodes Up",
     "Paste": "Paste",
+    "Paste with Connect": "Paste with Connect",
     "Reset View": "Reset View",
     "Resize Selected Nodes": "Resize Selected Nodes",
     "Select All": "Select All",
@@ -2603,7 +2604,8 @@
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
     "enterNewName": "Enter new name",
-    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red)."
+    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red).",
+    "share": "Share"
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",
