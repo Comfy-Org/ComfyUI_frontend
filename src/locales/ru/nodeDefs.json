@@ -3947,6 +3947,10 @@
     "description": "Изменить существующее изображение на основе текстового запроса",
     "display_name": "Grok Image Edit",
     "inputs": {
+      "aspect_ratio": {
+        "name": "соотношение сторон",
+        "tooltip": "Разрешено только при подключении нескольких изображений к входу изображения."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -3998,6 +4002,9 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Текстовый запрос, используемый для генерации изображения"
+      },
+      "resolution": {
+        "name": "разрешение"
       },
       "seed": {
         "name": "seed",
@@ -5853,6 +5860,9 @@
       },
       "mode": {
         "name": "режим"
+      },
+      "model": {
+        "name": "модель"
       },
       "prompt": {
         "name": "промпт"
