@@ -187,7 +187,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         :style="{ translate }"
       >
         <div class="absolute h-full w-screen overflow-y-auto contain-size">
-          <LinearControls mobile @navigate-assets="activeIndex = 1" />
+          <LinearControls mobile @navigate-outputs="activeIndex = 1" />
         </div>
         <div
           class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"

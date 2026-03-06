@@ -21,7 +21,7 @@ const { output } = defineProps<{
     height="40"
     :src="output.url"
   />
-  <template v-if="getMediaType(output) === 'video'">
+  <template v-else-if="getMediaType(output) === 'video'">
     <video
       class="pointer-events-none block size-10 rounded-sm bg-secondary-background object-cover"
       preload="metadata"
