@@ -115,7 +115,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     )
   }
 
-  async function exitBuilder() {
+  function exitBuilder() {
     resetSelectedToWorkflow()
     setMode('graph')
   }

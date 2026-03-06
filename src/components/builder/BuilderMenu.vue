@@ -94,7 +94,7 @@ function onEnterAppMode(close: () => void) {
 }
 
 function onExitBuilder(close: () => void) {
-  void appModeStore.exitBuilder()
+  appModeStore.exitBuilder()
   close()
 }
 </script>
