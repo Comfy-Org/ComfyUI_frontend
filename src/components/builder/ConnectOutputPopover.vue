@@ -7,7 +7,7 @@
       side="bottom"
       :side-offset="8"
       :collision-padding="10"
-      class="z-1001 w-80 rounded-xl border border-border-default bg-base-background shadow-interface will-change-[transform,opacity] data-[state=open]:data-[side=bottom]:animate-slideUpAndFade"
+      class="data-[state=open]:data-[side=bottom]:animate-slideUpAndFade z-1001 w-80 rounded-xl border border-border-default bg-base-background shadow-interface will-change-[transform,opacity]"
     >
       <div class="flex h-12 items-center justify-between px-4">
         <h3 class="text-sm font-medium text-base-foreground">

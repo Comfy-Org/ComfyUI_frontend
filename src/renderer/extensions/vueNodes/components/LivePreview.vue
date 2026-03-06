@@ -11,7 +11,7 @@
       v-else
       :src="imageUrl"
       :alt="$t('g.liveSamplingPreview')"
-      class="pointer-events-none w-full object-contain contain-size min-h-55 flex-1"
+      class="pointer-events-none min-h-55 w-full flex-1 object-contain contain-size"
       @load="handleImageLoad"
       @error="handleImageError"
     />

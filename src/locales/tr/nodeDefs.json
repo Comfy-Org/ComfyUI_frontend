@@ -3947,6 +3947,10 @@
     "description": "Mevcut bir görüntüyü metin istemine göre değiştir",
     "display_name": "Grok Görüntü Düzenle",
     "inputs": {
+      "aspect_ratio": {
+        "name": "en-boy oranı",
+        "tooltip": "Yalnızca birden fazla görsel, görsel girişine bağlandığında kullanılabilir."
+      },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
@@ -3998,6 +4002,9 @@
       "prompt": {
         "name": "istem",
         "tooltip": "Görüntüyü oluşturmak için kullanılan metin istemi"
+      },
+      "resolution": {
+        "name": "çözünürlük"
       },
       "seed": {
         "name": "tohum",
@@ -5853,6 +5860,9 @@
       },
       "mode": {
         "name": "mod"
+      },
+      "model": {
+        "name": "model"
       },
       "prompt": {
         "name": "istem"

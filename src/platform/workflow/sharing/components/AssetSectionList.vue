@@ -33,7 +33,7 @@
         :data-testid="`section-content-${section.id}`"
         class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
       >
-        <ul class="max-h-25 overflow-y-auto px-6 pb-1 pt-0.5">
+        <ul class="max-h-25 overflow-y-auto px-6 pt-0.5 pb-1">
           <li
             v-for="item in section.items"
             :key="item.id"

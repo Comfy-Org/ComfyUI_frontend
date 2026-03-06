@@ -22,7 +22,7 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
 <template>
   <DropdownMenuSeparator
     v-if="item.separator"
-    class="h-px bg-border-subtle m-1"
+    class="m-1 h-px bg-border-subtle"
   />
   <DropdownMenuSub v-else-if="item.items">
     <DropdownMenuSubTrigger
@@ -58,7 +58,7 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
     {{ item.label }}
     <div
       v-if="item.new"
-      class="ml-auto bg-primary-background rounded-full text-xxs font-bold px-1 flex leading-none items-center"
+      class="ml-auto flex items-center rounded-full bg-primary-background px-1 text-xxs leading-none font-bold"
       v-text="t('contextMenu.new')"
     />
   </DropdownMenuItem>

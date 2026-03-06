@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 pb-2 mt-2">
+  <div class="mt-2 px-4 pb-2">
     <!-- Sub-label: guidance message shown above all swap groups -->
     <p class="m-0 pb-5 text-sm/relaxed text-muted-foreground">
       {{

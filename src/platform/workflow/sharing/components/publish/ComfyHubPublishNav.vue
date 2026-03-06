@@ -34,7 +34,7 @@
             severity="contrast"
             :class="
               cn(
-                'size-5 shrink-0 border text-xs font-bold font-inter bg-transparent',
+                'size-5 shrink-0 border bg-transparent font-inter text-xs font-bold',
                 isCurrentStep(step.name)
                   ? 'border-base-foreground bg-base-foreground text-base-background'
                   : isCompletedStep(step.name)

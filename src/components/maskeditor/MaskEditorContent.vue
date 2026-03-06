@@ -13,29 +13,29 @@
     >
       <canvas
         ref="imgCanvasRef"
-        class="absolute top-0 left-0 size-full z-0"
+        class="absolute top-0 left-0 z-0 size-full"
         @contextmenu.prevent
       />
       <canvas
         ref="rgbCanvasRef"
-        class="absolute top-0 left-0 size-full z-10"
+        class="absolute top-0 left-0 z-10 size-full"
         @contextmenu.prevent
       />
       <canvas
         ref="maskCanvasRef"
-        class="absolute top-0 left-0 size-full z-30"
+        class="absolute top-0 left-0 z-30 size-full"
         @contextmenu.prevent
       />
       <!-- GPU Preview Canvas -->
       <canvas
         ref="gpuCanvasRef"
-        class="absolute top-0 left-0 size-full pointer-events-none"
+        class="pointer-events-none absolute top-0 left-0 size-full"
         :class="{
           'z-20': store.activeLayer === 'rgb',
           'z-40': store.activeLayer === 'mask'
         }"
       />
-      <div ref="canvasBackgroundRef" class="bg-white size-full" />
+      <div ref="canvasBackgroundRef" class="size-full bg-white" />
     </div>
 
     <div class="maskEditor-ui-container flex min-h-0 flex-1 flex-col">

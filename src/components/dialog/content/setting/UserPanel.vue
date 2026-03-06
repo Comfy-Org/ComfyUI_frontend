@@ -67,7 +67,7 @@
             v-if="!isApiKeyLogin"
             keypath="auth.deleteAccount.contactSupport"
             tag="p"
-            class="text-muted text-sm"
+            class="text-sm text-muted"
           >
             <template #email>
               <a href="mailto:support@comfy.org" class="underline"

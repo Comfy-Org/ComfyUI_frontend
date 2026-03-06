@@ -1,6 +1,6 @@
 <template>
   <section
-    class="m-2 mt-4 flex flex-col gap-6 whitespace-pre-wrap wrap-break-word"
+    class="m-2 mt-4 flex flex-col gap-6 wrap-break-word whitespace-pre-wrap"
   >
     <div>
       <span>{{ message }}</span>
@@ -40,12 +40,12 @@
           v-if="doNotAskAgain"
           keypath="missingModelsDialog.reEnableInSettings"
           tag="span"
-          class="text-sm text-muted-foreground ml-8"
+          class="ml-8 text-sm text-muted-foreground"
         >
           <template #link>
             <Button
               variant="textonly"
-              class="underline cursor-pointer p-0 text-sm text-muted-foreground hover:bg-transparent"
+              class="cursor-pointer p-0 text-sm text-muted-foreground underline hover:bg-transparent"
               @click="openBlueprintOverwriteSetting"
             >
               {{ t('missingModelsDialog.reEnableInSettingsLink') }}

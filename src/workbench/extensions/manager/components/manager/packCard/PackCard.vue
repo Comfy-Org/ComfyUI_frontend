@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'flex size-full flex-col overflow-hidden rounded-lg bg-modal-card-background transition-colors duration-200 cursor-pointer select-none',
+        'flex size-full cursor-pointer flex-col overflow-hidden rounded-lg bg-modal-card-background transition-colors duration-200 select-none',
         isSelected
           ? 'ring-3 ring-modal-card-border-highlighted'
           : 'hover:bg-modal-card-background-hovered',
@@ -16,8 +16,8 @@
     </div>
 
     <!-- Content -->
-    <div class="flex flex-1 flex-col rounded-lg min-h-0">
-      <div class="size-full py-2 px-3">
+    <div class="flex min-h-0 flex-1 flex-col rounded-lg">
+      <div class="size-full px-3 py-2">
         <div class="flex size-full flex-col gap-y-1">
           <span
             class="truncate overflow-hidden text-xs font-bold text-ellipsis"

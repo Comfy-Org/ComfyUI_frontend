@@ -6,7 +6,7 @@
         <div
           v-for="pkg in importFailedPackages"
           :key="pkg.packageId"
-          class="flex flex-col gap-2 max-h-60 overflow-x-hidden overflow-y-auto scrollbar-custom"
+          class="flex scrollbar-custom max-h-60 flex-col gap-2 overflow-x-hidden overflow-y-auto"
           role="region"
           :aria-label="`Error traceback for ${pkg.packageId}`"
           tabindex="0"
@@ -14,7 +14,7 @@
           <!-- Error Message -->
           <div
             v-if="pkg.traceback || pkg.errorMessage"
-            class="text-xs p-4 rounded-md bg-secondary-background font-mono"
+            class="rounded-md bg-secondary-background p-4 font-mono text-xs"
           >
             {{ pkg.traceback || pkg.errorMessage }}
           </div>

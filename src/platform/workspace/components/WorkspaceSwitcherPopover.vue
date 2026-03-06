@@ -48,7 +48,7 @@
                     </span>
                     <span
                       v-if="getTierLabel(workspace)"
-                      class="text-[10px] font-bold uppercase text-base-background bg-base-foreground px-1 py-0.5 rounded-full"
+                      class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
                     >
                       {{ getTierLabel(workspace) }}
                     </span>
