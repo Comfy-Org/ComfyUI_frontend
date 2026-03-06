@@ -322,7 +322,7 @@ test.describe('Settings', () => {
     await editKeybindingButton.click()
 
     // Set new keybinding
-    const input = comfyPage.page.getByPlaceholder('Press keys for new binding')
+    const input = comfyPage.page.getByPlaceholder('Enter your keybind')
     await input.press('Alt+n')
 
     const requestPromise = comfyPage.page.waitForRequest(
