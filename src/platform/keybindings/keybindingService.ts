@@ -34,6 +34,12 @@ export function useKeybindingService() {
 
     const keybinding = keybindingStore.getKeybinding(keyCombo)
     if (keybinding && keybinding.targetElementId !== 'graph-canvas') {
+      if (keybinding.targetElementId) {
+        const container = document.getElementById(keybinding.targetElementId)
+        if (!container?.contains(target)) {
+          return
+        }
+      }
       if (
         event.key === 'Escape' &&
         !event.ctrlKey &&

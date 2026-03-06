@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -54,6 +54,8 @@ function createTestKeyboardEvent(
 
 describe('keybindingService - Canvas Keybindings', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
+  let canvasContainer: HTMLDivElement
+  let canvasChild: HTMLCanvasElement
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -68,12 +70,24 @@ describe('keybindingService - Canvas Keybindings', () => {
       typeof useDialogStore
     >)
 
+    canvasContainer = document.createElement('div')
+    canvasContainer.id = 'graph-canvas-container'
+    canvasChild = document.createElement('canvas')
+    canvasContainer.appendChild(canvasChild)
+    document.body.appendChild(canvasContainer)
+
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
   })
 
-  it('should execute DeleteSelectedItems for Delete key', async () => {
-    const event = createTestKeyboardEvent('Delete')
+  afterEach(() => {
+    canvasContainer.remove()
+  })
+
+  it('should execute DeleteSelectedItems for Delete key on canvas', async () => {
+    const event = createTestKeyboardEvent('Delete', {
+      target: canvasChild
+    })
 
     await keybindingService.keybindHandler(event)
 
@@ -82,8 +96,10 @@ describe('keybindingService - Canvas Keybindings', () => {
     )
   })
 
-  it('should execute DeleteSelectedItems for Backspace key', async () => {
-    const event = createTestKeyboardEvent('Backspace')
+  it('should execute DeleteSelectedItems for Backspace key on canvas', async () => {
+    const event = createTestKeyboardEvent('Backspace', {
+      target: canvasChild
+    })
 
     await keybindingService.keybindHandler(event)
 
@@ -112,8 +128,11 @@ describe('keybindingService - Canvas Keybindings', () => {
     expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 
-  it('should execute SelectAll for Ctrl+A', async () => {
-    const event = createTestKeyboardEvent('a', { ctrlKey: true })
+  it('should execute SelectAll for Ctrl+A on canvas', async () => {
+    const event = createTestKeyboardEvent('a', {
+      ctrlKey: true,
+      target: canvasChild
+    })
 
     await keybindingService.keybindHandler(event)
 
@@ -122,8 +141,11 @@ describe('keybindingService - Canvas Keybindings', () => {
     )
   })
 
-  it('should execute CopySelected for Ctrl+C', async () => {
-    const event = createTestKeyboardEvent('c', { ctrlKey: true })
+  it('should execute CopySelected for Ctrl+C on canvas', async () => {
+    const event = createTestKeyboardEvent('c', {
+      ctrlKey: true,
+      target: canvasChild
+    })
 
     await keybindingService.keybindHandler(event)
 
@@ -132,8 +154,11 @@ describe('keybindingService - Canvas Keybindings', () => {
     )
   })
 
-  it('should execute PasteFromClipboard for Ctrl+V', async () => {
-    const event = createTestKeyboardEvent('v', { ctrlKey: true })
+  it('should execute PasteFromClipboard for Ctrl+V on canvas', async () => {
+    const event = createTestKeyboardEvent('v', {
+      ctrlKey: true,
+      target: canvasChild
+    })
 
     await keybindingService.keybindHandler(event)
 
@@ -142,10 +167,11 @@ describe('keybindingService - Canvas Keybindings', () => {
     )
   })
 
-  it('should execute PasteFromClipboardWithConnect for Ctrl+Shift+V', async () => {
+  it('should execute PasteFromClipboardWithConnect for Ctrl+Shift+V on canvas', async () => {
     const event = createTestKeyboardEvent('v', {
       ctrlKey: true,
-      shiftKey: true
+      shiftKey: true,
+      target: canvasChild
     })
 
     await keybindingService.keybindHandler(event)
@@ -153,5 +179,19 @@ describe('keybindingService - Canvas Keybindings', () => {
     expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
       'Comfy.Canvas.PasteFromClipboardWithConnect'
     )
+  })
+
+  it('should not execute canvas commands when target is outside canvas container', async () => {
+    const outsideDiv = document.createElement('div')
+    document.body.appendChild(outsideDiv)
+
+    const event = createTestKeyboardEvent('Delete', {
+      target: outsideDiv
+    })
+
+    await keybindingService.keybindHandler(event)
+
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    outsideDiv.remove()
   })
 })

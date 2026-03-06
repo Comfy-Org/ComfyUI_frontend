@@ -908,7 +908,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Canvas.PasteFromClipboardWithConnect',
       icon: 'icon-[lucide--clipboard-paste]',
-      label: 'Paste with Connect',
+      label: () => t('Paste with Connect'),
       function: () => {
         app.canvas.pasteFromClipboard({ connectInputs: true })
       }
