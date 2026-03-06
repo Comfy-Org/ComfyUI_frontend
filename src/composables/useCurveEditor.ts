@@ -102,8 +102,13 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
 
     svg.setPointerCapture(e.pointerId)
 
-    const onMove = (ev: PointerEvent) => {
-      if (dragIndex.value < 0) return
+    let rafId: number | null = null
+    let latestPointerEvent: PointerEvent | null = null
+
+    const applyMove = () => {
+      rafId = null
+      const ev = latestPointerEvent
+      if (!ev || dragIndex.value < 0) return
       const [x, y] = svgCoords(ev)
       const movedPoint: CurvePoint = [x, y]
       const newPoints = [...modelValue.value]
@@ -113,7 +118,20 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
       dragIndex.value = newPoints.indexOf(movedPoint)
     }
 
+    const onMove = (ev: PointerEvent) => {
+      if (dragIndex.value < 0) return
+      latestPointerEvent = ev
+      if (rafId === null) {
+        rafId = requestAnimationFrame(applyMove)
+      }
+    }
+
     const endDrag = () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+        rafId = null
+        applyMove()
+      }
       if (dragIndex.value < 0) return
       dragIndex.value = -1
       svg.removeEventListener('pointermove', onMove)
