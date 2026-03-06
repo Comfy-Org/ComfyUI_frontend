@@ -211,132 +211,146 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 )
 </script>
 <template>
-  <div class="flex items-center border-b border-border-subtle p-2 font-bold">
-    {{
-      isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
-    }}
-  </div>
-  <DraggableList
-    v-if="isArrangeMode"
-    v-slot="{ dragClass }"
-    v-model="appModeStore.selectedInputs"
-    class="overflow-x-clip"
-  >
-    <div
-      v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
-      :key="`${nodeId}: ${widgetName}`"
-      :class="cn(dragClass, 'pointer-events-auto my-2 p-2')"
-      :aria-label="`${widget?.label ?? widgetName} — ${node.title}`"
-    >
-      <div v-if="widget" class="pointer-events-none" inert>
-        <WidgetItem
-          :widget="widget"
-          :node="node"
-          show-node-name
-          hidden-widget-actions
-        />
-      </div>
-      <div v-else class="pointer-events-none p-1 text-sm text-muted-foreground">
-        {{ widgetName }}
-        <p class="text-xs italic">
-          ({{ t('linearMode.builder.unknownWidget') }})
-        </p>
-      </div>
+  <div class="flex h-full flex-col">
+    <div class="flex items-center border-b border-border-subtle p-2 font-bold">
+      {{
+        isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
+      }}
     </div>
-  </DraggableList>
-  <PropertiesAccordionItem
-    v-if="isSelectInputsMode"
-    :label="t('nodeHelpPage.inputs')"
-    enable-empty-state
-    :disabled="!appModeStore.selectedInputs.length"
-    class="border-b border-border-subtle"
-    :tooltip="`${t('linearMode.builder.inputsDesc')}\n${t('linearMode.builder.inputsExample')}`"
-    :tooltip-delay="100"
-  >
-    <template #label>
-      <div class="flex gap-3">
-        {{ t('nodeHelpPage.inputs') }}
-        <i class="icon-[lucide--circle-alert] bg-muted-foreground" />
-      </div>
-    </template>
-    <template #empty>
-      <div
-        class="w-full p-4 pt-2 text-muted-foreground"
-        v-text="t('linearMode.builder.promptAddInputs')"
-      />
-    </template>
-    <div
-      class="w-full p-4 pt-2 text-muted-foreground"
-      v-text="t('linearMode.builder.promptAddInputs')"
-    />
-    <DraggableList v-slot="{ dragClass }" v-model="appModeStore.selectedInputs">
-      <IoItem
-        v-for="{
-          nodeId,
-          widgetName,
-          label,
-          subLabel,
-          rename
-        } in inputsWithState"
-        :key="`${nodeId}: ${widgetName}`"
-        :class="cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')"
-        :title="label ?? widgetName"
-        :sub-title="subLabel"
-        :rename
-        :remove="
-          () =>
-            remove(
-              appModeStore.selectedInputs,
-              ([id, name]) => nodeId == id && widgetName === name
-            )
-        "
-      />
-    </DraggableList>
-  </PropertiesAccordionItem>
-  <PropertiesAccordionItem
-    v-if="isSelectOutputsMode"
-    :label="t('nodeHelpPage.outputs')"
-    enable-empty-state
-    :disabled="!appModeStore.selectedOutputs.length"
-    :tooltip="`${t('linearMode.builder.outputsDesc')}\n${t('linearMode.builder.outputsExample')}`"
-    :tooltip-delay="100"
-  >
-    <template #label>
-      <div class="flex gap-3">
-        {{ t('nodeHelpPage.outputs') }}
-        <i class="icon-[lucide--circle-alert] bg-muted-foreground" />
-      </div>
-    </template>
-    <template #empty>
-      <div
-        class="w-full p-4 pt-2 text-muted-foreground"
-        v-text="t('linearMode.builder.promptAddOutputs')"
-      />
-    </template>
-    <div
-      class="w-full p-4 pt-2 text-muted-foreground"
-      v-text="t('linearMode.builder.promptAddOutputs')"
-    />
-    <DraggableList
-      v-slot="{ dragClass }"
-      v-model="appModeStore.selectedOutputs"
-    >
-      <IoItem
-        v-for="([key, title], index) in outputsWithState"
-        :key
-        :class="
-          cn(
-            dragClass,
-            'my-2 rounded-lg bg-warning-background/40 p-2',
-            index === 0 && 'ring-2 ring-warning-background'
-          )
-        "
-        :title
-        :sub-title="String(key)"
-        :remove="() => remove(appModeStore.selectedOutputs, (k) => k == key)"
-      />
-    </DraggableList>
-  </PropertiesAccordionItem>
+    <div class="min-h-0 flex-1 overflow-y-auto">
+      <DraggableList
+        v-if="isArrangeMode"
+        v-slot="{ dragClass }"
+        v-model="appModeStore.selectedInputs"
+        class="overflow-x-clip"
+      >
+        <div
+          v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
+          :key="`${nodeId}: ${widgetName}`"
+          :class="cn(dragClass, 'pointer-events-auto my-2 p-2')"
+          :aria-label="`${widget?.label ?? widgetName} — ${node.title}`"
+        >
+          <div v-if="widget" class="pointer-events-none" inert>
+            <WidgetItem
+              :widget="widget"
+              :node="node"
+              show-node-name
+              hidden-widget-actions
+            />
+          </div>
+          <div
+            v-else
+            class="pointer-events-none p-1 text-sm text-muted-foreground"
+          >
+            {{ widgetName }}
+            <p class="text-xs italic">
+              ({{ t('linearMode.builder.unknownWidget') }})
+            </p>
+          </div>
+        </div>
+      </DraggableList>
+      <PropertiesAccordionItem
+        v-if="isSelectInputsMode"
+        :label="t('nodeHelpPage.inputs')"
+        enable-empty-state
+        :disabled="!appModeStore.selectedInputs.length"
+        class="border-b border-border-subtle"
+        :tooltip="`${t('linearMode.builder.inputsDesc')}\n${t('linearMode.builder.inputsExample')}`"
+        :tooltip-delay="100"
+      >
+        <template #label>
+          <div class="flex gap-3">
+            {{ t('nodeHelpPage.inputs') }}
+            <i class="icon-[lucide--circle-alert] bg-muted-foreground" />
+          </div>
+        </template>
+        <template #empty>
+          <div
+            class="w-full p-4 pt-2 text-muted-foreground"
+            v-text="t('linearMode.builder.promptAddInputs')"
+          />
+        </template>
+        <div
+          class="w-full p-4 pt-2 text-muted-foreground"
+          v-text="t('linearMode.builder.promptAddInputs')"
+        />
+        <DraggableList
+          v-slot="{ dragClass }"
+          v-model="appModeStore.selectedInputs"
+        >
+          <IoItem
+            v-for="{
+              nodeId,
+              widgetName,
+              label,
+              subLabel,
+              rename
+            } in inputsWithState"
+            :key="`${nodeId}: ${widgetName}`"
+            :class="
+              cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
+            "
+            :title="label ?? widgetName"
+            :sub-title="subLabel"
+            :rename
+            :remove="
+              () =>
+                remove(
+                  appModeStore.selectedInputs,
+                  ([id, name]) => nodeId == id && widgetName === name
+                )
+            "
+          />
+        </DraggableList>
+      </PropertiesAccordionItem>
+      <PropertiesAccordionItem
+        v-if="isSelectOutputsMode"
+        :label="t('nodeHelpPage.outputs')"
+        enable-empty-state
+        :disabled="!appModeStore.selectedOutputs.length"
+        :tooltip="`${t('linearMode.builder.outputsDesc')}\n${t('linearMode.builder.outputsExample')}`"
+        :tooltip-delay="100"
+      >
+        <template #label>
+          <div class="flex gap-3">
+            {{ t('nodeHelpPage.outputs') }}
+            <i class="icon-[lucide--circle-alert] bg-muted-foreground" />
+          </div>
+        </template>
+        <template #empty>
+          <div
+            class="w-full p-4 pt-2 text-muted-foreground"
+            v-text="t('linearMode.builder.promptAddOutputs')"
+          />
+        </template>
+        <div
+          class="w-full p-4 pt-2 text-muted-foreground"
+          v-text="t('linearMode.builder.promptAddOutputs')"
+        />
+        <DraggableList
+          v-slot="{ dragClass }"
+          v-model="appModeStore.selectedOutputs"
+        >
+          <IoItem
+            v-for="([key, title], index) in outputsWithState"
+            :key
+            :class="
+              cn(
+                dragClass,
+                'my-2 rounded-lg bg-warning-background/40 p-2',
+                index === 0 && 'ring-2 ring-warning-background'
+              )
+            "
+            :title
+            :sub-title="String(key)"
+            :remove="
+              () => remove(appModeStore.selectedOutputs, (k) => k == key)
+            "
+          />
+        </DraggableList>
+      </PropertiesAccordionItem>
+    </div>
+  </div>
 
   <Teleport
     v-if="isSelectMode && !settingStore.get('Comfy.VueNodes.Enabled')"

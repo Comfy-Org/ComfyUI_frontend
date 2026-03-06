@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -15,23 +15,15 @@ import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
 import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
+import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
-import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
-import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
-import { executeWidgetsCallback } from '@/utils/litegraphUtil'
-
-// Lazy-loaded to avoid pulling THREE.js into the main bundle
-const Preview3d = defineAsyncComponent(
-  () => import('@/renderer/extensions/linearMode/Preview3d.vue')
-)
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
@@ -73,17 +65,12 @@ async function loadWorkflow(item: AssetItem | undefined) {
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
   if (!changeTracker) return app.loadGraphData(workflow)
   changeTracker.redoQueue = []
-  changeTracker.updateState([workflow], changeTracker.undoQueue)
+  await changeTracker.updateState([workflow], changeTracker.undoQueue)
 }
 
 async function rerun(e: Event) {
   if (!runButtonClick) return
   await loadWorkflow(selectedItem.value)
-  //FIXME don't use timeouts here
-  //Currently seeds fail to properly update even with timeouts?
-  await new Promise((r) => setTimeout(r, 500))
-  executeWidgetsCallback(collectAllNodes(app.rootGraph), 'afterQueued')
-
   runButtonClick(e)
 }
 </script>
@@ -106,6 +93,7 @@ async function rerun(e: Event) {
     </template>
     <Button
       v-if="selectedOutput"
+      v-tooltip.top="t('g.download')"
       size="icon"
       :aria-label="t('g.download')"
       @click="
@@ -119,21 +107,26 @@ async function rerun(e: Event) {
     <Button
       v-if="!executionStore.isIdle && !selectedItem"
       variant="destructive"
-      size="icon"
-      :aria-label="t('menu.interrupt')"
       @click="commandStore.execute('Comfy.Interrupt')"
     >
       <i class="icon-[lucide--x]" />
+      {{ t('linearMode.cancelThisRun') }}
     </Button>
     <Popover
       v-if="selectedItem"
       :entries="[
-        {
-          icon: 'icon-[lucide--download]',
-          label: t('linearMode.downloadAll'),
-          command: () => downloadAsset(selectedItem)
-        },
-        { separator: true },
+        ...(allOutputs(selectedItem).length > 1
+          ? [
+              {
+                icon: 'icon-[lucide--download]',
+                label: t('linearMode.downloadAll', {
+                  count: allOutputs(selectedItem).length
+                }),
+                command: () => downloadAsset(selectedItem)
+              },
+              { separator: true }
+            ]
+          : []),
         {
           icon: 'icon-[lucide--trash-2]',
           label: t('queue.jobMenu.deleteAsset'),
@@ -143,32 +136,14 @@ async function rerun(e: Event) {
     />
   </section>
   <ImagePreview
-    v-if="
-      (canShowPreview && latentPreview) ||
-      getMediaType(selectedOutput) === 'images'
-    "
+    v-if="canShowPreview && latentPreview"
     :mobile
-    :src="(canShowPreview && latentPreview) || selectedOutput!.url"
+    :src="latentPreview"
   />
-  <VideoPreview
-    v-else-if="getMediaType(selectedOutput) === 'video'"
-    :src="selectedOutput!.url"
-    class="flex-1 object-contain md:p-3 md:contain-size"
-  />
-  <audio
-    v-else-if="getMediaType(selectedOutput) === 'audio'"
-    class="m-auto w-full"
-    controls
-    :src="selectedOutput!.url"
-  />
-  <article
-    v-else-if="getMediaType(selectedOutput) === 'text'"
-    class="m-auto my-12 w-full max-w-lg overflow-y-auto"
-    v-text="selectedOutput!.url"
-  />
-  <Preview3d
-    v-else-if="getMediaType(selectedOutput) === '3d'"
-    :model-url="selectedOutput!.url"
+  <MediaOutputPreview
+    v-else-if="selectedOutput"
+    :output="selectedOutput"
+    :mobile
   />
   <LatentPreview v-else-if="queueStore.runningTasks.length > 0" />
   <LinearArrange v-else-if="isArrangeMode" />
