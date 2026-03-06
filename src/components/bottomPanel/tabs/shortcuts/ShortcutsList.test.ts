@@ -103,7 +103,7 @@ describe('ShortcutsList', () => {
         id: 'No.Keybinding',
         label: 'No Keybinding',
         category: 'essentials',
-        keybinding: null
+        keybinding: undefined
       } as ComfyCommandImpl
     ]
 

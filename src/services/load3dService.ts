@@ -50,7 +50,8 @@ function getNodeToLoad3dMapSync(): Map<LGraphNode, Load3d> | null {
 // Async loader for nodeToLoad3dMap - also caches for sync access
 async function loadNodeToLoad3dMap(): Promise<Map<LGraphNode, Load3d>> {
   if (!cachedNodeToLoad3dMap) {
-    const module = await import('@/composables/useLoad3d')
+    const module =
+      await import('@/extensions/core/load3d/composables/useLoad3d')
     cachedNodeToLoad3dMap = module.nodeToLoad3dMap
   }
   return cachedNodeToLoad3dMap
@@ -58,7 +59,8 @@ async function loadNodeToLoad3dMap(): Promise<Map<LGraphNode, Load3d>> {
 
 async function loadUseLoad3dViewer() {
   if (!cachedUseLoad3dViewer) {
-    const module = await import('@/composables/useLoad3dViewer')
+    const module =
+      await import('@/extensions/core/load3d/composables/useLoad3dViewer')
     cachedUseLoad3dViewer = module.useLoad3dViewer
   }
   return cachedUseLoad3dViewer

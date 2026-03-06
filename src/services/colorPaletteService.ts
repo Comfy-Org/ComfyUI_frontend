@@ -266,10 +266,10 @@ export const useColorPaletteService = () => {
       throw new Error(`Color palette ${colorPaletteId} not found`)
     }
     downloadBlob(
-      colorPalette.id + '.json',
       new Blob([JSON.stringify(toRaw(colorPalette), null, 2)], {
         type: 'application/json'
-      })
+      }),
+      colorPalette.id + '.json'
     )
   }
 

@@ -11,7 +11,7 @@ const clipboardHTMLWrapper = [
 /**
  * Adds a handler on copy that serializes selected nodes to JSON
  */
-export const useCopy = () => {
+export const useGraphCopyHandler = () => {
   const canvasStore = useCanvasStore()
 
   useEventListener(document, 'copy', (e) => {

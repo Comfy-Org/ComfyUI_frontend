@@ -21,7 +21,7 @@ export function applyClasses(
     }, '')
   }
   element.className = str
-  if (requiredClasses) {
+  if (requiredClasses.length) {
     element.classList.add(...requiredClasses)
   }
 }
@@ -33,14 +33,12 @@ export function toggleElement(
     onShow
   }: {
     onHide?: (el: HTMLElement) => void
-    // @ts-expect-error fixme ts strict error
-    onShow?: (el: HTMLElement, value) => void
+    onShow?: (el: HTMLElement, value: unknown) => void
   } = {}
 ) {
   let placeholder: HTMLElement | Comment
   let hidden: boolean
-  // @ts-expect-error fixme ts strict error
-  return (value) => {
+  return (value: unknown) => {
     if (value) {
       if (hidden) {
         hidden = false

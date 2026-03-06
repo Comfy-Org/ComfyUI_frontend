@@ -39,7 +39,6 @@ import type {
   ConnectingLink,
   ContextMenuDivElement,
   DefaultConnectionColors,
-  Dictionary,
   Direction,
   IBoundaryNodes,
   IColorable,
@@ -100,7 +99,7 @@ import type {
   ISerialisedNode,
   SubgraphIO
 } from './types/serialisation'
-import type { NeverNever, PickNevers } from './types/utility'
+import type { OmitNeverProps, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
@@ -275,7 +274,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   static DEFAULT_EVENT_LINK_COLOR = '#A86'
 
   /** Link type to colour dictionary. */
-  static link_type_colors: Dictionary<string> = {
+  static link_type_colors: Record<string, string> = {
     '-1': LGraphCanvas.DEFAULT_EVENT_LINK_COLOR,
     number: '#AAA',
     node: '#DCA'
@@ -345,7 +344,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     | undefined
 
   /** Dispatches a custom event on the canvas. */
-  dispatch<T extends keyof NeverNever<LGraphCanvasEventMap>>(
+  dispatch<T extends keyof OmitNeverProps<LGraphCanvasEventMap>>(
     type: T,
     detail: LGraphCanvasEventMap[T]
   ): boolean
@@ -537,8 +536,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     output_on: string
   }
 
-  default_connection_color_byType: Dictionary<CanvasColour>
-  default_connection_color_byTypeOff: Dictionary<CanvasColour>
+  default_connection_color_byType: Record<string, CanvasColour>
+  default_connection_color_byTypeOff: Record<string, CanvasColour>
 
   /** Gets link colours. Extremely basic impl. until the legacy object dictionaries are removed. */
   colourGetter: DefaultConnectionColors = {
@@ -653,7 +652,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   render_time = 0
   fps = 0
   /** @deprecated See {@link LGraphCanvas.selectedItems} */
-  selected_nodes: Dictionary<LGraphNode> = {}
+  selected_nodes: Record<string, LGraphNode> = {}
   /** All selected nodes, groups, and reroutes */
   selectedItems: Set<Positionable> = new Set()
   /** The group currently being resized. */
@@ -669,7 +668,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   private _visible_node_ids: Set<NodeId> = new Set()
   node_over?: LGraphNode
   node_capturing_input?: LGraphNode | null
-  highlighted_links: Dictionary<boolean> = {}
+  highlighted_links: Record<string, boolean> = {}
 
   private _visibleReroutes: Set<Reroute> = new Set()
 
@@ -766,7 +765,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** called after moving a node @deprecated Does not handle multi-node move, and can return the wrong node. */
   onNodeMoved?: (node_dragged: LGraphNode | undefined) => void
   /** @deprecated Called with the deprecated {@link selected_nodes} when the selection changes. Replacement not yet impl. */
-  onSelectionChange?: (selected: Dictionary<Positionable>) => void
+  onSelectionChange?: (selected: Record<string, Positionable>) => void
   /** called when rendering a tooltip */
   onDrawLinkTooltip?: (
     ctx: CanvasRenderingContext2D,
@@ -1030,7 +1029,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @returns
    */
   static getBoundaryNodes(
-    nodes: LGraphNode[] | Dictionary<LGraphNode>
+    nodes: LGraphNode[] | Record<string, LGraphNode>
   ): NullableProperties<IBoundaryNodes> {
     const _nodes = Array.isArray(nodes) ? nodes : Object.values(nodes)
     return (
@@ -1050,7 +1049,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param align_to Node to align to (if null, align to the furthest node in the given direction)
    */
   static alignNodes(
-    nodes: Dictionary<LGraphNode>,
+    nodes: Record<string, LGraphNode>,
     direction: Direction,
     align_to?: LGraphNode
   ): void {

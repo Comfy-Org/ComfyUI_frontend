@@ -46,16 +46,13 @@ export const useComputedWithWidgetWatch = (
 ) => {
   const { widgetNames, triggerCanvasRedraw = false } = options
 
-  // Create a reactive trigger based on widget values
   const widgetValues = ref<Record<string, unknown>>({})
 
-  // Initialize widget observers
   if (node.widgets) {
     const widgetsToObserve = widgetNames
       ? node.widgets.filter((widget) => widgetNames.includes(widget.name))
       : node.widgets
 
-    // Initialize current values
     const currentValues: Record<string, unknown> = {}
     widgetsToObserve.forEach((widget) => {
       currentValues[widget.name] = widget.value
@@ -64,20 +61,17 @@ export const useComputedWithWidgetWatch = (
 
     widgetsToObserve.forEach((widget) => {
       widget.callback = useChainCallback(widget.callback, () => {
-        // Update the reactive widget values
         widgetValues.value = {
           ...widgetValues.value,
           [widget.name]: widget.value
         }
 
-        // Optionally trigger a canvas redraw
         if (triggerCanvasRedraw) {
           node.graph?.setDirtyCanvas(true, true)
         }
       })
     })
     if (widgetNames && widgetNames.length > widgetsToObserve.length) {
-      //Inputs have been included
       const indexesToObserve = widgetNames
         .map((name) =>
           widgetsToObserve.some((w) => w.name == name)
@@ -101,8 +95,6 @@ export const useComputedWithWidgetWatch = (
     }
   }
 
-  // Returns a function that creates a computed that responds to widget changes.
-  // The computed will be re-evaluated whenever any observed widget changes.
   return <T>(computeFn: () => T): ComputedRef<T> => {
     return computedWithControl(widgetValues, computeFn)
   }

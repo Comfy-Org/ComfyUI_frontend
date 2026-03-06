@@ -5,23 +5,7 @@ import { electronAPI } from '@/utils/envUtil'
 import { i18n } from '@/i18n'
 
 /**
- * Composable for building docs.comfy.org URLs with automatic locale and platform detection
- *
- * @example
- * ```ts
- * const { buildDocsUrl } = useExternalLink()
- *
- * // Simple usage
- * const changelogUrl = buildDocsUrl('/changelog', { includeLocale: true })
- * // => 'https://docs.comfy.org/zh-CN/changelog' (if Chinese)
- *
- * // With platform detection
- * const desktopUrl = buildDocsUrl('/installation/desktop', {
- *   includeLocale: true,
- *   platform: true
- * })
- * // => 'https://docs.comfy.org/zh-CN/installation/desktop/macos' (if Chinese + macOS)
- * ```
+ * Composable for building docs.comfy.org URLs with automatic locale and platform detection.
  */
 export function useExternalLink() {
   const locale = computed(() => String(i18n.global.locale.value))

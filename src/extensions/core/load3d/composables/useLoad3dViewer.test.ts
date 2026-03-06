@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
+import { useLoad3dViewer } from '@/extensions/core/load3d/composables/useLoad3dViewer'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'

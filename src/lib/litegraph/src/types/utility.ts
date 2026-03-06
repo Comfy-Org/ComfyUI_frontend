@@ -8,6 +8,6 @@ export type PickNevers<T> = {
 }
 
 /** {@link Omit} all properties that evaluate to `never`. */
-export type NeverNever<T> = {
+export type OmitNeverProps<T> = {
   [K in keyof T as T[K] extends never ? never : K]: T[K]
 }

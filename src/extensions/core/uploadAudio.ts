@@ -22,8 +22,8 @@ import { useAudioService } from '@/services/audioService'
 import { type NodeLocatorId } from '@/types'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-import { api } from '../../scripts/api'
-import { app } from '../../scripts/app'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 function updateUIWidget(

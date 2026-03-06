@@ -1163,7 +1163,29 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        await api.freeMemory({ freeExecutionCache: false })
+        try {
+          const res = await api.freeMemory({ freeExecutionCache: false })
+          if (res.status === 200) {
+            useToastStore().add({
+              severity: 'success',
+              summary: 'Models have been unloaded.',
+              life: 3000
+            })
+          } else {
+            useToastStore().add({
+              severity: 'error',
+              summary:
+                'Unloading of models failed. Installed ComfyUI may be an outdated version.',
+              life: 5000
+            })
+          }
+        } catch {
+          useToastStore().add({
+            severity: 'error',
+            summary: 'An error occurred while trying to unload models.',
+            life: 5000
+          })
+        }
       }
     },
     {
@@ -1183,7 +1205,29 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        await api.freeMemory({ freeExecutionCache: true })
+        try {
+          const res = await api.freeMemory({ freeExecutionCache: true })
+          if (res.status === 200) {
+            useToastStore().add({
+              severity: 'success',
+              summary: 'Models and Execution Cache have been cleared.',
+              life: 3000
+            })
+          } else {
+            useToastStore().add({
+              severity: 'error',
+              summary:
+                'Unloading of models failed. Installed ComfyUI may be an outdated version.',
+              life: 5000
+            })
+          }
+        } catch {
+          useToastStore().add({
+            severity: 'error',
+            summary: 'An error occurred while trying to unload models.',
+            life: 5000
+          })
+        }
       }
     },
     {

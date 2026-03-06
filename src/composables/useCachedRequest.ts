@@ -48,7 +48,7 @@ export function useCachedRequest<TParams, TResult>(
 
       return result
     } catch (err) {
-      // Set cache on error to prevent retrying bad requests
+      console.warn('Cached request failed, caching null result:', err)
       cache.set(cacheKey, null)
       return null
     } finally {

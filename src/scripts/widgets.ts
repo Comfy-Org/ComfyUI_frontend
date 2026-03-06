@@ -69,11 +69,10 @@ function controlValueRunBefore() {
 }
 
 export function updateControlWidgetLabel(widget: IBaseWidget) {
-  if (controlValueRunBefore()) {
-    widget.label = t('g.control_before_generate')
-  } else {
-    widget.label = t('g.control_after_generate')
-  }
+  const key = controlValueRunBefore()
+    ? 'g.control_before_generate'
+    : 'g.control_after_generate'
+  widget.label = t(key)
 }
 
 export const IS_CONTROL_WIDGET = Symbol()
@@ -83,7 +82,6 @@ export function addValueControlWidget(
   node: LGraphNode,
   targetWidget: IBaseWidget,
   defaultValue?: string,
-  _values?: unknown,
   widgetName?: string,
   inputData?: InputSpec
 ): IComboWidget {

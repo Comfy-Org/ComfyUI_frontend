@@ -48,7 +48,7 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
 }))
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
-import * as tooltipConfig from '@/composables/useTooltipConfig'
+import * as tooltipConfig from '@/utils/tooltipConfig'
 
 const tooltipDirectiveStub = {
   mounted: vi.fn(),

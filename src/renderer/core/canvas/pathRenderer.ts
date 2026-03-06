@@ -242,39 +242,8 @@ export class CanvasPathRenderer {
     const innerB = { x: end.x, y: end.y }
 
     // Apply directional offsets to create control points
-    switch (startDir) {
-      case 'left':
-        innerA.x -= l
-        break
-      case 'right':
-        innerA.x += l
-        break
-      case 'up':
-        innerA.y -= l
-        break
-      case 'down':
-        innerA.y += l
-        break
-      case 'none':
-        break
-    }
-
-    switch (endDir) {
-      case 'left':
-        innerB.x -= l
-        break
-      case 'right':
-        innerB.x += l
-        break
-      case 'up':
-        innerB.y -= l
-        break
-      case 'down':
-        innerB.y += l
-        break
-      case 'none':
-        break
-    }
+    this.applyDirectionOffset(innerA, startDir, l)
+    this.applyDirectionOffset(innerB, endDir, l)
 
     // Draw 4-point path: start -> innerA -> innerB -> end
     path.moveTo(start.x, start.y)
@@ -297,39 +266,8 @@ export class CanvasPathRenderer {
     const innerB = { x: end.x, y: end.y }
 
     // Apply directional offsets to match original behavior
-    switch (startDir) {
-      case 'left':
-        innerA.x -= l
-        break
-      case 'right':
-        innerA.x += l
-        break
-      case 'up':
-        innerA.y -= l
-        break
-      case 'down':
-        innerA.y += l
-        break
-      case 'none':
-        break
-    }
-
-    switch (endDir) {
-      case 'left':
-        innerB.x -= l
-        break
-      case 'right':
-        innerB.x += l
-        break
-      case 'up':
-        innerB.y -= l
-        break
-      case 'down':
-        innerB.y += l
-        break
-      case 'none':
-        break
-    }
+    this.applyDirectionOffset(innerA, startDir, l)
+    this.applyDirectionOffset(innerB, endDir, l)
 
     // Calculate midpoint using innerA/innerB positions (matching original)
     const midX = (innerA.x + innerB.x) * 0.5
@@ -398,18 +336,32 @@ export class CanvasPathRenderer {
   }
 
   private getDirectionOffset(direction: Direction, distance: number): Point {
+    const offset: Point = { x: 0, y: 0 }
+    this.applyDirectionOffset(offset, direction, distance)
+    return offset
+  }
+
+  /**
+   * Mutates {@link point} by adding an offset in the given {@link direction}.
+   */
+  private applyDirectionOffset(
+    point: Point,
+    direction: Direction,
+    distance: number
+  ): void {
     switch (direction) {
       case 'left':
-        return { x: -distance, y: 0 }
+        point.x -= distance
+        break
       case 'right':
-        return { x: distance, y: 0 }
+        point.x += distance
+        break
       case 'up':
-        return { x: 0, y: -distance }
+        point.y -= distance
+        break
       case 'down':
-        return { x: 0, y: distance }
-      case 'none':
-      default:
-        return { x: 0, y: 0 }
+        point.y += distance
+        break
     }
   }
 
@@ -471,39 +423,8 @@ export class CanvasPathRenderer {
     const pb = { x: endPoint.x, y: endPoint.y }
 
     // Apply spline offsets based on direction
-    switch (startDirection) {
-      case 'left':
-        pa.x -= dist * factor
-        break
-      case 'right':
-        pa.x += dist * factor
-        break
-      case 'up':
-        pa.y -= dist * factor
-        break
-      case 'down':
-        pa.y += dist * factor
-        break
-      case 'none':
-        break
-    }
-
-    switch (endDirection) {
-      case 'left':
-        pb.x -= dist * factor
-        break
-      case 'right':
-        pb.x += dist * factor
-        break
-      case 'up':
-        pb.y -= dist * factor
-        break
-      case 'down':
-        pb.y += dist * factor
-        break
-      case 'none':
-        break
-    }
+    this.applyDirectionOffset(pa, startDirection, dist * factor)
+    this.applyDirectionOffset(pb, endDirection, dist * factor)
 
     // Calculate bezier point (matching original computeConnectionPoint)
     const c1 = (1 - t) * (1 - t) * (1 - t)
@@ -687,35 +608,8 @@ export class CanvasPathRenderer {
       const innerB = { x: endPoint.x, y: endPoint.y }
 
       // Apply same directional offsets as buildLinearPath
-      switch (link.startDirection) {
-        case 'left':
-          innerA.x -= l
-          break
-        case 'right':
-          innerA.x += l
-          break
-        case 'up':
-          innerA.y -= l
-          break
-        case 'down':
-          innerA.y += l
-          break
-      }
-
-      switch (link.endDirection) {
-        case 'left':
-          innerB.x -= l
-          break
-        case 'right':
-          innerB.x += l
-          break
-        case 'up':
-          innerB.y -= l
-          break
-        case 'down':
-          innerB.y += l
-          break
-      }
+      this.applyDirectionOffset(innerA, link.startDirection, l)
+      this.applyDirectionOffset(innerB, link.endDirection, l)
 
       link.centerPos = {
         x: (innerA.x + innerB.x) * 0.5,
@@ -732,35 +626,8 @@ export class CanvasPathRenderer {
       const innerB = { x: endPoint.x, y: endPoint.y }
 
       // Apply same directional offsets as buildStraightPath
-      switch (link.startDirection) {
-        case 'left':
-          innerA.x -= l
-          break
-        case 'right':
-          innerA.x += l
-          break
-        case 'up':
-          innerA.y -= l
-          break
-        case 'down':
-          innerA.y += l
-          break
-      }
-
-      switch (link.endDirection) {
-        case 'left':
-          innerB.x -= l
-          break
-        case 'right':
-          innerB.x += l
-          break
-        case 'up':
-          innerB.y -= l
-          break
-        case 'down':
-          innerB.y += l
-          break
-      }
+      this.applyDirectionOffset(innerA, link.startDirection, l)
+      this.applyDirectionOffset(innerB, link.endDirection, l)
 
       // Calculate center using midX and average of innerA/innerB y positions
       const midX = (innerA.x + innerB.x) * 0.5

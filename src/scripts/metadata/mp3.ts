@@ -21,9 +21,17 @@ export async function getMp3Metadata(file: File) {
     if (page.match('\u00ff\u00fb')) break
   }
   let workflow, prompt
-  let prompt_s = header.match(/prompt\u0000(\{.*?\})\u0000/s)?.[1]
-  if (prompt_s) prompt = JSON.parse(prompt_s)
-  let workflow_s = header.match(/workflow\u0000(\{.*?\})\u0000/s)?.[1]
-  if (workflow_s) workflow = JSON.parse(workflow_s)
+  const prompt_s = header.match(/prompt\u0000(\{.*?\})\u0000/s)?.[1]
+  if (prompt_s) {
+    try {
+      prompt = JSON.parse(prompt_s)
+    } catch {}
+  }
+  const workflow_s = header.match(/workflow\u0000(\{.*?\})\u0000/s)?.[1]
+  if (workflow_s) {
+    try {
+      workflow = JSON.parse(workflow_s)
+    } catch {}
+  }
   return { prompt, workflow }
 }

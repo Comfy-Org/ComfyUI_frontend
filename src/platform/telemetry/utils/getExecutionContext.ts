@@ -1,7 +1,7 @@
 import {
   TOOLKIT_BLUEPRINT_MODULES,
-  TOOLKIT_NODE_NAMES
-} from '@/constants/toolkitNodes'
+  TOOLKIT_NOVEL_NODE_NAMES as TOOLKIT_NODE_NAMES
+} from '@/constants/essentialsNodes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'

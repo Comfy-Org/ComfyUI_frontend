@@ -106,7 +106,7 @@ export const useWorkflowService = () => {
     const blob = new Blob([json], { type: 'application/json' })
     const file = await getFilename(filename)
     if (!file) return
-    downloadBlob(file, blob)
+    downloadBlob(blob, file)
   }
   /**
    * Save a workflow as a new file

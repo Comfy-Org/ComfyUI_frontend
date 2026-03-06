@@ -105,7 +105,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       scheduleNextPoll(opId)
-    } catch {
+    } catch (error) {
+      console.warn('Billing operation poll failed:', error)
       if (Date.now() - operation.startedAt > TIMEOUT_MS) {
         handleTimeout(opId)
         return

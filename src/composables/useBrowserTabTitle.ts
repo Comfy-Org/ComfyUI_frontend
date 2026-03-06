@@ -22,7 +22,7 @@ export const useBrowserTabTitle = () => {
       : `[${Math.round(executionStore.executionProgress * 100)}%]`
   )
 
-  const newMenuEnabled = computed(
+  const isMenuBarActive = computed(
     () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
   )
 
@@ -86,7 +86,7 @@ export const useBrowserTabTitle = () => {
   const workflowTitle = computed(
     () =>
       executionText.value +
-      (newMenuEnabled.value ? workflowNameText.value : DEFAULT_TITLE)
+      (isMenuBarActive.value ? workflowNameText.value : DEFAULT_TITLE)
   )
 
   const title = computed(() => nodeExecutionTitle.value || workflowTitle.value)

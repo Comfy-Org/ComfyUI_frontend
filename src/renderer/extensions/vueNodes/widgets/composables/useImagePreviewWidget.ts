@@ -11,7 +11,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
+import { isAllSameAspectRatio } from '@/utils/imageUtil'
 
 /**
  * Workaround for Chrome GPU bug:
@@ -125,7 +125,7 @@ const renderPreview = (
     let cell_padding: number
     let cols: number
 
-    const compact_mode = is_all_same_aspect_ratio(imgs)
+    const compact_mode = isAllSameAspectRatio(imgs)
     if (!compact_mode) {
       // use rectangle cell style and border line
       cell_padding = 2

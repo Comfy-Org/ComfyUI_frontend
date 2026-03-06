@@ -6,7 +6,6 @@ import type { NodeId, NodeProperty } from '../LGraphNode'
 import type { LinkId, SerialisedLLinkArray } from '../LLink'
 import type { FloatingRerouteSlot, RerouteId } from '../Reroute'
 import type {
-  Dictionary,
   INodeFlags,
   INodeInputSlot,
   INodeOutputSlot,
@@ -83,7 +82,7 @@ export interface ISerialisedNode {
   mode: number
   outputs?: ISerialisableNodeOutput[]
   inputs?: ISerialisableNodeInput[]
-  properties?: Dictionary<NodeProperty | undefined>
+  properties?: Record<string, NodeProperty | undefined>
   shape?: RenderShape
   boxcolor?: string
   color?: string
@@ -112,7 +111,7 @@ export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
    */
   type: UUID
   /** Custom properties for this subgraph instance */
-  properties?: Dictionary<NodeProperty | undefined>
+  properties?: Record<string, NodeProperty | undefined>
 }
 
 /**

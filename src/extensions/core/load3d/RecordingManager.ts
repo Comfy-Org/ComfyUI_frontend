@@ -225,7 +225,7 @@ export class RecordingManager {
 
     try {
       const blob = new Blob(this.recordedChunks, { type: 'video/webm' })
-      downloadBlob(filename, blob)
+      downloadBlob(blob, filename)
 
       this.eventManager.emitEvent('recordingExported', null)
     } catch (error) {

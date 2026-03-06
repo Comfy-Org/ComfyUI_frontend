@@ -149,7 +149,7 @@ import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
-import { useCopy } from '@/composables/useCopy'
+import { useGraphCopyHandler } from '@/composables/useGraphCopyHandler'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
@@ -446,7 +446,7 @@ useNodeBadge()
 
 useGlobalLitegraph()
 useContextMenuTranslation()
-useCopy()
+useGraphCopyHandler()
 usePaste()
 useWorkflowAutoSave()
 

@@ -27,8 +27,8 @@ import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO
 import { GROUP } from '@/utils/executableGroupNodeDto'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'
 
-import { api } from '../../scripts/api'
-import { app } from '../../scripts/app'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { ManageGroupDialog } from './groupNodeManage'
 import { mergeIfValid } from './widgetInputs'
 

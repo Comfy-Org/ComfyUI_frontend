@@ -28,7 +28,6 @@ import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 import type {
   DefaultConnectionColors,
-  Dictionary,
   HasBoundingRect,
   IContextMenuValue,
   INodeInputSlot,
@@ -136,7 +135,7 @@ export interface GroupNodeWorkflowData {
   config?: Record<number, GroupNodeConfigEntry>
 }
 
-export interface LGraphExtra extends Dictionary<unknown> {
+export interface LGraphExtra extends Record<string, unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: number; parentId: number | undefined }[]
   ds?: DragAndScaleState
@@ -244,7 +243,7 @@ export class LGraph
   filter?: string
   /** Must contain serialisable values, e.g. primitive types */
   config: LGraphConfig = {}
-  vars: Dictionary<unknown> = {}
+  vars: Record<string, unknown> = {}
   nodes_executing: boolean[] = []
   nodes_actioning: (string | boolean)[] = []
   nodes_executedAction: string[] = []
@@ -636,7 +635,7 @@ export class LGraph
   ): LGraphNode[] {
     const L: LGraphNode[] = []
     const S: LGraphNode[] = []
-    const M: Dictionary<LGraphNode> = {}
+    const M: Record<string, LGraphNode> = {}
     // to avoid repeating links
     const visited_links: Record<NodeId, boolean> = {}
     const remaining_links: Record<NodeId, number> = {}

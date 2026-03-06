@@ -64,9 +64,7 @@ export class AnimationManager implements AnimationManagerInterface {
 
       this.currentAnimation = new THREE.AnimationMixer(model)
 
-      if (this.animationClips.length > 0) {
-        this.updateSelectedAnimation(0)
-      }
+      this.updateSelectedAnimation(0)
     } else {
       this.animationClips = []
     }

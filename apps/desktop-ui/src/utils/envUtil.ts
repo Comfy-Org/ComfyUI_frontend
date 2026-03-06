@@ -8,7 +8,7 @@ export function isElectron() {
   return 'electronAPI' in window && window.electronAPI !== undefined
 }
 
-export function electronAPI() {
+export function electronAPI(): ElectronAPI {
   return (window as ElectronWindow).electronAPI as ElectronAPI
 }
 

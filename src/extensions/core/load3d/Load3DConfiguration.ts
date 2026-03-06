@@ -7,7 +7,6 @@ import type {
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
-import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -25,7 +24,7 @@ type Load3DConfigurationSettings = {
 class Load3DConfiguration {
   constructor(
     private load3d: Load3d,
-    private properties?: Dictionary<NodeProperty | undefined>
+    private properties?: Record<string, NodeProperty | undefined>
   ) {}
 
   configureForSaveMesh(loadFolder: 'input' | 'output', filePath: string) {

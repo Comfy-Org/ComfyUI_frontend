@@ -6,14 +6,11 @@ import { $el } from './ui'
 
 export function clone<T>(obj: T): T {
   try {
-    if (typeof structuredClone !== 'undefined') {
-      return structuredClone(obj)
-    }
-  } catch (error) {
-    // structuredClone is stricter than using JSON.parse/stringify so fallback to that
+    return structuredClone(obj)
+  } catch {
+    // structuredClone is stricter than JSON.parse/stringify, so fall back
+    return JSON.parse(JSON.stringify(obj))
   }
-
-  return JSON.parse(JSON.stringify(obj))
 }
 
 /**
@@ -90,7 +87,7 @@ export function prop<T>(
   return defaultValue
 }
 
-export function getStorageValue(id: string) {
+export function getStorageValue(id: string): string | null {
   const clientId = api.clientId ?? api.initialClientId
   return (
     (clientId && sessionStorage.getItem(`${id}:${clientId}`)) ??

@@ -200,7 +200,7 @@ export function useJobMenu(
 
     const json = JSON.stringify(data, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
-    downloadBlob(filename, blob)
+    downloadBlob(blob, filename)
   }
 
   const deleteJobAsset = async () => {

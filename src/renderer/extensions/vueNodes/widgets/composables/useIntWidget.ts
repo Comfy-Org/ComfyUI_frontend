@@ -81,7 +81,6 @@ export const useIntWidget = () => {
         widget,
         defaultType,
         undefined,
-        undefined,
         transformInputSpecV2ToV1(inputSpec)
       )
       widget.linkedWidgets = [controlWidget]

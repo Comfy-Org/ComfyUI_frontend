@@ -64,8 +64,8 @@ function useVueNodeLifecycleIndividual() {
 
     try {
       nodeManager.value.cleanup()
-    } catch {
-      /* empty */
+    } catch (error) {
+      console.warn('Node manager cleanup failed:', error)
     }
     nodeManager.value = null
   }

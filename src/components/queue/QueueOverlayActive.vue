@@ -95,7 +95,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { buildTooltipConfig } from '@/utils/tooltipConfig'
 
 defineProps<{
   totalProgressStyle: Record<string, string>

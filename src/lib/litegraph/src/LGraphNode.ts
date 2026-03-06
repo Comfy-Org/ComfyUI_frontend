@@ -34,7 +34,6 @@ import type {
   ColorOption,
   CompassCorners,
   DefaultConnectionColors,
-  Dictionary,
   IColorable,
   IContextMenuValue,
   IFoundSlot,
@@ -280,7 +279,7 @@ export class LGraphNode
   private _concreteInputs: NodeInputSlot[] = []
   private _concreteOutputs: NodeOutputSlot[] = []
 
-  properties: Dictionary<NodeProperty | undefined> = {}
+  properties: Record<string, NodeProperty | undefined> = {}
   properties_info: INodePropertyInfo[] = []
   flags: INodeFlags = {}
   widgets?: IBaseWidget[]
@@ -2144,12 +2143,6 @@ export class LGraphNode
     return false
   }
 
-  /**
-   * Checks if the provided point is inside this node's collapse button area.
-   * @param x X co-ordinate to check
-   * @param y Y co-ordinate to check
-   * @returns true if the x,y point is in the collapse button area, otherwise false
-   */
   isPointInCollapse(x: number, y: number): boolean {
     const squareLength = LiteGraph.NODE_TITLE_HEIGHT
     return isInRectangle(

@@ -20,27 +20,32 @@ export async function initTelemetry(): Promise<void> {
   if (_initPromise) return _initPromise
 
   _initPromise = (async () => {
-    const [
-      { TelemetryRegistry },
-      { MixpanelTelemetryProvider },
-      { GtmTelemetryProvider },
-      { ImpactTelemetryProvider },
-      { PostHogTelemetryProvider }
-    ] = await Promise.all([
-      import('./TelemetryRegistry'),
-      import('./providers/cloud/MixpanelTelemetryProvider'),
-      import('./providers/cloud/GtmTelemetryProvider'),
-      import('./providers/cloud/ImpactTelemetryProvider'),
-      import('./providers/cloud/PostHogTelemetryProvider')
-    ])
+    try {
+      const [
+        { TelemetryRegistry },
+        { MixpanelTelemetryProvider },
+        { GtmTelemetryProvider },
+        { ImpactTelemetryProvider },
+        { PostHogTelemetryProvider }
+      ] = await Promise.all([
+        import('./TelemetryRegistry'),
+        import('./providers/cloud/MixpanelTelemetryProvider'),
+        import('./providers/cloud/GtmTelemetryProvider'),
+        import('./providers/cloud/ImpactTelemetryProvider'),
+        import('./providers/cloud/PostHogTelemetryProvider')
+      ])
 
-    const registry = new TelemetryRegistry()
-    registry.registerProvider(new MixpanelTelemetryProvider())
-    registry.registerProvider(new GtmTelemetryProvider())
-    registry.registerProvider(new ImpactTelemetryProvider())
-    registry.registerProvider(new PostHogTelemetryProvider())
+      const registry = new TelemetryRegistry()
+      registry.registerProvider(new MixpanelTelemetryProvider())
+      registry.registerProvider(new GtmTelemetryProvider())
+      registry.registerProvider(new ImpactTelemetryProvider())
+      registry.registerProvider(new PostHogTelemetryProvider())
 
-    setTelemetryRegistry(registry)
+      setTelemetryRegistry(registry)
+    } catch (error) {
+      _initPromise = null
+      console.error('Failed to initialize telemetry:', error)
+    }
   })()
 
   return _initPromise

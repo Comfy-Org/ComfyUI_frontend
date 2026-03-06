@@ -94,7 +94,7 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
         onShow: (el, v) => {
           if (typeof v === 'string') {
             el.textContent = v
-          } else {
+          } else if (v instanceof Node) {
             el.replaceChildren(v)
           }
         }

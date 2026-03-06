@@ -83,7 +83,7 @@ const nodeData = computed<VueNodeData>(() => {
     .map(([name, input]) => ({
       name,
       type: input.type,
-      shape: input.isOptional ? RenderShape.HollowCircle : undefined,
+      shape: input.isOptional ? RenderShape.HOLLOW_CIRCLE : undefined,
       boundingRect: [0, 0, 0, 0],
       link: null
     }))

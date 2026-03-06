@@ -1,26 +1,24 @@
 import { isObject } from 'es-toolkit/compat'
 
-export function getDataFromJSON(
-  file: File
-): Promise<Record<string, object> | undefined> {
-  return new Promise<Record<string, object> | undefined>((resolve) => {
+export function getDataFromJSON(file: File): Promise<Record<string, object>> {
+  return new Promise<Record<string, object>>((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = async () => {
-      const readerResult = reader.result as string
-      const jsonContent = JSON.parse(readerResult)
-      if (jsonContent?.templates) {
-        resolve({ templates: jsonContent.templates })
-        return
+    reader.onload = () => {
+      try {
+        const jsonContent = JSON.parse(reader.result as string)
+        if (jsonContent?.templates) {
+          resolve({ templates: jsonContent.templates })
+        } else if (isApiJson(jsonContent)) {
+          resolve({ prompt: jsonContent })
+        } else {
+          resolve({ workflow: jsonContent })
+        }
+      } catch (e) {
+        reject(e)
       }
-      if (isApiJson(jsonContent)) {
-        resolve({ prompt: jsonContent })
-        return
-      }
-      resolve({ workflow: jsonContent })
-      return
     }
+    reader.onerror = () => reject(reader.error)
     reader.readAsText(file)
-    return
   })
 }
 

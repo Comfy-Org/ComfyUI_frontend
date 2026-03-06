@@ -34,7 +34,7 @@ export function useSubgraphOperations() {
     workflowStore.activeWorkflow?.changeTracker?.checkState()
   }
 
-  const doUnpack = (
+  const unpackNodes = (
     subgraphNodes: SubgraphNode[],
     skipMissingNodes: boolean
   ) => {
@@ -65,7 +65,7 @@ export function useSubgraphOperations() {
     if (subgraphNodes.length === 0) {
       return
     }
-    doUnpack(subgraphNodes, true)
+    unpackNodes(subgraphNodes, true)
   }
 
   const addSubgraphToLibrary = async () => {

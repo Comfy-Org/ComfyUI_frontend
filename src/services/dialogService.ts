@@ -196,7 +196,7 @@ export const useDialogService = () => {
     })
   }
 
-  async function prompt({
+  function prompt({
     title,
     message,
     defaultValue = '',
@@ -234,7 +234,7 @@ export const useDialogService = () => {
    * `false` if denied (e.g. no in yes/no/cancel), or
    * `null` if the dialog is cancelled or closed
    */
-  async function confirm({
+  function confirm({
     title,
     message,
     type = 'default',

@@ -523,17 +523,8 @@ export const useExecutionStore = defineStore('execution', () => {
     jobIdToWorkflowId.value.set(String(jobId), String(workflowId))
   }
 
-  /**
-   * Convert a NodeLocatorId to an execution context ID
-   * @param locatorId The NodeLocatorId
-   * @returns The execution ID or null if conversion fails
-   */
-  const nodeLocatorIdToExecutionId = (
-    locatorId: NodeLocatorId | string
-  ): string | null => {
-    const executionId = workflowStore.nodeLocatorIdToNodeExecutionId(locatorId)
-    return executionId
-  }
+  const nodeLocatorIdToExecutionId =
+    workflowStore.nodeLocatorIdToNodeExecutionId
 
   const runningJobIds = computed<string[]>(() => {
     const result: string[] = []

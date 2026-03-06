@@ -66,7 +66,7 @@ export class ComfyCommandImpl implements ComfyCommand {
       : this._menubarLabel
   }
 
-  get keybinding(): KeybindingImpl | null {
+  get keybinding(): KeybindingImpl | undefined {
     return useKeybindingStore().getKeybindingByCommandId(this.id)
   }
 }
@@ -128,9 +128,7 @@ export const useCommandStore = defineStore('command', () => {
 
   const formatKeySequence = (command: ComfyCommandImpl): string => {
     const sequences = command.keybinding?.combo.getKeySequences() || []
-    return sequences
-      .map((seq) => seq.replace(/Control/g, 'Ctrl').replace(/Shift/g, 'Shift'))
-      .join(' + ')
+    return sequences.map((seq) => seq.replace(/Control/g, 'Ctrl')).join(' + ')
   }
 
   return {

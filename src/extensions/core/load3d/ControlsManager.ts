@@ -29,10 +29,9 @@ export class ControlsManager implements ControlsManagerInterface {
       const cameraState = {
         position: this.camera.position.clone(),
         target: this.controls.target.clone(),
-        zoom:
-          this.camera instanceof THREE.OrthographicCamera
-            ? (this.camera as THREE.OrthographicCamera).zoom
-            : (this.camera as THREE.PerspectiveCamera).zoom,
+        zoom: (
+          this.camera as THREE.PerspectiveCamera | THREE.OrthographicCamera
+        ).zoom,
         cameraType:
           this.camera instanceof THREE.PerspectiveCamera
             ? 'perspective'

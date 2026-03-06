@@ -1,4 +1,7 @@
-import type { NeverNever, PickNevers } from '@/lib/litegraph/src/types/utility'
+import type {
+  OmitNeverProps,
+  PickNevers
+} from '@/lib/litegraph/src/types/utility'
 
 type EventListeners<T> = {
   readonly [K in keyof T]:
@@ -38,7 +41,7 @@ export interface CustomEventDispatcher<
   EventMap extends Record<Keys, unknown>,
   Keys extends keyof EventMap & string = keyof EventMap & string
 > {
-  dispatch<T extends keyof NeverNever<EventMap>>(
+  dispatch<T extends keyof OmitNeverProps<EventMap>>(
     type: T,
     detail: EventMap[T]
   ): boolean
@@ -94,7 +97,7 @@ export class CustomEventTarget<
    * @param detail A custom object to send with the event
    * @returns `true` if the event was dispatched successfully, otherwise `false`.
    */
-  dispatch<T extends keyof NeverNever<EventMap>>(
+  dispatch<T extends keyof OmitNeverProps<EventMap>>(
     type: T,
     detail: EventMap[T]
   ): boolean

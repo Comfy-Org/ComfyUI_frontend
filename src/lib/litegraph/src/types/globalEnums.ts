@@ -19,7 +19,7 @@ export enum RenderShape {
   /** Slot shape: Grid */
   GRID = 6,
   /** Slot shape: Hollow circle  */
-  HollowCircle = 7
+  HOLLOW_CIRCLE = 7
 }
 
 /** Bit flags used to indicate what the pointer is currently hovering over. */
@@ -94,37 +94,27 @@ export enum EaseFunction {
 
 /** Bit flags used to indicate what the pointer is currently hovering over. */
 export enum Alignment {
-  /** No items / none */
   None = 0,
-  /** Top */
   Top = 1,
-  /** Bottom */
   Bottom = 1 << 1,
   /** Vertical middle */
   Middle = 1 << 2,
-  /** Left */
   Left = 1 << 3,
-  /** Right */
   Right = 1 << 4,
   /** Horizontal centre */
   Centre = 1 << 5,
-  /** Top left */
   TopLeft = Top | Left,
   /** Top side, horizontally centred */
   TopCentre = Top | Centre,
-  /** Top right */
   TopRight = Top | Right,
   /** Left side, vertically centred */
   MidLeft = Left | Middle,
-  /** Middle centre */
   MidCentre = Middle | Centre,
   /** Right side, vertically centred */
   MidRight = Right | Middle,
-  /** Bottom left */
   BottomLeft = Bottom | Left,
   /** Bottom side, horizontally centred */
   BottomCentre = Bottom | Centre,
-  /** Bottom right */
   BottomRight = Bottom | Right
 }
 

@@ -6,13 +6,21 @@ import type {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { components } from '@/types/comfyRegistryTypes'
 
+function safeParseJSON<T>(json: string | undefined | null, fallback: T): T {
+  try {
+    return JSON.parse(json ?? JSON.stringify(fallback)) as T
+  } catch {
+    return fallback
+  }
+}
+
 const registryToFrontendV2NodeOutputs = (
   registryDef: components['schemas']['ComfyNode']
 ): ComfyNodeDefV2['outputs'] => {
-  const returnTypes = JSON.parse(registryDef.return_types ?? '{}')
+  const returnTypes = safeParseJSON<string[]>(registryDef.return_types, [])
   if (!returnTypes.length) return []
 
-  const returnNames = JSON.parse(registryDef.return_names ?? '{}')
+  const returnNames = safeParseJSON<string[]>(registryDef.return_names, [])
   const outputsIsList = registryDef.output_is_list ?? []
 
   const outputs = []
@@ -31,9 +39,10 @@ const registryToFrontendV2NodeOutputs = (
 const registryToFrontendV2NodeInputs = (
   registryDef: components['schemas']['ComfyNode']
 ): ComfyNodeDefV2['inputs'] => {
-  const inputTypes = JSON.parse(
-    registryDef.input_types ?? '{}'
-  ) as ComfyNodeDefV1['input']
+  const inputTypes = safeParseJSON<ComfyNodeDefV1['input']>(
+    registryDef.input_types,
+    {}
+  )
   if (!inputTypes || !Object.keys(inputTypes).length) return {}
 
   const inputsV2: Record<string, InputSpec> = {}
