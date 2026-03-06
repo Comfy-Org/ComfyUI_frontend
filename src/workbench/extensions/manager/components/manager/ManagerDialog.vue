@@ -28,7 +28,7 @@
             :complete-on-focus="false"
             :delay="8"
             option-label="query"
-            class="w-full min-w-md max-w-lg"
+            class="w-full max-w-lg min-w-md"
             :pt="{
               root: { class: 'relative' },
               pcInputText: {
@@ -55,7 +55,7 @@
           >
             <template #dropdownicon>
               <i
-                class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                class="pi pi-search absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
               />
             </template>
           </AutoCompletePlus>
@@ -125,7 +125,7 @@
     </template>
 
     <template #content>
-      <div v-if="isLoading" class="scrollbar-hide size-full overflow-auto">
+      <div v-if="isLoading" class="size-full scrollbar-hide overflow-auto">
         <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
       </div>
       <NoResultsPlaceholder

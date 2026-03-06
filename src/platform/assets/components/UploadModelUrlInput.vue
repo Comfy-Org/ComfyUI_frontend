@@ -1,15 +1,15 @@
 <template>
-  <div class="flex flex-col justify-between h-full gap-6 text-sm">
+  <div class="flex h-full flex-col justify-between gap-6 text-sm">
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-2">
-        <p class="m-0 text-foreground">
+        <p class="text-foreground m-0">
           {{ $t('assetBrowser.uploadModelDescription1Generic') }}
         </p>
         <div class="m-0">
           <p class="m-0 text-muted-foreground">
             {{ $t('assetBrowser.uploadModelDescription2Generic') }}
           </p>
-          <span class="inline-flex items-center gap-1 flex-wrap mt-2">
+          <span class="mt-2 inline-flex flex-wrap items-center gap-1">
             <span class="inline-flex items-center gap-1">
               <img
                 :src="civitaiIcon"
@@ -65,7 +65,7 @@
             <Button
               variant="textonly"
               size="unset"
-              class="text-muted-foreground underline p-0"
+              class="p-0 text-muted-foreground underline"
               @click="openSecretsSettings"
             >
               {{ $t('assetBrowser.apiKeyHintLink') }}

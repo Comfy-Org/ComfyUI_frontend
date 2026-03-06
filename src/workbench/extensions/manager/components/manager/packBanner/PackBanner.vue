@@ -1,5 +1,5 @@
 <template>
-  <div class="aspect-7/3 w-full overflow-hidden z-0">
+  <div class="z-0 aspect-7/3 w-full overflow-hidden">
     <!-- default banner show -->
     <div v-if="showDefaultBanner" class="size-full">
       <img
@@ -25,8 +25,8 @@
         :alt="nodePack.name + ' banner'"
         :class="
           isImageError
-            ? 'relative size-full object-cover z-10'
-            : 'relative size-full object-contain z-10'
+            ? 'relative z-10 size-full object-cover'
+            : 'relative z-10 size-full object-contain'
         "
         @error="isImageError = true"
       />

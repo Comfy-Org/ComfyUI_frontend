@@ -1,13 +1,13 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col px-2 justify-center"
+    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
   >
     <!-- Image Wrapper -->
     <div
       ref="imageWrapperEl"
-      class="min-h-0 flex-1 flex w-full overflow-hidden rounded-[5px] bg-muted-background relative"
+      class="relative flex min-h-0 w-full flex-1 overflow-hidden rounded-[5px] bg-transparent"
       tabindex="0"
       role="img"
       :aria-label="$t('g.imagePreview')"
@@ -21,7 +21,7 @@
       <div
         v-if="imageError"
         role="alert"
-        class="flex flex-1 self-center size-full flex-col items-center justify-around bg-muted-background text-center text-base-foreground py-8"
+        class="flex size-full flex-1 flex-col items-center justify-around self-center py-8 text-center text-base-foreground"
       >
         <i class="mb-2 icon-[lucide--image-off] size-12 text-base-foreground" />
         <p class="text-sm text-base-foreground">
@@ -40,7 +40,7 @@
         v-if="!imageError"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="absolute inset-0 block size-full object-contain pointer-events-none"
+        class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
       />

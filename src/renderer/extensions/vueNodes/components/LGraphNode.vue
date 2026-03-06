@@ -9,24 +9,24 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'group/node bg-node-component-header-surface lg-node absolute text-sm',
-        'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
+        'group/node lg-node absolute bg-node-component-header-surface text-sm',
+        'min-h-(--node-height) w-(--node-width) min-w-[225px] contain-layout contain-style',
         shapeClass,
-        'touch-none flex flex-col',
+        'flex touch-none flex-col',
         'border border-solid border-component-node-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
-          'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-3 focus-visible:outline-node-component-outline',
+          'ring-node-component-ring hover:ring-7',
+        'outline-3 outline-transparent focus-visible:outline-node-component-outline',
         borderClass,
         outlineClass,
         cursorClass,
         {
-          [`${beforeShapeClass} before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0`]:
+          [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0 before:bg-bypass/60`]:
             bypassed,
           [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0`]:
             muted,
-          'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
+          'bg-primary-500/10 ring-4 ring-primary-500': isDraggingOver
         },
         shouldHandleNodePointerEvents && !nodeData.flags?.ghost
           ? 'pointer-events-auto'
@@ -58,7 +58,7 @@
     />
     <div
       v-if="displayHeader"
-      class="flex flex-col justify-center items-center relative"
+      class="relative flex flex-col items-center justify-center"
     >
       <template v-if="isCollapsed">
         <SlotConnectionDot
@@ -110,14 +110,14 @@
       </div>
 
       <div
-        class="flex flex-1 flex-col gap-1 pt-1 pb-3 bg-component-node-background rounded-b-2xl"
+        class="flex flex-1 flex-col gap-1 rounded-b-2xl bg-component-node-background pt-1 pb-3"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <NodeSlots :node-data="nodeData" />
 
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
-        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex flex-col">
+        <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
           <NodeContent
             v-if="nodeMedia"
             :node-data="nodeData"
@@ -147,7 +147,7 @@
       "
       :class="
         cn(
-          'flex w-full h-7 rounded-b-2xl -z-1 text-xs rounded-t-none overflow-hidden divide-x divide-component-node-border',
+          '-z-1 flex h-7 w-full divide-x divide-component-node-border overflow-hidden rounded-t-none rounded-b-2xl text-xs',
           !isCollapsed && '-mt-5 h-12'
         )
       "
@@ -157,7 +157,7 @@
         variant="textonly"
         :class="
           cn(
-            'flex-1 rounded-none h-full',
+            'h-full flex-1 rounded-none',
             hasAnyError &&
               showErrorsTabEnabled &&
               !nodeData.color &&
@@ -181,7 +181,7 @@
         variant="textonly"
         :class="
           cn(
-            'flex-1 rounded-none h-full bg-error hover:bg-destructive-background-hover',
+            'h-full flex-1 rounded-none bg-error hover:bg-destructive-background-hover',
             isCollapsed ? 'py-2' : 'pt-7 pb-2'
           )
         "
@@ -199,7 +199,7 @@
         "
         variant="textonly"
         :class="
-          cn('flex-1 rounded-none h-full', isCollapsed ? 'py-2' : 'pt-7 pb-2')
+          cn('h-full flex-1 rounded-none', isCollapsed ? 'py-2' : 'pt-7 pb-2')
         "
         @click.stop="showAdvancedState = !showAdvancedState"
       >
@@ -238,7 +238,7 @@
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 12 12"
-          :class="cn('size-2/5 absolute', handle.svgPositionClasses)"
+          :class="cn('absolute size-2/5', handle.svgPositionClasses)"
           :style="
             handle.svgTransform ? { transform: handle.svgTransform } : undefined
           "

@@ -88,7 +88,7 @@
           </p>
           <p
             v-if="isLoadingAssets"
-            class="m-0 text-sm italic text-muted-foreground"
+            class="m-0 text-sm text-muted-foreground italic"
           >
             {{ $t('shareWorkflow.checkingAssets') }}
           </p>

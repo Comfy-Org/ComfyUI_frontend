@@ -15,7 +15,7 @@ const { class: className, ...restProps } = defineProps<
     v-bind="restProps"
     :class="
       cn(
-        'px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground',
+        'px-3 py-2 text-xs tracking-wide text-muted-foreground uppercase',
         className
       )
     "

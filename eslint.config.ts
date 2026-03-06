@@ -127,7 +127,7 @@ export default defineConfig([
       // Off: may conflict with oxfmt formatting
       'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
       // Off: large batch change, enable and apply with `eslint --fix`
-      'better-tailwindcss/enforce-consistent-class-order': 'off',
+      'better-tailwindcss/enforce-consistent-class-order': 'error',
       'better-tailwindcss/enforce-canonical-classes': 'error',
       'better-tailwindcss/no-deprecated-classes': 'error'
     }

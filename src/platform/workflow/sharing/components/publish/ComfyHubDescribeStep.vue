@@ -57,7 +57,7 @@
       <TagsInput
         v-slot="{ isEmpty }"
         always-editing
-        class="select-none bg-secondary-background"
+        class="bg-secondary-background select-none"
         :model-value="tags"
         @update:model-value="$emit('update:tags', $event as string[])"
       >
@@ -70,18 +70,18 @@
 
       <TagsInput
         disabled
-        class="bg-transparent hover:bg-transparent hover-within:bg-transparent p-0"
+        class="hover-within:bg-transparent bg-transparent p-0 hover:bg-transparent"
       >
         <div
           v-if="displayedSuggestions.length > 0"
-          class="basis-full flex flex-wrap gap-2"
+          class="flex basis-full flex-wrap gap-2"
         >
           <TagsInputItem
             v-for="tag in displayedSuggestions"
             :key="tag"
             v-auto-animate
             :value="tag"
-            class="cursor-pointer select-none transition-colors bg-secondary-background hover:bg-secondary-background-selected text-muted-foreground px-2"
+            class="cursor-pointer bg-secondary-background px-2 text-muted-foreground transition-colors select-none hover:bg-secondary-background-selected"
             @click="addTag(tag)"
           >
             <TagsInputItemText />
@@ -91,7 +91,7 @@
           v-if="shouldShowSuggestionToggle"
           variant="muted-textonly"
           size="unset"
-          class="text-xs px-0 hover:bg-unset"
+          class="hover:bg-unset px-0 text-xs"
           @click="showAllSuggestions = !showAllSuggestions"
         >
           {{

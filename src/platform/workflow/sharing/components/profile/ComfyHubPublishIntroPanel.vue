@@ -13,7 +13,7 @@
     </div>
 
     <!-- Content -->
-    <section class="flex flex-col items-center gap-4 px-4 pb-6 pt-4">
+    <section class="flex flex-col items-center gap-4 px-4 pt-4 pb-6">
       <h2 class="m-0 text-base font-semibold text-base-foreground">
         {{ $t('comfyHubProfile.introTitle') }}
       </h2>

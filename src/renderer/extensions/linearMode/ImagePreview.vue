@@ -13,7 +13,7 @@ const width = ref('')
 const height = ref('')
 </script>
 <template>
-  <ZoomPane v-if="!mobile" v-slot="slotProps" class="flex-1 w-full">
+  <ZoomPane v-if="!mobile" v-slot="slotProps" class="w-full flex-1">
     <img
       ref="imageRef"
       :src
@@ -31,7 +31,7 @@ const height = ref('')
   <img
     v-else
     ref="imageRef"
-    class="contain-size grow object-contain"
+    class="grow object-contain contain-size"
     :src
     @load="
       () => {

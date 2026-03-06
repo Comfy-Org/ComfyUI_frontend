@@ -38,7 +38,7 @@
             ref="actionbarContainerRef"
             :class="
               cn(
-                'actionbar-container relative pointer-events-auto flex gap-2 h-12 items-center rounded-lg border bg-comfy-menu-bg px-2 shadow-interface',
+                'actionbar-container pointer-events-auto relative flex h-12 items-center gap-2 rounded-lg border bg-comfy-menu-bg px-2 shadow-interface',
                 hasAnyError
                   ? 'border-destructive-background-hover'
                   : 'border-interface-stroke'

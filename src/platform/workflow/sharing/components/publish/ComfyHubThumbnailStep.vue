@@ -40,7 +40,7 @@
 
       <template v-if="thumbnailType === 'imageComparison'">
         <div
-          class="flex-1 grid grid-cols-1 grid-rows-1 place-content-center-safe"
+          class="grid flex-1 grid-cols-1 grid-rows-1 place-content-center-safe"
         >
           <div
             v-if="hasBothComparisonImages"

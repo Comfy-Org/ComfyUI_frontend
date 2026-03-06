@@ -12,7 +12,7 @@ const { latentPreview } = defineProps<{
       class="block size-10 rounded-sm object-cover"
       :src="latentPreview"
     />
-    <div v-else class="size-10 rounded-sm skeleton-shimmer" />
-    <LinearProgressBar class="w-10 h-1 mt-1" rounded />
+    <div v-else class="skeleton-shimmer size-10 rounded-sm" />
+    <LinearProgressBar class="mt-1 h-1 w-10" rounded />
   </div>
 </template>
