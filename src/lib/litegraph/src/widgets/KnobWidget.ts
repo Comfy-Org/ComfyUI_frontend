@@ -35,8 +35,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
     ctx: CanvasRenderingContext2D,
     { width, showText = true, suppressPromotedOutline }: DrawWidgetOptions
   ): void {
-    // Store original context attributes
-    const { fillStyle, strokeStyle, textAlign } = ctx
+    ctx.save()
 
     const { y } = this
     const { margin } = BaseWidget
@@ -177,8 +176,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
       )
     }
 
-    // Restore original context attributes
-    Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
+    ctx.restore()
   }
 
   onClick(): void {

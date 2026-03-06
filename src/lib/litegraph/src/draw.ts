@@ -91,7 +91,7 @@ export function strokeShape(
   }
 
   // Set up context
-  const { lineWidth, strokeStyle } = ctx
+  ctx.save()
   ctx.lineWidth = thickness
   ctx.globalAlpha = 0.8
   ctx.strokeStyle = color
@@ -138,12 +138,7 @@ export function strokeShape(
   // Stroke the shape
   ctx.stroke()
 
-  // Reset context
-  ctx.lineWidth = lineWidth
-  ctx.strokeStyle = strokeStyle
-
-  // TODO: Store and reset value properly.  Callers currently expect this behaviour (e.g. muted nodes).
-  ctx.globalAlpha = 1
+  ctx.restore()
 }
 
 /**
@@ -216,18 +211,24 @@ export function drawTextInArea({
 }: IDrawTextInAreaOptions) {
   const { left, right, bottom, width, centreX } = area
 
+  ctx.save()
+
   // Text already fits
   const fullWidth = ctx.measureText(text).width
   if (fullWidth <= width) {
     ctx.textAlign = align
     const x = align === 'left' ? left : align === 'right' ? right : centreX
     ctx.fillText(text, x, bottom)
+    ctx.restore()
     return
   }
 
   // Need to truncate text
   const truncated = truncateTextToWidth(ctx, text, width)
-  if (truncated.length === 0) return
+  if (truncated.length === 0) {
+    ctx.restore()
+    return
+  }
 
   // Draw text - left-aligned to prevent bouncing during resize
   ctx.textAlign = 'left'
@@ -238,4 +239,6 @@ export function drawTextInArea({
   ctx.textAlign = 'right'
   const ellipsis = truncated.at(-1)!
   ctx.fillText(ellipsis, right, bottom, ctx.measureText(ellipsis).width * 0.75)
+
+  ctx.restore()
 }

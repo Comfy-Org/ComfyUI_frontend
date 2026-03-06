@@ -62,8 +62,7 @@ export abstract class BaseSteppedWidget<
     ctx: CanvasRenderingContext2D,
     options: DrawWidgetOptions
   ) {
-    // Store original context attributes
-    const { fillStyle, strokeStyle, textAlign } = ctx
+    ctx.save()
 
     this.drawWidgetShape(ctx, options)
     if (options.showText) {
@@ -72,7 +71,6 @@ export abstract class BaseSteppedWidget<
       this.drawTruncatingText({ ctx, width: options.width })
     }
 
-    // Restore original context attributes
-    Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
+    ctx.restore()
   }
 }

@@ -22,8 +22,7 @@ export class SliderWidget
     ctx: CanvasRenderingContext2D,
     { width, showText = true, suppressPromotedOutline }: DrawWidgetOptions
   ) {
-    // Store original context attributes
-    const { fillStyle, strokeStyle, textAlign } = ctx
+    ctx.save()
 
     const { height, y } = this
     const { margin } = BaseWidget
@@ -67,8 +66,7 @@ export class SliderWidget
       )
     }
 
-    // Restore original context attributes
-    Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
+    ctx.restore()
   }
 
   /**

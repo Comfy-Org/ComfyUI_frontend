@@ -5494,11 +5494,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @todo Split tooltip from hover, so it can be drawn / eased separately
    */
   drawLinkTooltip(ctx: CanvasRenderingContext2D, link: LinkSegment): void {
+    ctx.save()
     const pos = link._pos
     ctx.fillStyle = 'black'
     ctx.beginPath()
     if (this.linkMarkerShape === LinkMarkerShape.Arrow) {
-      const transform = ctx.getTransform()
+      ctx.save()
       ctx.translate(pos[0], pos[1])
       // Assertion: Number.isFinite guarantees this is a number.
       if (Number.isFinite(link._centreAngle))
@@ -5506,7 +5507,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.moveTo(-2, -3)
       ctx.lineTo(+4, 0)
       ctx.lineTo(-2, +3)
-      ctx.setTransform(transform)
+      ctx.restore()
     } else if (
       this.linkMarkerShape == null ||
       this.linkMarkerShape === LinkMarkerShape.Circle
@@ -5517,10 +5518,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // @ts-expect-error TODO: Better value typing
     const { data } = link
-    if (data == null) return
+    if (data == null) {
+      ctx.restore()
+      return
+    }
 
     // @ts-expect-error TODO: Better value typing
-    if (this.onDrawLinkTooltip?.(ctx, link, this) == true) return
+    if (this.onDrawLinkTooltip?.(ctx, link, this) == true) {
+      ctx.restore()
+      return
+    }
 
     let text: string | null = null
 
@@ -5530,7 +5537,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     else if (data.toToolTip) text = data.toToolTip()
     else text = `[${data.constructor.name}]`
 
-    if (text == null) return
+    if (text == null) {
+      ctx.restore()
+      return
+    }
 
     // Hard-coded tooltip limit
     text = text.substring(0, 30)
@@ -5554,6 +5564,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.textAlign = 'center'
     ctx.fillStyle = '#CEC'
     ctx.fillText(text, pos[0], pos[1] - 15 - h * 0.3)
+    ctx.restore()
   }
 
   /**

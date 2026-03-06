@@ -318,15 +318,9 @@ export abstract class SubgraphIONodeBase<
       | SubgraphOutput,
     editorAlpha?: number
   ): void {
-    const { lineWidth, strokeStyle, fillStyle, font, textBaseline } = ctx
+    ctx.save()
     this.drawProtected(ctx, colorContext, fromSlot, editorAlpha)
-    Object.assign(ctx, {
-      lineWidth,
-      strokeStyle,
-      fillStyle,
-      font,
-      textBaseline
-    })
+    ctx.restore()
   }
 
   /** @internal Leaves {@link ctx} dirty. */

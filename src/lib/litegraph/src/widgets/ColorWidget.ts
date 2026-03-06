@@ -29,7 +29,7 @@ export class ColorWidget
   override type = 'color' as const
 
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
-    const { fillStyle, strokeStyle, textAlign } = ctx
+    ctx.save()
 
     this.drawWidgetShape(ctx, options)
 
@@ -62,7 +62,7 @@ export class ColorWidget
     ctx.textAlign = 'right'
     ctx.fillText(this.value || '#000000', swatchX - 8, y + height * 0.7)
 
-    Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
+    ctx.restore()
   }
 
   onClick({ e, node, canvas }: WidgetEventOptions): void {

@@ -25,8 +25,7 @@ export class ButtonWidget
     ctx: CanvasRenderingContext2D,
     { width, showText = true, suppressPromotedOutline }: DrawWidgetOptions
   ) {
-    // Store original context attributes
-    const { fillStyle, strokeStyle, textAlign } = ctx
+    ctx.save()
 
     const { height, y } = this
     const { margin } = BaseWidget
@@ -48,8 +47,7 @@ export class ButtonWidget
     // Draw button text
     if (showText) this.drawLabel(ctx, width * 0.5)
 
-    // Restore original context attributes
-    Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
+    ctx.restore()
   }
 
   drawLabel(ctx: CanvasRenderingContext2D, x: number): void {

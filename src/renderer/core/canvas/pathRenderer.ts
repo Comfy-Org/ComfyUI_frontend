@@ -432,7 +432,7 @@ export class CanvasPathRenderer {
       const angle = Math.atan2(posB.y - posA.y, posB.x - posA.x)
 
       // Draw arrow triangle (matching original shape)
-      const transform = ctx.getTransform()
+      ctx.save()
       ctx.translate(posA.x, posA.y)
       ctx.rotate(angle)
       ctx.fillStyle = color
@@ -441,7 +441,7 @@ export class CanvasPathRenderer {
       ctx.lineTo(0, +7)
       ctx.lineTo(+5, -3)
       ctx.fill()
-      ctx.setTransform(transform)
+      ctx.restore()
     }
   }
 
@@ -803,20 +803,19 @@ export class CanvasPathRenderer {
   ): void {
     if (!link.centerPos) return
 
+    ctx.save()
     ctx.beginPath()
 
     if (
       context.style.centerMarkerShape === 'arrow' &&
       link.centerAngle !== undefined
     ) {
-      const transform = ctx.getTransform()
       ctx.translate(link.centerPos.x, link.centerPos.y)
       ctx.rotate(link.centerAngle)
       // The math is off, but it currently looks better in chromium (from original)
       ctx.moveTo(-3.2, -5)
       ctx.lineTo(7, 0)
       ctx.lineTo(-3.2, 5)
-      ctx.setTransform(transform)
     } else {
       // Default to circle
       ctx.arc(link.centerPos.x, link.centerPos.y, 5, 0, Math.PI * 2)
@@ -824,15 +823,14 @@ export class CanvasPathRenderer {
 
     // Apply disabled pattern or color
     if (link.disabled && context.patterns?.disabled) {
-      const { fillStyle, globalAlpha } = ctx
       ctx.fillStyle = context.patterns.disabled
       ctx.globalAlpha = 0.75
       ctx.fill()
-      ctx.globalAlpha = globalAlpha
-      ctx.fillStyle = fillStyle
     } else {
       ctx.fillStyle = color
       ctx.fill()
     }
+
+    ctx.restore()
   }
 }

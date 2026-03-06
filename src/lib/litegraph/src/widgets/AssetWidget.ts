@@ -39,8 +39,8 @@ export class AssetWidget
     options: DrawWidgetOptions
   ) {
     const { width, showText = true } = options
-    // Store original context attributes
-    const { fillStyle, strokeStyle, textAlign } = ctx
+
+    ctx.save()
 
     this.drawWidgetShape(ctx, options)
 
@@ -48,8 +48,7 @@ export class AssetWidget
       this.drawTruncatingText({ ctx, width, leftPadding: 0, rightPadding: 0 })
     }
 
-    // Restore original context attributes
-    Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
+    ctx.restore()
   }
 
   override onClick() {

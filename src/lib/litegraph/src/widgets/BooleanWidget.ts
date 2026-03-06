@@ -13,6 +13,8 @@ export class BooleanWidget
     ctx: CanvasRenderingContext2D,
     options: DrawWidgetOptions
   ) {
+    ctx.save()
+
     const { width, showText = true } = options
     const { height, y } = this
     const { margin } = BaseWidget
@@ -28,6 +30,8 @@ export class BooleanWidget
       this.drawLabel(ctx, margin * 2)
       this.drawValue(ctx, width - 40)
     }
+
+    ctx.restore()
   }
 
   drawLabel(ctx: CanvasRenderingContext2D, x: number): void {
