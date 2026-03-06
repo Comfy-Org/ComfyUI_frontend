@@ -906,6 +906,14 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.Canvas.PasteFromClipboardWithConnect',
+      icon: 'icon-[lucide--clipboard-paste]',
+      label: () => t('Paste with Connect'),
+      function: () => {
+        app.canvas.pasteFromClipboard({ connectInputs: true })
+      }
+    },
+    {
       id: 'Comfy.Canvas.SelectAll',
       icon: 'icon-[lucide--lasso-select]',
       label: 'Select All',
@@ -919,6 +927,12 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Delete Selected Items',
       versionAdded: '1.10.5',
       function: () => {
+        if (app.canvas.selectedItems.size === 0) {
+          app.canvas.canvas.dispatchEvent(
+            new CustomEvent('litegraph:no-items-selected', { bubbles: true })
+          )
+          return
+        }
         app.canvas.deleteSelected()
         app.canvas.setDirty(true, true)
       }

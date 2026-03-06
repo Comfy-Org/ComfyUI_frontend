@@ -189,11 +189,10 @@ export function useWorkflowActionsMenu(
 
     addItem({
       id: 'share',
-      label: t('menuLabels.Share'),
+      label: t('breadcrumbsMenu.share'),
       icon: 'icon-[comfy--send]',
       command: async () => {},
-      disabled: true,
-      visible: isRoot
+      visible: false
     })
 
     addItem({
