@@ -15,7 +15,7 @@
           :class="tabButtonClass('shareLink')"
           @click="handleDialogModeChange('shareLink')"
         >
-          {{ $t('shareWorkflow.shareLinkTab') }}
+          {{ $t('workflowSharing.share.shareLinkTab') }}
         </Button>
         <Button
           id="tab-publish"
@@ -25,11 +25,11 @@
           @click="handleDialogModeChange('publishToHub')"
         >
           <i class="icon-[lucide--globe] size-4" aria-hidden="true" />
-          {{ $t('shareWorkflow.publishToHubTab') }}
+          {{ $t('workflowSharing.share.publishToHubTab') }}
         </Button>
       </div>
       <div v-else class="select-none">
-        {{ $t('shareWorkflow.shareLinkTab') }}
+        {{ $t('workflowSharing.share.shareLinkTab') }}
       </div>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
         <i class="icon-[lucide--x] size-4" />
@@ -52,11 +52,11 @@
 
         <template v-if="dialogState === 'unsaved'">
           <p class="m-0 text-sm text-muted-foreground">
-            {{ $t('shareWorkflow.unsavedDescription') }}
+            {{ $t('workflowSharing.share.unsavedDescription') }}
           </p>
           <label v-if="isTemporary" class="flex flex-col gap-1">
             <span class="text-sm font-medium text-muted-foreground">
-              {{ $t('shareWorkflow.workflowNameLabel') }}
+              {{ $t('workflowSharing.workflowName') }}
             </span>
             <Input
               ref="nameInputRef"
@@ -73,8 +73,8 @@
           >
             {{
               isSaving
-                ? $t('shareWorkflow.saving')
-                : $t('shareWorkflow.saveButton')
+                ? $t('workflowSharing.share.saving')
+                : $t('workflowSharing.share.saveButton')
             }}
           </Button>
         </template>
@@ -84,13 +84,13 @@
             v-if="dialogState === 'stale'"
             class="m-0 text-xs text-muted-foreground"
           >
-            {{ $t('shareWorkflow.hasChangesDescription') }}
+            {{ $t('workflowSharing.share.hasChangesDescription') }}
           </p>
           <p
             v-if="isLoadingAssets"
             class="m-0 text-sm text-muted-foreground italic"
           >
-            {{ $t('shareWorkflow.checkingAssets') }}
+            {{ $t('workflowSharing.share.checkingAssets') }}
           </p>
           <ShareAssetWarningBox
             v-else-if="requiresAcknowledgment"
@@ -118,10 +118,12 @@
               v-if="publishResult.publishedAt"
               class="m-0 text-xs text-muted-foreground"
             >
-              {{ $t('shareWorkflow.publishedOn', { date: formattedDate }) }}
+              {{
+                $t('workflowSharing.share.publishedOn', { date: formattedDate })
+              }}
             </p>
             <p class="m-0 text-xs text-muted-foreground">
-              {{ $t('shareWorkflow.successDescription') }}
+              {{ $t('workflowSharing.share.successDescription') }}
             </p>
           </div>
         </template>
@@ -272,21 +274,21 @@ const formattedDate = computed(() => {
 const publishButtonLabel = computed(() => {
   if (dialogState.value === 'stale') {
     return isPublishing.value
-      ? t('shareWorkflow.updatingLink')
-      : t('shareWorkflow.updateLinkButton')
+      ? t('workflowSharing.share.updatingLink')
+      : t('workflowSharing.share.updateLinkButton')
   }
   return isPublishing.value
-    ? t('shareWorkflow.creatingLink')
-    : t('shareWorkflow.createLinkButton')
+    ? t('workflowSharing.share.creatingLink')
+    : t('workflowSharing.share.createLinkButton')
 })
 
-function stripJsonExtension(filename: string): string {
-  return filename.replace(/\.json$/i, '')
+function stripWorkflowExtension(filename: string): string {
+  return filename.replace(/\.app\.json$/i, '').replace(/\.json$/i, '')
 }
 
 function buildWorkflowPath(directory: string, filename: string): string {
   const normalizedDirectory = directory.replace(/\/+$/, '')
-  const normalizedFilename = appendJsonExt(stripJsonExtension(filename))
+  const normalizedFilename = appendJsonExt(stripWorkflowExtension(filename))
 
   return normalizedDirectory
     ? `${normalizedDirectory}/${normalizedFilename}`
@@ -299,7 +301,7 @@ async function refreshDialogState() {
   if (!workflow || workflow.isTemporary || workflow.isModified) {
     dialogState.value = 'unsaved'
     if (workflow) {
-      workflowName.value = stripJsonExtension(workflow.filename)
+      workflowName.value = stripWorkflowExtension(workflow.filename)
     }
     return
   }
@@ -315,7 +317,7 @@ async function refreshDialogState() {
     dialogState.value = 'ready'
     toast.add({
       severity: 'error',
-      summary: t('shareWorkflow.loadFailed')
+      summary: t('workflowSharing.share.loadFailed')
     })
   }
 }
@@ -351,8 +353,8 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
       console.error('Failed to save workflow:', error)
       toast.add({
         severity: 'error',
-        summary: t('shareWorkflow.saveFailedTitle'),
-        detail: t('shareWorkflow.saveFailedDescription'),
+        summary: t('workflowSharing.share.saveFailedTitle'),
+        detail: t('workflowSharing.share.saveFailedDescription'),
         life: 5000
       })
     }

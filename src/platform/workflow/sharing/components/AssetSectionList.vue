@@ -53,7 +53,7 @@
               v-if="item.in_library"
               class="ml-auto shrink-0 text-xs text-muted-foreground"
             >
-              {{ $t('shareWorkflow.inLibrary') }}
+              {{ $t('workflowSharing.share.inLibrary') }}
             </span>
           </li>
         </ul>

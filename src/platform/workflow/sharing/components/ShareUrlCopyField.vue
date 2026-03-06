@@ -3,7 +3,7 @@
     <Input
       readonly
       :model-value="url"
-      :aria-label="$t('shareWorkflow.shareUrlLabel')"
+      :aria-label="$t('workflowSharing.share.shareUrlLabel')"
       class="flex-1"
       @focus="($event.target as HTMLInputElement).select()"
     />
@@ -14,7 +14,9 @@
       @click="handleCopy"
     >
       {{
-        copied ? $t('shareWorkflow.linkCopied') : $t('shareWorkflow.copyLink')
+        copied
+          ? $t('workflowSharing.share.linkCopied')
+          : $t('workflowSharing.share.copyLink')
       }}
       <i class="icon-[lucide--link] size-3.5" aria-hidden="true" />
     </Button>

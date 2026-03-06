@@ -20,23 +20,23 @@ const i18n = createI18n({
   messages: {
     en: {
       g: { close: 'Close', cancel: 'Cancel' },
-      openSharedWorkflow: {
-        dialogTitle: 'Open shared workflow',
-        copyDescription:
-          'Opening the workflow will create a new copy in your workspace',
-        nonPublicAssetsWarningLine1:
-          'This workflow comes with non-public assets.',
-        nonPublicAssetsWarningLine2:
-          'These will be added to your library when you open the workflow',
-        copyAssetsAndOpen: 'Copy assets & open workflow',
-        openWorkflow: 'Open workflow',
-        openWithoutImporting: 'Open without importing',
-        loadError:
-          'Could not load this shared workflow. Please try again later.'
-      },
-      shareWorkflow: {
+      workflowSharing: {
         mediaLabel: '{count} Media File | {count} Media Files',
-        modelsLabel: '{count} Model | {count} Models'
+        modelsLabel: '{count} Model | {count} Models',
+        open: {
+          dialogTitle: 'Open shared workflow',
+          copyDescription:
+            'Opening the workflow will create a new copy in your workspace',
+          nonPublicAssetsWarningLine1:
+            'This workflow comes with non-public assets.',
+          nonPublicAssetsWarningLine2:
+            'These will be added to your library when you open the workflow',
+          copyAssetsAndOpen: 'Copy assets & open workflow',
+          openWorkflow: 'Open workflow',
+          openWithoutImporting: 'Open without importing',
+          loadError:
+            'Could not load this shared workflow. Please try again later.'
+        }
       }
     }
   }

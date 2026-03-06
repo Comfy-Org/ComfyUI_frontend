@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4 px-6 py-4">
     <p class="text-sm text-base-foreground">
-      {{ $t('comfyHubPublish.createProfileToPublish') }}
+      {{ $t('workflowSharing.publish.createProfileToPublish') }}
     </p>
 
     <Button
@@ -17,7 +17,7 @@
       </div>
       <span class="inline-flex items-center gap-1 text-sm text-base-foreground">
         <i class="icon-[lucide--plus] size-4" />
-        {{ $t('comfyHubPublish.createProfileCta') }}
+        {{ $t('workflowSharing.publish.createProfileCta') }}
       </span>
     </Button>
   </div>

@@ -2,7 +2,7 @@
   <div class="flex min-h-0 flex-1 flex-col gap-6">
     <fieldset class="flex flex-col gap-2">
       <legend class="text-sm text-base-foreground">
-        {{ $t('comfyHubPublish.selectAThumbnail') }}
+        {{ $t('workflowSharing.publish.selectAThumbnail') }}
       </legend>
       <ToggleGroup
         type="single"
@@ -49,12 +49,12 @@
           >
             <img
               :src="comparisonPreviewUrls.after!"
-              :alt="$t('comfyHubPublish.uploadComparisonAfterPrompt')"
+              :alt="$t('workflowSharing.publish.uploadComparisonAfterPrompt')"
               class="size-full object-contain"
             />
             <img
               :src="comparisonPreviewUrls.before!"
-              :alt="$t('comfyHubPublish.uploadComparisonBeforePrompt')"
+              :alt="$t('workflowSharing.publish.uploadComparisonBeforePrompt')"
               class="absolute inset-0 size-full object-contain"
               :style="{
                 clipPath: `inset(0 ${100 - previewSliderPosition}% 0 0)`
@@ -110,7 +110,7 @@
                   {{ slot.label }}
                 </span>
                 <span class="text-xs text-muted-foreground">
-                  {{ $t('comfyHubPublish.uploadThumbnailHint') }}
+                  {{ $t('workflowSharing.publish.uploadThumbnailHint') }}
                 </span>
               </template>
             </label>
@@ -149,7 +149,7 @@
             <video
               v-if="isVideoFile"
               :src="thumbnailPreviewUrl"
-              :aria-label="$t('comfyHubPublish.videoPreview')"
+              :aria-label="$t('workflowSharing.publish.videoPreview')"
               class="max-h-full max-w-full object-contain"
               muted
               loop
@@ -158,19 +158,19 @@
             <img
               v-else
               :src="thumbnailPreviewUrl"
-              :alt="$t('comfyHubPublish.thumbnailPreview')"
+              :alt="$t('workflowSharing.publish.thumbnailPreview')"
               class="max-h-full max-w-full object-contain"
             />
           </template>
           <template v-else>
             <span class="text-sm text-muted-foreground">
-              {{ $t('comfyHubPublish.uploadPromptClickToBrowse') }}
+              {{ $t('workflowSharing.publish.uploadPromptClickToBrowse') }}
             </span>
             <span class="text-sm text-muted-foreground">
               {{ uploadDropText }}
             </span>
             <span class="text-xs text-muted-foreground">
-              {{ $t('comfyHubPublish.uploadThumbnailHint') }}
+              {{ $t('workflowSharing.publish.uploadThumbnailHint') }}
             </span>
           </template>
         </label>
@@ -223,31 +223,31 @@ function handleThumbnailTypeChange(value: unknown) {
 }
 
 const uploadSectionLabel = computed(() => {
-  if (thumbnailType === 'video') return t('comfyHubPublish.uploadVideo')
+  if (thumbnailType === 'video') return t('workflowSharing.publish.uploadVideo')
   if (thumbnailType === 'imageComparison') {
-    return t('comfyHubPublish.uploadComparison')
+    return t('workflowSharing.publish.uploadComparison')
   }
-  return t('comfyHubPublish.uploadThumbnail')
+  return t('workflowSharing.publish.uploadThumbnail')
 })
 
 const uploadDropText = computed(() =>
   thumbnailType === 'video'
-    ? t('comfyHubPublish.uploadPromptDropVideo')
-    : t('comfyHubPublish.uploadPromptDropImage')
+    ? t('workflowSharing.publish.uploadPromptDropVideo')
+    : t('workflowSharing.publish.uploadPromptDropImage')
 )
 
 const thumbnailOptions = [
   {
     value: 'image' as const,
-    label: t('comfyHubPublish.thumbnailImage')
+    label: t('workflowSharing.publish.thumbnailImage')
   },
   {
     value: 'video' as const,
-    label: t('comfyHubPublish.thumbnailVideo')
+    label: t('workflowSharing.publish.thumbnailVideo')
   },
   {
     value: 'imageComparison' as const,
-    label: t('comfyHubPublish.thumbnailImageComparison')
+    label: t('workflowSharing.publish.thumbnailImageComparison')
   }
 ]
 
@@ -335,11 +335,11 @@ type ComparisonSlot = 'before' | 'after'
 const comparisonSlots = [
   {
     key: 'before' as const,
-    label: t('comfyHubPublish.uploadComparisonBeforePrompt')
+    label: t('workflowSharing.publish.uploadComparisonBeforePrompt')
   },
   {
     key: 'after' as const,
-    label: t('comfyHubPublish.uploadComparisonAfterPrompt')
+    label: t('workflowSharing.publish.uploadComparisonAfterPrompt')
   }
 ]
 

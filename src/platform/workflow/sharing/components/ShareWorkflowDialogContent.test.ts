@@ -102,30 +102,32 @@ const i18n = createI18n({
   messages: {
     en: {
       g: { close: 'Close', error: 'Error' },
-      shareWorkflow: {
-        unsavedDescription: 'You must save your workflow before sharing.',
-        shareLinkTab: 'Share',
-        publishToHubTab: 'Publish',
-        workflowNameLabel: 'Workflow name',
-        saving: 'Saving...',
-        saveButton: 'Save workflow',
-        createLinkButton: 'Create link',
-        creatingLink: 'Creating link...',
-        checkingAssets: 'Checking assets...',
-        successDescription: 'Anyone with this link...',
-        hasChangesDescription: 'You have made changes...',
-        updateLinkButton: 'Update link',
-        updatingLink: 'Updating link...',
-        publishedOn: 'Published on {date}',
+      workflowSharing: {
+        workflowName: 'Workflow name',
         mediaLabel: '{count} Media File | {count} Media Files',
         modelsLabel: '{count} Model | {count} Models',
-        acknowledgeCheckbox: 'I understand these assets...',
-        loadFailed: 'Failed to load publish status'
-      },
-      comfyHubProfile: {
-        introTitle: 'Introducing ComfyHub',
-        createProfileButton: 'Create my profile',
-        startPublishingButton: 'Start publishing'
+        share: {
+          unsavedDescription: 'You must save your workflow before sharing.',
+          shareLinkTab: 'Share',
+          publishToHubTab: 'Publish',
+          saving: 'Saving...',
+          saveButton: 'Save workflow',
+          createLinkButton: 'Create link',
+          creatingLink: 'Creating link...',
+          checkingAssets: 'Checking assets...',
+          successDescription: 'Anyone with this link...',
+          hasChangesDescription: 'You have made changes...',
+          updateLinkButton: 'Update link',
+          updatingLink: 'Updating link...',
+          publishedOn: 'Published on {date}',
+          acknowledgeCheckbox: 'I understand these assets...',
+          loadFailed: 'Failed to load publish status'
+        },
+        profile: {
+          introTitle: 'Introducing ComfyHub',
+          createProfileButton: 'Create my profile',
+          startPublishingButton: 'Start publishing'
+        }
       }
     }
   }

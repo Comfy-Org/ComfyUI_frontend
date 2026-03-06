@@ -4,7 +4,7 @@
       class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
     >
       <h2 class="text-sm text-base-foreground">
-        {{ $t('openSharedWorkflow.dialogTitle') }}
+        {{ $t('workflowSharing.open.dialogTitle') }}
       </h2>
       <Button size="icon" :aria-label="$t('g.close')" @click="onCancel">
         <i class="icon-[lucide--x] size-4" />
@@ -37,7 +37,7 @@
           aria-hidden="true"
         />
         <p class="m-0 text-center text-sm text-muted-foreground">
-          {{ $t('openSharedWorkflow.loadError') }}
+          {{ $t('workflowSharing.open.loadError') }}
         </p>
       </main>
       <footer
@@ -56,7 +56,7 @@
             {{ workflowName }}
           </h2>
           <p class="m-0 text-sm text-muted-foreground">
-            {{ $t('openSharedWorkflow.copyDescription') }}
+            {{ $t('workflowSharing.open.copyDescription') }}
           </p>
         </div>
 
@@ -77,7 +77,7 @@
                 <span
                   class="m-0 flex-1 text-left text-sm text-muted-foreground"
                 >
-                  {{ $t('openSharedWorkflow.nonPublicAssetsWarningLine1') }}
+                  {{ $t('workflowSharing.open.nonPublicAssetsWarningLine1') }}
                 </span>
                 <i
                   :class="
@@ -111,13 +111,13 @@
           size="lg"
           @click="onOpenWithoutImporting(sharedWorkflow)"
         >
-          {{ $t('openSharedWorkflow.openWithoutImporting') }}
+          {{ $t('workflowSharing.open.openWithoutImporting') }}
         </Button>
         <Button variant="primary" size="lg" @click="onConfirm(sharedWorkflow)">
           {{
             hasAssets
-              ? $t('openSharedWorkflow.copyAssetsAndOpen')
-              : $t('openSharedWorkflow.openWorkflow')
+              ? $t('workflowSharing.open.copyAssetsAndOpen')
+              : $t('workflowSharing.open.openWorkflow')
           }}
         </Button>
       </footer>
