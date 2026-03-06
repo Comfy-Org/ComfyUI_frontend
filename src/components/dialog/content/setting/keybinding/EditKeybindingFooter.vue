@@ -13,7 +13,13 @@
       :disabled="!dialogState.newCombo"
       @click="handleSave"
     >
-      {{ hasConflict ? $t('g.overwrite') : $t('g.save') }}
+      {{
+        hasConflict
+          ? $t('g.overwrite')
+          : dialogState.newCombo?.isBrowserReserved
+            ? $t('g.saveAnyway')
+            : $t('g.save')
+      }}
     </Button>
   </div>
 </template>

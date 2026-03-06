@@ -59,7 +59,15 @@
         :pt="{ bodyCell: 'p-1 min-h-8' }"
       >
         <template #body="slotProps">
-          <div class="truncate" :title="slotProps.data.id">
+          <div
+            class="flex items-center gap-1.5 truncate"
+            :title="slotProps.data.id"
+          >
+            <i
+              v-if="slotProps.data.keybinding?.combo.isBrowserReserved"
+              v-tooltip="$t('g.browserReservedKeybindingTooltip')"
+              class="pi pi-exclamation-triangle shrink-0 text-amber-400"
+            />
             {{ slotProps.data.label }}
           </div>
         </template>
