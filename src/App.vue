@@ -4,7 +4,7 @@
   <BlockUI full-screen :blocked="isLoading" />
   <div
     v-if="isLoading"
-    class="fixed inset-0 z-1200 flex items-center justify-center pointer-events-none"
+    class="pointer-events-none fixed inset-0 z-1200 flex items-center justify-center"
   >
     <LogoComfyWaveLoader size="xl" color="yellow" />
   </div>
