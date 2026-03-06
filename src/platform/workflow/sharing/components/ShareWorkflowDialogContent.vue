@@ -280,13 +280,13 @@ const publishButtonLabel = computed(() => {
     : t('shareWorkflow.createLinkButton')
 })
 
-function stripJsonExtension(filename: string): string {
-  return filename.replace(/\.json$/i, '')
+function stripWorkflowExtension(filename: string): string {
+  return filename.replace(/\.app\.json$/i, '').replace(/\.json$/i, '')
 }
 
 function buildWorkflowPath(directory: string, filename: string): string {
   const normalizedDirectory = directory.replace(/\/+$/, '')
-  const normalizedFilename = appendJsonExt(stripJsonExtension(filename))
+  const normalizedFilename = appendJsonExt(stripWorkflowExtension(filename))
 
   return normalizedDirectory
     ? `${normalizedDirectory}/${normalizedFilename}`
@@ -299,7 +299,7 @@ async function refreshDialogState() {
   if (!workflow || workflow.isTemporary || workflow.isModified) {
     dialogState.value = 'unsaved'
     if (workflow) {
-      workflowName.value = stripJsonExtension(workflow.filename)
+      workflowName.value = stripWorkflowExtension(workflow.filename)
     }
     return
   }
