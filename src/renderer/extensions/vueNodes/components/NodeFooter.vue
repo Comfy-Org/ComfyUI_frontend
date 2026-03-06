@@ -7,12 +7,12 @@
         cn(
           getTabStyles(false),
           errorTabWidth,
-          '-z-5 bg-destructive-background hover:bg-destructive-background-hover text-white'
+          '-z-5 bg-destructive-background text-white hover:bg-destructive-background-hover'
         )
       "
       @click.stop="$emit('openErrors')"
     >
-      <div class="flex items-center justify-center gap-2 w-full h-full">
+      <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.error') }}</span>
         <i class="icon-[lucide--info] size-4 shrink-0" />
       </div>
@@ -31,7 +31,7 @@
       :style="{ backgroundColor: headerColor }"
       @click.stop="$emit('enterSubgraph')"
     >
-      <div class="flex items-center justify-center gap-2 w-1/2 ml-auto h-full">
+      <div class="ml-auto flex h-full w-1/2 items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enter') }}</span>
         <i class="icon-[comfy--workflow] size-4 shrink-0" />
       </div>
@@ -46,12 +46,12 @@
         cn(
           getTabStyles(false),
           enterTabFullWidth,
-          '-z-5 bg-destructive-background hover:bg-destructive-background-hover text-white'
+          '-z-5 bg-destructive-background text-white hover:bg-destructive-background-hover'
         )
       "
       @click.stop="$emit('openErrors')"
     >
-      <div class="flex items-center justify-center gap-2 w-full h-full">
+      <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.error') }}</span>
         <i class="icon-[lucide--info] size-4 shrink-0" />
       </div>
@@ -73,7 +73,7 @@
       :style="{ backgroundColor: headerColor }"
       @click.stop="$emit('enterSubgraph')"
     >
-      <div class="flex items-center justify-center gap-2 w-full h-full">
+      <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enterSubgraph') }}</span>
         <i class="icon-[comfy--workflow] size-4 shrink-0" />
       </div>
@@ -83,12 +83,12 @@
   <!-- Case 4: Advanced Footer (Regular Nodes) -->
   <div
     v-else-if="showAdvancedInputsButton || showAdvancedState"
-    class="flex w-full h-7 rounded-b-2xl -z-1 text-xs rounded-t-none overflow-hidden divide-x divide-component-node-border relative -mt-5"
+    class="relative -z-1 -mt-5 flex h-7 w-full divide-x divide-component-node-border overflow-hidden rounded-t-none rounded-b-2xl text-xs"
   >
     <Button
       variant="textonly"
       :class="
-        cn('flex-1 rounded-none h-full', isCollapsed ? 'py-2' : 'pt-7 pb-2')
+        cn('h-full flex-1 rounded-none', isCollapsed ? 'py-2' : 'pt-7 pb-2')
       "
       @click.stop="$emit('toggleAdvanced')"
     >
@@ -160,17 +160,17 @@ const getTabStyles = (isBackground = false) => {
     if (isBackground) {
       pt = props.hasAnyError ? 'pt-10.5' : 'pt-9'
     }
-    sizeClasses = cn('h-15 -mt-7.5', pt)
+    sizeClasses = cn('-mt-7.5 h-15', pt)
   } else {
     let pt = 'pt-12.5'
     if (isBackground) {
       pt = props.hasAnyError ? 'pt-12.5' : 'pt-11.5'
     }
-    sizeClasses = cn('h-17.5 -mt-10', pt)
+    sizeClasses = cn('-mt-10 h-17.5', pt)
   }
 
   return cn(
-    'absolute top-full left-0 text-xs pointer-events-auto',
+    'pointer-events-auto absolute top-full left-0 text-xs',
     footerRadiusClass.value,
     sizeClasses,
     props.hasAnyError ? '-translate-x-1 translate-y-0.5' : 'translate-y-0.5'

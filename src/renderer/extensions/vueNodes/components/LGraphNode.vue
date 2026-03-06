@@ -10,7 +10,7 @@
     :class="
       cn(
         'group/node lg-node absolute text-sm',
-        'contain-layout contain-style min-w-[225px] flex flex-col',
+        'flex min-w-[225px] flex-col contain-layout contain-style',
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
@@ -46,7 +46,7 @@
       data-testid="node-state-outline-overlay"
       :class="
         cn(
-          'absolute pointer-events-none border-3 z-0 outline-none',
+          'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
           hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
           isSelected
@@ -60,7 +60,7 @@
     <div
       :class="
         cn(
-          'absolute pointer-events-none border-1 border-solid border-component-node-border',
+          'pointer-events-none absolute border border-solid border-component-node-border',
           rootBorderShapeClass,
           hasAnyError ? '-inset-1' : 'inset-0',
           footerRootBorderBottomClass
@@ -71,16 +71,16 @@
       data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex flex-col flex-1 bg-node-component-header-surface',
+          'flex flex-1 flex-col bg-node-component-header-surface',
           'min-h-(--node-height) w-(--node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
           {
-            [`${beforeShapeClass} before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0`]:
+            [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0 before:bg-bypass/60`]:
               bypassed,
             [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0`]:
               muted,
-            'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
+            'bg-primary-500/10 ring-4 ring-primary-500': isDraggingOver
           }
         )
       "
@@ -95,7 +95,7 @@
       />
       <div
         v-if="displayHeader"
-        class="flex flex-col justify-center items-center relative"
+        class="relative flex flex-col items-center justify-center"
       >
         <template v-if="isCollapsed">
           <SlotConnectionDot
