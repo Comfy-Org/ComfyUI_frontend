@@ -16,7 +16,7 @@
     :pt="{
       root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
         class: cn(
-          'h-10 relative inline-flex cursor-pointer select-none',
+          'relative inline-flex h-10 cursor-pointer select-none',
           'rounded-lg bg-secondary-background text-base-foreground',
           'transition-all duration-200 ease-in-out',
           'border-[2.5px] border-solid',
@@ -24,7 +24,7 @@
             ? 'border-node-component-border'
             : 'border-transparent',
           'focus-within:border-node-component-border',
-          { 'opacity-60 cursor-default': props.disabled }
+          { 'cursor-default opacity-60': props.disabled }
         )
       }),
       labelContainer: {
@@ -46,7 +46,7 @@
       // Overlay & list visuals unchanged
       overlay: {
         class: cn(
-          'mt-2 rounded-lg py-2 px-2',
+          'mt-2 rounded-lg p-2',
           'bg-base-background',
           'text-base-foreground',
           'border border-solid border-border-default'
@@ -62,7 +62,7 @@
       // Option row hover and focus tone
       option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
         class: cn(
-          'flex gap-2 items-center h-10 px-2 rounded-lg cursor-pointer',
+          'flex h-10 cursor-pointer items-center gap-2 rounded-lg px-2',
           'hover:bg-secondary-background-hover',
           // Add focus/highlight state for keyboard navigation
           context?.focused &&
@@ -135,7 +135,7 @@
       </span>
       <span
         v-if="selectedCount > 0"
-        class="pointer-events-none absolute -top-2 -right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-primary-background text-xs font-semibold text-base-foreground"
+        class="pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 items-center justify-center rounded-full bg-primary-background text-xs font-semibold text-base-foreground"
       >
         {{ selectedCount }}
       </span>
@@ -150,11 +150,11 @@
     <template #option="slotProps">
       <div
         role="button"
-        class="flex items-center gap-2 cursor-pointer"
+        class="flex cursor-pointer items-center gap-2"
         :style="popoverStyle"
       >
         <div
-          class="flex size-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+          class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
           :class="
             slotProps.selected
               ? 'bg-primary-background'

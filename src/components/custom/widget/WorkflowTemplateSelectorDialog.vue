@@ -116,7 +116,7 @@
         v-if="!isLoading && filteredTemplates.length === 0"
         class="flex h-64 flex-col items-center justify-center text-neutral-500"
       >
-        <i class="mb-4 icon-[lucide--search] h-12 w-12 opacity-50" />
+        <i class="mb-4 icon-[lucide--search] size-12 opacity-50" />
         <p class="mb-2 text-lg">
           {{ $t('templateWorkflows.noResults', 'No templates found') }}
         </p>
@@ -133,7 +133,7 @@
         <!-- Title -->
         <span
           v-if="isLoading"
-          class="inline-block h-8 w-48 animate-pulse rounded bg-dialog-surface"
+          class="inline-block h-8 w-48 animate-pulse rounded-sm bg-dialog-surface"
         ></span>
 
         <!-- Template Cards Grid -->
@@ -154,9 +154,7 @@
             <template #top>
               <CardTop ratio="landscape">
                 <template #default>
-                  <div
-                    class="h-full w-full animate-pulse bg-dialog-surface"
-                  ></div>
+                  <div class="size-full animate-pulse bg-dialog-surface"></div>
                 </template>
               </CardTop>
             </template>
@@ -164,10 +162,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="mb-2 h-6 animate-pulse rounded bg-dialog-surface"
+                    class="mb-2 h-6 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                   <div
-                    class="h-4 animate-pulse rounded bg-dialog-surface"
+                    class="h-4 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                 </div>
               </CardBottom>
@@ -193,9 +191,7 @@
               <CardTop ratio="square">
                 <template #default>
                   <!-- Template Thumbnail -->
-                  <div
-                    class="relative h-full w-full overflow-hidden rounded-lg"
-                  >
+                  <div class="relative size-full overflow-hidden rounded-lg">
                     <template v-if="template.mediaType === 'audio'">
                       <AudioThumbnail :src="getBaseThumbnailSrc(template)" />
                     </template>
@@ -263,7 +259,7 @@
                     />
                     <ProgressSpinner
                       v-if="loadingTemplate === template.name"
-                      class="absolute inset-0 z-10 m-auto h-12 w-12"
+                      class="absolute inset-0 z-10 m-auto size-12"
                     />
                   </div>
                 </template>
@@ -339,9 +335,7 @@
             <template #top>
               <CardTop ratio="square">
                 <template #default>
-                  <div
-                    class="h-full w-full animate-pulse bg-dialog-surface"
-                  ></div>
+                  <div class="size-full animate-pulse bg-dialog-surface"></div>
                 </template>
               </CardTop>
             </template>
@@ -349,10 +343,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="mb-2 h-6 animate-pulse rounded bg-dialog-surface"
+                    class="mb-2 h-6 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                   <div
-                    class="h-4 animate-pulse rounded bg-dialog-surface"
+                    class="h-4 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                 </div>
               </CardBottom>

@@ -2,7 +2,7 @@
   <div class="subscription-container h-full">
     <div class="flex h-full flex-col gap-6">
       <div class="flex items-center gap-2">
-        <span class="text-2xl font-inter font-semibold leading-tight">
+        <span class="font-inter text-2xl/tight font-semibold">
           {{
             isActiveSubscription
               ? $t('subscription.title')
@@ -31,7 +31,7 @@
             class="text-xs text-text-secondary"
             @click="handleLearnMoreClick"
           >
-            <i class="pi pi-question-circle text-text-secondary text-xs" />
+            <i class="pi pi-question-circle text-xs text-text-secondary" />
             {{ $t('subscription.learnMore') }}
           </Button>
           <Button
@@ -39,7 +39,7 @@
             class="text-xs text-text-secondary"
             @click="handleOpenPartnerNodesInfo"
           >
-            <i class="pi pi-question-circle text-text-secondary text-xs" />
+            <i class="pi pi-question-circle text-xs text-text-secondary" />
             {{ $t('subscription.partnerNodesCredits') }}
           </Button>
           <Button
@@ -48,7 +48,7 @@
             :loading="isLoadingSupport"
             @click="handleMessageSupport"
           >
-            <i class="pi pi-comment text-text-secondary text-xs" />
+            <i class="pi pi-comment text-xs text-text-secondary" />
             {{ $t('subscription.messageSupport') }}
           </Button>
         </div>
@@ -59,7 +59,7 @@
           @click="handleInvoiceHistory"
         >
           {{ $t('subscription.invoiceHistory') }}
-          <i class="pi pi-external-link text-text-secondary text-xs" />
+          <i class="pi pi-external-link text-xs text-text-secondary" />
         </Button>
       </div>
     </div>

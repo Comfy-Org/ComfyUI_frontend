@@ -23,7 +23,10 @@ import { st } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { isNodeExecutionId } from '@/types/nodeIdentification'
+import {
+  isNodeExecutionId,
+  compareExecutionId
+} from '@/types/nodeIdentification'
 
 const PROMPT_CARD_ID = '__prompt__'
 const SINGLE_GROUP_KEY = '__single__'
@@ -151,12 +154,16 @@ function addCardErrorToGroup(
   group.get(card.id)?.errors.push(error)
 }
 
+function compareNodeId(a: ErrorCardData, b: ErrorCardData): number {
+  return compareExecutionId(a.nodeId, b.nodeId)
+}
+
 function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
   return Array.from(groupsMap.entries())
     .map(([title, groupData]) => ({
       type: 'execution' as const,
       title,
-      cards: Array.from(groupData.cards.values()),
+      cards: Array.from(groupData.cards.values()).sort(compareNodeId),
       priority: groupData.priority
     }))
     .sort((a, b) => {

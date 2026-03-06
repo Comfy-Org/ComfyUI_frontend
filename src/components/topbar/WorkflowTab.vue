@@ -7,6 +7,7 @@
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
+        @mouseup="handleMouseUp"
         @click="handleClick"
       >
         <i
@@ -38,7 +39,7 @@
     </ContextMenuTrigger>
     <ContextMenuPortal>
       <ContextMenuContent
-        class="z-1000 rounded-lg px-2 py-3 min-w-56 bg-base-background shadow-interface border border-border-subtle"
+        class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
       >
         <WorkflowActionsList
           :items="contextMenuItems"
@@ -96,6 +97,13 @@ const props = defineProps<{
   workflowOption: WorkflowOption
   isFirst: boolean
   isLast: boolean
+}>()
+
+const emit = defineEmits<{
+  closeToLeft: []
+  closeToRight: []
+  closeOthers: []
+  mouseup: [event: MouseEvent]
 }>()
 
 const { t } = useI18n()
@@ -162,6 +170,10 @@ const handleClick = (event: Event) => {
   popoverRef.value?.togglePopover(event)
 }
 
+const handleMouseUp = (event: MouseEvent) => {
+  emit('mouseup', event)
+}
+
 const closeWorkflows = async (options: WorkflowOption[]) => {
   for (const opt of options) {
     if (
@@ -179,12 +191,6 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
 const onCloseWorkflow = async (option: WorkflowOption) => {
   await closeWorkflows([option])
 }
-
-const emit = defineEmits<{
-  closeToLeft: []
-  closeToRight: []
-  closeOthers: []
-}>()
 
 const commandStore = useCommandStore()
 const workflow = computed(() => props.workflowOption.workflow)

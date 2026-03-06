@@ -13,7 +13,7 @@ const { output } = defineProps<{
 <template>
   <img
     v-if="getMediaType(output) === 'images'"
-    class="block size-10 rounded-sm object-cover bg-secondary-background"
+    class="block size-10 rounded-sm bg-secondary-background object-cover"
     loading="lazy"
     width="40"
     height="40"

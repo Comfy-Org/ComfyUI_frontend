@@ -1,13 +1,13 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col px-2 justify-center"
+    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
   >
     <!-- Image Wrapper -->
     <div
       ref="imageWrapperEl"
-      class="min-h-0 flex-1 flex w-full overflow-hidden rounded-[5px] bg-muted-background relative"
+      class="relative flex min-h-0 w-full flex-1 overflow-hidden rounded-[5px] bg-transparent"
       tabindex="0"
       role="img"
       :aria-label="$t('g.imagePreview')"
@@ -21,11 +21,9 @@
       <div
         v-if="imageError"
         role="alert"
-        class="flex flex-1 self-center size-full flex-col items-center justify-around bg-muted-background text-center text-base-foreground py-8"
+        class="flex size-full flex-1 flex-col items-center justify-around self-center py-8 text-center text-base-foreground"
       >
-        <i
-          class="mb-2 icon-[lucide--image-off] h-12 w-12 text-base-foreground"
-        />
+        <i class="mb-2 icon-[lucide--image-off] size-12 text-base-foreground" />
         <p class="text-sm text-base-foreground">
           {{ $t('g.imageFailedToLoad') }}
         </p>
@@ -42,7 +40,7 @@
         v-if="!imageError"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="absolute inset-0 block size-full object-contain pointer-events-none"
+        class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -60,7 +58,7 @@
           :aria-label="$t('g.editOrMaskImage')"
           @click="handleEditMask"
         >
-          <i-comfy:mask class="h-4 w-4" />
+          <i-comfy:mask class="size-4" />
         </button>
 
         <!-- Download Button -->
@@ -70,7 +68,7 @@
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] h-4 w-4" />
+          <i class="icon-[lucide--download] size-4" />
         </button>
 
         <!-- Close Button -->
@@ -80,7 +78,7 @@
           :aria-label="$t('g.removeImage')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] h-4 w-4" />
+          <i class="icon-[lucide--x] size-4" />
         </button>
       </div>
     </div>
@@ -129,7 +127,7 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -257,9 +255,10 @@ const handleRemove = () => {
 const setCurrentIndex = (index: number) => {
   if (currentIndex.value === index) return
   if (index >= 0 && index < props.imageUrls.length) {
+    const urlChanged = props.imageUrls[index] !== currentImageUrl.value
     currentIndex.value = index
-    startDelayedLoader()
     imageError.value = false
+    if (urlChanged) startDelayedLoader()
   }
 }
 

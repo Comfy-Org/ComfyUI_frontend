@@ -2,9 +2,9 @@
   <slot v-if="isReady" />
   <div
     v-else
-    class="fixed inset-0 z-[1100] flex items-center justify-center bg-[var(--p-mask-background)]"
+    class="fixed inset-0 z-1100 flex items-center justify-center bg-(--p-mask-background)"
   >
-    <ProgressSpinner />
+    <LogoComfyWaveLoader size="xl" color="yellow" disable-animation />
   </div>
 </template>
 
@@ -23,7 +23,6 @@
  */
 import { promiseTimeout, until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import ProgressSpinner from 'primevue/progressspinner'
 import { onMounted, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -31,6 +30,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import LogoComfyWaveLoader from '@/components/loader/LogoComfyWaveLoader.vue'
 
 const FIREBASE_INIT_TIMEOUT_MS = 16_000
 const CONFIG_REFRESH_TIMEOUT_MS = 10_000

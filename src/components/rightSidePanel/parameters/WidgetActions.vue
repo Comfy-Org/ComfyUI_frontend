@@ -117,13 +117,13 @@ function handleResetToDefault() {
 <template>
   <MoreButton
     is-vertical
-    class="text-muted-foreground bg-transparent hover:text-base-foreground hover:bg-secondary-background-hover active:scale-95 transition-all"
+    class="bg-transparent text-muted-foreground transition-all hover:bg-secondary-background-hover hover:text-base-foreground active:scale-95"
   >
     <template #default="{ close }">
       <Button
         variant="textonly"
         size="unset"
-        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleRename()
@@ -139,7 +139,7 @@ function handleResetToDefault() {
         v-if="hasParents"
         variant="textonly"
         size="unset"
-        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             if (isShownOnParents) handleHideInput()
@@ -161,7 +161,7 @@ function handleResetToDefault() {
       <Button
         variant="textonly"
         size="unset"
-        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleToggleFavorite()
@@ -183,7 +183,7 @@ function handleResetToDefault() {
         v-if="hasDefault"
         variant="textonly"
         size="unset"
-        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         :disabled="isCurrentValueDefault"
         @click="
           () => {

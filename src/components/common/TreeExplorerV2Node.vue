@@ -19,7 +19,7 @@
       @dragend="handleDragEnd"
     >
       <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
-      <span class="min-w-0 flex-1 truncate text-sm text-foreground">
+      <span class="text-foreground min-w-0 flex-1 truncate text-sm">
         <slot name="node" :node="item.value">
           {{ item.value.label }}
         </slot>
@@ -27,7 +27,7 @@
       <button
         :class="
           cn(
-            'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded border-none bg-transparent text-muted-foreground hover:text-foreground',
+            'hover:text-foreground flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent text-muted-foreground',
             'opacity-0 group-hover/tree-node:opacity-100'
           )
         "
@@ -64,7 +64,7 @@
       <i
         :class="cn(item.value.icon, 'size-4 shrink-0 text-muted-foreground')"
       />
-      <span class="min-w-0 flex-1 truncate text-sm text-foreground">
+      <span class="text-foreground min-w-0 flex-1 truncate text-sm">
         <slot name="folder" :node="item.value">
           {{ item.value.label }}
         </slot>

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative size-full overflow-hidden rounded bg-modal-card-placeholder-background"
+    class="relative size-full overflow-hidden rounded-sm bg-modal-card-placeholder-background"
     @dblclick="emit('view')"
   >
     <img

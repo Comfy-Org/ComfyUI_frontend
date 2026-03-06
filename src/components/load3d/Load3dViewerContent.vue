@@ -9,7 +9,7 @@
     <div class="relative flex-1">
       <div
         ref="containerRef"
-        class="absolute h-full w-full"
+        class="absolute size-full"
         @resize="viewer.handleResize"
         @dragover.prevent.stop="handleDragOver"
         @dragleave.stop="handleDragLeave"

@@ -9,7 +9,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'w-full min-w-0 p-1 flex items-center justify-center gap-1'
+          'flex w-full min-w-0 items-center justify-center gap-1 p-1'
         )
       "
       @update:model-value="(v) => handleOptionChange(v as string)"

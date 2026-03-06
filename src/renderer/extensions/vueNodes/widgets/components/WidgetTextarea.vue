@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'relative rounded-lg focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted hover:bg-component-node-widget-background-hovered',
         widget.borderStyle
       )
     "
@@ -10,7 +10,7 @@
     <label
       v-if="!hideLayoutField"
       :for="id"
-      class="pointer-events-none absolute left-3 top-1.5 z-10 text-xxs text-muted-foreground"
+      class="pointer-events-none absolute top-1.5 left-3 z-10 text-xxs text-muted-foreground"
     >
       {{ displayName }}
     </label>
@@ -22,7 +22,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full text-xs resize-none',
+          'size-full resize-none text-xs',
           !hideLayoutField && 'pt-5',
           isClipTextEncode &&
             'selection:text-transparent selection:bg-blue-500/50'
@@ -53,6 +53,18 @@
       "
       v-html="sanitizedHighlightedText"
     ></div>
+    <Button
+      v-if="isReadOnly"
+      variant="textonly"
+      size="icon"
+      class="invisible absolute top-1.5 right-1.5 z-10 group-focus-within:visible group-hover:visible hover:bg-base-foreground/10"
+      :title="$t('g.copyToClipboard')"
+      :aria-label="$t('g.copyToClipboard')"
+      @click="handleCopy"
+      @pointerdown.capture.stop
+    >
+      <i class="icon-[lucide--copy] size-4 text-component-node-foreground" />
+    </Button>
   </div>
 </template>
 
@@ -61,7 +73,9 @@ import { computed, useId, ref, watch, nextTick } from 'vue'
 import dompurify from 'dompurify'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
+import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
@@ -86,6 +100,7 @@ const {
 const modelValue = defineModel<string>({ default: '' })
 
 const hideLayoutField = useHideLayoutField()
+const { copyToClipboard } = useCopyToClipboard()
 
 const settingStore = useSettingStore()
 
@@ -103,8 +118,8 @@ const filteredProps = computed(() =>
 const displayName = computed(() => widget.label || widget.name)
 const id = useId()
 
-const isReadOnly = computed(
-  () => widget.options?.read_only ?? widget.options?.disabled ?? false
+const isReadOnly = computed(() =>
+  Boolean(widget.options?.read_only || widget.options?.disabled)
 )
 
 const textareaRef = ref<InstanceType<typeof Textarea> | null>(null)
@@ -140,4 +155,7 @@ watch(
   },
   { immediate: true }
 )
+function handleCopy() {
+  copyToClipboard(modelValue.value)
+}
 </script>
