@@ -21,19 +21,15 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock(
-  '@/platform/workflow/management/stores/workflowStore',
-  () => ({
-    useWorkflowStore: () => ({
-      activeWorkflow: { filename: 'test-workflow' }
-    })
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    activeWorkflow: { filename: 'test-workflow' }
   })
-)
+}))
 
 // Import after mocks so real composables pick up the mocked dependencies
-const { useComfyHubProfileGate } = await import(
-  '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
-)
+const { useComfyHubProfileGate } =
+  await import('@/platform/workflow/sharing/composables/useComfyHubProfileGate')
 
 const mockProfile = {
   username: 'testuser',
@@ -114,9 +110,7 @@ describe('ComfyHubPublishDialog', () => {
     const wrapper = createWrapper()
     await flushPromises()
 
-    expect(wrapper.find('[data-step]').attributes('data-step')).toBe(
-      'describe'
-    )
+    expect(wrapper.find('[data-step]').attributes('data-step')).toBe('describe')
 
     await wrapper.find('[data-testid="require-profile"]').trigger('click')
 
