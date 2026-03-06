@@ -42,7 +42,7 @@ function openTemplates() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 pointer-events-auto">
+  <div class="pointer-events-auto flex flex-col gap-2">
     <WorkflowActionsDropdown source="app_mode_toolbar" />
 
     <Button
@@ -62,7 +62,7 @@ function openTemplates() {
     </Button>
 
     <div
-      class="flex flex-col w-10 rounded-lg bg-secondary-background overflow-hidden"
+      class="flex w-10 flex-col overflow-hidden rounded-lg bg-secondary-background"
     >
       <Button
         v-tooltip.right="{

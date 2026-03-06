@@ -33,6 +33,8 @@ interface Window {
     gtm_container_id?: string
     ga_measurement_id?: string
     mixpanel_token?: string
+    posthog_project_token?: string
+    posthog_api_host?: string
     require_whitelist?: boolean
     subscription_required?: boolean
     max_upload_size?: number

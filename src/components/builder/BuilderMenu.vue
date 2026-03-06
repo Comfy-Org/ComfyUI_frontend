@@ -4,7 +4,7 @@
       <button
         :class="
           cn(
-            'absolute left-4 top-[calc(var(--workflow-tabs-height)+16px)] z-1000 inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-lg py-2 pr-2 pl-3 shadow-interface transition-colors border-none',
+            'absolute top-[calc(var(--workflow-tabs-height)+16px)] left-4 z-1000 inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-lg border-none py-2 pr-2 pl-3 shadow-interface transition-colors',
             'bg-secondary-background hover:bg-secondary-background-hover',
             'data-[state=open]:bg-secondary-background-hover'
           )
@@ -22,10 +22,10 @@
       <button
         :class="
           cn(
-            'flex w-full items-center gap-3 rounded-md bg-transparent px-3 py-2 text-sm border-none',
+            'flex w-full items-center gap-3 rounded-md border-none bg-transparent px-3 py-2 text-sm',
             hasOutputs
               ? 'cursor-pointer hover:bg-secondary-background-hover'
-              : 'opacity-50 pointer-events-none'
+              : 'pointer-events-none opacity-50'
           )
         "
         :disabled="!hasOutputs"
@@ -36,7 +36,7 @@
       </button>
       <div class="my-1 border-t border-border-default" />
       <button
-        class="flex w-full cursor-pointer items-center gap-3 rounded-md bg-transparent px-3 py-2 text-sm border-none hover:bg-secondary-background-hover"
+        class="flex w-full cursor-pointer items-center gap-3 rounded-md border-none bg-transparent px-3 py-2 text-sm hover:bg-secondary-background-hover"
         @click="onExitBuilder(close)"
       >
         <i class="icon-[lucide--square-pen] size-4" />

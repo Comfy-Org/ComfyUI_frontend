@@ -6,7 +6,7 @@ export const buttonVariants = cva({
   variants: {
     variant: {
       secondary:
-        'bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover',
+        'text-secondary-foreground bg-secondary-background hover:bg-secondary-background-hover',
       primary:
         'bg-primary-background text-base-foreground hover:bg-primary-background-hover',
       inverted:
@@ -14,15 +14,15 @@ export const buttonVariants = cva({
       destructive:
         'bg-destructive-background text-base-foreground hover:bg-destructive-background-hover',
       textonly:
-        'text-base-foreground bg-transparent hover:bg-secondary-background-hover',
+        'bg-transparent text-base-foreground hover:bg-secondary-background-hover',
       'muted-textonly':
-        'text-muted-foreground bg-transparent hover:bg-secondary-background-hover',
+        'bg-transparent text-muted-foreground hover:bg-secondary-background-hover',
       'destructive-textonly':
-        'text-destructive-background bg-transparent hover:bg-destructive-background/10',
+        'bg-transparent text-destructive-background hover:bg-destructive-background/10',
       'overlay-white': 'bg-white text-gray-600 hover:bg-white/90',
       base: 'bg-base-background text-base-foreground hover:bg-secondary-background-hover',
       gradient:
-        'bg-(image:--subscription-button-gradient) text-white border-transparent hover:opacity-90'
+        'border-transparent bg-(image:--subscription-button-gradient) text-white hover:opacity-90'
     },
     size: {
       sm: 'h-6 rounded-sm px-2 py-1 text-xs',

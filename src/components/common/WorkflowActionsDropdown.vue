@@ -55,7 +55,7 @@ function toggleLinearMode() {
   <DropdownMenuRoot v-model:open="dropdownOpen" @update:open="handleOpen">
     <slot name="button" :has-unseen-items="hasUnseenItems">
       <div
-        class="inline-flex items-center rounded-lg bg-secondary-background pointer-events-auto"
+        class="pointer-events-auto inline-flex items-center rounded-lg bg-secondary-background"
       >
         <Button
           v-tooltip="{
@@ -94,7 +94,7 @@ function toggleLinearMode() {
             variant="secondary"
             size="unset"
             :aria-label="t('breadcrumbsMenu.workflowActions')"
-            class="relative h-10 rounded-lg pl-2.5 pr-2 gap-1 text-center data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
+            class="relative h-10 gap-1 rounded-lg pr-2 pl-2.5 text-center data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
           >
             <span>{{
               canvasStore.linearMode
@@ -118,7 +118,7 @@ function toggleLinearMode() {
         :align
         :side-offset="5"
         :collision-padding="10"
-        class="z-1000 rounded-lg px-2 py-3 min-w-56 bg-base-background shadow-interface border border-border-subtle"
+        class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
       >
         <WorkflowActionsList :items="menuItems" />
       </DropdownMenuContent>

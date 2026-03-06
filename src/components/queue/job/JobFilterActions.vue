@@ -27,7 +27,7 @@
           </Button>
         </template>
         <template #default="{ close }">
-          <div class="flex min-w-[12rem] flex-col items-stretch">
+          <div class="flex min-w-48 flex-col items-stretch">
             <Button
               class="w-full justify-between"
               variant="textonly"
@@ -76,7 +76,7 @@
           </Button>
         </template>
         <template #default="{ close }">
-          <div class="flex min-w-[12rem] flex-col items-stretch">
+          <div class="flex min-w-48 flex-col items-stretch">
             <template v-for="(mode, index) in jobSortModes" :key="mode">
               <Button
                 class="w-full justify-between"

@@ -1,8 +1,6 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <h3
-      class="text-center text-[15px] font-sans text-[var(--descrip-text)] mt-2.5"
-    >
+    <h3 class="mt-2.5 text-center font-sans text-[15px] text-(--descrip-text)">
       {{ t('maskEditor.colorSelectSettings') }}
     </h3>
 

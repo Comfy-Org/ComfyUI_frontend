@@ -4,7 +4,7 @@
       :class="
         cn(
           searchInputVariants({ size }),
-          disabled && 'opacity-50 pointer-events-none',
+          disabled && 'pointer-events-none opacity-50',
           className
         )
       "
@@ -24,7 +24,7 @@
         v-else-if="loading"
         :class="
           cn(
-            'icon-[lucide--loader-circle] absolute animate-spin pointer-events-none',
+            'pointer-events-none absolute icon-[lucide--loader-circle] animate-spin',
             sizeConfig.iconPos,
             sizeConfig.icon
           )
@@ -34,7 +34,7 @@
         v-else
         :class="
           cn(
-            'absolute pointer-events-none',
+            'pointer-events-none absolute',
             sizeConfig.iconPos,
             sizeConfig.icon,
             icon

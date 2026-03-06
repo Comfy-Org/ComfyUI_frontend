@@ -3947,6 +3947,10 @@
     "description": "텍스트 프롬프트를 기반으로 기존 이미지를 수정합니다",
     "display_name": "Grok 이미지 편집",
     "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "여러 이미지가 이미지 입력에 연결된 경우에만 허용됩니다."
+      },
       "control_after_generate": {
         "name": "생성 후 제어"
       },
@@ -3998,6 +4002,9 @@
       "prompt": {
         "name": "프롬프트",
         "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트"
+      },
+      "resolution": {
+        "name": "해상도"
       },
       "seed": {
         "name": "시드",
@@ -5853,6 +5860,9 @@
       },
       "mode": {
         "name": "모드"
+      },
+      "model": {
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트"
