@@ -552,13 +552,6 @@ describe('assetsStore - Refactored (Option A)', () => {
       mockOutputOverrides.value = [
         {
           supportsPreview: true,
-          filename: 'temp_preview.png',
-          subfolder: '',
-          type: 'temp',
-          url: 'http://test.com/temp_preview.png'
-        },
-        {
-          supportsPreview: true,
           filename: 'saved_first.png',
           subfolder: '',
           type: 'output',
@@ -570,6 +563,13 @@ describe('assetsStore - Refactored (Option A)', () => {
           subfolder: '',
           type: 'output',
           url: 'http://test.com/saved_last.png'
+        },
+        {
+          supportsPreview: true,
+          filename: 'temp_preview.png',
+          subfolder: '',
+          type: 'temp',
+          url: 'http://test.com/temp_preview.png'
         }
       ]
 
