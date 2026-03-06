@@ -99,7 +99,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
   useWorkflowThumbnail: () => ({
     storeThumbnail: vi.fn(),
-    getThumbnail: vi.fn()
+    getThumbnail: vi.fn(),
+    clearThumbnail: vi.fn(),
+    moveWorkflowThumbnail: vi.fn()
   })
 }))
 
@@ -853,12 +855,13 @@ describe('useWorkflowService', () => {
 
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
-      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'removeWorkflowEntry').mockResolvedValue()
       mockConfirm.mockResolvedValue(true)
 
       await service.saveWorkflow(workflow)
 
       expect(mockConfirm).toHaveBeenCalled()
+      expect(workflowStore.removeWorkflowEntry).toHaveBeenCalledWith(existing)
       expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
         workflow,
         'workflows/test.app.json'

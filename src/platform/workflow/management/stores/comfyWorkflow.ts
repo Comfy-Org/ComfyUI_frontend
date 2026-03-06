@@ -151,14 +151,16 @@ export class ComfyWorkflow extends UserFile {
     super.unload()
   }
 
-  override async save() {
+  override async save({
+    overwrite
+  }: { force?: boolean; overwrite?: boolean } = {}) {
     const { useWorkflowDraftStore } =
       await import('@/platform/workflow/persistence/stores/workflowDraftStore')
     const draftStore = useWorkflowDraftStore()
     this.content = JSON.stringify(this.activeState)
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
-    const ret = await super.save({ force: true })
+    const ret = await super.save({ force: true, overwrite })
     this.changeTracker?.reset()
     this.isModified = false
     draftStore.removeDraft(this.path)

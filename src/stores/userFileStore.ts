@@ -140,11 +140,14 @@ export class UserFile {
    * Saves the file to the remote storage.
    * @param force Whether to force the save even if the file is not modified.
    */
-  async save({ force = false }: { force?: boolean } = {}): Promise<UserFile> {
+  async save({
+    force = false,
+    overwrite
+  }: { force?: boolean; overwrite?: boolean } = {}): Promise<UserFile> {
     if (this.isPersisted && !this.isModified && !force) return this
 
     const resp = await api.storeUserData(this.path, this.content, {
-      overwrite: this.isPersisted,
+      overwrite: overwrite ?? this.isPersisted,
       throwOnError: true,
       full_info: true
     })

@@ -63,7 +63,11 @@ interface WorkflowStore {
   ) => ComfyWorkflow
   renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
   deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
-  saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  removeWorkflowEntry: (workflow: ComfyWorkflow) => Promise<void>
+  saveWorkflow: (
+    workflow: ComfyWorkflow,
+    options?: { overwrite?: boolean }
+  ) => Promise<void>
 
   workflows: ComfyWorkflow[]
   bookmarkedWorkflows: ComfyWorkflow[]
@@ -540,13 +544,31 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
+   * Remove a workflow entry from the store without deleting the file on disk.
+   * Used during atomic overwrite to clear the old entry before saving the new
+   * content, so that the save can use overwrite: true to replace the file.
+   */
+  const removeWorkflowEntry = async (workflow: ComfyWorkflow) => {
+    useWorkflowDraftStore().removeDraft(workflow.path)
+    if (bookmarkStore.isBookmarked(workflow.path)) {
+      await bookmarkStore.setBookmarked(workflow.path, false)
+    }
+    clearThumbnail(workflow.key)
+    delete workflowLookup.value[workflow.path]
+  }
+
+  /**
    * Save a workflow.
    * @param workflow The workflow to save.
+   * @param options.overwrite Force overwrite of existing file at the path.
    */
-  const saveWorkflow = async (workflow: ComfyWorkflow) => {
+  const saveWorkflow = async (
+    workflow: ComfyWorkflow,
+    options?: { overwrite?: boolean }
+  ) => {
     isBusy.value = true
     try {
-      await workflow.save()
+      await workflow.save({ overwrite: options?.overwrite })
       // Synchronously detach and re-attach to force refresh the tree objects
       // without an async gap that would cause the tab to disappear.
       const openIndex = detachWorkflow(workflow)
@@ -774,6 +796,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     createNewTemporary,
     renameWorkflow,
     deleteWorkflow,
+    removeWorkflowEntry,
     saveAs,
     saveWorkflow,
     reorderWorkflows,

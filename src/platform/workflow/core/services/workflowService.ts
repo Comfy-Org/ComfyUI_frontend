@@ -130,11 +130,20 @@ export const useWorkflowService = () => {
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       if ((await confirmOverwrite(newPath)) !== true) return false
+    }
 
-      if (!isSelfOverwrite) {
-        const deleted = await deleteWorkflow(existingWorkflow, true)
-        if (!deleted) return false
+    const needsOverwrite =
+      !!existingWorkflow && !existingWorkflow.isTemporary && !isSelfOverwrite
+
+    // Close and remove the old workflow entry before saving the new content.
+    // The file on disk is intentionally kept so that a save failure does not
+    // cause data loss.  The subsequent save with overwrite: true will
+    // atomically replace it.
+    if (needsOverwrite) {
+      if (workflowStore.isOpen(existingWorkflow)) {
+        await closeWorkflow(existingWorkflow, { warnIfUnsaved: false })
       }
+      await workflowStore.removeWorkflowEntry(existingWorkflow)
     }
 
     workflow.changeTracker?.checkState()
@@ -143,11 +152,19 @@ export const useWorkflowService = () => {
       await saveWorkflow(workflow)
     } else if (workflow.isTemporary) {
       await renameWorkflow(workflow, newPath)
-      await workflowStore.saveWorkflow(workflow)
+      if (needsOverwrite) {
+        await workflowStore.saveWorkflow(workflow, { overwrite: true })
+      } else {
+        await workflowStore.saveWorkflow(workflow)
+      }
     } else {
       const tempWorkflow = workflowStore.saveAs(workflow, newPath)
       await openWorkflow(tempWorkflow)
-      await workflowStore.saveWorkflow(tempWorkflow)
+      if (needsOverwrite) {
+        await workflowStore.saveWorkflow(tempWorkflow, { overwrite: true })
+      } else {
+        await workflowStore.saveWorkflow(tempWorkflow)
+      }
     }
     return true
   }
@@ -174,7 +191,12 @@ export const useWorkflowService = () => {
             await workflowStore.saveWorkflow(workflow)
             return
           }
-          await deleteWorkflow(existing, true)
+          // Remove the old entry without deleting the file; the rename
+          // will atomically replace it, preventing data loss on failure.
+          if (workflowStore.isOpen(existing)) {
+            await closeWorkflow(existing, { warnIfUnsaved: false })
+          }
+          await workflowStore.removeWorkflowEntry(existing)
         }
         await renameWorkflow(workflow, expectedPath)
         toastStore.add({
