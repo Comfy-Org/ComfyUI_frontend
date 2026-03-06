@@ -57,7 +57,7 @@
         <img
           :src="image.url"
           :alt="$t('comfyHubPublish.exampleImage', { index: index + 1 })"
-          class="h-full w-full object-cover"
+          class="size-full object-cover"
         />
         <div
           v-if="isSelected(image.id)"

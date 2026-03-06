@@ -247,7 +247,7 @@ const handleFocusOut = (event: FocusEvent) => {
 
 const getNavigationDotClass = (index: number) =>
   cn(
-    'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer',
+    'size-2 rounded-full transition-all duration-200 border-0 cursor-pointer',
     index === currentIndex.value
       ? 'bg-base-foreground'
       : 'bg-base-foreground/50 hover:bg-base-foreground/80'
