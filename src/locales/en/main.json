@@ -3156,6 +3156,7 @@
   "linearMode": {
     "linearMode": "App Mode",
     "beta": "App mode in beta",
+    "buildAnApp": "Build an app",
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
@@ -3182,8 +3183,7 @@
       "appBuilder": "App builder",
       "apps": "Apps",
       "appsEmptyMessage": "Saved apps will show up here.",
-      "appsEmptyMessageAction": "Click below to build your first app.",
-      "enterAppMode": "Enter app mode"
+      "appsEmptyMessageAction": "Click below to build your first app."
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
