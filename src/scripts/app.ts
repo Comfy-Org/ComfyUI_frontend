@@ -670,20 +670,6 @@ export class ComfyApp {
           e.stopImmediatePropagation()
           return
         }
-
-        // Ctrl+C Copy
-        if (e.key === 'c' && (e.metaKey || e.ctrlKey)) {
-          return
-        }
-
-        // Ctrl+V Paste
-        if (
-          (e.key === 'v' || e.key == 'V') &&
-          (e.metaKey || e.ctrlKey) &&
-          !e.shiftKey
-        ) {
-          return
-        }
       }
 
       // Fall through to Litegraph defaults

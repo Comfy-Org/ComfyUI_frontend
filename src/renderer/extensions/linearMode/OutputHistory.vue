@@ -42,7 +42,7 @@ const queueCount = computed(
 
 const itemClass = cn(
   'shrink-0 cursor-pointer rounded-lg border-2 border-transparent p-1 outline-none',
-  'data-[state=checked]:border-interface-panel-job-progress-border'
+  'relative data-[state=checked]:border-interface-panel-job-progress-border'
 )
 
 const hasActiveContent = computed(

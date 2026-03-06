@@ -2,7 +2,10 @@ import type { ComputedRef, Ref } from 'vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
+import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -189,11 +192,11 @@ export function useWorkflowActionsMenu(
 
     addItem({
       id: 'share',
-      label: t('menuLabels.Share'),
+      label: t('breadcrumbsMenu.share'),
       icon: 'icon-[comfy--send]',
-      command: async () => {},
-      disabled: true,
-      visible: isRoot
+      command: () =>
+        openShareDialog().catch(useErrorHandling().toastErrorHandler),
+      visible: isCloud && flags.workflowSharingEnabled
     })
 
     addItem({

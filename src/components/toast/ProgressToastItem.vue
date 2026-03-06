@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { cn } from '@/utils/tailwindUtil'
