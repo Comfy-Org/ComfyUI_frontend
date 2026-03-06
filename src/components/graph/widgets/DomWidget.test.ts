@@ -113,4 +113,62 @@ describe('DomWidget disabled style', () => {
     expect(root.style.pointerEvents).toBe('none')
     expect(root.style.opacity).toBe('0.5')
   })
+
+  it('uses enabled style when promoted override widget is not computedDisabled', async () => {
+    const widgetState = createWidgetState(false)
+    const wrapper = mount(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+
+    widgetState.zIndex = 3
+    await wrapper.vm.$nextTick()
+
+    const root = wrapper.get('.dom-widget').element as HTMLElement
+    expect(root.style.pointerEvents).toBe('auto')
+    expect(root.style.opacity).toBe('1')
+  })
+
+  it('falls back to widget.computedDisabled when no position override exists', async () => {
+    const domWidgetStore = useDomWidgetStore()
+    const node = createMockLGraphNode({
+      id: 3,
+      constructor: {
+        nodeData: {}
+      }
+    })
+
+    const widget = {
+      id: 'dom-widget-no-override',
+      name: 'test_widget',
+      type: 'custom',
+      value: '',
+      options: {},
+      node,
+      computedDisabled: true
+    } as unknown as BaseDOMWidget<object | string>
+
+    domWidgetStore.registerWidget(widget)
+
+    const state = domWidgetStore.widgetStates.get(widget.id)
+    if (!state) throw new Error('Expected registered DomWidgetState')
+
+    state.zIndex = 2
+    state.size = [100, 40]
+
+    const widgetState = reactive(state)
+    const wrapper = mount(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+
+    widgetState.zIndex = 3
+    await wrapper.vm.$nextTick()
+
+    const root = wrapper.get('.dom-widget').element as HTMLElement
+    expect(root.style.pointerEvents).toBe('none')
+    expect(root.style.opacity).toBe('0.5')
+  })
 })
