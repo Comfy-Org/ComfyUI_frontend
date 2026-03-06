@@ -170,7 +170,7 @@ const inputAriaAttrs = computed(() => ({
       :hide-buttons="buttonsDisabled"
       :parse-value="parseWidgetValue"
       :input-attrs="inputAriaAttrs"
-      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7 relative')"
+      :class="cn(WidgetInputBaseClass, 'relative flex h-7 grow text-xs')"
       @keydown.up.prevent="updateValueBy(stepValue)"
       @keydown.down.prevent="updateValueBy(-stepValue)"
       @keydown.page-up.prevent="updateValueBy(10 * stepValue)"
@@ -178,10 +178,10 @@ const inputAriaAttrs = computed(() => ({
     >
       <template #background>
         <div
-          class="absolute size-full rounded-lg pointer-events-none overflow-clip"
+          class="pointer-events-none absolute size-full overflow-clip rounded-lg"
         >
           <div
-            class="bg-primary-background/15 size-full"
+            class="size-full bg-primary-background/15"
             :style="{ width: `${sliderWidth}%` }"
           />
         </div>

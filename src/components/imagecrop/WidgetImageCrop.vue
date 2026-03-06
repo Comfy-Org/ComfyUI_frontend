@@ -1,6 +1,6 @@
 <template>
   <div
-    class="widget-expands relative flex h-full w-full flex-col gap-1"
+    class="widget-expands relative flex size-full flex-col gap-1"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
@@ -18,7 +18,7 @@
         v-else-if="!imageUrl"
         class="flex size-full flex-col items-center justify-center text-center"
       >
-        <i class="mb-2 icon-[lucide--image] h-12 w-12" />
+        <i class="mb-2 icon-[lucide--image] size-12" />
         <p class="text-sm">{{ $t('imageCrop.noInputImage') }}</p>
       </div>
 

@@ -48,7 +48,7 @@
                     </span>
                     <span
                       v-if="getTierLabel(workspace)"
-                      class="text-[10px] font-bold uppercase text-base-background bg-base-foreground px-1 py-0.5 rounded-full"
+                      class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
                     >
                       {{ getTierLabel(workspace) }}
                     </span>
@@ -68,11 +68,11 @@
       </template>
 
       <!-- Create workspace button -->
-      <div class="px-2 py-2">
+      <div class="p-2">
         <div
           :class="
             cn(
-              'flex h-12 w-full items-center gap-2 rounded-sm px-2 py-2',
+              'flex h-12 w-full items-center gap-2 rounded-sm p-2',
               canCreateWorkspace
                 ? 'cursor-pointer hover:bg-secondary-background-hover'
                 : 'cursor-default'

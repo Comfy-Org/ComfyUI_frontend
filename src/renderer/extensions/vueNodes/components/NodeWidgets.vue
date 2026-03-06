@@ -33,7 +33,7 @@
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
+              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
               widget.slotMetadata?.linked && 'opacity-100'
             )
           "
@@ -64,7 +64,7 @@
             :class="
               cn(
                 'col-span-2',
-                widget.hasError && 'text-node-stroke-error font-bold'
+                widget.hasError && 'font-bold text-node-stroke-error'
               )
             "
             @update:model-value="widget.updateHandler"

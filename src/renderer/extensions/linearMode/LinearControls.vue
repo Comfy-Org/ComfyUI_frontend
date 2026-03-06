@@ -90,7 +90,7 @@ function getDropIndicator(node: LGraphNode) {
   const buildImageUrl = () => {
     if (!filename) return undefined
     const params = new URLSearchParams(resultItem)
-    appendCloudResParam(params, String(filename))
+    appendCloudResParam(params, resultItem.filename)
     return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
   }
 
@@ -165,23 +165,23 @@ defineExpose({ runButtonClick })
 <template>
   <div
     v-if="!isBuilderMode && hasOutputs"
-    class="flex flex-col min-w-80 h-full"
+    class="flex h-full min-w-80 flex-col"
     v-bind="$attrs"
   >
     <section
       v-if="!mobile"
       data-testid="linear-workflow-info"
-      class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center contain-size"
+      class="flex h-12 items-center gap-2 border-x border-border-subtle bg-comfy-menu-bg px-4 py-2 contain-size"
     >
       <span
-        class="font-bold truncate"
+        class="truncate font-bold"
         v-text="workflowStore.activeWorkflow?.filename"
       />
       <div class="flex-1" />
       <Popover
         v-if="partitionedNodes[0].length"
         align="end"
-        class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height) z-100"
+        class="z-100 max-h-(--reka-popover-content-available-height) overflow-x-clip overflow-y-auto"
         side="bottom"
         :side-offset="-8"
       >
@@ -201,7 +201,7 @@ defineExpose({ runButtonClick })
             />
             <NodeWidgets
               :node-data
-              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg max-w-100"
+              class="max-w-100 gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1"
             />
           </template>
         </div>
@@ -209,11 +209,11 @@ defineExpose({ runButtonClick })
       <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
     </section>
     <div
-      class="border-x md:border-y gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
+      class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"
     >
       <section
         data-testid="linear-widgets"
-        class="grow-1 overflow-y-auto contain-size"
+        class="grow overflow-y-auto contain-size"
       >
         <template
           v-for="(nodeData, index) of appModeStore.selectedInputs.length
@@ -223,7 +223,7 @@ defineExpose({ runButtonClick })
         >
           <div
             v-if="index !== 0 && !appModeStore.selectedInputs.length"
-            class="w-full border-t-1 border-node-component-border"
+            class="w-full border-t border-node-component-border"
           />
           <DropZone
             :on-drag-over="nodeData.onDragOver"
@@ -235,9 +235,9 @@ defineExpose({ runButtonClick })
               :node-data
               :class="
                 cn(
-                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg **:[.h-7]:h-10',
+                  'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 **:[.h-7]:h-10',
                   nodeData.hasErrors &&
-                    'ring-2 ring-inset ring-node-stroke-error'
+                    'ring-2 ring-node-stroke-error ring-inset'
                 )
               "
             />
@@ -251,7 +251,7 @@ defineExpose({ runButtonClick })
         :to="toastTo"
       >
         <div
-          class="bg-base-foreground md:bg-secondary-background text-base-background md:text-base-foreground rounded-lg flex h-10 md:h-8 p-1 pr-2 gap-2 items-center"
+          class="flex h-10 items-center gap-2 rounded-lg bg-base-foreground p-1 pr-2 text-base-background md:h-8 md:bg-secondary-background md:text-base-foreground"
         >
           <template v-if="pendingJobQueues === 0">
             <i
@@ -275,13 +275,13 @@ defineExpose({ runButtonClick })
       <section
         v-if="mobile"
         data-testid="linear-run-button"
-        class="p-4 pb-6 border-t border-node-component-border"
+        class="border-t border-node-component-border p-4 pb-6"
       >
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
-          class="w-full mt-4"
+          class="mt-4 w-full"
         />
-        <div v-else class="flex mt-4">
+        <div v-else class="mt-4 flex">
           <Popover side="top" @open-auto-focus.prevent>
             <template #button>
               <Button size="lg" class="-mr-3 pr-7">
@@ -290,7 +290,7 @@ defineExpose({ runButtonClick })
               </Button>
             </template>
             <div
-              class="mb-2 m-1 text-node-component-slot-text"
+              class="m-1 mb-2 text-node-component-slot-text"
               v-text="t('linearMode.runCount')"
             />
             <ScrubableNumberInput
@@ -303,7 +303,7 @@ defineExpose({ runButtonClick })
           </Popover>
           <Button
             variant="primary"
-            class="grow-1"
+            class="grow"
             size="lg"
             @click="runButtonClick"
           >
@@ -315,10 +315,10 @@ defineExpose({ runButtonClick })
       <section
         v-else
         data-testid="linear-run-button"
-        class="p-4 pb-6 border-t border-node-component-border"
+        class="border-t border-node-component-border p-4 pb-6"
       >
         <div
-          class="mb-2 m-1 text-node-component-slot-text"
+          class="m-1 mb-2 text-node-component-slot-text"
           v-text="t('linearMode.runCount')"
         />
         <ScrubableNumberInput
@@ -330,12 +330,12 @@ defineExpose({ runButtonClick })
         />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
-          class="w-full mt-4"
+          class="mt-4 w-full"
         />
         <Button
           v-else
           variant="primary"
-          class="w-full mt-4 text-sm"
+          class="mt-4 w-full text-sm"
           size="lg"
           @click="runButtonClick"
         >

@@ -2,13 +2,13 @@
   <div
     class="flex w-full max-w-[490px] flex-col border-t border-border-default"
   >
-    <div class="flex h-full w-full flex-col gap-4 p-4">
-      <p class="m-0 text-sm leading-5 text-muted-foreground">
+    <div class="flex size-full flex-col gap-4 p-4">
+      <p class="m-0 text-sm/5 text-muted-foreground">
         {{ $t('missingModelsDialog.description') }}
       </p>
 
       <div
-        class="flex max-h-[300px] flex-col overflow-y-auto rounded-lg bg-secondary-background scrollbar-custom"
+        class="flex scrollbar-custom max-h-[300px] flex-col overflow-y-auto rounded-lg bg-secondary-background"
       >
         <div
           v-for="model in processedModels"
@@ -17,13 +17,13 @@
         >
           <div class="flex items-center gap-2 overflow-hidden">
             <span
-              class="min-w-0 truncate text-sm text-foreground"
+              class="text-foreground min-w-0 truncate text-sm"
               :title="model.name"
             >
               {{ model.name }}
             </span>
             <span
-              class="inline-flex h-4 shrink-0 items-center rounded-full bg-muted-foreground/20 px-1.5 text-xxxs font-semibold uppercase text-muted-foreground"
+              class="inline-flex h-4 shrink-0 items-center rounded-full bg-muted-foreground/20 px-1.5 text-xxxs font-semibold text-muted-foreground uppercase"
             >
               {{ model.badgeLabel }}
             </span>
@@ -81,9 +81,7 @@
         </div>
       </div>
 
-      <p
-        class="m-0 text-xs leading-5 text-muted-foreground whitespace-pre-line"
-      >
+      <p class="m-0 text-xs/5 whitespace-pre-line text-muted-foreground">
         {{ $t('missingModelsDialog.footerDescription') }}
       </p>
 
@@ -92,15 +90,13 @@
         class="flex gap-3 rounded-lg border border-warning-background bg-warning-background/10 p-3"
       >
         <i
-          class="icon-[lucide--triangle-alert] mt-0.5 h-4 w-4 shrink-0 text-warning-background"
+          class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0 text-warning-background"
         />
         <div class="flex flex-col gap-1">
-          <p
-            class="m-0 text-xs font-semibold leading-5 text-warning-background"
-          >
+          <p class="m-0 text-xs/5 font-semibold text-warning-background">
             {{ $t('missingModelsDialog.customModelsWarning') }}
           </p>
-          <p class="m-0 text-xs leading-5 text-warning-background">
+          <p class="m-0 text-xs/5 text-warning-background">
             {{ $t('missingModelsDialog.customModelsInstruction') }}
           </p>
         </div>

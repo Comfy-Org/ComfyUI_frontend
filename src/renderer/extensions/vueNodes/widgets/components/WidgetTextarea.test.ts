@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
+import { createMockWidget } from './widgetTestUtils'
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 
@@ -13,18 +14,17 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
   })
 }))
 
-function createMockWidget(
+function createTextareaWidget(
   value: string = 'default text',
-  options: SimplifiedWidget['options'] = {},
+  options: SimplifiedWidget<string>['options'] = {},
   callback?: (value: string) => void
-): SimplifiedWidget<string> {
-  return {
-    name: 'test_textarea',
-    type: 'string',
+) {
+  return createMockWidget<string>({
     value,
+    name: 'test_textarea',
     options,
     callback
-  }
+  })
 }
 
 function mountComponent(
@@ -67,7 +67,7 @@ async function setTextareaValueAndTrigger(
 describe('WidgetTextarea Value Binding', () => {
   describe('Vue Event Emission', () => {
     it('emits Vue event when textarea value changes on blur', async () => {
-      const widget = createMockWidget('hello')
+      const widget = createTextareaWidget('hello')
       const wrapper = mountComponent(widget, 'hello')
 
       await setTextareaValueAndTrigger(wrapper, 'world', 'blur')
@@ -78,7 +78,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('emits Vue event when textarea value changes on input', async () => {
-      const widget = createMockWidget('initial')
+      const widget = createTextareaWidget('initial')
       const wrapper = mountComponent(widget, 'initial')
 
       await setTextareaValueAndTrigger(wrapper, 'new content', 'input')
@@ -89,7 +89,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('handles empty string values', async () => {
-      const widget = createMockWidget('something')
+      const widget = createTextareaWidget('something')
       const wrapper = mountComponent(widget, 'something')
 
       await setTextareaValueAndTrigger(wrapper, '')
@@ -100,7 +100,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('handles multiline text correctly', async () => {
-      const widget = createMockWidget('single line')
+      const widget = createTextareaWidget('single line')
       const wrapper = mountComponent(widget, 'single line')
 
       const multilineText = 'Line 1\nLine 2\nLine 3'
@@ -112,7 +112,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('handles special characters correctly', async () => {
-      const widget = createMockWidget('normal')
+      const widget = createTextareaWidget('normal')
       const wrapper = mountComponent(widget, 'normal')
 
       const specialText = 'special @#$%^&*()[]{}|\\:";\'<>?,./'
@@ -124,7 +124,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget('test', {}, undefined)
+      const widget = createTextareaWidget('test', {}, undefined)
       const wrapper = mountComponent(widget, 'test')
 
       await setTextareaValueAndTrigger(wrapper, 'new value')
@@ -138,7 +138,7 @@ describe('WidgetTextarea Value Binding', () => {
 
   describe('User Interactions', () => {
     it('emits update:modelValue on blur', async () => {
-      const widget = createMockWidget('original')
+      const widget = createTextareaWidget('original')
       const wrapper = mountComponent(widget, 'original')
 
       await setTextareaValueAndTrigger(wrapper, 'updated')
@@ -149,7 +149,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('emits update:modelValue on input', async () => {
-      const widget = createMockWidget('start')
+      const widget = createTextareaWidget('start')
       const wrapper = mountComponent(widget, 'start')
 
       await setTextareaValueAndTrigger(wrapper, 'finish', 'input')
@@ -162,7 +162,7 @@ describe('WidgetTextarea Value Binding', () => {
 
   describe('Component Rendering', () => {
     it('renders textarea component', () => {
-      const widget = createMockWidget('test value')
+      const widget = createTextareaWidget('test value')
       const wrapper = mountComponent(widget, 'test value')
 
       const textarea = wrapper.find('textarea')
@@ -170,7 +170,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('displays initial value in textarea', () => {
-      const widget = createMockWidget('initial content')
+      const widget = createTextareaWidget('initial content')
       const wrapper = mountComponent(widget, 'initial content')
 
       const textarea = wrapper.find('textarea')
@@ -183,7 +183,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('uses widget name as placeholder when no placeholder provided', () => {
-      const widget = createMockWidget('test')
+      const widget = createTextareaWidget('test')
       const wrapper = mountComponent(widget, 'test')
 
       const textareaLabel = wrapper.find('label')
@@ -191,7 +191,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('uses provided placeholder when specified', () => {
-      const widget = createMockWidget('test')
+      const widget = createTextareaWidget('test')
       const wrapper = mountComponent(
         widget,
         'test',
@@ -209,7 +209,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('hides copy button when not read-only', async () => {
-      const widget = createMockWidget('test')
+      const widget = createTextareaWidget('test')
       const wrapper = mountComponent(widget, 'test', false)
 
       const button = wrapper.find('button')
@@ -217,7 +217,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('copy button has invisible class by default when read-only', () => {
-      const widget = createMockWidget('test', { read_only: true })
+      const widget = createTextareaWidget('test', { read_only: true })
       const wrapper = mountComponent(widget, 'test', true)
 
       const button = wrapper.find('button')
@@ -226,7 +226,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('copy button has group-hover:visible class when read-only, and copies on click', async () => {
-      const widget = createMockWidget('test value', { read_only: true })
+      const widget = createTextareaWidget('test value', { read_only: true })
       const wrapper = mountComponent(widget, 'test value', true)
 
       const button = wrapper.find('button')
@@ -241,7 +241,7 @@ describe('WidgetTextarea Value Binding', () => {
 
   describe('Edge Cases', () => {
     it('handles very long text', async () => {
-      const widget = createMockWidget('short')
+      const widget = createTextareaWidget('short')
       const wrapper = mountComponent(widget, 'short')
 
       const longText = 'a'.repeat(10000)
@@ -253,7 +253,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('handles unicode characters', async () => {
-      const widget = createMockWidget('ascii')
+      const widget = createTextareaWidget('ascii')
       const wrapper = mountComponent(widget, 'ascii')
 
       const unicodeText = '🎨 Unicode: αβγ 中文 العربية 🚀'
@@ -265,7 +265,7 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('handles text with tabs and spaces', async () => {
-      const widget = createMockWidget('normal')
+      const widget = createTextareaWidget('normal')
       const wrapper = mountComponent(widget, 'normal')
 
       const formattedText = '\tIndented line\n  Spaced line\n\t\tDouble indent'

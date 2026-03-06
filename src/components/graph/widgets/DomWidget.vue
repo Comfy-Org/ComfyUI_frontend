@@ -2,14 +2,14 @@
   <div
     v-show="widgetState.visible"
     ref="widgetElement"
-    class="dom-widget h-full w-full"
+    class="dom-widget size-full"
     :title="tooltip"
     :style="style"
   >
     <component
       :is="widget.component"
       v-if="isComponentWidget(widget)"
-      class="h-full w-full"
+      class="size-full"
       :model-value="widget.value"
       :widget="widget"
       v-bind="widget.props"
