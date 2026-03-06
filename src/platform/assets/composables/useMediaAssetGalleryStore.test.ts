@@ -160,6 +160,37 @@ describe('useMediaAssetGalleryStore', () => {
     })
   })
 
+  describe('openUrl', () => {
+    it('should create a ResultItemImpl with overridden url getter', () => {
+      const store = useMediaAssetGalleryStore()
+      const testUrl = 'https://example.com/node-image.png'
+
+      store.openUrl(testUrl)
+
+      expect(ResultItemImpl).toHaveBeenCalledWith({
+        filename: 'node-image.png',
+        subfolder: '',
+        type: 'output',
+        nodeId: '0',
+        mediaType: 'images'
+      })
+      expect(store.items).toHaveLength(1)
+      expect(store.items[0].url).toBe(testUrl)
+      expect(store.activeIndex).toBe(0)
+    })
+
+    it('should handle urls without a filename path', () => {
+      const store = useMediaAssetGalleryStore()
+
+      store.openUrl('https://example.com/')
+
+      expect(ResultItemImpl).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: '' })
+      )
+      expect(store.items[0].url).toBe('https://example.com/')
+    })
+  })
+
   describe('close', () => {
     it('should reset activeIndex to -1', () => {
       const store = useMediaAssetGalleryStore()

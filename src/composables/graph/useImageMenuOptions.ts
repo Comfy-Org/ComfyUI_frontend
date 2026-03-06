@@ -1,7 +1,8 @@
 import { useI18n } from 'vue-i18n'
 
-import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { downloadFile } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useMediaAssetGalleryStore } from '@/platform/assets/composables/useMediaAssetGalleryStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 import type { MenuOption } from './useMoreOptionsMenu'
@@ -23,7 +24,7 @@ export function useImageMenuOptions() {
     if (!img) return
     const url = new URL(img.src)
     url.searchParams.delete('preview')
-    void openFileInNewTab(url.toString())
+    useMediaAssetGalleryStore().openUrl(url.toString())
   }
 
   const copyImage = async (node: LGraphNode) => {
@@ -87,7 +88,7 @@ export function useImageMenuOptions() {
       },
       {
         label: t('contextMenu.Open Image'),
-        icon: 'icon-[lucide--external-link]',
+        icon: 'icon-[lucide--maximize]',
         action: () => openImage(node)
       },
       {

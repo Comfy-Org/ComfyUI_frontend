@@ -20,6 +20,11 @@
     </template>
   </div>
 
+  <ResultGallery
+    v-model:active-index="mediaAssetGalleryStore.activeIndex"
+    :all-gallery-items="mediaAssetGalleryStore.items"
+  />
+
   <GlobalToast />
   <InviteAcceptedToast />
   <RerouteMigrationToast />
@@ -50,6 +55,7 @@ import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
+import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
@@ -57,6 +63,7 @@ import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useMediaAssetGalleryStore } from '@/platform/assets/composables/useMediaAssetGalleryStore'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
@@ -109,6 +116,7 @@ const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
+const mediaAssetGalleryStore = useMediaAssetGalleryStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 const { isBuilderMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())

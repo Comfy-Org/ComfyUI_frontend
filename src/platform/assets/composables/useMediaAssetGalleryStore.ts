@@ -37,11 +37,32 @@ export const useMediaAssetGalleryStore = defineStore(
       activeIndex.value = 0
     }
 
+    const openUrl = (url: string) => {
+      const resultItem = new ResultItemImpl({
+        filename: url.split('/').pop() ?? '',
+        subfolder: '',
+        type: 'output',
+        nodeId: '0',
+        mediaType: 'images'
+      })
+
+      Object.defineProperty(resultItem, 'url', {
+        get() {
+          return url
+        },
+        configurable: true
+      })
+
+      items.value = [resultItem]
+      activeIndex.value = 0
+    }
+
     return {
       activeIndex,
       items,
       close,
-      openSingle
+      openSingle,
+      openUrl
     }
   }
 )
