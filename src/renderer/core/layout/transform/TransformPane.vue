@@ -3,7 +3,7 @@
     data-testid="transform-pane"
     :class="
       cn(
-        'absolute inset-0 size-full pointer-events-none',
+        'pointer-events-none absolute inset-0 size-full',
         isInteracting ? 'transform-pane--interacting' : 'will-change-auto'
       )
     "

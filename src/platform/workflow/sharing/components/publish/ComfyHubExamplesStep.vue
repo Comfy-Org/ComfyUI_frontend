@@ -15,7 +15,7 @@
         tabindex="0"
         role="button"
         :aria-label="$t('comfyHubPublish.uploadExampleImage')"
-        class="flex h-25 aspect-square text-center cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        class="focus-visible:outline-ring flex aspect-square h-25 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default text-center transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
         @dragenter.stop
         @dragleave.stop
         @dragover.prevent.stop
@@ -49,7 +49,7 @@
         :class="
           cn(
             'relative h-25 cursor-pointer overflow-hidden rounded-sm p-0',
-            isSelected(image.id) ? 'ring-2 ring-ring' : 'ring-0'
+            isSelected(image.id) ? 'ring-ring ring-2' : 'ring-0'
           )
         "
         @click="toggleSelection(image.id)"
@@ -57,7 +57,7 @@
         <img
           :src="image.url"
           :alt="$t('comfyHubPublish.exampleImage', { index: index + 1 })"
-          class="h-full w-full object-cover"
+          class="size-full object-cover"
         />
         <div
           v-if="isSelected(image.id)"

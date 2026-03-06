@@ -21,13 +21,13 @@
     >
       <template #pipCmd>
         <code
-          class="px-1 py-0.5 rounded-sm text-xs font-mono bg-comfy-menu-bg text-comfy-input-foreground"
+          class="rounded-sm bg-comfy-menu-bg px-1 py-0.5 font-mono text-xs text-comfy-input-foreground"
           >pip install -U --pre comfyui-manager</code
         >
       </template>
       <template #flag>
         <code
-          class="px-1 py-0.5 rounded-sm text-xs font-mono bg-comfy-menu-bg text-comfy-input-foreground"
+          class="rounded-sm bg-comfy-menu-bg px-1 py-0.5 font-mono text-xs text-comfy-input-foreground"
           >--enable-manager</code
         >
       </template>
@@ -49,12 +49,12 @@
       v-if="hasInstalledPacksPendingRestart"
       variant="primary"
       :disabled="isRestarting"
-      class="w-full h-9 justify-center gap-2 text-sm font-semibold mt-2"
+      class="mt-2 h-9 w-full justify-center gap-2 text-sm font-semibold"
       @click="applyChanges()"
     >
       <DotSpinner v-if="isRestarting" duration="1s" :size="14" />
       <i v-else class="icon-[lucide--refresh-cw] size-4 shrink-0" />
-      <span class="truncate min-w-0">{{
+      <span class="min-w-0 truncate">{{
         t('rightSidePanel.missingNodePacks.applyChanges')
       }}</span>
     </Button>

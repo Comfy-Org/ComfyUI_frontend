@@ -15,7 +15,7 @@ const { class: className, ...restProps } = defineProps<
     v-bind="restProps"
     :class="
       cn(
-        'relative flex w-full cursor-pointer select-none items-center justify-between',
+        'relative flex w-full cursor-pointer items-center justify-between select-none',
         'gap-3 rounded-sm px-2 py-3 text-sm outline-none',
         'hover:bg-secondary-background-hover',
         'focus:bg-secondary-background-hover',

@@ -12,7 +12,7 @@
       size="sm"
       :class="
         cn('absolute top-2 right-8 transition-opacity', {
-          'opacity-0 pointer-events-none select-none': !isHovered
+          'pointer-events-none opacity-0 select-none': !isHovered
         })
       "
       :aria-label="tooltipText"

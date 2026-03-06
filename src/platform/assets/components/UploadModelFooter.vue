@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-end gap-2 w-full">
+  <div class="flex w-full justify-end gap-2">
     <div v-if="currentStep === 1" class="mr-auto flex items-center gap-2">
       <i class="icon-[lucide--circle-question-mark] text-muted-foreground" />
       <Button
