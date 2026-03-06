@@ -119,19 +119,13 @@ export function useFeatureFlags() {
     get workflowSharingEnabled() {
       return (
         remoteConfig.value.workflow_sharing_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.WORKFLOW_SHARING_ENABLED,
-          false
-        )
+        api.getServerFeature(ServerFeatureFlag.WORKFLOW_SHARING_ENABLED, false)
       )
     },
     get comfyHubUploadEnabled() {
       return (
         remoteConfig.value.comfyhub_upload_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
-          false
-        )
+        api.getServerFeature(ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED, false)
       )
     },
     get comfyHubProfileGateEnabled() {
