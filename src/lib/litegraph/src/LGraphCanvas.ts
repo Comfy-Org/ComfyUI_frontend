@@ -3791,13 +3791,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return
   }
 
-  private _noItemsSelected(): void {
-    const event = new CustomEvent('litegraph:no-items-selected', {
-      bubbles: true
-    })
-    this.canvas.dispatchEvent(event)
-  }
-
   /**
    * process a key event
    */
@@ -3842,31 +3835,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.node_panel?.close()
         this.options_panel?.close()
         if (this.node_panel || this.options_panel) block_default = true
-      } else if (e.keyCode === 65 && e.ctrlKey) {
-        // select all Control A
-        this.selectItems()
-        block_default = true
-      } else if (e.keyCode === 67 && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
-        // copy
-        if (this.selected_nodes) {
-          this.copyToClipboard()
-          block_default = true
-        }
-      } else if (e.keyCode === 86 && (e.metaKey || e.ctrlKey)) {
-        // paste
-        this.pasteFromClipboard({ connectInputs: e.shiftKey })
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        // delete or backspace
-        // @ts-expect-error EventTarget.localName is not in standard types
-        if (e.target.localName != 'input' && e.target.localName != 'textarea') {
-          if (this.selectedItems.size === 0) {
-            this._noItemsSelected()
-            return
-          }
-
-          this.deleteSelected()
-          block_default = true
-        }
       }
 
       // TODO

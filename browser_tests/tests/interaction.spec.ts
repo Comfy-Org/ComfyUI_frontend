@@ -819,16 +819,13 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
       const activeWorkflowName =
         await comfyPage.menu.workflowsTab.getActiveWorkflowName()
-      const workflowPathA = `${workflowA}.json`
-      const workflowPathB = `${workflowB}.json`
-
       expect(openWorkflows).toEqual(
-        expect.arrayContaining([workflowPathA, workflowPathB])
+        expect.arrayContaining([workflowA, workflowB])
       )
-      expect(openWorkflows.indexOf(workflowPathA)).toBeLessThan(
-        openWorkflows.indexOf(workflowPathB)
+      expect(openWorkflows.indexOf(workflowA)).toBeLessThan(
+        openWorkflows.indexOf(workflowB)
       )
-      expect(activeWorkflowName).toEqual(workflowPathB)
+      expect(activeWorkflowName).toEqual(workflowB)
     })
   })
 
