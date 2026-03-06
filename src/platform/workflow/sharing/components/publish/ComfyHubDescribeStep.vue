@@ -2,22 +2,22 @@
   <div class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4">
     <label class="flex flex-col gap-2">
       <span class="text-sm text-base-foreground">
-        {{ $t('comfyHubPublish.workflowName') }}
+        {{ $t('sharing.workflowNameLabel') }}
       </span>
       <Input
         :model-value="name"
-        :placeholder="$t('comfyHubPublish.workflowNamePlaceholder')"
+        :placeholder="$t('sharing.publish.workflowNamePlaceholder')"
         @update:model-value="$emit('update:name', String($event))"
       />
     </label>
 
     <label class="flex flex-col gap-2">
       <span class="text-sm text-base-foreground">
-        {{ $t('comfyHubPublish.workflowDescription') }}
+        {{ $t('sharing.publish.workflowDescription') }}
       </span>
       <Textarea
         :model-value="description"
-        :placeholder="$t('comfyHubPublish.workflowDescriptionPlaceholder')"
+        :placeholder="$t('sharing.publish.workflowDescriptionPlaceholder')"
         rows="5"
         @update:model-value="$emit('update:description', String($event))"
       />
@@ -25,7 +25,7 @@
 
     <label class="flex flex-col gap-2">
       <span class="text-sm text-base-foreground">
-        {{ $t('comfyHubPublish.workflowType') }}
+        {{ $t('sharing.publish.workflowType') }}
       </span>
       <Select
         :model-value="workflowType"
@@ -35,7 +35,7 @@
       >
         <SelectTrigger>
           <SelectValue
-            :placeholder="$t('comfyHubPublish.workflowTypePlaceholder')"
+            :placeholder="$t('sharing.publish.workflowTypePlaceholder')"
           />
         </SelectTrigger>
         <SelectContent>
@@ -52,7 +52,7 @@
 
     <fieldset class="flex flex-col gap-2">
       <legend class="text-sm text-base-foreground">
-        {{ $t('comfyHubPublish.tagsDescription') }}
+        {{ $t('sharing.publish.tagsDescription') }}
       </legend>
       <TagsInput
         v-slot="{ isEmpty }"
@@ -97,8 +97,8 @@
           {{
             $t(
               showAllSuggestions
-                ? 'comfyHubPublish.showLessTags'
-                : 'comfyHubPublish.showMoreTags'
+                ? 'sharing.publish.showLessTags'
+                : 'sharing.publish.showMoreTags'
             )
           }}
         </Button>
@@ -146,19 +146,19 @@ const { t } = useI18n()
 const workflowTypeOptions = computed(() => [
   {
     value: 'imageGeneration',
-    label: t('comfyHubPublish.workflowTypeImageGeneration')
+    label: t('sharing.publish.workflowTypeImageGeneration')
   },
   {
     value: 'videoGeneration',
-    label: t('comfyHubPublish.workflowTypeVideoGeneration')
+    label: t('sharing.publish.workflowTypeVideoGeneration')
   },
   {
     value: 'upscaling',
-    label: t('comfyHubPublish.workflowTypeUpscaling')
+    label: t('sharing.publish.workflowTypeUpscaling')
   },
   {
     value: 'editing',
-    label: t('comfyHubPublish.workflowTypeEditing')
+    label: t('sharing.publish.workflowTypeEditing')
   }
 ])
 

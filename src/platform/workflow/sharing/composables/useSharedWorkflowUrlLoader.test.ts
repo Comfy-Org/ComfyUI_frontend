@@ -62,13 +62,13 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: vi.fn((key: string) => {
       if (key === 'g.error') return 'Error'
-      if (key === 'shareWorkflow.loadFailed') {
+      if (key === 'sharing.share.loadFailed') {
         return 'Failed to load shared workflow'
       }
-      if (key === 'openSharedWorkflow.dialogTitle') {
+      if (key === 'sharing.open.dialogTitle') {
         return 'Open shared workflow'
       }
-      if (key === 'openSharedWorkflow.importFailed') {
+      if (key === 'sharing.open.importFailed') {
         return 'Failed to import workflow assets'
       }
       return key

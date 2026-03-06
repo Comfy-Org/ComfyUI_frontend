@@ -2,7 +2,7 @@
   <div class="flex min-h-0 flex-1 flex-col gap-6">
     <p class="text-sm">
       {{
-        $t('comfyHubPublish.examplesDescription', {
+        $t('sharing.publish.examplesDescription', {
           selected: selectedExampleIds.length,
           total: MAX_EXAMPLES
         })
@@ -14,7 +14,7 @@
       <label
         tabindex="0"
         role="button"
-        :aria-label="$t('comfyHubPublish.uploadExampleImage')"
+        :aria-label="$t('sharing.publish.uploadExampleImage')"
         class="focus-visible:outline-ring flex aspect-square h-25 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default text-center transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
         @dragenter.stop
         @dragleave.stop
@@ -36,7 +36,7 @@
           aria-hidden="true"
         />
         <span class="sr-only">{{
-          $t('comfyHubPublish.uploadExampleImage')
+          $t('sharing.publish.uploadExampleImage')
         }}</span>
       </label>
 
@@ -56,7 +56,7 @@
       >
         <img
           :src="image.url"
-          :alt="$t('comfyHubPublish.exampleImage', { index: index + 1 })"
+          :alt="$t('sharing.publish.exampleImage', { index: index + 1 })"
           class="size-full object-cover"
         />
         <div

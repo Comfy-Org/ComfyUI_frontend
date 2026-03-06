@@ -17,12 +17,12 @@ export function useAssetSections(items: () => AssetInfo[]) {
     const allSections: AssetSection[] = [
       {
         id: 'media',
-        labelKey: 'shareWorkflow.mediaLabel',
+        labelKey: 'sharing.share.mediaLabel',
         items: media
       },
       {
         id: 'models',
-        labelKey: 'shareWorkflow.modelsLabel',
+        labelKey: 'sharing.share.modelsLabel',
         items: models
       }
     ]

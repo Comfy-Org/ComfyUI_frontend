@@ -54,7 +54,7 @@
           class="flex h-10 w-full items-center rounded-lg bg-secondary-background-selected pl-11 select-none"
         >
           <span class="truncate text-sm text-base-foreground">
-            {{ $t('comfyHubProfile.profileCreationNav') }}
+            {{ $t('sharing.profile.profileCreationNav') }}
           </span>
         </div>
       </li>
@@ -89,14 +89,14 @@ const steps = [
   {
     name: 'describe' as const,
     number: 1,
-    label: t('comfyHubPublish.stepDescribe')
+    label: t('sharing.publish.stepDescribe')
   },
   {
     name: 'examples' as const,
     number: 2,
-    label: t('comfyHubPublish.stepExamples')
+    label: t('sharing.publish.stepExamples')
   },
-  { name: 'finish' as const, number: 3, label: t('comfyHubPublish.stepFinish') }
+  { name: 'finish' as const, number: 3, label: t('sharing.publish.stepFinish') }
 ]
 
 const isProfileCreationFlow = computed(() => currentStep === 'profileCreation')

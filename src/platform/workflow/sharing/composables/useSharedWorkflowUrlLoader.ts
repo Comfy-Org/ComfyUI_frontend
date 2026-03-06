@@ -118,7 +118,7 @@ export function useSharedWorkflowUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('shareWorkflow.loadFailed'),
+        detail: t('sharing.share.loadFailed'),
         life: 3000
       })
       cleanupUrlParams()
@@ -135,7 +135,7 @@ export function useSharedWorkflowUrlLoader() {
     }
 
     const { payload } = result
-    const workflowName = payload.name || t('openSharedWorkflow.dialogTitle')
+    const workflowName = payload.name || t('sharing.open.dialogTitle')
     const nonOwnedAssets = payload.assets.filter((a) => !a.in_library)
 
     try {
@@ -148,7 +148,7 @@ export function useSharedWorkflowUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('shareWorkflow.loadFailed'),
+        detail: t('sharing.share.loadFailed'),
         life: 5000
       })
       return 'failed'
@@ -167,7 +167,7 @@ export function useSharedWorkflowUrlLoader() {
         toast.add({
           severity: 'error',
           summary: t('g.error'),
-          detail: t('openSharedWorkflow.importFailed')
+          detail: t('sharing.open.importFailed')
         })
         cleanupUrlParams()
         clearPreservedQuery(SHARE_NAMESPACE)

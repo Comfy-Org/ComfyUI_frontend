@@ -14,7 +14,7 @@
             aria-hidden="true"
           />
           <span class="m-0 flex-1 text-left text-sm text-muted-foreground">
-            {{ $t('shareWorkflow.privateAssetsDescription') }}
+            {{ $t('sharing.share.privateAssetsDescription') }}
           </span>
 
           <i
@@ -42,7 +42,7 @@
         class="size-3.5 shrink-0 cursor-pointer accent-primary-background"
       />
       <span class="text-sm text-muted-foreground">
-        {{ $t('shareWorkflow.acknowledgeCheckbox') }}
+        {{ $t('sharing.share.acknowledgeCheckbox') }}
       </span>
     </label>
   </div>

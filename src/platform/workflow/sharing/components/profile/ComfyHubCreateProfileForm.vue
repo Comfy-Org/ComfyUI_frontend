@@ -8,20 +8,20 @@
       class="flex h-16 items-center justify-between px-6"
     >
       <h2 class="text-base font-normal text-base-foreground">
-        {{ $t('comfyHubProfile.createProfileTitle') }}
+        {{ $t('sharing.profile.createProfileTitle') }}
       </h2>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
         <i class="icon-[lucide--x] size-4" />
       </Button>
     </header>
     <h2 v-else class="px-6 pt-6 text-base font-normal text-base-foreground">
-      {{ $t('comfyHubProfile.createProfileTitle') }}
+      {{ $t('sharing.profile.createProfileTitle') }}
     </h2>
 
     <div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-4">
       <div class="flex flex-col gap-4">
         <label for="profile-picture" class="text-sm text-muted-foreground">
-          {{ $t('comfyHubProfile.chooseProfilePicture') }}
+          {{ $t('sharing.profile.chooseProfilePicture') }}
         </label>
         <label
           class="flex size-13 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-linear-to-b from-green-600/50 to-green-900"
@@ -36,7 +36,7 @@
           <template v-if="profilePreviewUrl">
             <img
               :src="profilePreviewUrl"
-              :alt="$t('comfyHubProfile.chooseProfilePicture')"
+              :alt="$t('sharing.profile.chooseProfilePicture')"
               class="size-full rounded-full object-cover"
             />
           </template>
@@ -51,18 +51,18 @@
       <div class="flex flex-col gap-6">
         <div class="flex flex-col gap-4">
           <label for="profile-name" class="text-sm text-muted-foreground">
-            {{ $t('comfyHubProfile.nameLabel') }}
+            {{ $t('sharing.profile.nameLabel') }}
           </label>
           <Input
             id="profile-name"
             v-model="name"
-            :placeholder="$t('comfyHubProfile.namePlaceholder')"
+            :placeholder="$t('sharing.profile.namePlaceholder')"
           />
         </div>
 
         <div class="flex flex-col gap-2">
           <label for="profile-username" class="text-sm text-muted-foreground">
-            {{ $t('comfyHubProfile.usernameLabel') }}
+            {{ $t('sharing.profile.usernameLabel') }}
           </label>
           <div class="relative">
             <span
@@ -84,12 +84,12 @@
             for="profile-description"
             class="text-sm text-muted-foreground"
           >
-            {{ $t('comfyHubProfile.descriptionLabel') }}
+            {{ $t('sharing.profile.descriptionLabel') }}
           </label>
           <Textarea
             id="profile-description"
             v-model="description"
-            :placeholder="$t('comfyHubProfile.descriptionPlaceholder')"
+            :placeholder="$t('sharing.profile.descriptionPlaceholder')"
             class="h-24 resize-none rounded-lg border-none bg-secondary-background p-4 text-sm shadow-none"
           />
         </div>
@@ -110,8 +110,8 @@
       >
         {{
           isCreating
-            ? $t('comfyHubProfile.creatingProfile')
-            : $t('comfyHubProfile.createProfile')
+            ? $t('sharing.profile.creatingProfile')
+            : $t('sharing.profile.createProfile')
         }}
       </Button>
     </footer>

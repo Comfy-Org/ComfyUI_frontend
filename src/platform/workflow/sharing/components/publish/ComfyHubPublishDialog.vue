@@ -1,13 +1,13 @@
 <template>
   <BaseModalLayout
-    :content-title="$t('comfyHubPublish.title')"
+    :content-title="$t('sharing.publish.title')"
     content-padding="none"
     left-panel-width="16.5rem"
     size="md"
   >
     <template #leftPanelHeaderTitle>
       <h2 class="flex-1 text-base font-semibold select-none">
-        {{ $t('comfyHubPublish.title') }}
+        {{ $t('sharing.publish.title') }}
       </h2>
     </template>
 

@@ -12,12 +12,15 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      shareWorkflow: {
-        privateAssetsDescription:
-          'Your workflow contains private models and/or media files',
-        mediaLabel: '{count} Media File | {count} Media Files',
-        modelsLabel: '{count} Model | {count} Models',
-        acknowledgeCheckbox: 'I understand these assets...'
+      sharing: {
+        share: {
+          privateAssetsDescription:
+            'Your workflow contains private models and/or media files',
+          mediaLabel: '{count} Media File | {count} Media Files',
+          modelsLabel: '{count} Model | {count} Models',
+          acknowledgeCheckbox: 'I understand these assets...',
+          inLibrary: 'In library'
+        }
       }
     }
   }

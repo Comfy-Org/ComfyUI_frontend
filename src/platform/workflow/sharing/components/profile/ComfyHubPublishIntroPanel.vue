@@ -15,10 +15,10 @@
     <!-- Content -->
     <section class="flex flex-col items-center gap-4 px-4 pt-4 pb-6">
       <h2 class="m-0 text-base font-semibold text-base-foreground">
-        {{ $t('comfyHubProfile.introTitle') }}
+        {{ $t('sharing.profile.introTitle') }}
       </h2>
       <p class="m-0 text-center text-sm text-muted-foreground">
-        {{ $t('comfyHubProfile.introDescription') }}
+        {{ $t('sharing.profile.introDescription') }}
       </p>
       <Button
         variant="primary"
@@ -26,7 +26,7 @@
         class="mt-2 w-full"
         @click="onCreateProfile"
       >
-        {{ $t('comfyHubProfile.startPublishingButton') }}
+        {{ $t('sharing.profile.startPublishingButton') }}
       </Button>
     </section>
   </div>
