@@ -29,6 +29,8 @@ export type RemoteConfig = {
   gtm_container_id?: string
   ga_measurement_id?: string
   mixpanel_token?: string
+  posthog_project_token?: string
+  posthog_api_host?: string
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
   max_upload_size?: number

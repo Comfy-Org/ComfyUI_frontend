@@ -99,6 +99,7 @@
     "loglevel": "^1.9.2",
     "marked": "^15.0.11",
     "pinia": "catalog:",
+    "posthog-js": "catalog:",
     "primeicons": "catalog:",
     "primevue": "catalog:",
     "reka-ui": "catalog:",
