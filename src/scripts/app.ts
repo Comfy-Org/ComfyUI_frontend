@@ -236,7 +236,7 @@ export class ComfyApp {
 
   /**
    * The node errors from the previous execution.
-   * @deprecated Use app.extensionManager.lastNodeErrors instead
+   * @deprecated Use useExecutionErrorStore().lastNodeErrors instead
    */
   get lastNodeErrors(): Record<NodeId, NodeError> | null {
     return useExecutionErrorStore().lastNodeErrors
@@ -244,7 +244,7 @@ export class ComfyApp {
 
   /**
    * The error from the previous execution.
-   * @deprecated Use app.extensionManager.lastExecutionError instead
+   * @deprecated Use useExecutionErrorStore().lastExecutionError instead
    */
   get lastExecutionError(): ExecutionErrorWsMessage | null {
     return useExecutionErrorStore().lastExecutionError

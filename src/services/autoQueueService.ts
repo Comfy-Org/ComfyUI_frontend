@@ -1,5 +1,6 @@
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   isInstantRunningMode,
   useQueuePendingTaskCountStore,
@@ -28,7 +29,7 @@ export function setupAutoQueueHandler() {
   queueCountStore.$subscribe(
     async () => {
       internalCount = queueCountStore.count
-      if (!internalCount && !app.lastExecutionError) {
+      if (!internalCount && !useExecutionErrorStore().lastExecutionError) {
         if (
           isInstantRunningMode(queueSettingsStore.mode) ||
           (queueSettingsStore.mode === 'change' && graphHasChanged)

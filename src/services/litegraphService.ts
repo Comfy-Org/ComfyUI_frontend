@@ -54,6 +54,7 @@ import { ComfyApp, app } from '@/scripts/app'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -205,7 +206,7 @@ export const useLitegraphService = () => {
       }
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
-      if (app.lastExecutionError?.node_id == this.id) {
+      if (useExecutionErrorStore().lastExecutionError?.node_id == this.id) {
         return { color: '#f0f', lineWidth: 3 }
       }
     }

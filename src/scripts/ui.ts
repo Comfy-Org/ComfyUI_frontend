@@ -8,6 +8,7 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useTelemetry } from '@/platform/telemetry'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
@@ -707,7 +708,7 @@ export class ComfyUI {
         status.exec_info.queue_remaining == 0 &&
         this.autoQueueEnabled &&
         (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
-        !app.lastExecutionError
+        !useExecutionErrorStore().lastExecutionError
       ) {
         app.queuePrompt(0, this.batchCount)
         status.exec_info.queue_remaining += this.batchCount
