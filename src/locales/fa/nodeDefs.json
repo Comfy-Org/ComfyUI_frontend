@@ -696,8 +696,7 @@
         "tooltip": "حداکثر تعداد تصاویری که هنگام فعال بودن تولید ترتیبی تصویر (auto) تولید می‌شود. مجموع تصاویر (ورودی + تولید شده) نباید از ۱۵ بیشتر باشد."
       },
       "model": {
-        "name": "مدل",
-        "tooltip": "نام مدل"
+        "name": "مدل"
       },
       "prompt": {
         "name": "پرامپت",
@@ -2135,6 +2134,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "description": "برش و تغییر اندازه نواحی از دسته تصویر ورودی بر اساس جعبه‌های مرزی ارائه‌شده.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "جعبه‌های مرزی"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "output_height": {
+        "name": "ارتفاع خروجی",
+        "tooltip": "ارتفاعی که هر برش به آن تغییر اندازه داده می‌شود."
+      },
+      "output_width": {
+        "name": "عرض خروجی",
+        "tooltip": "عرضی که هر برش به آن تغییر اندازه داده می‌شود."
+      },
+      "padding": {
+        "name": "حاشیه",
+        "tooltip": "حاشیه اضافی (بر حسب پیکسل) که به هر طرف جعبه مرزی قبل از برش اضافه می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "تمام برش‌ها به صورت یک دسته تصویر واحد جمع‌آوری شده‌اند."
       }
     }
   },
@@ -3702,6 +3730,60 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "تولید یا ویرایش تصاویر به صورت همزمان از طریق Google Vertex API.",
+    "display_name": "Nano Banana ۲",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "اگر روی 'auto' تنظیم شود، با نسبت تصویر ورودی شما مطابقت دارد؛ اگر تصویری ارائه نشود، معمولاً یک مربع با نسبت ۱۶:۹ تولید می‌شود."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "files": {
+        "name": "فایل‌ها",
+        "tooltip": "فایل(های) اختیاری برای استفاده به عنوان زمینه برای مدل. ورودی‌ها را از node Gemini Generate Content Input Files می‌پذیرد."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصویر(های) مرجع اختیاری. برای افزودن چند تصویر، از node Batch Images استفاده کنید (تا ۱۴ تصویر)."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی درباره تصویری که باید تولید شود یا ویرایش‌هایی که باید اعمال گردد. هرگونه محدودیت، سبک یا جزئیاتی که مدل باید رعایت کند را وارد کنید."
+      },
+      "resolution": {
+        "name": "وضوح تصویر",
+        "tooltip": "وضوح خروجی هدف. برای ۲K/۴K از upscaler بومی Gemini استفاده می‌شود."
+      },
+      "response_modalities": {
+        "name": "حالت‌های پاسخ"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "زمانی که مقدار seed ثابت باشد، مدل تلاش می‌کند تا پاسخ مشابهی برای درخواست‌های تکراری ارائه دهد. خروجی قطعی تضمین نمی‌شود. همچنین، تغییر مدل یا تنظیمات پارامترها مانند دما (temperature) می‌تواند باعث تغییر در پاسخ حتی با همان مقدار seed شود. به طور پیش‌فرض، مقدار seed به صورت تصادفی انتخاب می‌شود."
+      },
+      "system_prompt": {
+        "name": "پرامپت سیستمی",
+        "tooltip": "دستورالعمل‌های پایه‌ای که رفتار هوش مصنوعی را تعیین می‌کند."
+      },
+      "thinking_level": {
+        "name": "سطح تفکر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "تولید پاسخ متنی با مدل هوش مصنوعی Gemini گوگل. می‌توانید انواع مختلفی از ورودی‌ها (متن، تصویر، صوت، ویدئو) را به عنوان زمینه برای تولید پاسخ‌های مرتبط‌تر و معنادارتر ارائه دهید.",
     "display_name": "Google Gemini",
@@ -3865,6 +3947,10 @@
     "description": "ویرایش یک تصویر موجود بر اساس یک متن راهنما",
     "display_name": "ویرایش تصویر Grok",
     "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "فقط زمانی مجاز است که چندین تصویر به ورودی تصویر متصل باشند."
+      },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
@@ -3916,6 +4002,9 @@
       "prompt": {
         "name": "راهنما",
         "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "resolution": {
+        "name": "وضوح"
       },
       "seed": {
         "name": "بذر",
@@ -4749,6 +4838,28 @@
       }
     }
   },
+  "ImageMergeTileList": {
+    "display_name": "ادغام فهرست کاشی‌ها به تصویر",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageOnlyCheckpointLoader": {
     "display_name": "بارگذاری Checkpoint فقط تصویر (مدل img2vid)",
     "inputs": {
@@ -5327,6 +5438,39 @@
       }
     }
   },
+  "KlingAvatarNode": {
+    "description": "تولید ویدئوهای دیجیتال انسان به سبک پخش زنده از یک عکس و یک فایل صوتی.",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "تصویر مرجع آواتار. عرض و ارتفاع باید حداقل ۳۰۰ پیکسل باشد. نسبت ابعاد باید بین ۱:۲.۵ و ۲.۵:۱ باشد."
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرومپت اختیاری برای تعریف حرکات، احساسات و حرکات دوربین آواتار."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "ورودی صوتی. مدت زمان باید بین ۲ تا ۳۰۰ ثانیه باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingCameraControlI2VNode": {
     "description": "تبدیل تصاویر ثابت به ویدیوهای سینمایی با حرکات حرفه‌ای دوربین که شبیه‌ساز فیلم‌برداری واقعی است. کنترل حرکات مجازی دوربین شامل زوم، چرخش، پن، تیلت و نمای اول شخص، در حالی که تمرکز بر تصویر اصلی شما حفظ می‌شود.",
     "display_name": "تبدیل تصویر به ویدیو Kling (کنترل دوربین)",
@@ -5716,6 +5860,9 @@
       },
       "mode": {
         "name": "حالت"
+      },
+      "model": {
+        "name": "مدل"
       },
       "prompt": {
         "name": "پرامپت"
@@ -12665,6 +12812,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "محاسبه عرض و ارتفاع بر اساس نسبت تصویر و هدف مگاپیکسل. مناسب برای تعیین ابعاد تصویر نهفته خالی.",
+    "display_name": "انتخابگر وضوح",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "نسبت تصویر برای ابعاد خروجی."
+      },
+      "megapixels": {
+        "name": "مگاپیکسل",
+        "tooltip": "هدف مجموع مگاپیکسل‌ها. ۱٫۰ مگاپیکسل ≈ ۱۰۲۴×۱۰۲۴ برای تصویر مربع."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "عرض",
+        "tooltip": "عرض محاسبه‌شده بر حسب پیکسل (مضربی از ۸)."
+      },
+      "1": {
+        "name": "ارتفاع",
+        "tooltip": "ارتفاع محاسبه‌شده بر حسب پیکسل (مضربی از ۸)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
     "display_name": "Rodin 3D Generate - تولید جزئیات",
@@ -12921,6 +13092,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "ترسیم بدن"
+      },
+      "draw_face": {
+        "name": "ترسیم صورت"
+      },
+      "draw_feet": {
+        "name": "ترسیم پاها"
+      },
+      "draw_hands": {
+        "name": "ترسیم دست‌ها"
+      },
+      "face_point_size": {
+        "name": "اندازه نقطه صورت"
+      },
+      "keypoints": {
+        "name": "نقاط کلیدی"
+      },
+      "score_threshold": {
+        "name": "آستانه امتیاز"
+      },
+      "stick_width": {
+        "name": "ضخامت خط"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "اجبار به مربع بودن",
+        "tooltip": "محور کوتاه‌تر جعبه مرزی را گسترش می‌دهد تا ناحیه برش همیشه مربع باشد."
+      },
+      "keypoints": {
+        "name": "نقاط کلیدی"
+      },
+      "scale": {
+        "name": "مقیاس",
+        "tooltip": "ضریب بزرگنمایی برای ناحیه جعبه مرزی اطراف هر صورت شناسایی‌شده."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "جعبه‌های مرزی",
+        "tooltip": "جعبه‌های مرزی صورت برای هر فریم، سازگار با ورودی bboxes در SDPoseKeypointExtractor."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "استخراج نقاط کلیدی ژست از تصاویر با استفاده از مدل SDPose: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته"
+      },
+      "bboxes": {
+        "name": "جعبه‌های مرزی",
+        "tooltip": "جعبه‌های مرزی اختیاری برای تشخیص دقیق‌تر. برای تشخیص چند نفره الزامی است."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نقاط کلیدی",
+        "tooltip": "نقاط کلیدی در قالب قاب OpenPose (عرض بوم، ارتفاع بوم، افراد)"
       }
     }
   },
@@ -13998,6 +14253,29 @@
       },
       "1": {
         "name": "راست",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "یک تصویر را به فهرستی دسته‌ای از کاشی‌ها با همپوشانی مشخص تقسیم می‌کند.",
+    "display_name": "تقسیم تصویر به فهرست کاشی‌ها",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -17886,6 +18164,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته"
+      },
+      "clip_vision_output": {
+        "name": "خروجی clip vision"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "pose_end": {
+        "name": "پایان pose",
+        "tooltip": "گام پایان برای استفاده از pose conditioning."
+      },
+      "pose_start": {
+        "name": "شروع pose",
+        "tooltip": "گام شروع برای استفاده از pose conditioning."
+      },
+      "pose_strength": {
+        "name": "قدرت pose",
+        "tooltip": "قدرت pose در latent."
+      },
+      "pose_video": {
+        "name": "ویدئوی pose",
+        "tooltip": "ویدئو برای pose conditioning استفاده می‌شود. به نصف وضوح ویدئوی اصلی کاهش داده می‌شود."
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "reference_image": {
+        "name": "تصویر مرجع"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent خالی با اندازه تولید."
       }
     }
   },

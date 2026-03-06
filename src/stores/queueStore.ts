@@ -14,11 +14,12 @@ import type {
   StatusWsMessageStatus,
   TaskOutput
 } from '@/schemas/apiSchema'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -91,6 +92,13 @@ export class ResultItemImpl {
     return api.apiURL('/view?' + this.urlParams)
   }
 
+  get previewUrl(): string {
+    if (!this.isImage) return this.url
+    const params = new URLSearchParams(this.urlParams)
+    appendCloudResParam(params, this.filename)
+    return api.apiURL('/view?' + params)
+  }
+
   get urlWithTimestamp(): string {
     return `${this.url}&t=${+new Date()}`
   }
@@ -105,6 +113,9 @@ export class ResultItemImpl {
     }
     if (this.isMp4) {
       return 'video/mp4'
+    }
+    if (this.filename.endsWith('.mov')) {
+      return 'video/quicktime'
     }
 
     if (this.isVhsFormat) {
@@ -134,14 +145,6 @@ export class ResultItemImpl {
     return undefined
   }
 
-  get isGif(): boolean {
-    return this.filename.endsWith('.gif')
-  }
-
-  get isWebp(): boolean {
-    return this.filename.endsWith('.webp')
-  }
-
   get isWebm(): boolean {
     return this.filename.endsWith('.webm')
   }
@@ -151,11 +154,11 @@ export class ResultItemImpl {
   }
 
   get isVideoBySuffix(): boolean {
-    return this.isWebm || this.isMp4
+    return getMediaTypeFromFilename(this.filename) === 'video'
   }
 
   get isImageBySuffix(): boolean {
-    return this.isGif || this.isWebp
+    return getMediaTypeFromFilename(this.filename) === 'image'
   }
 
   get isMp3(): boolean {
@@ -175,7 +178,7 @@ export class ResultItemImpl {
   }
 
   get isAudioBySuffix(): boolean {
-    return this.isMp3 || this.isWav || this.isOgg || this.isFlac
+    return getMediaTypeFromFilename(this.filename) === 'audio'
   }
 
   get isVideo(): boolean {
@@ -310,10 +313,6 @@ export class TaskItemImpl {
 
   get key() {
     return this.jobId + this.displayStatus
-  }
-
-  get queueIndex() {
-    return this.job.priority
   }
 
   get jobId() {
@@ -499,8 +498,8 @@ export const useQueueStore = defineStore('queue', () => {
     tasks.value.flatMap((task: TaskItemImpl) => task.flatten())
   )
 
-  const lastHistoryQueueIndex = computed<number>(() =>
-    historyTasks.value.length ? historyTasks.value[0].queueIndex : -1
+  const lastJobHistoryPriority = computed<number>(() =>
+    historyTasks.value.length ? historyTasks.value[0].job.priority : -1
   )
 
   const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
@@ -611,7 +610,7 @@ export const useQueueStore = defineStore('queue', () => {
 
     tasks,
     flatTasks,
-    lastHistoryQueueIndex,
+    lastJobHistoryPriority,
     hasPendingTasks,
     activeJobsCount,
 

@@ -1,6 +1,6 @@
 import _ from 'es-toolkit/compat'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
@@ -22,6 +22,7 @@ import {
   createBounds
 } from '@/lib/litegraph/src/litegraph'
 import type {
+  CreateNodeOptions,
   GraphAddOptions,
   IContextMenuValue,
   Point,
@@ -54,7 +55,7 @@ import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -686,7 +687,7 @@ export const useLitegraphService = () => {
               callback: () => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
-                window.open(url, '_blank')
+                void openFileInNewTab(url.toString())
               }
             },
             ...getCopyImageOption(img),
@@ -885,7 +886,7 @@ export const useLitegraphService = () => {
 
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
-    options: Record<string, unknown> & { pos?: Point } = {},
+    options: CreateNodeOptions = {},
     addOptions?: GraphAddOptions
   ): LGraphNode | null {
     options.pos ??= getCanvasCenter()

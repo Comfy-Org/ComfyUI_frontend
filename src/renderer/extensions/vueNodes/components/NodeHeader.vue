@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-header text-sm py-2 pl-2 pr-3 w-full min-w-0',
+        'lg-node-header w-full min-w-0 py-2 pr-3 pl-2 text-sm',
         'text-node-component-header',
         headerShapeClass
       )
@@ -14,9 +14,9 @@
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex items-center justify-between gap-2.5 min-w-0">
+    <div class="flex min-w-0 items-center justify-between gap-2.5">
       <!-- Collapse/Expand Button -->
-      <div class="relative flex items-center gap-2.5 min-w-0 shrink-1 mr-auto">
+      <div class="relative mr-auto flex min-w-0 shrink items-center gap-2.5">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
@@ -43,7 +43,7 @@
           class="flex min-w-0 flex-1 items-center gap-2"
           data-testid="node-title"
         >
-          <div class="truncate flex-1">
+          <div class="flex-1 truncate">
             <EditableText
               :model-value="displayTitle"
               :is-editing="isEditing"
@@ -59,17 +59,17 @@
         <span
           :class="
             cn(
-              'flex h-5 bg-component-node-widget-background p-1 items-center text-xs shrink-0',
+              'flex h-5 shrink-0 items-center bg-component-node-widget-background p-1 text-xs',
               badge.rest ? 'rounded-l-full pr-1' : 'rounded-full'
             )
           "
         >
-          <i class="h-full icon-[lucide--component] bg-amber-400" />
+          <i class="icon-[lucide--component] h-full bg-amber-400" />
           <span class="truncate" v-text="badge.required" />
         </span>
         <span
           v-if="badge.rest"
-          class="truncate -ml-2.5 grow-1 basis-0 bg-component-node-widget-background rounded-r-full max-w-max min-w-0"
+          class="-ml-2.5 max-w-max min-w-0 grow basis-0 truncate rounded-r-full bg-component-node-widget-background"
         >
           <span class="pr-2" v-text="badge.rest" />
         </span>
@@ -77,7 +77,7 @@
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
-        class="size-5 icon-[comfy--pin]"
+        class="icon-[comfy--pin] size-5"
         data-testid="node-pin-indicator"
       />
     </div>

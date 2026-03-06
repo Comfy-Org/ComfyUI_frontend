@@ -87,7 +87,9 @@ export class SubgraphInput extends SubgraphSlot {
         return
       }
 
-      this._widget ??= inputWidget
+      // Keep the widget reference in sync with the active upstream widget.
+      // Stale references can appear across nested promotion rebinds.
+      this._widget = inputWidget
       this.events.dispatch('input-connected', {
         input: slot,
         widget: inputWidget,
@@ -207,6 +209,8 @@ export class SubgraphInput extends SubgraphSlot {
 
   override disconnect(): void {
     super.disconnect()
+
+    this._widget = undefined
 
     this.events.dispatch('input-disconnected', { input: this })
   }

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import {
   demoteWidget,
@@ -17,10 +18,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
-import { DraggableList } from '@/scripts/ui/draggableList'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { cn } from '@/utils/tailwindUtil'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
@@ -29,9 +30,6 @@ const canvasStore = useCanvasStore()
 const promotionStore = usePromotionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
-
-const draggableList = ref<DraggableList | undefined>(undefined)
-const draggableItems = ref()
 
 const promotionEntries = computed(() => {
   const node = activeNode.value
@@ -195,59 +193,14 @@ function showRecommended() {
   }
 }
 
-function setDraggableState() {
-  draggableList.value?.dispose()
-  if (searchQuery.value || !draggableItems.value?.children?.length) return
-  draggableList.value = new DraggableList(
-    draggableItems.value,
-    '.draggable-item'
-  )
-  draggableList.value.applyNewItemsOrder = function () {
-    const reorderedItems = []
-
-    let oldPosition = -1
-    this.getAllItems().forEach((item, index) => {
-      if (item === this.draggableItem) {
-        oldPosition = index
-        return
-      }
-      if (!this.isItemToggled(item)) {
-        reorderedItems[index] = item
-        return
-      }
-      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
-      reorderedItems[newIndex] = item
-    })
-
-    for (let index = 0; index < this.getAllItems().length; index++) {
-      const item = reorderedItems[index]
-      if (typeof item === 'undefined') {
-        reorderedItems[index] = this.draggableItem
-      }
-    }
-    const newPosition = reorderedItems.indexOf(this.draggableItem)
-    const aw = activeWidgets.value
-    const [w] = aw.splice(oldPosition, 1)
-    aw.splice(newPosition, 0, w)
-    activeWidgets.value = aw
-  }
-}
-watch(filteredActive, () => {
-  setDraggableState()
-})
-
 onMounted(() => {
-  setDraggableState()
   if (activeNode.value) pruneDisconnected(activeNode.value)
-})
-onBeforeUnmount(() => {
-  draggableList.value?.dispose()
 })
 </script>
 
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <div class="px-4 pb-4 pt-1 flex gap-2 border-b border-interface-stroke">
+    <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
       <FormSearchInput v-model="searchQuery" />
     </div>
 
@@ -258,7 +211,7 @@ onBeforeUnmount(() => {
           filteredActive.length === 0 &&
           filteredCandidates.length === 0
         "
-        class="text-sm text-muted-foreground px-4 py-10 text-center"
+        class="px-4 py-10 text-center text-sm text-muted-foreground"
       >
         {{ $t('rightSidePanel.noneSearchDesc') }}
       </div>
@@ -268,31 +221,30 @@ onBeforeUnmount(() => {
         class="flex flex-col border-b border-interface-stroke"
       >
         <div
-          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
+          class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
         >
-          <div class="text-sm font-semibold uppercase line-clamp-1">
+          <div class="line-clamp-1 text-sm font-semibold uppercase">
             {{ $t('subgraphStore.shown') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
             @click.stop="hideAll"
           >
             {{ $t('subgraphStore.hideAll') }}</a
           >
         </div>
-        <div ref="draggableItems" class="pb-2 px-2 space-y-0.5 mt-0.5">
+        <DraggableList v-slot="{ dragClass }" v-model="activeWidgets">
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredActive"
             :key="toKey([node, widget])"
-            class="bg-comfy-menu-bg"
+            :class="cn(!searchQuery && dragClass, 'bg-comfy-menu-bg')"
             :node-title="node.title"
             :widget-name="widget.name"
-            :is-shown="true"
-            :is-draggable="!searchQuery"
             :is-physical="node.id === -1"
+            :is-draggable="!searchQuery"
             @toggle-visibility="demote([node, widget])"
           />
-        </div>
+        </DraggableList>
       </div>
 
       <div
@@ -300,19 +252,19 @@ onBeforeUnmount(() => {
         class="flex flex-col border-b border-interface-stroke"
       >
         <div
-          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
+          class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
         >
-          <div class="text-sm font-semibold uppercase line-clamp-1">
+          <div class="line-clamp-1 text-sm font-semibold uppercase">
             {{ $t('subgraphStore.hidden') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
             @click.stop="showAll"
           >
             {{ $t('subgraphStore.showAll') }}</a
           >
         </div>
-        <div class="pb-2 px-2 space-y-0.5 mt-0.5">
+        <div class="mt-0.5 space-y-0.5 px-2 pb-2">
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredCandidates"
             :key="toKey([node, widget])"
@@ -330,7 +282,7 @@ onBeforeUnmount(() => {
       >
         <Button
           size="sm"
-          class="rounded border-none px-3 py-0.5"
+          class="rounded-sm border-none px-3 py-0.5"
           @click.stop="showRecommended"
         >
           {{ $t('subgraphStore.showRecommended') }}

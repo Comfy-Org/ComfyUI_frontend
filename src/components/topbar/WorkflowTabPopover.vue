@@ -140,54 +140,65 @@ defineExpose({
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .workflow-preview-content {
-  @apply flex flex-col rounded-xl overflow-hidden;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
   max-width: var(--popover-width);
   background-color: var(--comfy-menu-bg);
   color: var(--fg-color);
 }
 
 .workflow-preview-thumbnail {
-  @apply relative p-2;
+  position: relative;
+  padding: calc(var(--spacing) * 2);
 }
 
 .workflow-preview-thumbnail img {
-  @apply shadow-md;
+  box-shadow: var(--shadow-md);
   background-color: color-mix(in srgb, var(--comfy-menu-bg) 70%, black);
 }
 
 .dark-theme .workflow-preview-thumbnail img {
-  @apply shadow-lg;
+  box-shadow: var(--shadow-lg);
 }
 
 .workflow-preview-footer {
-  @apply pt-1 pb-2 px-3;
+  padding-top: calc(var(--spacing) * 1);
+  padding-right: calc(var(--spacing) * 3);
+  padding-bottom: calc(var(--spacing) * 2);
+  padding-left: calc(var(--spacing) * 3);
 }
 
 .workflow-preview-name {
-  @apply block text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  line-height: var(--tw-leading, var(--text-sm--line-height));
+  font-weight: var(--font-weight-medium);
   color: var(--fg-color);
 }
 </style>
 
 <style>
-@reference '../../assets/css/style.css';
-
 .workflow-popover-fade {
   --p-popover-background: transparent;
   --p-popover-content-padding: 0;
-  @apply bg-transparent rounded-xl shadow-lg;
+  border-radius: var(--radius-xl);
+  background-color: transparent;
+  box-shadow: var(--shadow-lg);
   transition: opacity 0.15s ease-out !important;
 }
 
 .workflow-popover-fade.p-popover-flipped {
-  @apply -translate-y-full;
+  transform: translateY(-100%);
 }
 
 .dark-theme .workflow-popover-fade {
-  @apply shadow-2xl;
+  box-shadow: var(--shadow-2xl);
 }
 
 .workflow-popover-fade.p-popover::after,

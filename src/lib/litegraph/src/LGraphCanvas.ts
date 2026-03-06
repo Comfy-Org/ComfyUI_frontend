@@ -12,6 +12,7 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
+import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
 import type { LGraph } from './LGraph'
@@ -364,6 +365,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.canvas.dispatchEvent(new CustomEvent(type, { detail }))
   }
 
+  private _setCursor!: ReturnType<typeof createCursorCache>
+
   private _updateCursorStyle() {
     if (!this.state.shouldSetCursor) return
 
@@ -386,7 +389,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       cursor = 'grab'
     }
 
-    this.canvas.style.cursor = cursor
+    this._setCursor(cursor)
   }
 
   // Whether the canvas was previously being dragged prior to pressing space key.
@@ -1911,6 +1914,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.pointer.element = element
 
     if (!element) return
+    this._setCursor = createCursorCache(element)
 
     // TODO: classList.add
     element.className += ' lgraphcanvas'
@@ -2970,7 +2974,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
 
           // Set appropriate cursor for resize direction
-          this.canvas.style.cursor = cursors[resizeDirection]
+          this._setCursor(cursors[resizeDirection])
           return
         }
       }
@@ -3787,13 +3791,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return
   }
 
-  private _noItemsSelected(): void {
-    const event = new CustomEvent('litegraph:no-items-selected', {
-      bubbles: true
-    })
-    this.canvas.dispatchEvent(event)
-  }
-
   /**
    * process a key event
    */
@@ -3838,31 +3835,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.node_panel?.close()
         this.options_panel?.close()
         if (this.node_panel || this.options_panel) block_default = true
-      } else if (e.keyCode === 65 && e.ctrlKey) {
-        // select all Control A
-        this.selectItems()
-        block_default = true
-      } else if (e.keyCode === 67 && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
-        // copy
-        if (this.selected_nodes) {
-          this.copyToClipboard()
-          block_default = true
-        }
-      } else if (e.keyCode === 86 && (e.metaKey || e.ctrlKey)) {
-        // paste
-        this.pasteFromClipboard({ connectInputs: e.shiftKey })
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        // delete or backspace
-        // @ts-expect-error EventTarget.localName is not in standard types
-        if (e.target.localName != 'input' && e.target.localName != 'textarea') {
-          if (this.selectedItems.size === 0) {
-            this._noItemsSelected()
-            return
-          }
-
-          this.deleteSelected()
-          block_default = true
-        }
       }
 
       // TODO
@@ -6573,7 +6545,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const ySizeFix = opts.posSizeFix[1] * LiteGraph.NODE_SLOT_HEIGHT
         const nodeX = opts.position[0] + opts.posAdd[0] + xSizeFix
         const nodeY = opts.position[1] + opts.posAdd[1] + ySizeFix
-        const pos = [nodeX, nodeY]
+        const pos: [number, number] = [nodeX, nodeY]
         const newNode = LiteGraph.createNode(nodeTypeStr, nodeNewOpts?.title, {
           pos
         })

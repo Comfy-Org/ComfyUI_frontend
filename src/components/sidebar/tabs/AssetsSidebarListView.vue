@@ -2,7 +2,7 @@
   <div class="flex h-full flex-col">
     <div v-if="assetItems.length" class="px-2">
       <div
-        class="flex items-center p-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
+        class="flex items-center p-2 font-inter text-sm/normal font-normal text-muted-foreground"
       >
         {{
           t(
@@ -56,6 +56,8 @@
             @mouseleave="onAssetLeave(item.asset.id)"
             @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
             @click.stop="emit('select-asset', item.asset, selectableAssets)"
+            @dblclick.stop="emit('preview-asset', item.asset)"
+            @preview-click="emit('preview-asset', item.asset)"
             @stack-toggle="void toggleStack(item.asset)"
           >
             <template v-if="hoveredAssetId === item.asset.id" #actions>
@@ -116,6 +118,7 @@ const assetsStore = useAssetsStore()
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem, assets?: AssetItem[]): void
+  (e: 'preview-asset', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
 }>()
@@ -186,7 +189,7 @@ function getAssetCardClass(selected: boolean): string {
     'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
     'cursor-pointer',
     selected &&
-      'bg-secondary-background-hover ring-1 ring-inset ring-modal-card-border-highlighted'
+      'bg-secondary-background-hover ring-1 ring-modal-card-border-highlighted ring-inset'
   )
 }
 

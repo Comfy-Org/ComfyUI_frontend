@@ -28,7 +28,7 @@
             :complete-on-focus="false"
             :delay="8"
             option-label="query"
-            class="w-full min-w-md max-w-lg"
+            class="w-full max-w-lg min-w-md"
             :pt="{
               root: { class: 'relative' },
               pcInputText: {
@@ -55,7 +55,7 @@
           >
             <template #dropdownicon>
               <i
-                class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                class="pi pi-search absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
               />
             </template>
           </AutoCompletePlus>
@@ -125,7 +125,7 @@
     </template>
 
     <template #content>
-      <div v-if="isLoading" class="scrollbar-hide h-full w-full overflow-auto">
+      <div v-if="isLoading" class="size-full scrollbar-hide overflow-auto">
         <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
       </div>
       <NoResultsPlaceholder
@@ -133,7 +133,7 @@
         :title="emptyStateTitle"
         :message="emptyStateMessage"
       />
-      <div v-else class="h-full w-full" @click="handleGridContainerClick">
+      <div v-else class="size-full" @click="handleGridContainerClick">
         <VirtualGrid
           id="results-grid"
           :items="resultsWithKeys"
@@ -165,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
+import { until, whenever } from '@vueuse/core'
 import { merge, stubTrue } from 'es-toolkit/compat'
 import type { AutoCompleteOptionSelectEvent } from 'primevue/autocomplete'
 import {
@@ -211,8 +211,9 @@ import { useManagerState } from '@/workbench/extensions/manager/composables/useM
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-const { initialTab, onClose } = defineProps<{
+const { initialTab, initialPackId, onClose } = defineProps<{
   initialTab?: ManagerTab
+  initialPackId?: string
   onClose: () => void
 }>()
 
@@ -347,8 +348,14 @@ const {
   sortOptions
 } = useRegistrySearch({
   initialSortField: initialState.sortField,
-  initialSearchMode: initialState.searchMode,
-  initialSearchQuery: initialState.searchQuery
+  initialSearchMode:
+    initialPackId && initialTabId !== ManagerTab.Missing
+      ? 'packs'
+      : initialState.searchMode,
+  initialSearchQuery:
+    initialTabId === ManagerTab.Missing
+      ? ''
+      : (initialPackId ?? initialState.searchQuery)
 })
 pageNumber.value = 0
 
@@ -474,6 +481,19 @@ watch(
     }
   }
 )
+
+// Auto-select the pack matching initialPackId once
+if (initialPackId) {
+  until(resultsWithKeys)
+    .toMatch((packs) => packs.some((p) => p.id === initialPackId))
+    .then((packs) => {
+      const target = packs.find((p) => p.id === initialPackId)
+      if (target && selectedNodePacks.value.length === 0) {
+        selectedNodePacks.value = [target]
+        isRightPanelOpen.value = true
+      }
+    })
+}
 
 const getLoadingCount = () => {
   switch (selectedTab.value?.id) {

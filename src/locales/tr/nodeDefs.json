@@ -696,8 +696,7 @@
         "tooltip": "sequential_image_generation='auto' olduğunda oluşturulacak maksimum resim sayısı. Toplam resim sayısı (girdi + oluşturulan) 15'i geçemez."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -2135,6 +2134,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "description": "Sağlanan sınırlayıcı kutulara göre giriş görüntü grubundan bölgeleri kırp ve yeniden boyutlandır.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "sınırlayıcı_kutular"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "output_height": {
+        "name": "çıktı_yüksekliği",
+        "tooltip": "Her kırpmanın yeniden boyutlandırılacağı yükseklik."
+      },
+      "output_width": {
+        "name": "çıktı_genişliği",
+        "tooltip": "Her kırpmanın yeniden boyutlandırılacağı genişlik."
+      },
+      "padding": {
+        "name": "dolgu",
+        "tooltip": "Kırpmadan önce sınırlayıcı kutunun her bir kenarına piksel cinsinden eklenen ekstra dolgu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Tüm kırpmalar tek bir görüntü grubunda birleştirilir."
       }
     }
   },
@@ -3702,6 +3730,60 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "Google Vertex API üzerinden senkron olarak görseller oluşturun veya düzenleyin.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' olarak ayarlanırsa, giriş görselinizin en-boy oranı kullanılır; görsel yoksa genellikle 16:9 kare oluşturulur."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı dosya(lar). Gemini Generate Content Input Files düğümünden gelen girdileri kabul eder."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "İsteğe bağlı referans görsel(ler)i. Birden fazla görsel eklemek için Batch Images düğümünü kullanın (en fazla 14)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Oluşturulacak görseli veya uygulanacak düzenlemeleri tanımlayan metin istemi. Modelin uyması gereken kısıtlamalar, stiller veya detayları ekleyin."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Hedef çıktı çözünürlüğü. 2K/4K için yerel Gemini yükselticisi kullanılır."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed belirli bir değere sabitlendiğinde, model tekrarlanan isteklerde aynı yanıtı vermeye çalışır. Deterministik çıktı garanti edilmez. Ayrıca, model veya parametre ayarlarını (ör. sıcaklık) değiştirmek, aynı seed değeriyle bile yanıtın farklı olmasına neden olabilir. Varsayılan olarak rastgele bir seed değeri kullanılır."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Bir yapay zekanın davranışını belirleyen temel talimatlar."
+      },
+      "thinking_level": {
+        "name": "thinking_level"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Google'ın Gemini AI modeli ile metin yanıtları oluşturun. Daha alakalı ve anlamlı yanıtlar oluşturmak için bağlam olarak birden fazla girdi türü (metin, görseller, ses, video) sağlayabilirsiniz.",
     "display_name": "Google Gemini",
@@ -3865,6 +3947,10 @@
     "description": "Mevcut bir görüntüyü metin istemine göre değiştir",
     "display_name": "Grok Görüntü Düzenle",
     "inputs": {
+      "aspect_ratio": {
+        "name": "en-boy oranı",
+        "tooltip": "Yalnızca birden fazla görsel, görsel girişine bağlandığında kullanılabilir."
+      },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
@@ -3916,6 +4002,9 @@
       "prompt": {
         "name": "istem",
         "tooltip": "Görüntüyü oluşturmak için kullanılan metin istemi"
+      },
+      "resolution": {
+        "name": "çözünürlük"
       },
       "seed": {
         "name": "tohum",
@@ -4749,6 +4838,28 @@
       }
     }
   },
+  "ImageMergeTileList": {
+    "display_name": "Döşeme Listesini Görüntüye Birleştir",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageOnlyCheckpointLoader": {
     "display_name": "Sadece Görüntü Kontrol Noktası Yükleyici (img2vid modeli)",
     "inputs": {
@@ -5327,6 +5438,39 @@
       }
     }
   },
+  "KlingAvatarNode": {
+    "description": "Tek bir fotoğraf ve bir ses dosyasından yayın tarzı dijital insan videoları oluşturun.",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Avatar referans görseli. Genişlik ve yükseklik en az 300px olmalıdır. En-boy oranı 1:2.5 ile 2.5:1 arasında olmalıdır."
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Avatarın hareketlerini, duygularını ve kamera hareketlerini tanımlamak için isteğe bağlı komut."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "Ses girişi. Süresi 2 ile 300 saniye arasında olmalıdır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingCameraControlI2VNode": {
     "description": "Gerçek dünya sinematografisini simüle eden profesyonel kamera hareketleriyle durağan görüntüleri sinematik videolara dönüştürün. Orijinal görüntünüze odaklanırken yakınlaştırma, döndürme, kaydırma, eğme ve birinci şahıs görünümü dahil olmak üzere sanal kamera eylemlerini kontrol edin.",
     "display_name": "Kling Görüntüden Videoya (Kamera Kontrolü)",
@@ -5716,6 +5860,9 @@
       },
       "mode": {
         "name": "mod"
+      },
+      "model": {
+        "name": "model"
       },
       "prompt": {
         "name": "istem"
@@ -12665,6 +12812,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "En-boy oranı ve megapiksel hedefinden genişlik ve yükseklik hesaplayın. Boş Latent Görüntü boyutlarını ayarlamak için kullanışlıdır.",
+    "display_name": "Çözünürlük Seçici",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en_boy_orani",
+        "tooltip": "Çıktı boyutları için en-boy oranı."
+      },
+      "megapixels": {
+        "name": "megapiksel",
+        "tooltip": "Hedef toplam megapiksel. 1,0 MP ≈ 1024×1024 (kare için)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "genislik",
+        "tooltip": "Piksel cinsinden hesaplanan genişlik (8'in katı)."
+      },
+      "1": {
+        "name": "yukseklik",
+        "tooltip": "Piksel cinsinden hesaplanan yükseklik (8'in katı)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
     "display_name": "Rodin 3D Oluştur - Detay Oluştur",
@@ -12921,6 +13092,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "gövde_çiz"
+      },
+      "draw_face": {
+        "name": "yüzü_çiz"
+      },
+      "draw_feet": {
+        "name": "ayakları_çiz"
+      },
+      "draw_hands": {
+        "name": "elleri_çiz"
+      },
+      "face_point_size": {
+        "name": "yüz_nokta_boyutu"
+      },
+      "keypoints": {
+        "name": "anahtar_noktalar"
+      },
+      "score_threshold": {
+        "name": "puan_eşiği"
+      },
+      "stick_width": {
+        "name": "çizgi_genişliği"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "kare_zorla",
+        "tooltip": "Kırpma bölgesinin her zaman kare olması için kısa olan kutu eksenini genişlet."
+      },
+      "keypoints": {
+        "name": "anahtar_noktalar"
+      },
+      "scale": {
+        "name": "ölçek",
+        "tooltip": "Her tespit edilen yüzün etrafındaki sınırlayıcı kutu alanı için çarpan."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "Her kare için yüz sınırlayıcı kutuları, SDPoseKeypointExtractor bboxes girişiyle uyumlu."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "SDPose modeli ile görüntülerden poz anahtar noktalarını çıkar: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "toplu_boyut"
+      },
+      "bboxes": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "Daha doğru tespitler için isteğe bağlı sınırlayıcı kutular. Çoklu kişi tespiti için gereklidir."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "anahtar_noktalar",
+        "tooltip": "OpenPose çerçeve formatında anahtar noktalar (canvas_genişliği, canvas_yüksekliği, kişiler)"
       }
     }
   },
@@ -13998,6 +14253,29 @@
       },
       "1": {
         "name": "sağ",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "Bir görüntüyü, belirtilen örtüşme ile toplu bir döşeme listesine böler.",
+    "display_name": "Görüntüyü Döşeme Listesine Böl",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -17886,6 +18164,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "toplu_boyutu"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "pose_end": {
+        "name": "poz_bitişi",
+        "tooltip": "Poz koşullandırmasının biteceği adım."
+      },
+      "pose_start": {
+        "name": "poz_başlangıcı",
+        "tooltip": "Poz koşullandırmasının başlayacağı adım."
+      },
+      "pose_strength": {
+        "name": "poz_gücü",
+        "tooltip": "Poz latentinin gücü."
+      },
+      "pose_video": {
+        "name": "poz_videosu",
+        "tooltip": "Poz koşullandırması için kullanılan video. Ana videonun çözünürlüğünün yarısına düşürülecek."
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "reference_image": {
+        "name": "referans_görsel"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Üretim boyutunda boş latent."
       }
     }
   },

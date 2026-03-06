@@ -9,7 +9,7 @@
       v-if="isLoadingVersions || isQueueing"
       class="flex flex-col items-center py-4 text-center text-muted"
     >
-      <ProgressSpinner class="mb-2 h-8 w-8" />
+      <ProgressSpinner class="mb-2 size-8" />
       {{ $t('manager.loadingVersions') }}
     </div>
     <div v-else-if="versionOptions.length === 0" class="py-2">

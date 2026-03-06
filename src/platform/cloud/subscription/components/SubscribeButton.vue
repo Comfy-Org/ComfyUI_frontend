@@ -2,15 +2,7 @@
   <Button
     :size
     :disabled="disabled"
-    variant="primary"
-    :style="
-      variant === 'gradient'
-        ? {
-            background: 'var(--color-subscription-button-gradient)',
-            color: 'var(--color-white)'
-          }
-        : undefined
-    "
+    :variant="buttonVariant === 'gradient' ? 'gradient' : 'primary'"
     :class="cn('font-bold', fluid && 'w-full')"
     @click="handleSubscribe"
   >
@@ -24,19 +16,20 @@ import { onBeforeUnmount, ref, watch } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
   size = 'lg',
   fluid = true,
-  variant = 'default',
+  buttonVariant = 'default',
   label,
   disabled = false
 } = defineProps<{
   label?: string
   size?: 'sm' | 'lg'
-  variant?: 'default' | 'gradient'
+  buttonVariant?: 'default' | 'gradient'
   fluid?: boolean
   disabled?: boolean
 }>()
@@ -46,6 +39,7 @@ const emit = defineEmits<{
 }>()
 
 const { isActiveSubscription, showSubscriptionDialog } = useBillingContext()
+const { subscriptionTier } = useSubscription()
 const isAwaitingStripeSubscription = ref(false)
 
 watch(
@@ -60,7 +54,9 @@ watch(
 
 const handleSubscribe = () => {
   if (isCloud) {
-    useTelemetry()?.trackSubscription('subscribe_clicked')
+    useTelemetry()?.trackSubscription('subscribe_clicked', {
+      current_tier: subscriptionTier.value?.toLowerCase()
+    })
   }
   isAwaitingStripeSubscription.value = true
   showSubscriptionDialog()

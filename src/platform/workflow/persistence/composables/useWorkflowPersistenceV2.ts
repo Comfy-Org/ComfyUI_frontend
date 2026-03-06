@@ -33,6 +33,7 @@ import { clearAllV2Storage } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
+import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -44,6 +45,7 @@ export function useWorkflowPersistenceV2() {
   const settingStore = useSettingStore()
   const route = useRoute()
   const router = useRouter()
+  const sharedWorkflowUrlLoader = useSharedWorkflowUrlLoader()
   const templateUrlLoader = useTemplateUrlLoader()
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const draftStore = useWorkflowDraftStoreV2()
@@ -183,6 +185,10 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
+  const loadSharedWorkflowFromUrlIfPresent = async () => {
+    return await sharedWorkflowUrlLoader.loadSharedWorkflowFromUrl()
+  }
+
   // Setup watchers
   watch(
     () => workflowStore.activeWorkflow?.key,
@@ -279,6 +285,7 @@ export function useWorkflowPersistenceV2() {
 
   return {
     initializeWorkflow,
+    loadSharedWorkflowFromUrlIfPresent,
     loadTemplateFromUrlIfPresent,
     restoreWorkflowTabsState
   }

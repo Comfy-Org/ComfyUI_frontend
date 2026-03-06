@@ -104,15 +104,13 @@ test.describe('Missing models warning', () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('missing/missing_models')
 
-    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
-    await expect(missingModelsWarning).toBeVisible()
+    const dialogTitle = comfyPage.page.getByText(
+      'This workflow is missing models'
+    )
+    await expect(dialogTitle).toBeVisible()
 
-    const downloadButton = missingModelsWarning.getByText('Download')
-    await expect(downloadButton).toBeVisible()
-
-    // Check that the copy URL button is also visible for Desktop environment
-    const copyUrlButton = missingModelsWarning.getByText('Copy URL')
-    await expect(copyUrlButton).toBeVisible()
+    const downloadAllButton = comfyPage.page.getByText('Download all')
+    await expect(downloadAllButton).toBeVisible()
   })
 
   test('Should display a warning when missing models are found in node properties', async ({
@@ -123,15 +121,13 @@ test.describe('Missing models warning', () => {
       'missing/missing_models_from_node_properties'
     )
 
-    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
-    await expect(missingModelsWarning).toBeVisible()
+    const dialogTitle = comfyPage.page.getByText(
+      'This workflow is missing models'
+    )
+    await expect(dialogTitle).toBeVisible()
 
-    const downloadButton = missingModelsWarning.getByText('Download')
-    await expect(downloadButton).toBeVisible()
-
-    // Check that the copy URL button is also visible for Desktop environment
-    const copyUrlButton = missingModelsWarning.getByText('Copy URL')
-    await expect(copyUrlButton).toBeVisible()
+    const downloadAllButton = comfyPage.page.getByText('Download all')
+    await expect(downloadAllButton).toBeVisible()
   })
 
   test('Should not display a warning when no missing models are found', async ({
@@ -172,8 +168,10 @@ test.describe('Missing models warning', () => {
 
     await comfyPage.workflow.loadWorkflow('missing/missing_models')
 
-    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
-    await expect(missingModelsWarning).not.toBeVisible()
+    const dialogTitle = comfyPage.page.getByText(
+      'This workflow is missing models'
+    )
+    await expect(dialogTitle).not.toBeVisible()
   })
 
   test('Should not display warning when model metadata exists but widget values have changed', async ({
@@ -186,8 +184,10 @@ test.describe('Missing models warning', () => {
     )
 
     // The missing models warning should NOT appear
-    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
-    await expect(missingModelsWarning).not.toBeVisible()
+    const dialogTitle = comfyPage.page.getByText(
+      'This workflow is missing models'
+    )
+    await expect(dialogTitle).not.toBeVisible()
   })
 
   // Flaky test after parallelization
@@ -199,13 +199,15 @@ test.describe('Missing models warning', () => {
     // https://github.com/Comfy-Org/ComfyUI_devtools/blob/main/__init__.py
     await comfyPage.workflow.loadWorkflow('missing/missing_models')
 
-    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
-    await expect(missingModelsWarning).toBeVisible()
+    const dialogTitle = comfyPage.page.getByText(
+      'This workflow is missing models'
+    )
+    await expect(dialogTitle).toBeVisible()
 
-    const downloadButton = comfyPage.page.getByText('Download')
-    await expect(downloadButton).toBeVisible()
+    const downloadAllButton = comfyPage.page.getByText('Download all')
+    await expect(downloadAllButton).toBeVisible()
     const downloadPromise = comfyPage.page.waitForEvent('download')
-    await downloadButton.click()
+    await downloadAllButton.click()
 
     const download = await downloadPromise
     expect(download.suggestedFilename()).toBe('fake_model.safetensors')
@@ -229,12 +231,13 @@ test.describe('Missing models warning', () => {
     test('Should disable warning dialog when checkbox is checked', async ({
       comfyPage
     }) => {
-      await checkbox.click()
       const changeSettingPromise = comfyPage.page.waitForRequest(
         '**/api/settings/Comfy.Workflow.ShowMissingModelsWarning'
       )
-      await closeButton.click()
+      await checkbox.click()
       await changeSettingPromise
+
+      await closeButton.click()
 
       const settingValue = await comfyPage.settings.getSetting(
         'Comfy.Workflow.ShowMissingModelsWarning'

@@ -1,10 +1,10 @@
 <template>
   <div
     ref="rootEl"
-    class="relative overflow-hidden h-full w-full bg-neutral-900"
+    class="relative size-full overflow-hidden bg-neutral-900"
   >
-    <div class="p-terminal rounded-none h-full w-full p-2">
-      <div ref="terminalEl" class="h-full terminal-host" />
+    <div class="p-terminal size-full rounded-none p-2">
+      <div ref="terminalEl" class="terminal-host h-full" />
     </div>
     <Button
       v-tooltip.left="{
@@ -16,7 +16,7 @@
       size="small"
       :class="
         cn('absolute top-2 right-8 transition-opacity', {
-          'opacity-0 pointer-events-none select-none': !isHovered
+          'pointer-events-none opacity-0 select-none': !isHovered
         })
       "
       :aria-label="tooltipText"
@@ -101,13 +101,15 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@reference '../../../../assets/css/style.css';
-
+/* xterm renders its internal DOM outside Vue templates, so :deep selectors are
+ * required to style those generated nodes.
+ */
 :deep(.p-terminal) .xterm {
-  @apply overflow-hidden;
+  overflow: hidden;
 }
 
 :deep(.p-terminal) .xterm-screen {
-  @apply bg-neutral-900 overflow-hidden;
+  overflow: hidden;
+  background-color: var(--color-neutral-900);
 }
 </style>

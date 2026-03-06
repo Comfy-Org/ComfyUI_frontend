@@ -50,7 +50,7 @@
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
-        class="pb-1 px-2 2xl:px-4"
+        class="px-2 pb-1 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
       />
       <Divider type="dashed" class="my-2" />
@@ -95,6 +95,7 @@
           :toggle-stack="toggleListViewStack"
           :asset-type="activeTab"
           @select-asset="handleAssetSelect"
+          @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />
@@ -117,7 +118,7 @@
       <div
         v-if="hasSelection"
         ref="footerRef"
-        class="flex gap-1 h-18 w-full items-center justify-between"
+        class="flex h-18 w-full items-center justify-between gap-1"
       >
         <div class="flex-1 pl-4">
           <div ref="selectionCountButtonRef" class="inline-flex w-48">
@@ -136,7 +137,7 @@
             </Button>
           </div>
         </div>
-        <div class="flex shrink gap-2 pr-4 items-center-safe justify-end-safe">
+        <div class="flex shrink items-center-safe justify-end-safe gap-2 pr-4">
           <template v-if="isCompact">
             <!-- Compact mode: Icon only -->
             <Button
@@ -216,10 +217,6 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-// Lazy-loaded to avoid pulling THREE.js into the main bundle
-const Load3dViewerContent = defineAsyncComponent(
-  () => import('@/components/load3d/Load3dViewerContent.vue')
-)
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
@@ -250,6 +247,10 @@ import {
   isPreviewableMediaType
 } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
+
+const Load3dViewerContent = defineAsyncComponent(
+  () => import('@/components/load3d/Load3dViewerContent.vue')
+)
 
 const { t } = useI18n()
 

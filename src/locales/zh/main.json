@@ -225,6 +225,7 @@
     "login": {
       "andText": "和",
       "backToLogin": "返回登录",
+      "backToSocialLogin": "改用 Google 或 Github 注册",
       "confirmPasswordLabel": "确认密码",
       "confirmPasswordPlaceholder": "再次输入相同的密码",
       "didntReceiveEmail": "没有收到邮件？请联系我们：",
@@ -233,6 +234,9 @@
       "failed": "登录失败",
       "forgotPassword": "忘记密码？",
       "forgotPasswordError": "发送重置密码邮件失败",
+      "freeTierBadge": "可享免费套餐",
+      "freeTierDescription": "使用 Google 注册，每月可获得 {credits} 免费积分。无需绑定银行卡。",
+      "freeTierDescriptionGeneric": "使用 Google 注册，每月可获得免费积分。无需绑定银行卡。",
       "insecureContextWarning": "此连接不安全（HTTP）—如果继续登录，您的凭据可能会被攻击者拦截。",
       "loginButton": "登录",
       "loginWithGithub": "使用Github登录",
@@ -251,11 +255,13 @@
       "sendResetLink": "发送重置链接",
       "signInOrSignUp": "登录 / 注册",
       "signUp": "注册",
+      "signUpFreeTierPromo": "新用户？使用 Google {signUp}，每月可获得 {credits} 免费积分。",
       "success": "登录成功",
       "termsLink": "使用条款",
       "termsText": "点击“下一步”或“注册”即表示您同意我们的",
       "title": "登录您的账户",
       "useApiKey": "Comfy API 密钥",
+      "useEmailInstead": "改用邮箱",
       "userAvatar": "用户头像"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "已经有账户了？",
       "emailLabel": "电子邮件",
+      "emailNotEligibleForFreeTier": "邮箱注册不支持免费套餐。",
       "emailPlaceholder": "输入您的电子邮件",
       "passwordLabel": "密码",
       "passwordPlaceholder": "输入新密码",
@@ -293,6 +300,9 @@
       "signUpWithGoogle": "使用Google注册",
       "title": "创建一个账户"
     }
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "billingOperation": {
     "subscriptionFailed": "订阅更新失败",
@@ -315,8 +325,44 @@
     "deleteBlueprint": "删除蓝图",
     "deleteWorkflow": "删除工作流",
     "duplicate": "复制",
+    "enterAppMode": "进入应用模式",
+    "enterBuilderMode": "进入应用构建器",
     "enterNewName": "输入新名称",
-    "missingNodesWarning": "工作流包含不支持的节点（红色突出显示）。"
+    "exitAppMode": "退出应用模式",
+    "missingNodesWarning": "工作流包含不支持的节点（红色突出显示）。",
+    "workflowActions": "工作流操作"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "退出应用构建器"
+  },
+  "builderToolbar": {
+    "app": "应用",
+    "appDescription": "默认以应用方式打开",
+    "arrange": "预览",
+    "arrangeDescription": "查看应用布局",
+    "connectOutput": "连接输出",
+    "connectOutputBody1": "您的应用需要至少连接一个输出，才能保存。",
+    "connectOutputBody2": "切换到“选择”步骤，点击输出节点将其添加到此处。",
+    "defaultModeAppliedAppBody": "此工作流将从现在起默认以应用模式打开。",
+    "defaultModeAppliedAppPrompt": "你想现在查看吗？",
+    "defaultModeAppliedGraphBody": "此工作流将从现在起默认以节点图模式打开。",
+    "defaultModeAppliedGraphPrompt": "你还想查看应用吗？",
+    "defaultModeAppliedTitle": "设置成功",
+    "defaultView": "设置默认视图",
+    "defaultViewDescription": "选择打开方式",
+    "defaultViewLabel": "默认情况下，此工作流将以以下方式打开：",
+    "defaultViewTitle": "为此工作流设置默认视图",
+    "emptyWorkflowPrompt": "要使用模板开始吗？",
+    "emptyWorkflowTitle": "此工作流没有节点",
+    "inputs": "输入",
+    "inputsDescription": "选择输入",
+    "label": "应用构建器",
+    "nodeGraph": "节点图",
+    "nodeGraphDescription": "默认以节点图方式打开",
+    "outputs": "输出",
+    "outputsDescription": "选择输出",
+    "switchToOutputs": "切换到输出",
+    "viewApp": "查看应用"
   },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
@@ -661,6 +707,7 @@
     "OPENAI_INPUT_FILES": "OpenAI输入文件",
     "PHOTOMAKER": "PhotoMaker",
     "PIXVERSE_TEMPLATE": "Pixverse 模板",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "Recraft 颜色",
     "RECRAFT_CONTROLS": "Recraft 控件",
     "RECRAFT_V3_STYLE": "Recraft V3 风格",
@@ -819,6 +866,7 @@
     "clearFilters": "清除筛选",
     "close": "关闭",
     "closeDialog": "关闭对话框",
+    "collapseAll": "全部折叠",
     "color": "颜色",
     "comfy": "舒适",
     "comfyOrgLogoAlt": "ComfyOrg 徽标",
@@ -879,6 +927,7 @@
     "enableSelected": "启用选中项",
     "enabled": "已启用",
     "enabling": "启用中",
+    "enter": "进入",
     "enterBaseName": "输入基础名称",
     "enterNewName": "输入新名称",
     "enterNewNamePrompt": "输入新名称：",
@@ -887,6 +936,7 @@
     "errorLoadingImage": "图片加载出错",
     "errorLoadingVideo": "视频加载出错",
     "essentials": "基础",
+    "expandAll": "全部展开",
     "experimental": "测试版",
     "export": "导出",
     "extensionName": "扩展名称",
@@ -919,6 +969,7 @@
     "imageUrl": "图片网址",
     "import": "导入",
     "inProgress": "进行中",
+    "inSubgraph": "在子图 '{name}' 中",
     "increment": "增加",
     "info": "节点信息",
     "input": "输入",
@@ -986,6 +1037,7 @@
     "or": "或",
     "output": "输出",
     "overwrite": "覆盖",
+    "partner": "合作伙伴",
     "playPause": "开启/暂停",
     "playRecording": "播放录音",
     "playbackSpeed": "播放速度",
@@ -996,6 +1048,7 @@
     "progressCountOf": "共",
     "queued": "已执行",
     "ready": "就绪",
+    "recents": "最近使用",
     "reconnected": "已重新连接",
     "reconnecting": "重新连接中",
     "refresh": "刷新",
@@ -1076,6 +1129,7 @@
     "updated": "已更新",
     "updating": "更新中",
     "upload": "上传",
+    "uploadAlreadyInProgress": "上传已在进行中",
     "usageHint": "使用提示",
     "use": "使用",
     "user": "用户",
@@ -1149,6 +1203,8 @@
     "star": "星星"
   },
   "imageCompare": {
+    "batchLabelA": "A：",
+    "batchLabelB": "B：",
     "noImages": "没有可以对比的图像"
   },
   "imageCrop": {
@@ -1282,20 +1338,63 @@
     "helpFix": "帮助修复这个"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "应用构建器",
+      "apps": "应用",
+      "appsEmptyMessage": "已保存的应用会显示在这里。\n点击下方开始构建你的第一个应用。",
+      "enterAppMode": "进入应用模式"
+    },
+    "arrange": {
+      "atLeastOne": "至少一个",
+      "connectAtLeastOne": "请连接{atLeastOne}个输出节点，以便用户在运行后查看结果。",
+      "noOutputs": "尚未添加输出",
+      "outputExamples": "示例：“保存图像”或“保存视频”",
+      "outputs": "输出",
+      "resultsLabel": "运行此应用后，所选输出节点生成的结果将在此显示",
+      "switchToOutputs": "切换到“输出”步骤，并点击输出节点将其添加到此处。",
+      "switchToOutputsButton": "切换到输出"
+    },
+    "backToWorkflow": "返回工作流",
     "beta": "App 模式测试版 - 提供反馈",
+    "builder": {
+      "exit": "退出构建器",
+      "exitConfirmMessage": "您有未保存的更改将会丢失\n确定不保存直接退出吗？",
+      "exitConfirmTitle": "退出应用构建器？",
+      "inputsDesc": "用户可通过这些输入项进行交互和调整，以生成输出结果。",
+      "inputsExample": "示例：“加载图像”、“文本提示”、“步数”",
+      "noInputs": "尚未添加输入项",
+      "noOutputs": "尚未添加输出节点",
+      "outputsDesc": "请至少连接一个输出节点，用户运行后才能看到结果。",
+      "outputsExample": "示例：“保存图像”或“保存视频”",
+      "promptAddInputs": "点击节点参数，将其添加为输入项",
+      "promptAddOutputs": "点击输出节点，将其添加到此处。这些将作为生成结果。",
+      "title": "应用构建模式",
+      "unknownWidget": "组件不可见"
+    },
     "downloadAll": "全部下载",
     "dragAndDropImage": "拖拽图片到此处",
+    "emptyWorkflowExplanation": "你的工作流为空。你需要先添加一些节点，才能开始构建应用。",
+    "enterNodeGraph": "进入节点图",
+    "giveFeedback": "提供反馈",
     "graphMode": "图形模式",
     "linearMode": "App 模式",
+    "loadTemplate": "加载模板",
+    "mobileControls": "编辑与运行",
+    "queue": {
+      "clear": "清空队列",
+      "clickToClear": "点击清空队列"
+    },
     "rerun": "重新运行",
     "reuseParameters": "复用参数",
     "runCount": "运行次数：",
+    "viewJob": "查看任务",
     "welcome": {
-      "intro": "简化视图，隐藏节点图，让你专注于创作。",
-      "layout": "左侧显示你生成的图像、视频和输出。右侧只保留所需的控制项。所有复杂内容都被隐藏。",
+      "buildApp": "构建应用",
+      "controls": "输出显示在底部，控制项在右侧。其他内容都不会干扰您。",
+      "getStarted": "点击 {runButton} 开始。",
+      "message": "简化视图，隐藏节点图，让您专注于创作。",
       "sharing": "分享很简单：创建工作流，打开应用模式，右键点击标签页并导出。当他人打开你的文件时，会直接进入这个简洁视图。你可以将强大的工作流作为简单工具分享，无需理解节点图。",
-      "title": "欢迎使用应用模式",
-      "widget": "如果你想控制显示哪些设置，将顶层节点转换为子图，然后在上方工具箱中使用控件提升，选择要暴露的内容。"
+      "title": "欢迎使用应用模式"
     }
   },
   "load3d": {
@@ -1504,6 +1603,9 @@
     "nodePack": "节点包",
     "nodePackInfo": "节点包信息",
     "notAvailable": "不可用",
+    "packInstall": {
+      "nodeIdRequired": "安装需要节点 ID"
+    },
     "packsSelected": "选定的包",
     "repository": "仓库",
     "restartToApplyChanges": "要应用更改，请重新启动ComfyUI",
@@ -1661,6 +1763,7 @@
     "disabled": "禁用",
     "disabledTooltip": "工作流将不会自动执行",
     "execute": "执行",
+    "fullscreen": "全屏",
     "help": "说明",
     "helpAndFeedback": "帮助与反馈",
     "hideMenu": "隐藏菜单",
@@ -1808,7 +1911,8 @@
     "Workflows": "工作流",
     "Zoom In": "放大画面",
     "Zoom Out": "缩小画面",
-    "Zoom to fit": "缩放以适应"
+    "Zoom to fit": "缩放以适应",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "节点颜色",
@@ -1818,11 +1922,19 @@
     "showLinks": "显示连接"
   },
   "missingModelsDialog": {
+    "acceptTerms": "接受条款",
+    "customModelsInstruction": "您需要手动查找并下载这些模型。请在网上搜索（如 Civitai 或 Hugging Face），或联系原始工作流提供者。",
+    "customModelsWarning": "其中一些是我们无法识别的自定义模型。",
+    "description": "此工作流需要您尚未下载的模型。",
     "doNotAskAgain": "不再显示此消息",
-    "missingModels": "缺少模型",
-    "missingModelsMessage": "加载工作流时，未找到以下模型",
+    "downloadAll": "全部下载",
+    "downloadAvailable": "下载可用项",
+    "footerDescription": "请下载并将这些模型放入正确的文件夹。\n画布上缺少模型的节点会以红色高亮显示。",
+    "gotIt": "好的，知道了",
     "reEnableInSettings": "可在{link}中重新启用",
-    "reEnableInSettingsLink": "设置"
+    "reEnableInSettingsLink": "设置",
+    "title": "此工作流缺少模型",
+    "totalSize": "总下载大小："
   },
   "missingNodes": {
     "cloud": {
@@ -1844,6 +1956,14 @@
       "label": "预览版",
       "tooltip": "您正在使用 ComfyUI 的夜间版本。请使用反馈按钮分享您对这些功能的看法。"
     }
+  },
+  "nightlySurvey": {
+    "accept": "好的，我来帮忙！",
+    "description": "您一直在使用此功能。能否花一点时间分享您的反馈？",
+    "dontAskAgain": "不再询问",
+    "loadError": "加载问卷失败。请稍后再试。",
+    "notNow": "暂不",
+    "title": "帮助我们改进"
   },
   "nodeCategories": {
     "": "",
@@ -1986,7 +2106,10 @@
     "openNodeManager": "打开节点管理器",
     "quickFixAvailable": "可用快速修复",
     "redHighlight": "红色",
+    "replaceAll": "全部替换",
+    "replaceAllWarning": "将替换此组中所有可用节点。",
     "replaceFailed": "替换节点失败",
+    "replaceNode": "替换节点",
     "replaceSelected": "替换已选（{count}）",
     "replaceWarning": "此操作将永久修改工作流。如不确定，请先保存副本。",
     "replaceable": "可替换",
@@ -1994,7 +2117,11 @@
     "replacedAllNodes": "已替换 {count} 种节点类型",
     "replacedNode": "已替换节点：{nodeType}",
     "selectAll": "全选",
-    "skipForNow": "暂时跳过"
+    "skipForNow": "暂时跳过",
+    "swapNodesGuide": "以下节点可以自动替换为兼容的替代项。",
+    "swapNodesTitle": "交换节点",
+    "unknownNode": "未知",
+    "willBeReplacedBy": "此节点将被替换为："
   },
   "nodeTemplates": {
     "enterName": "输入名称",
@@ -2012,6 +2139,19 @@
       "windows": "Windows (支持 CUDA 的 Nvidia GPU)"
     },
     "title": "您的设备不受支持"
+  },
+  "painter": {
+    "background": "背景",
+    "brush": "画笔",
+    "clear": "清除",
+    "color": "取色器",
+    "eraser": "橡皮擦",
+    "hardness": "硬度",
+    "height": "高度",
+    "size": "光标大小",
+    "tool": "工具",
+    "uploadError": "上传绘图图像失败：{status} - {statusText}",
+    "width": "宽度"
   },
   "progressToast": {
     "allDownloadsCompleted": "所有下载已完成",
@@ -2133,6 +2273,23 @@
     "inputsNone": "无输入",
     "inputsNoneTooltip": "节点没有输入",
     "locateNode": "在画布上定位节点",
+    "missingNodePacks": {
+      "applyChanges": "应用更改",
+      "cloudMessage": "此工作流需要 Comfy Cloud 上尚未提供的自定义节点。",
+      "collapse": "收起",
+      "expand": "展开",
+      "installAll": "全部安装",
+      "installNodePack": "安装节点包",
+      "installed": "已安装",
+      "installing": "正在安装...",
+      "ossManagerDisabledHint": "要安装缺失的节点，请先在你的 Python 环境中运行 {pipCmd} 安装 Node Manager，然后使用 {flag} 参数重启 ComfyUI。",
+      "ossMessage": "此工作流使用了你尚未安装的自定义节点。",
+      "searchInManager": "在节点管理器中搜索",
+      "title": "缺失节点包",
+      "unknownPack": "未知包",
+      "unsupportedTitle": "不支持的节点包",
+      "viewInManager": "在管理器中查看"
+    },
     "mute": "禁用",
     "noErrors": "无错误",
     "noSelection": "选择一个节点查看其属性信息。",
@@ -2504,8 +2661,16 @@
     "nodeLibrary": "节点库",
     "nodeLibraryTab": {
       "allNodes": "全部节点",
+      "blueprints": "蓝图",
       "custom": "自定义",
       "essentials": "基础",
+      "filter": "筛选",
+      "filterOptions": {
+        "blueprints": "蓝图",
+        "comfyNodes": "Comfy 节点",
+        "extensions": "扩展",
+        "partnerNodes": "合作伙伴节点"
+      },
       "groupBy": "分组方式",
       "groupStrategies": {
         "category": "类别",
@@ -2515,10 +2680,18 @@
         "source": "来源",
         "sourceDesc": "按来源类型分组（核心，自定义，API）"
       },
+      "noBookmarkedNodes": "暂无收藏",
       "resetView": "重置视图为默认",
       "sections": {
+        "bookmarked": "已收藏",
+        "comfyBlueprints": "Comfy 蓝图",
+        "comfyNodes": "Comfy 节点",
+        "extensions": "扩展",
         "favoriteNode": "收藏节点",
         "favorites": "收藏夹",
+        "myBlueprints": "我的蓝图",
+        "partnerNodes": "合作伙伴节点",
+        "subgraphBlueprints": "子图蓝图",
         "unfavoriteNode": "取消收藏节点"
       },
       "sortBy": {
@@ -2572,6 +2745,7 @@
       "searchJobs": "搜索...",
       "showAssets": "显示资产",
       "showAssetsPanel": "显示资产面板",
+      "showRunProgressBar": "显示运行进度条",
       "sortBy": "排序方式",
       "sortJobs": "排序任务",
       "stubClipTextEncode": "CLIP文本编码：",
@@ -2611,14 +2785,17 @@
     "cannotDeleteGlobal": "无法删除已安装的蓝图",
     "confirmDelete": "此操作将永久从您的库中移除该子工作流",
     "confirmDeleteTitle": "删除子工作流？",
+    "disconnected": "已断开连接",
     "enterDescription": "输入描述",
     "enterSearchAliases": "输入搜索别名（用逗号分隔）",
     "hidden": "隐藏/嵌套参数",
     "hideAll": "全部隐藏",
+    "linked": "（已关联）",
     "loadFailure": "加载子工作流蓝图失败",
     "overwriteBlueprint": "保存将用您的更改覆盖当前子工作流",
     "overwriteBlueprintTitle": "覆盖现有子工作流？",
     "promoteOutsideSubgraph": "不在子工作流中时无法提升小部件",
+    "promoteWidget": "提升组件：{name}",
     "publish": "发布子工作流",
     "publishSuccess": "已保存到节点库",
     "publishSuccessMessage": "您可以在节点库的“子工作流蓝图”下找到您的子工作流蓝图",
@@ -2626,7 +2803,8 @@
     "searchAliases": "搜索别名",
     "showAll": "全部显示",
     "showRecommended": "显示推荐控件",
-    "shown": "节点上显示"
+    "shown": "节点上显示",
+    "unpromoteWidget": "取消提升组件：{name}"
   },
   "subscription": {
     "addApiCredits": "添加API额度",
@@ -2634,7 +2812,9 @@
     "addCreditsLabel": "随时获取更多积分",
     "benefits": {
       "benefit1": "合作伙伴节点的月度积分 — 按需充值",
-      "benefit2": "每个队列最长运行 30 分钟"
+      "benefit1FreeTier": "每月更多积分，随时补充",
+      "benefit2": "每个队列最长运行 30 分钟",
+      "benefit3": "支持自带模型（Creator & Pro）"
     },
     "beta": "测试版",
     "billedMonthly": "每月付款",
@@ -2672,6 +2852,21 @@
     "description": "选择最适合您的订阅计划",
     "descriptionWorkspace": "为您的工作区选择最佳方案",
     "expiresDate": "于 {date} 过期",
+    "freeTier": {
+      "description": "您的免费套餐每月包含 {credits} 积分，可体验 Comfy Cloud。",
+      "descriptionGeneric": "您的免费套餐每月包含积分额度，可体验 Comfy Cloud。",
+      "nextRefresh": "您的积分将在 {date} 刷新。",
+      "outOfCredits": {
+        "subtitle": "订阅以解锁补充积分和更多功能",
+        "title": "您的免费积分已用完"
+      },
+      "subscribeCta": "订阅获取更多",
+      "title": "您正在使用免费套餐",
+      "topUpBlocked": {
+        "title": "解锁补充积分和更多功能"
+      },
+      "upgradeCta": "查看套餐"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "对企业级有疑问？",
     "invoiceHistory": "发票历史",
@@ -2682,6 +2877,7 @@
     "maxDuration": {
       "creator": "30 分钟",
       "founder": "30 分钟",
+      "free": "30 分钟",
       "pro": "1 小时",
       "standard": "30 分钟"
     },
@@ -2740,6 +2936,7 @@
     "resubscribe": "重新订阅",
     "resubscribeSuccess": "订阅已成功重新激活",
     "resubscribeTo": "重新订阅 {plan}",
+    "subscribeForMore": "升级",
     "subscribeNow": "立即订阅",
     "subscribeTo": "订阅 {plan}",
     "subscribeToComfyCloud": "订阅 Comfy Cloud",
@@ -2754,6 +2951,9 @@
       "founder": {
         "name": "Founder's Edition"
       },
+      "free": {
+        "name": "免费"
+      },
       "pro": {
         "name": "Pro"
       },
@@ -2767,6 +2967,7 @@
     "upgrade": "升级",
     "upgradePlan": "升级订阅",
     "upgradeTo": "升级到 {plan}",
+    "upgradeToAddCredits": "升级以添加积分",
     "usdPerMonth": "USD / mo",
     "usdPerMonthPerMember": "美元 / 月 / 每成员",
     "videoEstimateExplanation": "这些预估基于 Wan Fun Control 生成 5 秒视频。",
@@ -2864,6 +3065,7 @@
     "emptyCanvas": "画布为空",
     "errorCopyImage": "复制图片出错：{error}",
     "errorLoadingModel": "加载模型出错",
+    "errorOpenImage": "打开图像时出错：{error}",
     "errorSaveSetting": "保存设置 {id} 出错：{err}",
     "exportSuccess": "成功将模型导出为 {format}",
     "failedExecutionPathResolution": "无法解析所选节点的路径",
@@ -3031,7 +3233,9 @@
     "enterFilename": "输入文件名",
     "enterFilenamePrompt": "输入文件名：",
     "exportWorkflow": "导出工作流",
-    "saveWorkflow": "保存工作流"
+    "saveWorkflow": "保存工作流",
+    "savedAsApp": "已转换为应用工作流",
+    "savedAsWorkflow": "已转换为节点图工作流"
   },
   "workspace": {
     "addedToWorkspace": "您已被加入 {workspaceName}",

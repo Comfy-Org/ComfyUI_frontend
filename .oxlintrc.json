@@ -35,7 +35,7 @@
       }
     ],
     "no-control-regex": "off",
-    "no-eval": "off",
+    "no-eval": "error",
     "no-redeclare": "error",
     "no-restricted-imports": [
       "error",

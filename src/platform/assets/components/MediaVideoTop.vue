@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative size-full overflow-hidden rounded bg-black"
+    class="relative size-full overflow-hidden rounded-sm bg-black"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >

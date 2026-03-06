@@ -3,7 +3,7 @@
     <!-- Assets Header -->
     <div v-if="assets.length" class="px-2 2xl:px-4">
       <div
-        class="flex items-center py-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
+        class="flex items-center py-2 font-inter text-sm/normal font-normal text-muted-foreground"
       >
         {{
           t(
@@ -81,7 +81,7 @@ const assetItems = computed<AssetGridItem[]>(() =>
 
 const gridStyle = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 30vw), 1fr))',
   padding: '0 0.5rem',
   gap: '0.5rem'
 }

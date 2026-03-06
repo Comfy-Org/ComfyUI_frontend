@@ -1,42 +1,129 @@
 import { defineStore } from 'pinia'
-import { readonly, computed, ref } from 'vue'
+import { reactive, computed, watch } from 'vue'
 
-export type AppMode = 'graph' | 'app' | 'builder:select' | 'builder:arrange'
+import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
+import { useAppMode } from '@/composables/useAppMode'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { app } from '@/scripts/app'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 export const useAppModeStore = defineStore('appMode', () => {
-  const mode = ref<AppMode>('graph')
-  const builderSaving = ref(false)
-  const hasOutputs = ref(true)
-  const enableAppBuilder = ref(false)
+  const { getCanvas } = useCanvasStore()
+  const workflowStore = useWorkflowStore()
+  const { mode, setMode, isBuilderMode, isSelectMode } = useAppMode()
+  const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
-  const isBuilderMode = computed(
-    () => mode.value === 'builder:select' || mode.value === 'builder:arrange'
+  const selectedInputs = reactive<[NodeId, string][]>([])
+  const selectedOutputs = reactive<NodeId[]>([])
+  const hasOutputs = computed(() => !!selectedOutputs.length)
+  const hasNodes = computed(() => {
+    // Nodes are not reactive, so trigger recomputation when workflow changes
+    void workflowStore.activeWorkflow
+    void mode.value
+    return !!app.rootGraph?.nodes?.length
+  })
+
+  function loadSelections(data: Partial<LinearData> | undefined) {
+    const rawInputs = data?.inputs ?? []
+    const rawOutputs = data?.outputs ?? []
+
+    // Prune entries referencing nodes deleted in workflow mode.
+    // Only check node existence, not widgets — dynamic widgets can
+    // hide/show other widgets so a missing widget does not mean stale data.
+    const inputs = app.rootGraph
+      ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
+      : rawInputs
+    const outputs = app.rootGraph
+      ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
+      : rawOutputs
+
+    selectedInputs.splice(0, selectedInputs.length, ...inputs)
+    selectedOutputs.splice(0, selectedOutputs.length, ...outputs)
+  }
+
+  function resetSelectedToWorkflow() {
+    const { activeWorkflow } = workflowStore
+    if (!activeWorkflow) return
+
+    loadSelections(activeWorkflow.changeTracker?.activeState?.extra?.linearData)
+  }
+
+  watch(
+    () => workflowStore.activeWorkflow,
+    (newWorkflow) => {
+      if (newWorkflow) {
+        loadSelections(
+          newWorkflow.changeTracker?.activeState?.extra?.linearData
+        )
+      } else {
+        loadSelections(undefined)
+      }
+    },
+    { immediate: true }
   )
-  const isAppMode = computed(
-    () => mode.value === 'app' || mode.value === 'builder:arrange'
+
+  watch(
+    () =>
+      isBuilderMode.value
+        ? { inputs: selectedInputs, outputs: selectedOutputs }
+        : null,
+    (data) => {
+      if (!data) return
+      const graph = app.rootGraph
+      if (!graph) return
+      const extra = (graph.extra ??= {})
+      extra.linearData = {
+        inputs: [...data.inputs],
+        outputs: [...data.outputs]
+      }
+    },
+    { deep: true }
   )
-  const isGraphMode = computed(
-    () => mode.value === 'graph' || mode.value === 'builder:select'
-  )
-  const isBuilderSaving = computed(
-    () => builderSaving.value && isBuilderMode.value
-  )
+
+  let unwatch: () => void | undefined
+  watch(isSelectMode, (inSelect) => {
+    const { state } = getCanvas()
+    if (!state) return
+    state.readOnly = inSelect
+    unwatch?.()
+    if (inSelect)
+      unwatch = watch(
+        () => state.readOnly,
+        () => (state.readOnly = true)
+      )
+  })
+
+  function enterBuilder() {
+    if (!hasNodes.value) {
+      emptyWorkflowDialog.show({
+        onEnterBuilder: () => enterBuilder(),
+        onDismiss: () => setMode('graph')
+      })
+      return
+    }
+
+    setMode(
+      mode.value === 'app' && hasOutputs.value
+        ? 'builder:arrange'
+        : 'builder:inputs'
+    )
+  }
+
+  async function exitBuilder() {
+    resetSelectedToWorkflow()
+    setMode('graph')
+  }
 
   return {
-    mode: readonly(mode),
-    enableAppBuilder: readonly(enableAppBuilder),
-    isBuilderMode,
-    isAppMode,
-    isGraphMode,
-    isBuilderSaving,
+    enterBuilder,
+    exitBuilder,
+    hasNodes,
     hasOutputs,
-    setBuilderSaving: (newBuilderSaving: boolean) => {
-      if (!isBuilderMode.value) return
-      builderSaving.value = newBuilderSaving
-    },
-    setMode: (newMode: AppMode) => {
-      if (newMode === mode.value) return
-      mode.value = newMode
-    }
+    resetSelectedToWorkflow,
+    selectedInputs,
+    selectedOutputs
   }
 })

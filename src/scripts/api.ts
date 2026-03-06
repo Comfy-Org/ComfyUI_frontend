@@ -12,6 +12,8 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
+import { zShareableAssetsResponse } from '@/schemas/apiSchema'
 import type { IFuseOptions } from 'fuse.js'
 import type {
   TemplateIncludeOnDistributionEnum,
@@ -475,6 +477,23 @@ export class ComfyApi extends EventTarget {
     super.removeEventListener(type, callback as EventListener, options)
   }
 
+  addCustomEventListener(
+    type: string,
+    callback: ((event: CustomEvent<unknown>) => void) | null,
+    options?: AddEventListenerOptions | boolean
+  ) {
+    super.addEventListener(type, callback as EventListener, options)
+    this._registered.add(type)
+  }
+
+  removeCustomEventListener(
+    type: string,
+    callback: ((event: CustomEvent<unknown>) => void) | null,
+    options?: EventListenerOptions | boolean
+  ) {
+    super.removeEventListener(type, callback as EventListener, options)
+  }
+
   /**
    * Dispatches a custom event.
    * Provides type safety for the contravariance issue with EventTarget (last checked TS 5.6).
@@ -854,6 +873,30 @@ export class ComfyApi extends EventTarget {
     }
 
     return await res.json()
+  }
+
+  /**
+   * Gets the list of assets and models referenced by a prompt that would
+   * need user consent before sharing.
+   */
+  async getShareableAssets(
+    prompt: ComfyApiWorkflow,
+    options?: { owned?: boolean }
+  ): Promise<ShareableAssetsResponse> {
+    const body: Record<string, unknown> = { workflow_api_json: prompt }
+    if (options?.owned !== undefined) {
+      body.owned = options.owned
+    }
+    const res = await this.fetchApi('/assets/from-workflow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+    if (res.status !== 200) {
+      throw new Error(`Failed to fetch shareable assets: ${res.status}`)
+    }
+    const data = await res.json()
+    return zShareableAssetsResponse.parse(data)
   }
 
   /**

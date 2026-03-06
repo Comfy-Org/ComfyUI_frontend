@@ -696,8 +696,7 @@
         "tooltip": "الحد الأقصى لعدد الصور التي سيتم توليدها عندما يكون sequential_image_generation='auto'. إجمالي الصور (المدخلة + المولدة) لا يمكن أن يتجاوز 15."
       },
       "model": {
-        "name": "model",
-        "tooltip": "اسم النموذج"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -2135,6 +2134,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "description": "قص وتغيير حجم المناطق من دفعة الصور المدخلة بناءً على مربعات التحديد المقدمة.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "مربعات التحديد"
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "output_height": {
+        "name": "ارتفاع الناتج",
+        "tooltip": "الارتفاع الذي يتم تغيير حجم كل قص إليه."
+      },
+      "output_width": {
+        "name": "عرض الناتج",
+        "tooltip": "العرض الذي يتم تغيير حجم كل قص إليه."
+      },
+      "padding": {
+        "name": "هامش إضافي",
+        "tooltip": "هامش إضافي بالبكسل يُضاف على كل جانب من مربع التحديد قبل القص."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "جميع القصاصات مكدسة في دفعة صور واحدة."
       }
     }
   },
@@ -3702,6 +3730,60 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "إنشاء أو تعديل الصور بشكل متزامن عبر Google Vertex API.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "إذا تم تعيينها إلى 'auto'، سيتم مطابقة نسبة العرض إلى الارتفاع لصورتك المدخلة؛ إذا لم يتم توفير صورة، يتم عادةً إنشاء صورة مربعة بنسبة 16:9."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "ملف (ملفات) اختيارية لاستخدامها كسياق للنموذج. يقبل المدخلات من عقدة Gemini Generate Content Input Files."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صورة (صور) مرجعية اختيارية. لإضافة عدة صور، استخدم عقدة Batch Images (حتى ١٤ صورة)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "وصف نصي للصورة المراد إنشاؤها أو التعديلات المطلوب تطبيقها. أدرج أي قيود أو أنماط أو تفاصيل يجب على النموذج اتباعها."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "دقة الإخراج المستهدفة. بالنسبة لـ 2K/4K يتم استخدام أداة التكبير الأصلية لـ Gemini."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "عند تثبيت قيمة seed على رقم محدد، يحاول النموذج تقديم نفس الاستجابة للطلبات المتكررة قدر الإمكان. لا يمكن ضمان نتائج حتمية. كما أن تغيير النموذج أو إعدادات المعلمات مثل درجة العشوائية قد يؤدي إلى اختلاف النتائج حتى مع نفس قيمة seed. بشكل افتراضي، يتم استخدام قيمة seed عشوائية."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "تعليمات أساسية تحدد سلوك الذكاء الاصطناعي."
+      },
+      "thinking_level": {
+        "name": "thinking_level"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "إنشاء استجابات نصية باستخدام نموذج الذكاء الاصطناعي Gemini من Google. يمكنك تقديم أنواع متعددة من المدخلات (نص، صور، صوت، فيديو) كسياق لإنشاء استجابات أكثر صلة ومعنى.",
     "display_name": "Google Gemini",
@@ -3865,6 +3947,10 @@
     "description": "تعديل صورة موجودة بناءً على مطالبة نصية",
     "display_name": "تعديل صورة Grok",
     "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع",
+        "tooltip": "مسموح فقط عند توصيل عدة صور بمدخل الصورة."
+      },
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
       },
@@ -3916,6 +4002,9 @@
       "prompt": {
         "name": "المطالبة",
         "tooltip": "المطالبة النصية المستخدمة لتوليد الصورة"
+      },
+      "resolution": {
+        "name": "الدقة"
       },
       "seed": {
         "name": "البذرة",
@@ -4749,6 +4838,28 @@
       }
     }
   },
+  "ImageMergeTileList": {
+    "display_name": "دمج قائمة القطع إلى صورة",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageOnlyCheckpointLoader": {
     "display_name": "محمل نقطة تحقق الصور فقط (نموذج img2vid)",
     "inputs": {
@@ -5327,6 +5438,39 @@
       }
     }
   },
+  "KlingAvatarNode": {
+    "description": "إنشاء مقاطع فيديو رقمية بأسلوب البث المباشر لإنسان رقمي من صورة واحدة وملف صوتي.",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "صورة",
+        "tooltip": "صورة مرجعية للأفاتار. يجب ألا يقل العرض والارتفاع عن ٣٠٠ بكسل. يجب أن تكون نسبة الأبعاد بين ١:٢.٥ و٢.٥:١."
+      },
+      "mode": {
+        "name": "الوضع"
+      },
+      "prompt": {
+        "name": "موجه",
+        "tooltip": "موجه اختياري لتحديد حركات الأفاتار، المشاعر، وحركات الكاميرا."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "sound_file": {
+        "name": "ملف صوتي",
+        "tooltip": "إدخال صوتي. يجب أن تتراوح المدة بين ٢ و٣٠٠ ثانية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingCameraControlI2VNode": {
     "description": "تحويل الصور الثابتة إلى فيديوهات سينمائية مع حركات كاميرا احترافية تحاكي التصوير السينمائي الحقيقي. تحكم في زووم، دوران، تحريك الكاميرا، الميل، والرؤية من منظور الشخص الأول مع الحفاظ على تركيز الصورة الأصلية.",
     "display_name": "تحكم كاميرا كليغ: صورة إلى فيديو",
@@ -5716,6 +5860,9 @@
       },
       "mode": {
         "name": "الوضع"
+      },
+      "model": {
+        "name": "النموذج"
       },
       "prompt": {
         "name": "الموجه"
@@ -12665,6 +12812,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "احسب العرض والارتفاع من نسبة العرض إلى الارتفاع والهدف بالميغابكسل. مفيد لتعيين أبعاد صورة Latent فارغة.",
+    "display_name": "محدد الدقة",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع",
+        "tooltip": "نسبة العرض إلى الارتفاع للأبعاد الناتجة."
+      },
+      "megapixels": {
+        "name": "الميغابكسل",
+        "tooltip": "إجمالي الميغابكسل المستهدف. ١.٠ ميغابكسل ≈ ١٠٢٤×١٠٢٤ للبُعد المربع."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "العرض",
+        "tooltip": "العرض المحسوب بالبكسل (مضاعف للعدد ٨)."
+      },
+      "1": {
+        "name": "الارتفاع",
+        "tooltip": "الارتفاع المحسوب بالبكسل (مضاعف للعدد ٨)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "توليد أصول ثلاثية الأبعاد باستخدام واجهة برمجة تطبيقات رودين",
     "display_name": "رودين 3D توليد - توليد التفاصيل",
@@ -12921,6 +13092,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "رسم الجسم"
+      },
+      "draw_face": {
+        "name": "رسم الوجه"
+      },
+      "draw_feet": {
+        "name": "رسم القدمين"
+      },
+      "draw_hands": {
+        "name": "رسم اليدين"
+      },
+      "face_point_size": {
+        "name": "حجم نقطة الوجه"
+      },
+      "keypoints": {
+        "name": "النقاط الرئيسية"
+      },
+      "score_threshold": {
+        "name": "عتبة الدرجات"
+      },
+      "stick_width": {
+        "name": "عرض الخط"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "إجبار الشكل المربع",
+        "tooltip": "توسيع المحور الأقصر لمربع التحديد بحيث تكون منطقة القص دائماً مربعة."
+      },
+      "keypoints": {
+        "name": "النقاط الرئيسية"
+      },
+      "scale": {
+        "name": "المقياس",
+        "tooltip": "معامل ضرب لمساحة مربع التحديد حول كل وجه مكتشف."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مربعات التحديد",
+        "tooltip": "مربعات تحديد الوجه لكل إطار، متوافقة مع مدخل مربعات التحديد في SDPoseKeypointExtractor."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "استخراج النقاط الرئيسية للوضعية من الصور باستخدام نموذج SDPose: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "حجم الدفعة"
+      },
+      "bboxes": {
+        "name": "مربعات التحديد",
+        "tooltip": "مربعات التحديد الاختيارية للحصول على كشف أدق. مطلوبة لاكتشاف عدة أشخاص."
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النقاط الرئيسية",
+        "tooltip": "النقاط الرئيسية بتنسيق OpenPose (عرض اللوحة، ارتفاع اللوحة، الأشخاص)"
       }
     }
   },
@@ -13998,6 +14253,29 @@
       },
       "1": {
         "name": "يمين",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "يقوم بتقسيم صورة إلى قائمة دفعات من القطع مع تداخل محدد.",
+    "display_name": "تجزئة الصورة إلى قائمة قطع",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -17886,6 +18164,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "حجم الدفعة"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول"
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "pose_end": {
+        "name": "نهاية الوضعية",
+        "tooltip": "خطوة النهاية لاستخدام تكييف الوضعية."
+      },
+      "pose_start": {
+        "name": "بدء الوضعية",
+        "tooltip": "خطوة البدء لاستخدام تكييف الوضعية."
+      },
+      "pose_strength": {
+        "name": "قوة الوضعية",
+        "tooltip": "قوة الفضاء الكامن للوضعية."
+      },
+      "pose_video": {
+        "name": "فيديو الوضعية",
+        "tooltip": "الفيديو المستخدم لتكييف الوضعية. سيتم تقليل دقته إلى نصف دقة الفيديو الرئيسي."
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "reference_image": {
+        "name": "صورة مرجعية"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سلبي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "كامن",
+        "tooltip": "فضاء كامن فارغ بحجم التوليد."
       }
     }
   },

@@ -44,6 +44,10 @@ const mockCanvasStore = vi.hoisted(() => ({
   linearMode: false
 }))
 
+const mockAppModeStore = vi.hoisted(() => ({
+  enterBuilder: vi.fn()
+}))
+
 const mockFeatureFlags = vi.hoisted(() => ({
   flags: { linearToggleEnabled: false }
 }))
@@ -73,6 +77,12 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => mockCanvasStore)
 }))
 
+vi.mock('@/stores/appModeStore', () => ({
+  useAppModeStore: vi.fn(() => mockAppModeStore)
+}))
+
+vi.mock('@/composables/useErrorHandling', () => ({}))
+
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: vi.fn(() => mockFeatureFlags)
 }))
@@ -80,7 +90,9 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 type MenuItems = ReturnType<typeof useWorkflowActionsMenu>['menuItems']['value']
 
 function actionItems(items: MenuItems): WorkflowMenuAction[] {
-  return items.filter((i): i is WorkflowMenuAction => !i.separator)
+  return items.filter(
+    (i): i is WorkflowMenuAction => !i.separator && i.visible !== false
+  )
 }
 
 function menuLabels(items: MenuItems) {
@@ -286,6 +298,18 @@ describe('useWorkflowActionsMenu', () => {
     await findItem(menuItems.value, 'tabMenu.addToBookmarks').command?.()
 
     expect(mockBookmarkStore.toggleBookmarked).toHaveBeenCalledWith('test.json')
+  })
+
+  it('enter builder mode calls enterBuilder', async () => {
+    mockFeatureFlags.flags.linearToggleEnabled = true
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    await findItem(
+      menuItems.value,
+      'breadcrumbsMenu.enterBuilderMode'
+    ).command?.()
+
+    expect(mockAppModeStore.enterBuilder).toHaveBeenCalled()
   })
 
   it('app mode toggle executes Comfy.ToggleLinear', async () => {

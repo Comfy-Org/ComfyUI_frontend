@@ -696,8 +696,7 @@
         "tooltip": "当 sequential_image_generation='auto' 时生成图像的最大数量。总图像数（输入+生成）不能超过 15。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -2135,6 +2134,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "description": "根据提供的边界框，从输入图像批量中裁剪并调整区域大小。",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "每个裁剪区域调整后的高度。"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "每个裁剪区域调整后的宽度。"
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "在裁剪前，每个边界框四周额外添加的像素填充。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "所有裁剪区域堆叠为一个图像批量。"
       }
     }
   },
@@ -3702,6 +3730,60 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "通过 Google Vertex API 同步生成或编辑图像。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "如果设置为“自动”，则匹配输入图像的宽高比；如果未提供图像，通常会生成 16:9 的正方形。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "files": {
+        "name": "文件",
+        "tooltip": "可选的文件，作为模型的上下文使用。可接受来自 Gemini 生成内容输入文件节点的输入。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "可选的参考图像。要包含多张图片，请使用批量图像节点（最多 14 张）。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述要生成图像或要应用编辑的文本提示。请包含模型应遵循的任何约束、风格或细节。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "目标输出分辨率。对于 2K/4K，使用原生 Gemini 超分辨率算法。"
+      },
+      "response_modalities": {
+        "name": "响应模式"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "当种子值固定时，模型会尽力为重复请求提供相同的响应，但不能保证输出完全一致。此外，更改模型或参数设置（如温度）即使使用相同的种子值，也可能导致响应不同。默认情况下使用随机种子值。"
+      },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "决定 AI 行为的基础性指令。"
+      },
+      "thinking_level": {
+        "name": "思考层级"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "使用 Google 的 Gemini AI 模型生成文本响应。您可以提供多种类型的输入（文本、图像、音频、视频）作为上下文，以生成更相关和有意义的响应。",
     "display_name": "Google Gemini",
@@ -3865,6 +3947,10 @@
     "description": "根据文本提示修改现有图像",
     "display_name": "Grok 图像编辑",
     "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "仅当多个图像连接到图像输入时允许。"
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -3916,6 +4002,9 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "用于生成图像的文本提示"
+      },
+      "resolution": {
+        "name": "分辨率"
       },
       "seed": {
         "name": "seed",
@@ -4749,6 +4838,28 @@
       }
     }
   },
+  "ImageMergeTileList": {
+    "display_name": "将图块列表合并为图像",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageOnlyCheckpointLoader": {
     "display_name": "Checkpoint加载器（仅图像）",
     "inputs": {
@@ -5327,6 +5438,39 @@
       }
     }
   },
+  "KlingAvatarNode": {
+    "description": "从单张照片和音频文件生成广播风格的数字人视频。",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "头像参考图像。宽度和高度必须至少为300像素。宽高比需在1:2.5到2.5:1之间。"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "可选提示，用于定义头像动作、情感和摄像机运动。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "种子用于控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "音频输入。时长必须在2到300秒之间。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingCameraControlI2VNode": {
     "description": "将静态图像转化为具有专业摄像机运动的电影级视频，模拟真实世界的电影摄影。可控制虚拟摄像机的缩放、旋转、平移、俯仰和第一人称视角，同时保持对原始图像的聚焦。",
     "display_name": "Kling 图像转视频（摄像机控制）",
@@ -5716,6 +5860,9 @@
       },
       "mode": {
         "name": "模式"
+      },
+      "model": {
+        "name": "模型"
       },
       "prompt": {
         "name": "提示词"
@@ -12665,6 +12812,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "根据宽高比和目标百万像素数计算宽度和高度。适用于设置空latent图像的尺寸。",
+    "display_name": "分辨率选择器",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "输出尺寸的宽高比。"
+      },
+      "megapixels": {
+        "name": "百万像素",
+        "tooltip": "目标总百万像素数。1.0 MP ≈ 1024×1024（正方形）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "宽度",
+        "tooltip": "计算得到的像素宽度（8的倍数）。"
+      },
+      "1": {
+        "name": "高度",
+        "tooltip": "计算得到的像素高度（8的倍数）。"
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "使用Rodin API生成3D资源",
     "display_name": "Rodin 3D生成 - 细节生成",
@@ -12921,6 +13092,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "扩展较短的边界框轴，使裁剪区域始终为正方形。"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "每个检测到的人脸边界框区域的缩放倍数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "每帧的人脸边界框，可与SDPoseKeypointExtractor的bboxes输入兼容。"
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "使用SDPose模型从图像中提取姿态关键点：https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "可选的边界框，用于更精确的检测。多人检测时必需。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "OpenPose帧格式的关键点（canvas_width, canvas_height, people）"
       }
     }
   },
@@ -13998,6 +14253,29 @@
       },
       "1": {
         "name": "右声道",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "将图像拆分为带有指定重叠的批量图块列表。",
+    "display_name": "将图像拆分为图块列表",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -17886,6 +18164,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "clip_vision_output": {
+        "name": "clip视觉输出"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "negative": {
+        "name": "负向"
+      },
+      "pose_end": {
+        "name": "姿态结束步",
+        "tooltip": "用于姿态调控的结束步数。"
+      },
+      "pose_start": {
+        "name": "姿态起始步",
+        "tooltip": "用于姿态调控的起始步数。"
+      },
+      "pose_strength": {
+        "name": "姿态强度",
+        "tooltip": "姿态latent的强度。"
+      },
+      "pose_video": {
+        "name": "姿态视频",
+        "tooltip": "用于姿态调控的视频。将被缩小到主视频分辨率的一半。"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "reference_image": {
+        "name": "参考图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负向",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "生成尺寸的空latent。"
       }
     }
   },

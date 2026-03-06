@@ -5,7 +5,7 @@
       v-if="isSettingUp"
       class="rounded-2xl border border-interface-stroke p-6"
     >
-      <div class="flex items-center gap-2 text-muted-foreground py-4">
+      <div class="flex items-center gap-2 py-4 text-muted-foreground">
         <i class="pi pi-spin pi-spinner" />
         <span>{{ $t('billingOperation.subscriptionProcessing') }}</span>
       </div>
@@ -23,10 +23,10 @@
           <i class="pi pi-info-circle" />
         </div>
         <div class="flex flex-col gap-2">
-          <h2 class="text-sm font-bold text-text-primary m-0 pt-1.5">
+          <h2 class="m-0 pt-1.5 text-sm font-bold text-text-primary">
             {{ $t('subscription.canceledCard.title') }}
           </h2>
-          <p class="text-sm text-text-secondary m-0">
+          <p class="m-0 text-sm text-text-secondary">
             {{
               $t('subscription.canceledCard.description', {
                 date: formattedEndDate
@@ -144,9 +144,10 @@
                 <!-- Active state: show Manage Payment, Upgrade, and menu -->
                 <template v-else>
                   <Button
+                    v-if="!isFreeTierPlan"
                     size="lg"
                     variant="secondary"
-                    class="rounded-lg px-4 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                    class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
                     @click="manageSubscription"
                   >
                     {{ $t('subscription.managePayment') }}
@@ -155,11 +156,12 @@
                     size="lg"
                     variant="primary"
                     class="rounded-lg px-4 text-sm font-normal text-text-primary"
-                    @click="showSubscriptionDialog"
+                    @click="handleUpgrade"
                   >
                     {{ $t('subscription.upgradePlan') }}
                   </Button>
                   <Button
+                    v-if="!isFreeTierPlan"
                     v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                     variant="secondary"
                     size="lg"
@@ -175,11 +177,11 @@
           </div>
         </div>
 
-        <div class="flex flex-col lg:flex-row lg:items-stretch gap-6 pt-6">
+        <div class="flex flex-col gap-6 pt-6 lg:flex-row lg:items-stretch">
           <div class="flex flex-col">
-            <div class="flex flex-col gap-3 h-full">
+            <div class="flex h-full flex-col gap-3">
               <div
-                class="relative flex flex-col gap-6 rounded-2xl p-5 bg-secondary-background justify-between h-full"
+                class="relative flex h-full flex-col justify-between gap-6 rounded-2xl bg-secondary-background p-5"
               >
                 <Button
                   variant="muted-textonly"
@@ -188,7 +190,7 @@
                   :loading="isLoadingBalance"
                   @click="handleRefresh"
                 >
-                  <i class="pi pi-sync text-text-secondary text-sm" />
+                  <i class="pi pi-sync text-sm text-text-secondary" />
                 </Button>
 
                 <div class="flex flex-col gap-2">
@@ -209,7 +211,7 @@
                 <table class="text-sm text-muted">
                   <tbody>
                     <tr>
-                      <td class="pr-4 font-bold text-left align-middle">
+                      <td class="pr-4 text-left align-middle font-bold">
                         <Skeleton
                           v-if="isLoadingBalance"
                           width="5rem"
@@ -224,7 +226,7 @@
                       </td>
                     </tr>
                     <tr>
-                      <td class="pr-4 font-bold text-left align-middle">
+                      <td class="pr-4 text-left align-middle font-bold">
                         <Skeleton
                           v-if="isLoadingBalance"
                           width="3rem"
@@ -250,11 +252,20 @@
                     !showZeroState &&
                     permissions.canTopUp
                   "
-                  class="flex items-center justify-between"
+                  class="flex flex-col gap-3"
                 >
                   <Button
+                    v-if="isFreeTierPlan"
+                    variant="gradient"
+                    class="min-h-8 w-full rounded-lg p-2 text-sm font-normal"
+                    @click="handleUpgradeToAddCredits"
+                  >
+                    {{ $t('subscription.upgradeToAddCredits') }}
+                  </Button>
+                  <Button
+                    v-else
                     variant="secondary"
-                    class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                    class="min-h-8 rounded-lg bg-interface-menu-component-surface-selected p-2 text-sm font-normal text-text-primary"
                     @click="handleAddApiCredits"
                   >
                     {{ $t('subscription.addCredits') }}
@@ -305,20 +316,20 @@
           !isInPersonalWorkspace &&
           permissions.canManageSubscription
         "
-        class="mt-6 flex gap-1 rounded-2xl border border-interface-stroke p-6 justify-between items-center text-sm"
+        class="mt-6 flex items-center justify-between gap-1 rounded-2xl border border-interface-stroke p-6 text-sm"
       >
         <div class="flex flex-col gap-2">
-          <h4 class="text-sm text-text-primary m-0">
+          <h4 class="m-0 text-sm text-text-primary">
             {{ $t('subscription.nextMonthInvoice') }}
           </h4>
           <span
-            class="text-muted-foreground underline cursor-pointer"
+            class="cursor-pointer text-muted-foreground underline"
             @click="manageSubscription"
           >
             {{ $t('subscription.invoiceHistory') }}
           </span>
         </div>
-        <div class="flex flex-col gap-2 items-end">
+        <div class="flex flex-col items-end gap-2">
           <h4 class="m-0 font-bold">${{ nextMonthInvoice }}</h4>
           <h5 class="m-0 text-muted-foreground">
             {{ $t('subscription.memberCount', memberCount) }}
@@ -336,7 +347,7 @@
           href="https://www.comfy.org/cloud/pricing"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-sm underline hover:opacity-80 text-muted"
+          class="text-sm text-muted underline hover:opacity-80"
         >
           {{ $t('subscription.viewMoreDetailsPlans') }}
         </a>
@@ -366,9 +377,11 @@ import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
   getTierCredits,
-  getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@/utils/tailwindUtil'
@@ -385,6 +398,7 @@ const isSettingUp = computed(() => billingOperationStore.isSettingUp)
 
 const {
   isActiveSubscription,
+  isFreeTier: isFreeTierPlan,
   subscription,
   showSubscriptionDialog,
   manageSubscription,
@@ -394,6 +408,7 @@ const {
 } = useBillingContext()
 
 const { showCancelSubscriptionDialog } = useDialogService()
+const { showPricingTable } = useSubscriptionDialog()
 
 const isResubscribing = ref(false)
 
@@ -453,6 +468,14 @@ const showZeroState = computed(
 // Subscribe workspace - opens the subscription dialog (personal or workspace variant)
 function handleSubscribeWorkspace() {
   showSubscriptionDialog()
+}
+
+function handleUpgrade() {
+  isFreeTierPlan.value ? showPricingTable() : showSubscriptionDialog()
+}
+
+function handleUpgradeToAddCredits() {
+  showPricingTable()
 }
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
 const isYearlySubscription = computed(
@@ -524,16 +547,29 @@ const refillsDate = computed(() => {
 
 const creditsRemainingLabel = computed(() =>
   isYearlySubscription.value
-    ? t('subscription.creditsRemainingThisYear', {
-        date: refillsDate.value
-      })
-    : t('subscription.creditsRemainingThisMonth', {
-        date: refillsDate.value
-      })
+    ? t(
+        'subscription.creditsRemainingThisYear',
+        {
+          date: refillsDate.value
+        },
+        {
+          escapeParameter: false
+        }
+      )
+    : t(
+        'subscription.creditsRemainingThisMonth',
+        {
+          date: refillsDate.value
+        },
+        {
+          escapeParameter: false
+        }
+      )
 )
 
 const planTotalCredits = computed(() => {
   const credits = getTierCredits(tierKey.value)
+  if (credits === null) return '—'
   const total = isYearlySubscription.value ? credits * 12 : credits
   return n(total)
 })
@@ -542,21 +578,9 @@ const includedCreditsDisplay = computed(
   () => `${monthlyBonusCredits.value} / ${planTotalCredits.value}`
 )
 
-// Tier benefits for v-for loop
-type BenefitType = 'metric' | 'feature' | 'icon'
-
-interface Benefit {
-  key: string
-  type: BenefitType
-  label: string
-  value?: string
-  icon?: string
-}
-
-const tierBenefits = computed((): Benefit[] => {
+const tierBenefits = computed((): TierBenefit[] => {
   const key = tierKey.value
-
-  const benefits: Benefit[] = []
+  const benefits: TierBenefit[] = []
 
   if (!isInPersonalWorkspace.value) {
     benefits.push({
@@ -567,33 +591,7 @@ const tierBenefits = computed((): Benefit[] => {
     })
   }
 
-  benefits.push(
-    {
-      key: 'maxDuration',
-      type: 'metric',
-      value: t(`subscription.maxDuration.${key}`),
-      label: t('subscription.maxDurationLabel')
-    },
-    {
-      key: 'gpu',
-      type: 'feature',
-      label: t('subscription.gpuLabel')
-    },
-    {
-      key: 'addCredits',
-      type: 'feature',
-      label: t('subscription.addCreditsLabel')
-    }
-  )
-
-  if (getTierFeatures(key).customLoRAs) {
-    benefits.push({
-      key: 'customLoRAs',
-      type: 'feature',
-      label: t('subscription.customLoRAsLabel')
-    })
-  }
-
+  benefits.push(...getCommonTierBenefits(key, t, n))
   return benefits
 })
 

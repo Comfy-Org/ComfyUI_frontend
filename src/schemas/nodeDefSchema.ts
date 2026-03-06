@@ -158,6 +158,20 @@ export function isComboInputSpec(
   return isComboInputSpecV1(inputSpec) || isComboInputSpecV2(inputSpec)
 }
 
+export function isMediaUploadComboInput(inputSpec: InputSpec): boolean {
+  const [inputName, inputOptions] = inputSpec
+  if (!inputOptions) return false
+
+  const isUploadInput =
+    inputOptions['image_upload'] === true ||
+    inputOptions['video_upload'] === true ||
+    inputOptions['animated_image_upload'] === true
+
+  return (
+    isUploadInput && (isComboInputSpecV1(inputSpec) || inputName === 'COMBO')
+  )
+}
+
 /**
  * Get the type of an input spec.
  *

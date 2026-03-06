@@ -262,7 +262,7 @@ describe('TopMenuSection', () => {
     )
   })
 
-  it('opens the assets sidebar tab when QPO V2 is enabled', async () => {
+  it('opens the job history sidebar tab when QPO V2 is enabled', async () => {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) =>
@@ -273,10 +273,10 @@ describe('TopMenuSection', () => {
 
     await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
 
-    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+    expect(sidebarTabStore.activeSidebarTabId).toBe('job-history')
   })
 
-  it('toggles the assets sidebar tab when QPO V2 is enabled', async () => {
+  it('toggles the job history sidebar tab when QPO V2 is enabled', async () => {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) =>
@@ -287,7 +287,7 @@ describe('TopMenuSection', () => {
     const toggleButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
 
     await toggleButton.trigger('click')
-    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+    expect(sidebarTabStore.activeSidebarTabId).toBe('job-history')
 
     await toggleButton.trigger('click')
     expect(sidebarTabStore.activeSidebarTabId).toBe(null)
@@ -296,11 +296,13 @@ describe('TopMenuSection', () => {
   describe('inline progress summary', () => {
     const configureSettings = (
       pinia: ReturnType<typeof createTestingPinia>,
-      qpoV2Enabled: boolean
+      qpoV2Enabled: boolean,
+      showRunProgressBar = true
     ) => {
       const settingStore = useSettingStore(pinia)
       vi.mocked(settingStore.get).mockImplementation((key) => {
         if (key === 'Comfy.Queue.QPOV2') return qpoV2Enabled
+        if (key === 'Comfy.Queue.ShowRunProgressBar') return showRunProgressBar
         if (key === 'Comfy.UseNewMenu') return 'Top'
         return undefined
       })
@@ -322,6 +324,19 @@ describe('TopMenuSection', () => {
     it('does not render inline progress summary when QPO V2 is disabled', async () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, false)
+
+      const wrapper = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        wrapper.findComponent({ name: 'QueueInlineProgressSummary' }).exists()
+      ).toBe(false)
+    })
+
+    it('does not render inline progress summary when run progress bar is disabled', async () => {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      configureSettings(pinia, true, false)
 
       const wrapper = createWrapper({ pinia })
 

@@ -1,5 +1,7 @@
 <template>
-  <section class="m-2 mt-4 flex flex-col gap-6 whitespace-pre-wrap break-words">
+  <section
+    class="m-2 mt-4 flex flex-col gap-6 wrap-break-word whitespace-pre-wrap"
+  >
     <div>
       <span>{{ message }}</span>
       <ul v-if="itemList?.length" class="m-0 mt-2 flex flex-col gap-2 pl-4">
@@ -28,7 +30,7 @@
             id="doNotAskAgain"
             v-model="doNotAskAgain"
             type="checkbox"
-            class="h-4 w-4 cursor-pointer"
+            class="size-4 cursor-pointer"
           />
           <label for="doNotAskAgain">{{
             t('missingModelsDialog.doNotAskAgain')
@@ -38,12 +40,12 @@
           v-if="doNotAskAgain"
           keypath="missingModelsDialog.reEnableInSettings"
           tag="span"
-          class="text-sm text-muted-foreground ml-8"
+          class="ml-8 text-sm text-muted-foreground"
         >
           <template #link>
             <Button
               variant="textonly"
-              class="underline cursor-pointer p-0 text-sm text-muted-foreground hover:bg-transparent"
+              class="cursor-pointer p-0 text-sm text-muted-foreground underline hover:bg-transparent"
               @click="openBlueprintOverwriteSetting"
             >
               {{ t('missingModelsDialog.reEnableInSettingsLink') }}

@@ -2,12 +2,19 @@ import { markRaw } from 'vue'
 
 import { t } from '@/i18n'
 import type { ChangeTracker } from '@/scripts/changeTracker'
+import type { AppMode } from '@/composables/useAppMode'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { UserFile } from '@/stores/userFileStore'
 import type {
   ComfyWorkflowJSON,
   ModelFile
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { MissingNodeType } from '@/types/comfy'
+
+export interface LinearData {
+  inputs: [NodeId, string][]
+  outputs: NodeId[]
+}
 
 export interface PendingWarnings {
   missingNodeTypes?: MissingNodeType[]
@@ -33,7 +40,18 @@ export class ComfyWorkflow extends UserFile {
    * Warnings deferred from load time, shown when the workflow is first focused.
    */
   pendingWarnings: PendingWarnings | null = null
-
+  /**
+   * Initial app mode derived from the serialized workflow (extra.linearMode).
+   * - `undefined`: not yet resolved (first load hasn't happened)
+   * - `null`: resolved, but no mode was set (never builder-saved)
+   * - `AppMode`: resolved to a specific mode
+   */
+  initialMode: AppMode | null | undefined = undefined
+  /**
+   * Current app mode set by the user during the session.
+   * Takes precedence over initialMode when present.
+   */
+  activeMode: AppMode | null = null
   /**
    * @param options The path, modified, and size of the workflow.
    * Note: path is the full path, including the 'workflows/' prefix.
@@ -129,6 +147,7 @@ export class ComfyWorkflow extends UserFile {
 
   override unload(): void {
     this.changeTracker = null
+    this.activeMode = null
     super.unload()
   }
 
