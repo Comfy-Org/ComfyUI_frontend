@@ -22,16 +22,14 @@ import type { OutputSelection } from '@/renderer/extensions/linearMode/linearMod
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const mediaActions = useMediaAssetActions()
-const queueStore = useQueueStore()
 const { isBuilderMode, isArrangeMode } = useAppMode()
-const { allOutputs } = useOutputHistory()
+const { allOutputs, mayBeActiveWorkflowPending } = useOutputHistory()
 const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
@@ -42,12 +40,14 @@ const selectedItem = ref<AssetItem>()
 const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
+const showSkeleton = ref(false)
 
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
   selectedOutput.value = sel.output
   canShowPreview.value = sel.canShowPreview
   latentPreview.value = sel.latentPreviewUrl
+  showSkeleton.value = sel.showSkeleton ?? false
 }
 
 function downloadAsset(item?: AssetItem) {
@@ -76,7 +76,9 @@ async function rerun(e: Event) {
 </script>
 <template>
   <section
-    v-if="selectedItem || selectedOutput || !executionStore.isIdle"
+    v-if="
+      selectedItem || selectedOutput || executionStore.isActiveWorkflowRunning
+    "
     data-testid="linear-output-info"
     class="flex w-full flex-wrap justify-center gap-2 p-4 text-sm tabular-nums md:z-10"
   >
@@ -105,7 +107,7 @@ async function rerun(e: Event) {
       <i class="icon-[lucide--download]" />
     </Button>
     <Button
-      v-if="!executionStore.isIdle && !selectedItem"
+      v-if="executionStore.isActiveWorkflowRunning && !selectedItem"
       variant="destructive"
       @click="commandStore.execute('Comfy.Interrupt')"
     >
@@ -145,7 +147,7 @@ async function rerun(e: Event) {
     :output="selectedOutput"
     :mobile
   />
-  <LatentPreview v-else-if="queueStore.runningTasks.length > 0" />
+  <LatentPreview v-else-if="showSkeleton || mayBeActiveWorkflowPending" />
   <LinearArrange v-else-if="isArrangeMode" />
   <LinearWelcome v-else />
   <div

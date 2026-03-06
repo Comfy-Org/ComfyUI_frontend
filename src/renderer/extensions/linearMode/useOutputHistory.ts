@@ -1,4 +1,5 @@
 import { useAsyncState } from '@vueuse/core'
+import type { ComputedRef } from 'vue'
 import { computed, ref, watchEffect } from 'vue'
 
 import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
@@ -11,12 +12,14 @@ import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOut
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 export function useOutputHistory(): {
   outputs: IAssetsProvider
   allOutputs: (item?: AssetItem) => ResultItemImpl[]
   selectFirstHistory: () => void
+  mayBeActiveWorkflowPending: ComputedRef<boolean>
 } {
   const backingOutputs = useMediaAssets('output')
   void backingOutputs.fetchMediaList()
@@ -24,6 +27,22 @@ export function useOutputHistory(): {
   const workflowStore = useWorkflowStore()
   const executionStore = useExecutionStore()
   const appModeStore = useAppModeStore()
+  const queueStore = useQueueStore()
+
+  // True when there are queued/running jobs for the active workflow but no
+  // in-progress output items yet.
+  const mayBeActiveWorkflowPending = computed(() => {
+    if (linearStore.activeWorkflowInProgressItems.length > 0) return false
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return false
+    const pathMap = executionStore.jobIdToSessionWorkflowPath
+    const matchesPath = (task: { jobId: string | number }) =>
+      pathMap.get(String(task.jobId)) === path
+    return (
+      queueStore.runningTasks.some(matchesPath) ||
+      queueStore.pendingTasks.some(matchesPath)
+    )
+  })
 
   function filterByOutputNodes(items: ResultItemImpl[]): ResultItemImpl[] {
     const nodeIds = appModeStore.selectedOutputs
@@ -140,5 +159,5 @@ export function useOutputHistory(): {
     }
   })
 
-  return { outputs, allOutputs, selectFirstHistory }
+  return { outputs, allOutputs, selectFirstHistory, mayBeActiveWorkflowPending }
 }
