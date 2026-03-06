@@ -3,13 +3,13 @@
   <WidgetLayoutField :widget="widget">
     <label
       :class="
-        cn(WidgetInputBaseClass, 'flex items-center gap-2 w-full px-4 py-2')
+        cn(WidgetInputBaseClass, 'flex w-full items-center gap-2 px-4 py-2')
       "
     >
       <ColorPicker
         v-model="localValue"
         v-bind="filteredProps"
-        class="h-4 w-8 overflow-hidden !rounded-full border-none"
+        class="h-4 w-8 overflow-hidden rounded-full! border-none"
         :aria-label="widget.name"
         :pt="{
           preview: '!w-full !h-full !border-none'
@@ -17,7 +17,7 @@
         @update:model-value="onPickerUpdate"
       />
       <span
-        class="text-xs truncate min-w-[4ch]"
+        class="min-w-[4ch] truncate text-xs"
         data-testid="widget-color-text"
         >{{ toHexFromFormat(localValue, format) }}</span
       >

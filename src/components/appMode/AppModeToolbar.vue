@@ -4,18 +4,21 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
-import { useAppMode } from '@/composables/useAppMode'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const workspaceStore = useWorkspaceStore()
 const { enableAppBuilder } = useAppMode()
-const { enterBuilder } = useAppModeStore()
+const appModeStore = useAppModeStore()
+const { enterBuilder } = appModeStore
+const { hasNodes } = storeToRefs(appModeStore)
 const tooltipOptions = { showDelay: 300, hideDelay: 300 }
 
 const isAssetsActive = computed(
@@ -39,7 +42,7 @@ function openTemplates() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 pointer-events-auto">
+  <div class="pointer-events-auto flex flex-col gap-2">
     <WorkflowActionsDropdown source="app_mode_toolbar">
       <template #button="{ hasUnseenItems }">
         <Button
@@ -50,7 +53,7 @@ function openTemplates() {
           variant="secondary"
           size="unset"
           :aria-label="t('sideToolbar.labels.menu')"
-          class="relative h-10 rounded-lg pl-3 pr-2 gap-1 data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
+          class="relative h-10 gap-1 rounded-lg pr-2 pl-3 data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
         >
           <i class="icon-[lucide--panels-top-left] size-4" />
           <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
@@ -71,6 +74,7 @@ function openTemplates() {
       }"
       variant="secondary"
       size="unset"
+      :disabled="!hasNodes"
       :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       class="size-10 rounded-lg"
       @click="enterBuilder"
@@ -79,7 +83,7 @@ function openTemplates() {
     </Button>
 
     <div
-      class="flex flex-col w-10 rounded-lg bg-secondary-background overflow-hidden"
+      class="flex w-10 flex-col overflow-hidden rounded-lg bg-secondary-background"
     >
       <Button
         v-tooltip.right="{

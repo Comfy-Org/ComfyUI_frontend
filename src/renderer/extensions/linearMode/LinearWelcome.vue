@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useAppMode } from '@/composables/useAppMode'
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useAppModeStore } from '@/stores/appModeStore'
 import Button from '@/components/ui/button/Button.vue'
 import { storeToRefs } from 'pinia'
@@ -8,14 +9,15 @@ import { storeToRefs } from 'pinia'
 const { t } = useI18n()
 const { setMode } = useAppMode()
 const appModeStore = useAppModeStore()
-const { hasOutputs } = storeToRefs(appModeStore)
+const { hasOutputs, hasNodes } = storeToRefs(appModeStore)
+const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
 </script>
 
 <template>
   <div
     role="article"
     data-testid="linear-welcome"
-    class="flex flex-col items-center justify-center h-full gap-6 p-8 max-w-lg mx-auto text-center"
+    class="mx-auto flex h-full max-w-lg flex-col items-center justify-center gap-6 p-8 text-center"
   >
     <div class="flex flex-col gap-2">
       <h2 class="text-3xl font-semibold text-muted-foreground">
@@ -23,7 +25,7 @@ const { hasOutputs } = storeToRefs(appModeStore)
       </h2>
     </div>
 
-    <div class="flex flex-col gap-3 text-muted-foreground max-w-md text-[14px]">
+    <div class="flex max-w-md flex-col gap-3 text-[14px] text-muted-foreground">
       <p class="mt-0">{{ t('linearMode.welcome.message') }}</p>
       <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
       <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
@@ -33,7 +35,7 @@ const { hasOutputs } = storeToRefs(appModeStore)
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>
             <span
-              class="inline-flex items-center px-3.5 py-0.5 mx-0.5 transform -translate-y-0.5 rounded-sm bg-primary-background text-base-foreground text-xxs font-medium cursor-default"
+              class="mx-0.5 inline-flex -translate-y-0.5 transform cursor-default items-center rounded-sm bg-primary-background px-3.5 py-0.5 text-xxs font-medium text-base-foreground"
             >
               {{ t('menu.run') }}
             </span>
@@ -41,19 +43,37 @@ const { hasOutputs } = storeToRefs(appModeStore)
         </i18n-t>
       </p>
     </div>
-    <div v-else class="flex flex-row gap-2">
-      <Button variant="textonly" size="lg" @click="setMode('graph')">
-        {{ t('linearMode.welcome.backToWorkflow') }}
-      </Button>
-      <Button variant="primary" size="lg" @click="appModeStore.enterBuilder()">
-        <i class="icon-[lucide--hammer]" />
-        {{ t('linearMode.welcome.buildApp') }}
-        <div
-          class="bg-base-foreground text-base-background text-xxs rounded-full absolute -top-2 -right-2 px-1"
+    <template v-else>
+      <p v-if="!hasNodes" class="mt-0 max-w-md text-sm text-base-foreground">
+        {{ t('linearMode.emptyWorkflowExplanation') }}
+      </p>
+      <div class="flex flex-row gap-2">
+        <Button variant="textonly" size="lg" @click="setMode('graph')">
+          {{ t('linearMode.backToWorkflow') }}
+        </Button>
+        <Button
+          v-if="!hasNodes"
+          variant="secondary"
+          size="lg"
+          @click="templateSelectorDialog.show('appbuilder')"
         >
-          {{ t('g.experimental') }}
-        </div>
-      </Button>
-    </div>
+          {{ t('linearMode.loadTemplate') }}
+        </Button>
+        <Button
+          v-else
+          variant="primary"
+          size="lg"
+          @click="appModeStore.enterBuilder()"
+        >
+          <i class="icon-[lucide--hammer]" />
+          {{ t('linearMode.welcome.buildApp') }}
+          <div
+            class="absolute -top-2 -right-2 rounded-full bg-base-foreground px-1 text-xxs text-base-background"
+          >
+            {{ t('g.experimental') }}
+          </div>
+        </Button>
+      </div>
+    </template>
   </div>
 </template>

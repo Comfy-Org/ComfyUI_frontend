@@ -19,6 +19,12 @@ export const useAppModeStore = defineStore('appMode', () => {
   const selectedInputs = reactive<[NodeId, string][]>([])
   const selectedOutputs = reactive<NodeId[]>([])
   const hasOutputs = computed(() => !!selectedOutputs.length)
+  const hasNodes = computed(() => {
+    // Nodes are not reactive, so trigger recomputation when workflow changes
+    void workflowStore.activeWorkflow
+    void mode.value
+    return !!app.rootGraph?.nodes?.length
+  })
 
   function loadSelections(data: Partial<LinearData> | undefined) {
     const rawInputs = data?.inputs ?? []
@@ -91,7 +97,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   })
 
   function enterBuilder() {
-    if (!app.rootGraph?.nodes?.length) {
+    if (!hasNodes.value) {
       emptyWorkflowDialog.show({
         onEnterBuilder: () => enterBuilder(),
         onDismiss: () => setMode('graph')
@@ -114,6 +120,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   return {
     enterBuilder,
     exitBuilder,
+    hasNodes,
     hasOutputs,
     resetSelectedToWorkflow,
     selectedInputs,

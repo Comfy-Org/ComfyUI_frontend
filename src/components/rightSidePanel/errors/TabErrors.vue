@@ -1,8 +1,8 @@
 <template>
-  <div class="flex flex-col h-full min-w-0">
+  <div class="flex h-full min-w-0 flex-col">
     <!-- Search bar + collapse toggle -->
     <div
-      class="px-4 pt-1 pb-4 flex items-center border-b border-interface-stroke shrink-0 min-w-0"
+      class="flex min-w-0 shrink-0 items-center border-b border-interface-stroke px-4 pt-1 pb-4"
     >
       <FormSearchInput v-model="searchQuery" class="flex-1" />
       <CollapseToggleButton
@@ -12,12 +12,12 @@
     </div>
 
     <!-- Scrollable content -->
-    <div class="flex-1 overflow-y-auto min-w-0">
+    <div class="min-w-0 flex-1 overflow-y-auto">
       <TransitionGroup tag="div" name="list-scale" class="relative">
         <div
           v-if="filteredGroups.length === 0"
           key="empty"
-          class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15"
+          class="px-4 pt-5 pb-15 text-center text-sm text-muted-foreground"
         >
           {{
             searchQuery.trim()
@@ -40,12 +40,12 @@
           @update:collapse="setSectionCollapsed(group.title, $event)"
         >
           <template #label>
-            <div class="flex items-center gap-2 flex-1 min-w-0">
-              <span class="flex-1 flex items-center gap-2 min-w-0">
+            <div class="flex min-w-0 flex-1 items-center gap-2">
+              <span class="flex min-w-0 flex-1 items-center gap-2">
                 <i
-                  class="icon-[lucide--octagon-alert] size-4 text-destructive-background-hover shrink-0"
+                  class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive-background-hover"
                 />
-                <span class="text-destructive-background-hover truncate">
+                <span class="truncate text-destructive-background-hover">
                   {{
                     group.type === 'missing_node'
                       ? `${group.title} (${missingPackGroups.length})`
@@ -69,7 +69,7 @@
                 "
                 variant="secondary"
                 size="sm"
-                class="shrink-0 mr-2 h-8 rounded-lg text-sm"
+                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
                 :disabled="isInstallingAll"
                 @click.stop="installAll"
               >
@@ -90,7 +90,7 @@
                 "
                 variant="secondary"
                 size="sm"
-                class="shrink-0 mr-2 h-8 rounded-lg text-sm"
+                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
                 @click.stop="handleReplaceAll()"
               >
                 {{ t('nodeReplacement.replaceAll', 'Replace All') }}
@@ -118,7 +118,7 @@
           />
 
           <!-- Execution Errors -->
-          <div v-else-if="group.type === 'execution'" class="px-4 space-y-3">
+          <div v-else-if="group.type === 'execution'" class="space-y-3 px-4">
             <ErrorNodeCard
               v-for="card in group.cards"
               :key="card.id"
@@ -135,17 +135,17 @@
     </div>
 
     <!-- Fixed Footer: Help Links -->
-    <div class="shrink-0 border-t border-interface-stroke p-4 min-w-0">
+    <div class="min-w-0 shrink-0 border-t border-interface-stroke p-4">
       <i18n-t
         keypath="rightSidePanel.errorHelp"
         tag="p"
-        class="m-0 text-sm text-muted-foreground leading-tight break-words"
+        class="m-0 text-sm/tight wrap-break-word text-muted-foreground"
       >
         <template #github>
           <Button
             variant="textonly"
             size="unset"
-            class="inline underline text-inherit text-sm whitespace-nowrap"
+            class="inline text-sm whitespace-nowrap text-inherit underline"
             @click="openGitHubIssues"
           >
             {{ t('rightSidePanel.errorHelpGithub') }}
@@ -155,7 +155,7 @@
           <Button
             variant="textonly"
             size="unset"
-            class="inline underline text-inherit text-sm whitespace-nowrap"
+            class="inline text-sm whitespace-nowrap text-inherit underline"
             @click="contactSupport"
           >
             {{ t('rightSidePanel.errorHelpSupport') }}

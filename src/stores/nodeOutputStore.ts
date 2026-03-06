@@ -121,11 +121,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
     const isImage = isImageOutputs(node, outputs)
-    const firstFilename = outputs.images[0]?.filename
 
     return outputs.images.map((image) => {
       const params = new URLSearchParams(image)
-      if (isImage) appendCloudResParam(params, firstFilename)
+      if (isImage) appendCloudResParam(params, image.filename)
       return api.apiURL(`/view?${params}${previewParam}${rand}`)
     })
   }

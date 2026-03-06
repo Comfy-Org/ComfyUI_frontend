@@ -1,6 +1,6 @@
 <template>
   <div
-    class="widget-expands flex h-full w-full flex-col gap-1"
+    class="widget-expands flex size-full flex-col gap-1"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
@@ -29,7 +29,7 @@
         <div
           v-show="cursorVisible"
           ref="cursorEl"
-          class="pointer-events-none absolute left-0 top-0 rounded-full border border-black/60 shadow-[0_0_0_1px_rgba(255,255,255,0.8)] will-change-transform"
+          class="pointer-events-none absolute top-0 left-0 rounded-full border border-black/60 shadow-[0_0_0_1px_rgba(255,255,255,0.8)] will-change-transform"
           :style="cursorSizeStyle"
         />
       </div>
@@ -46,7 +46,7 @@
       ref="controlsEl"
       :class="
         cn(
-          'grid shrink-0 gap-x-1 gap-y-1',
+          'grid shrink-0 gap-1',
           compact ? 'grid-cols-1' : 'grid-cols-[auto_1fr]'
         )
       "
@@ -109,7 +109,7 @@
           class="flex-1"
           @update:model-value="(v) => v?.length && (brushSize = v[0])"
         />
-        <span class="w-8 text-center text-xs text-node-text-muted">{{
+        <span class="text-node-text-muted w-8 text-center text-xs">{{
           brushSize
         }}</span>
       </div>
@@ -127,7 +127,7 @@
           <input
             type="color"
             :value="brushColorDisplay"
-            class="h-4 w-8 cursor-pointer appearance-none overflow-hidden rounded-full border-none bg-transparent [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none [&::-webkit-color-swatch]:rounded-full [&::-moz-color-swatch]:border-none [&::-moz-color-swatch]:rounded-full"
+            class="h-4 w-8 cursor-pointer appearance-none overflow-hidden rounded-full border-none bg-transparent [&::-moz-color-swatch]:rounded-full [&::-moz-color-swatch]:border-none [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-none [&::-webkit-color-swatch-wrapper]:p-0"
             @input="
               (e) => (brushColorDisplay = (e.target as HTMLInputElement).value)
             "
@@ -135,14 +135,14 @@
           <span class="min-w-[4ch] truncate text-xs">{{
             brushColorDisplay
           }}</span>
-          <span class="ml-auto flex items-center text-xs text-node-text-muted">
+          <span class="text-node-text-muted ml-auto flex items-center text-xs">
             <input
               type="number"
               :value="brushOpacityPercent"
               min="0"
               max="100"
               step="1"
-              class="w-7 appearance-none border-0 bg-transparent text-right text-xs text-node-text-muted outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+              class="text-node-text-muted w-7 appearance-none border-0 bg-transparent text-right text-xs outline-none [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               @click.stop
               @change="
                 (e) => {
@@ -177,7 +177,7 @@
               (v) => v?.length && (brushHardnessPercent = v[0])
             "
           />
-          <span class="w-8 text-center text-xs text-node-text-muted"
+          <span class="text-node-text-muted w-8 text-center text-xs"
             >{{ brushHardnessPercent }}%</span
           >
         </div>
@@ -201,7 +201,7 @@
             class="flex-1"
             @update:model-value="(v) => v?.length && (canvasWidth = v[0])"
           />
-          <span class="w-10 text-center text-xs text-node-text-muted">{{
+          <span class="text-node-text-muted w-10 text-center text-xs">{{
             canvasWidth
           }}</span>
         </div>
@@ -223,7 +223,7 @@
             class="flex-1"
             @update:model-value="(v) => v?.length && (canvasHeight = v[0])"
           />
-          <span class="w-10 text-center text-xs text-node-text-muted">{{
+          <span class="text-node-text-muted w-10 text-center text-xs">{{
             canvasHeight
           }}</span>
         </div>
@@ -240,7 +240,7 @@
           <input
             type="color"
             :value="backgroundColorDisplay"
-            class="h-4 w-8 cursor-pointer appearance-none overflow-hidden rounded-full border-none bg-transparent [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none [&::-webkit-color-swatch]:rounded-full [&::-moz-color-swatch]:border-none [&::-moz-color-swatch]:rounded-full"
+            class="h-4 w-8 cursor-pointer appearance-none overflow-hidden rounded-full border-none bg-transparent [&::-moz-color-swatch]:rounded-full [&::-moz-color-swatch]:border-none [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-none [&::-webkit-color-swatch-wrapper]:p-0"
             @input="
               (e) =>
                 (backgroundColorDisplay = (e.target as HTMLInputElement).value)

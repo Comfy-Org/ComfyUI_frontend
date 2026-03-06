@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AssetExport } from '@/stores/assetExportStore'
@@ -76,7 +76,7 @@ function closeDialog() {
         </h3>
       </div>
 
-      <div class="relative max-h-75 overflow-y-auto px-4 py-4">
+      <div class="relative max-h-75 overflow-y-auto p-4">
         <div class="flex flex-col gap-2">
           <div
             v-for="job in exportJobs"
@@ -119,7 +119,7 @@ function closeDialog() {
                 v-else-if="job.status === 'completed' && job.downloadError"
               >
                 <span
-                  class="text-xs text-destructive-background truncate max-w-32"
+                  class="max-w-32 truncate text-xs text-destructive-background"
                 >
                   {{ job.downloadError }}
                 </span>
@@ -178,7 +178,7 @@ function closeDialog() {
 
     <template #footer="{ toggle }">
       <div
-        class="flex flex-1 min-w-0 h-12 items-center justify-between gap-2 border-t border-border-default px-4"
+        class="flex h-12 min-w-0 flex-1 items-center justify-between gap-2 border-t border-border-default px-4"
       >
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <i
@@ -188,7 +188,7 @@ function closeDialog() {
           <span
             :class="
               cn(
-                'truncate font-bold text-base-foreground transition-all duration-300 overflow-hidden',
+                'truncate overflow-hidden font-bold text-base-foreground transition-all duration-300',
                 isExpanded ? 'min-w-0 flex-1' : 'w-0'
               )
             "
@@ -202,7 +202,7 @@ function closeDialog() {
             v-if="isInProgress"
             :class="
               cn(
-                'text-sm text-muted-foreground transition-all duration-300 overflow-hidden',
+                'overflow-hidden text-sm text-muted-foreground transition-all duration-300',
                 isExpanded ? 'whitespace-nowrap' : 'w-0'
               )
             "

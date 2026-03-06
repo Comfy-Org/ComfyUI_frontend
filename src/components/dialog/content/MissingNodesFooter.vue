@@ -1,12 +1,12 @@
 <template>
-  <div class="flex w-full flex-col gap-2 py-2 px-4">
+  <div class="flex w-full flex-col gap-2 px-4 py-2">
     <div class="flex flex-col gap-1 text-sm text-muted-foreground">
       <div class="flex items-center gap-1">
         <input
           id="doNotAskAgainNodes"
           v-model="doNotAskAgain"
           type="checkbox"
-          class="h-4 w-4 cursor-pointer"
+          class="size-4 cursor-pointer"
         />
         <label for="doNotAskAgainNodes">{{
           $t('missingModelsDialog.doNotAskAgain')
@@ -16,12 +16,12 @@
         v-if="doNotAskAgain"
         keypath="missingModelsDialog.reEnableInSettings"
         tag="span"
-        class="text-sm text-muted-foreground ml-6"
+        class="ml-6 text-sm text-muted-foreground"
       >
         <template #link>
           <Button
             variant="textonly"
-            class="underline cursor-pointer p-0 text-sm text-muted-foreground hover:bg-transparent"
+            class="cursor-pointer p-0 text-sm text-muted-foreground underline hover:bg-transparent"
             @click="openShowMissingNodesSetting"
           >
             {{ $t('missingModelsDialog.reEnableInSettingsLink') }}

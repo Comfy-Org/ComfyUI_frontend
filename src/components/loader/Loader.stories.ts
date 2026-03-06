@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import Loader from './Loader.vue'
 
 const meta: Meta<typeof Loader> = {
-  title: 'Components/Common/Loader',
+  title: 'Components/Loader/Loader',
   component: Loader,
   tags: ['autodocs'],
   parameters: {

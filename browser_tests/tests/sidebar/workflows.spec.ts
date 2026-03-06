@@ -330,12 +330,9 @@ test.describe('Workflows sidebar', () => {
       .getPersistedItem('workflow1.json')
       .click({ button: 'right' })
     await comfyPage.contextMenu.clickMenuItem('Duplicate')
-    await comfyPage.nextFrame()
-
-    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow.json',
-      '*workflow1 (Copy).json'
-    ])
+    await expect
+      .poll(() => workflowsTab.getOpenedWorkflowNames())
+      .toEqual(['*Unsaved Workflow.json', '*workflow1 (Copy).json'])
   })
 
   test('Can drop workflow from workflows sidebar', async ({ comfyPage }) => {

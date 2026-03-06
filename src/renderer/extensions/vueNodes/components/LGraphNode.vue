@@ -10,7 +10,7 @@
     :class="
       cn(
         'group/node lg-node absolute text-sm',
-        'contain-style contain-layout min-w-[225px] flex flex-col',
+        'contain-layout contain-style min-w-[225px] flex flex-col',
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
@@ -149,7 +149,7 @@
         <div
           :class="
             cn(
-              'flex flex-1 flex-col gap-1 pt-1 pb-3 bg-component-node-background',
+              'flex flex-1 flex-col gap-1 bg-component-node-background pt-1 pb-3',
               bodyRoundingClass
             )
           "
@@ -159,7 +159,7 @@
 
           <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
-          <div v-if="hasCustomContent" class="min-h-0 flex-1 flex flex-col">
+          <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent
               v-if="nodeMedia"
               :node-data="nodeData"
@@ -222,7 +222,7 @@
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 12 12"
-          :class="cn('w-2/5 h-2/5 absolute', handle.svgPositionClasses)"
+          :class="cn('absolute size-2/5', handle.svgPositionClasses)"
           :style="
             handle.svgTransform ? { transform: handle.svgTransform } : undefined
           "
@@ -291,7 +291,7 @@ import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeData
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
