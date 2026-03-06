@@ -141,11 +141,9 @@ const footerRadiusClass = computed(() => {
 
   switch (props.shape) {
     case RenderShape.BOX:
-      return 'rounded-none'
+      return ''
     case RenderShape.CARD:
-      return isExpanded
-        ? 'rounded-bl-none rounded-br-[20px]'
-        : 'rounded-bl-none rounded-br-2xl'
+      return isExpanded ? 'rounded-br-[20px]' : 'rounded-br-2xl'
     default:
       return isExpanded ? 'rounded-b-[20px]' : 'rounded-b-2xl'
   }

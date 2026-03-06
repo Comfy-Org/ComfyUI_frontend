@@ -46,7 +46,7 @@
       data-testid="node-state-outline-overlay"
       :class="
         cn(
-          'absolute pointer-events-none border-3 z-60 outline-none',
+          'absolute pointer-events-none border-3 z-0 outline-none',
           selectionShapeClass,
           hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
           isSelected
@@ -177,7 +177,12 @@
             v-if="shouldShowPreviewImg"
             :image-url="latestPreviewUrl"
           />
-          <NodeBadges v-bind="badges" :pricing="undefined" class="mt-auto" />
+          <NodeBadges
+            v-if="!isTransparentHeaderless"
+            v-bind="badges"
+            :pricing="undefined"
+            class="mt-auto"
+          />
         </div>
       </template>
     </div>
@@ -294,6 +299,7 @@ import {
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
+import { isTransparent } from '@/utils/colorUtil'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -575,10 +581,9 @@ const cursorClass = computed(() => {
 const bodyRoundingClass = computed(() => {
   switch (nodeData.shape) {
     case RenderShape.BOX:
-      return 'rounded-none'
+      return ''
     case RenderShape.CARD:
-      // Rounding tl-none and br-2xl as per user's final manual correction
-      return 'rounded-tl-none rounded-br-2xl rounded-tr-none rounded-bl-none'
+      return 'rounded-br-2xl'
     default:
       return 'rounded-b-2xl'
   }
@@ -587,37 +592,48 @@ const bodyRoundingClass = computed(() => {
 const shapeClass = computed(() => {
   switch (nodeData.shape) {
     case RenderShape.BOX:
-      return 'rounded-none'
+      return ''
     case RenderShape.CARD:
-      return 'rounded-tl-2xl rounded-br-2xl rounded-tr-none rounded-bl-none'
+      return 'rounded-tl-2xl rounded-br-2xl'
     default:
       return 'rounded-2xl'
   }
 })
 
+const isTransparentHeaderless = computed(
+  () =>
+    !displayHeader.value &&
+    !!nodeData.bgcolor &&
+    isTransparent(nodeData.bgcolor)
+)
+
 const rootBorderShapeClass = computed(() => {
+  if (isTransparentHeaderless.value) return 'border-0'
+
   const isExpanded = hasAnyError.value
   switch (nodeData.shape) {
     case RenderShape.BOX:
-      return 'rounded-none'
+      return ''
     case RenderShape.CARD:
       return isExpanded
-        ? 'rounded-tl-[20px] rounded-br-[20px] rounded-tr-none rounded-bl-none'
-        : 'rounded-tl-2xl rounded-br-2xl rounded-tr-none rounded-bl-none'
+        ? 'rounded-tl-[20px] rounded-br-[20px]'
+        : 'rounded-tl-2xl rounded-br-2xl'
     default:
       return isExpanded ? 'rounded-[20px]' : 'rounded-2xl'
   }
 })
 
 const selectionShapeClass = computed(() => {
+  if (isTransparentHeaderless.value) return 'border-0'
+
   const isExpanded = hasAnyError.value
   switch (nodeData.shape) {
     case RenderShape.BOX:
-      return 'rounded-none'
+      return ''
     case RenderShape.CARD:
       return isExpanded
-        ? 'rounded-tl-[23px] rounded-br-[23px] rounded-tr-none rounded-bl-none'
-        : 'rounded-tl-[19px] rounded-br-[19px] rounded-tr-none rounded-bl-none'
+        ? 'rounded-tl-[23px] rounded-br-[23px]'
+        : 'rounded-tl-[19px] rounded-br-[19px]'
     default:
       return isExpanded ? 'rounded-[23px]' : 'rounded-[19px]'
   }
@@ -626,9 +642,9 @@ const selectionShapeClass = computed(() => {
 const beforeShapeClass = computed(() => {
   switch (nodeData.shape) {
     case RenderShape.BOX:
-      return 'before:rounded-none'
+      return ''
     case RenderShape.CARD:
-      return 'before:rounded-tl-2xl before:rounded-br-2xl before:rounded-tr-none before:rounded-bl-none'
+      return 'before:rounded-tl-2xl before:rounded-br-2xl'
     default:
       return 'before:rounded-2xl'
   }
