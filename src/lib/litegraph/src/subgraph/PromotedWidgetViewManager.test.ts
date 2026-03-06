@@ -101,6 +101,87 @@ describe('PromotedWidgetViewManager', () => {
     expect(views[1].key).toBe('1:widgetA:slotB')
   })
 
+  test('getOrCreate returns distinct views for same widget with different viewKeys', () => {
+    const manager = new PromotedWidgetViewManager<{ key: string }>()
+
+    const viewA = manager.getOrCreate(
+      '1',
+      'widgetA',
+      () =>
+        makeView({
+          interiorNodeId: '1',
+          widgetName: 'widgetA',
+          viewKey: 'slotA'
+        }),
+      'slotA'
+    )
+    const viewB = manager.getOrCreate(
+      '1',
+      'widgetA',
+      () =>
+        makeView({
+          interiorNodeId: '1',
+          widgetName: 'widgetA',
+          viewKey: 'slotB'
+        }),
+      'slotB'
+    )
+
+    expect(viewA).not.toBe(viewB)
+    expect(viewA.key).toBe('1:widgetA:slotA')
+    expect(viewB.key).toBe('1:widgetA:slotB')
+  })
+
+  test('getOrCreate with viewKey returns cached view on subsequent calls', () => {
+    const manager = new PromotedWidgetViewManager<{ key: string }>()
+
+    const first = manager.getOrCreate(
+      '1',
+      'widgetA',
+      () =>
+        makeView({
+          interiorNodeId: '1',
+          widgetName: 'widgetA',
+          viewKey: 'slotA'
+        }),
+      'slotA'
+    )
+    const second = manager.getOrCreate(
+      '1',
+      'widgetA',
+      () =>
+        makeView({
+          interiorNodeId: '1',
+          widgetName: 'widgetA',
+          viewKey: 'slotA'
+        }),
+      'slotA'
+    )
+
+    expect(second).toBe(first)
+  })
+
+  test('getOrCreate with viewKey does not collide with keyless entry', () => {
+    const manager = new PromotedWidgetViewManager<{ key: string }>()
+
+    const keyless = manager.getOrCreate('1', 'widgetA', () =>
+      makeView({ interiorNodeId: '1', widgetName: 'widgetA' })
+    )
+    const keyed = manager.getOrCreate(
+      '1',
+      'widgetA',
+      () =>
+        makeView({
+          interiorNodeId: '1',
+          widgetName: 'widgetA',
+          viewKey: 'slotA'
+        }),
+      'slotA'
+    )
+
+    expect(keyed).not.toBe(keyless)
+  })
+
   test('removeByViewKey removes only the targeted keyed view', () => {
     const manager = new PromotedWidgetViewManager<{ key: string }>()
 
