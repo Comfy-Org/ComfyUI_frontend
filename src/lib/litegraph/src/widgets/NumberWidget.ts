@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { evaluateInput, getWidgetStep } from '@/lib/litegraph/src/utils/widget'
 
@@ -65,7 +66,7 @@ export class NumberWidget
 
     // Handle center click - show prompt
     canvas.prompt(
-      'Value',
+      t('widgets.valuePromptTitle'),
       this.value,
       (v: string) => {
         const parsed = evaluateInput(v)

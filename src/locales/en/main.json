@@ -2545,6 +2545,7 @@
     },
     "node2only": "Node 2.0 only",
     "selectModel": "Select model",
+    "valuePromptTitle": "Value",
     "uploadSelect": {
       "placeholder": "Select...",
       "placeholderImage": "Select image...",

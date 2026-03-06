@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 
@@ -40,7 +41,7 @@ export class TextWidget
   override onClick({ e, node, canvas }: WidgetEventOptions) {
     // Show prompt dialog for text input
     canvas.prompt(
-      'Value',
+      t('widgets.valuePromptTitle'),
       this.value,
       (v: string) => {
         if (v !== null) {
