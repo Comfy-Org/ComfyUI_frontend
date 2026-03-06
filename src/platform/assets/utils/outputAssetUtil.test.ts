@@ -126,6 +126,59 @@ describe('resolveOutputAssetItems', () => {
     ])
   })
 
+  it('reverses outputs and excludes the correct key simultaneously', async () => {
+    const outputA = createOutput({
+      filename: 'a.png',
+      nodeId: '1',
+      url: 'https://example.com/a.png'
+    })
+    const outputB = createOutput({
+      filename: 'b.png',
+      nodeId: '2',
+      url: 'https://example.com/b.png'
+    })
+    const outputC = createOutput({
+      filename: 'c.png',
+      nodeId: '3',
+      url: 'https://example.com/c.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-combo',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 3,
+      allOutputs: [outputA, outputB, outputC]
+    }
+
+    const results = await resolveOutputAssetItems(metadata, {
+      excludeOutputKey: '2-sub-b.png'
+    })
+
+    // outputB excluded, remaining reversed: [C, A]
+    expect(results.map((asset) => asset.name)).toEqual(['c.png', 'a.png'])
+  })
+
+  it('returns empty array when all outputs are excluded', async () => {
+    const output = createOutput({
+      filename: 'only.png',
+      nodeId: '1',
+      url: 'https://example.com/only.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-empty',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata, {
+      excludeOutputKey: '1-sub-only.png'
+    })
+
+    expect(results).toHaveLength(0)
+  })
+
   it('keeps root outputs with empty subfolders', async () => {
     const output = createOutput({
       filename: 'root.png',
