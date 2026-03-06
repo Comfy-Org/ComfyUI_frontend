@@ -9,6 +9,19 @@ import { syncEntities } from '@/utils/syncUtil'
 import { buildTree } from '@/utils/treeUtil'
 
 /**
+ * Normalizes a timestamp value that may be either a number (milliseconds)
+ * or an ISO 8601 string (from Go's time.Time JSON serialization) into
+ * a consistent millisecond timestamp.
+ */
+function normalizeTimestamp(value: number | string): number {
+  if (typeof value === 'string') {
+    const ms = new Date(value).getTime()
+    return Number.isNaN(ms) ? Date.now() : ms
+  }
+  return value
+}
+
+/**
  * Represents a file in the user's data directory.
  */
 export class UserFile {
@@ -140,7 +153,7 @@ export class UserFile {
     // https://github.com/comfyanonymous/ComfyUI/pull/5446
     const updatedFile = (await resp.json()) as string | UserDataFullInfo
     if (typeof updatedFile === 'object') {
-      this.lastModified = updatedFile.modified
+      this.lastModified = normalizeTimestamp(updatedFile.modified)
       this.size = updatedFile.size
     }
     this.originalContent = this.content
@@ -175,7 +188,7 @@ export class UserFile {
     // https://github.com/comfyanonymous/ComfyUI/pull/5446
     const updatedFile = (await resp.json()) as string | UserDataFullInfo
     if (typeof updatedFile === 'object') {
-      this.lastModified = updatedFile.modified
+      this.lastModified = normalizeTimestamp(updatedFile.modified)
       this.size = updatedFile.size
     }
     return this

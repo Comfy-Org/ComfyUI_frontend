@@ -3968,6 +3968,10 @@
         "name": "seed",
         "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
       },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Only allowed when multiple images are connected to the image input."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -3999,6 +4003,9 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "resolution": {
+        "name": "resolution"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -5749,6 +5756,9 @@
       },
       "mode": {
         "name": "mode"
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {

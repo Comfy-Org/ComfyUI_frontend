@@ -14,11 +14,12 @@ import type {
   StatusWsMessageStatus,
   TaskOutput
 } from '@/schemas/apiSchema'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -91,6 +92,13 @@ export class ResultItemImpl {
     return api.apiURL('/view?' + this.urlParams)
   }
 
+  get previewUrl(): string {
+    if (!this.isImage) return this.url
+    const params = new URLSearchParams(this.urlParams)
+    appendCloudResParam(params, this.filename)
+    return api.apiURL('/view?' + params)
+  }
+
   get urlWithTimestamp(): string {
     return `${this.url}&t=${+new Date()}`
   }
@@ -99,47 +107,78 @@ export class ResultItemImpl {
     return !!this.format && !!this.frame_rate
   }
 
-  get extension(): string {
-    const dotIndex = this.filename.lastIndexOf('.')
-    return dotIndex >= 0 ? this.filename.slice(dotIndex + 1).toLowerCase() : ''
-  }
-
   get htmlVideoType(): string | undefined {
-    const videoMimeTypes: Record<string, string> = {
-      webm: 'video/webm',
-      mp4: 'video/mp4'
+    if (this.isWebm) {
+      return 'video/webm'
     }
-    const byExtension = videoMimeTypes[this.extension]
-    if (byExtension) return byExtension
+    if (this.isMp4) {
+      return 'video/mp4'
+    }
+    if (this.filename.endsWith('.mov')) {
+      return 'video/quicktime'
+    }
 
     if (this.isVhsFormat) {
-      for (const [ext, mime] of Object.entries(videoMimeTypes)) {
-        if (this.format?.endsWith(ext)) return mime
+      if (this.format?.endsWith('webm')) {
+        return 'video/webm'
+      }
+      if (this.format?.endsWith('mp4')) {
+        return 'video/mp4'
       }
     }
     return undefined
   }
 
   get htmlAudioType(): string | undefined {
-    const audioMimeTypes: Record<string, string> = {
-      mp3: 'audio/mpeg',
-      wav: 'audio/wav',
-      ogg: 'audio/ogg',
-      flac: 'audio/flac'
+    if (this.isMp3) {
+      return 'audio/mpeg'
     }
-    return audioMimeTypes[this.extension]
+    if (this.isWav) {
+      return 'audio/wav'
+    }
+    if (this.isOgg) {
+      return 'audio/ogg'
+    }
+    if (this.isFlac) {
+      return 'audio/flac'
+    }
+    return undefined
+  }
+
+  get isWebm(): boolean {
+    return this.filename.endsWith('.webm')
+  }
+
+  get isMp4(): boolean {
+    return this.filename.endsWith('.mp4')
   }
 
   get isVideoBySuffix(): boolean {
-    return this.extension === 'webm' || this.extension === 'mp4'
+    return getMediaTypeFromFilename(this.filename) === 'video'
   }
 
   get isImageBySuffix(): boolean {
-    return this.extension === 'gif' || this.extension === 'webp'
+    return getMediaTypeFromFilename(this.filename) === 'image'
+  }
+
+  get isMp3(): boolean {
+    return this.filename.endsWith('.mp3')
+  }
+
+  get isWav(): boolean {
+    return this.filename.endsWith('.wav')
+  }
+
+  get isOgg(): boolean {
+    return this.filename.endsWith('.ogg')
+  }
+
+  get isFlac(): boolean {
+    return this.filename.endsWith('.flac')
   }
 
   get isAudioBySuffix(): boolean {
-    return ['mp3', 'wav', 'ogg', 'flac'].includes(this.extension)
+    return getMediaTypeFromFilename(this.filename) === 'audio'
   }
 
   get isVideo(): boolean {
@@ -595,7 +634,11 @@ export const useQueuePendingTaskCountStore = defineStore(
   }
 )
 
-type AutoQueueMode = 'disabled' | 'change' | 'instant-idle' | 'instant-running'
+export type AutoQueueMode =
+  | 'disabled'
+  | 'change'
+  | 'instant-idle'
+  | 'instant-running'
 
 export const isInstantMode = (
   mode: AutoQueueMode

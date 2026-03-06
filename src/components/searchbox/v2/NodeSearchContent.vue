@@ -60,7 +60,7 @@
           :aria-selected="index === selectedIndex"
           :class="
             cn(
-              'flex cursor-pointer items-center px-4 h-14',
+              'flex h-14 cursor-pointer items-center px-4',
               index === selectedIndex && 'bg-secondary-background-hover'
             )
           "

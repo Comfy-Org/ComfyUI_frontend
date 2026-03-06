@@ -24,31 +24,6 @@ export interface PendingWarnings {
   }
 }
 
-type LinearModeTarget = { extra?: Record<string, unknown> | null } | null
-
-export function syncLinearMode(
-  workflow: ComfyWorkflow,
-  targets: LinearModeTarget[],
-  options?: { flushLinearData?: boolean }
-): void {
-  for (const target of targets) {
-    if (!target) continue
-    if (workflow.initialMode === 'app' || workflow.initialMode === 'graph') {
-      const extra = (target.extra ??= {})
-      extra.linearMode = workflow.initialMode === 'app'
-    } else {
-      delete target.extra?.linearMode
-    }
-    if (options?.flushLinearData && workflow.dirtyLinearData) {
-      const extra = (target.extra ??= {})
-      extra.linearData = workflow.dirtyLinearData
-    }
-  }
-  if (options?.flushLinearData && workflow.dirtyLinearData) {
-    workflow.dirtyLinearData = null
-  }
-}
-
 export class ComfyWorkflow extends UserFile {
   static readonly basePath: string = 'workflows/'
   readonly tintCanvasBg?: string
@@ -77,12 +52,6 @@ export class ComfyWorkflow extends UserFile {
    * Takes precedence over initialMode when present.
    */
   activeMode: AppMode | null = null
-  /**
-   * In-progress builder selections not yet persisted via save.
-   * Preserved across tab switches, discarded on exitBuilder.
-   */
-  dirtyLinearData: LinearData | null = null
-
   /**
    * @param options The path, modified, and size of the workflow.
    * Note: path is the full path, including the 'workflows/' prefix.

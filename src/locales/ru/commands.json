@@ -344,6 +344,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "Переключить режим фокуса"
   },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "Переключить боковую панель приложений",
+    "tooltip": "Приложения"
+  },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "Переключить боковую панель ресурсов",
     "tooltip": "Ресурсы"

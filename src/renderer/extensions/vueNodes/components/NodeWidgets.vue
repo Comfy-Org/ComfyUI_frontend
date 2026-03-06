@@ -33,7 +33,7 @@
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
+              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
               widget.slotMetadata?.linked && 'opacity-100'
             )
           "
@@ -53,7 +53,7 @@
           />
         </div>
         <!-- Widget Component -->
-        <AppInput :id="widget.id" :name="widget.name" :is-select-mode>
+        <AppInput :id="widget.id" :name="widget.name" :is-select-inputs-mode>
           <component
             :is="widget.vueComponent"
             v-model="widget.value"
@@ -64,7 +64,7 @@
             :class="
               cn(
                 'col-span-2',
-                widget.hasError && 'text-node-stroke-error font-bold'
+                widget.hasError && 'font-bold text-node-stroke-error'
               )
             "
             @update:model-value="widget.updateHandler"
@@ -123,7 +123,7 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
-const { isSelectMode } = useAppMode()
+const { isSelectInputsMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
 const promotionStore = usePromotionStore()
@@ -215,9 +215,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
 
-    // Build options from store state, with slot-linked override for disabled
+    // Build options from store state, with disabled override for
+    // slot-linked widgets or widgets with disabled state (e.g. display-only)
     const storeOptions = widgetState?.options ?? {}
-    const widgetOptions = slotMetadata?.linked
+    const isDisabled = slotMetadata?.linked || widgetState?.disabled
+    const widgetOptions = isDisabled
       ? { ...storeOptions, disabled: true }
       : storeOptions
 

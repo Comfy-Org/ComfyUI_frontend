@@ -5,25 +5,26 @@ import { createI18n } from 'vue-i18n'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
+import { createMockWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en'
 })
 
-function createMockWidget(
+function createNumberInputWidget(
   value: number = 0,
   type: 'int' | 'float' = 'int',
   options: SimplifiedWidget['options'] = {},
   callback?: (value: number) => void
 ): SimplifiedWidget<number> {
-  return {
+  return createMockWidget<number>({
+    value,
     name: 'test_input_number',
     type,
-    value,
     options,
     callback
-  }
+  })
 }
 
 function mountComponent(widget: SimplifiedWidget<number>, modelValue: number) {
@@ -43,7 +44,7 @@ function getNumberInput(wrapper: ReturnType<typeof mount>) {
 
 describe('WidgetInputNumberInput Value Binding', () => {
   it('displays initial value in input field', () => {
-    const widget = createMockWidget(42, 'int')
+    const widget = createNumberInputWidget(42, 'int')
     const wrapper = mountComponent(widget, 42)
 
     const input = getNumberInput(wrapper)
@@ -51,7 +52,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
   })
 
   it('emits update:modelValue when value changes', async () => {
-    const widget = createMockWidget(10, 'int')
+    const widget = createNumberInputWidget(10, 'int')
     const wrapper = mountComponent(widget, 10)
 
     const inputNumber = wrapper
@@ -63,7 +64,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
   })
 
   it('handles negative values', () => {
-    const widget = createMockWidget(-5, 'int')
+    const widget = createNumberInputWidget(-5, 'int')
     const wrapper = mountComponent(widget, -5)
 
     const input = getNumberInput(wrapper)
@@ -71,7 +72,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
   })
 
   it('handles decimal values for float type', () => {
-    const widget = createMockWidget(3.14, 'float')
+    const widget = createNumberInputWidget(3.14, 'float')
     const wrapper = mountComponent(widget, 3.14)
 
     const input = getNumberInput(wrapper)
@@ -81,7 +82,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
 
 describe('WidgetInputNumberInput Grouping Behavior', () => {
   it('displays numbers without commas by default for int widgets', () => {
-    const widget = createMockWidget(1000, 'int')
+    const widget = createNumberInputWidget(1000, 'int')
     const wrapper = mountComponent(widget, 1000)
 
     const input = getNumberInput(wrapper)
@@ -90,7 +91,7 @@ describe('WidgetInputNumberInput Grouping Behavior', () => {
   })
 
   it('displays numbers without commas by default for float widgets', () => {
-    const widget = createMockWidget(1000.5, 'float')
+    const widget = createNumberInputWidget(1000.5, 'float')
     const wrapper = mountComponent(widget, 1000.5)
 
     const input = getNumberInput(wrapper)
@@ -99,7 +100,7 @@ describe('WidgetInputNumberInput Grouping Behavior', () => {
   })
 
   it('displays numbers with commas when grouping enabled', () => {
-    const widget = createMockWidget(1000, 'int', { useGrouping: true })
+    const widget = createNumberInputWidget(1000, 'int', { useGrouping: true })
     const wrapper = mountComponent(widget, 1000)
 
     const input = getNumberInput(wrapper)
@@ -108,7 +109,7 @@ describe('WidgetInputNumberInput Grouping Behavior', () => {
   })
 
   it('displays numbers without commas when grouping explicitly disabled', () => {
-    const widget = createMockWidget(1000, 'int', { useGrouping: false })
+    const widget = createNumberInputWidget(1000, 'int', { useGrouping: false })
     const wrapper = mountComponent(widget, 1000)
 
     const input = getNumberInput(wrapper)
@@ -117,7 +118,9 @@ describe('WidgetInputNumberInput Grouping Behavior', () => {
   })
 
   it('displays numbers without commas when useGrouping option is undefined', () => {
-    const widget = createMockWidget(1000, 'int', { useGrouping: undefined })
+    const widget = createNumberInputWidget(1000, 'int', {
+      useGrouping: undefined
+    })
     const wrapper = mountComponent(widget, 1000)
 
     const input = getNumberInput(wrapper)
@@ -131,21 +134,21 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
   const UNSAFE_LARGE_INTEGER = 18446744073709552000 // Example seed value that exceeds safe range
 
   it('shows buttons for safe integer values', () => {
-    const widget = createMockWidget(1000, 'int')
+    const widget = createNumberInputWidget(1000, 'int')
     const wrapper = mountComponent(widget, 1000)
 
     expect(wrapper.findAll('button').length).toBe(2)
   })
 
   it('shows buttons for values at safe integer limit', () => {
-    const widget = createMockWidget(SAFE_INTEGER_MAX, 'int')
+    const widget = createNumberInputWidget(SAFE_INTEGER_MAX, 'int')
     const wrapper = mountComponent(widget, SAFE_INTEGER_MAX)
 
     expect(wrapper.findAll('button').length).toBe(2)
   })
 
   it('hides buttons for unsafe large integer values', () => {
-    const widget = createMockWidget(UNSAFE_LARGE_INTEGER, 'int')
+    const widget = createNumberInputWidget(UNSAFE_LARGE_INTEGER, 'int')
     const wrapper = mountComponent(widget, UNSAFE_LARGE_INTEGER)
 
     expect(wrapper.findAll('button').length).toBe(0)
@@ -153,7 +156,7 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
 
   it('hides buttons for unsafe negative integer values', () => {
     const unsafeNegative = -UNSAFE_LARGE_INTEGER
-    const widget = createMockWidget(unsafeNegative, 'int')
+    const widget = createNumberInputWidget(unsafeNegative, 'int')
     const wrapper = mountComponent(widget, unsafeNegative)
 
     expect(wrapper.findAll('button').length).toBe(0)
@@ -161,7 +164,7 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
 
   it('shows tooltip for disabled buttons due to precision limits', (context) => {
     context.skip('needs diagnosis')
-    const widget = createMockWidget(UNSAFE_LARGE_INTEGER, 'int')
+    const widget = createNumberInputWidget(UNSAFE_LARGE_INTEGER, 'int')
     const wrapper = mountComponent(widget, UNSAFE_LARGE_INTEGER)
 
     // Check that tooltip wrapper div exists
@@ -170,7 +173,7 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
   })
 
   it('does not show tooltip for safe integer values', () => {
-    const widget = createMockWidget(1000, 'int')
+    const widget = createNumberInputWidget(1000, 'int')
     const wrapper = mountComponent(widget, 1000)
 
     // For safe values, tooltip should not be set (computed returns null)
@@ -179,7 +182,7 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
   })
 
   it('handles floating point values correctly', () => {
-    const widget = createMockWidget(1000.5, 'float')
+    const widget = createNumberInputWidget(1000.5, 'float')
     const wrapper = mountComponent(widget, 1000.5)
 
     expect(wrapper.findAll('button').length).toBe(2)
@@ -187,7 +190,7 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
 
   it('hides buttons for unsafe floating point values', () => {
     const unsafeFloat = UNSAFE_LARGE_INTEGER + 0.5
-    const widget = createMockWidget(unsafeFloat, 'float')
+    const widget = createNumberInputWidget(unsafeFloat, 'float')
     const wrapper = mountComponent(widget, unsafeFloat)
 
     expect(wrapper.findAll('button').length).toBe(0)
@@ -196,7 +199,7 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
 
 describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
   it('handles null/undefined model values gracefully', () => {
-    const widget = createMockWidget(0, 'int')
+    const widget = createNumberInputWidget(0, 'int')
     const wrapper = mount(WidgetInputNumberInput, {
       global: { plugins: [i18n] },
       props: {
@@ -210,21 +213,21 @@ describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
 
   it('handles NaN values gracefully', (context) => {
     context.skip('needs diagnosis')
-    const widget = createMockWidget(NaN, 'int')
+    const widget = createNumberInputWidget(NaN, 'int')
     const wrapper = mountComponent(widget, NaN)
 
     expect(wrapper.findAll('button').length).toBe(0)
   })
 
   it('handles Infinity values', () => {
-    const widget = createMockWidget(Infinity, 'int')
+    const widget = createNumberInputWidget(Infinity, 'int')
     const wrapper = mountComponent(widget, Infinity)
 
     expect(wrapper.findAll('button').length).toBe(0)
   })
 
   it('handles negative Infinity values', () => {
-    const widget = createMockWidget(-Infinity, 'int')
+    const widget = createNumberInputWidget(-Infinity, 'int')
     const wrapper = mountComponent(widget, -Infinity)
 
     expect(wrapper.findAll('button').length).toBe(0)

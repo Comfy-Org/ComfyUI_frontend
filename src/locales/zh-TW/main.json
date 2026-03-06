@@ -326,14 +326,14 @@
     "deleteWorkflow": "刪除工作流程",
     "duplicate": "複製",
     "enterAppMode": "進入應用模式",
+    "enterBuilderMode": "進入應用程式建構器",
     "enterNewName": "輸入新名稱",
     "exitAppMode": "離開應用模式",
     "missingNodesWarning": "工作流程包含不支援的節點（以紅色標示）。",
     "workflowActions": "工作流程操作"
   },
   "builderMenu": {
-    "exitAppBuilder": "離開應用程式建構器",
-    "saveApp": "儲存應用程式"
+    "exitAppBuilder": "離開應用程式建構器"
   },
   "builderToolbar": {
     "app": "應用",
@@ -343,22 +343,26 @@
     "connectOutput": "連接輸出",
     "connectOutputBody1": "您的應用必須至少連接一個輸出才能儲存。",
     "connectOutputBody2": "切換到「選擇」步驟，點擊輸出節點以新增到這裡。",
-    "filename": "檔案名稱",
+    "defaultModeAppliedAppBody": "此工作流程將從現在起預設以應用程式模式開啟。",
+    "defaultModeAppliedAppPrompt": "您想現在查看嗎？",
+    "defaultModeAppliedGraphBody": "此工作流程將從現在起預設以節點圖形模式開啟。",
+    "defaultModeAppliedGraphPrompt": "您還想查看應用程式嗎？",
+    "defaultModeAppliedTitle": "設定成功",
+    "defaultView": "設定預設檢視",
+    "defaultViewDescription": "選擇開啟方式",
+    "defaultViewLabel": "預設情況下，此工作流程將以以下方式開啟：",
+    "defaultViewTitle": "設定此工作流程的預設檢視",
+    "emptyWorkflowPrompt": "您想從範本開始嗎？",
+    "emptyWorkflowTitle": "此工作流程沒有節點",
+    "inputs": "輸入",
+    "inputsDescription": "選擇輸入",
     "label": "應用建立器",
     "nodeGraph": "節點圖",
     "nodeGraphDescription": "預設以節點圖開啟",
-    "save": "儲存",
-    "saveAs": "另存新檔",
-    "saveAsLabel": "將此工作流程另存為...",
-    "saveDescription": "儲存並完成",
-    "saveSuccess": "儲存成功",
-    "saveSuccessAppMessage": "「{name}」已儲存。從現在起將預設以應用模式開啟。",
-    "saveSuccessAppPrompt": "您想現在檢視嗎？",
-    "saveSuccessGraphMessage": "「{name}」已儲存。將預設以節點圖開啟。",
-    "select": "選擇",
-    "selectDescription": "選擇輸入／輸出",
-    "switchToSelect": "切換到選擇",
-    "viewApp": "檢視應用"
+    "outputs": "輸出",
+    "outputsDescription": "選擇輸出",
+    "switchToOutputs": "切換到輸出",
+    "viewApp": "查看應用程式"
   },
   "clipboard": {
     "errorMessage": "複製到剪貼簿失敗",
@@ -862,6 +866,7 @@
     "clearFilters": "清除篩選",
     "close": "關閉",
     "closeDialog": "關閉對話框",
+    "collapseAll": "全部摺疊",
     "color": "顏色",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "ComfyOrg 標誌",
@@ -931,6 +936,7 @@
     "errorLoadingImage": "載入圖片時發生錯誤",
     "errorLoadingVideo": "載入影片時發生錯誤",
     "essentials": "基本功能",
+    "expandAll": "全部展開",
     "experimental": "實驗性",
     "export": "匯出",
     "extensionName": "擴充套件名稱",
@@ -1334,7 +1340,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "應用建立器",
-      "apps": "應用"
+      "apps": "應用",
+      "appsEmptyMessage": "已儲存的應用程式將顯示在這裡。\n點擊下方開始建立您的第一個應用程式。",
+      "enterAppMode": "進入應用程式模式"
     },
     "arrange": {
       "atLeastOne": "至少一個",
@@ -1343,9 +1351,10 @@
       "outputExamples": "範例：「儲存圖像」或「儲存影片」",
       "outputs": "輸出",
       "resultsLabel": "執行此應用後，從所選輸出節點產生的結果將顯示於此",
-      "switchToSelect": "切換到「選擇」步驟，點擊輸出節點以新增到這裡。",
-      "switchToSelectButton": "切換到選擇"
+      "switchToOutputs": "切換到「輸出」步驟，然後點擊輸出節點以將其新增到這裡。",
+      "switchToOutputsButton": "切換到輸出"
     },
+    "backToWorkflow": "返回工作流程",
     "beta": "App 模式 Beta - 提供回饋",
     "builder": {
       "exit": "離開建構器",
@@ -1359,13 +1368,18 @@
       "outputsExample": "例如：「儲存圖像」或「儲存影片」",
       "promptAddInputs": "點擊節點參數，將其新增為輸入",
       "promptAddOutputs": "點擊輸出節點，將其新增於此。這些將是產生的結果。",
-      "title": "應用程式建構模式"
+      "title": "應用程式建構模式",
+      "unknownWidget": "元件不可見"
     },
     "downloadAll": "全部下載",
     "dragAndDropImage": "拖曳圖片到此",
+    "emptyWorkflowExplanation": "您的工作流程目前是空的。您需要先新增一些節點，才能開始建立應用程式。",
+    "enterNodeGraph": "進入節點圖",
     "giveFeedback": "提供回饋",
     "graphMode": "圖形模式",
     "linearMode": "App 模式",
+    "loadTemplate": "載入範本",
+    "mobileControls": "編輯與執行",
     "queue": {
       "clear": "清除佇列",
       "clickToClear": "點擊以清除佇列"
@@ -1373,8 +1387,8 @@
     "rerun": "重新執行",
     "reuseParameters": "重用參數",
     "runCount": "執行次數：",
+    "viewJob": "檢視任務",
     "welcome": {
-      "backToWorkflow": "返回工作流程",
       "buildApp": "建立應用",
       "controls": "您的輸出會顯示在下方，控制項在右側。其他內容都不會干擾您。",
       "getStarted": "點擊 {runButton} 開始。",
@@ -1749,6 +1763,7 @@
     "disabled": "已停用",
     "disabledTooltip": "工作流程將不會自動排入佇列",
     "execute": "執行",
+    "fullscreen": "全螢幕",
     "help": "說明",
     "helpAndFeedback": "說明與回饋",
     "hideMenu": "隱藏選單",
@@ -1896,7 +1911,8 @@
     "Workflows": "工作流程",
     "Zoom In": "放大",
     "Zoom Out": "縮小",
-    "Zoom to fit": "縮放至適合大小"
+    "Zoom to fit": "縮放至適合大小",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "節點顏色",
@@ -1906,6 +1922,7 @@
     "showLinks": "顯示連結"
   },
   "missingModelsDialog": {
+    "acceptTerms": "接受條款",
     "customModelsInstruction": "您需要自行尋找並下載這些模型。請在網路上搜尋（可嘗試 Civitai 或 Hugging Face），或聯絡原始工作流程提供者。",
     "customModelsWarning": "其中有些是我們無法識別的自訂模型。",
     "description": "此工作流程需要您尚未下載的模型。",
@@ -2265,6 +2282,7 @@
       "installNodePack": "安裝節點包",
       "installed": "已安裝",
       "installing": "安裝中⋯⋯",
+      "ossManagerDisabledHint": "若要安裝缺少的節點，請先在您的 Python 環境中執行 {pipCmd} 以安裝 Node Manager，然後使用 {flag} 旗標重新啟動 ComfyUI。",
       "ossMessage": "此工作流程使用了你尚未安裝的自訂節點。",
       "searchInManager": "在節點管理器中搜尋",
       "title": "缺少節點包",
@@ -2715,6 +2733,7 @@
       "searchJobs": "搜尋...",
       "showAssets": "顯示資產",
       "showAssetsPanel": "顯示資產面板",
+      "showRunProgressBar": "顯示運行進度條",
       "sortBy": "排序依據",
       "sortJobs": "排序作業",
       "stubClipTextEncode": "CLIP 文字編碼：",
@@ -3202,7 +3221,9 @@
     "enterFilename": "輸入檔案名稱",
     "enterFilenamePrompt": "請輸入檔案名稱：",
     "exportWorkflow": "匯出工作流程",
-    "saveWorkflow": "儲存工作流程"
+    "saveWorkflow": "儲存工作流程",
+    "savedAsApp": "已轉換為應用程式工作流程",
+    "savedAsWorkflow": "已轉換為僅節點圖工作流程"
   },
   "workspace": {
     "addedToWorkspace": "你已被加入 {workspaceName}",

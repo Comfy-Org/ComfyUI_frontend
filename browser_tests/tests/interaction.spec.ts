@@ -171,6 +171,8 @@ test.describe('Node Interaction', () => {
 
   test('Can drag node', { tag: '@screenshot' }, async ({ comfyPage }) => {
     await comfyPage.nodeOps.dragTextEncodeNode2()
+    // Move mouse away to avoid hover highlight on the node at the drop position.
+    await comfyPage.canvasOps.moveMouseToEmptyArea()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png')
   })

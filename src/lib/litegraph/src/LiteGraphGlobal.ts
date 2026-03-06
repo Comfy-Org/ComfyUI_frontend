@@ -10,7 +10,13 @@ import { Reroute } from './Reroute'
 import { InputIndicators } from './canvas/InputIndicators'
 import { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
 import { Rectangle } from './infrastructure/Rectangle'
-import type { Dictionary, ISlotType, Rect, WhenNullish } from './interfaces'
+import type {
+  CreateNodeOptions,
+  Dictionary,
+  ISlotType,
+  Rect,
+  WhenNullish
+} from './interfaces'
 import { distance, isInsideRectangle, overlapBounding } from './measure'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
@@ -525,7 +531,7 @@ export class LiteGraphGlobal {
   createNode(
     type: string,
     title?: string,
-    options?: Dictionary<unknown>
+    options?: CreateNodeOptions
   ): LGraphNode | null {
     const base_class = this.registered_node_types[type]
     if (!base_class) {
@@ -561,10 +567,7 @@ export class LiteGraphGlobal {
 
     // extra options
     if (options) {
-      for (const i in options) {
-        // @ts-expect-error #577 Requires interface
-        node[i] = options[i]
-      }
+      Object.assign(node, options)
     }
 
     // callback
