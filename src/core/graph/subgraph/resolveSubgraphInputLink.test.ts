@@ -121,6 +121,68 @@ describe('resolveSubgraphInputLink', () => {
     expect(result).toBe('seed_input')
   })
 
+  test('skips broken links where getLink returns undefined', () => {
+    const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
+    addLinkedInteriorInput(subgraph, 'prompt', 'valid_input', 'valid')
+    const broken = addLinkedInteriorInput(
+      subgraph,
+      'prompt',
+      'broken_input',
+      'broken'
+    )
+
+    const originalGetLink = subgraph.getLink.bind(subgraph)
+    vi.spyOn(subgraph, 'getLink').mockImplementation((linkId) => {
+      if (typeof linkId !== 'number') return originalGetLink(linkId)
+      if (linkId === broken.linkId) return undefined
+      return originalGetLink(linkId)
+    })
+
+    const result = resolveSubgraphInputLink(
+      subgraphNode,
+      'prompt',
+      ({ targetInput }) => targetInput.name
+    )
+
+    expect(result).toBe('valid_input')
+  })
+
+  test('returns result from latest connection when multiple links resolve', () => {
+    const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
+    addLinkedInteriorInput(subgraph, 'prompt', 'older_input', 'older')
+    addLinkedInteriorInput(subgraph, 'prompt', 'newer_input', 'newer')
+
+    const result = resolveSubgraphInputLink(
+      subgraphNode,
+      'prompt',
+      ({ targetInput }) => targetInput.name
+    )
+
+    expect(result).toBe('newer_input')
+  })
+
+  test('falls back to earlier link when latest resolve callback returns undefined', () => {
+    const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
+    addLinkedInteriorInput(subgraph, 'prompt', 'fallback_input', 'fallback')
+    const newer = addLinkedInteriorInput(
+      subgraph,
+      'prompt',
+      'skipped_input',
+      'skipped'
+    )
+
+    const result = resolveSubgraphInputLink(
+      subgraphNode,
+      'prompt',
+      ({ targetInput }) => {
+        if (targetInput.link === newer.linkId) return undefined
+        return targetInput.name
+      }
+    )
+
+    expect(result).toBe('fallback_input')
+  })
+
   test('caches getTargetWidget result within the same callback evaluation', () => {
     const { subgraph, subgraphNode } = createSubgraphSetup('model')
     const linked = addLinkedInteriorInput(
