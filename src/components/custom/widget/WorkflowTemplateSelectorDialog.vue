@@ -133,7 +133,7 @@
         <!-- Title -->
         <span
           v-if="isLoading"
-          class="inline-block h-8 w-48 animate-pulse rounded bg-dialog-surface"
+          class="inline-block h-8 w-48 animate-pulse rounded-sm bg-dialog-surface"
         ></span>
 
         <!-- Template Cards Grid -->
@@ -164,10 +164,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="mb-2 h-6 animate-pulse rounded bg-dialog-surface"
+                    class="mb-2 h-6 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                   <div
-                    class="h-4 animate-pulse rounded bg-dialog-surface"
+                    class="h-4 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                 </div>
               </CardBottom>
@@ -349,10 +349,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="mb-2 h-6 animate-pulse rounded bg-dialog-surface"
+                    class="mb-2 h-6 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                   <div
-                    class="h-4 animate-pulse rounded bg-dialog-surface"
+                    class="h-4 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                 </div>
               </CardBottom>
@@ -438,7 +438,6 @@ onMounted(() => {
 const systemStatsStore = useSystemStatsStore()
 
 const distributions = computed(() => {
-  // eslint-disable-next-line no-undef
   switch (__DISTRIBUTION__) {
     case 'cloud':
       return [TemplateIncludeOnDistributionEnum.Cloud]

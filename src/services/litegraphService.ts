@@ -1,12 +1,15 @@
 import _ from 'es-toolkit/compat'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
+import {
+  addWidgetPromotionOptions,
+  isPreviewPseudoWidget
+} from '@/core/graph/subgraph/promotionUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { st, t } from '@/i18n'
 import {
@@ -19,6 +22,8 @@ import {
   createBounds
 } from '@/lib/litegraph/src/litegraph'
 import type {
+  CreateNodeOptions,
+  GraphAddOptions,
   IContextMenuValue,
   Point,
   Subgraph
@@ -36,6 +41,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
+import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
+import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -48,16 +55,19 @@ import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
+  isAnimatedOutput,
   isImageNode,
   isVideoNode,
+  isVideoOutput,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
@@ -124,6 +134,30 @@ export const useLitegraphService = () => {
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
+  const subgraphPseudoWidgetCache = new WeakMap<
+    SubgraphNode,
+    SubgraphPseudoWidgetCache<LGraphNode, IBaseWidget>
+  >()
+
+  function invalidateSubgraphPseudoWidgetCache(node: SubgraphNode) {
+    subgraphPseudoWidgetCache.delete(node)
+  }
+
+  function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
+    const promotionStore = usePromotionStore()
+    const promotions = promotionStore.getPromotionsRef(
+      node.rootGraph.id,
+      node.id
+    )
+    const resolved = resolveSubgraphPseudoWidgetCache({
+      cache: subgraphPseudoWidgetCache.get(node) ?? null,
+      promotions,
+      getNodeById: (nodeId) => node.subgraph.getNodeById(nodeId) ?? undefined,
+      isPreviewPseudoWidget
+    })
+    subgraphPseudoWidgetCache.set(node, resolved.cache)
+    return resolved.nodes
+  }
 
   /**
    * @internal The key for the node definition in the i18n file.
@@ -314,6 +348,7 @@ export const useLitegraphService = () => {
 
         // Set up event listener for promoted widget registration
         subgraph.events.addEventListener('widget-promoted', (event) => {
+          invalidateSubgraphPseudoWidgetCache(this)
           const { widget } = event.detail
           // Only handle DOM widgets
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
@@ -333,6 +368,7 @@ export const useLitegraphService = () => {
 
         // Set up event listener for promoted widget removal
         subgraph.events.addEventListener('widget-demoted', (event) => {
+          invalidateSubgraphPseudoWidgetCache(this)
           const { widget } = event.detail
           // Only handle DOM widgets
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
@@ -651,7 +687,7 @@ export const useLitegraphService = () => {
               callback: () => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
-                window.open(url, '_blank')
+                void openFileInNewTab(url.toString())
               }
             },
             ...getCopyImageOption(img),
@@ -753,17 +789,9 @@ export const useLitegraphService = () => {
     if (isNewOutput) this.images = output.images
 
     if (isNewOutput || isNewPreview) {
-      this.animatedImages = output?.animated?.find(Boolean)
+      this.animatedImages = isAnimatedOutput(output)
 
-      const isAnimatedWebp =
-        this.animatedImages &&
-        output?.images?.some((img) => img.filename?.includes('webp'))
-      const isAnimatedPng =
-        this.animatedImages &&
-        output?.images?.some((img) => img.filename?.includes('png'))
-      const isVideo =
-        (this.animatedImages && !isAnimatedWebp && !isAnimatedPng) ||
-        isVideoNode(this)
+      const isVideo = isVideoOutput(output) || isVideoNode(this)
       if (isVideo) {
         useNodeVideo(this, callback).showPreview()
       } else {
@@ -799,6 +827,15 @@ export const useLitegraphService = () => {
     }
     node.prototype.onDrawBackground = function () {
       updatePreviews(this)
+
+      if (this instanceof SubgraphNode) {
+        const parentGraph = this.graph
+        for (const interiorNode of getPseudoWidgetPreviewTargets(this)) {
+          updatePreviews(interiorNode, () => {
+            parentGraph?.setDirtyCanvas(true)
+          })
+        }
+      }
     }
   }
 
@@ -849,8 +886,9 @@ export const useLitegraphService = () => {
 
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
-    options: Record<string, unknown> & { pos?: Point } = {}
-  ): LGraphNode {
+    options: CreateNodeOptions = {},
+    addOptions?: GraphAddOptions
+  ): LGraphNode | null {
     options.pos ??= getCanvasCenter()
 
     if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
@@ -879,9 +917,9 @@ export const useLitegraphService = () => {
     )
 
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
+    if (!graph || !node) return null
 
-    graph.add(node)
-    // @ts-expect-error fixme ts strict error
+    graph.add(node, addOptions)
     return node
   }
 

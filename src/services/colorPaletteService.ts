@@ -107,8 +107,7 @@ export const useColorPaletteService = () => {
     for (const dataType of nodeDefStore.nodeDataTypes) {
       const cssVar = `color-datatype-${dataType}`
 
-      const valueMaybe =
-        linkColorPalette[dataType as unknown as keyof Colors['node_slot']]
+      const valueMaybe = linkColorPalette[dataType as keyof Colors['node_slot']]
       if (valueMaybe) {
         rootStyle.setProperty(`--${cssVar}`, valueMaybe)
       } else {

@@ -7,8 +7,10 @@
  * - A user adds a 3D node from the node menu
  */
 
-import { useExtensionService } from '@/services/extensionService'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import { useExtensionService } from '@/services/extensionService'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import type { ComfyExtension } from '@/types/comfy'
@@ -54,7 +56,10 @@ function isLoad3dNodeType(nodeTypeName: string): boolean {
 useExtensionService().registerExtension({
   name: 'Comfy.Load3DLazy',
 
-  async beforeRegisterNodeDef(nodeType, nodeData) {
+  async beforeRegisterNodeDef(
+    nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if (isLoad3dNodeType(nodeData.name)) {
       // Inject mesh_upload spec flags so WidgetSelect.vue can detect
       // Load3D's model_file as a mesh upload widget without hardcoding.

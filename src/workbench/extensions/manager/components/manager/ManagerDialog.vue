@@ -165,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
+import { until, whenever } from '@vueuse/core'
 import { merge, stubTrue } from 'es-toolkit/compat'
 import type { AutoCompleteOptionSelectEvent } from 'primevue/autocomplete'
 import {
@@ -211,8 +211,9 @@ import { useManagerState } from '@/workbench/extensions/manager/composables/useM
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-const { initialTab, onClose } = defineProps<{
+const { initialTab, initialPackId, onClose } = defineProps<{
   initialTab?: ManagerTab
+  initialPackId?: string
   onClose: () => void
 }>()
 
@@ -347,8 +348,14 @@ const {
   sortOptions
 } = useRegistrySearch({
   initialSortField: initialState.sortField,
-  initialSearchMode: initialState.searchMode,
-  initialSearchQuery: initialState.searchQuery
+  initialSearchMode:
+    initialPackId && initialTabId !== ManagerTab.Missing
+      ? 'packs'
+      : initialState.searchMode,
+  initialSearchQuery:
+    initialTabId === ManagerTab.Missing
+      ? ''
+      : (initialPackId ?? initialState.searchQuery)
 })
 pageNumber.value = 0
 
@@ -474,6 +481,19 @@ watch(
     }
   }
 )
+
+// Auto-select the pack matching initialPackId once
+if (initialPackId) {
+  until(resultsWithKeys)
+    .toMatch((packs) => packs.some((p) => p.id === initialPackId))
+    .then((packs) => {
+      const target = packs.find((p) => p.id === initialPackId)
+      if (target && selectedNodePacks.value.length === 0) {
+        selectedNodePacks.value = [target]
+        isRightPanelOpen.value = true
+      }
+    })
+}
 
 const getLoadingCount = () => {
   switch (selectedTab.value?.id) {

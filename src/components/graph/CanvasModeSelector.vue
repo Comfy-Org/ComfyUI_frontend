@@ -40,7 +40,7 @@
       </div>
 
       <div
-        class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+        class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
         @click="setMode('hand')"
       >
         <div class="flex items-center gap-2">

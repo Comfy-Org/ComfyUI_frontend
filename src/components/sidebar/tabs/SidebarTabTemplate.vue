@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col',
+        'comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col w-full',
         props.class
       )
     "
@@ -10,6 +10,7 @@
     <div class="comfy-vue-side-bar-header flex flex-col gap-2">
       <Toolbar
         class="min-h-16 bg-transparent rounded-none border-x-0 border-t-0 px-2 2xl:px-4"
+        :pt="sidebarPt"
       >
         <template #start>
           <span class="truncate font-bold" :title="props.title">
@@ -19,7 +20,7 @@
         </template>
         <template #end>
           <div
-            class="touch:w-auto touch:opacity-100 flex flex-row overflow-hidden transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100"
+            class="touch:w-auto touch:opacity-100 [&_.p-button]:py-1 2xl:[&_.p-button]:py-2 flex flex-row overflow-hidden transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100"
           >
             <slot name="tool-buttons" />
           </div>
@@ -45,16 +46,7 @@ const props = defineProps<{
   title: string
   class?: string
 }>()
+const sidebarPt = {
+  start: 'min-w-0 flex-1 overflow-hidden'
+}
 </script>
-
-<style scoped>
-@reference '../../../assets/css/style.css';
-
-:deep(.p-toolbar-end) .p-button {
-  @apply py-1 2xl:py-2;
-}
-
-:deep(.p-toolbar-start) {
-  @apply min-w-0 flex-1 overflow-hidden;
-}
-</style>

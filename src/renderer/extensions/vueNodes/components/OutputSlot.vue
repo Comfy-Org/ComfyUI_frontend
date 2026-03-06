@@ -7,7 +7,11 @@
         v-if="!props.dotOnly && !hasNoLabel"
         class="truncate text-node-component-slot-text"
       >
-        {{ slotData.localized_name || (slotData.name ?? `Output ${index}`) }}
+        {{
+          slotData.label ||
+          slotData.localized_name ||
+          (slotData.name ?? `Output ${index}`)
+        }}
       </span>
     </div>
     <!-- Connection Dot -->

@@ -13,7 +13,7 @@
         />
         <span
           v-else-if="secret.provider"
-          class="rounded bg-base-surface px-2 py-0.5 text-xs text-muted"
+          class="rounded-sm bg-base-surface px-2 py-0.5 text-xs text-muted"
         >
           {{ providerLabel }}
         </span>

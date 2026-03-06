@@ -12,7 +12,7 @@
         :class="
           cn(
             'flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface justify-center',
-            compact && 'size-full '
+            compact && 'size-full'
           )
         "
       >
@@ -69,7 +69,7 @@ import Skeleton from 'primevue/skeleton'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -80,7 +80,8 @@ import { cn } from '@/utils/tailwindUtil'
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const CurrentUserPopoverWorkspace = defineAsyncComponent(
-  () => import('./CurrentUserPopoverWorkspace.vue')
+  () =>
+    import('../../platform/workspace/components/CurrentUserPopoverWorkspace.vue')
 )
 
 const { showArrow = true, compact = false } = defineProps<{

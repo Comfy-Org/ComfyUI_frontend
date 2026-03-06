@@ -91,6 +91,7 @@ export { RecursionError } from './infrastructure/RecursionError'
 export type {
   CanvasColour,
   ColorOption,
+  CreateNodeOptions,
   IContextMenuOptions,
   IContextMenuValue,
   INodeInputSlot,
@@ -107,7 +108,8 @@ export {
   type GroupNodeConfigEntry,
   type GroupNodeWorkflowData,
   type LGraphTriggerAction,
-  type LGraphTriggerParam
+  type LGraphTriggerParam,
+  type GraphAddOptions
 } from './LGraph'
 export type { LGraphTriggerEvent } from './types/graphTriggers'
 export { BadgePosition, LGraphBadge } from './LGraphBadge'
@@ -143,7 +145,11 @@ export { isColorable } from './utils/type'
 export { createUuidv4 } from './utils/uuid'
 export type { UUID } from './utils/uuid'
 export { truncateText } from './utils/textUtils'
-export { getWidgetStep } from './utils/widget'
+export {
+  evaluateInput,
+  getWidgetStep,
+  resolveNodeRootGraphId
+} from './utils/widget'
 export { distributeSpace, type SpaceRequest } from './utils/spaceDistribution'
 
 export { BaseWidget } from './widgets/BaseWidget'

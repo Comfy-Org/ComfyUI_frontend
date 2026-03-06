@@ -40,19 +40,20 @@
     "block-no-empty": true,
     "no-descending-specificity": null,
     "no-duplicate-at-import-rules": true,
+    "at-rule-disallowed-list": ["apply"],
     "at-rule-no-unknown": [
       true,
       {
         "ignoreAtRules": [
           "tailwind",
-          "apply",
           "layer",
           "config",
           "theme",
           "reference",
           "plugin",
           "custom-variant",
-          "utility"
+          "utility",
+          "source"
         ]
       }
     ],

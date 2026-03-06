@@ -1,11 +1,16 @@
 import { mount } from '@vue/test-utils'
-import { computed } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ActiveJobCard from './ActiveMediaAssetCard.vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
+
+const mockRunCancelJob = vi.fn()
+const mockRunDeleteJob = vi.fn()
+const mockCanCancelJob = ref(false)
+const mockCanDeleteJob = ref(false)
 
 vi.mock('@/composables/queue/useJobActions', () => ({
   useJobActions: () => ({
@@ -14,8 +19,15 @@ vi.mock('@/composables/queue/useJobActions', () => ({
       label: 'Cancel',
       variant: 'destructive'
     },
-    canCancelJob: computed(() => false),
-    runCancelJob: vi.fn()
+    canCancelJob: mockCanCancelJob,
+    runCancelJob: mockRunCancelJob,
+    deleteAction: {
+      icon: 'icon-[lucide--circle-minus]',
+      label: 'Remove job',
+      variant: 'destructive'
+    },
+    canDeleteJob: mockCanDeleteJob,
+    runDeleteJob: mockRunDeleteJob
   })
 }))
 
@@ -58,6 +70,13 @@ const mountComponent = (job: JobListItem) =>
   })
 
 describe('ActiveJobCard', () => {
+  beforeEach(() => {
+    mockCanCancelJob.value = false
+    mockCanDeleteJob.value = false
+    mockRunCancelJob.mockReset()
+    mockRunDeleteJob.mockReset()
+  })
+
   it('displays percentage and progress bar when job is running', () => {
     const wrapper = mountComponent(
       createJob({ state: 'running', progressTotalPercent: 65 })
@@ -120,5 +139,75 @@ describe('ActiveJobCard', () => {
     const container = wrapper.find('[role="status"]')
     expect(container.exists()).toBe(true)
     expect(container.attributes('aria-label')).toBe('Active job: Generating...')
+  })
+
+  it('shows delete button on hover for failed jobs', async () => {
+    mockCanDeleteJob.value = true
+
+    const wrapper = mountComponent(
+      createJob({ state: 'failed', title: 'Failed' })
+    )
+
+    expect(wrapper.findComponent({ name: 'Button' }).exists()).toBe(false)
+
+    await wrapper.find('[role="status"]').trigger('mouseenter')
+
+    const button = wrapper.findComponent({ name: 'Button' })
+    expect(button.exists()).toBe(true)
+    expect(button.attributes('aria-label')).toBe('Remove job')
+  })
+
+  it('calls runDeleteJob when delete button is clicked on a failed job', async () => {
+    mockCanDeleteJob.value = true
+
+    const wrapper = mountComponent(
+      createJob({ state: 'failed', title: 'Failed' })
+    )
+
+    await wrapper.find('[role="status"]').trigger('mouseenter')
+
+    const button = wrapper.findComponent({ name: 'Button' })
+    await button.trigger('click')
+
+    expect(mockRunDeleteJob).toHaveBeenCalledOnce()
+  })
+
+  it('does not show action button when job cannot be cancelled or deleted', async () => {
+    const wrapper = mountComponent(
+      createJob({ state: 'running', progressTotalPercent: 50 })
+    )
+
+    await wrapper.find('[role="status"]').trigger('mouseenter')
+
+    expect(wrapper.findComponent({ name: 'Button' }).exists()).toBe(false)
+  })
+
+  it('shows cancel button on hover for cancellable jobs', async () => {
+    mockCanCancelJob.value = true
+
+    const wrapper = mountComponent(
+      createJob({ state: 'running', progressTotalPercent: 50 })
+    )
+
+    await wrapper.find('[role="status"]').trigger('mouseenter')
+
+    const button = wrapper.findComponent({ name: 'Button' })
+    expect(button.exists()).toBe(true)
+    expect(button.attributes('aria-label')).toBe('Cancel')
+  })
+
+  it('calls runCancelJob when cancel button is clicked', async () => {
+    mockCanCancelJob.value = true
+
+    const wrapper = mountComponent(
+      createJob({ state: 'running', progressTotalPercent: 50 })
+    )
+
+    await wrapper.find('[role="status"]').trigger('mouseenter')
+
+    const button = wrapper.findComponent({ name: 'Button' })
+    await button.trigger('click')
+
+    expect(mockRunCancelJob).toHaveBeenCalledOnce()
   })
 })

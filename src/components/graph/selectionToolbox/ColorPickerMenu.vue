@@ -31,7 +31,7 @@
         :key="subOption.label"
         :class="
           cn(
-            'hover:bg-secondary-background-hover rounded cursor-pointer',
+            'hover:bg-secondary-background-hover rounded-sm cursor-pointer',
             isColorSubmenu
               ? 'w-7 h-7 flex items-center justify-center'
               : 'flex items-center gap-2 px-3 py-1.5 text-sm',
@@ -51,9 +51,9 @@
         <template v-else-if="!subOption.color">
           <i
             v-if="isShapeSelected(subOption)"
-            class="icon-[lucide--check] size-4 flex-shrink-0"
+            class="icon-[lucide--check] size-4 shrink-0"
           />
-          <div v-else class="w-4 flex-shrink-0" />
+          <div v-else class="w-4 shrink-0" />
           <span>{{ subOption.label }}</span>
         </template>
       </div>

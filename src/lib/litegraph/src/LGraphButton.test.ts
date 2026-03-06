@@ -36,7 +36,7 @@ describe('LGraphButton', () => {
       const button = new LGraphButton({ text: '' }) // Empty text makes it invisible
       const ctx = {
         measureText: vi.fn().mockReturnValue({ width: 100 })
-      } as unknown as CanvasRenderingContext2D
+      } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
       const superDrawSpy = vi.spyOn(
         Object.getPrototypeOf(Object.getPrototypeOf(button)),
@@ -66,7 +66,7 @@ describe('LGraphButton', () => {
         font: '',
         fillStyle: '',
         globalAlpha: 1
-      } as unknown as CanvasRenderingContext2D
+      } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
       const mockGetWidth = vi.fn().mockReturnValue(80)
       button.getWidth = mockGetWidth
@@ -98,7 +98,7 @@ describe('LGraphButton', () => {
         font: '',
         fillStyle: '',
         globalAlpha: 1
-      } as unknown as CanvasRenderingContext2D
+      } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
       const mockGetWidth = vi.fn().mockReturnValue(50)
       button.getWidth = mockGetWidth
@@ -172,7 +172,7 @@ describe('LGraphButton', () => {
         font: '',
         fillStyle: '',
         globalAlpha: 1
-      } as unknown as CanvasRenderingContext2D
+      } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
       // Draw the button
       button.draw(ctx, 100, 50)

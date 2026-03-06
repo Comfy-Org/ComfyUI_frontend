@@ -24,31 +24,25 @@
         class="absolute inset-0 flex items-center justify-center bg-modal-card-placeholder-background"
       >
         <!-- Spinner for queued/initialization states -->
-        <i
-          v-if="isQueued"
-          class="icon-[lucide--loader-circle] size-8 animate-spin text-muted-foreground"
-        />
+        <Loader v-if="isQueued" size="md" class="text-muted-foreground" />
         <!-- Error icon for failed state -->
         <i
           v-else-if="isFailed"
           class="icon-[lucide--circle-alert] size-8 text-red-500"
         />
         <!-- Spinner for running without preview -->
-        <i
-          v-else
-          class="icon-[lucide--loader-circle] size-8 animate-spin text-muted-foreground"
-        />
+        <Loader v-else size="md" class="text-muted-foreground" />
       </div>
-      <!-- Cancel button overlay -->
+      <!-- Cancel/Delete button overlay -->
       <Button
-        v-if="hovered && canCancelJob"
+        v-if="hovered && showActionButton"
         variant="destructive"
         size="icon"
-        :aria-label="cancelAction.label"
+        :aria-label="activeAction.label"
         class="absolute top-2 right-2"
-        @click.stop="runCancelJob()"
+        @click.stop="runActiveAction()"
       >
-        <i :class="cancelAction.icon" />
+        <i :class="activeAction.icon" />
       </Button>
     </div>
 
@@ -80,6 +74,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Loader from '@/components/common/Loader.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
@@ -90,7 +85,28 @@ const { job } = defineProps<{ job: JobListItem }>()
 const { t } = useI18n()
 const hovered = ref(false)
 
-const { cancelAction, canCancelJob, runCancelJob } = useJobActions(() => job)
+const {
+  cancelAction,
+  canCancelJob,
+  runCancelJob,
+  deleteAction,
+  canDeleteJob,
+  runDeleteJob
+} = useJobActions(() => job)
+
+const showActionButton = computed(
+  () => canCancelJob.value || canDeleteJob.value
+)
+const activeAction = computed(() =>
+  canCancelJob.value ? cancelAction : deleteAction
+)
+const runActiveAction = () => {
+  if (canCancelJob.value) {
+    runCancelJob()
+  } else if (canDeleteJob.value) {
+    runDeleteJob()
+  }
+}
 
 const { progressBarPrimaryClass, hasProgressPercent, progressPercentStyle } =
   useProgressBarBackground()

@@ -98,16 +98,17 @@ describe('SignInForm', () => {
       await nextTick()
 
       const forgotPasswordSpan = wrapper.find(
-        'span.text-muted.text-base.font-medium.cursor-pointer'
+        'span.text-muted.text-base.font-medium.select-none'
       )
 
-      expect(forgotPasswordSpan.classes()).toContain('text-link-disabled')
+      expect(forgotPasswordSpan.classes()).toContain('cursor-not-allowed')
+      expect(forgotPasswordSpan.classes()).toContain('opacity-50')
     })
 
     it('shows toast and focuses email input when clicked while disabled', async () => {
       const wrapper = mountComponent()
       const forgotPasswordSpan = wrapper.find(
-        'span.text-muted.text-base.font-medium.cursor-pointer'
+        'span.text-muted.text-base.font-medium.select-none'
       )
 
       // Mock getElementById to track focus
@@ -152,7 +153,7 @@ describe('SignInForm', () => {
       )
 
       const forgotPasswordSpan = wrapper.find(
-        'span.text-muted.text-base.font-medium.cursor-pointer'
+        'span.text-muted.text-base.font-medium.select-none'
       )
 
       // Click the forgot password link

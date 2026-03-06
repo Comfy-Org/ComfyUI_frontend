@@ -28,7 +28,7 @@
         :src="imageUrl"
         :alt="$t('imageCrop.cropPreviewAlt')"
         draggable="false"
-        class="block size-full object-contain select-none brightness-50"
+        class="block size-full object-contain select-none"
         @load="handleImageLoad"
         @error="handleImageError"
         @dragstart.prevent
@@ -36,14 +36,12 @@
 
       <div
         v-if="imageUrl && !isLoading"
-        class="absolute box-content cursor-move overflow-hidden border-2 border-white"
+        class="absolute box-content cursor-move border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"
         :style="cropBoxStyle"
         @pointerdown="handleDragStart"
         @pointermove="handleDragMove"
         @pointerup="handleDragEnd"
-      >
-        <div class="pointer-events-none size-full" :style="cropImageStyle" />
-      </div>
+      />
 
       <div
         v-for="handle in resizeHandles"
@@ -131,7 +129,6 @@ const {
   isLockEnabled,
 
   cropBoxStyle,
-  cropImageStyle,
   resizeHandles,
 
   handleImageLoad,

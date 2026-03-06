@@ -4,11 +4,7 @@ import { computed, shallowRef } from 'vue'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -64,7 +60,7 @@ vi.mock('@/composables/graph/useGraphNodeManager', () => {
 })
 
 vi.mock('@/composables/graph/useVueNodeLifecycle', () => {
-  const nodeManager = useGraphNodeManager(undefined as unknown as LGraph)
+  const nodeManager = useGraphNodeManager(null!)
   return {
     useVueNodeLifecycle: vi.fn(() => ({
       nodeManager

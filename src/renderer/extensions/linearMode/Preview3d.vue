@@ -24,7 +24,7 @@ watch([containerRef, () => modelUrl], async () => {
 <template>
   <div
     ref="containerRef"
-    class="relative w-full h-full"
+    class="relative w-full md:w-[calc(100%-150px)] h-full self-center"
     @mouseenter="viewer.handleMouseEnter"
     @mouseleave="viewer.handleMouseLeave"
     @resize="viewer.handleResize"

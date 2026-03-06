@@ -10,10 +10,31 @@ interface ImpactQueueFunction {
   a?: unknown[][]
 }
 
+type GtagGetFieldName = 'client_id' | 'session_id' | 'session_number'
+
+interface GtagGetFieldValueMap {
+  client_id: string | number | undefined
+  session_id: string | number | undefined
+  session_number: string | number | undefined
+}
+
+interface GtagFunction {
+  <TField extends GtagGetFieldName>(
+    command: 'get',
+    targetId: string,
+    fieldName: TField,
+    callback: (value: GtagGetFieldValueMap[TField]) => void
+  ): void
+  (...args: unknown[]): void
+}
+
 interface Window {
   __CONFIG__: {
     gtm_container_id?: string
+    ga_measurement_id?: string
     mixpanel_token?: string
+    posthog_project_token?: string
+    posthog_api_host?: string
     require_whitelist?: boolean
     subscription_required?: boolean
     max_upload_size?: number
@@ -36,12 +57,8 @@ interface Window {
       badge?: string
     }
   }
-  __ga_identity__?: {
-    client_id?: string
-    session_id?: string
-    session_number?: string
-  }
   dataLayer?: Array<Record<string, unknown>>
+  gtag?: GtagFunction
   ire_o?: string
   ire?: ImpactQueueFunction
 }

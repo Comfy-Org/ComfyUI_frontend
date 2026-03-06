@@ -24,8 +24,7 @@ jobs:
           ./scripts/cicd/pr-storybook-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
             "${{ github.head_ref }}" \
-            "starting" \
-            "$(date -u '+%m/%d/%Y, %I:%M:%S %p')"
+            "starting"
 
   # Build Storybook for all PRs (free Cloudflare deployment)
   storybook-build:

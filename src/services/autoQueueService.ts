@@ -1,6 +1,7 @@
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import {
+  isInstantRunningMode,
   useQueuePendingTaskCountStore,
   useQueueSettingsStore
 } from '@/stores/queueStore'
@@ -29,7 +30,7 @@ export function setupAutoQueueHandler() {
       internalCount = queueCountStore.count
       if (!internalCount && !app.lastExecutionError) {
         if (
-          queueSettingsStore.mode === 'instant' ||
+          isInstantRunningMode(queueSettingsStore.mode) ||
           (queueSettingsStore.mode === 'change' && graphHasChanged)
         ) {
           graphHasChanged = false
