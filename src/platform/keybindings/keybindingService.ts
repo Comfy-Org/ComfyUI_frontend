@@ -33,9 +33,13 @@ export function useKeybindingService() {
     }
 
     const keybinding = keybindingStore.getKeybinding(keyCombo)
-    if (keybinding && keybinding.targetElementId !== 'graph-canvas') {
-      if (keybinding.targetElementId) {
-        const container = document.getElementById(keybinding.targetElementId)
+    if (keybinding) {
+      const targetElementId =
+        keybinding.targetElementId === 'graph-canvas'
+          ? 'graph-canvas-container'
+          : keybinding.targetElementId
+      if (targetElementId) {
+        const container = document.getElementById(targetElementId)
         if (!container?.contains(target)) {
           return
         }

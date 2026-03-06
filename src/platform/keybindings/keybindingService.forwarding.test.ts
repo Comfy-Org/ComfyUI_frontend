@@ -181,6 +181,34 @@ describe('keybindingService - Canvas Keybindings', () => {
     )
   })
 
+  it('should execute graph-canvas bindings by normalizing to graph-canvas-container', async () => {
+    const event = createTestKeyboardEvent('=', {
+      altKey: true,
+      target: canvasChild
+    })
+
+    await keybindingService.keybindHandler(event)
+
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.Canvas.ZoomIn'
+    )
+  })
+
+  it('should not execute graph-canvas bindings when target is outside canvas', async () => {
+    const outsideDiv = document.createElement('div')
+    document.body.appendChild(outsideDiv)
+
+    const event = createTestKeyboardEvent('=', {
+      altKey: true,
+      target: outsideDiv
+    })
+
+    await keybindingService.keybindHandler(event)
+
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    outsideDiv.remove()
+  })
+
   it('should not execute canvas commands when target is outside canvas container', async () => {
     const outsideDiv = document.createElement('div')
     document.body.appendChild(outsideDiv)
