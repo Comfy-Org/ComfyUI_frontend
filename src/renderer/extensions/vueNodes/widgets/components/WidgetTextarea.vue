@@ -24,14 +24,15 @@
           WidgetInputBaseClass,
           'size-full resize-none text-xs',
           !hideLayoutField && 'pt-5',
-          isClipTextEncode &&
-            'selection:text-transparent selection:bg-blue-500/50'
+          showHighlight && 'selection:bg-blue-500/50 selection:text-transparent'
         )
       "
       :placeholder
       :readonly="isReadOnly"
-      :style="isClipTextEncode ? '-webkit-text-fill-color: transparent;' : ''"
+      :style="showHighlight ? '-webkit-text-fill-color: transparent;' : ''"
       data-capture-wheel="true"
+      @compositionstart="isComposing = true"
+      @compositionend="isComposing = false"
       @scroll.passive="syncScroll"
       @pointerdown.capture.stop
       @pointermove.capture.stop
@@ -39,13 +40,13 @@
       @contextmenu.capture.stop
     />
     <div
-      v-if="isClipTextEncode"
+      v-if="showHighlight"
       ref="overlayRef"
       aria-hidden="true"
       :class="
         cn(
           'pointer-events-none absolute inset-0',
-          'text-xs font-[monospace] whitespace-pre-wrap wrap-break-word overflow-y-auto',
+          'overflow-y-auto font-[monospace] text-xs wrap-break-word whitespace-pre-wrap',
           'border border-transparent px-2.75 pb-5',
           '[scrollbar-color:transparent_transparent] [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent',
           !hideLayoutField ? 'pt-5' : 'pt-2'
@@ -104,12 +105,18 @@ const { copyToClipboard } = useCopyToClipboard()
 
 const settingStore = useSettingStore()
 
+const isComposing = ref(false)
+
 const isClipTextEncode = computed(() => {
   const isEnabled = settingStore.get(
     'Comfy.TextareaWidget.HighlightClipComments'
   )
   return isEnabled && nodeType.includes('CLIPTextEncode')
 })
+
+const showHighlight = computed(
+  () => isClipTextEncode.value && !isComposing.value
+)
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
@@ -147,7 +154,7 @@ const syncScroll = (e?: Event) => {
 }
 
 watch(
-  isClipTextEncode,
+  showHighlight,
   (newValue) => {
     if (newValue) {
       nextTick(() => syncScroll())
@@ -155,6 +162,7 @@ watch(
   },
   { immediate: true }
 )
+
 function handleCopy() {
   copyToClipboard(modelValue.value)
 }
