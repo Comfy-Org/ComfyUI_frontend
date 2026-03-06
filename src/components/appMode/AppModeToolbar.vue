@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -34,10 +33,6 @@ function openAssets() {
 
 function showApps() {
   void commandStore.execute('Workspace.ToggleSidebarTab.apps')
-}
-
-function openTemplates() {
-  useWorkflowTemplateSelectorDialog().show('sidebar')
 }
 </script>
 
@@ -91,19 +86,6 @@ function openTemplates() {
         @click="showApps"
       >
         <i class="icon-[lucide--panels-top-left] size-4" />
-      </Button>
-      <Button
-        v-tooltip.right="{
-          value: t('sideToolbar.templates'),
-          ...tooltipOptions
-        }"
-        variant="textonly"
-        size="unset"
-        :aria-label="t('sideToolbar.templates')"
-        class="size-10"
-        @click="openTemplates"
-      >
-        <i class="icon-[comfy--template] size-4" />
       </Button>
     </div>
   </div>
