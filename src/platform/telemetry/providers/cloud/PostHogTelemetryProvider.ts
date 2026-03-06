@@ -1,29 +1,23 @@
-import type { OverridedMixpanel } from 'mixpanel-browser'
+import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import {
-  checkForCompletedTopup as checkTopupUtil,
-  clearTopupTracking as clearTopupUtil,
-  startTopupTracking as startTopupUtil
-} from '@/platform/telemetry/topupTracker'
-import type { AuditLog } from '@/services/customerEventsService'
-
-import { getExecutionContext } from '../../utils/getExecutionContext'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
   AuthMetadata,
-  CreditTopupMetadata,
   EnterLinearMetadata,
   ExecutionContext,
-  ExecutionTriggerSource,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  PageViewMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
@@ -41,9 +35,8 @@ import type {
   WorkflowCreatedMetadata,
   WorkflowImportMetadata
 } from '../../types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { TelemetryEvents } from '../../types'
+import { getExecutionContext } from '../../utils/getExecutionContext'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -71,20 +64,17 @@ interface QueuedEvent {
 }
 
 /**
- * Mixpanel Telemetry Provider - Cloud Build Implementation
+ * PostHog Telemetry Provider - Cloud Build Implementation
+ *
+ * Sends all telemetry events to PostHog so they can be correlated
+ * with session recordings. Follows the same pattern as MixpanelTelemetryProvider.
  *
  * CRITICAL: OSS Build Safety
- * This provider integrates with Mixpanel for cloud telemetry tracking.
  * Entire file is tree-shaken away in OSS builds (DISTRIBUTION unset).
- *
- * To verify OSS builds exclude this code:
- * 1. `DISTRIBUTION= pnpm build` (OSS build)
- * 2. `grep -RinE --include='*.js' 'trackWorkflow|trackEvent|mixpanel' dist/` (should find nothing)
- * 3. Check dist/assets/*.js files contain no tracking code
  */
-export class MixpanelTelemetryProvider implements TelemetryProvider {
+export class PostHogTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
-  private mixpanel: OverridedMixpanel | null = null
+  private posthog: PostHog | null = null
   private eventQueue: QueuedEvent[] = []
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
@@ -101,56 +91,53 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       },
       { immediate: true }
     )
-    const token = window.__CONFIG__?.mixpanel_token
 
-    if (token) {
+    const apiKey = window.__CONFIG__?.posthog_project_token
+    if (apiKey) {
       try {
-        // Dynamic import to avoid bundling mixpanel in OSS builds
-        void import('mixpanel-browser')
-          .then((mixpanelModule) => {
-            this.mixpanel = mixpanelModule.default
-            this.mixpanel.init(token, {
-              debug: import.meta.env.DEV,
-              track_pageview: true,
-              api_host: 'https://mp.comfy.org',
-              cross_subdomain_cookie: true,
-              persistence: 'cookie',
-              loaded: () => {
-                this.isInitialized = true
-                this.flushEventQueue() // flush events that were queued while initializing
-                useCurrentUser().onUserResolved((user) => {
-                  if (this.mixpanel && user.id) {
-                    this.mixpanel.identify(user.id)
-                  }
-                })
+        void import('posthog-js')
+          .then((posthogModule) => {
+            this.posthog = posthogModule.default
+            this.posthog!.init(apiKey, {
+              api_host:
+                window.__CONFIG__?.posthog_api_host || 'https://ph.comfy.org',
+              autocapture: false,
+              capture_pageview: false,
+              capture_pageleave: false,
+              persistence: 'localStorage+cookie'
+            })
+            this.isInitialized = true
+            this.flushEventQueue()
+
+            useCurrentUser().onUserResolved((user) => {
+              if (this.posthog && user.id) {
+                this.posthog.identify(user.id)
               }
             })
           })
           .catch((error) => {
-            console.error('Failed to load Mixpanel:', error)
+            console.error('Failed to load PostHog:', error)
             this.isEnabled = false
           })
       } catch (error) {
-        console.error('Failed to initialize Mixpanel:', error)
+        console.error('Failed to initialize PostHog:', error)
         this.isEnabled = false
       }
     } else {
-      console.warn('Mixpanel token not provided in runtime config')
+      console.warn('PostHog API key not provided in runtime config')
       this.isEnabled = false
     }
   }
 
   private flushEventQueue(): void {
-    if (!this.isInitialized || !this.mixpanel) {
-      return
-    }
+    if (!this.isInitialized || !this.posthog) return
 
     while (this.eventQueue.length > 0) {
       const event = this.eventQueue.shift()!
       try {
-        this.mixpanel.track(event.eventName, event.properties || {})
+        this.posthog.capture(event.eventName, event.properties || {})
       } catch (error) {
-        console.error('Failed to track queued event:', error)
+        console.error('Failed to track queued PostHog event:', error)
       }
     }
   }
@@ -159,26 +146,40 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     eventName: TelemetryEventName,
     properties?: TelemetryEventProperties
   ): void {
-    if (!this.isEnabled) {
-      return
-    }
-
-    if (this.disabledEvents.has(eventName)) {
-      return
-    }
+    if (!this.isEnabled) return
+    if (this.disabledEvents.has(eventName)) return
 
     const event: QueuedEvent = { eventName, properties }
 
-    if (this.isInitialized && this.mixpanel) {
-      // Mixpanel is ready, track immediately
+    if (this.isInitialized && this.posthog) {
       try {
-        this.mixpanel.track(eventName, properties || {})
+        this.posthog.capture(eventName, properties || {})
       } catch (error) {
-        console.error('Failed to track event:', error)
+        console.error('Failed to track PostHog event:', error)
       }
     } else {
-      // Mixpanel not ready yet, queue the event
       this.eventQueue.push(event)
+    }
+  }
+
+  private captureRaw(
+    eventName: TelemetryEventName,
+    properties?: Record<string, unknown>
+  ): void {
+    if (!this.isEnabled) return
+    if (this.disabledEvents.has(eventName)) return
+
+    if (this.isInitialized && this.posthog) {
+      try {
+        this.posthog.capture(eventName, properties || {})
+      } catch (error) {
+        console.error('Failed to track PostHog event:', error)
+      }
+    } else {
+      this.eventQueue.push({
+        eventName,
+        properties: properties as TelemetryEventProperties
+      })
     }
   }
 
@@ -235,39 +236,18 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
   }
 
-  /**
-   * Track when a user completes a subscription cancellation flow.
-   * Fired after we detect the backend reports `is_active: false` and the UI stops polling.
-   */
   trackMonthlySubscriptionCancelled(): void {
     this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED)
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
-    const metadata: CreditTopupMetadata = {
+    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED, {
       credit_amount: amount
-    }
-    this.trackEvent(
-      TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED,
-      metadata
-    )
+    })
   }
 
   trackApiCreditTopupSucceeded(): void {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
-  }
-
-  // Credit top-up tracking methods (composition with utility functions)
-  startTopupTracking(): void {
-    startTopupUtil()
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return checkTopupUtil(events)
-  }
-
-  clearTopupTracking(): void {
-    clearTopupUtil()
   }
 
   trackRunButton(options?: {
@@ -303,19 +283,23 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         ? TelemetryEvents.USER_SURVEY_OPENED
         : TelemetryEvents.USER_SURVEY_SUBMITTED
 
-    // Apply normalization to survey responses
     const normalizedResponses = responses
       ? normalizeSurveyResponses(responses)
       : undefined
 
     this.trackEvent(eventName, normalizedResponses)
 
-    // If this is a survey submission, also set user properties with normalized data
-    if (stage === 'submitted' && normalizedResponses && this.mixpanel) {
+    if (
+      stage === 'submitted' &&
+      normalizedResponses &&
+      this.posthog &&
+      this.isEnabled &&
+      !this.disabledEvents.has(TelemetryEvents.USER_SURVEY_SUBMITTED)
+    ) {
       try {
-        this.mixpanel.people.set(normalizedResponses)
+        this.posthog.people.set(normalizedResponses)
       } catch (error) {
-        console.error('Failed to set survey user properties:', error)
+        console.error('Failed to set PostHog user properties:', error)
       }
     }
   }
@@ -422,5 +406,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackPageView(pageName: string, properties?: PageViewMetadata): void {
+    this.captureRaw(TelemetryEvents.PAGE_VIEW, {
+      page_name: pageName,
+      ...properties
+    })
   }
 }
