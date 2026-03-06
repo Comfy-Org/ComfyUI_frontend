@@ -205,12 +205,6 @@ const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
 
-import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { useMaskEditorLoader } from '@/composables/maskeditor/useMaskEditorLoader'
-import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
-import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
-
 const actionButtonClass =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
 

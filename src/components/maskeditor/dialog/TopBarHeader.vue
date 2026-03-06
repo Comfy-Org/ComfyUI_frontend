@@ -106,10 +106,6 @@
         <button :class="textButtonClass" @click="onInvert">
           {{ t('maskEditor.invert') }}
         </button>
-
-        <button :class="textButtonClass" @click="onClear">
-          {{ t('maskEditor.clear') }}
-        </button>
       </div>
     </div>
 
@@ -195,11 +191,6 @@ const onMirrorVertical = async () => {
 
 const onInvert = () => {
   canvasTools.invertMask()
-}
-
-const onClear = () => {
-  canvasTools.clearMask()
-  store.triggerClear()
 }
 
 const handleSave = async () => {
