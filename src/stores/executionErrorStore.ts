@@ -26,15 +26,40 @@ import {
   getNodeByExecutionId,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { isValueStillOutOfRange } from '@/utils/executionErrorUtil'
+
+/**
+ * Error types that can be resolved automatically when the user changes a
+ * widget value or establishes a connection, without requiring a re-run.
+ */
+const SIMPLE_ERROR_TYPES = new Set([
+  'value_bigger_than_max',
+  'value_smaller_than_min',
+  'value_not_in_list',
+  'required_input_missing'
+])
 
 interface MissingNodesError {
   message: string
   nodeTypes: MissingNodeType[]
 }
 
+function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
+  if (node.has_errors === hasErrors) return
+  const oldValue = node.has_errors
+  node.has_errors = hasErrors
+  node.graph?.trigger('node:property:changed', {
+    type: 'node:property:changed',
+    nodeId: node.id,
+    property: 'has_errors',
+    oldValue,
+    newValue: hasErrors
+  })
+}
+
 function clearAllNodeErrorFlags(rootGraph: LGraph): void {
   forEachNode(rootGraph, (node) => {
-    node.has_errors = false
+    setNodeHasErrors(node, false)
     if (node.inputs) {
       for (const slot of node.inputs) {
         slot.hasErrors = false
@@ -61,12 +86,12 @@ function applyNodeError(
   const node = getNodeByExecutionId(rootGraph, executionId)
   if (!node) return
 
-  node.has_errors = true
+  setNodeHasErrors(node, true)
   markNodeSlotErrors(node, nodeError)
 
   for (const parentId of getParentExecutionIds(executionId)) {
     const parentNode = getNodeByExecutionId(rootGraph, parentId)
-    if (parentNode) parentNode.has_errors = true
+    if (parentNode) setNodeHasErrors(parentNode, true)
   }
 }
 
@@ -102,6 +127,71 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Clear only prompt-level errors. Called during resetExecutionState. */
   function clearPromptError() {
     lastPromptError.value = null
+  }
+
+  /**
+   * Removes a node's errors if they consist entirely of simple, auto-resolvable
+   * types. When `slotName` is provided, only errors for that slot are checked.
+   */
+  function clearSimpleNodeErrors(executionId: string, slotName?: string): void {
+    if (!lastNodeErrors.value) return
+    const nodeError = lastNodeErrors.value[executionId]
+    if (!nodeError) return
+
+    const relevantErrors = slotName
+      ? nodeError.errors.filter((e) => e.extra_info?.input_name === slotName)
+      : nodeError.errors
+
+    if (
+      relevantErrors.length === 0 ||
+      !relevantErrors.every((e) => SIMPLE_ERROR_TYPES.has(e.type))
+    ) {
+      return
+    }
+
+    const updated = { ...lastNodeErrors.value }
+
+    if (slotName) {
+      // Remove only the target slot's errors if they were all simple
+      const remainingErrors = nodeError.errors.filter(
+        (e) => e.extra_info?.input_name !== slotName
+      )
+      if (remainingErrors.length === 0) {
+        delete updated[executionId]
+      } else {
+        updated[executionId] = {
+          ...nodeError,
+          errors: remainingErrors
+        }
+      }
+    } else {
+      // If no slot specified and all errors were simple, clear the whole node
+      delete updated[executionId]
+    }
+
+    lastNodeErrors.value = Object.keys(updated).length > 0 ? updated : null
+  }
+
+  /**
+   * Attempts to clear an error for a given widget, but avoids clearing it if
+   * the error is a range violation and the new value is still out of bounds.
+   */
+  function clearSimpleWidgetErrorIfValid(
+    executionId: string,
+    widgetName: string,
+    newValue: unknown,
+    options?: { min?: number; max?: number }
+  ): void {
+    if (typeof newValue === 'number' && lastNodeErrors.value) {
+      const nodeErrors = lastNodeErrors.value[executionId]
+      if (nodeErrors) {
+        const errs = nodeErrors.errors.filter(
+          (e) => e.extra_info?.input_name === widgetName
+        )
+        if (isValueStillOutOfRange(newValue, errs, options || {})) return
+      }
+    }
+    clearSimpleNodeErrors(executionId, widgetName)
   }
 
   /** Set missing node types and open the error overlay if the Errors tab is enabled. */
@@ -413,6 +503,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     lastExecutionErrorNodeId,
     activeGraphErrorNodeIds,
     activeMissingNodeGraphIds,
+
+    // Clearing (targeted)
+    clearSimpleNodeErrors,
+    clearSimpleWidgetErrorIfValid,
 
     // Missing node actions
     setMissingNodeTypes,

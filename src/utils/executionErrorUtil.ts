@@ -90,3 +90,29 @@ export function classifyCloudValidationError(
 
   return null
 }
+
+/**
+ * Returns true if `value` still violates a recorded range constraint.
+ * Pass errors already filtered to the target widget (by `input_name`).
+ * `options` should contain the widget's configured `min` / `max`.
+ */
+export function isValueStillOutOfRange(
+  value: number,
+  errors: NodeError['errors'],
+  options: { min?: number; max?: number }
+): boolean {
+  return (
+    errors.some(
+      (e) =>
+        e.type === 'value_bigger_than_max' &&
+        options.max !== undefined &&
+        value > options.max
+    ) ||
+    errors.some(
+      (e) =>
+        e.type === 'value_smaller_than_min' &&
+        options.min !== undefined &&
+        value < options.min
+    )
+  )
+}

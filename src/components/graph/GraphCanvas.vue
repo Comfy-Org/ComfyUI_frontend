@@ -147,6 +147,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
+import { useNodeErrorAutoResolve } from '@/composables/node/useNodeErrorAutoResolve'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -186,7 +187,7 @@ import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import { forEachNode, getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 import { isCloud } from '@/platform/distribution/types'
@@ -402,7 +403,8 @@ watch(
         delete slot.hasErrors
       }
 
-      const nodeErrors = lastNodeErrors?.[node.id]
+      const execId = getExecutionIdByNode(comfyApp.rootGraph, node)
+      const nodeErrors = execId ? lastNodeErrors?.[execId] : undefined
       if (!nodeErrors) return
 
       const validErrors = nodeErrors.errors.filter(
@@ -443,6 +445,7 @@ const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
+useNodeErrorAutoResolve()
 
 useGlobalLitegraph()
 useContextMenuTranslation()

@@ -112,6 +112,8 @@ import { usePromotionStore } from '@/stores/promotionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
+import { getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
+import { app } from '@/scripts/app'
 
 import InputSlot from './InputSlot.vue'
 
@@ -185,7 +187,14 @@ interface ProcessedWidget {
 
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
-  const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeData.id ?? '']
+
+  // nodeData.id is the local node ID; subgraph nodes need the full execution
+  // path (e.g. "65:63") to match keys in lastNodeErrors.
+  const nodeExecId = app.rootGraph
+    ? getExecutionIdFromNodeData(app.rootGraph, nodeData)
+    : String(nodeData.id ?? '')
+
+  const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
   const graphId = canvasStore.canvas?.graph?.rootGraph.id
 
   const nodeId = nodeData.id
@@ -249,6 +258,14 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       if (widgetState) widgetState.value = newValue
       // Invoke LiteGraph callback wrapper (handles triggerDraw, etc.)
       widget.callback?.(newValue)
+      // Vue widgets bypass onWidgetChanged; resolve errors directly using
+      // the execution ID computed at the top of this computed property.
+      executionErrorStore.clearSimpleWidgetErrorIfValid(
+        nodeExecId,
+        widget.name,
+        newValue,
+        widgetOptions as { min?: number; max?: number }
+      )
     }
 
     const tooltipText = getWidgetTooltip(widget)

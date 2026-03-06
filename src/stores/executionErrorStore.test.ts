@@ -157,3 +157,147 @@ describe('executionErrorStore — missing node operations', () => {
     })
   })
 })
+
+describe('executionErrorStore — node error operations', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  describe('clearSimpleNodeErrors', () => {
+    it('does nothing if lastNodeErrors is null', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = null
+      // Should not error
+      store.clearSimpleNodeErrors('123', 'widgetName')
+      expect(store.lastNodeErrors).toBeNull()
+    })
+
+    it('clears entirely if there are only simple errors for the same slot', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: 'Max exceeded',
+              details: '',
+              extra_info: { input_name: 'testSlot' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleNodeErrors('123', 'testSlot')
+
+      // Should be entirely removed (empty object becomes null)
+      expect(store.lastNodeErrors).toBeNull()
+    })
+
+    it('clears only the specific slot errors, leaving other errors alone', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: 'Max exceeded',
+              details: '',
+              extra_info: { input_name: 'testSlot' }
+            },
+            {
+              type: 'required_input_missing',
+              message: 'Missing',
+              details: '',
+              extra_info: { input_name: 'otherSlot' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleNodeErrors('123', 'testSlot')
+
+      // otherSlot error should still exist
+      expect(store.lastNodeErrors).not.toBeNull()
+      expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+      expect(
+        store.lastNodeErrors?.['123'].errors[0].extra_info?.input_name
+      ).toBe('otherSlot')
+    })
+
+    it('does not clear if the error is not simple', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'exception_type', // Complex error
+              message: 'Failed execution',
+              details: '',
+              extra_info: { input_name: 'testSlot' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleNodeErrors('123', 'testSlot')
+
+      // Error should remain
+      expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+    })
+  })
+
+  describe('clearSimpleWidgetErrorIfValid', () => {
+    it('clears error if value is valid (isValueStillOutOfRange is false)', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: '...',
+              details: '',
+              extra_info: { input_name: 'testWidget' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      // Valid value (5 < 10)
+      store.clearSimpleWidgetErrorIfValid('123', 'testWidget', 5, { max: 10 })
+
+      expect(store.lastNodeErrors).toBeNull()
+    })
+
+    it('does not clear error if value is still out of range', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: '...',
+              details: '',
+              extra_info: { input_name: 'testWidget' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      // Invalid value (15 > 10)
+      store.clearSimpleWidgetErrorIfValid('123', 'testWidget', 15, { max: 10 })
+
+      expect(store.lastNodeErrors).not.toBeNull()
+      expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+    })
+  })
+})

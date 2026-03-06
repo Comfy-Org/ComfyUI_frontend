@@ -11,7 +11,7 @@ import {
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
-interface NodeWithId {
+export interface NodeWithId {
   id: string | number
   subgraphId?: string | null
 }
@@ -358,6 +358,26 @@ export function getExecutionIdByNode(
   if (parentPath === undefined) return null
 
   return `${parentPath}:${node.id}`
+}
+
+/**
+ * Returns the execution ID for a node described by plain data (id + subgraphId),
+ * without requiring a pre-existing {@link LGraphNode} reference.
+ * Subgraph nodes return the full colon-separated path (e.g. `"65:70:63"`).
+ * Falls back to `String(nodeData.id)` if the node cannot be resolved.
+ *
+ * @param rootGraph - The root graph to resolve from
+ * @param nodeData  - Object with `id` (local node ID) and optional `subgraphId` (UUID)
+ */
+export function getExecutionIdFromNodeData(
+  rootGraph: LGraph,
+  nodeData: NodeWithId
+): string {
+  const locatorId = getLocatorIdFromNodeData(nodeData)
+  const node = getNodeByLocatorId(rootGraph, locatorId)
+  return node
+    ? (getExecutionIdByNode(rootGraph, node) ?? String(nodeData.id))
+    : String(nodeData.id)
 }
 
 /**
