@@ -228,7 +228,7 @@ export function useWorkflowActionsMenu(
         }
 
         // TODO: proceed with share
-      },
+      }
     })
 
     addItem({

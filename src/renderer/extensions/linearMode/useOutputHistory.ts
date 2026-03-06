@@ -171,13 +171,14 @@ export function useOutputHistory(): {
 
     // Interrupt the running job if it belongs to this workflow
     if (queueStore.runningTasks.some(matchesPath)) {
-      useCommandStore().execute('Comfy.Interrupt')
-    }
-
-    // Delete pending jobs for this workflow from the queue
-    for (const task of queueStore.pendingTasks) {
-      if (matchesPath(task)) {
-        await api.deleteItem('queue', String(task.jobId))
+      void useCommandStore().execute('Comfy.Interrupt')
+    } else {
+      // Delete first pending job for this workflow from the queue
+      for (const task of queueStore.pendingTasks) {
+        if (matchesPath(task)) {
+          await api.deleteItem('queue', String(task.jobId))
+          break
+        }
       }
     }
   }
