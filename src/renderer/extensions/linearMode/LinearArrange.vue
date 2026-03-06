@@ -40,12 +40,12 @@ const existingOutput = computed(() => {
     v-else-if="hasOutputs"
     role="article"
     data-testid="arrange-preview"
-    class="flex flex-col items-center justify-center h-full w-3/4 gap-6 p-8 mx-auto"
+    class="mx-auto flex h-full w-3/4 flex-col items-center justify-center gap-6 p-8"
   >
     <div
-      class="border-warning-background border-2 border-dashed rounded-2xl w-full h-4/5 flex items-center justify-center flex-col p-12"
+      class="flex h-4/5 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-warning-background p-12"
     >
-      <p class="text-base-foreground font-bold mb-0">
+      <p class="mb-0 font-bold text-base-foreground">
         {{ t('linearMode.arrange.outputs') }}
       </p>
       <p class="text-center">{{ t('linearMode.arrange.resultsLabel') }}</p>
@@ -55,18 +55,18 @@ const existingOutput = computed(() => {
     v-else
     role="article"
     data-testid="arrange-no-outputs"
-    class="flex flex-col items-center justify-center h-full gap-6 p-8 w-lg mx-auto text-center"
+    class="mx-auto flex h-full w-lg flex-col items-center justify-center gap-6 p-8 text-center"
   >
     <p class="m-0 text-base-foreground">
       {{ t('linearMode.arrange.noOutputs') }}
     </p>
 
-    <div class="flex flex-col gap-1 text-muted-foreground w-lg text-[14px]">
+    <div class="flex w-lg flex-col gap-1 text-[14px] text-muted-foreground">
       <p class="mt-0 p-0">{{ t('linearMode.arrange.switchToOutputs') }}</p>
 
       <i18n-t keypath="linearMode.arrange.connectAtLeastOne" tag="div">
         <template #atLeastOne>
-          <span class="italic font-bold">
+          <span class="font-bold italic">
             {{ t('linearMode.arrange.atLeastOne') }}
           </span>
         </template>

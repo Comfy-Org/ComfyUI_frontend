@@ -31,10 +31,10 @@ function toggle() {
         <div
           :class="
             cn(
-              'overflow-hidden transition-all duration-300 min-w-0 max-w-full',
+              'max-w-full min-w-0 overflow-hidden transition-all duration-300',
               isExpanded
-                ? 'w-full max-h-100 sm:w-[max(400px,40vw)]'
-                : 'w-0 max-h-0'
+                ? 'max-h-100 w-full sm:w-[max(400px,40vw)]'
+                : 'max-h-0 w-0'
             )
           "
         >

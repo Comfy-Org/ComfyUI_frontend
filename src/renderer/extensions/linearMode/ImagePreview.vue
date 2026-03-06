@@ -19,13 +19,13 @@ const height = ref('')
   <ZoomPane
     v-if="!mobile"
     v-slot="slotProps"
-    :class="cn('flex-1 w-full', $attrs.class as string)"
+    :class="cn('w-full flex-1', $attrs.class as string)"
   >
     <img
       ref="imageRef"
       :src
       v-bind="slotProps"
-      class="h-full object-contain w-full"
+      class="size-full object-contain"
       @load="
         () => {
           if (!imageRef) return
@@ -38,7 +38,7 @@ const height = ref('')
   <img
     v-else
     ref="imageRef"
-    class="contain-size grow-1 object-contain"
+    class="grow object-contain contain-size"
     :src
     @load="
       () => {

@@ -78,7 +78,7 @@ async function rerun(e: Event) {
   <section
     v-if="selectedItem || selectedOutput || !executionStore.isIdle"
     data-testid="linear-output-info"
-    class="flex flex-wrap gap-2 p-4 w-full md:z-10 tabular-nums justify-center text-sm"
+    class="flex w-full flex-wrap justify-center gap-2 p-4 text-sm tabular-nums md:z-10"
   >
     <template v-if="selectedItem">
       <Button size="md" @click="rerun">
@@ -89,7 +89,7 @@ async function rerun(e: Event) {
         {{ t('linearMode.reuseParameters') }}
         <i class="icon-[lucide--list-restart]" />
       </Button>
-      <div class="border-r border-border-subtle mx-1" />
+      <div class="mx-1 border-r border-border-subtle" />
     </template>
     <Button
       v-if="selectedOutput"

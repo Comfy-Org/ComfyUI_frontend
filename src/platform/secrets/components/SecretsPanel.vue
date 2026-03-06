@@ -11,8 +11,8 @@
 
       <Divider class="my-4" />
 
-      <div class="flex items-center justify-between my-4">
-        <h3 class="text-lg font-semibold my-0">
+      <div class="my-4 flex items-center justify-between">
+        <h3 class="my-0 text-lg font-semibold">
           {{ $t('secrets.modelProviders') }}
         </h3>
         <Button @click="openCreateDialog">
@@ -22,7 +22,7 @@
       </div>
 
       <div v-if="loading" class="flex items-center justify-center py-8">
-        <ProgressSpinner class="h-8 w-8" />
+        <ProgressSpinner class="size-8" />
       </div>
 
       <div

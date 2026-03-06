@@ -6,7 +6,7 @@
           id="doNotAskAgainModels"
           v-model="doNotAskAgain"
           type="checkbox"
-          class="h-4 w-4 cursor-pointer"
+          class="size-4 cursor-pointer"
         />
         <label for="doNotAskAgainModels">{{
           $t('missingModelsDialog.doNotAskAgain')

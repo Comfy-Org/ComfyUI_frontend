@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-2 flex-auto">
+  <div class="flex flex-auto flex-col gap-2">
     <ComboboxRoot :ignore-filter="true" :open="false">
       <ComboboxAnchor
         :class="
@@ -7,7 +7,7 @@
             'relative flex w-full cursor-text items-center',
             'rounded-lg bg-comfy-input text-comfy-input-foreground',
             showBorder &&
-              'border border-solid border-border-default box-border',
+              'box-border border border-solid border-border-default',
             sizeClasses,
             className
           )
@@ -15,7 +15,7 @@
       >
         <i
           v-if="!searchTerm"
-          :class="cn('absolute left-4 pointer-events-none', icon, iconClass)"
+          :class="cn('pointer-events-none absolute left-4', icon, iconClass)"
         />
         <Button
           v-else

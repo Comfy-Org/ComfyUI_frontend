@@ -7,8 +7,8 @@ export const searchInputVariants = cva({
     size: {
       sm: 'h-6 p-1',
       md: 'h-8 px-2 py-1.5',
-      lg: 'h-10 px-2 py-2',
-      xl: 'h-12 px-2 py-2'
+      lg: 'h-10 p-2',
+      xl: 'h-12 p-2'
     }
   },
   defaultVariants: { size: 'md' }

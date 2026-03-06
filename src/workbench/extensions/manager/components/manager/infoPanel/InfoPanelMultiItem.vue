@@ -1,11 +1,11 @@
 <template>
   <div
     v-if="nodePacks?.length"
-    class="flex h-full flex-col overflow-y-auto scrollbar-custom"
+    class="flex scrollbar-custom h-full flex-col overflow-y-auto"
   >
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter">
+        <span class="font-inter text-xs uppercase">
           {{ t('manager.actions') }}
         </span>
       </template>
@@ -42,7 +42,7 @@
 
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter">
+        <span class="font-inter text-xs uppercase">
           {{ t('manager.basicInfo') }}
         </span>
       </template>
@@ -97,7 +97,7 @@ const { nodePacks } = defineProps<{
 const { t } = useI18n()
 
 const accordionClass = cn(
-  'bg-modal-panel-background border-t border-border-default'
+  'border-t border-border-default bg-modal-panel-background'
 )
 
 const managerStore = useComfyManagerStore()

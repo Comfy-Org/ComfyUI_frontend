@@ -204,13 +204,13 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 )
 </script>
 <template>
-  <div class="h-full flex flex-col">
-    <div class="flex font-bold p-2 border-border-subtle border-b items-center">
+  <div class="flex h-full flex-col">
+    <div class="flex items-center border-b border-border-subtle p-2 font-bold">
       {{
         isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
       }}
     </div>
-    <div class="flex-1 overflow-y-auto min-h-0">
+    <div class="min-h-0 flex-1 overflow-y-auto">
       <DraggableList
         v-if="isArrangeMode"
         v-slot="{ dragClass }"
@@ -219,7 +219,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         <div
           v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
           :key="`${nodeId}: ${widgetName}`"
-          :class="cn(dragClass, 'p-2 my-2 pointer-events-auto')"
+          :class="cn(dragClass, 'pointer-events-auto my-2 p-2')"
           :aria-label="`${widget?.label ?? widgetName} — ${node.title}`"
         >
           <div v-if="widget" class="pointer-events-none" inert>
@@ -232,7 +232,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           </div>
           <div
             v-else
-            class="text-muted-foreground text-sm p-1 pointer-events-none"
+            class="pointer-events-none p-1 text-sm text-muted-foreground"
           >
             {{ widgetName }}
             <p class="text-xs italic">
@@ -246,14 +246,14 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         :label="t('nodeHelpPage.inputs')"
         enable-empty-state
         :disabled="!appModeStore.selectedInputs.length"
-        class="border-border-subtle border-b"
+        class="border-b border-border-subtle"
         :tooltip="`${t('linearMode.builder.inputsDesc')}\n${t('linearMode.builder.inputsExample')}`"
         :tooltip-delay="100"
       >
         <template #label>
           <div class="flex gap-3">
             {{ t('nodeHelpPage.inputs') }}
-            <i class="bg-muted-foreground icon-[lucide--circle-alert]" />
+            <i class="icon-[lucide--circle-alert] bg-muted-foreground" />
           </div>
         </template>
         <template #empty>
@@ -280,7 +280,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             } in inputsWithState"
             :key="`${nodeId}: ${widgetName}`"
             :class="
-              cn(dragClass, 'bg-primary-background/30 p-2 my-2 rounded-lg')
+              cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
             "
             :title="label ?? widgetName"
             :sub-title="subLabel"
@@ -306,7 +306,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         <template #label>
           <div class="flex gap-3">
             {{ t('nodeHelpPage.outputs') }}
-            <i class="bg-muted-foreground icon-[lucide--circle-alert]" />
+            <i class="icon-[lucide--circle-alert] bg-muted-foreground" />
           </div>
         </template>
         <template #empty>
@@ -329,8 +329,8 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             :class="
               cn(
                 dragClass,
-                'bg-warning-background/40 p-2 my-2 rounded-lg',
-                index === 0 && 'ring-warning-background ring-2'
+                'my-2 rounded-lg bg-warning-background/40 p-2',
+                index === 0 && 'ring-2 ring-warning-background'
               )
             "
             :title
@@ -351,7 +351,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     <div
       :class="
         cn(
-          'absolute w-full h-full pointer-events-auto',
+          'pointer-events-auto absolute size-full',
           hoveringSelectable ? 'cursor-pointer' : 'cursor-grab'
         )
       "
@@ -366,7 +366,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             v-for="[key, style] in renderedInputs"
             :key
             :style="toValue(style)"
-            class="fixed bg-primary-background/30 rounded-lg"
+            class="fixed rounded-lg bg-primary-background/30"
           />
         </template>
         <template v-else>
@@ -376,7 +376,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             :style="toValue(style)"
             :class="
               cn(
-                'fixed ring-warning-background ring-5 rounded-2xl',
+                'fixed rounded-2xl ring-5 ring-warning-background',
                 !isSelected && 'ring-warning-background/50'
               )
             "
@@ -384,17 +384,17 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             <div class="absolute top-0 right-0 size-8">
               <div
                 v-if="isSelected"
-                class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg cursor-pointer pointer-events-auto"
+                class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-warning-background p-2"
                 @click.stop="
                   remove(appModeStore.selectedOutputs, (k) => k == key)
                 "
                 @pointerdown.stop
               >
-                <i class="icon-[lucide--check] bg-text-foreground size-full" />
+                <i class="bg-text-foreground icon-[lucide--check] size-full" />
               </div>
               <div
                 v-else
-                class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg cursor-pointer pointer-events-auto"
+                class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-component-node-background ring-4 ring-warning-background/50 ring-inset"
                 @click.stop="appModeStore.selectedOutputs.push(key)"
                 @pointerdown.stop
               />
