@@ -55,7 +55,6 @@ export function useWorkflowActionsMenu(
   const subgraphStore = useSubgraphStore()
   const menuItemStore = useMenuItemStore()
   const canvasStore = useCanvasStore()
-  const { toastErrorHandler } = useErrorHandling()
   const { flags } = useFeatureFlags()
   const { enterBuilder } = useAppModeStore()
 
@@ -195,7 +194,8 @@ export function useWorkflowActionsMenu(
       id: 'share',
       label: t('breadcrumbsMenu.share'),
       icon: 'icon-[comfy--send]',
-      command: () => openShareDialog().catch(toastErrorHandler),
+      command: () =>
+        openShareDialog().catch(useErrorHandling().toastErrorHandler),
       visible: isCloud && flags.workflowSharingEnabled
     })
 
