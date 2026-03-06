@@ -50,12 +50,12 @@
             <img
               :src="comparisonPreviewUrls.after!"
               :alt="$t('comfyHubPublish.uploadComparisonAfterPrompt')"
-              class="h-full w-full object-contain"
+              class="size-full object-contain"
             />
             <img
               :src="comparisonPreviewUrls.before!"
               :alt="$t('comfyHubPublish.uploadComparisonBeforePrompt')"
-              class="absolute inset-0 h-full w-full object-contain"
+              class="absolute inset-0 size-full object-contain"
               :style="{
                 clipPath: `inset(0 ${100 - previewSliderPosition}% 0 0)`
               }"
