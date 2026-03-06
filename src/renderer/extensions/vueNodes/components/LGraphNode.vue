@@ -71,7 +71,7 @@
       data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex flex-1 flex-col bg-node-component-header-surface',
+          'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
           'min-h-(--node-height) w-(--node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
