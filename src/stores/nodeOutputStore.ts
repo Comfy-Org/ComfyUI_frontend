@@ -11,6 +11,8 @@ import type {
   ResultItemType
 } from '@/schemas/apiSchema'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
@@ -97,20 +99,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return true
   }
 
-  /**
-   * Get the preview param for the node's outputs.
-   *
-   * If the output is an image, use the user's preferred format (from settings).
-   * For non-image outputs, return an empty string, as including the preview param
-   * will force the server to load the output file as an image.
-   */
-  function getPreviewParam(
-    node: LGraphNode,
-    outputs: ExecutedWsMessage['output']
-  ): string {
-    return isImageOutputs(node, outputs) ? app.getPreviewFormatParam() : ''
-  }
-
   function getNodeImageUrls(node: LGraphNode): string[] | undefined {
     const previews = getNodePreviews(node)
     if (previews?.length) return previews
@@ -118,14 +106,17 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const outputs = getNodeOutputs(node)
     if (!outputs?.images?.length) return
 
-    const rand = app.getRandParam()
-    const previewParam = getPreviewParam(node, outputs)
     const isImage = isImageOutputs(node, outputs)
 
     return outputs.images.map((image) => {
       const params = new URLSearchParams(image)
-      if (isImage) appendCloudResParam(params, image.filename)
-      return api.apiURL(`/view?${params}${previewParam}${rand}`)
+      if (isImage) {
+        appendCloudResParam(params, image.filename)
+        const previewFormat = useSettingStore().get('Comfy.PreviewFormat')
+        if (previewFormat) params.set('preview', previewFormat)
+      }
+      if (!isCloud) params.set('rand', String(Math.random()))
+      return api.apiURL(`/view?${params}`)
     })
   }
 
@@ -443,8 +434,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     getNodeOutputs,
     getNodeImageUrls,
     getNodePreviews,
-    getPreviewParam,
-
     // Setters
     setNodeOutputs,
     setNodeOutputsByExecutionId,

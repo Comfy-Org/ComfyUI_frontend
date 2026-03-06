@@ -7,18 +7,11 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import * as litegraphUtil from '@/utils/litegraphUtil'
-
-vi.mock('@/utils/litegraphUtil', () => ({
-  isAnimatedOutput: vi.fn(),
-  isVideoNode: vi.fn()
-}))
 
 const mockGetNodeById = vi.fn()
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
     rootGraph: {
       getNodeById: (...args: unknown[]) => mockGetNodeById(...args)
     },
@@ -148,76 +141,6 @@ describe('nodeOutputStore restoreOutputs', () => {
     // reactivity update.
     expect(store.nodeOutputs['3']).toStrictEqual(widgetOutput)
     expect(app.nodeOutputs['3']).toStrictEqual(widgetOutput)
-  })
-})
-
-describe('nodeOutputStore getPreviewParam', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-    vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
-    vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
-  })
-
-  it('should return empty string if output is animated', () => {
-    const store = useNodeOutputStore()
-    vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(true)
-    const node = createMockNode()
-    const outputs = createMockOutputs([{ filename: 'img.png' }])
-    expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
-  })
-
-  it('should return empty string if isVideoNode returns true', () => {
-    const store = useNodeOutputStore()
-    vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(true)
-    const node = createMockNode()
-    const outputs = createMockOutputs([{ filename: 'img.png' }])
-    expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
-  })
-
-  it('should return empty string if outputs.images is undefined', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode()
-    const outputs: ExecutedWsMessage['output'] = {}
-    expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
-  })
-
-  it('should return empty string if outputs.images is empty', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode()
-    const outputs = createMockOutputs([])
-    expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
-  })
-
-  it('should return empty string if outputs.images contains SVG images', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode()
-    const outputs = createMockOutputs([{ filename: 'img.svg' }])
-    expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
-  })
-
-  it('should return format param for standard image outputs', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode()
-    const outputs = createMockOutputs([{ filename: 'img.png' }])
-    expect(store.getPreviewParam(node, outputs)).toBe('&format=test_webp')
-    expect(vi.mocked(app).getPreviewFormatParam).toHaveBeenCalledTimes(1)
-  })
-
-  it('should return format param for multiple standard images', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode()
-    const outputs = createMockOutputs([
-      { filename: 'img1.png' },
-      { filename: 'img2.jpg' }
-    ])
-    expect(store.getPreviewParam(node, outputs)).toBe('&format=test_webp')
-    expect(vi.mocked(app).getPreviewFormatParam).toHaveBeenCalledTimes(1)
   })
 })
 
