@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import type { CSSProperties, MaybeRefOrGetter } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import { computed } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 
@@ -58,7 +60,7 @@ type LayoutConfig = {
   maxColumns: number
   itemHeight: number
   itemWidth: number
-  gap: string
+  gapClass: string
 }
 
 const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
@@ -66,19 +68,19 @@ const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
     maxColumns: 4,
     itemHeight: 120,
     itemWidth: 89,
-    gap: 'var(--spacing-4) var(--spacing-2)'
+    gapClass: 'gap-x-2 gap-y-4'
   },
   list: {
     maxColumns: 1,
     itemHeight: 64,
     itemWidth: 380,
-    gap: 'var(--spacing-2)'
+    gapClass: 'gap-2'
   },
   'list-small': {
     maxColumns: 1,
     itemHeight: 40,
     itemWidth: 380,
-    gap: 'var(--spacing-1)'
+    gapClass: 'gap-1'
   }
 }
 
@@ -86,12 +88,9 @@ const layoutConfig = computed<LayoutConfig>(
   () => LAYOUT_CONFIGS[layoutMode.value ?? 'grid']
 )
 
-const gridStyle = computed<CSSProperties>(() => ({
-  display: 'grid',
-  gap: layoutConfig.value.gap,
-  padding: '1rem',
-  width: '100%'
-}))
+const gridClass = computed(() =>
+  cn('grid w-full p-4', layoutConfig.value.gapClass)
+)
 
 type VirtualDropdownItem = FormDropdownItem & { key: string }
 const virtualItems = computed<VirtualDropdownItem[]>(() =>
@@ -139,7 +138,7 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
       v-else
       :key="layoutMode"
       :items="virtualItems"
-      :grid-style
+      :grid-class="gridClass"
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"
       :default-item-width="layoutConfig.itemWidth"

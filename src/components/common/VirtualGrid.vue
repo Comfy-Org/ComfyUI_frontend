@@ -4,7 +4,7 @@
     class="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-(--dialog-surface) h-full overflow-y-auto [overflow-anchor:none] [scrollbar-gutter:stable]"
   >
     <div :style="topSpacerStyle" />
-    <div :style="mergedGridStyle">
+    <div :class="gridClass" :style="mergedGridStyle">
       <div
         v-for="(item, i) in renderedItems"
         :key="item.key"
@@ -32,6 +32,7 @@ type GridState = {
 const {
   items,
   gridStyle,
+  gridClass,
   bufferRows = 1,
   scrollThrottle = 64,
   resizeDebounce = 64,
@@ -40,7 +41,8 @@ const {
   maxColumns = Infinity
 } = defineProps<{
   items: (T & { key: string })[]
-  gridStyle: CSSProperties
+  gridStyle?: CSSProperties
+  gridClass?: string
   bufferRows?: number
   scrollThrottle?: number
   resizeDebounce?: number
@@ -71,7 +73,7 @@ const cols = computed(() => {
 })
 
 const mergedGridStyle = computed<CSSProperties>(() => {
-  if (maxColumns === Infinity) return gridStyle
+  if (maxColumns === Infinity) return gridStyle ?? {}
   return {
     ...gridStyle,
     gridTemplateColumns: `repeat(${maxColumns}, minmax(0, 1fr))`
