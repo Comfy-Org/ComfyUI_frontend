@@ -17,10 +17,7 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { api } from './api'
 import type { ComfyApp } from './app'
 import { app } from './app'
-
-function clone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj))
-}
+import { clone } from './utils'
 
 const logger = log.getLogger('ChangeTracker')
 // Change to debug for more verbose logging
