@@ -52,6 +52,10 @@ export function deduplicateSubgraphNodeIds(
     patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
   }
 
+  for (const subgraph of clonedSubgraphs) {
+    patchProxyWidgets(subgraph.nodes ?? [], subgraphIdSet, remapBySubgraph)
+  }
+
   if (clonedRootNodes) {
     patchProxyWidgets(clonedRootNodes, subgraphIdSet, remapBySubgraph)
   }
@@ -101,12 +105,14 @@ function findNextAvailableId(
   usedNodeIds: Set<number>,
   state: LGraphState
 ): NodeId {
-  while (usedNodeIds.has(++state.lastNodeId)) {
-    if (state.lastNodeId >= MAX_NODE_ID) {
+  while (true) {
+    const nextId = state.lastNodeId + 1
+    if (nextId > MAX_NODE_ID) {
       throw new Error('Node ID space exhausted')
     }
+    state.lastNodeId = nextId
+    if (!usedNodeIds.has(nextId)) return nextId as NodeId
   }
-  return state.lastNodeId as NodeId
 }
 
 /** Patches origin_id / target_id in serialized links. */

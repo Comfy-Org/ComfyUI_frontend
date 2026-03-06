@@ -2482,14 +2482,23 @@ export class LGraph
       const subgraphs = data.definitions?.subgraphs
       let effectiveNodesData = nodesData
       if (subgraphs) {
+        const reservedNodeIds = new Set<number>()
+        for (const node of this._nodes) {
+          if (typeof node.id === 'number') reservedNodeIds.add(node.id)
+        }
+        for (const sg of this.subgraphs.values()) {
+          for (const node of sg.nodes) {
+            if (typeof node.id === 'number') reservedNodeIds.add(node.id)
+          }
+        }
+        for (const n of nodesData ?? []) {
+          if (typeof n.id === 'number') reservedNodeIds.add(n.id)
+        }
+
         const deduplicated = this.isRootGraph
           ? deduplicateSubgraphNodeIds(
               subgraphs,
-              new Set<number>(
-                nodesData
-                  ?.map((n) => n.id)
-                  .filter((id): id is number => typeof id === 'number')
-              ),
+              reservedNodeIds,
               this.state,
               nodesData
             )

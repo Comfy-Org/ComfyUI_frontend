@@ -19,6 +19,9 @@ import {
 } from './subgraph/__fixtures__/subgraphHelpers'
 
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
+import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWidgets'
+import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
+import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
 function swapNodes(nodes: LGraphNode[]) {
@@ -742,18 +745,35 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     }
   })
 
-  it('is a no-op when subgraph node IDs are already unique', () => {
-    const graphData = loadFixture()
-    const subgraphs = graphData.definitions!.subgraphs!
-    subgraphs[0].nodes![0].id = 10 as NodeId
-    subgraphs[0].nodes![1].id = 11 as NodeId
-    subgraphs[0].nodes![2].id = 12 as NodeId
-    subgraphs[1].nodes![0].id = 20 as NodeId
-    subgraphs[1].nodes![1].id = 21 as NodeId
-    subgraphs[1].nodes![2].id = 22 as NodeId
-
+  it('patches proxyWidgets inside nested subgraph nodes', () => {
     const graph = new LGraph()
-    graph.configure(graphData)
+    graph.configure(structuredClone(nestedSubgraphProxyWidgets))
+
+    const idsB = new Set(
+      graph.subgraphs.get(SUBGRAPH_B)!.nodes.map((n) => String(n.id))
+    )
+
+    const innerNode = graph.subgraphs
+      .get(SUBGRAPH_A)!
+      .nodes.find((n) => n.id === (50 as NodeId))
+    const pw = innerNode?.properties?.proxyWidgets
+    expect(Array.isArray(pw)).toBe(true)
+    for (const entry of pw as unknown[][]) {
+      expect(Array.isArray(entry)).toBe(true)
+      expect(idsB.has(String(entry[0]))).toBe(true)
+    }
+  })
+
+  it('throws when node ID space is exhausted', () => {
+    expect(() => {
+      const graph = new LGraph()
+      graph.configure(structuredClone(nodeIdSpaceExhausted))
+    }).toThrow('Node ID space exhausted')
+  })
+
+  it('is a no-op when subgraph node IDs are already unique', () => {
+    const graph = new LGraph()
+    graph.configure(structuredClone(uniqueSubgraphNodeIds))
 
     expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(new Set([10, 11, 12]))
     expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(new Set([20, 21, 22]))
