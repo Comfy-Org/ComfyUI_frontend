@@ -1,17 +1,14 @@
 import type { CurvePoint } from './types'
 
-/**
- * Monotone cubic Hermite interpolation.
- * Produces a smooth curve that passes through all control points
- * without overshooting (monotone property).
- *
- * Returns a function that evaluates y for any x in [0, 1].
- */
-export function createMonotoneInterpolator(
-  points: CurvePoint[]
-): (x: number) => number {
-  if (points.length === 0) return () => 0
-  if (points.length === 1) return () => points[0][1]
+interface MonotoneSpline {
+  n: number
+  xs: number[]
+  ys: number[]
+  slopes: number[]
+}
+
+function computeMonotoneSpline(points: CurvePoint[]): MonotoneSpline | null {
+  if (points.length < 2) return null
 
   const sorted = [...points].sort((a, b) => a[0] - b[0])
   const n = sorted.length
@@ -51,6 +48,51 @@ export function createMonotoneInterpolator(
     }
   }
 
+  return { n, xs, ys, slopes }
+}
+
+function hermiteEval(
+  spline: MonotoneSpline,
+  lo: number,
+  hi: number,
+  x: number
+): number {
+  const dx = spline.xs[hi] - spline.xs[lo]
+  if (dx === 0) return spline.ys[lo]
+
+  const t = (x - spline.xs[lo]) / dx
+  const t2 = t * t
+  const t3 = t2 * t
+
+  const h00 = 2 * t3 - 3 * t2 + 1
+  const h10 = t3 - 2 * t2 + t
+  const h01 = -2 * t3 + 3 * t2
+  const h11 = t3 - t2
+
+  return (
+    h00 * spline.ys[lo] +
+    h10 * dx * spline.slopes[lo] +
+    h01 * spline.ys[hi] +
+    h11 * dx * spline.slopes[hi]
+  )
+}
+
+/**
+ * Monotone cubic Hermite interpolation.
+ * Produces a smooth curve that passes through all control points
+ * without overshooting (monotone property).
+ *
+ * Returns a function that evaluates y for any x in [0, 1].
+ */
+export function createMonotoneInterpolator(
+  points: CurvePoint[]
+): (x: number) => number {
+  if (points.length === 0) return () => 0
+  if (points.length === 1) return () => points[0][1]
+
+  const spline = computeMonotoneSpline(points)!
+  const { n, xs, ys } = spline
+
   return (x: number): number => {
     if (x <= xs[0]) return ys[0]
     if (x >= xs[n - 1]) return ys[n - 1]
@@ -63,24 +105,7 @@ export function createMonotoneInterpolator(
       else hi = mid
     }
 
-    const dx = xs[hi] - xs[lo]
-    if (dx === 0) return ys[lo]
-
-    const t = (x - xs[lo]) / dx
-    const t2 = t * t
-    const t3 = t2 * t
-
-    const h00 = 2 * t3 - 3 * t2 + 1
-    const h10 = t3 - 2 * t2 + t
-    const h01 = -2 * t3 + 3 * t2
-    const h11 = t3 - t2
-
-    return (
-      h00 * ys[lo] +
-      h10 * dx * slopes[lo] +
-      h01 * ys[hi] +
-      h11 * dx * slopes[hi]
-    )
+    return hermiteEval(spline, lo, hi, x)
   }
 }
 
@@ -108,11 +133,36 @@ export function histogramToPath(histogram: Uint32Array): string {
 
 export function curvesToLUT(points: CurvePoint[]): Uint8Array {
   const lut = new Uint8Array(256)
-  const interpolate = createMonotoneInterpolator(points)
+
+  if (points.length === 0) return lut
+  if (points.length === 1) {
+    const v = Math.max(0, Math.min(255, Math.round(points[0][1] * 255)))
+    lut.fill(v)
+    return lut
+  }
+
+  const spline = computeMonotoneSpline(points)!
+  const { n, xs, ys } = spline
+
+  let lo = 0
+  let hi = 1
 
   for (let i = 0; i < 256; i++) {
     const x = i / 255
-    const y = interpolate(x)
+    let y: number
+
+    if (x <= xs[0]) {
+      y = ys[0]
+    } else if (x >= xs[n - 1]) {
+      y = ys[n - 1]
+    } else {
+      while (hi < n - 1 && xs[hi] < x) {
+        lo++
+        hi++
+      }
+      y = hermiteEval(spline, lo, hi, x)
+    }
+
     lut[i] = Math.max(0, Math.min(255, Math.round(y * 255)))
   }
 
