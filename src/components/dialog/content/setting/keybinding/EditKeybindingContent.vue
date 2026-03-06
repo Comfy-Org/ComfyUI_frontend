@@ -1,12 +1,12 @@
 <template>
   <div class="flex w-96 flex-col border-t border-border-default p-4">
-    <InputText
-      class="mb-2 bg-secondary-background text-center"
-      :model-value="dialogState.newCombo?.toString() ?? ''"
+    <input
+      class="mb-2 w-full rounded-sm border border-border-default bg-secondary-background px-3 py-2 text-center text-foreground shadow-none focus:outline-none"
+      :value="dialogState.newCombo?.toString() ?? ''"
       :placeholder="$t('g.enterYourKeybind')"
+      :aria-label="$t('g.enterYourKeybind')"
       autocomplete="off"
       autofocus
-      fluid
       @keydown.stop.prevent="captureKeybinding"
     />
     <div class="min-h-12">
@@ -28,7 +28,6 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
