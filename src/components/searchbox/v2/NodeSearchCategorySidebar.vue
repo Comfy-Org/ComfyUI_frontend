@@ -121,7 +121,7 @@ const categoryTree = computed<CategoryNode[]>(() => {
 
 function categoryBtnClass(id: string) {
   return cn(
-    'cursor-pointer border-none bg-transparent rounded-sm px-3 py-2.5 text-left text-sm transition-colors',
+    'cursor-pointer rounded-sm border-none bg-transparent px-3 py-2.5 text-left text-sm transition-colors',
     selectedCategory.value === id
       ? CATEGORY_SELECTED_CLASS
       : CATEGORY_UNSELECTED_CLASS

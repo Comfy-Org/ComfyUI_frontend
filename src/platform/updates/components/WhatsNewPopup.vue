@@ -3,7 +3,7 @@
     <div class="whats-new-popup" @click.stop>
       <!-- Close Button -->
       <Button
-        class="close-button absolute top-2 right-2 z-10 w-8 h-8 p-2 rounded-lg opacity-50"
+        class="close-button absolute top-2 right-2 z-10 size-8 rounded-lg p-2 opacity-50"
         :aria-label="$t('g.close')"
         size="icon-sm"
         variant="muted-textonly"
@@ -13,7 +13,7 @@
       </Button>
 
       <!-- Modal Body -->
-      <div class="modal-body flex flex-col gap-4 px-0 pt-0 pb-2 flex-1">
+      <div class="modal-body flex flex-1 flex-col gap-4 px-0 pt-0 pb-2">
         <!-- Release Content -->
         <div
           class="content-text max-h-96 overflow-y-auto"
@@ -23,10 +23,10 @@
 
       <!-- Modal Footer -->
       <div
-        class="modal-footer flex justify-between items-center gap-4 px-4 pb-4"
+        class="modal-footer flex items-center justify-between gap-4 px-4 pb-4"
       >
         <a
-          class="learn-more-link flex items-center gap-2 text-sm font-normal py-1"
+          class="learn-more-link flex items-center gap-2 py-1 text-sm font-normal"
           :href="changelogUrl"
           target="_blank"
           rel="noopener noreferrer"

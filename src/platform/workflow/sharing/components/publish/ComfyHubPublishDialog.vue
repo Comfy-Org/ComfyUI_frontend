@@ -6,7 +6,7 @@
     size="md"
   >
     <template #leftPanelHeaderTitle>
-      <h2 class="flex-1 select-none text-base font-semibold">
+      <h2 class="flex-1 text-base font-semibold select-none">
         {{ $t('comfyHubPublish.title') }}
       </h2>
     </template>

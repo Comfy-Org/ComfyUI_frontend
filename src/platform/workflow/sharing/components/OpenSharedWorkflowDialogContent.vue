@@ -31,7 +31,7 @@
     </template>
 
     <template v-else-if="error">
-      <main class="flex flex-col items-center gap-4 px-8 py-8">
+      <main class="flex flex-col items-center gap-4 p-8">
         <i
           class="icon-[lucide--circle-alert] size-8 text-warning-background"
           aria-hidden="true"

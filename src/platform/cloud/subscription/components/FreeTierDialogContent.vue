@@ -4,7 +4,7 @@
     <Button
       size="icon"
       variant="muted-textonly"
-      class="rounded-full absolute top-2.5 right-2.5 z-10 h-8 w-8 p-0 text-white hover:bg-white/20"
+      class="absolute top-2.5 right-2.5 z-10 size-8 rounded-full p-0 text-white hover:bg-white/20"
       :aria-label="$t('g.close')"
       @click="$emit('close', false)"
     >
@@ -84,7 +84,7 @@
 
       <div class="flex flex-col pt-8">
         <Button
-          class="w-full rounded-lg bg-[var(--color-accent-blue,#0B8CE9)] px-4 py-2 font-inter text-sm font-bold text-white hover:bg-[var(--color-accent-blue,#0B8CE9)]/90"
+          class="w-full rounded-lg bg-(--color-accent-blue,#0B8CE9) px-4 py-2 font-inter text-sm font-bold text-white hover:bg-(--color-accent-blue,#0B8CE9)/90"
           @click="$emit('upgrade')"
         >
           {{

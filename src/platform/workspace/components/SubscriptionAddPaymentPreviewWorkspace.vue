@@ -1,14 +1,14 @@
 <template>
-  <h2 class="text-xl lg:text-2xl text-muted-foreground m-0 text-center mb-8">
+  <h2 class="m-0 mb-8 text-center text-xl text-muted-foreground lg:text-2xl">
     {{ $t('subscription.preview.confirmPayment') }}
   </h2>
   <div
-    class="flex flex-col justify-between items-stretch max-w-[400px] mx-auto text-sm h-full"
+    class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm"
   >
     <div class="">
       <!-- Plan Header -->
       <div class="flex flex-col gap-2">
-        <span class="text-base-foreground text-sm">
+        <span class="text-sm text-base-foreground">
           {{ tierName }}
         </span>
         <div class="flex items-baseline gap-2">
@@ -31,7 +31,7 @@
             {{ $t('subscription.preview.eachMonthCreditsRefill') }}
           </span>
           <div class="flex items-center gap-1">
-            <i class="icon-[lucide--component] text-amber-400 text-sm" />
+            <i class="icon-[lucide--component] text-sm text-amber-400" />
             <span class="font-bold text-base-foreground">
               {{ displayCredits }}
             </span>
@@ -43,7 +43,7 @@
 
         <!-- Expandable Features -->
         <button
-          class="flex items-center justify-end gap-1 text-sm text-muted-foreground hover:text-base-foreground cursor-pointer bg-transparent border-none p-0"
+          class="flex cursor-pointer items-center justify-end gap-1 border-none bg-transparent p-0 text-sm text-muted-foreground hover:text-base-foreground"
           @click="isFeaturesCollapsed = !isFeaturesCollapsed"
         >
           <span>
@@ -75,13 +75,13 @@
             <span class="text-sm text-base-foreground">
               {{ $t('subscription.gpuLabel') }}
             </span>
-            <i class="pi pi-check text-xs text-success-foreground" />
+            <i class="pi pi-check text-success-foreground text-xs" />
           </div>
           <div class="flex items-center justify-between">
             <span class="text-sm text-base-foreground">
               {{ $t('subscription.addCreditsLabel') }}
             </span>
-            <i class="pi pi-check text-xs text-success-foreground" />
+            <i class="pi pi-check text-success-foreground text-xs" />
           </div>
           <div class="flex items-center justify-between">
             <span class="text-sm text-base-foreground">
@@ -89,7 +89,7 @@
             </span>
             <i
               v-if="hasCustomLoRAs"
-              class="pi pi-check text-xs text-success-foreground"
+              class="pi pi-check text-success-foreground text-xs"
             />
             <i v-else class="pi pi-times text-xs text-muted-foreground" />
           </div>
@@ -98,7 +98,7 @@
 
       <!-- Total Due Section -->
       <div class="flex flex-col gap-2 border-t border-border-subtle pt-8">
-        <div class="flex text-base items-center justify-between">
+        <div class="flex items-center justify-between text-base">
           <span class="text-base-foreground">
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
@@ -106,7 +106,7 @@
             ${{ totalDueToday }}
           </span>
         </div>
-        <span class="text-muted-foreground text-sm">
+        <span class="text-sm text-muted-foreground">
           {{
             $t('subscription.preview.nextPaymentDue', {
               date: nextPaymentDate
@@ -118,7 +118,7 @@
     <!-- Footer -->
     <div class="flex flex-col gap-2 pt-8">
       <!-- Terms Agreement -->
-      <p class="text-xs text-muted-foreground text-center">
+      <p class="text-center text-xs text-muted-foreground">
         <i18n-t keypath="subscription.preview.termsAgreement" tag="span">
           <template #terms>
             <a
@@ -157,7 +157,7 @@
       <!-- Back Link -->
       <Button
         variant="textonly"
-        class="text-muted-foreground hover:text-base-foreground hover:bg-none text-center cursor-pointer transition-colors text-xs"
+        class="cursor-pointer text-center text-xs text-muted-foreground transition-colors hover:bg-none hover:text-base-foreground"
         @click="$emit('back')"
       >
         {{ $t('subscription.preview.backToAllPlans') }}

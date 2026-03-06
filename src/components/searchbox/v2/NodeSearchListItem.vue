@@ -3,7 +3,7 @@
     class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden"
   >
     <div class="flex flex-col gap-0.5 overflow-hidden">
-      <div class="font-semibold text-foreground flex items-center gap-2">
+      <div class="text-foreground flex items-center gap-2 font-semibold">
         <span v-if="isBookmarked && !hideBookmarkIcon">
           <i class="pi pi-bookmark-fill mr-1 text-sm" />
         </span>
@@ -28,7 +28,7 @@
             nodeDef.nodeSource.type !== NodeSourceType.Core &&
             nodeDef.nodeSource.type !== NodeSourceType.Unknown
           "
-          class="inline-flex shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-xs bg-base-foreground/5 text-base-foreground/70 mr-0.5"
+          class="border-border mr-0.5 inline-flex shrink-0 rounded-sm border bg-base-foreground/5 px-1.5 py-0.5 text-xs text-base-foreground/70"
         >
           {{ nodeDef.nodeSource.displayText }}
         </span>

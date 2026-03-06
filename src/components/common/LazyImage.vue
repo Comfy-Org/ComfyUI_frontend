@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerRef"
-    class="relative flex h-full w-full items-center justify-center overflow-hidden"
+    class="relative flex size-full items-center justify-center overflow-hidden"
     :class="containerClass"
   >
     <Skeleton

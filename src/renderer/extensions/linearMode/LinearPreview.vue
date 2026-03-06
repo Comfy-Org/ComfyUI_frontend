@@ -91,7 +91,7 @@ async function rerun(e: Event) {
   <section
     v-if="selectedItem || selectedOutput || !executionStore.isIdle"
     data-testid="linear-output-info"
-    class="flex flex-wrap gap-2 p-4 w-full md:z-10 tabular-nums justify-center text-sm"
+    class="flex w-full flex-wrap justify-center gap-2 p-4 text-sm tabular-nums md:z-10"
   >
     <template v-if="selectedItem">
       <Button size="md" @click="rerun">
@@ -102,7 +102,7 @@ async function rerun(e: Event) {
         {{ t('linearMode.reuseParameters') }}
         <i class="icon-[lucide--list-restart]" />
       </Button>
-      <div class="border-r border-border-subtle mx-1" />
+      <div class="mx-1 border-r border-border-subtle" />
     </template>
     <Button
       v-if="selectedOutput"
@@ -153,17 +153,17 @@ async function rerun(e: Event) {
   <VideoPreview
     v-else-if="getMediaType(selectedOutput) === 'video'"
     :src="selectedOutput!.url"
-    class="object-contain flex-1 md:contain-size md:p-3"
+    class="flex-1 object-contain md:p-3 md:contain-size"
   />
   <audio
     v-else-if="getMediaType(selectedOutput) === 'audio'"
-    class="w-full m-auto"
+    class="m-auto w-full"
     controls
     :src="selectedOutput!.url"
   />
   <article
     v-else-if="getMediaType(selectedOutput) === 'text'"
-    class="w-full max-w-128 m-auto my-12 overflow-y-auto"
+    class="m-auto my-12 w-full max-w-lg overflow-y-auto"
     v-text="selectedOutput!.url"
   />
   <Preview3d

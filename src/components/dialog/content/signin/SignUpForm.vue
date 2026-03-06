@@ -29,7 +29,7 @@
     <PasswordFields />
 
     <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="mx-auto h-8 w-8" />
+    <ProgressSpinner v-if="loading" class="mx-auto size-8" />
     <Button
       v-else
       type="submit"

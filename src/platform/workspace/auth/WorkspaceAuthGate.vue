@@ -2,7 +2,7 @@
   <slot v-if="isReady" />
   <div
     v-else
-    class="fixed inset-0 z-[1100] flex items-center justify-center bg-[var(--p-mask-background)]"
+    class="fixed inset-0 z-1100 flex items-center justify-center bg-(--p-mask-background)"
   >
     <Loader size="lg" class="text-white" />
   </div>

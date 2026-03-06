@@ -104,7 +104,7 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
 
 <template>
   <div
-    class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline outline-offset-[-1px] outline-node-component-border"
+    class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
   >
     <FormDropdownMenuFilter
       v-if="filterOptions.length > 0"

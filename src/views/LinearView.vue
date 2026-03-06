@@ -75,7 +75,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 </script>
 <template>
   <MobileDisplay v-if="mobileDisplay" />
-  <div v-else class="absolute w-full h-full">
+  <div v-else class="absolute size-full">
     <div
       class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
     >
@@ -87,7 +87,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
     </div>
     <Splitter
       :key="isArrangeMode ? 'arrange' : 'normal'"
-      class="h-[calc(100%-var(--workflow-tabs-height))] w-full border-none bg-comfy-menu-secondary-bg"
+      class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full border-none"
       :state-key="isArrangeMode ? 'builder-splitter' : undefined"
       :state-storage="isArrangeMode ? 'local' : undefined"
       @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
@@ -104,8 +104,8 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         "
         :class="
           cn(
-            'outline-none arrange-panel',
-            showLeftBuilder ? 'bg-comfy-menu-bg min-w-78' : 'min-w-min'
+            'arrange-panel outline-none',
+            showLeftBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-min'
           )
         "
       >
@@ -114,7 +114,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         </div>
         <div
           v-else-if="sidebarOnLeft && activeTab"
-          class="flex h-full border-border-subtle border-r"
+          class="flex h-full border-r border-border-subtle"
         >
           <ExtensionSlot :extension="activeTab" />
         </div>
@@ -127,20 +127,20 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       <SplitterPanel
         id="linearCenterPanel"
         :size="isArrangeMode ? CENTER_PANEL_SIZE : 98"
-        class="flex flex-col min-w-0 gap-4 relative text-muted-foreground outline-none"
+        class="relative flex min-w-0 flex-col gap-4 text-muted-foreground outline-none"
       >
         <LinearProgressBar
-          class="absolute top-0 left-0 w-[calc(100%+16px)] z-21"
+          class="absolute top-0 left-0 z-21 w-[calc(100%+16px)]"
         />
         <LinearPreview
           :run-button-click="linearWorkflowRef?.runButtonClick"
           :typeform-widget-id="TYPEFORM_WIDGET_ID"
         />
-        <div class="absolute z-21 top-4 left-4">
+        <div class="absolute top-4 left-4 z-21">
           <AppModeToolbar v-if="!isBuilderMode" />
         </div>
-        <div ref="bottomLeftRef" class="absolute z-20 bottom-7 left-4" />
-        <div ref="bottomRightRef" class="absolute z-20 bottom-7 right-4" />
+        <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
+        <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
       </SplitterPanel>
       <SplitterPanel
         v-if="hasRightPanel"
@@ -152,8 +152,8 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         :style="showLeftBuilder && !activeTab ? { display: 'none' } : undefined"
         :class="
           cn(
-            'outline-none arrange-panel',
-            showRightBuilder ? 'bg-comfy-menu-bg min-w-78' : 'min-w-min'
+            'arrange-panel outline-none',
+            showRightBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-min'
           )
         "
       >
@@ -167,7 +167,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         />
         <div
           v-else-if="activeTab"
-          class="flex h-full border-border-subtle border-l"
+          class="flex h-full border-l border-border-subtle"
         >
           <ExtensionSlot :extension="activeTab" />
         </div>
