@@ -51,6 +51,17 @@ export function createMonotoneInterpolator(
     }
   }
 
+  const segCount = n - 1
+  const segDx = new Float64Array(segCount)
+  const segM0dx = new Float64Array(segCount)
+  const segM1dx = new Float64Array(segCount)
+  for (let i = 0; i < segCount; i++) {
+    const dx = xs[i + 1] - xs[i]
+    segDx[i] = dx
+    segM0dx[i] = slopes[i] * dx
+    segM1dx[i] = slopes[i + 1] * dx
+  }
+
   return (x: number): number => {
     if (x <= xs[0]) return ys[0]
     if (x >= xs[n - 1]) return ys[n - 1]
@@ -63,7 +74,7 @@ export function createMonotoneInterpolator(
       else hi = mid
     }
 
-    const dx = xs[hi] - xs[lo]
+    const dx = segDx[lo]
     if (dx === 0) return ys[lo]
 
     const t = (x - xs[lo]) / dx
@@ -75,12 +86,7 @@ export function createMonotoneInterpolator(
     const h01 = -2 * t3 + 3 * t2
     const h11 = t3 - t2
 
-    return (
-      h00 * ys[lo] +
-      h10 * dx * slopes[lo] +
-      h01 * ys[hi] +
-      h11 * dx * slopes[hi]
-    )
+    return h00 * ys[lo] + h10 * segM0dx[lo] + h01 * ys[hi] + h11 * segM1dx[lo]
   }
 }
 
