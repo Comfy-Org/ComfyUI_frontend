@@ -7,6 +7,7 @@ import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { resolveNode } from '@/utils/litegraphUtil'
 
@@ -104,6 +105,8 @@ export const useAppModeStore = defineStore('appMode', () => {
       })
       return
     }
+
+    useSidebarTabStore().activeSidebarTabId = null
 
     setMode(
       mode.value === 'app' && hasOutputs.value
