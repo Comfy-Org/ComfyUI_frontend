@@ -2,6 +2,7 @@ import type { ComputedRef, Ref } from 'vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -10,6 +11,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -51,7 +53,8 @@ export function useWorkflowActionsMenu(
   const subgraphStore = useSubgraphStore()
   const menuItemStore = useMenuItemStore()
   const { flags } = useFeatureFlags()
-  const { enterBuilder } = useAppModeStore()
+  const { closeDialog } = useDialogStore()
+  const { enterBuilder, pruneLinearData } = useAppModeStore()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -192,8 +195,40 @@ export function useWorkflowActionsMenu(
       id: 'share',
       label: t('breadcrumbsMenu.share'),
       icon: 'icon-[comfy--send]',
-      command: async () => {},
-      visible: false
+      visible: false,
+      command: async () => {
+        // TODO: extract this to the sharing service
+        const wf = targetWorkflow.value
+        if (!wf) return
+
+        const isAppDefault = wf.initialMode === 'app'
+        const linearData = wf.changeTracker?.activeState?.extra?.linearData
+        const { outputs } = pruneLinearData(linearData)
+
+        if (isAppDefault && outputs.length === 0) {
+          const dialog = showConfirmDialog({
+            headerProps: {
+              title: t('shareNoOutputs.title')
+            },
+            props: {
+              promptText: t('shareNoOutputs.message'),
+              preserveNewlines: true
+            },
+            footerProps: {
+              confirmText: t('shareNoOutputs.shareAnyway'),
+              confirmVariant: 'secondary',
+              onCancel: () => closeDialog(dialog),
+              onConfirm: () => {
+                closeDialog(dialog)
+                // TODO: proceed with share
+              }
+            }
+          })
+          return
+        }
+
+        // TODO: proceed with share
+      },
     })
 
     addItem({

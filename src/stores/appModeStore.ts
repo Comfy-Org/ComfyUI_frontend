@@ -27,20 +27,25 @@ export const useAppModeStore = defineStore('appMode', () => {
     return !!app.rootGraph?.nodes?.length
   })
 
-  function loadSelections(data: Partial<LinearData> | undefined) {
+  // Prune entries referencing nodes deleted in workflow mode.
+  // Only check node existence, not widgets — dynamic widgets can
+  // hide/show other widgets so a missing widget does not mean stale data.
+  function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
 
-    // Prune entries referencing nodes deleted in workflow mode.
-    // Only check node existence, not widgets — dynamic widgets can
-    // hide/show other widgets so a missing widget does not mean stale data.
-    const inputs = app.rootGraph
-      ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
-      : rawInputs
-    const outputs = app.rootGraph
-      ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
-      : rawOutputs
+    return {
+      inputs: app.rootGraph
+        ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
+        : rawInputs,
+      outputs: app.rootGraph
+        ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
+        : rawOutputs
+    }
+  }
 
+  function loadSelections(data: Partial<LinearData> | undefined) {
+    const { inputs, outputs } = pruneLinearData(data)
     selectedInputs.splice(0, selectedInputs.length, ...inputs)
     selectedOutputs.splice(0, selectedOutputs.length, ...outputs)
   }
@@ -125,6 +130,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     exitBuilder,
     hasNodes,
     hasOutputs,
+    pruneLinearData,
     resetSelectedToWorkflow,
     selectedInputs,
     selectedOutputs

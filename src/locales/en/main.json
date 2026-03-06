@@ -1330,6 +1330,7 @@
     "Rename": "Rename",
     "Save": "Save",
     "Save As": "Save As",
+    "Share": "Share",
     "Show Settings Dialog": "Show Settings Dialog",
     "Set Subgraph Description": "Set Subgraph Description",
     "Set Subgraph Search Aliases": "Set Subgraph Search Aliases",
@@ -3008,6 +3009,11 @@
     "share": "Share",
     "shareTooltip": "Share workflow"
   },
+  "shareNoOutputs": {
+    "title": "App has no outputs",
+    "message": "You're about to share an app without outputs. It can't be used until an output is connected.\n\nShare anyway?",
+    "shareAnyway": "Share anyway"
+  },
   "shareWorkflow": {
     "shareLinkTab": "Share",
     "publishToHubTab": "Publish",
@@ -3178,7 +3184,9 @@
       "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
       "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
       "getStarted": "Click {runButton} to get started.",
-      "buildApp": "Build app"
+      "buildApp": "Build app",
+      "noOutputs": "An app needs at least {count} to be usable.",
+      "oneOutput": "1 output"
     },
     "appModeToolbar": {
       "appBuilder": "App builder",
