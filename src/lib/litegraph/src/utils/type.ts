@@ -14,7 +14,7 @@ import type { CanvasPointerEvent } from '../types/events'
 import type { LGraphCanvas } from '../LGraphCanvas'
 import type { LGraphNode } from '../LGraphNode'
 
-export interface IWidgetWithContextMenu extends IBaseWidget {
+interface IWidgetWithContextMenu extends IBaseWidget {
   getContextMenuOptions(opts: {
     e: CanvasPointerEvent
     node: LGraphNode
