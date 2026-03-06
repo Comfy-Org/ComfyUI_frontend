@@ -3,19 +3,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-
-vi.mock('@/scripts/app', () => {
-  return {
-    app: {
-      canvas: {
-        processKey: vi.fn()
-      }
-    }
-  }
-})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
@@ -36,13 +25,15 @@ function createTestKeyboardEvent(
     ctrlKey?: boolean
     altKey?: boolean
     metaKey?: boolean
+    shiftKey?: boolean
   } = {}
 ): KeyboardEvent {
   const {
     target = document.body,
     ctrlKey = false,
     altKey = false,
-    metaKey = false
+    metaKey = false,
+    shiftKey = false
   } = options
 
   const event = new KeyboardEvent('keydown', {
@@ -50,6 +41,7 @@ function createTestKeyboardEvent(
     ctrlKey,
     altKey,
     metaKey,
+    shiftKey,
     bubbles: true,
     cancelable: true
   })
@@ -60,7 +52,7 @@ function createTestKeyboardEvent(
   return event
 }
 
-describe('keybindingService - Event Forwarding', () => {
+describe('keybindingService - Canvas Keybindings', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
 
   beforeEach(() => {
@@ -80,90 +72,86 @@ describe('keybindingService - Event Forwarding', () => {
     keybindingService.registerCoreKeybindings()
   })
 
-  it('should forward Delete key to canvas when no keybinding exists', async () => {
+  it('should execute DeleteSelectedItems for Delete key', async () => {
     const event = createTestKeyboardEvent('Delete')
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(app.canvas.processKey)).toHaveBeenCalledWith(event)
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.Canvas.DeleteSelectedItems'
+    )
   })
 
-  it('should forward Backspace key to canvas when no keybinding exists', async () => {
+  it('should execute DeleteSelectedItems for Backspace key', async () => {
     const event = createTestKeyboardEvent('Backspace')
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(app.canvas.processKey)).toHaveBeenCalledWith(event)
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.Canvas.DeleteSelectedItems'
+    )
   })
 
-  it('should not forward Delete key when typing in input field', async () => {
+  it('should not execute DeleteSelectedItems when typing in input field', async () => {
     const inputElement = document.createElement('input')
     const event = createTestKeyboardEvent('Delete', { target: inputElement })
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(app.canvas.processKey)).not.toHaveBeenCalled()
     expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 
-  it('should not forward Delete key when typing in textarea', async () => {
+  it('should not execute DeleteSelectedItems when typing in textarea', async () => {
     const textareaElement = document.createElement('textarea')
-    const event = createTestKeyboardEvent('Delete', { target: textareaElement })
+    const event = createTestKeyboardEvent('Delete', {
+      target: textareaElement
+    })
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(app.canvas.processKey)).not.toHaveBeenCalled()
     expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 
-  it('should not forward Delete key when canvas processKey is not available', async () => {
-    // Temporarily replace processKey with undefined - testing edge case
-    const originalProcessKey = vi.mocked(app.canvas).processKey
-    vi.mocked(app.canvas).processKey = undefined!
-
-    const event = createTestKeyboardEvent('Delete')
-
-    try {
-      await keybindingService.keybindHandler(event)
-      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
-    } finally {
-      // Restore processKey for other tests
-      vi.mocked(app.canvas).processKey = originalProcessKey
-    }
-  })
-
-  it('should not forward Delete key when canvas is not available', async () => {
-    const originalCanvas = vi.mocked(app).canvas
-    vi.mocked(app).canvas = null!
-
-    const event = createTestKeyboardEvent('Delete')
-
-    try {
-      await keybindingService.keybindHandler(event)
-      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
-    } finally {
-      // Restore canvas for other tests
-      vi.mocked(app).canvas = originalCanvas
-    }
-  })
-
-  it('should not forward non-canvas keys', async () => {
-    const event = createTestKeyboardEvent('Enter')
+  it('should execute SelectAll for Ctrl+A', async () => {
+    const event = createTestKeyboardEvent('a', { ctrlKey: true })
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(app.canvas.processKey)).not.toHaveBeenCalled()
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.Canvas.SelectAll'
+    )
   })
 
-  it('should not forward when modifier keys are pressed', async () => {
-    const event = createTestKeyboardEvent('Delete', { ctrlKey: true })
+  it('should execute CopySelected for Ctrl+C', async () => {
+    const event = createTestKeyboardEvent('c', { ctrlKey: true })
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(app.canvas.processKey)).not.toHaveBeenCalled()
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.Canvas.CopySelected'
+    )
+  })
+
+  it('should execute PasteFromClipboard for Ctrl+V', async () => {
+    const event = createTestKeyboardEvent('v', { ctrlKey: true })
+
+    await keybindingService.keybindHandler(event)
+
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.Canvas.PasteFromClipboard'
+    )
+  })
+
+  it('should execute PasteFromClipboardWithConnect for Ctrl+Shift+V', async () => {
+    const event = createTestKeyboardEvent('v', {
+      ctrlKey: true,
+      shiftKey: true
+    })
+
+    await keybindingService.keybindHandler(event)
+
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.Canvas.PasteFromClipboardWithConnect'
+    )
   })
 })
