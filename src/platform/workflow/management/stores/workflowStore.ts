@@ -255,6 +255,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return workflow
   }
 
+  /**
+   * Ensures the workflow data has a stable `id` field for sharing.
+   * If no `id` is present, a new UUID is generated and injected.
+   * Returns a deep copy of the input (or the default graph if none provided).
+   */
   const ensureWorkflowId = (
     workflowData?: ComfyWorkflowJSON
   ): ComfyWorkflowJSON => {
@@ -291,7 +296,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Create a temporary workflow, attempting to reuse an existing workflow if conditions match
+   * Create a temporary workflow, attempting to reuse an existing workflow
+   * if conditions match.
+   *
+   * Note: A UUID `id` field is injected into the workflow data via
+   * {@link ensureWorkflowId} if one is not already present. The serialized
+   * workflow content will always contain an `id` field.
    */
   const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
     const fullPath = getUnconflictedPath(
@@ -323,7 +333,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Create a new temporary workflow without attempting to reuse existing workflows
+   * Create a new temporary workflow without attempting to reuse existing
+   * workflows.
+   *
+   * Note: A UUID `id` field is injected into the workflow data via
+   * {@link ensureWorkflowId} if one is not already present. The serialized
+   * workflow content will always contain an `id` field.
    */
   const createNewTemporary = (
     path?: string,
