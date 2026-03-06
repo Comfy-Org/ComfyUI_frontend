@@ -9,7 +9,7 @@ import type {
 
 const MAX_NODE_ID = 100_000_000
 
-export interface DeduplicationResult {
+interface DeduplicationResult {
   subgraphs: ExportedSubgraph[]
   rootNodes: ISerialisedNode[] | undefined
 }
