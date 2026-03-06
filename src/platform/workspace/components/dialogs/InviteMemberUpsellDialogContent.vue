@@ -23,7 +23,7 @@
     </div>
 
     <!-- Body -->
-    <div class="flex flex-col gap-4 px-4 py-4">
+    <div class="flex flex-col gap-4 p-4">
       <p class="m-0 text-sm text-muted-foreground">
         {{
           isActiveSubscription
@@ -34,7 +34,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="flex items-center justify-end gap-4 px-4 py-4">
+    <div class="flex items-center justify-end gap-4 p-4">
       <Button variant="muted-textonly" @click="onDismiss">
         {{ $t('g.cancel') }}
       </Button>

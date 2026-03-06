@@ -13,7 +13,7 @@
         'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         shapeClass,
         'touch-none flex flex-col',
-        'border-1 border-solid border-component-node-border',
+        'border border-solid border-component-node-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
@@ -86,7 +86,7 @@
       v-if="isCollapsed && executing && progress !== undefined"
       :class="
         cn(
-          'absolute inset-x-4 -bottom-[1px] translate-y-1/2 rounded-full',
+          'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
           progressClasses
         )
       "
@@ -238,7 +238,7 @@
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 12 12"
-          :class="cn('w-2/5 h-2/5 absolute', handle.svgPositionClasses)"
+          :class="cn('size-2/5 absolute', handle.svgPositionClasses)"
           :style="
             handle.svgTransform ? { transform: handle.svgTransform } : undefined
           "

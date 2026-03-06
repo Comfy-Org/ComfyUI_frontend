@@ -17,8 +17,8 @@
 
     <!-- Content -->
     <div class="flex flex-1 flex-col rounded-lg min-h-0">
-      <div class="h-full w-full py-2 px-3">
-        <div class="flex h-full w-full flex-col gap-y-1">
+      <div class="size-full py-2 px-3">
+        <div class="flex size-full flex-col gap-y-1">
           <span
             class="truncate overflow-hidden text-xs font-bold text-ellipsis"
           >
@@ -26,7 +26,7 @@
           </span>
           <p
             v-if="nodePack.description"
-            class="my-0 mb-1 line-clamp-3 min-h-12 flex-1 overflow-hidden text-xs leading-4 font-medium break-words text-muted"
+            class="my-0 mb-1 line-clamp-3 min-h-12 flex-1 overflow-hidden text-xs/4 font-medium wrap-break-word text-muted"
           >
             {{ nodePack.description }}
           </p>
@@ -51,7 +51,7 @@
             <div class="flex">
               <span
                 v-if="publisherName"
-                class="max-w-40 truncate text-xs leading-3 font-medium text-muted"
+                class="max-w-40 truncate text-xs/3 font-medium text-muted"
               >
                 {{ publisherName }}
               </span>

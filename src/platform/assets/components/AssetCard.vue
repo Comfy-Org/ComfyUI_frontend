@@ -20,7 +20,7 @@
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
         v-if="isLoading || error"
-        class="flex size-full cursor-pointer items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
+        class="flex size-full cursor-pointer items-center justify-center bg-linear-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
       />
       <img
         v-else

@@ -23,9 +23,7 @@
         role="alert"
         class="flex flex-1 self-center size-full flex-col items-center justify-around bg-muted-background text-center text-base-foreground py-8"
       >
-        <i
-          class="mb-2 icon-[lucide--image-off] h-12 w-12 text-base-foreground"
-        />
+        <i class="mb-2 icon-[lucide--image-off] size-12 text-base-foreground" />
         <p class="text-sm text-base-foreground">
           {{ $t('g.imageFailedToLoad') }}
         </p>
@@ -60,7 +58,7 @@
           :aria-label="$t('g.editOrMaskImage')"
           @click="handleEditMask"
         >
-          <i-comfy:mask class="h-4 w-4" />
+          <i-comfy:mask class="size-4" />
         </button>
 
         <!-- Download Button -->
@@ -70,7 +68,7 @@
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] h-4 w-4" />
+          <i class="icon-[lucide--download] size-4" />
         </button>
 
         <!-- Close Button -->
@@ -80,7 +78,7 @@
           :aria-label="$t('g.removeImage')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] h-4 w-4" />
+          <i class="icon-[lucide--x] size-4" />
         </button>
       </div>
     </div>

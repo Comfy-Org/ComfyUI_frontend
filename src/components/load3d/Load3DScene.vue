@@ -1,7 +1,7 @@
 <template>
   <div
     ref="container"
-    class="relative h-full w-full min-h-[200px]"
+    class="relative size-full min-h-[200px]"
     data-capture-wheel="true"
     tabindex="-1"
     @pointerdown.stop="focusContainer"

@@ -8,7 +8,7 @@
     <template v-else>
       <!-- Header -->
       <div class="mb-8 flex flex-col gap-4">
-        <h1 class="my-0 text-2xl leading-normal font-medium">
+        <h1 class="my-0 text-2xl/normal font-medium">
           {{ isSignIn ? t('auth.login.title') : t('auth.signup.title') }}
         </h1>
         <p class="my-0 text-base">
@@ -85,7 +85,7 @@
         >
           <img
             src="/assets/images/comfy-logo-mono.svg"
-            class="mr-2 h-5 w-5"
+            class="mr-2 size-5"
             :alt="$t('g.comfy')"
           />
           {{ t('auth.login.useApiKey') }}

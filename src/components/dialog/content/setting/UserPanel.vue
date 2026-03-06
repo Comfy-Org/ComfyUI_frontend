@@ -55,7 +55,7 @@
 
         <ProgressSpinner
           v-if="loading"
-          class="mt-4 h-8 w-8"
+          class="mt-4 size-8"
           style="--pc-spinner-color: #000"
         />
         <div v-else class="mt-4 flex flex-col gap-2">

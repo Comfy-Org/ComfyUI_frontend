@@ -50,7 +50,7 @@
         <!-- Error Message -->
         <p
           v-if="error.message"
-          class="m-0 text-sm break-words whitespace-pre-wrap leading-relaxed px-0.5 max-h-[4lh] overflow-y-auto"
+          class="m-0 text-sm/relaxed wrap-break-word whitespace-pre-wrap px-0.5 max-h-[4lh] overflow-y-auto"
         >
           {{ error.message }}
         </p>
@@ -66,7 +66,7 @@
           "
         >
           <p
-            class="m-0 text-xs text-muted-foreground break-words whitespace-pre-wrap font-mono leading-relaxed"
+            class="m-0 text-xs/relaxed text-muted-foreground wrap-break-word whitespace-pre-wrap font-mono"
           >
             {{ error.details }}
           </p>

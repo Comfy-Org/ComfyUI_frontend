@@ -76,7 +76,7 @@ function closeDialog() {
         </h3>
       </div>
 
-      <div class="relative max-h-75 overflow-y-auto px-4 py-4">
+      <div class="relative max-h-75 overflow-y-auto p-4">
         <div class="flex flex-col gap-2">
           <div
             v-for="job in exportJobs"

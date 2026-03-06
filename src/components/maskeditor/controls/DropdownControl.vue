@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-row gap-2.5 items-center min-h-6 relative">
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+    <span class="text-left text-xs font-sans text-(--descrip-text)">{{
       label
     }}</span>
     <select

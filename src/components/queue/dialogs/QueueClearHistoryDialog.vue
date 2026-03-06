@@ -3,7 +3,7 @@
     class="w-[360px] rounded-2xl border border-interface-stroke bg-interface-panel-surface text-text-primary shadow-interface font-inter"
   >
     <header
-      class="flex items-center justify-between border-b border-interface-stroke px-4 py-4"
+      class="flex items-center justify-between border-b border-interface-stroke p-4"
     >
       <p class="m-0 text-[14px] font-normal leading-none">
         {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogTitle') }}
@@ -18,7 +18,7 @@
       </Button>
     </header>
 
-    <div class="flex flex-col gap-4 px-4 py-4 text-[14px] text-text-secondary">
+    <div class="flex flex-col gap-4 p-4 text-[14px] text-text-secondary">
       <p class="m-0">
         {{
           t('sideToolbar.queueProgressOverlay.clearHistoryDialogDescription')
@@ -29,7 +29,7 @@
       </p>
     </div>
 
-    <footer class="flex items-center justify-end px-4 py-4">
+    <footer class="flex items-center justify-end p-4">
       <div class="flex items-center gap-4 leading-none">
         <Button variant="muted-textonly" size="lg" @click="onCancel">
           {{ t('g.cancel') }}

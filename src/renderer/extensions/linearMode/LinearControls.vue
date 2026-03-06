@@ -209,11 +209,11 @@ defineExpose({ runButtonClick })
       <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
     </section>
     <div
-      class="border-x md:border-y gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
+      class="border-x md:border-y gap-2 h-full border-(--interface-stroke) bg-comfy-menu-bg flex flex-col px-2"
     >
       <section
         data-testid="linear-widgets"
-        class="grow-1 overflow-y-auto contain-size"
+        class="grow overflow-y-auto contain-size"
       >
         <template
           v-for="(nodeData, index) of appModeStore.selectedInputs.length
@@ -223,7 +223,7 @@ defineExpose({ runButtonClick })
         >
           <div
             v-if="index !== 0 && !appModeStore.selectedInputs.length"
-            class="w-full border-t-1 border-node-component-border"
+            class="w-full border-t border-node-component-border"
           />
           <DropZone
             :on-drag-over="nodeData.onDragOver"
@@ -303,7 +303,7 @@ defineExpose({ runButtonClick })
           </Popover>
           <Button
             variant="primary"
-            class="grow-1"
+            class="grow"
             size="lg"
             @click="runButtonClick"
           >

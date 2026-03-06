@@ -3,7 +3,7 @@
     <!-- Assets Header -->
     <div v-if="assets.length" class="px-2 2xl:px-4">
       <div
-        class="flex items-center py-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
+        class="flex items-center py-2 text-sm/normal font-normal text-muted-foreground font-inter"
       >
         {{
           t(

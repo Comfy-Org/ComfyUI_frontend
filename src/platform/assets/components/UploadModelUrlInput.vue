@@ -14,7 +14,7 @@
               <img
                 :src="civitaiIcon"
                 :alt="$t('assetBrowser.providerCivitai')"
-                class="w-4 h-4"
+                class="size-4"
               />
               <a
                 :href="civitaiUrl"
@@ -29,7 +29,7 @@
               <img
                 :src="huggingFaceIcon"
                 :alt="$t('assetBrowser.providerHuggingFace')"
-                class="w-4 h-4"
+                class="size-4"
               />
               <a
                 :href="huggingFaceUrl"

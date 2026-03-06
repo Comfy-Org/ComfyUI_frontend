@@ -1,10 +1,10 @@
 <template>
   <div class="flex w-138 flex-col">
     <ContentDivider :width="1" />
-    <div class="flex h-full w-full flex-col gap-2 px-4 py-6">
+    <div class="flex size-full flex-col gap-2 px-4 py-6">
       <!-- Description -->
       <div v-if="showAfterWhatsNew">
-        <p class="m-0 mb-4 text-sm leading-4 text-base-foreground">
+        <p class="m-0 mb-4 text-sm/4 text-base-foreground">
           {{ $t('manager.conflicts.description') }}
           <br /><br />
           {{ $t('manager.conflicts.info') }}

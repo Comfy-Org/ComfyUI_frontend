@@ -38,7 +38,7 @@ function getIcon() {
       <div class="text-xs text-text-secondary line-clamp-1">
         {{ nodeTitle }}
       </div>
-      <div class="text-sm line-clamp-1 leading-8">{{ widgetName }}</div>
+      <div class="text-sm/8 line-clamp-1">{{ widgetName }}</div>
     </div>
     <Button
       variant="muted-textonly"

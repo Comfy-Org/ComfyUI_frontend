@@ -23,9 +23,7 @@
         role="alert"
         class="flex flex-auto flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
       >
-        <i
-          class="mb-2 icon-[lucide--video-off] h-12 w-12 text-base-foreground"
-        />
+        <i class="mb-2 icon-[lucide--video-off] size-12 text-base-foreground" />
         <p class="text-sm text-base-foreground">
           {{ $t('g.videoFailedToLoad') }}
         </p>
@@ -67,7 +65,7 @@
           :aria-label="$t('g.downloadVideo')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] h-4 w-4" />
+          <i class="icon-[lucide--download] size-4" />
         </button>
 
         <!-- Close Button -->
@@ -77,14 +75,14 @@
           :aria-label="$t('g.removeVideo')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] h-4 w-4" />
+          <i class="icon-[lucide--x] size-4" />
         </button>
       </div>
 
       <!-- Multiple Videos Navigation -->
       <div
         v-if="hasMultipleVideos"
-        class="absolute right-2 bottom-2 left-2 flex justify-center gap-1"
+        class="absolute inset-x-2 bottom-2 flex justify-center gap-1"
       >
         <button
           v-for="(_, index) in imageUrls"

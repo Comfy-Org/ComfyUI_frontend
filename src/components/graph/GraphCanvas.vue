@@ -11,7 +11,7 @@
         <!-- Native drag area for Electron -->
         <div
           v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-          class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
+          class="app-drag fixed top-0 left-0 z-10 h-(--comfy-topbar-height) w-full"
         />
         <div
           class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
@@ -27,7 +27,7 @@
     </template>
     <template v-if="showUI" #side-bar-panel>
       <div
-        class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto"
+        class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>

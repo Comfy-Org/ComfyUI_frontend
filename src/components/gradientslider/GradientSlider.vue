@@ -54,7 +54,7 @@ const pressed = ref(false)
     :class="
       cn(
         'relative flex w-full touch-none items-center select-none',
-        'data-[disabled]:opacity-50'
+        'data-disabled:opacity-50'
       )
     "
     :style="{ '--reka-slider-thumb-transform': 'translate(-50%, -50%)' }"

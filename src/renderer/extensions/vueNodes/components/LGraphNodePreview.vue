@@ -3,7 +3,7 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-component-node-background lg-node pb-1 contain-style contain-layout w-[350px] rounded-2xl touch-none flex flex-col border-1 border-solid outline-transparent outline-2 border-node-stroke',
+        'bg-component-node-background lg-node pb-1 contain-style contain-layout w-[350px] rounded-2xl touch-none flex flex-col border border-solid outline-transparent outline-2 border-node-stroke',
         position
       )
     "

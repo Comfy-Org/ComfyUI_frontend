@@ -2,7 +2,7 @@
   <template v-if="imageUrl">
     <div
       v-if="imageError"
-      class="text-pure-white flex h-full w-full flex-col items-center justify-center text-center"
+      class="text-pure-white flex size-full flex-col items-center justify-center text-center"
     >
       <i-lucide:image-off class="mb-1 size-8 text-smoke-500" />
       <p class="text-xs text-smoke-400">{{ $t('g.imageFailedToLoad') }}</p>

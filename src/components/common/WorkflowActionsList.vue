@@ -32,9 +32,9 @@ const {
         cn(
           'flex min-h-6 p-2 items-center gap-2 self-stretch rounded-sm outline-none',
           !item.disabled && item.command && 'cursor-pointer',
-          'data-[highlighted]:bg-secondary-background-hover',
+          'data-highlighted:bg-secondary-background-hover',
           !item.disabled && 'hover:bg-secondary-background-hover',
-          'data-[disabled]:opacity-50 data-[disabled]:cursor-default'
+          'data-disabled:opacity-50 data-disabled:cursor-default'
         )
       "
       @select="() => item.command?.()"
@@ -44,7 +44,7 @@ const {
       <span class="flex-1">{{ item.label }}</span>
       <span
         v-if="item.badge"
-        class="rounded-full uppercase ml-3 flex items-center gap-1 bg-[var(--primary-background)] px-1.5 py-0.5 text-xxs text-base-foreground"
+        class="rounded-full uppercase ml-3 flex items-center gap-1 bg-(--primary-background) px-1.5 py-0.5 text-xxs text-base-foreground"
       >
         {{ item.badge }}
       </span>

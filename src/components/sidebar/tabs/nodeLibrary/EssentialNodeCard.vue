@@ -12,7 +12,7 @@
     <i :class="cn(nodeIcon, 'size-6 text-muted-foreground')" />
 
     <TextTickerMultiLine
-      class="shrink-0 h-7 w-full text-xs font-normal text-foreground leading-normal mt-2"
+      class="shrink-0 h-7 w-full text-xs/normal font-normal text-foreground mt-2"
     >
       {{ node.label }}
     </TextTickerMultiLine>

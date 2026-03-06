@@ -68,11 +68,11 @@
       </template>
 
       <!-- Create workspace button -->
-      <div class="px-2 py-2">
+      <div class="p-2">
         <div
           :class="
             cn(
-              'flex h-12 w-full items-center gap-2 rounded-sm px-2 py-2',
+              'flex h-12 w-full items-center gap-2 rounded-sm p-2',
               canCreateWorkspace
                 ? 'cursor-pointer hover:bg-secondary-background-hover'
                 : 'cursor-default'

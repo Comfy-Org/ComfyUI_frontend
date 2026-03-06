@@ -1,6 +1,6 @@
 <template>
-  <div class="flex w-[490px] flex-col border-t-1 border-border-default">
-    <div class="flex h-full w-full flex-col gap-4 p-4">
+  <div class="flex w-[490px] flex-col border-t border-border-default">
+    <div class="flex size-full flex-col gap-4 p-4">
       <!-- Error Details -->
       <div v-if="importFailedPackages.length > 0" class="flex flex-col gap-3">
         <div

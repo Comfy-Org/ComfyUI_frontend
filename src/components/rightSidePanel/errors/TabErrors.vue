@@ -139,7 +139,7 @@
       <i18n-t
         keypath="rightSidePanel.errorHelp"
         tag="p"
-        class="m-0 text-sm text-muted-foreground leading-tight break-words"
+        class="m-0 text-sm/tight text-muted-foreground wrap-break-word"
       >
         <template #github>
           <Button

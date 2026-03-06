@@ -36,7 +36,7 @@
         </div>
 
         <!-- Arrow -->
-        <i class="pi pi-arrow-right text-muted-foreground w-8 h-8" />
+        <i class="pi pi-arrow-right text-muted-foreground size-8" />
 
         <!-- New Plan -->
         <div class="flex flex-col gap-1">
@@ -81,7 +81,7 @@
       <!-- Proration Section -->
       <div
         v-if="showProration"
-        class="flex flex-col gap-2 border-t border-border-subtle pt-6 pb-6"
+        class="flex flex-col gap-2 border-t border-border-subtle py-6"
       >
         <div
           v-if="proratedRefundCents > 0"

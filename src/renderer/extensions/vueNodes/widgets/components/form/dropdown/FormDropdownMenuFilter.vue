@@ -30,7 +30,7 @@ const singleFilterOption = computed(() => filterOptions.length === 1)
           !singleFilterOption &&
             'transition-all duration-150 hover:text-base-foreground hover:bg-interface-menu-component-surface-hovered cursor-pointer active:scale-95',
           !singleFilterOption && filterSelected === option.value
-            ? '!bg-interface-menu-component-surface-selected text-base-foreground'
+            ? 'bg-interface-menu-component-surface-selected! text-base-foreground'
             : 'bg-transparent'
         )
       "

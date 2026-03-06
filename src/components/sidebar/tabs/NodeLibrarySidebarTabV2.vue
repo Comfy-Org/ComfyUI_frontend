@@ -20,7 +20,7 @@
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
-                class="z-[9999] min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
                 align="end"
                 :side-offset="4"
               >
@@ -51,7 +51,7 @@
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
-                class="z-[9999] min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
                 align="end"
                 :side-offset="4"
               >

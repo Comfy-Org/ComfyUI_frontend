@@ -21,7 +21,7 @@ const { class: className, ...restProps } = defineProps<
         'border-[2.5px] border-solid border-transparent',
         'transition-all duration-200 ease-in-out',
         'focus:border-node-component-border focus:outline-none',
-        'data-[placeholder]:text-muted-foreground',
+        'data-placeholder:text-muted-foreground',
         'disabled:cursor-not-allowed disabled:opacity-60',
         '[&>span]:truncate',
         className

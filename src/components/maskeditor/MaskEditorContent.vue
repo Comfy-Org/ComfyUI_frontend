@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerRef"
-    class="maskEditor-dialog-root flex h-full w-full flex-col"
+    class="maskEditor-dialog-root flex size-full flex-col"
     @contextmenu.prevent
     @dragstart="handleDragStart"
     @keydown.stop
@@ -13,29 +13,29 @@
     >
       <canvas
         ref="imgCanvasRef"
-        class="absolute top-0 left-0 w-full h-full z-0"
+        class="absolute top-0 left-0 size-full z-0"
         @contextmenu.prevent
       />
       <canvas
         ref="rgbCanvasRef"
-        class="absolute top-0 left-0 w-full h-full z-10"
+        class="absolute top-0 left-0 size-full z-10"
         @contextmenu.prevent
       />
       <canvas
         ref="maskCanvasRef"
-        class="absolute top-0 left-0 w-full h-full z-30"
+        class="absolute top-0 left-0 size-full z-30"
         @contextmenu.prevent
       />
       <!-- GPU Preview Canvas -->
       <canvas
         ref="gpuCanvasRef"
-        class="absolute top-0 left-0 w-full h-full pointer-events-none"
+        class="absolute top-0 left-0 size-full pointer-events-none"
         :class="{
           'z-20': store.activeLayer === 'rgb',
           'z-40': store.activeLayer === 'mask'
         }"
       />
-      <div ref="canvasBackgroundRef" class="bg-white w-full h-full" />
+      <div ref="canvasBackgroundRef" class="bg-white size-full" />
     </div>
 
     <div class="maskEditor-ui-container flex min-h-0 flex-1 flex-col">

@@ -2,9 +2,7 @@
   <div class="flex flex-col w-full mb-4">
     <!-- Type header row: type name + chevron -->
     <div class="flex h-8 items-center w-full">
-      <p
-        class="flex-1 min-w-0 text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap text-foreground"
-      >
+      <p class="flex-1 min-w-0 text-sm font-medium truncate text-foreground">
         {{ `${group.type} (${group.nodeTypes.length})` }}
       </p>
 
@@ -79,7 +77,7 @@
     </div>
 
     <!-- Replace Action Button -->
-    <div class="flex items-start w-full pt-1 pb-1">
+    <div class="flex items-start w-full py-1">
       <Button
         variant="secondary"
         size="md"

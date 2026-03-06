@@ -1,8 +1,8 @@
 <template>
-  <div class="flex h-full w-full flex-col">
+  <div class="flex size-full flex-col">
     <header class="mb-8 flex items-center gap-4">
       <WorkspaceProfilePic
-        class="size-12 !text-3xl"
+        class="size-12 text-3xl!"
         :workspace-name="workspaceName"
       />
       <h1 class="text-3xl text-base-foreground">

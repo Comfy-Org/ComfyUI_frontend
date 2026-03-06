@@ -22,7 +22,7 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
 <template>
   <DropdownMenuSeparator
     v-if="item.separator"
-    class="h-[1px] bg-border-subtle m-1"
+    class="h-px bg-border-subtle m-1"
   />
   <DropdownMenuSub v-else-if="item.items">
     <DropdownMenuSubTrigger

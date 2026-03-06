@@ -22,7 +22,7 @@
       </div>
 
       <div v-if="loading" class="flex items-center justify-center py-8">
-        <ProgressSpinner class="h-8 w-8" />
+        <ProgressSpinner class="size-8" />
       </div>
 
       <div

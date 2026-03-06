@@ -102,7 +102,7 @@
         :to="inlineProgressSummaryTarget"
       >
         <div
-          class="pointer-events-none absolute left-0 right-0 top-full mt-1 flex justify-end pr-1"
+          class="pointer-events-none absolute inset-x-0 top-full mt-1 flex justify-end pr-1"
         >
           <QueueInlineProgressSummary
             :hidden="shouldHideInlineProgressSummary"

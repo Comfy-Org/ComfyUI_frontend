@@ -47,7 +47,7 @@
       <div
         v-for="(dep, index) in nodePack.latest_version.dependencies"
         :key="index"
-        class="break-words text-muted-foreground"
+        class="wrap-break-word text-muted-foreground"
       >
         {{ dep }}
       </div>

@@ -141,7 +141,7 @@ function closeDialog() {
         </div>
       </div>
 
-      <div class="relative max-h-75 overflow-y-auto px-4 py-4">
+      <div class="relative max-h-75 overflow-y-auto p-4">
         <div
           v-if="filteredJobs.length > 3"
           class="absolute right-1 top-4 h-12 w-1 rounded-full bg-muted-foreground"

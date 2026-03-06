@@ -18,7 +18,7 @@ const height = ref('')
       ref="imageRef"
       :src
       v-bind="slotProps"
-      class="h-full object-contain w-full"
+      class="size-full object-contain"
       @load="
         () => {
           if (!imageRef) return
@@ -31,7 +31,7 @@ const height = ref('')
   <img
     v-else
     ref="imageRef"
-    class="contain-size grow-1 object-contain"
+    class="contain-size grow object-contain"
     :src
     @load="
       () => {

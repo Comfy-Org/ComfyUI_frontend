@@ -16,7 +16,7 @@
   >
     <div class="flex items-center justify-between gap-2.5 min-w-0">
       <!-- Collapse/Expand Button -->
-      <div class="relative flex items-center gap-2.5 min-w-0 shrink-1 mr-auto">
+      <div class="relative flex items-center gap-2.5 min-w-0 shrink mr-auto">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
@@ -69,7 +69,7 @@
         </span>
         <span
           v-if="badge.rest"
-          class="truncate -ml-2.5 grow-1 basis-0 bg-component-node-widget-background rounded-r-full max-w-max min-w-0"
+          class="truncate -ml-2.5 grow basis-0 bg-component-node-widget-background rounded-r-full max-w-max min-w-0"
         >
           <span class="pr-2" v-text="badge.rest" />
         </span>

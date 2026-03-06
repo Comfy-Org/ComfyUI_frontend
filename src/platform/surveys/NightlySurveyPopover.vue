@@ -108,7 +108,7 @@ function handleOptOut() {
       <div
         v-if="isVisible"
         data-testid="nightly-survey-popover"
-        class="fixed bottom-4 right-4 z-[10000] w-80 rounded-lg border border-border-subtle bg-base-background p-4 shadow-lg"
+        class="fixed bottom-4 right-4 z-10000 w-80 rounded-lg border border-border-subtle bg-base-background p-4 shadow-lg"
       >
         <div class="mb-3 flex items-start justify-between">
           <h3 class="text-sm font-medium text-text-primary">
