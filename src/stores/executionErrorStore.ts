@@ -138,7 +138,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const nodeError = lastNodeErrors.value[executionId]
     if (!nodeError) return
 
-    const relevantErrors = slotName
+    const hasTargetName = slotName !== undefined
+
+    const relevantErrors = hasTargetName
       ? nodeError.errors.filter((e) => e.extra_info?.input_name === slotName)
       : nodeError.errors
 
@@ -151,7 +153,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     const updated = { ...lastNodeErrors.value }
 
-    if (slotName) {
+    if (hasTargetName) {
       // Remove only the target slot's errors if they were all simple
       const remainingErrors = nodeError.errors.filter(
         (e) => e.extra_info?.input_name !== slotName

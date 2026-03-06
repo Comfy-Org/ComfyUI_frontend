@@ -266,7 +266,7 @@ describe('executionErrorUtil', () => {
       expect(isValueStillOutOfRange(10, errors, { min: 5 })).toBe(false)
     })
 
-    it('should return false if max is undefined but error was value_bigger_than_max', () => {
+    it('should return true if max is undefined but error was value_bigger_than_max (conservative)', () => {
       const errors = [
         {
           type: 'value_bigger_than_max',
@@ -275,7 +275,7 @@ describe('executionErrorUtil', () => {
           extra_info: {}
         }
       ]
-      expect(isValueStillOutOfRange(15, errors, {})).toBe(false)
+      expect(isValueStillOutOfRange(15, errors, {})).toBe(true)
     })
   })
 })

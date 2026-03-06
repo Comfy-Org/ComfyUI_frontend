@@ -260,9 +260,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       widget.callback?.(newValue)
       // Vue widgets bypass onWidgetChanged; resolve errors directly using
       // the execution ID computed at the top of this computed property.
+      // slotName is the subgraph input name; falls back to the widget's own name.
+      const errorInputName = widget.slotName ?? widget.name
       executionErrorStore.clearSimpleWidgetErrorIfValid(
         nodeExecId,
-        widget.name,
+        errorInputName,
         newValue,
         widgetOptions as { min?: number; max?: number }
       )
