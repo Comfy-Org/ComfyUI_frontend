@@ -13,6 +13,15 @@ import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/us
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
 vi.mock('@vueuse/core')
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: vi.fn()
+}))
+
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: vi.fn().mockReturnValue({
+    nodeProgressStates: {}
+  })
+}))
 vi.mock('@/renderer/core/spatial/boundsCalculator', () => ({
   calculateNodeBounds: vi.fn(),
   calculateMinimapScale: vi.fn(),

@@ -31,7 +31,7 @@
             v-if="shouldShowBadge"
             :class="
               cn(
-                'sidebar-icon-badge absolute min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-base-foreground',
+                'sidebar-icon-badge absolute min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] leading-[14px] font-medium text-base-foreground',
                 badgeClass || '-top-1 -right-1'
               )
             "

@@ -40,7 +40,7 @@
       },
       overlay: {
         class: cn(
-          'mt-2 p-2 rounded-lg',
+          'mt-2 rounded-lg p-2',
           'bg-base-background text-base-foreground',
           'border border-solid border-border-default'
         )
@@ -57,7 +57,7 @@
       option: ({ context }: SelectPassThroughMethodOptions<SelectOption>) => ({
         class: cn(
           // Row layout
-          'flex items-center justify-between gap-3 px-2 py-3 rounded',
+          'flex items-center justify-between gap-3 rounded-sm px-2 py-3',
           'hover:bg-secondary-background-hover',
           // Add focus state for keyboard navigation
           context.focused && 'bg-secondary-background-hover',

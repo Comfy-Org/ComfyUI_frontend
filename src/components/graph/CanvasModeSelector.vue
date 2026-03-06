@@ -10,9 +10,9 @@
       <div
         class="rounded-lg bg-interface-panel-selected-surface p-2 group-hover:bg-interface-button-hover-surface"
       >
-        <i :class="currentModeIcon" class="block h-4 w-4" />
+        <i :class="currentModeIcon" class="block size-4" />
       </div>
-      <i class="icon-[lucide--chevron-down] block h-4 w-4 pr-1.5" />
+      <i class="icon-[lucide--chevron-down] block size-4 pr-1.5" />
     </div>
   </Button>
 
@@ -31,7 +31,7 @@
         @click="setMode('select')"
       >
         <div class="flex items-center gap-2">
-          <i class="icon-[lucide--mouse-pointer-2] h-4 w-4" />
+          <i class="icon-[lucide--mouse-pointer-2] size-4" />
           <span>{{ $t('graphCanvasMenu.select') }}</span>
         </div>
         <span class="text-[9px] text-text-primary">{{
@@ -40,11 +40,11 @@
       </div>
 
       <div
-        class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+        class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
         @click="setMode('hand')"
       >
         <div class="flex items-center gap-2">
-          <i class="icon-[lucide--hand] h-4 w-4" />
+          <i class="icon-[lucide--hand] size-4" />
           <span>{{ $t('graphCanvasMenu.hand') }}</span>
         </div>
         <span class="text-[9px] text-text-primary">{{ lockCommandText }}</span>

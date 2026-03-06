@@ -3,7 +3,7 @@
     <!-- Hidden single-line measurement element for overflow detection -->
     <div
       ref="measureRef"
-      class="invisible absolute inset-x-0 top-0 overflow-hidden whitespace-nowrap pointer-events-none"
+      class="pointer-events-none invisible absolute inset-x-0 top-0 overflow-hidden whitespace-nowrap"
       aria-hidden="true"
     >
       <slot />
@@ -13,7 +13,7 @@
       <slot />
     </MarqueeLine>
 
-    <div v-else class="flex flex-col w-full">
+    <div v-else class="flex w-full flex-col">
       <MarqueeLine>{{ firstLine }}</MarqueeLine>
       <MarqueeLine>{{ secondLine }}</MarqueeLine>
     </div>

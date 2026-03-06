@@ -411,6 +411,7 @@ const zSettings = z.object({
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),
+  'Comfy.Queue.ShowRunProgressBar': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
@@ -479,3 +480,31 @@ export type UserDataFullInfo = z.infer<typeof zUserDataFullInfo>
 export type TerminalSize = z.infer<typeof zTerminalSize>
 export type LogEntry = z.infer<typeof zLogEntry>
 export type LogsRawResponse = z.infer<typeof zLogRawResponse>
+
+export const zComfyHubProfile = z.object({
+  username: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  coverImageUrl: z.string().nullish(),
+  profilePictureUrl: z.string().nullish()
+})
+
+export type ComfyHubProfile = z.infer<typeof zComfyHubProfile>
+
+export const zAssetInfo = z.object({
+  id: z.string(),
+  name: z.string(),
+  preview_url: z.string(),
+  storage_url: z.string(),
+  model: z.boolean(),
+  public: z.boolean(),
+  in_library: z.boolean()
+})
+
+export type AssetInfo = z.infer<typeof zAssetInfo>
+
+export const zShareableAssetsResponse = z.object({
+  assets: z.array(zAssetInfo)
+})
+
+export type ShareableAssetsResponse = z.infer<typeof zShareableAssetsResponse>

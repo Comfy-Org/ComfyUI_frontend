@@ -2,7 +2,7 @@
   <div class="relative" @pointerdown.stop>
     <div
       v-if="!hideWhenEmpty || modelValue"
-      class="bg-component-node-widget-background box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0"
+      class="relative box-border flex h-16 w-full items-center justify-start gap-4 rounded-lg bg-component-node-widget-background px-4 py-0"
     >
       <!-- Hidden audio element -->
       <audio
@@ -20,7 +20,7 @@
           variant="textonly"
           size="unset"
           :aria-label="$t('g.playPause')"
-          class="size-6 rounded"
+          class="size-6 rounded-sm"
           @click="togglePlayPause"
         >
           <i
@@ -61,7 +61,7 @@
           variant="textonly"
           size="unset"
           :aria-label="$t('g.volume')"
-          class="size-6 rounded"
+          class="size-6 rounded-sm"
           @click="toggleMute"
         >
           <i
@@ -94,7 +94,7 @@
           variant="textonly"
           size="unset"
           :aria-label="$t('g.moreOptions')"
-          class="size-6 rounded"
+          class="size-6 rounded-sm"
           @click="toggleOptionsMenu"
         >
           <i class="text-secondary icon-[lucide--more-vertical] size-4" />
@@ -108,7 +108,7 @@
         popup
         class="audio-player-menu"
         :pt:root:class="
-          cn('bg-component-node-widget-background border-component-node-border')
+          cn('border-component-node-border bg-component-node-widget-background')
         "
         :pt:submenu:class="cn('bg-component-node-widget-background')"
       >

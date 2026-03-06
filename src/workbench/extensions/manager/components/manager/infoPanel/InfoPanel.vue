@@ -2,11 +2,11 @@
   <template v-if="nodePack">
     <div
       ref="scrollContainer"
-      class="flex h-full flex-col overflow-y-auto scrollbar-custom"
+      class="flex scrollbar-custom h-full flex-col overflow-y-auto"
     >
       <PropertiesAccordionItem v-if="!importFailed" :class="accordionClass">
         <template #label>
-          <span class="text-xs uppercase font-inter">
+          <span class="font-inter text-xs uppercase">
             {{ t('manager.actions') }}
           </span>
         </template>
@@ -35,7 +35,7 @@
 
       <PropertiesAccordionItem :class="accordionClass">
         <template #label>
-          <span class="text-xs uppercase font-inter">
+          <span class="font-inter text-xs uppercase">
             {{ t('manager.basicInfo') }}
           </span>
         </template>
@@ -74,7 +74,7 @@
 
       <PropertiesAccordionItem :class="accordionClass">
         <template #label>
-          <span class="text-xs uppercase font-inter">
+          <span class="font-inter text-xs uppercase">
             {{ t('g.description') }}
           </span>
         </template>
@@ -86,7 +86,7 @@
         :class="accordionClass"
       >
         <template #label>
-          <span class="text-xs uppercase font-inter">
+          <span class="font-inter text-xs uppercase">
             ⚠️ {{ importFailed ? t('g.error') : t('g.warning') }}
           </span>
         </template>
@@ -97,7 +97,7 @@
 
       <PropertiesAccordionItem :class="accordionClass">
         <template #label>
-          <span class="text-xs uppercase font-inter">
+          <span class="font-inter text-xs uppercase">
             {{ t('g.nodes') }}
           </span>
         </template>
@@ -158,7 +158,7 @@ const { nodePack } = defineProps<{
 const scrollContainer = ref<HTMLElement | null>(null)
 
 const accordionClass = cn(
-  'bg-modal-panel-background border-t border-border-default'
+  'border-t border-border-default bg-modal-panel-background'
 )
 
 const managerStore = useComfyManagerStore()

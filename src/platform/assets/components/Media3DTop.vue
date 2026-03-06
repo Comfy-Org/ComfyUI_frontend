@@ -1,5 +1,5 @@
 <template>
-  <div class="relative size-full overflow-hidden rounded">
+  <div class="relative size-full overflow-hidden rounded-sm">
     <img
       v-if="!thumbnailError"
       :src="thumbnailSrc"

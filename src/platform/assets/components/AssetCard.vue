@@ -7,9 +7,9 @@
     :tabindex="interactive ? 0 : -1"
     :class="
       cn(
-        'select-none rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col h-full',
+        'flex h-full flex-col gap-2 overflow-hidden rounded-2xl bg-modal-card-background p-2 transition-all duration-200 select-none',
         interactive &&
-          'group appearance-none bg-transparent m-0 outline-none text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4',
+          'group m-0 appearance-none border-none bg-transparent text-left outline-4 outline-base-foreground outline-none hover:bg-secondary-background focus:bg-secondary-background focus:outline-solid',
         focused && 'bg-secondary-background outline-solid'
       )
     "
@@ -20,20 +20,20 @@
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
         v-if="isLoading || error"
-        class="flex size-full cursor-pointer items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
+        class="flex size-full cursor-pointer items-center justify-center bg-linear-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
       />
       <img
         v-else
         :src="asset.preview_url"
         :alt="displayName"
-        class="size-full object-cover cursor-pointer"
+        class="size-full cursor-pointer object-cover"
       />
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
         :class="
           cn(
-            'absolute top-2 right-2 invisible group-hover:visible',
+            'invisible absolute top-2 right-2 group-hover:visible',
             dropdownMenuButton?.isOpen && 'visible'
           )
         "
@@ -66,13 +66,13 @@
         </MoreButton>
       </IconGroup>
     </div>
-    <div class="max-h-32 flex flex-col gap-2 justify-between flex-auto">
+    <div class="flex max-h-32 flex-auto flex-col justify-between gap-2">
       <h3
         :id="titleId"
         v-tooltip.top="{ value: displayName, showDelay: tooltipDelay }"
         :class="
           cn(
-            'm-0 text-sm font-semibold line-clamp-2 wrap-anywhere',
+            'm-0 line-clamp-2 text-sm font-semibold wrap-anywhere',
             'text-base-foreground'
           )
         "
@@ -84,13 +84,13 @@
         v-tooltip.top="{ value: asset.secondaryText, showDelay: tooltipDelay }"
         :class="
           cn(
-            'm-0 text-sm line-clamp-2 [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box] text-muted-foreground'
+            'm-0 line-clamp-2 [display:-webkit-box] text-sm text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
           )
         "
       >
         {{ asset.secondaryText }}
       </p>
-      <div class="flex items-center justify-between gap-2 mt-auto">
+      <div class="mt-auto flex items-center justify-between gap-2">
         <div class="flex gap-3 text-xs text-muted-foreground">
           <span v-if="asset.stats.stars" class="flex items-center gap-1">
             <i class="icon-[lucide--star] size-3" />
@@ -115,7 +115,7 @@
           v-if="interactive"
           variant="secondary"
           size="lg"
-          class="shrink-0 relative"
+          class="relative shrink-0"
           @click.stop="handleSelect"
         >
           {{ $t('g.use') }}
@@ -210,7 +210,7 @@ function confirmDeletion() {
       confirmText: t('g.delete'),
       // TODO: These need to be put into the new Button Variants once we have them.
       confirmClass: cn(
-        'bg-danger-200 text-base-foreground hover:bg-danger-200/80 focus:bg-danger-200/80 focus:ring ring-base-foreground'
+        'bg-danger-200 text-base-foreground ring-base-foreground hover:bg-danger-200/80 focus:bg-danger-200/80 focus:ring'
       ),
       optionsDisabled,
       onCancel: () => {
