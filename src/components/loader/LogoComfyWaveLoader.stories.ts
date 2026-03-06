@@ -21,6 +21,9 @@ const meta: Meta<typeof LogoComfyWaveLoader> = {
     },
     bordered: {
       control: 'boolean'
+    },
+    disableAnimation: {
+      control: 'boolean'
     }
   }
 }
@@ -44,6 +47,10 @@ export const ExtraLarge: Story = {
 
 export const NoBorder: Story = {
   args: { bordered: false }
+}
+
+export const Static: Story = {
+  args: { disableAnimation: true }
 }
 
 export const BrandColors: Story = {

@@ -15,7 +15,14 @@ const meta: Meta<typeof LogoCFillLoader> = {
       control: 'select',
       options: ['sm', 'md', 'lg', 'xl']
     },
+    color: {
+      control: 'select',
+      options: ['yellow', 'blue', 'white', 'black']
+    },
     bordered: {
+      control: 'boolean'
+    },
+    disableAnimation: {
       control: 'boolean'
     }
   }
@@ -42,27 +49,31 @@ export const NoBorder: Story = {
   args: { bordered: false }
 }
 
+export const Static: Story = {
+  args: { disableAnimation: true }
+}
+
 export const BrandColors: Story = {
   render: () => ({
     components: { LogoCFillLoader },
     template: `
       <div class="flex items-end gap-12">
         <div class="flex flex-col items-center gap-2">
-          <span class="text-xs text-neutral-400">#F0FF41</span>
-          <LogoCFillLoader size="lg" class="text-[#F0FF41]" />
+          <span class="text-xs text-neutral-400">Yellow</span>
+          <LogoCFillLoader size="lg" color="yellow" />
         </div>
         <div class="flex flex-col items-center gap-2">
-          <span class="text-xs text-neutral-400">#172DD7</span>
-          <LogoCFillLoader size="lg" class="text-[#172DD7]" />
+          <span class="text-xs text-neutral-400">Blue</span>
+          <LogoCFillLoader size="lg" color="blue" />
         </div>
         <div class="flex flex-col items-center gap-2">
           <span class="text-xs text-neutral-400">White</span>
-          <LogoCFillLoader size="lg" class="text-white" />
+          <LogoCFillLoader size="lg" color="white" />
         </div>
         <div class="p-4 bg-white rounded" style="background: white">
           <div class="flex flex-col items-center gap-2">
             <span class="text-xs text-neutral-600">Black</span>
-            <LogoCFillLoader size="lg" class="text-black" />
+            <LogoCFillLoader size="lg" color="black" />
           </div>
         </div>
       </div>
@@ -75,10 +86,10 @@ export const AllSizes: Story = {
     components: { LogoCFillLoader },
     template: `
       <div class="flex items-end gap-8">
-        <LogoCFillLoader size="sm" class="text-[#F0FF41]" />
-        <LogoCFillLoader size="md" class="text-[#F0FF41]" />
-        <LogoCFillLoader size="lg" class="text-[#F0FF41]" />
-        <LogoCFillLoader size="xl" class="text-[#F0FF41]" />
+        <LogoCFillLoader size="sm" color="yellow" />
+        <LogoCFillLoader size="md" color="yellow" />
+        <LogoCFillLoader size="lg" color="yellow" />
+        <LogoCFillLoader size="xl" color="yellow" />
       </div>
     `
   })
