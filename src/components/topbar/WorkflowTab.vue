@@ -7,6 +7,7 @@
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
+        @mouseup="handleMouseUp"
         @click="handleClick"
       >
         <i
@@ -98,6 +99,13 @@ const props = defineProps<{
   isLast: boolean
 }>()
 
+const emit = defineEmits<{
+  closeToLeft: []
+  closeToRight: []
+  closeOthers: []
+  mouseup: [event: MouseEvent]
+}>()
+
 const { t } = useI18n()
 
 const workspaceStore = useWorkspaceStore()
@@ -162,6 +170,10 @@ const handleClick = (event: Event) => {
   popoverRef.value?.togglePopover(event)
 }
 
+const handleMouseUp = (event: MouseEvent) => {
+  emit('mouseup', event)
+}
+
 const closeWorkflows = async (options: WorkflowOption[]) => {
   for (const opt of options) {
     if (
@@ -179,12 +191,6 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
 const onCloseWorkflow = async (option: WorkflowOption) => {
   await closeWorkflows([option])
 }
-
-const emit = defineEmits<{
-  closeToLeft: []
-  closeToRight: []
-  closeOthers: []
-}>()
 
 const commandStore = useCommandStore()
 const workflow = computed(() => props.workflowOption.workflow)

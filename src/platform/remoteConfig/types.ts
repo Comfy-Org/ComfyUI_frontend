@@ -48,4 +48,7 @@ export type RemoteConfig = {
   node_library_essentials_enabled?: boolean
   free_tier_credits?: number
   new_free_tier_subscriptions?: boolean
+  workflow_sharing_enabled?: boolean
+  comfyhub_upload_enabled?: boolean
+  comfyhub_profile_gate_enabled?: boolean
 }
