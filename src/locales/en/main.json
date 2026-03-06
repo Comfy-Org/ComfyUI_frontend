@@ -899,6 +899,8 @@
       "dirtyCloseHint": "Hold Shift to close without prompt",
       "confirmOverwriteTitle": "Overwrite existing file?",
       "confirmOverwrite": "The file below already exists. Would you like to overwrite it?",
+      "confirmDeleteFolderTitle": "Delete Folder",
+      "confirmDeleteFolderMessage": "Delete this folder and all workflows inside it?",
       "workflowTreeType": {
         "browse": "Browse",
         "bookmarks": "Bookmarks",
