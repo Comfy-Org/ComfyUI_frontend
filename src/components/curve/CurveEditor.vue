@@ -76,7 +76,7 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 
-import { useCurveEditor } from '@/composables/useCurveEditor'
+import { useCurveEditor } from '@/components/curve/useCurveEditor'
 
 import type { CurvePoint } from './types'
 

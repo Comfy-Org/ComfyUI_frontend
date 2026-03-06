@@ -34,7 +34,7 @@
 import { computed } from 'vue'
 
 import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { useTransformCompatOverlayProps } from '@/renderer/extensions/vueNodes/widgets/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {

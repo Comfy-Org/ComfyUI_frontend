@@ -5,7 +5,7 @@ import { ref, watch } from 'vue'
 
 import { t } from '@/i18n'
 import { useCachedRequest } from '@/composables/useCachedRequest'
-import { useServerLogs } from '@/composables/useServerLogs'
+import { useServerLogs } from '@/workbench/extensions/manager/composables/useServerLogs'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 

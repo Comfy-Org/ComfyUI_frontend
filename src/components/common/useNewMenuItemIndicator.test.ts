@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
+import { useNewMenuItemIndicator } from '@/components/common/useNewMenuItemIndicator'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 
 const mockSettingStore = vi.hoisted(() => ({

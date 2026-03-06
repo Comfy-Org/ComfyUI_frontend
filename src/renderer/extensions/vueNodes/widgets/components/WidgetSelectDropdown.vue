@@ -3,7 +3,7 @@ import { capitalize } from 'es-toolkit'
 import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { useTransformCompatOverlayProps } from '@/renderer/extensions/vueNodes/widgets/composables/useTransformCompatOverlayProps'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'

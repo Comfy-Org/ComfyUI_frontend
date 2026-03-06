@@ -80,7 +80,7 @@
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 
-import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
+import { useNodeHelpContent } from '@/components/node/useNodeHelpContent'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const { node } = defineProps<{

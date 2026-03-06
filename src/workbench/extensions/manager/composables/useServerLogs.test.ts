@@ -2,7 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useServerLogs } from '@/composables/useServerLogs'
+import { useServerLogs } from '@/workbench/extensions/manager/composables/useServerLogs'
 import type { LogsWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 

@@ -15,7 +15,7 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useRefreshableSelection } from '@/composables/useRefreshableSelection'
+import { useRefreshableSelection } from '@/components/graph/selectionToolbox/useRefreshableSelection'
 
 const { t } = useI18n()
 const { isRefreshable, refreshSelected } = useRefreshableSelection()

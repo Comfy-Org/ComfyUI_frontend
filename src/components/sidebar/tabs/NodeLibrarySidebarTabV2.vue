@@ -183,7 +183,7 @@ import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames
 import SearchBox from '@/components/common/SearchBoxV2.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
-import { usePerTabState } from '@/composables/usePerTabState'
+import { usePerTabState } from '@/components/sidebar/tabs/usePerTabState'
 import {
   DEFAULT_SORTING_ID,
   DEFAULT_TAB_ID,

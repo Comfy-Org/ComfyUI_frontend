@@ -104,7 +104,10 @@ import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
-import { ASPECT_RATIOS, useImageCrop } from '@/composables/useImageCrop'
+import {
+  ASPECT_RATIOS,
+  useImageCrop
+} from '@/components/imagecrop/useImageCrop'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Bounds } from '@/renderer/core/layout/types'
 
