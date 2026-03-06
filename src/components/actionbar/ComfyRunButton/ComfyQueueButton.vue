@@ -34,7 +34,7 @@
       <DropdownMenuPortal>
         <DropdownMenuContent
           :side-offset="4"
-          class="z-[1000] min-w-44 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
+          class="z-1000 min-w-44 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
         >
           <DropdownMenuItem
             v-for="item in queueModeMenuItems"
