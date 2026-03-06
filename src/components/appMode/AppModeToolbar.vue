@@ -52,28 +52,7 @@ function openTemplates() {
 
 <template>
   <div class="pointer-events-auto flex flex-col gap-2">
-    <WorkflowActionsDropdown source="app_mode_toolbar">
-      <template #button="{ hasUnseenItems }">
-        <Button
-          v-tooltip.right="{
-            value: t('sideToolbar.labels.menu'),
-            ...tooltipOptions
-          }"
-          variant="secondary"
-          size="unset"
-          :aria-label="t('sideToolbar.labels.menu')"
-          class="relative h-10 gap-1 rounded-lg pr-2 pl-3 data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
-        >
-          <i class="icon-[lucide--panels-top-left] size-4" />
-          <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
-          <span
-            v-if="hasUnseenItems"
-            aria-hidden="true"
-            class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
-          />
-        </Button>
-      </template>
-    </WorkflowActionsDropdown>
+    <WorkflowActionsDropdown source="app_mode_toolbar" />
 
     <Button
       v-if="enableAppBuilder"
