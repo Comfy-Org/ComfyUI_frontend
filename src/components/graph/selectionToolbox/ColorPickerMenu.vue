@@ -33,7 +33,7 @@
           cn(
             'hover:bg-secondary-background-hover rounded-sm cursor-pointer',
             isColorSubmenu
-              ? 'w-7 h-7 flex items-center justify-center'
+              ? 'size-7 flex items-center justify-center'
               : 'flex items-center gap-2 px-3 py-1.5 text-sm',
             subOption.disabled
               ? 'cursor-not-allowed pointer-events-none text-node-icon-disabled'

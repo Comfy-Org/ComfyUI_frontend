@@ -1,6 +1,6 @@
 <template>
   <div
-    class="widget-expands flex h-full w-full flex-col gap-1"
+    class="widget-expands flex size-full flex-col gap-1"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
@@ -46,7 +46,7 @@
       ref="controlsEl"
       :class="
         cn(
-          'grid shrink-0 gap-x-1 gap-y-1',
+          'grid shrink-0 gap-1',
           compact ? 'grid-cols-1' : 'grid-cols-[auto_1fr]'
         )
       "

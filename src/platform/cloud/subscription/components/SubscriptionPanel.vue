@@ -2,7 +2,7 @@
   <div class="subscription-container h-full">
     <div class="flex h-full flex-col gap-6">
       <div class="flex items-center gap-2">
-        <span class="text-2xl font-inter font-semibold leading-tight">
+        <span class="text-2xl/tight font-inter font-semibold">
           {{
             isActiveSubscription
               ? $t('subscription.title')

@@ -337,7 +337,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     <div
       :class="
         cn(
-          'absolute w-full h-full pointer-events-auto',
+          'absolute size-full pointer-events-auto',
           hoveringSelectable ? 'cursor-pointer' : 'cursor-grab'
         )
       "

@@ -46,7 +46,7 @@
       // Overlay & list visuals unchanged
       overlay: {
         class: cn(
-          'mt-2 rounded-lg py-2 px-2',
+          'mt-2 rounded-lg p-2',
           'bg-base-background',
           'text-base-foreground',
           'border border-solid border-border-default'
@@ -135,7 +135,7 @@
       </span>
       <span
         v-if="selectedCount > 0"
-        class="pointer-events-none absolute -top-2 -right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-primary-background text-xs font-semibold text-base-foreground"
+        class="pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 items-center justify-center rounded-full bg-primary-background text-xs font-semibold text-base-foreground"
       >
         {{ selectedCount }}
       </span>

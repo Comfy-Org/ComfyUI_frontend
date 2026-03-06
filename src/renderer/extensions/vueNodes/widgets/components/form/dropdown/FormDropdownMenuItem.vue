@@ -77,7 +77,7 @@ function handleVideoLoad(event: Event) {
       :class="
         cn(
           'relative',
-          'w-full aspect-square overflow-hidden outline-1 outline-offset-[-1px] outline-interface-stroke',
+          'w-full aspect-square overflow-hidden outline-1 -outline-offset-1 outline-interface-stroke',
           'transition-[transform,box-shadow] duration-150',
           {
             'min-w-16 max-w-16 rounded-l-lg': layout === 'list',
@@ -93,7 +93,7 @@ function handleVideoLoad(event: Event) {
       <!-- Selected Icon -->
       <div
         v-if="selected"
-        class="absolute top-1 left-1 size-4 rounded-full border-1 border-base-foreground bg-primary-background"
+        class="absolute top-1 left-1 size-4 rounded-full border border-base-foreground bg-primary-background"
       >
         <i
           class="icon-[lucide--check] size-3 translate-y-[-0.5px] text-base-foreground bold"
@@ -117,7 +117,7 @@ function handleVideoLoad(event: Event) {
       />
       <div
         v-else
-        class="size-full bg-gradient-to-tr from-blue-400 via-teal-500 to-green-400"
+        class="size-full bg-linear-to-tr from-blue-400 via-teal-500 to-green-400"
       />
     </div>
     <!-- Name -->
@@ -135,7 +135,7 @@ function handleVideoLoad(event: Event) {
         v-tooltip="layout === 'grid' ? (label ?? name) : undefined"
         :class="
           cn(
-            'block text-xs line-clamp-2 break-words overflow-hidden',
+            'block text-xs line-clamp-2 wrap-break-word overflow-hidden',
             'transition-colors duration-150',
             // selection
             !!selected && 'text-base-foreground'

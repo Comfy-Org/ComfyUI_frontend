@@ -21,7 +21,7 @@ const { class: className, ...restProps } = defineProps<
         'focus:bg-secondary-background-hover',
         'data-[state=checked]:bg-secondary-background-selected',
         'data-[state=checked]:hover:bg-secondary-background-selected',
-        'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'data-disabled:pointer-events-none data-disabled:opacity-50',
         className
       )
     "

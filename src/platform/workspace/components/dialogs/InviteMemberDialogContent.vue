@@ -24,7 +24,7 @@
 
     <!-- Body: Email Step -->
     <template v-if="step === 'email'">
-      <div class="flex flex-col gap-4 px-4 py-4">
+      <div class="flex flex-col gap-4 p-4">
         <p class="m-0 text-sm text-muted-foreground">
           {{ $t('workspacePanel.inviteMemberDialog.message') }}
         </p>
@@ -37,7 +37,7 @@
       </div>
 
       <!-- Footer: Email Step -->
-      <div class="flex items-center justify-end gap-4 px-4 py-4">
+      <div class="flex items-center justify-end gap-4 p-4">
         <Button variant="muted-textonly" @click="onCancel">
           {{ $t('g.cancel') }}
         </Button>
@@ -55,7 +55,7 @@
 
     <!-- Body: Link Step -->
     <template v-else>
-      <div class="flex flex-col gap-4 px-4 py-4">
+      <div class="flex flex-col gap-4 p-4">
         <p class="m-0 text-sm text-muted-foreground">
           {{ $t('workspacePanel.inviteMemberDialog.linkStep.message') }}
         </p>
@@ -86,7 +86,7 @@
       </div>
 
       <!-- Footer: Link Step -->
-      <div class="flex items-center justify-end gap-4 px-4 py-4">
+      <div class="flex items-center justify-end gap-4 p-4">
         <Button variant="muted-textonly" @click="onCancel">
           {{ $t('g.cancel') }}
         </Button>

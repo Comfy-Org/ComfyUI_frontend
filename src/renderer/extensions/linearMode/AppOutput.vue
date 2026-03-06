@@ -25,7 +25,7 @@ function togglePromotion() {
   <div
     :class="
       cn(
-        'absolute w-full h-full pointer-events-auto ring-warning-background/50 ring-5 rounded-2xl',
+        'absolute size-full pointer-events-auto ring-warning-background/50 ring-5 rounded-2xl',
         isPromoted && 'ring-warning-background'
       )
     "

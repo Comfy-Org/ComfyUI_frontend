@@ -142,7 +142,7 @@ const displayLabel = customRef((track, trigger) => {
       cn(
         'widget-item col-span-full grid grid-cols-subgrid rounded-lg group',
         isDraggable &&
-          'draggable-item !will-change-auto drag-handle cursor-grab bg-comfy-menu-bg [&.is-draggable]:cursor-grabbing outline-comfy-menu-bg [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0 [&.is-draggable]:opacity-70'
+          'draggable-item will-change-auto! drag-handle cursor-grab bg-comfy-menu-bg [&.is-draggable]:cursor-grabbing outline-comfy-menu-bg [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0 [&.is-draggable]:opacity-70'
       )
     "
   >
@@ -160,7 +160,7 @@ const displayLabel = customRef((track, trigger) => {
         :model-value="displayLabel"
         :is-editing="isEditing"
         :input-attrs="{ placeholder: widget.name }"
-        class="text-sm leading-8 p-0 m-0 truncate pointer-events-auto cursor-text"
+        class="text-sm/8 p-0 m-0 truncate pointer-events-auto cursor-text"
         @edit="displayLabel = $event"
         @cancel="isEditing = false"
         @click="isEditing = true"

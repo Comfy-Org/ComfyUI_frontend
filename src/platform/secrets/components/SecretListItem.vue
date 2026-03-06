@@ -9,7 +9,7 @@
           v-if="providerLogo"
           :src="providerLogo"
           :alt="providerLabel"
-          class="h-5 w-5"
+          class="size-5"
         />
         <span
           v-else-if="secret.provider"

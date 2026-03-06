@@ -4,7 +4,7 @@
     @keydown.esc.capture="handleEscape"
   >
     <div
-      class="grid h-full w-full transition-[grid-template-columns] duration-300 ease-out"
+      class="grid size-full transition-[grid-template-columns] duration-300 ease-out"
       :style="gridStyle"
     >
       <nav

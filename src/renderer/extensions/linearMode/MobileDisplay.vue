@@ -149,7 +149,7 @@ const menuEntries = computed<MenuItem[]>(() => [
 ])
 </script>
 <template>
-  <section class="absolute w-full h-full flex flex-col bg-secondary-background">
+  <section class="absolute size-full flex flex-col bg-secondary-background">
     <header
       class="w-full h-16 px-4 py-3 flex border-border-subtle border-b items-center gap-3 bg-base-background"
     >
@@ -162,13 +162,13 @@ const menuEntries = computed<MenuItem[]>(() => [
         <template #button>
           <!--TODO: Use button here? Probably too much work to destyle-->
           <div
-            class="bg-secondary-background h-10 rounded-sm grow-1 flex items-center p-2 gap-2"
+            class="bg-secondary-background h-10 rounded-sm grow flex items-center p-2 gap-2"
           >
             <i
               class="shrink-0 icon-[lucide--panels-top-left] bg-primary-background"
             />
             <span
-              class="truncate contain-size h-full w-full"
+              class="truncate contain-size size-full"
               v-text="workflowStore.activeWorkflow?.filename"
             />
             <i
@@ -207,7 +207,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         v-for="([label, icon], index) in tabs"
         :key="label"
         :variant="index === activeIndex ? 'secondary' : 'muted-textonly'"
-        class="flex-col h-14 grow-1"
+        class="flex-col h-14 grow"
         @click="onClick(index)"
       >
         <div class="relative size-4">

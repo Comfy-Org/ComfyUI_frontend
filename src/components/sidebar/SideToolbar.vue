@@ -8,7 +8,7 @@
       'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
-      'border-r border-[var(--interface-stroke)] shadow-interface': isConnected
+      'border-r border-(--interface-stroke) shadow-interface': isConnected
     }"
   >
     <div

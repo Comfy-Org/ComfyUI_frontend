@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+    <span class="text-left text-xs font-sans text-(--descrip-text)">{{
       label
     }}</span>
     <input

@@ -74,7 +74,7 @@ const unifiedWrapperClass = computed((): string =>
 const unifiedDotsClass = computed((): string =>
   cn(
     unified &&
-      'grid grid-cols-1 grid-rows-1 gap-0 [&>*]:row-span-full [&>*]:col-span-full place-items-center'
+      'grid grid-cols-1 grid-rows-1 gap-0 *:row-span-full *:col-span-full place-items-center'
   )
 )
 

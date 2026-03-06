@@ -8,7 +8,7 @@
         class="icon-[lucide--triangle-alert] size-4 text-warning-background shrink-0 mr-1.5"
       />
       <p
-        class="flex-1 min-w-0 text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap"
+        class="flex-1 min-w-0 text-sm font-medium truncate"
         :class="
           group.packId === null && !group.isResolving
             ? 'text-warning-background'
@@ -101,7 +101,7 @@
         group.packId !== null &&
         (nodePack || comfyManagerStore.isPackInstalled(group.packId))
       "
-      class="flex items-start w-full pt-1 pb-1"
+      class="flex items-start w-full py-1"
     >
       <Button
         variant="secondary"
@@ -141,7 +141,7 @@
     <!-- Registry still loading: packId known but result not yet available -->
     <div
       v-else-if="group.packId !== null && shouldShowManagerButtons && isLoading"
-      class="flex items-start w-full pt-1 pb-1"
+      class="flex items-start w-full py-1"
     >
       <div
         class="flex flex-1 h-8 items-center justify-center overflow-hidden p-2 rounded-lg min-w-0 bg-secondary-background opacity-60 cursor-not-allowed select-none"
@@ -156,7 +156,7 @@
     <!-- Search in Manager: fetch done but pack not found in registry -->
     <div
       v-else-if="group.packId !== null && shouldShowManagerButtons"
-      class="flex items-start w-full pt-1 pb-1"
+      class="flex items-start w-full py-1"
     >
       <Button
         variant="secondary"

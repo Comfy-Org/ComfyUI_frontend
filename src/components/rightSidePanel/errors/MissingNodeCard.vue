@@ -2,7 +2,7 @@
   <div class="px-4 pb-2">
     <!-- Sub-label: cloud or OSS message shown above all pack groups -->
     <p
-      class="m-0 text-sm text-muted-foreground leading-relaxed"
+      class="m-0 text-sm/relaxed text-muted-foreground"
       :class="showManagerHint ? 'pb-3' : 'pb-5'"
     >
       {{
@@ -17,7 +17,7 @@
       v-if="showManagerHint"
       keypath="rightSidePanel.missingNodePacks.ossManagerDisabledHint"
       tag="p"
-      class="m-0 pb-5 text-sm text-muted-foreground leading-relaxed"
+      class="m-0 pb-5 text-sm/relaxed text-muted-foreground"
     >
       <template #pipCmd>
         <code

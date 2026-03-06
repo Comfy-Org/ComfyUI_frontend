@@ -33,7 +33,7 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="icon-[lucide--external-link] text-primary w-4 h-4 ml-auto"
+            class="icon-[lucide--external-link] text-primary size-4 ml-auto"
           />
           <i
             v-if="menuItem.key === 'more'"
@@ -88,7 +88,7 @@
       data-testid="whats-new-section"
     >
       <h3
-        class="section-description flex items-center gap-2.5 self-stretch px-8 pt-2 pb-2"
+        class="section-description flex items-center gap-2.5 self-stretch px-8 py-2"
       >
         {{ $t('helpCenter.whatsNew') }}
       </h3>

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-full absolute top-0 left-0 z-999 pointer-events-none flex flex-col"
+    class="size-full absolute top-0 left-0 z-999 pointer-events-none flex flex-col"
   >
     <slot name="workflow-tabs" />
 
@@ -60,11 +60,11 @@
           <slot name="topmenu" :sidebar-panel-visible />
 
           <Splitter
-            class="bg-transparent pointer-events-none border-none splitter-overlay-bottom mr-1 mb-1 ml-1 flex-1"
+            class="bg-transparent pointer-events-none border-none splitter-overlay-bottom mx-1 mb-1 flex-1"
             layout="vertical"
             :pt:gutter="
               cn(
-                'rounded-tl-lg rounded-tr-lg',
+                'rounded-t-lg',
                 !(bottomPanelVisible && !focusMode) && 'hidden'
               )
             "

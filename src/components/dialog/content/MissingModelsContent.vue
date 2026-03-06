@@ -2,8 +2,8 @@
   <div
     class="flex w-full max-w-[490px] flex-col border-t border-border-default"
   >
-    <div class="flex h-full w-full flex-col gap-4 p-4">
-      <p class="m-0 text-sm leading-5 text-muted-foreground">
+    <div class="flex size-full flex-col gap-4 p-4">
+      <p class="m-0 text-sm/5 text-muted-foreground">
         {{ $t('missingModelsDialog.description') }}
       </p>
 
@@ -81,9 +81,7 @@
         </div>
       </div>
 
-      <p
-        class="m-0 text-xs leading-5 text-muted-foreground whitespace-pre-line"
-      >
+      <p class="m-0 text-xs/5 text-muted-foreground whitespace-pre-line">
         {{ $t('missingModelsDialog.footerDescription') }}
       </p>
 
@@ -92,15 +90,13 @@
         class="flex gap-3 rounded-lg border border-warning-background bg-warning-background/10 p-3"
       >
         <i
-          class="icon-[lucide--triangle-alert] mt-0.5 h-4 w-4 shrink-0 text-warning-background"
+          class="icon-[lucide--triangle-alert] mt-0.5 size-4 shrink-0 text-warning-background"
         />
         <div class="flex flex-col gap-1">
-          <p
-            class="m-0 text-xs font-semibold leading-5 text-warning-background"
-          >
+          <p class="m-0 text-xs/5 font-semibold text-warning-background">
             {{ $t('missingModelsDialog.customModelsWarning') }}
           </p>
-          <p class="m-0 text-xs leading-5 text-warning-background">
+          <p class="m-0 text-xs/5 text-warning-background">
             {{ $t('missingModelsDialog.customModelsInstruction') }}
           </p>
         </div>

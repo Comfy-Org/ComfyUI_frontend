@@ -163,7 +163,7 @@ async function rerun(e: Event) {
   />
   <article
     v-else-if="getMediaType(selectedOutput) === 'text'"
-    class="w-full max-w-128 m-auto my-12 overflow-y-auto"
+    class="w-full max-w-lg m-auto my-12 overflow-y-auto"
     v-text="selectedOutput!.url"
   />
   <Preview3d

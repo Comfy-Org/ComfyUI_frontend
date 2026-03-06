@@ -52,7 +52,7 @@ const controlMode = defineModel<ControlOptions>()
 
 <template>
   <div class="w-113 max-w-md p-4 space-y-4">
-    <div class="text-sm text-muted-foreground leading-tight">
+    <div class="text-sm/tight text-muted-foreground">
       {{ $t('widgets.valueControl.header.prefix') }}
       <span class="text-base-foreground font-medium">
         {{
@@ -76,7 +76,7 @@ const controlMode = defineModel<ControlOptions>()
       >
         <div class="flex items-center gap-2 flex-1 min-w-0 text-wrap">
           <div
-            class="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 bg-secondary-background border border-border-subtle"
+            class="flex items-center justify-center size-8 rounded-lg shrink-0 bg-secondary-background border border-border-subtle"
           >
             <i
               v-if="option.icon"
@@ -92,14 +92,12 @@ const controlMode = defineModel<ControlOptions>()
           </div>
 
           <div class="flex flex-col gap-0.5 min-w-0 flex-1">
-            <div class="text-sm font-normal text-base-foreground leading-tight">
+            <div class="text-sm/tight font-normal text-base-foreground">
               <span>
                 {{ $t(`widgets.valueControl.${option.title}`) }}
               </span>
             </div>
-            <div
-              class="text-sm font-normal text-muted-foreground leading-tight"
-            >
+            <div class="text-sm/tight font-normal text-muted-foreground">
               {{ $t(`widgets.valueControl.${option.description}`) }}
             </div>
           </div>

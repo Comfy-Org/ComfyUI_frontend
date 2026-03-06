@@ -10,7 +10,7 @@
           <div
             class="p-3 bg-primary-background-hover rounded-lg flex items-center justify-center shrink-0"
           >
-            <i class="icon-[lucide--rocket] w-4 h-4 text-white" />
+            <i class="icon-[lucide--rocket] size-4 text-white" />
           </div>
           <div class="flex flex-col gap-1">
             <div
@@ -42,7 +42,7 @@
           rel="noopener noreferrer"
           @click="handleLearnMore"
         >
-          <i class="icon-[lucide--external-link] w-4 h-4"></i>
+          <i class="icon-[lucide--external-link] size-4"></i>
           {{ $t('releaseToast.whatsNew') }}
         </a>
         <div class="flex items-center gap-4">

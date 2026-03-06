@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="relative flex flex-col p-4 pt-8 md:p-16 !overflow-y-auto h-full gap-8"
+    class="relative flex flex-col p-4 pt-8 md:p-16 overflow-y-auto! h-full gap-8"
   >
     <Button
       size="icon"
@@ -51,7 +51,7 @@
     <Button
       size="icon"
       variant="muted-textonly"
-      class="rounded-full absolute top-2.5 right-2.5 z-10 h-8 w-8 p-0 text-white hover:bg-white/20"
+      class="rounded-full absolute top-2.5 right-2.5 z-10 size-8 p-0 text-white hover:bg-white/20"
       :aria-label="$t('g.close')"
       @click="handleClose"
     >

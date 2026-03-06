@@ -3,7 +3,7 @@
     <div class="whats-new-popup" @click.stop>
       <!-- Close Button -->
       <Button
-        class="close-button absolute top-2 right-2 z-10 w-8 h-8 p-2 rounded-lg opacity-50"
+        class="close-button absolute top-2 right-2 z-10 size-8 p-2 rounded-lg opacity-50"
         :aria-label="$t('g.close')"
         size="icon-sm"
         variant="muted-textonly"

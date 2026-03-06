@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col w-full',
+        'comfy-vue-side-bar-container group/sidebar-tab flex size-full flex-col',
         props.class
       )
     "

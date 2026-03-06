@@ -17,7 +17,7 @@
     <WorkflowActionsDropdown source="breadcrumb_subgraph_menu_selected" />
     <Button
       v-if="isInSubgraph"
-      class="back-button pointer-events-auto h-8 w-8 shrink-0 border border-transparent bg-transparent p-0 ml-1.5 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
+      class="back-button pointer-events-auto size-8 shrink-0 border border-transparent bg-transparent p-0 ml-1.5 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
       text
       severity="secondary"
       size="small"

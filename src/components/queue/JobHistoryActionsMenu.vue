@@ -14,7 +14,7 @@
         </Button>
       </template>
       <template #default="{ close }">
-        <div class="flex min-w-[14rem] flex-col items-stretch font-inter">
+        <div class="flex min-w-56 flex-col items-stretch font-inter">
           <Button
             data-testid="docked-job-history-action"
             class="w-full justify-between text-sm font-light"
@@ -67,7 +67,7 @@
                 class="icon-[lucide--trash-2] size-4 shrink-0 self-center text-destructive-background"
               />
               <span
-                class="flex flex-col items-start break-words text-left leading-tight"
+                class="flex flex-col items-start wrap-break-word text-left leading-tight"
               >
                 <span class="text-sm font-light">
                   {{ t('sideToolbar.queueProgressOverlay.clearHistory') }}

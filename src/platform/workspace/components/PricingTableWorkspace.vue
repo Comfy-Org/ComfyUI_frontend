@@ -56,7 +56,7 @@
         <div class="p-8 pb-0 flex flex-col gap-8">
           <div class="flex flex-row items-center gap-2 justify-between">
             <span
-              class="font-inter text-base font-bold leading-normal text-base-foreground"
+              class="font-inter text-base/normal font-bold text-base-foreground"
             >
               {{ tier.name }}
             </span>
@@ -81,9 +81,7 @@
                   </span>
                   ${{ getPrice(tier) }}
                 </span>
-                <span
-                  class="font-inter text-sm leading-normal text-base-foreground"
-                >
+                <span class="font-inter text-sm/normal text-base-foreground">
                   {{ t('subscription.usdPerMonthPerMember') }}
                 </span>
               </div>
@@ -109,7 +107,7 @@
               <div class="flex flex-row items-center gap-1">
                 <i class="icon-[lucide--component] text-amber-400 text-sm" />
                 <span
-                  class="font-inter text-sm font-bold leading-normal text-base-foreground"
+                  class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
                   {{ n(getMonthlyCreditsPerMember(tier)) }}
                 </span>
@@ -121,7 +119,7 @@
                 {{ t('subscription.maxMembersLabel') }}
               </span>
               <span
-                class="font-inter text-sm font-bold leading-normal text-base-foreground"
+                class="font-inter text-sm/normal font-bold text-base-foreground"
               >
                 {{ getMaxMembers(tier) }}
               </span>
@@ -132,7 +130,7 @@
                 {{ t('subscription.maxDurationLabel') }}
               </span>
               <span
-                class="font-inter text-sm font-bold leading-normal text-base-foreground"
+                class="font-inter text-sm/normal font-bold text-base-foreground"
               >
                 {{ tier.maxDuration }}
               </span>
@@ -166,9 +164,7 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-start justify-between">
                 <div class="flex flex-col gap-2">
-                  <span
-                    class="text-sm font-normal text-foreground leading-relaxed"
-                  >
+                  <span class="text-sm/relaxed font-normal text-foreground">
                     {{ t('subscription.videoEstimateLabel') }}
                   </span>
                   <div class="flex flex-row items-center gap-2 group pt-2">
@@ -184,7 +180,7 @@
                   </div>
                 </div>
                 <span
-                  class="font-inter text-sm font-bold leading-normal text-base-foreground"
+                  class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
                   ~{{ n(tier.pricing.videoEstimate) }}
                 </span>
@@ -231,7 +227,7 @@
       }"
     >
       <div class="flex flex-col gap-2">
-        <p class="text-sm text-base-foreground leading-normal">
+        <p class="text-sm/normal text-base-foreground">
           {{ t('subscription.videoEstimateExplanation') }}
         </p>
         <a

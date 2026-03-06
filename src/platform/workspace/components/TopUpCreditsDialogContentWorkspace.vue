@@ -3,7 +3,7 @@
     class="flex min-w-[460px] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- Header -->
-    <div class="flex py-8 items-center justify-between px-8">
+    <div class="flex p-8 items-center justify-between">
       <h2 class="text-lg font-bold text-base-foreground m-0">
         {{
           isInsufficientCredits
@@ -123,7 +123,7 @@
       >
     </p>
 
-    <div class="pt-8 pb-8 flex flex-col gap-8 px-8">
+    <div class="p-8 flex flex-col gap-8">
       <Button
         :disabled="!isValidAmount || loading || isPolling"
         :loading="loading || isPolling"

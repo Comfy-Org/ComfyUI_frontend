@@ -19,7 +19,7 @@
 
       <!-- Other conflict types use standard message -->
       <template v-else>
-        <div class="text-sm break-words">
+        <div class="text-sm wrap-break-word">
           {{ getConflictMessage(conflict, $t) }}
         </div>
       </template>

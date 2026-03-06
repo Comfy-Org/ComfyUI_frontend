@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex flex-col p-4 pt-8 md:p-16 !overflow-y-auto h-full gap-8"
+    class="relative flex flex-col p-4 pt-8 md:p-16 overflow-y-auto! h-full gap-8"
   >
     <Button
       v-if="checkoutStep === 'preview'"

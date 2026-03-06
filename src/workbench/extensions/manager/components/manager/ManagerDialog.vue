@@ -125,7 +125,7 @@
     </template>
 
     <template #content>
-      <div v-if="isLoading" class="scrollbar-hide h-full w-full overflow-auto">
+      <div v-if="isLoading" class="scrollbar-hide size-full overflow-auto">
         <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
       </div>
       <NoResultsPlaceholder
@@ -133,7 +133,7 @@
         :title="emptyStateTitle"
         :message="emptyStateMessage"
       />
-      <div v-else class="h-full w-full" @click="handleGridContainerClick">
+      <div v-else class="size-full" @click="handleGridContainerClick">
         <VirtualGrid
           id="results-grid"
           :items="resultsWithKeys"
