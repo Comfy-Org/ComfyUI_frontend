@@ -49,13 +49,14 @@
           '[scrollbar-color:transparent_transparent] [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent'
         )
       "
-      v-html="highlightedText"
+      v-html="sanitizedHighlightedText"
     ></div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, useId, ref } from 'vue'
+import dompurify from 'dompurify'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
@@ -106,6 +107,10 @@ const isReadOnly = computed(
 
 const overlayRef = ref<HTMLElement | null>(null)
 const highlightedText = useTextareaHighlighting(modelValue, isClipTextEncode)
+
+const sanitizedHighlightedText = computed(() => {
+  return dompurify.sanitize(highlightedText.value)
+})
 
 const syncScroll = (e: Event) => {
   if (overlayRef.value) {

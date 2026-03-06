@@ -35,7 +35,7 @@ export function useTextareaHighlighting(
     let i = 0
     while (i < text.length) {
       // Line Comments (//)
-      if (text.startsWith('//', i)) {
+      if (text.startsWith('//', i) && current.type !== 'block') {
         flushText()
         const node: AstNode = { type: 'line', value: '//', children: [] }
         current.children.push(node)
@@ -52,7 +52,7 @@ export function useTextareaHighlighting(
       }
 
       // Open Block Comment (/*)
-      if (text.startsWith('/*', i)) {
+      if (text.startsWith('/*', i) && current.type !== 'block') {
         flushText()
         const node: AstNode = { type: 'block', valid: false, children: [] }
         current.children.push(node)
@@ -74,7 +74,7 @@ export function useTextareaHighlighting(
           i += 2
           continue
         } else {
-          // Unmatched closing bracket: treat everything from scope start as invalid block
+          // Unmatched closing bracket
           flushText()
           const node: AstNode = {
             type: 'block',
