@@ -278,7 +278,7 @@ describe('Nested promoted widget mapping', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('maps store identity to deepest concrete widget for two-layer promotions', () => {
+  function createTwoLayerPromotionSetup() {
     const subgraphA = createTestSubgraph({
       inputs: [{ name: 'a_input', type: '*' }]
     })
@@ -308,11 +308,30 @@ describe('Nested promoted widget mapping', () => {
     const nodeData = vueNodeData.get(String(subgraphNodeB.id))
     const mappedWidget = nodeData?.widgets?.[0]
 
+    return { innerNode, subgraphNodeB, mappedWidget }
+  }
+
+  it('resolves storeNodeId to the deepest concrete node for two-layer promotions', () => {
+    const { innerNode, subgraphNodeB, mappedWidget } =
+      createTwoLayerPromotionSetup()
+
     expect(mappedWidget).toBeDefined()
-    expect(mappedWidget?.type).toBe('combo')
-    expect(mappedWidget?.storeName).toBe('picker')
     expect(mappedWidget?.storeNodeId).toBe(
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
     )
+  })
+
+  it('resolves storeName to the deepest concrete widget name for two-layer promotions', () => {
+    const { mappedWidget } = createTwoLayerPromotionSetup()
+
+    expect(mappedWidget).toBeDefined()
+    expect(mappedWidget?.storeName).toBe('picker')
+  })
+
+  it('resolves effectiveWidget type to the deepest concrete widget type for two-layer promotions', () => {
+    const { mappedWidget } = createTwoLayerPromotionSetup()
+
+    expect(mappedWidget).toBeDefined()
+    expect(mappedWidget?.type).toBe('combo')
   })
 })
