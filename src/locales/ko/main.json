@@ -356,13 +356,15 @@
     "emptyWorkflowExplanation": "워크플로우가 비어 있습니다. 앱을 만들려면 먼저 노드가 필요합니다.",
     "emptyWorkflowPrompt": "템플릿으로 시작하시겠습니까?",
     "emptyWorkflowTitle": "이 워크플로우에는 노드가 없습니다",
+    "inputs": "입력",
+    "inputsDescription": "입력 선택",
     "label": "앱 빌더",
     "loadTemplate": "템플릿 불러오기",
     "nodeGraph": "노드 그래프",
     "nodeGraphDescription": "기본적으로 노드 그래프로 열립니다",
-    "select": "선택",
-    "selectDescription": "입력/출력 선택",
-    "switchToSelect": "선택으로 전환",
+    "outputs": "출력",
+    "outputsDescription": "출력 선택",
+    "switchToOutputs": "출력으로 전환",
     "viewApp": "앱 보기"
   },
   "clipboard": {
@@ -1350,8 +1352,8 @@
       "outputExamples": "예시: '이미지 저장' 또는 '비디오 저장'",
       "outputs": "출력",
       "resultsLabel": "선택한 출력 노드에서 생성된 결과가 이곳에 표시됩니다.",
-      "switchToSelect": "'선택' 단계로 전환한 후 출력 노드를 클릭하여 여기에 추가하세요.",
-      "switchToSelectButton": "선택으로 전환"
+      "switchToOutputs": "'출력' 단계로 전환한 후 출력 노드를 클릭하여 여기에 추가하세요.",
+      "switchToOutputsButton": "출력으로 전환"
     },
     "beta": "앱 모드 베타 - 피드백 보내기",
     "builder": {
@@ -2728,6 +2730,7 @@
       "searchJobs": "검색...",
       "showAssets": "에셋 보기",
       "showAssetsPanel": "에셋 패널 보기",
+      "showRunProgressBar": "실행 진행률 표시줄 표시",
       "sortBy": "정렬 기준",
       "sortJobs": "작업 정렬",
       "stubClipTextEncode": "CLIP 텍스트 인코드:",

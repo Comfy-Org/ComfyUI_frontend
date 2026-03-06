@@ -356,13 +356,15 @@
     "emptyWorkflowExplanation": "您的工作流程是空的。您需要先新增一些節點才能開始建立應用程式。",
     "emptyWorkflowPrompt": "您想從範本開始嗎？",
     "emptyWorkflowTitle": "此工作流程沒有節點",
+    "inputs": "輸入",
+    "inputsDescription": "選擇輸入",
     "label": "應用建立器",
     "loadTemplate": "載入範本",
     "nodeGraph": "節點圖",
     "nodeGraphDescription": "預設以節點圖開啟",
-    "select": "選擇",
-    "selectDescription": "選擇輸入／輸出",
-    "switchToSelect": "切換到選擇",
+    "outputs": "輸出",
+    "outputsDescription": "選擇輸出",
+    "switchToOutputs": "切換到輸出",
     "viewApp": "查看應用程式"
   },
   "clipboard": {
@@ -1350,8 +1352,8 @@
       "outputExamples": "範例：「儲存圖像」或「儲存影片」",
       "outputs": "輸出",
       "resultsLabel": "執行此應用後，從所選輸出節點產生的結果將顯示於此",
-      "switchToSelect": "切換到「選擇」步驟，點擊輸出節點以新增到這裡。",
-      "switchToSelectButton": "切換到選擇"
+      "switchToOutputs": "切換到「輸出」步驟，然後點擊輸出節點以將其新增到這裡。",
+      "switchToOutputsButton": "切換到輸出"
     },
     "beta": "App 模式 Beta - 提供回饋",
     "builder": {
@@ -2728,6 +2730,7 @@
       "searchJobs": "搜尋...",
       "showAssets": "顯示資產",
       "showAssetsPanel": "顯示資產面板",
+      "showRunProgressBar": "顯示運行進度條",
       "sortBy": "排序依據",
       "sortJobs": "排序作業",
       "stubClipTextEncode": "CLIP 文字編碼：",

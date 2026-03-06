@@ -9,7 +9,7 @@
   >
     <template v-if="shouldShowLeftPanel" #leftPanelHeaderTitle>
       <i class="icon-[comfy--ai-model] size-4" />
-      <h2 class="flex-auto select-none text-base font-semibold text-nowrap">
+      <h2 class="flex-auto text-base font-semibold text-nowrap select-none">
         {{ displayTitle }}
       </h2>
     </template>
@@ -75,7 +75,7 @@
       <ModelInfoPanel v-if="focusedAsset" :asset="focusedAsset" :cache-key />
       <div
         v-else
-        class="flex h-full items-center justify-center break-words p-6 text-center text-muted"
+        class="flex h-full items-center justify-center p-6 text-center wrap-break-word text-muted"
       >
         {{ $t('assetBrowser.modelInfo.selectModelPrompt') }}
       </div>

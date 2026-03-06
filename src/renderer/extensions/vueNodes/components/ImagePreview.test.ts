@@ -311,6 +311,37 @@ describe('ImagePreview', () => {
     expect(imgElement.attributes('alt')).toBe('Node output 2')
   })
 
+  describe('batch cycling with identical URLs', () => {
+    it('should not enter persistent loading state when cycling through identical images', async () => {
+      vi.useFakeTimers()
+      try {
+        const sameUrl = '/api/view?filename=test.png&type=output'
+        const wrapper = mountImagePreview({
+          imageUrls: [sameUrl, sameUrl, sameUrl]
+        })
+
+        // Simulate initial image load
+        await wrapper.find('img').trigger('load')
+        await nextTick()
+        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+
+        // Click second navigation dot to cycle
+        const dots = wrapper.findAll('.w-2.h-2.rounded-full')
+        await dots[1].trigger('click')
+        await nextTick()
+
+        // Advance past the delayed loader timeout
+        await vi.advanceTimersByTimeAsync(300)
+        await nextTick()
+
+        // Should NOT be in loading state since URL didn't change
+        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
+
   describe('URL change detection', () => {
     it('should NOT reset loading state when imageUrls prop is reassigned with identical URLs', async () => {
       vi.useFakeTimers()
@@ -343,30 +374,33 @@ describe('ImagePreview', () => {
     })
 
     it('should reset loading state when imageUrls prop changes to different URLs', async () => {
-      const urls = ['/api/view?filename=test.png&type=output']
-      const wrapper = mountImagePreview({ imageUrls: urls })
+      vi.useFakeTimers()
+      try {
+        const urls = ['/api/view?filename=test.png&type=output']
+        const wrapper = mountImagePreview({ imageUrls: urls })
 
-      // Simulate image load completing
-      const img = wrapper.find('img')
-      await img.trigger('load')
-      await nextTick()
+        // Simulate image load completing
+        const img = wrapper.find('img')
+        await img.trigger('load')
+        await nextTick()
 
-      // Verify loader is hidden
-      expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+        // Verify loader is hidden
+        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
 
-      // Change to different URL
-      await wrapper.setProps({
-        imageUrls: ['/api/view?filename=different.png&type=output']
-      })
-      await nextTick()
+        // Change to different URL
+        await wrapper.setProps({
+          imageUrls: ['/api/view?filename=different.png&type=output']
+        })
+        await nextTick()
 
-      // After 250ms timeout, loading state should be reset (aria-busy="true")
-      // We can check the internal state via the Skeleton appearing
-      // or wait for the timeout
-      await new Promise((resolve) => setTimeout(resolve, 300))
-      await nextTick()
+        // Advance past the 250ms delayed loader timeout
+        await vi.advanceTimersByTimeAsync(300)
+        await nextTick()
 
-      expect(wrapper.find('[aria-busy="true"]').exists()).toBe(true)
+        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(true)
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('should handle empty to non-empty URL transitions correctly', async () => {

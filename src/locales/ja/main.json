@@ -356,13 +356,15 @@
     "emptyWorkflowExplanation": "ワークフローが空です。アプリを作成するにはまずノードが必要です。",
     "emptyWorkflowPrompt": "テンプレートから始めますか？",
     "emptyWorkflowTitle": "このワークフローにはノードがありません",
+    "inputs": "入力",
+    "inputsDescription": "入力を選択",
     "label": "アプリビルダー",
     "loadTemplate": "テンプレートを読み込む",
     "nodeGraph": "ノードグラフ",
     "nodeGraphDescription": "デフォルトでノードグラフとして開きます",
-    "select": "選択",
-    "selectDescription": "入力／出力を選択",
-    "switchToSelect": "選択に切り替え",
+    "outputs": "出力",
+    "outputsDescription": "出力を選択",
+    "switchToOutputs": "出力に切り替え",
     "viewApp": "アプリを表示"
   },
   "clipboard": {
@@ -1350,8 +1352,8 @@
       "outputExamples": "例：「画像を保存」や「動画を保存」",
       "outputs": "出力",
       "resultsLabel": "選択した出力ノードから生成された結果は、このアプリ実行後にここに表示されます",
-      "switchToSelect": "「選択」ステップに切り替えて、出力ノードをクリックしてここに追加してください。",
-      "switchToSelectButton": "選択に切り替え"
+      "switchToOutputs": "「出力」ステップに切り替え、出力ノードをクリックしてここに追加してください。",
+      "switchToOutputsButton": "出力に切り替え"
     },
     "beta": "アプリモード ベータ版 - フィードバックを送る",
     "builder": {
@@ -2728,6 +2730,7 @@
       "searchJobs": "検索...",
       "showAssets": "アセットを表示",
       "showAssetsPanel": "アセットパネルを表示",
+      "showRunProgressBar": "実行進行バーを表示",
       "sortBy": "並べ替え条件",
       "sortJobs": "ジョブを並べ替え",
       "stubClipTextEncode": "CLIPテキストエンコード：",

@@ -356,13 +356,15 @@
     "emptyWorkflowExplanation": "ورک‌فلو شما خالی است. ابتدا باید چند node اضافه کنید تا بتوانید اپلیکیشن بسازید.",
     "emptyWorkflowPrompt": "آیا می‌خواهید با یک قالب شروع کنید؟",
     "emptyWorkflowTitle": "این ورک‌فلو هیچ node ندارد",
+    "inputs": "ورودی‌ها",
+    "inputsDescription": "انتخاب ورودی‌ها",
     "label": "سازنده اپلیکیشن",
     "loadTemplate": "بارگذاری قالب",
     "nodeGraph": "گراف node",
     "nodeGraphDescription": "به طور پیش‌فرض به صورت گراف node باز می‌شود",
-    "select": "انتخاب",
-    "selectDescription": "انتخاب ورودی/خروجی‌ها",
-    "switchToSelect": "رفتن به انتخاب",
+    "outputs": "خروجی‌ها",
+    "outputsDescription": "انتخاب خروجی‌ها",
+    "switchToOutputs": "رفتن به خروجی‌ها",
     "viewApp": "مشاهده اپلیکیشن"
   },
   "clipboard": {
@@ -1350,8 +1352,8 @@
       "outputExamples": "مثال‌ها: «ذخیره تصویر» یا «ذخیره ویدیو»",
       "outputs": "خروجی‌ها",
       "resultsLabel": "نتایج تولیدشده از node(های) خروجی انتخاب‌شده پس از اجرای این اپلیکیشن اینجا نمایش داده می‌شوند.",
-      "switchToSelect": "به مرحله «انتخاب» بروید و روی nodeهای خروجی کلیک کنید تا اینجا اضافه شوند.",
-      "switchToSelectButton": "رفتن به انتخاب"
+      "switchToOutputs": "به مرحله «خروجی» بروید و روی نودهای خروجی کلیک کنید تا اینجا اضافه شوند.",
+      "switchToOutputsButton": "رفتن به خروجی‌ها"
     },
     "beta": "حالت برنامه بتا - ارسال بازخورد",
     "builder": {
@@ -2740,6 +2742,7 @@
       "searchJobs": "جستجو...",
       "showAssets": "نمایش دارایی‌ها",
       "showAssetsPanel": "نمایش پنل دارایی‌ها",
+      "showRunProgressBar": "نمایش نوار پیشرفت اجرا",
       "sortBy": "مرتب‌سازی بر اساس",
       "sortJobs": "مرتب‌سازی کارها",
       "stubClipTextEncode": "CLIP Text Encode:",

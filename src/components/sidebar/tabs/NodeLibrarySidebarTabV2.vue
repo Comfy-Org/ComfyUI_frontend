@@ -13,14 +13,14 @@
             <DropdownMenuTrigger as-child>
               <button
                 :aria-label="$t('g.sort')"
-                class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-comfy-input hover:bg-comfy-input-hover border-none"
+                class="hover:bg-comfy-input-hover flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-comfy-input"
               >
                 <i class="icon-[lucide--arrow-up-down] size-4" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
-                class="z-[9999] min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
                 align="end"
                 :side-offset="4"
               >
@@ -44,14 +44,14 @@
             <DropdownMenuTrigger as-child>
               <button
                 :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
-                class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-comfy-input hover:bg-comfy-input-hover border-none"
+                class="hover:bg-comfy-input-hover flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-comfy-input"
               >
                 <i class="icon-[lucide--list-filter] size-4" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
-                class="z-[9999] min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
                 align="end"
                 :side-offset="4"
               >
@@ -106,7 +106,7 @@
         <Separator decorative class="border border-dashed border-comfy-input" />
         <!-- Tab list in header (fixed) -->
         <TabsList
-          class="flex gap-4 border-b border-comfy-input bg-background p-4 justify-between"
+          class="bg-background flex gap-4 border-b border-comfy-input p-4"
         >
           <TabsTrigger
             v-for="tab in tabs"
@@ -114,8 +114,8 @@
             :value="tab.value"
             :class="
               cn(
-                'select-none border-none outline-none px-3 py-2 rounded-lg cursor-pointer',
-                'text-sm text-foreground transition-colors',
+                'cursor-pointer rounded-lg border-none px-3 py-2 outline-none select-none',
+                'text-foreground text-sm transition-colors',
                 selectedTab === tab.value
                   ? 'bg-comfy-input font-bold'
                   : 'bg-transparent font-normal'
