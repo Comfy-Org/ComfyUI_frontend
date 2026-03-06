@@ -7,6 +7,7 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useMaskEditorLoader } from '@/composables/maskeditor/useMaskEditorLoader'
 import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
 import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
+import { useToast } from 'primevue/usetoast'
 
 export function useMaskEditor() {
   const openMaskEditor = (node: LGraphNode) => {
@@ -49,6 +50,20 @@ export function useMaskEditor() {
 
   const clearMask = async (node: LGraphNode) => {
     if (!node) {
+      return
+    }
+
+    const dialogStore = useDialogStore()
+    if (dialogStore.isDialogOpen('global-mask-editor')) {
+      console.warn(
+        '[MaskEditor] Cannot clear mask while the mask editor is open'
+      )
+      useToast().add({
+        severity: 'warn',
+        summary: 'Warning',
+        detail: 'Please close the mask editor before clearing masks.',
+        life: 3000
+      })
       return
     }
 
