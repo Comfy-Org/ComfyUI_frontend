@@ -39,7 +39,7 @@
     </ContextMenuTrigger>
     <ContextMenuPortal>
       <ContextMenuContent
-        class="z-1000 rounded-lg px-2 py-3 min-w-56 bg-base-background shadow-interface border border-border-subtle"
+        class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
       >
         <WorkflowActionsList
           :items="contextMenuItems"

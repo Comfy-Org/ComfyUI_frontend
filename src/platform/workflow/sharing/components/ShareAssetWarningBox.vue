@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded-lg flex flex-col gap-3">
+  <div class="flex flex-col gap-3 rounded-lg">
     <CollapsibleRoot
       v-model:open="isWarningExpanded"
       class="overflow-hidden rounded-lg bg-secondary-background"

@@ -18,7 +18,7 @@
 
       <nav
         ref="navRef"
-        class="scrollbar-hide flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
+        class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
       >
         <div
           v-for="(group, index) in navGroups"

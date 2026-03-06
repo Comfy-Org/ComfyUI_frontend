@@ -11,7 +11,7 @@
           v-if="conflict.required_value"
           class="overflow-x-hidden rounded-sm"
         >
-          <p class="m-0 text-xs text-muted-foreground break-all font-mono">
+          <p class="m-0 font-mono text-xs break-all text-muted-foreground">
             {{ conflict.required_value }}
           </p>
         </div>

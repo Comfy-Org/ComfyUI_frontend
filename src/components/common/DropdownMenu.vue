@@ -27,14 +27,14 @@ const { itemClass: itemProp, contentClass: contentProp } = defineProps<{
 
 const itemClass = computed(() =>
   cn(
-    'data-highlighted:bg-secondary-background-hover data-disabled:pointer-events-none data-disabled:text-muted-foreground flex p-2 leading-none rounded-lg gap-1 cursor-pointer m-1',
+    'm-1 flex cursor-pointer gap-1 rounded-lg p-2 leading-none data-disabled:pointer-events-none data-disabled:text-muted-foreground data-highlighted:bg-secondary-background-hover',
     itemProp
   )
 )
 
 const contentClass = computed(() =>
   cn(
-    'z-1700 rounded-lg p-2 bg-base-background border border-border-subtle min-w-[220px] shadow-sm will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade',
+    'data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade z-1700 min-w-[220px] rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[opacity,transform]',
     contentProp
   )
 )

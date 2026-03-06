@@ -11,8 +11,8 @@
 
       <Divider class="my-4" />
 
-      <div class="flex items-center justify-between my-4">
-        <h3 class="text-lg font-semibold my-0">
+      <div class="my-4 flex items-center justify-between">
+        <h3 class="my-0 text-lg font-semibold">
           {{ $t('secrets.modelProviders') }}
         </h3>
         <Button @click="openCreateDialog">
