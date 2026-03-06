@@ -1,59 +1,66 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
 
-const mockFetchProfile = vi.hoisted(() => vi.fn())
-const mockGoToStep = vi.hoisted(() => vi.fn())
-const mockGoNext = vi.hoisted(() => vi.fn())
-const mockGoBack = vi.hoisted(() => vi.fn())
-const mockOpenProfileCreationStep = vi.hoisted(() => vi.fn())
-const mockCloseProfileCreationStep = vi.hoisted(() => vi.fn())
+const mockFetchApi = vi.hoisted(() => vi.fn())
+
+vi.mock('@/scripts/api', () => ({
+  api: { fetchApi: mockFetchApi }
+}))
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    resolvedUserInfo: { value: { id: 'user-a' } }
+  })
+}))
+
+vi.mock('@/composables/useErrorHandling', () => ({
+  useErrorHandling: () => ({
+    toastErrorHandler: vi.fn()
+  })
+}))
 
 vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
+  '@/platform/workflow/management/stores/workflowStore',
   () => ({
-    useComfyHubProfileGate: () => ({
-      fetchProfile: mockFetchProfile
+    useWorkflowStore: () => ({
+      activeWorkflow: { filename: 'test-workflow' }
     })
   })
 )
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubPublishWizard',
-  () => ({
-    useComfyHubPublishWizard: () => ({
-      currentStep: ref('finish'),
-      formData: ref({
-        name: '',
-        description: '',
-        workflowType: '',
-        tags: [],
-        thumbnailType: 'image',
-        thumbnailFile: null,
-        comparisonBeforeFile: null,
-        comparisonAfterFile: null,
-        exampleImages: [],
-        selectedExampleIds: []
-      }),
-      isFirstStep: ref(false),
-      isLastStep: ref(true),
-      goToStep: mockGoToStep,
-      goNext: mockGoNext,
-      goBack: mockGoBack,
-      openProfileCreationStep: mockOpenProfileCreationStep,
-      closeProfileCreationStep: mockCloseProfileCreationStep
-    })
-  })
+// Import after mocks so real composables pick up the mocked dependencies
+const { useComfyHubProfileGate } = await import(
+  '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 )
+
+const mockProfile = {
+  username: 'testuser',
+  name: 'Test User',
+  description: 'A test profile'
+}
+
+function mockSuccessResponse(data?: unknown) {
+  return {
+    ok: true,
+    json: async () => data ?? mockProfile
+  } as Response
+}
 
 describe('ComfyHubPublishDialog', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockFetchProfile.mockResolvedValue(null)
+    mockFetchApi.mockResolvedValue(mockSuccessResponse())
+
+    // Reset module-level singleton state
+    const gate = useComfyHubProfileGate()
+    gate.hasProfile.value = null
+    gate.profile.value = null
+    gate.isCheckingProfile.value = false
+    gate.isFetchingProfile.value = false
   })
 
   function createWrapper() {
@@ -78,7 +85,7 @@ describe('ComfyHubPublishDialog', () => {
           },
           ComfyHubPublishWizardContent: {
             template:
-              '<div><button data-testid="require-profile" @click="$props.onRequireProfile()" /><button data-testid="gate-complete" @click="$props.onGateComplete()" /><button data-testid="gate-close" @click="$props.onGateClose()" /></div>',
+              '<div :data-step="$props.currentStep"><button data-testid="require-profile" @click="$props.onRequireProfile()" /><button data-testid="gate-complete" @click="$props.onGateComplete()" /><button data-testid="gate-close" @click="$props.onGateClose()" /></div>',
             props: [
               'currentStep',
               'formData',
@@ -100,16 +107,22 @@ describe('ComfyHubPublishDialog', () => {
     createWrapper()
     await flushPromises()
 
-    expect(mockFetchProfile).toHaveBeenCalledWith()
+    expect(mockFetchApi).toHaveBeenCalledWith('/hub/profile')
   })
 
   it('switches to profile creation step when final-step publish requires profile', async () => {
     const wrapper = createWrapper()
     await flushPromises()
 
+    expect(wrapper.find('[data-step]').attributes('data-step')).toBe(
+      'describe'
+    )
+
     await wrapper.find('[data-testid="require-profile"]').trigger('click')
 
-    expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
+    expect(wrapper.find('[data-step]').attributes('data-step')).toBe(
+      'profileCreation'
+    )
   })
 
   it('returns to finish state after gate complete and does not auto-close', async () => {
@@ -117,11 +130,15 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     await wrapper.find('[data-testid="require-profile"]').trigger('click')
+    expect(wrapper.find('[data-step]').attributes('data-step')).toBe(
+      'profileCreation'
+    )
+
+    mockFetchApi.mockClear()
     await wrapper.find('[data-testid="gate-complete"]').trigger('click')
 
-    expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
-    expect(mockCloseProfileCreationStep).toHaveBeenCalledOnce()
-    expect(mockFetchProfile).toHaveBeenCalledWith({ force: true })
+    expect(wrapper.find('[data-step]').attributes('data-step')).toBe('finish')
+    expect(mockFetchApi).toHaveBeenCalledWith('/hub/profile')
     expect(onClose).not.toHaveBeenCalled()
   })
 
@@ -130,10 +147,13 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     await wrapper.find('[data-testid="require-profile"]').trigger('click')
+    expect(wrapper.find('[data-step]').attributes('data-step')).toBe(
+      'profileCreation'
+    )
+
     await wrapper.find('[data-testid="gate-close"]').trigger('click')
 
-    expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
-    expect(mockCloseProfileCreationStep).toHaveBeenCalledOnce()
+    expect(wrapper.find('[data-step]').attributes('data-step')).toBe('finish')
     expect(onClose).not.toHaveBeenCalled()
   })
 })
