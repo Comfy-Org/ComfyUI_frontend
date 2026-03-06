@@ -84,6 +84,30 @@ export function createMonotoneInterpolator(
   }
 }
 
+function quickSelect(arr: Uint32Array, k: number): number {
+  let lo = 0
+  let hi = arr.length - 1
+  while (lo < hi) {
+    const pivot = arr[hi]
+    let i = lo
+    for (let j = lo; j < hi; j++) {
+      if (arr[j] <= pivot) {
+        const tmp = arr[i]
+        arr[i] = arr[j]
+        arr[j] = tmp
+        i++
+      }
+    }
+    const tmp = arr[i]
+    arr[i] = arr[hi]
+    arr[hi] = tmp
+    if (i === k) return arr[i]
+    else if (i < k) lo = i + 1
+    else hi = i - 1
+  }
+  return arr[lo]
+}
+
 /**
  * Convert a 256-bin histogram into an SVG path string.
  * Normalizes using the 99.5th percentile to avoid outlier spikes.
@@ -91,8 +115,8 @@ export function createMonotoneInterpolator(
 export function histogramToPath(histogram: Uint32Array): string {
   if (!histogram.length) return ''
 
-  const sorted = Array.from(histogram).sort((a, b) => a - b)
-  const max = sorted[Math.floor(255 * 0.995)]
+  const copy = new Uint32Array(histogram)
+  const max = quickSelect(copy, Math.floor(255 * 0.995))
   if (max === 0) return ''
 
   const invMax = 1 / max
