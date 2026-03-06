@@ -77,6 +77,7 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
+import { deduplicateSubgraphNodeIds } from './utils/subgraphDeduplication'
 
 export type {
   LGraphTriggerAction,
@@ -2475,19 +2476,31 @@ export class LGraph
         this[i] = data[i]
       }
 
-      // Subgraph definitions
+      // Subgraph definitions — deduplicate node IDs before configuring.
+      // deduplicateSubgraphNodeIds clones internally to avoid mutating
+      // the caller's data (e.g. reactive Pinia state).
       const subgraphs = data.definitions?.subgraphs
+      let effectiveNodesData = nodesData
       if (subgraphs) {
-        for (const subgraph of subgraphs) this.createSubgraph(subgraph)
-        for (const subgraph of subgraphs)
-          this.subgraphs.get(subgraph.id)?.configure(subgraph)
-      }
+        const deduplicated = this.isRootGraph
+          ? deduplicateSubgraphNodeIds(
+              subgraphs,
+              new Set<number>(
+                nodesData
+                  ?.map((n) => n.id)
+                  .filter((id): id is number => typeof id === 'number')
+              ),
+              this.state,
+              nodesData
+            )
+          : undefined
 
-      if (this.isRootGraph) {
-        const reservedNodeIds = nodesData
-          ?.map((n) => n.id)
-          .filter((id): id is number => typeof id === 'number')
-        this.ensureGlobalIdUniqueness(reservedNodeIds)
+        const finalSubgraphs = deduplicated?.subgraphs ?? subgraphs
+        effectiveNodesData = deduplicated?.rootNodes ?? nodesData
+
+        for (const subgraph of finalSubgraphs) this.createSubgraph(subgraph)
+        for (const subgraph of finalSubgraphs)
+          this.subgraphs.get(subgraph.id)?.configure(subgraph)
       }
 
       let error = false
@@ -2495,8 +2508,8 @@ export class LGraph
 
       // create nodes
       this._nodes = []
-      if (nodesData) {
-        for (const n_info of nodesData) {
+      if (effectiveNodesData) {
+        for (const n_info of effectiveNodesData) {
           // stored info
           let node = LiteGraph.createNode(String(n_info.type), n_info.title)
           if (!node) {
