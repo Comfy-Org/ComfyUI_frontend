@@ -3160,12 +3160,13 @@
     "runCount": "Number of runs",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
-    "downloadAll": "Download All",
+    "downloadAll": "Download {count} assets from this run",
     "viewJob": "View Job",
     "enterNodeGraph": "Enter node graph",
     "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
     "backToWorkflow": "Back to workflow",
     "loadTemplate": "Load a template",
+    "cancelThisRun": "Cancel this run",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
@@ -3177,7 +3178,8 @@
     "appModeToolbar": {
       "appBuilder": "App builder",
       "apps": "Apps",
-      "appsEmptyMessage": "Saved apps will show up here.\nClick below to build your first app.",
+      "appsEmptyMessage": "Saved apps will show up here.",
+      "appsEmptyMessageAction": "Click below to build your first app.",
       "enterAppMode": "Enter app mode"
     },
     "arrange": {
@@ -3519,6 +3521,7 @@
     "emptyWorkflowPrompt": "Do you want to start with a template?"
   },
   "builderMenu": {
+    "enterAppMode": "Enter app mode",
     "exitAppBuilder": "Exit app builder"
   }
 }

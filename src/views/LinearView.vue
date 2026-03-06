@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
+import type { MaybeElement } from '@vueuse/core'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { storeToRefs } from 'pinia'
@@ -19,6 +20,7 @@ import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBa
 import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAppMode } from '@/composables/useAppMode'
+import { useStablePrimeVueSplitterSizer } from '@/composables/useStablePrimeVueSplitterSizer'
 import {
   BUILDER_MIN_SIZE,
   CENTER_PANEL_SIZE,
@@ -39,9 +41,6 @@ const activeTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 const sidebarOnLeft = computed(
   () => settingStore.get('Comfy.Sidebar.Location') === 'left'
 )
-// Builder panel is always on the opposite side of the sidebar.
-// In arrange mode we render 3 panels to match the overlay structure,
-// so the same stateKey percentage maps to the same pixel width.
 const showLeftBuilder = computed(
   () => !sidebarOnLeft.value && isArrangeMode.value
 )
@@ -67,6 +66,25 @@ function sidePanelMinSize(isBuilder: boolean, isHidden: boolean) {
   return SIDEBAR_MIN_SIZE
 }
 
+// Remount splitter when panel structure changes so initializePanels()
+// properly sets flexBasis for the current set of panels.
+const splitterKey = computed(() => {
+  const left = hasLeftPanel.value ? 'L' : ''
+  const right = hasRightPanel.value ? 'R' : ''
+  return isArrangeMode.value ? 'arrange' : `app-${left}${right}`
+})
+
+const leftPanelRef = useTemplateRef<MaybeElement>('leftPanel')
+const rightPanelRef = useTemplateRef<MaybeElement>('rightPanel')
+
+const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+  [
+    { ref: leftPanelRef, storageKey: 'Comfy.LinearView.LeftPanelWidth' },
+    { ref: rightPanelRef, storageKey: 'Comfy.LinearView.RightPanelWidth' }
+  ],
+  [activeTab, splitterKey]
+)
+
 const TYPEFORM_WIDGET_ID = 'gmVqFi8l'
 
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
@@ -86,16 +104,15 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       </div>
     </div>
     <Splitter
-      :key="isArrangeMode ? 'arrange' : 'normal'"
+      :key="splitterKey"
       class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full border-none"
-      :state-key="isArrangeMode ? 'builder-splitter' : undefined"
-      :state-storage="isArrangeMode ? 'local' : undefined"
-      @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
+      @resizestart="$event.originalEvent.preventDefault()"
+      @resizeend="onResizeEnd"
     >
       <SplitterPanel
         v-if="hasLeftPanel"
-        id="linearLeftPanel"
-        :size="isArrangeMode ? SIDE_PANEL_SIZE : 1"
+        ref="leftPanel"
+        :size="SIDE_PANEL_SIZE"
         :min-size="
           sidePanelMinSize(showLeftBuilder, showRightBuilder && !activeTab)
         "
@@ -104,17 +121,15 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         "
         :class="
           cn(
-            'arrange-panel outline-none',
-            showLeftBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-min'
+            'arrange-panel overflow-hidden outline-none',
+            showLeftBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-78'
           )
         "
       >
-        <div v-if="showLeftBuilder" class="h-full overflow-y-auto">
-          <AppBuilder />
-        </div>
+        <AppBuilder v-if="showLeftBuilder" />
         <div
           v-else-if="sidebarOnLeft && activeTab"
-          class="flex h-full border-r border-border-subtle"
+          class="size-full overflow-x-hidden border-r border-border-subtle"
         >
           <ExtensionSlot :extension="activeTab" />
         </div>
@@ -126,7 +141,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       </SplitterPanel>
       <SplitterPanel
         id="linearCenterPanel"
-        :size="isArrangeMode ? CENTER_PANEL_SIZE : 98"
+        :size="CENTER_PANEL_SIZE"
         class="relative flex min-w-0 flex-col gap-4 text-muted-foreground outline-none"
       >
         <LinearProgressBar
@@ -144,22 +159,20 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       </SplitterPanel>
       <SplitterPanel
         v-if="hasRightPanel"
-        id="linearRightPanel"
-        :size="isArrangeMode ? SIDE_PANEL_SIZE : 1"
+        ref="rightPanel"
+        :size="SIDE_PANEL_SIZE"
         :min-size="
           sidePanelMinSize(showRightBuilder, showLeftBuilder && !activeTab)
         "
         :style="showLeftBuilder && !activeTab ? { display: 'none' } : undefined"
         :class="
           cn(
-            'arrange-panel outline-none',
-            showRightBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-min'
+            'arrange-panel overflow-hidden outline-none',
+            showRightBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-78'
           )
         "
       >
-        <div v-if="showRightBuilder" class="h-full overflow-y-auto">
-          <AppBuilder />
-        </div>
+        <AppBuilder v-if="showRightBuilder" />
         <LinearControls
           v-else-if="sidebarOnLeft && !isArrangeMode"
           ref="linearWorkflowRef"
@@ -167,7 +180,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         />
         <div
           v-else-if="activeTab"
-          class="flex h-full border-l border-border-subtle"
+          class="h-full overflow-x-hidden border-l border-border-subtle"
         >
           <ExtensionSlot :extension="activeTab" />
         </div>
