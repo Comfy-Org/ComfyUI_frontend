@@ -307,14 +307,21 @@ export class ChangeTracker {
       title: string,
       value: string | number,
       callback: (v: string) => void,
-      event: CanvasPointerEvent
+      event: CanvasPointerEvent,
+      multiline?: boolean
     ) {
       const extendedCallback = (v: string) => {
         callback(v)
         checkState()
       }
       logger.debug('checkState on prompt')
-      return prompt.apply(this, [title, value, extendedCallback, event])
+      return prompt.apply(this, [
+        title,
+        value,
+        extendedCallback,
+        event,
+        multiline
+      ])
     }
 
     // Handle litegraph context menu for COMBO widgets
