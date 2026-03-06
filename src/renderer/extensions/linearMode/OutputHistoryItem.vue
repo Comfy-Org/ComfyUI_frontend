@@ -23,7 +23,7 @@ const { output } = defineProps<{
   />
   <template v-if="getMediaType(output) === 'video'">
     <video
-      class="block size-10 rounded-sm object-cover bg-secondary-background pointer-events-none"
+      class="pointer-events-none block size-10 rounded-sm bg-secondary-background object-cover"
       preload="metadata"
       width="40"
       height="40"
