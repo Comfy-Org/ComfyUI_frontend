@@ -86,6 +86,8 @@ vi.mock('@/stores/appModeStore', () => ({
   useAppModeStore: vi.fn(() => mockAppModeStore)
 }))
 
+vi.mock('@/composables/useErrorHandling', () => ({}))
+
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: vi.fn(() => mockFeatureFlags)
 }))
