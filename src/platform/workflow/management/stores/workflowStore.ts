@@ -255,6 +255,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return workflow
   }
 
+  /**
+   * Ensures the workflow data has a stable `id` field for sharing.
+   * If the provided (or default) workflow data does not contain an `id`,
+   * a new UUID is generated and injected into the returned copy.
+   *
+   * @returns A deep copy of the workflow data with a guaranteed `id` field.
+   */
   const ensureWorkflowId = (
     workflowData?: ComfyWorkflowJSON
   ): ComfyWorkflowJSON => {
@@ -270,7 +277,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Helper to create a new temporary workflow
+   * Helper to create a new temporary workflow.
+   *
+   * Calls {@link ensureWorkflowId} to guarantee the workflow data contains
+   * a UUID `id` field. If the provided data has no `id`, one is generated
+   * and injected into the serialized content.
    */
   const createNewWorkflow = (
     path: string,
@@ -291,7 +302,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Create a temporary workflow, attempting to reuse an existing workflow if conditions match
+   * Create a temporary workflow, attempting to reuse an existing workflow
+   * if conditions match.
+   *
+   * Note: A UUID `id` field is injected into the workflow data via
+   * {@link ensureWorkflowId} if one is not already present. The serialized
+   * workflow content will always contain an `id` field, even if none was
+   * provided in the input.
    */
   const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
     const fullPath = getUnconflictedPath(
@@ -323,7 +340,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Create a new temporary workflow without attempting to reuse existing workflows
+   * Create a new temporary workflow without attempting to reuse existing
+   * workflows.
+   *
+   * Note: A UUID `id` field is injected into the workflow data via
+   * {@link ensureWorkflowId} if one is not already present. The serialized
+   * workflow content will always contain an `id` field, even if none was
+   * provided in the input.
    */
   const createNewTemporary = (
     path?: string,
