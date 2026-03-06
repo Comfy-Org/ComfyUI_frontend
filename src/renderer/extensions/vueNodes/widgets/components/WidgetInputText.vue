@@ -30,7 +30,7 @@
 import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {

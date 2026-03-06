@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
