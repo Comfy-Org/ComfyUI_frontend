@@ -10,7 +10,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { getJobDetail } from '@/services/jobOutputCache'
+import { api } from '@/scripts/api'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
@@ -20,6 +22,7 @@ export function useOutputHistory(): {
   allOutputs: (item?: AssetItem) => ResultItemImpl[]
   selectFirstHistory: () => void
   mayBeActiveWorkflowPending: ComputedRef<boolean>
+  cancelActiveWorkflowJobs: () => Promise<void>
 } {
   const backingOutputs = useMediaAssets('output')
   void backingOutputs.fetchMediaList()
@@ -159,5 +162,31 @@ export function useOutputHistory(): {
     }
   })
 
-  return { outputs, allOutputs, selectFirstHistory, mayBeActiveWorkflowPending }
+  async function cancelActiveWorkflowJobs() {
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return
+    const pathMap = executionStore.jobIdToSessionWorkflowPath
+    const matchesPath = (task: { jobId: string | number }) =>
+      pathMap.get(String(task.jobId)) === path
+
+    // Interrupt the running job if it belongs to this workflow
+    if (queueStore.runningTasks.some(matchesPath)) {
+      useCommandStore().execute('Comfy.Interrupt')
+    }
+
+    // Delete pending jobs for this workflow from the queue
+    for (const task of queueStore.pendingTasks) {
+      if (matchesPath(task)) {
+        await api.deleteItem('queue', String(task.jobId))
+      }
+    }
+  }
+
+  return {
+    outputs,
+    allOutputs,
+    selectFirstHistory,
+    mayBeActiveWorkflowPending,
+    cancelActiveWorkflowJobs
+  }
 }

@@ -20,16 +20,13 @@ import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
-const commandStore = useCommandStore()
-const executionStore = useExecutionStore()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
-const { allOutputs, mayBeActiveWorkflowPending } = useOutputHistory()
+const { allOutputs, mayBeActiveWorkflowPending, cancelActiveWorkflowJobs } =
+  useOutputHistory()
 const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
@@ -77,7 +74,10 @@ async function rerun(e: Event) {
 <template>
   <section
     v-if="
-      selectedItem || selectedOutput || executionStore.isActiveWorkflowRunning
+      selectedItem ||
+      selectedOutput ||
+      showSkeleton ||
+      mayBeActiveWorkflowPending
     "
     data-testid="linear-output-info"
     class="flex w-full flex-wrap justify-center gap-2 p-4 text-sm tabular-nums md:z-10"
@@ -107,9 +107,9 @@ async function rerun(e: Event) {
       <i class="icon-[lucide--download]" />
     </Button>
     <Button
-      v-if="executionStore.isActiveWorkflowRunning && !selectedItem"
+      v-if="(showSkeleton || mayBeActiveWorkflowPending) && !selectedItem"
       variant="destructive"
-      @click="commandStore.execute('Comfy.Interrupt')"
+      @click="cancelActiveWorkflowJobs()"
     >
       <i class="icon-[lucide--x]" />
       {{ t('linearMode.cancelThisRun') }}
