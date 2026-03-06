@@ -1,7 +1,35 @@
 import { without } from 'es-toolkit'
 
-import type { IColorable, ISlotType } from '@/lib/litegraph/src/interfaces'
-import type { NodeBindable } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IColorable,
+  IContextMenuValue,
+  ISlotType
+} from '@/lib/litegraph/src/interfaces'
+import type {
+  IBaseWidget,
+  NodeBindable
+} from '@/lib/litegraph/src/types/widgets'
+
+import type { CanvasPointerEvent } from '../types/events'
+import type { LGraphCanvas } from '../LGraphCanvas'
+import type { LGraphNode } from '../LGraphNode'
+
+export interface IWidgetWithContextMenu extends IBaseWidget {
+  getContextMenuOptions(opts: {
+    e: CanvasPointerEvent
+    node: LGraphNode
+    canvas: LGraphCanvas
+  }): IContextMenuValue[]
+}
+
+export function hasWidgetContextMenuOptions(
+  widget: IBaseWidget
+): widget is IWidgetWithContextMenu {
+  return (
+    'getContextMenuOptions' in widget &&
+    typeof widget.getContextMenuOptions === 'function'
+  )
+}
 
 /**
  * Converts a plain object to a class instance if it is not already an instance of the class.

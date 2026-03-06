@@ -105,6 +105,7 @@ import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
+import { hasWidgetContextMenuOptions } from './utils/type'
 import { createUuidv4 } from './utils/uuid'
 import type { UUID } from './utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -8493,6 +8494,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       } else {
         // on node
         menu_info = this.getNodeMenuOptions(node)
+
+        const widget = node.getWidgetOnPos(event.canvasX, event.canvasY)
+        if (widget && hasWidgetContextMenuOptions(widget)) {
+          const widgetMenuItems = widget.getContextMenuOptions({
+            e: event,
+            node,
+            canvas: this
+          })
+          if (Array.isArray(widgetMenuItems) && widgetMenuItems.length) {
+            menu_info.unshift(...widgetMenuItems, null)
+          }
+        }
       }
     } else {
       menu_info = this.getCanvasMenuOptions()
