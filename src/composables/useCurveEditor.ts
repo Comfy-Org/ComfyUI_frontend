@@ -12,6 +12,7 @@ interface UseCurveEditorOptions {
 export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
   const dragIndex = ref(-1)
   let cleanupDrag: (() => void) | null = null
+  let cachedInverseCTM: DOMMatrix | null = null
 
   const curvePath = computed(() => {
     const points = modelValue.value
@@ -31,16 +32,14 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
     return parts.join('')
   })
 
-  function svgCoords(e: PointerEvent): [number, number] {
-    const svg = svgRef.value
-    if (!svg) return [0, 0]
+  function svgCoords(
+    e: PointerEvent,
+    inverseCTM?: DOMMatrix | null
+  ): [number, number] {
+    const inv = inverseCTM ?? svgRef.value?.getScreenCTM()?.inverse()
+    if (!inv) return [0, 0]
 
-    const ctm = svg.getScreenCTM()
-    if (!ctm) return [0, 0]
-
-    const svgPt = new DOMPoint(e.clientX, e.clientY).matrixTransform(
-      ctm.inverse()
-    )
+    const svgPt = new DOMPoint(e.clientX, e.clientY).matrixTransform(inv)
     return [
       Math.max(0, Math.min(1, svgPt.x)),
       Math.max(0, Math.min(1, 1 - svgPt.y))
@@ -100,11 +99,12 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
     const svg = svgRef.value
     if (!svg) return
 
+    cachedInverseCTM = svg.getScreenCTM()?.inverse() ?? null
     svg.setPointerCapture(e.pointerId)
 
     const onMove = (ev: PointerEvent) => {
       if (dragIndex.value < 0) return
-      const [x, y] = svgCoords(ev)
+      const [x, y] = svgCoords(ev, cachedInverseCTM)
       const movedPoint: CurvePoint = [x, y]
       const newPoints = [...modelValue.value]
       newPoints[dragIndex.value] = movedPoint
@@ -116,6 +116,7 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
     const endDrag = () => {
       if (dragIndex.value < 0) return
       dragIndex.value = -1
+      cachedInverseCTM = null
       svg.removeEventListener('pointermove', onMove)
       svg.removeEventListener('pointerup', endDrag)
       svg.removeEventListener('lostpointercapture', endDrag)
