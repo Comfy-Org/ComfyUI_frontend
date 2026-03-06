@@ -4,18 +4,21 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
-import { useAppMode } from '@/composables/useAppMode'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const workspaceStore = useWorkspaceStore()
 const { enableAppBuilder } = useAppMode()
-const { enterBuilder } = useAppModeStore()
+const appModeStore = useAppModeStore()
+const { enterBuilder } = appModeStore
+const { hasNodes } = storeToRefs(appModeStore)
 const tooltipOptions = { showDelay: 300, hideDelay: 300 }
 
 const isAssetsActive = computed(
@@ -71,6 +74,7 @@ function openTemplates() {
       }"
       variant="secondary"
       size="unset"
+      :disabled="!hasNodes"
       :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       class="size-10 rounded-lg"
       @click="enterBuilder"

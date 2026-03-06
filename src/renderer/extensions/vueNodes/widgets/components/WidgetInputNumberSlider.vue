@@ -4,7 +4,7 @@
       <Slider
         :model-value="[modelValue]"
         v-bind="filteredProps"
-        class="flex-grow text-xs"
+        class="grow text-xs"
         :step="stepValue"
         :aria-label="widget.name"
         @update:model-value="updateLocalValue"

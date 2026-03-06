@@ -305,7 +305,7 @@ interface Props {
   loadingTier?: CheckoutTierKey | null
 }
 
-const { isLoading = false, loadingTier = null } = defineProps<Props>()
+const { isLoading, loadingTier = null } = defineProps<Props>()
 
 const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]

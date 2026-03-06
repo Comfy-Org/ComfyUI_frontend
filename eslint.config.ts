@@ -78,6 +78,7 @@ export default defineConfig([
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
       'src/types/vue-shim.d.ts',
+      'packages/design-system/src/css/lucideStrokePlugin.js',
       'test-results/*',
       'vitest.setup.ts'
     ]
@@ -130,8 +131,7 @@ export default defineConfig([
       // Off: large batch change (v3→v4 renames like rounded→rounded-sm),
       // enable and apply with `eslint --fix` in a follow-up PR
       'better-tailwindcss/enforce-canonical-classes': 'off',
-      // Off: large batch change, enable and apply with `eslint --fix`
-      'better-tailwindcss/no-deprecated-classes': 'off'
+      'better-tailwindcss/no-deprecated-classes': 'error'
     }
   },
   // Disables ESLint rules that conflict with formatters

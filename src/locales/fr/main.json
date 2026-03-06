@@ -356,13 +356,15 @@
     "emptyWorkflowExplanation": "Votre workflow est vide. Vous devez d’abord ajouter des nœuds pour commencer à créer une application.",
     "emptyWorkflowPrompt": "Voulez-vous commencer avec un modèle ?",
     "emptyWorkflowTitle": "Ce workflow ne contient aucun nœud",
+    "inputs": "Entrées",
+    "inputsDescription": "Choisissez les entrées",
     "label": "Créateur d'applications",
     "loadTemplate": "Charger un modèle",
     "nodeGraph": "Graphe de nœuds",
     "nodeGraphDescription": "S'ouvre par défaut en tant que graphe de nœuds",
-    "select": "Sélectionner",
-    "selectDescription": "Choisir les entrées/sorties",
-    "switchToSelect": "Passer à Sélectionner",
+    "outputs": "Sorties",
+    "outputsDescription": "Choisissez les sorties",
+    "switchToOutputs": "Passer aux sorties",
     "viewApp": "Voir l’application"
   },
   "clipboard": {
@@ -1350,8 +1352,8 @@
       "outputExamples": "Exemples : « Enregistrer l'image » ou « Enregistrer la vidéo »",
       "outputs": "Sorties",
       "resultsLabel": "Les résultats générés à partir du ou des nœuds de sortie sélectionnés seront affichés ici après l'exécution de cette application",
-      "switchToSelect": "Passez à l'étape « Sélectionner » et cliquez sur les nœuds de sortie pour les ajouter ici.",
-      "switchToSelectButton": "Passer à Sélectionner"
+      "switchToOutputs": "Passez à l'étape « Sortie » et cliquez sur les nœuds de sortie pour les ajouter ici.",
+      "switchToOutputsButton": "Passer aux sorties"
     },
     "beta": "Mode App Bêta - Donnez votre avis",
     "builder": {
@@ -2728,6 +2730,7 @@
       "searchJobs": "Rechercher...",
       "showAssets": "Afficher les ressources",
       "showAssetsPanel": "Afficher le panneau des ressources",
+      "showRunProgressBar": "Afficher la barre de progression d'exécution",
       "sortBy": "Trier par",
       "sortJobs": "Trier les travaux",
       "stubClipTextEncode": "CLIP Text Encode :",

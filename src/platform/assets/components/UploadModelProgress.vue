@@ -16,7 +16,7 @@
           v-if="previewImage"
           :src="previewImage"
           :alt="metadata?.filename || metadata?.name || 'Model preview'"
-          class="size-14 flex-shrink-0 rounded object-cover"
+          class="size-14 shrink-0 rounded-sm object-cover"
         />
         <div
           class="flex min-w-0 flex-1 flex-col items-start justify-center gap-1"
@@ -47,7 +47,7 @@
           v-if="previewImage"
           :src="previewImage"
           :alt="metadata?.filename || metadata?.name || 'Model preview'"
-          class="size-14 flex-shrink-0 rounded object-cover"
+          class="size-14 shrink-0 rounded-sm object-cover"
         />
         <div
           class="flex min-w-0 flex-1 flex-col items-start justify-center gap-1"

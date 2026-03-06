@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Loader from '@/components/common/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -266,7 +267,7 @@ defineExpose({ runButtonClick })
             </Button>
           </template>
           <template v-else>
-            <i class="icon-[lucide--loader-circle] size-4 animate-spin" />
+            <Loader size="sm" />
             <span v-text="t('queue.jobQueueing')" />
           </template>
         </div>

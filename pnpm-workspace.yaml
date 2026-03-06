@@ -9,6 +9,7 @@ catalog:
   '@iconify-json/lucide': ^1.1.178
   '@iconify/json': ^2.2.380
   '@iconify/tailwind4': ^1.2.0
+  '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.1.1
   '@lobehub/i18n-cli': ^1.26.1
   '@nx/eslint': 22.5.2
@@ -87,6 +88,7 @@ catalog:
   picocolors: ^1.1.1
   pinia: ^3.0.4
   postcss-html: ^1.8.0
+  posthog-js: ^1.358.1
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: ^4.2.5

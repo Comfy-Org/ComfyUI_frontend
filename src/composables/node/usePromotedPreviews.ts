@@ -3,7 +3,7 @@ import { computed, toValue } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
