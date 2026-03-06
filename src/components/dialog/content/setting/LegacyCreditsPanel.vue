@@ -1,5 +1,5 @@
 <template>
-  <TabPanel value="Credits" class="credits-container h-full">
+  <div class="credits-container h-full">
     <!-- Legacy Design -->
     <div class="flex h-full flex-col">
       <h2 class="mb-2 text-2xl font-bold">
@@ -102,7 +102,7 @@
         </Button>
       </div>
     </div>
-  </TabPanel>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -110,15 +110,14 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
-import TabPanel from 'primevue/tabpanel'
 import { computed, ref, watch } from 'vue'
 
 import UserCredit from '@/components/common/UserCredit.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -138,7 +137,7 @@ const authStore = useFirebaseAuthStore()
 const authActions = useFirebaseAuthActions()
 const commandStore = useCommandStore()
 const telemetry = useTelemetry()
-const { isActiveSubscription } = useSubscription()
+const { isActiveSubscription } = useBillingContext()
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 

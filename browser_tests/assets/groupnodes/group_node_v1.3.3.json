@@ -76,11 +76,7 @@
             "properties": {
               "Node name for S&R": "EmptyLatentImage"
             },
-            "widgets_values": [
-              512,
-              512,
-              1
-            ],
+            "widgets_values": [512, 512, 1],
             "index": 0
           },
           {
@@ -121,9 +117,7 @@
             "properties": {
               "Node name for S&R": "CheckpointLoaderSimple"
             },
-            "widgets_values": [
-              "v1-5-pruned-emaonly.ckpt"
-            ],
+            "widgets_values": ["v1-5-pruned-emaonly.ckpt"],
             "index": 1
           },
           {
@@ -195,9 +189,7 @@
             "properties": {
               "Node name for S&R": "CLIPTextEncode"
             },
-            "widgets_values": [
-              "text, watermark"
-            ],
+            "widgets_values": ["text, watermark"],
             "index": 3
           },
           {
@@ -320,85 +312,20 @@
             ],
             "outputs": [],
             "properties": {},
-            "widgets_values": [
-              "ComfyUI"
-            ],
+            "widgets_values": ["ComfyUI"],
             "index": 6
           }
         ],
         "links": [
-          [
-            1,
-            1,
-            2,
-            0,
-            4,
-            "CLIP"
-          ],
-          [
-            1,
-            1,
-            3,
-            0,
-            4,
-            "CLIP"
-          ],
-          [
-            1,
-            0,
-            4,
-            0,
-            4,
-            "MODEL"
-          ],
-          [
-            2,
-            0,
-            4,
-            1,
-            6,
-            "CONDITIONING"
-          ],
-          [
-            3,
-            0,
-            4,
-            2,
-            7,
-            "CONDITIONING"
-          ],
-          [
-            0,
-            0,
-            4,
-            3,
-            5,
-            "LATENT"
-          ],
-          [
-            4,
-            0,
-            5,
-            0,
-            3,
-            "LATENT"
-          ],
-          [
-            1,
-            2,
-            5,
-            1,
-            4,
-            "VAE"
-          ],
-          [
-            5,
-            0,
-            6,
-            0,
-            8,
-            "IMAGE"
-          ]
+          [1, 1, 2, 0, 4, "CLIP"],
+          [1, 1, 3, 0, 4, "CLIP"],
+          [1, 0, 4, 0, 4, "MODEL"],
+          [2, 0, 4, 1, 6, "CONDITIONING"],
+          [3, 0, 4, 2, 7, "CONDITIONING"],
+          [0, 0, 4, 3, 5, "LATENT"],
+          [4, 0, 5, 0, 3, "LATENT"],
+          [1, 2, 5, 1, 4, "VAE"],
+          [5, 0, 6, 0, 8, "IMAGE"]
         ],
         "external": []
       }

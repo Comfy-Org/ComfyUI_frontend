@@ -6,7 +6,9 @@ import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 import { MtlObjBridge, OBJLoader2Parallel } from 'wwobjloader2'
-import OBJLoader2WorkerUrl from 'wwobjloader2/worker?url'
+// Use pre-bundled worker module (has all dependencies included)
+// The unbundled 'wwobjloader2/worker' has ES imports that fail in production builds
+import OBJLoader2WorkerUrl from 'wwobjloader2/bundle/worker/module?url'
 
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -166,6 +168,10 @@ export class LoaderManager implements LoaderManagerInterface {
         fbxModel.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             this.modelManager.originalMaterials.set(child, child.material)
+
+            if (child instanceof THREE.SkinnedMesh) {
+              child.frustumCulled = false
+            }
           }
         })
         break
@@ -212,6 +218,10 @@ export class LoaderManager implements LoaderManagerInterface {
           if (child instanceof THREE.Mesh) {
             child.geometry.computeVertexNormals()
             this.modelManager.originalMaterials.set(child, child.material)
+
+            if (child instanceof THREE.SkinnedMesh) {
+              child.frustumCulled = false
+            }
           }
         })
         break

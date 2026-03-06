@@ -24,6 +24,7 @@
         v-model:light-config="lightConfig"
         :is-splat-model="isSplatModel"
         :is-ply-model="isPlyModel"
+        :has-skeleton="hasSkeleton"
         @update-background-image="handleBackgroundImageUpdate"
         @export-model="handleExportModel"
       />
@@ -116,6 +117,7 @@ const {
   isPreview,
   isSplatModel,
   isPlyModel,
+  hasSkeleton,
   hasRecording,
   recordingDuration,
   animations,

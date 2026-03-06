@@ -1,12 +1,15 @@
 import _ from 'es-toolkit/compat'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
+import {
+  addWidgetPromotionOptions,
+  isPreviewPseudoWidget
+} from '@/core/graph/subgraph/promotionUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { st, t } from '@/i18n'
 import {
@@ -19,6 +22,8 @@ import {
   createBounds
 } from '@/lib/litegraph/src/litegraph'
 import type {
+  CreateNodeOptions,
+  GraphAddOptions,
   IContextMenuValue,
   Point,
   Subgraph
@@ -29,12 +34,15 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
+import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
+import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -47,15 +55,19 @@ import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
+  isAnimatedOutput,
   isImageNode,
   isVideoNode,
+  isVideoOutput,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
@@ -70,6 +82,49 @@ export interface HasInitialMinSize {
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
 
+export function getExtraOptionsForWidget(
+  node: LGraphNode,
+  widget: IBaseWidget
+) {
+  const options: IContextMenuValue[] = []
+  const input = node.inputs.find((inp) => inp.widget?.name === widget.name)
+
+  if (input) {
+    options.unshift({
+      content: `${t('contextMenu.RenameWidget')}: ${widget.label ?? widget.name}`,
+      callback: async () => {
+        const newLabel = await useDialogService().prompt({
+          title: t('g.rename'),
+          message: t('g.enterNewNamePrompt'),
+          defaultValue: widget.label,
+          placeholder: widget.name
+        })
+        if (newLabel === null) return
+        widget.label = newLabel || undefined
+        input.label = newLabel || undefined
+        widget.callback?.(widget.value)
+        useCanvasStore().canvas?.setDirty(true)
+      }
+    })
+  }
+
+  const favoritedWidgetsStore = useFavoritedWidgetsStore()
+  const isFavorited = favoritedWidgetsStore.isFavorited(node, widget.name)
+  options.unshift({
+    content: isFavorited
+      ? `${t('contextMenu.UnfavoriteWidget')}: ${widget.label ?? widget.name}`
+      : `${t('contextMenu.FavoriteWidget')}: ${widget.label ?? widget.name}`,
+    callback: () => {
+      favoritedWidgetsStore.toggleFavorite(node, widget.name)
+    }
+  })
+
+  if (node.graph && !node.graph.isRootGraph) {
+    addWidgetPromotionOptions(options, widget, node)
+  }
+  return options
+}
+
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
  */
@@ -79,6 +134,30 @@ export const useLitegraphService = () => {
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
+  const subgraphPseudoWidgetCache = new WeakMap<
+    SubgraphNode,
+    SubgraphPseudoWidgetCache<LGraphNode, IBaseWidget>
+  >()
+
+  function invalidateSubgraphPseudoWidgetCache(node: SubgraphNode) {
+    subgraphPseudoWidgetCache.delete(node)
+  }
+
+  function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
+    const promotionStore = usePromotionStore()
+    const promotions = promotionStore.getPromotionsRef(
+      node.rootGraph.id,
+      node.id
+    )
+    const resolved = resolveSubgraphPseudoWidgetCache({
+      cache: subgraphPseudoWidgetCache.get(node) ?? null,
+      promotions,
+      getNodeById: (nodeId) => node.subgraph.getNodeById(nodeId) ?? undefined,
+      isPreviewPseudoWidget
+    })
+    subgraphPseudoWidgetCache.set(node, resolved.cache)
+    return resolved.nodes
+  }
 
   /**
    * @internal The key for the node definition in the i18n file.
@@ -117,7 +196,7 @@ export const useLitegraphService = () => {
       const state =
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
       if (state === 'running') {
-        return { color: '#0f0' }
+        return { color: '#0f0', lineWidth: 3 }
       }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
@@ -127,7 +206,7 @@ export const useLitegraphService = () => {
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
       if (app.lastExecutionError?.node_id == this.id) {
-        return { color: '#f0f', lineWidth: 2 }
+        return { color: '#f0f', lineWidth: 3 }
       }
     }
   }
@@ -260,7 +339,7 @@ export const useLitegraphService = () => {
       static comfyClass: string
       static override title: string
       static override category: string
-      static nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
+      static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
       _initialMinSize = { width: 1, height: 1 }
 
@@ -269,6 +348,7 @@ export const useLitegraphService = () => {
 
         // Set up event listener for promoted widget registration
         subgraph.events.addEventListener('widget-promoted', (event) => {
+          invalidateSubgraphPseudoWidgetCache(this)
           const { widget } = event.detail
           // Only handle DOM widgets
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
@@ -288,6 +368,7 @@ export const useLitegraphService = () => {
 
         // Set up event listener for promoted widget removal
         subgraph.events.addEventListener('widget-demoted', (event) => {
+          invalidateSubgraphPseudoWidgetCache(this)
           const { widget } = event.detail
           // Only handle DOM widgets
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
@@ -393,7 +474,7 @@ export const useLitegraphService = () => {
       static comfyClass: string
       static override title: string
       static override category: string
-      static nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
+      static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
       _initialMinSize = { width: 1, height: 1 }
 
@@ -495,6 +576,13 @@ export const useLitegraphService = () => {
     // because `registerNodeType` will overwrite the assignments.
     node.category = nodeDef.category
     node.title = nodeDef.display_name || nodeDef.name
+
+    // Set skip_list for dev-only nodes based on current DevMode setting
+    // This ensures nodes registered after initial load respect the current setting
+    if (nodeDef.dev_only) {
+      const settingStore = useSettingStore()
+      node.skip_list = !settingStore.get('Comfy.DevMode')
+    }
   }
 
   /**
@@ -599,7 +687,7 @@ export const useLitegraphService = () => {
               callback: () => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
-                window.open(url, '_blank')
+                void openFileInNewTab(url.toString())
               }
             },
             ...getCopyImageOption(img),
@@ -670,30 +758,8 @@ export const useLitegraphService = () => {
       }
       const [x, y] = canvas.graph_mouse
       const overWidget = this.getWidgetOnPos(x, y, true)
-      if (overWidget) {
-        const input = this.inputs.find(
-          (inp) => inp.widget?.name === overWidget.name
-        )
-        if (input)
-          options.unshift({
-            content: `${t('contextMenu.RenameWidget')}: ${overWidget.label ?? overWidget.name}`,
-            callback: async () => {
-              const newLabel = await useDialogService().prompt({
-                title: t('g.rename'),
-                message: t('g.enterNewName') + ':',
-                defaultValue: overWidget.label,
-                placeholder: overWidget.name
-              })
-              if (newLabel === null) return
-              overWidget.label = newLabel || undefined
-              input.label = newLabel || undefined
-              useCanvasStore().canvas?.setDirty(true)
-            }
-          })
-        if (this.graph && !this.graph.isRootGraph) {
-          addWidgetPromotionOptions(options, overWidget, this)
-        }
-      }
+      if (overWidget)
+        options.unshift(...getExtraOptionsForWidget(this, overWidget))
       return []
     }
   }
@@ -723,17 +789,9 @@ export const useLitegraphService = () => {
     if (isNewOutput) this.images = output.images
 
     if (isNewOutput || isNewPreview) {
-      this.animatedImages = output?.animated?.find(Boolean)
+      this.animatedImages = isAnimatedOutput(output)
 
-      const isAnimatedWebp =
-        this.animatedImages &&
-        output?.images?.some((img) => img.filename?.includes('webp'))
-      const isAnimatedPng =
-        this.animatedImages &&
-        output?.images?.some((img) => img.filename?.includes('png'))
-      const isVideo =
-        (this.animatedImages && !isAnimatedWebp && !isAnimatedPng) ||
-        isVideoNode(this)
+      const isVideo = isVideoOutput(output) || isVideoNode(this)
       if (isVideo) {
         useNodeVideo(this, callback).showPreview()
       } else {
@@ -769,6 +827,15 @@ export const useLitegraphService = () => {
     }
     node.prototype.onDrawBackground = function () {
       updatePreviews(this)
+
+      if (this instanceof SubgraphNode) {
+        const parentGraph = this.graph
+        for (const interiorNode of getPseudoWidgetPreviewTargets(this)) {
+          updatePreviews(interiorNode, () => {
+            parentGraph?.setDirtyCanvas(true)
+          })
+        }
+      }
     }
   }
 
@@ -819,8 +886,9 @@ export const useLitegraphService = () => {
 
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
-    options: Record<string, any> = {}
-  ): LGraphNode {
+    options: CreateNodeOptions = {},
+    addOptions?: GraphAddOptions
+  ): LGraphNode | null {
     options.pos ??= getCanvasCenter()
 
     if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
@@ -849,16 +917,19 @@ export const useLitegraphService = () => {
     )
 
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
+    if (!graph || !node) return null
 
-    // @ts-expect-error fixme ts strict error
-    graph.add(node)
-    // @ts-expect-error fixme ts strict error
+    graph.add(node, addOptions)
     return node
   }
 
   function getCanvasCenter(): Point {
     const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
-    const [x, y, w, h] = app.canvas.ds.visible_area
+    const visibleArea = app.canvas?.ds?.visible_area
+    if (!visibleArea) {
+      return [0, 0]
+    }
+    const [x, y, w, h] = visibleArea
     return [x + w / dpi / 2, y + h / dpi / 2]
   }
 
@@ -905,6 +976,7 @@ export const useLitegraphService = () => {
     addNodeOnGraph,
     addNodeInput,
     getCanvasCenter,
+    getExtraOptionsForWidget,
     goToNode,
     resetView,
     fitView,

@@ -1,5 +1,6 @@
+import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
@@ -29,7 +30,7 @@ const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
 })
 
 const setupMockStores = () => {
-  const pinia = createPinia()
+  const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
 
   const settingStore = useSettingStore()
@@ -154,7 +155,7 @@ describe('NodeHeader.vue', () => {
     // Edit and confirm (EditableText uses blur or enter to emit)
     const input = wrapper.get('[data-testid="node-title-input"]')
     await input.setValue('My Custom Sampler')
-    await input.trigger('keyup.enter')
+    await input.trigger('keydown.enter')
     await input.trigger('blur')
 
     // NodeHeader should emit update:title with trimmed value
@@ -169,7 +170,7 @@ describe('NodeHeader.vue', () => {
     await wrapper.get('[data-testid="node-header-1"]').trigger('dblclick')
     const input = wrapper.get('[data-testid="node-title-input"]')
     await input.setValue('Should Not Save')
-    await input.trigger('keyup.escape')
+    await input.trigger('keydown.escape')
 
     // Should not emit update:title
     expect(wrapper.emitted('update:title')).toBeFalsy()

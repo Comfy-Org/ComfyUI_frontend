@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { resultItemType } from '@/schemas/apiSchema'
+import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 const zComboOption = z.union([z.string(), z.number()])
 const zRemoteWidgetConfig = z.object({
@@ -42,7 +43,7 @@ const zNumericInputOptions = zBaseInputOptions.extend({
   step: z.number().optional(),
   /** Note: Many node authors are using INT/FLOAT to pass list of INT/FLOAT. */
   default: z.union([z.number(), z.array(z.number())]).optional(),
-  display: z.enum(['slider', 'number', 'knob']).optional()
+  display: z.enum(['slider', 'number', 'knob', 'gradientslider']).optional()
 })
 
 export const zIntInputOptions = zNumericInputOptions.extend({
@@ -50,11 +51,21 @@ export const zIntInputOptions = zNumericInputOptions.extend({
    * If true, a linked widget will be added to the node to select the mode
    * of `control_after_generate`.
    */
-  control_after_generate: z.boolean().optional()
+  control_after_generate: z
+    .union([z.boolean(), z.enum(CONTROL_OPTIONS)])
+    .optional()
 })
 
 export const zFloatInputOptions = zNumericInputOptions.extend({
-  round: z.union([z.number(), z.literal(false)]).optional()
+  round: z.union([z.number(), z.literal(false)]).optional(),
+  gradient_stops: z
+    .array(
+      z.object({
+        offset: z.number(),
+        color: z.tuple([z.number(), z.number(), z.number()])
+      })
+    )
+    .optional()
 })
 
 export const zBooleanInputOptions = zBaseInputOptions.extend({
@@ -74,12 +85,16 @@ export const zStringInputOptions = zBaseInputOptions.extend({
 })
 
 export const zComboInputOptions = zBaseInputOptions.extend({
-  control_after_generate: z.boolean().optional(),
+  control_after_generate: z
+    .union([z.boolean(), z.enum(CONTROL_OPTIONS)])
+    .optional(),
   image_upload: z.boolean().optional(),
   image_folder: resultItemType.optional(),
   allow_batch: z.boolean().optional(),
   video_upload: z.boolean().optional(),
   audio_upload: z.boolean().optional(),
+  mesh_upload: z.boolean().optional(),
+  upload_subfolder: z.string().optional(),
   animated_image_upload: z.boolean().optional(),
   options: z.array(zComboOption).optional(),
   remote: zRemoteWidgetConfig.optional(),
@@ -143,6 +158,20 @@ export function isComboInputSpec(
   return isComboInputSpecV1(inputSpec) || isComboInputSpecV2(inputSpec)
 }
 
+export function isMediaUploadComboInput(inputSpec: InputSpec): boolean {
+  const [inputName, inputOptions] = inputSpec
+  if (!inputOptions) return false
+
+  const isUploadInput =
+    inputOptions['image_upload'] === true ||
+    inputOptions['video_upload'] === true ||
+    inputOptions['animated_image_upload'] === true
+
+  return (
+    isUploadInput && (isComboInputSpecV1(inputSpec) || inputName === 'COMBO')
+  )
+}
+
 /**
  * Get the type of an input spec.
  *
@@ -197,6 +226,50 @@ const zComfyOutputTypesSpec = z.array(
   z.union([zComfyNodeDataType, zComfyComboOutput])
 )
 
+/**
+ * Widget dependency with type information.
+ * Provides strong type enforcement for JSONata evaluation context.
+ */
+const zWidgetDependency = z.object({
+  name: z.string(),
+  type: z.string()
+})
+
+export type WidgetDependency = z.infer<typeof zWidgetDependency>
+
+/**
+ * Schema for price badge depends_on field.
+ * Specifies which widgets and inputs the pricing expression depends on.
+ * Widgets must be specified as objects with name and type.
+ */
+const zPriceBadgeDepends = z.object({
+  widgets: z.array(zWidgetDependency).optional().default([]),
+  inputs: z.array(z.string()).optional().default([]),
+  /**
+   * Autogrow input group names to track.
+   * For each group, the count of connected inputs will be available in the
+   * JSONata context as `g.<groupName>`.
+   * Example: `input_groups: ["reference_videos"]` makes `g.reference_videos`
+   * available with the count of connected inputs like `reference_videos.character1`, etc.
+   */
+  input_groups: z.array(z.string()).optional().default([])
+})
+
+/**
+ * Schema for price badge definition.
+ * Used to calculate and display pricing information for API nodes.
+ * The `expr` field contains a JSONata expression that returns a PricingResult.
+ */
+const zPriceBadge = z.object({
+  engine: z.literal('jsonata').optional().default('jsonata'),
+  depends_on: zPriceBadgeDepends
+    .optional()
+    .default({ widgets: [], inputs: [], input_groups: [] }),
+  expr: z.string()
+})
+
+export type PriceBadge = z.infer<typeof zPriceBadge>
+
 export const zComfyNodeDef = z.object({
   input: zComfyInputsSpec.optional(),
   output: zComfyOutputTypesSpec.optional(),
@@ -209,10 +282,12 @@ export const zComfyNodeDef = z.object({
   description: z.string(),
   help: z.string().optional(),
   category: z.string(),
+  main_category: z.string().optional(),
   output_node: z.boolean(),
   python_module: z.string(),
   deprecated: z.boolean().optional(),
   experimental: z.boolean().optional(),
+  dev_only: z.boolean().optional(),
   /**
    * Whether the node is an API node. Running API nodes requires login to
    * Comfy Org account.
@@ -224,7 +299,22 @@ export const zComfyNodeDef = z.object({
    * Used to ensure consistent widget ordering regardless of JSON serialization.
    * Keys are 'required', 'optional', etc., values are arrays of input names.
    */
-  input_order: z.record(z.array(z.string())).optional()
+  input_order: z.record(z.array(z.string())).optional(),
+  /**
+   * Alternative names for search. Useful for synonyms, abbreviations,
+   * or old names after renaming a node.
+   */
+  search_aliases: z.array(z.string()).optional(),
+  /**
+   * Price badge definition for API nodes.
+   * Contains a JSONata expression to calculate pricing based on widget values
+   * and input connectivity.
+   */
+  price_badge: zPriceBadge.optional(),
+  /** Category for the Essentials tab. If set, the node appears in Essentials. */
+  essentials_category: z.string().optional(),
+  /** Whether the blueprint is a global/installed blueprint (not user-created). */
+  isGlobal: z.boolean().optional()
 })
 
 export const zAutogrowOptions = z.object({

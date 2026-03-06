@@ -2,8 +2,8 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
 
 import TransformPane from '../transform/TransformPane.vue'
 
@@ -29,8 +29,8 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
   }
 })
 
-function createMockCanvas(): LGraphCanvas {
-  return {
+function createMockLGraphCanvas() {
+  return createMockCanvas({
     canvas: {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn()
@@ -39,7 +39,7 @@ function createMockCanvas(): LGraphCanvas {
       offset: [0, 0],
       scale: 1
     }
-  } as unknown as LGraphCanvas
+  })
 }
 
 describe('TransformPane', () => {
@@ -52,7 +52,7 @@ describe('TransformPane', () => {
 
   describe('component mounting', () => {
     it('should mount successfully with minimal props', () => {
-      const mockCanvas = createMockCanvas()
+      const mockCanvas = createMockLGraphCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -69,7 +69,7 @@ describe('TransformPane', () => {
         transformOrigin: '0 0'
       }
 
-      const mockCanvas = createMockCanvas()
+      const mockCanvas = createMockLGraphCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -83,7 +83,7 @@ describe('TransformPane', () => {
     })
 
     it('should render slot content', () => {
-      const mockCanvas = createMockCanvas()
+      const mockCanvas = createMockLGraphCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -100,7 +100,7 @@ describe('TransformPane', () => {
 
   describe('RAF synchronization', () => {
     it('should call syncWithCanvas during RAF updates', async () => {
-      const mockCanvas = createMockCanvas()
+      const mockCanvas = createMockLGraphCanvas()
       mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -119,7 +119,7 @@ describe('TransformPane', () => {
 
   describe('canvas event listeners', () => {
     it('should add event listeners to canvas on mount', async () => {
-      const mockCanvas = createMockCanvas()
+      const mockCanvas = createMockLGraphCanvas()
       mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -151,7 +151,7 @@ describe('TransformPane', () => {
     })
 
     it('should remove event listeners on unmount', async () => {
-      const mockCanvas = createMockCanvas()
+      const mockCanvas = createMockLGraphCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -186,7 +186,7 @@ describe('TransformPane', () => {
 
   describe('interaction state management', () => {
     it('should apply interacting class during interactions', async () => {
-      const mockCanvas = createMockCanvas()
+      const mockCanvas = createMockLGraphCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -204,7 +204,7 @@ describe('TransformPane', () => {
     })
 
     it('should handle pointer events for node delegation', async () => {
-      const mockCanvas = createMockCanvas()
+      const mockCanvas = createMockLGraphCanvas()
       const wrapper = mount(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -225,7 +225,7 @@ describe('TransformPane', () => {
 
   describe('transform state integration', () => {
     it('should provide transform utilities to child components', () => {
-      const mockCanvas = createMockCanvas()
+      const mockCanvas = createMockLGraphCanvas()
       mount(TransformPane, {
         props: {
           canvas: mockCanvas

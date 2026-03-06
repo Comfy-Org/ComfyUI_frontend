@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import _ from 'es-toolkit/compat'
+import type { TgpuRoot } from 'typegpu'
 
 import {
   BrushShape,
@@ -71,9 +72,24 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
 
   const canvasHistory = useCanvasHistory(20)
 
-  const tgpuRoot = ref<any>(null)
+  const tgpuRoot = ref<TgpuRoot | null>(null)
 
   const colorInput = ref<HTMLInputElement | null>(null)
+
+  // GPU texture recreation signals
+  /**
+   * GPU texture data must use ArrayBuffer (not SharedArrayBuffer) for compatibility
+   * with WebGPU's device.queue.writeTexture API. SharedArrayBuffer is not accepted
+   * by the WebGPU specification and will cause runtime errors.
+   *
+   * @see https://gpuweb.github.io/gpuweb/#dom-gpuqueue-writetexture
+   */
+  type GPUCompatibleArray = Uint8ClampedArray & { buffer: ArrayBuffer }
+  const gpuTexturesNeedRecreation = ref<boolean>(false)
+  const gpuTextureWidth = ref<number>(0)
+  const gpuTextureHeight = ref<number>(0)
+  const pendingGPUMaskData = ref<GPUCompatibleArray | null>(null)
+  const pendingGPURgbData = ref<GPUCompatibleArray | null>(null)
 
   watch(maskCanvas, (canvas) => {
     if (canvas) {
@@ -208,6 +224,13 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     panOffset.value = { x: 0, y: 0 }
     cursorPoint.value = { x: 0, y: 0 }
     maskOpacity.value = 0.8
+
+    // Reset GPU recreation flags
+    gpuTexturesNeedRecreation.value = false
+    gpuTextureWidth.value = 0
+    gpuTextureHeight.value = 0
+    pendingGPUMaskData.value = null
+    pendingGPURgbData.value = null
   }
 
   return {
@@ -253,6 +276,13 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     canvasHistory,
 
     tgpuRoot,
+
+    // GPU texture recreation signals
+    gpuTexturesNeedRecreation,
+    gpuTextureWidth,
+    gpuTextureHeight,
+    pendingGPUMaskData,
+    pendingGPURgbData,
 
     colorInput,
 

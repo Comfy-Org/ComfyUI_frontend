@@ -39,6 +39,21 @@ export function buildTree<T>(items: T[], key: (item: T) => string[]): TreeNode {
   return root
 }
 
+/**
+ * If a tree root has exactly one non-leaf child folder, promote that
+ * folder's children up to the root level, removing the redundant layer.
+ */
+export function unwrapTreeRoot(tree: TreeNode): TreeNode {
+  if (
+    tree.children?.length === 1 &&
+    !tree.children[0].leaf &&
+    (tree.children[0].children?.length ?? 0) > 0
+  ) {
+    return { ...tree, children: tree.children[0].children }
+  }
+  return tree
+}
+
 export function flattenTree<T>(tree: TreeNode): T[] {
   const result: T[] = []
   const stack: TreeNode[] = [tree]

@@ -1,7 +1,7 @@
-import { toValue } from '@vueuse/core'
-import { compare, valid } from 'semver'
 import type { MaybeRefOrGetter } from 'vue'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
+
+import { compare, valid } from 'semver'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'

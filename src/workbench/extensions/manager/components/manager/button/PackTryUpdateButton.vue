@@ -1,7 +1,7 @@
 <template>
   <Button
     v-tooltip.top="$t('manager.tryUpdateTooltip')"
-    variant="textonly"
+    variant="primary"
     :size
     :disabled="isUpdating"
     @click="tryUpdate"
@@ -11,6 +11,7 @@
       duration="1s"
       :size="size === 'sm' ? 12 : 16"
     />
+    <i v-else class="icon-[lucide--refresh-cw]" />
     <span>{{ isUpdating ? t('g.updating') : t('manager.tryUpdate') }}</span>
   </Button>
 </template>

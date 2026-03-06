@@ -5,10 +5,7 @@
     {
       "id": 1,
       "type": "KSampler",
-      "pos": [
-        590,
-        40
-      ],
+      "pos": [590, 40],
       "size": {
         "0": 315,
         "1": 262
@@ -53,23 +50,12 @@
       "properties": {
         "Node name for S&R": "KSampler"
       },
-      "widgets_values": [
-        0,
-        "randomize",
-        20,
-        8,
-        "euler",
-        "normal",
-        1
-      ]
+      "widgets_values": [0, "randomize", 20, 8, "euler", "normal", 1]
     },
     {
       "id": 4,
       "type": "CLIPTextEncode",
-      "pos": [
-        20,
-        50
-      ],
+      "pos": [20, 50],
       "size": {
         "0": 400,
         "1": 200
@@ -88,26 +74,19 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
-          "links": [
-            3
-          ],
+          "links": [3],
           "shape": 3
         }
       ],
       "properties": {
         "Node name for S&R": "CLIPTextEncode"
       },
-      "widgets_values": [
-        ""
-      ]
+      "widgets_values": [""]
     },
     {
       "id": 5,
       "type": "CLIPTextEncode",
-      "pos": [
-        20,
-        320
-      ],
+      "pos": [20, 320],
       "size": {
         "0": 400,
         "1": 200
@@ -134,30 +113,16 @@
       "properties": {
         "Node name for S&R": "CLIPTextEncode"
       },
-      "widgets_values": [
-        ""
-      ]
+      "widgets_values": [""]
     }
   ],
-  "links": [
-    [
-      3,
-      4,
-      0,
-      1,
-      1,
-      "CONDITIONING"
-    ]
-  ],
+  "links": [[3, 4, 0, 1, 1, "CONDITIONING"]],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        0,
-        0
-      ]
+      "offset": [0, 0]
     }
   },
   "version": 0.4

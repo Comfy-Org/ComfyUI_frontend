@@ -2,10 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectionMenuOptions } from '@/composables/graph/useSelectionMenuOptions'
 
-const subgraphMocks = vi.hoisted(() => ({
+const mocks = vi.hoisted(() => ({
   convertToSubgraph: vi.fn(),
   unpackSubgraph: vi.fn(),
   addSubgraphToLibrary: vi.fn(),
+  frameNodes: vi.fn(),
   createI18nMock: vi.fn(() => ({
     global: {
       t: vi.fn(),
@@ -19,7 +20,7 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key
   }),
-  createI18n: subgraphMocks.createI18nMock
+  createI18n: mocks.createI18nMock
 }))
 
 vi.mock('@/composables/graph/useSelectionOperations', () => ({
@@ -42,17 +43,45 @@ vi.mock('@/composables/graph/useNodeArrangement', () => ({
 
 vi.mock('@/composables/graph/useSubgraphOperations', () => ({
   useSubgraphOperations: () => ({
-    convertToSubgraph: subgraphMocks.convertToSubgraph,
-    unpackSubgraph: subgraphMocks.unpackSubgraph,
-    addSubgraphToLibrary: subgraphMocks.addSubgraphToLibrary
+    convertToSubgraph: mocks.convertToSubgraph,
+    unpackSubgraph: mocks.unpackSubgraph,
+    addSubgraphToLibrary: mocks.addSubgraphToLibrary
   })
 }))
 
 vi.mock('@/composables/graph/useFrameNodes', () => ({
   useFrameNodes: () => ({
-    frameNodes: vi.fn()
+    frameNodes: mocks.frameNodes
   })
 }))
+
+describe('useSelectionMenuOptions - multiple nodes options', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns Frame Nodes option that invokes frameNodes when called', () => {
+    const { getMultipleNodesOptions } = useSelectionMenuOptions()
+    const options = getMultipleNodesOptions()
+
+    const frameOption = options.find((opt) => opt.label === 'g.frameNodes')
+    expect(frameOption).toBeDefined()
+    expect(frameOption?.action).toBeDefined()
+
+    frameOption?.action?.()
+    expect(mocks.frameNodes).toHaveBeenCalledOnce()
+  })
+
+  it('returns Convert to Group Node option from getMultipleNodesOptions', () => {
+    const { getMultipleNodesOptions } = useSelectionMenuOptions()
+    const options = getMultipleNodesOptions()
+
+    const groupNodeOption = options.find(
+      (opt) => opt.label === 'contextMenu.Convert to Group Node'
+    )
+    expect(groupNodeOption).toBeDefined()
+  })
+})
 
 describe('useSelectionMenuOptions - subgraph options', () => {
   beforeEach(() => {
@@ -68,10 +97,10 @@ describe('useSelectionMenuOptions - subgraph options', () => {
 
     expect(options).toHaveLength(1)
     expect(options[0]?.label).toBe('contextMenu.Convert to Subgraph')
-    expect(options[0]?.action).toBe(subgraphMocks.convertToSubgraph)
+    expect(options[0]?.action).toBe(mocks.convertToSubgraph)
   })
 
-  it('includes convert, add to library, and unpack when subgraphs are selected', () => {
+  it('includes convert and unpack but hides add to library when multiple items with subgraphs are selected', () => {
     const { getSubgraphOptions } = useSelectionMenuOptions()
     const options = getSubgraphOptions({
       hasSubgraphs: true,
@@ -80,16 +109,11 @@ describe('useSelectionMenuOptions - subgraph options', () => {
     const labels = options.map((option) => option.label)
 
     expect(labels).toContain('contextMenu.Convert to Subgraph')
-    expect(labels).toContain('contextMenu.Add Subgraph to Library')
+    expect(labels).not.toContain('contextMenu.Add Subgraph to Library')
     expect(labels).toContain('contextMenu.Unpack Subgraph')
-
-    const convertOption = options.find(
-      (option) => option.label === 'contextMenu.Convert to Subgraph'
-    )
-    expect(convertOption?.action).toBe(subgraphMocks.convertToSubgraph)
   })
 
-  it('hides convert option when only a single subgraph is selected', () => {
+  it('shows add to library and unpack when a single subgraph is selected', () => {
     const { getSubgraphOptions } = useSelectionMenuOptions()
     const options = getSubgraphOptions({
       hasSubgraphs: true,
@@ -102,5 +126,10 @@ describe('useSelectionMenuOptions - subgraph options', () => {
       'contextMenu.Add Subgraph to Library',
       'contextMenu.Unpack Subgraph'
     ])
+
+    const addToLibraryOption = options.find(
+      (option) => option.label === 'contextMenu.Add Subgraph to Library'
+    )
+    expect(addToLibraryOption?.action).toBe(mocks.addSubgraphToLibrary)
   })
 })

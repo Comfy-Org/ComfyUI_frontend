@@ -4,6 +4,8 @@
     <div
       class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"
       :class="isEditing === false ? 'visible' : 'invisible'"
+      tabindex="0"
+      data-capture-wheel="true"
       v-html="renderedHtml"
     />
 
@@ -21,6 +23,9 @@
         }
       }"
       data-capture-wheel="true"
+      @pointerdown.capture.stop
+      @pointermove.capture.stop
+      @pointerup.capture.stop
       @click.stop
       @keydown.stop
     />

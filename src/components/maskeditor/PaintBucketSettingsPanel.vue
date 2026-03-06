@@ -1,8 +1,6 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <h3
-      class="text-center text-[15px] font-sans text-[var(--descrip-text)] mt-2.5"
-    >
+    <h3 class="mt-2.5 text-center font-sans text-[15px] text-(--descrip-text)">
       {{ t('maskEditor.paintBucketSettings') }}
     </h3>
 
@@ -27,11 +25,13 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 import SliderControl from './controls/SliderControl.vue'
 
+const { t } = useI18n()
 const store = useMaskEditorStore()
 
 const onToleranceChange = (value: number) => {

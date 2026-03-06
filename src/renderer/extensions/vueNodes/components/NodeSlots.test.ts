@@ -1,6 +1,6 @@
 /* eslint-disable vue/one-component-per-file */
+import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 import { defineComponent } from 'vue'
 import type { PropType } from 'vue'
@@ -84,7 +84,7 @@ const mountSlots = (nodeData: VueNodeData, readonly = false) => {
   })
   return mount(NodeSlots, {
     global: {
-      plugins: [i18n, createPinia()],
+      plugins: [i18n, createTestingPinia({ stubActions: false })],
       stubs: {
         InputSlot: InputSlotStub,
         OutputSlot: OutputSlotStub

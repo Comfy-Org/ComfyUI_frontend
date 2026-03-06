@@ -36,13 +36,16 @@
     "label": "重启"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "为所选节点开启 3D 浏览器（Beta 版）"
+    "label": "为选中节点打开3D查看器（测试版）"
   },
   "Comfy_BrowseModelAssets": {
     "label": "实验性：浏览模型资源"
   },
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
+  },
+  "Comfy_Canvas_CopySelected": {
+    "label": "复制"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "删除选定的项目"
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "上移选中的节点"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "粘贴"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "重置视图"
   },
   "Comfy_Canvas_Resize": {
     "label": "调整选定节点的大小"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "全选"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "切换链接可见性"
@@ -79,9 +88,6 @@
   },
   "Comfy_Canvas_ToggleMinimap": {
     "label": "画布切换小地图"
-  },
-  "Comfy_Canvas_ToggleSelected_Pin": {
-    "label": "固定/取消固定选中项"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "忽略/取消忽略选中节点"
@@ -94,6 +100,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "固定/取消固定选中节点"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "固定/取消固定选中项"
   },
   "Comfy_Canvas_Unlock": {
     "label": "解锁画布"
@@ -191,17 +200,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "检查更新"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "切换进度对话框"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "减小 MaskEditor 中的笔刷大小"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "增加 MaskEditor 画笔大小"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "在MaskEditor中打开取色器"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "在MaskEditor中水平镜像"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "在MaskEditor中垂直镜像"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "打开选中节点的遮罩编辑器"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "在MaskEditor中向左旋转"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "在MaskEditor中向右旋转"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "卸载模型"
@@ -233,11 +254,17 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "队列所选输出节点"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "切换作业历史"
+  },
   "Comfy_Redo": {
     "label": "重做"
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "刷新节点定义"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "重命名工作流"
   },
   "Comfy_SaveWorkflow": {
     "label": "保存工作流"
@@ -247,6 +274,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "显示设置对话框"
+  },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "设置子图描述"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "设置子图搜索别名"
   },
   "Comfy_ToggleAssetAPI": {
     "label": "实验性：启用 AssetAPI"
@@ -259,6 +292,9 @@
   },
   "Comfy_ToggleLinear": {
     "label": "切换线性模式"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "切换队列面板V2"
   },
   "Comfy_ToggleTheme": {
     "label": "切换主题"
@@ -290,9 +326,6 @@
   "Workspace_ToggleBottomPanel": {
     "label": "切换底部面板"
   },
-  "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "显示快捷键对话框"
-  },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
     "label": "切换终端底部面板"
   },
@@ -305,8 +338,15 @@
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
     "label": "切换检视控制底部面板"
   },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "显示快捷键对话框"
+  },
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "切换应用侧边栏",
+    "tooltip": "应用"
   },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "切换资产侧边栏",

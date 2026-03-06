@@ -2,6 +2,7 @@ import _ from 'es-toolkit/compat'
 import * as jsondiffpatch from 'jsondiffpatch'
 import log from 'loglevel'
 
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   ComfyWorkflow,
@@ -10,7 +11,7 @@ import {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 import { api } from './api'
@@ -40,7 +41,7 @@ export class ChangeTracker {
   _restoringState: boolean = false
 
   ds?: { scale: number; offset: [number, number] }
-  nodeOutputs?: Record<string, any>
+  nodeOutputs?: Record<string, ExecutedWsMessage['output']>
 
   private subgraphState?: {
     navigation: string[]
@@ -76,6 +77,7 @@ export class ChangeTracker {
       scale: app.canvas.ds.scale,
       offset: [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
     }
+    this.nodeOutputs = useNodeOutputStore().snapshotOutputs()
     const navigation = useSubgraphNavigationStore().exportState()
     // Always store the navigation state, even if empty (root level)
     this.subgraphState = { navigation }
@@ -303,11 +305,11 @@ export class ChangeTracker {
     const prompt = LGraphCanvas.prototype.prompt
     LGraphCanvas.prototype.prompt = function (
       title: string,
-      value: any,
-      callback: (v: any) => void,
-      event: any
+      value: string | number,
+      callback: (v: string) => void,
+      event: CanvasPointerEvent
     ) {
-      const extendedCallback = (v: any) => {
+      const extendedCallback = (v: string) => {
         callback(v)
         checkState()
       }
@@ -338,7 +340,7 @@ export class ChangeTracker {
     api.addEventListener('executed', (e: CustomEvent<ExecutedWsMessage>) => {
       const detail = e.detail
       const workflow =
-        useExecutionStore().queuedPrompts[detail.prompt_id]?.workflow
+        useExecutionStore().queuedJobs[detail.prompt_id]?.workflow
       const changeTracker = workflow?.changeTracker
       if (!changeTracker) return
       changeTracker.nodeOutputs ??= {}

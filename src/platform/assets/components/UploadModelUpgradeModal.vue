@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col justify-between gap-10 p-4 border-t border-border-default w-auto max-w-[min(500px,90vw)]"
+    class="flex w-auto max-w-[min(500px,90vw)] flex-col justify-between gap-10 border-t border-border-default p-4"
   >
     <UploadModelUpgradeModalBody />
 
@@ -12,13 +12,13 @@
 </template>
 
 <script setup lang="ts">
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import UploadModelUpgradeModalBody from '@/platform/assets/components/UploadModelUpgradeModalBody.vue'
 import UploadModelUpgradeModalFooter from '@/platform/assets/components/UploadModelUpgradeModalFooter.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-const { showSubscriptionDialog } = useSubscription()
+const { showSubscriptionDialog } = useBillingContext()
 
 function handleClose() {
   dialogStore.closeDialog({ key: 'upload-model-upgrade' })

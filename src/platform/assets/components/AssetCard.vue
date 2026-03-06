@@ -1,6 +1,5 @@
 <template>
   <div
-    v-if="!deletedLocal"
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
     :aria-labelledby="titleId"
@@ -8,50 +7,52 @@
     :tabindex="interactive ? 0 : -1"
     :class="
       cn(
-        'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col h-full',
+        'flex h-full flex-col gap-2 overflow-hidden rounded-2xl bg-modal-card-background p-2 transition-all duration-200 select-none',
         interactive &&
-          'group appearance-none bg-transparent m-0 outline-none text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4'
+          'group m-0 appearance-none border-none bg-transparent text-left outline-4 outline-base-foreground outline-none hover:bg-secondary-background focus:bg-secondary-background focus:outline-solid',
+        focused && 'bg-secondary-background outline-solid'
       )
     "
+    @click.stop="interactive && $emit('focus', asset)"
+    @focus="interactive && $emit('focus', asset)"
     @keydown.enter.self="interactive && $emit('select', asset)"
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
         v-if="isLoading || error"
-        class="flex size-full cursor-pointer items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
-        role="button"
-        @click.self="interactive && $emit('select', asset)"
+        class="flex size-full cursor-pointer items-center justify-center bg-linear-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
       />
       <img
         v-else
         :src="asset.preview_url"
         :alt="displayName"
-        class="size-full object-cover cursor-pointer"
-        role="button"
-        @click.self="interactive && $emit('select', asset)"
+        class="size-full cursor-pointer object-cover"
       />
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
-        v-if="flags.assetUpdateOptionsEnabled && !(asset.is_immutable ?? true)"
         :class="
           cn(
-            'absolute top-2 right-2 invisible group-hover:visible',
+            'invisible absolute top-2 right-2 group-hover:visible',
             dropdownMenuButton?.isOpen && 'visible'
           )
         "
       >
-        <MoreButton ref="dropdown-menu-button" size="sm">
+        <Button
+          v-tooltip.bottom="$t('assetBrowser.modelInfo.title')"
+          :aria-label="$t('assetBrowser.modelInfo.title')"
+          variant="secondary"
+          size="sm"
+          @click.stop="$emit('showInfo', asset)"
+        >
+          <i class="icon-[lucide--info]" />
+        </Button>
+        <MoreButton
+          v-if="showAssetOptions"
+          ref="dropdown-menu-button"
+          size="sm"
+        >
           <template #default>
-            <Button
-              variant="secondary"
-              size="md"
-              class="justify-start"
-              @click="startAssetRename"
-            >
-              <i class="icon-[lucide--pencil]" />
-              <span>{{ $t('g.rename') }}</span>
-            </Button>
             <Button
               variant="secondary"
               size="md"
@@ -65,49 +66,65 @@
         </MoreButton>
       </IconGroup>
     </div>
-    <div class="max-h-32 flex flex-col gap-2 justify-between flex-auto">
+    <div class="flex max-h-32 flex-auto flex-col justify-between gap-2">
       <h3
         :id="titleId"
         v-tooltip.top="{ value: displayName, showDelay: tooltipDelay }"
         :class="
           cn(
-            'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
+            'm-0 line-clamp-2 text-sm font-semibold wrap-anywhere',
             'text-base-foreground'
           )
         "
       >
-        <EditableText
-          :model-value="displayName"
-          :is-editing="isEditing"
-          :input-attrs="{ 'data-testid': 'asset-name-input' }"
-          @edit="assetRename"
-          @cancel="assetRename()"
-        />
+        {{ displayName }}
       </h3>
       <p
         :id="descId"
-        v-tooltip.top="{ value: asset.description, showDelay: tooltipDelay }"
+        v-tooltip.top="{ value: asset.secondaryText, showDelay: tooltipDelay }"
         :class="
           cn(
-            'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box] text-muted-foreground'
+            'm-0 line-clamp-2 [display:-webkit-box] text-sm text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
           )
         "
       >
-        {{ asset.description }}
+        {{ asset.secondaryText }}
       </p>
-      <div class="flex gap-4 text-xs text-muted-foreground mt-auto">
-        <span v-if="asset.stats.stars" class="flex items-center gap-1">
-          <i class="icon-[lucide--star] size-3" />
-          {{ asset.stats.stars }}
-        </span>
-        <span v-if="asset.stats.downloadCount" class="flex items-center gap-1">
-          <i class="icon-[lucide--download] size-3" />
-          {{ asset.stats.downloadCount }}
-        </span>
-        <span v-if="asset.stats.formattedDate" class="flex items-center gap-1">
-          <i class="icon-[lucide--clock] size-3" />
-          {{ asset.stats.formattedDate }}
-        </span>
+      <div class="mt-auto flex items-center justify-between gap-2">
+        <div class="flex gap-3 text-xs text-muted-foreground">
+          <span v-if="asset.stats.stars" class="flex items-center gap-1">
+            <i class="icon-[lucide--star] size-3" />
+            {{ asset.stats.stars }}
+          </span>
+          <span
+            v-if="asset.stats.downloadCount"
+            class="flex items-center gap-1"
+          >
+            <i class="icon-[lucide--download] size-3" />
+            {{ asset.stats.downloadCount }}
+          </span>
+          <span
+            v-if="asset.stats.formattedDate"
+            class="flex items-center gap-1"
+          >
+            <i class="icon-[lucide--clock] size-3" />
+            {{ asset.stats.formattedDate }}
+          </span>
+        </div>
+        <Button
+          v-if="interactive"
+          variant="secondary"
+          size="lg"
+          class="relative shrink-0"
+          @click.stop="handleSelect"
+        >
+          {{ $t('g.use') }}
+          <StatusBadge
+            v-if="isNewlyImported"
+            severity="contrast"
+            class="absolute -top-0.5 -right-0.5"
+          />
+        </Button>
       </div>
     </div>
   </div>
@@ -120,32 +137,35 @@ import { useI18n } from 'vue-i18n'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
-import EditableText from '@/components/common/EditableText.vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
+import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const { asset, interactive } = defineProps<{
+const { asset, interactive, focused } = defineProps<{
   asset: AssetDisplayItem
   interactive?: boolean
+  focused?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
+  focus: [asset: AssetDisplayItem]
   select: [asset: AssetDisplayItem]
+  deleted: [asset: AssetDisplayItem]
+  showInfo: [asset: AssetDisplayItem]
 }>()
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
-const { flags } = useFeatureFlags()
-const toastStore = useToastStore()
+const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
 
 const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
   'dropdown-menu-button'
@@ -154,11 +174,11 @@ const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
 const titleId = useId()
 const descId = useId()
 
-const isEditing = ref(false)
-const newNameRef = ref<string>()
-const deletedLocal = ref(false)
+const displayName = computed(() => getAssetDisplayName(asset))
 
-const displayName = computed(() => newNameRef.value ?? asset.name)
+const isNewlyImported = computed(() => isDownloadedThisSession(asset.id))
+
+const showAssetOptions = computed(() => !(asset.is_immutable ?? true))
 
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
@@ -168,6 +188,11 @@ const { isLoading, error } = useImage({
   src: asset.preview_url ?? '',
   alt: asset.name
 })
+
+function handleSelect() {
+  acknowledgeAsset(asset.id)
+  emit('select', asset)
+}
 
 function confirmDeletion() {
   dropdownMenuButton.value?.hide()
@@ -185,7 +210,7 @@ function confirmDeletion() {
       confirmText: t('g.delete'),
       // TODO: These need to be put into the new Button Variants once we have them.
       confirmClass: cn(
-        'bg-danger-200 text-base-foreground hover:bg-danger-200/80 focus:bg-danger-200/80 focus:ring ring-base-foreground'
+        'bg-danger-200 text-base-foreground ring-base-foreground hover:bg-danger-200/80 focus:bg-danger-200/80 focus:ring'
       ),
       optionsDisabled,
       onCancel: () => {
@@ -203,7 +228,7 @@ function confirmDeletion() {
           })
           // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 1_000))
-          deletedLocal.value = true
+          emit('deleted', asset)
         } catch (err: unknown) {
           console.error(err)
           promptText.value = t('assetBrowser.deletion.failed', {
@@ -217,33 +242,5 @@ function confirmDeletion() {
       }
     }
   })
-}
-
-function startAssetRename() {
-  dropdownMenuButton.value?.hide()
-  isEditing.value = true
-}
-
-async function assetRename(newName?: string) {
-  isEditing.value = false
-  if (newName) {
-    // Optimistic update
-    newNameRef.value = newName
-    try {
-      const result = await assetService.updateAsset(asset.id, {
-        name: newName
-      })
-      // Update with the actual name once the server responds
-      newNameRef.value = result.name
-    } catch (err: unknown) {
-      console.error(err)
-      toastStore.add({
-        severity: 'error',
-        summary: t('assetBrowser.rename.failed'),
-        life: 10_000
-      })
-      newNameRef.value = undefined
-    }
-  }
 }
 </script>

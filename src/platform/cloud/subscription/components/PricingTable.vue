@@ -30,7 +30,7 @@
             <span>{{ option.label }}</span>
             <div
               v-if="option.value === 'yearly'"
-              class="bg-primary-background text-white text-[11px] px-1 py-0.5 rounded-full flex items-center font-bold"
+              class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-[11px] font-bold text-white"
             >
               -20%
             </div>
@@ -38,27 +38,27 @@
         </template>
       </SelectButton>
     </div>
-    <div class="flex flex-col xl:flex-row items-stretch gap-6">
+    <div class="flex flex-col items-stretch gap-6 xl:flex-row">
       <div
         v-for="tier in tiers"
         :key="tier.id"
         :class="
           cn(
-            'flex-1 flex flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)]',
+            'flex flex-1 flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)]',
             tier.isPopular ? 'border-muted-foreground' : ''
           )
         "
       >
-        <div class="p-8 pb-0 flex flex-col gap-8">
-          <div class="flex flex-row items-center gap-2 justify-between">
+        <div class="flex flex-col gap-8 p-8 pb-0">
+          <div class="flex flex-row items-center justify-between gap-2">
             <span
-              class="font-inter text-base font-bold leading-normal text-base-foreground"
+              class="font-inter text-base/normal font-bold text-base-foreground"
             >
               {{ tier.name }}
             </span>
             <div
               v-if="tier.isPopular"
-              class="rounded-full bg-base-foreground px-1.5 text-[11px] font-bold uppercase text-base-background h-5 tracking-tight flex items-center"
+              class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-[11px] font-bold tracking-tight text-base-background uppercase"
             >
               {{ t('subscription.mostPopular') }}
             </div>
@@ -67,19 +67,17 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-baseline gap-2">
                 <span
-                  class="font-inter text-[32px] font-semibold leading-normal text-base-foreground"
+                  class="font-inter text-[32px] leading-normal font-semibold text-base-foreground"
                 >
                   <span
                     v-show="currentBillingCycle === 'yearly'"
-                    class="line-through text-2xl text-muted-foreground"
+                    class="text-2xl text-muted-foreground line-through"
                   >
                     ${{ tier.pricing.monthly }}
                   </span>
                   ${{ getPrice(tier) }}
                 </span>
-                <span
-                  class="font-inter text-xl leading-normal text-base-foreground"
-                >
+                <span class="font-inter text-xl/normal text-base-foreground">
                   {{ t('subscription.usdPerMonth') }}
                 </span>
               </div>
@@ -97,10 +95,10 @@
             </div>
           </div>
 
-          <div class="flex flex-col gap-4 pb-0 flex-1">
+          <div class="flex flex-1 flex-col gap-4 pb-0">
             <div class="flex flex-row items-center justify-between">
               <span
-                class="font-inter text-sm font-normal leading-normal text-foreground"
+                class="text-foreground font-inter text-sm/normal font-normal"
               >
                 {{
                   currentBillingCycle === 'yearly'
@@ -109,9 +107,9 @@
                 }}
               </span>
               <div class="flex flex-row items-center gap-1">
-                <i class="icon-[lucide--component] text-amber-400 text-sm" />
+                <i class="icon-[lucide--component] text-sm text-amber-400" />
                 <span
-                  class="font-inter text-sm font-bold leading-normal text-base-foreground"
+                  class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
                   {{ n(getCreditsDisplay(tier)) }}
                 </span>
@@ -119,53 +117,53 @@
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-foreground">
+              <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.maxDurationLabel') }}
               </span>
               <span
-                class="font-inter text-sm font-bold leading-normal text-base-foreground"
+                class="font-inter text-sm/normal font-bold text-base-foreground"
               >
                 {{ tier.maxDuration }}
               </span>
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-foreground">
+              <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.gpuLabel') }}
               </span>
-              <i class="pi pi-check text-xs text-success-foreground" />
+              <i class="pi pi-check text-success-foreground text-xs" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-foreground">
+              <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
-              <i class="pi pi-check text-xs text-success-foreground" />
+              <i class="pi pi-check text-success-foreground text-xs" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-foreground">
+              <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.customLoRAsLabel') }}
               </span>
               <i
                 v-if="tier.customLoRAs"
-                class="pi pi-check text-xs text-success-foreground"
+                class="pi pi-check text-success-foreground text-xs"
               />
-              <i v-else class="pi pi-times text-xs text-foreground" />
+              <i v-else class="pi pi-times text-foreground text-xs" />
             </div>
 
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-start justify-between">
                 <div class="flex flex-col gap-2">
-                  <span class="text-sm font-normal text-foreground">
+                  <span class="text-foreground text-sm/relaxed font-normal">
                     {{ t('subscription.videoEstimateLabel') }}
                   </span>
-                  <div class="flex flex-row items-center gap-2 group pt-2">
+                  <div class="group flex flex-row items-center gap-2 pt-2">
                     <i
                       class="pi pi-question-circle text-xs text-muted-foreground group-hover:text-base-foreground"
                     />
                     <span
-                      class="text-sm font-normal text-muted-foreground cursor-pointer group-hover:text-base-foreground"
+                      class="cursor-pointer text-sm font-normal text-muted-foreground group-hover:text-base-foreground"
                       @click="togglePopover"
                     >
                       {{ t('subscription.videoEstimateHelp') }}
@@ -173,7 +171,7 @@
                   </div>
                 </div>
                 <span
-                  class="font-inter text-sm font-bold leading-normal text-base-foreground"
+                  class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
                   ~{{ n(tier.pricing.videoEstimate) }}
                 </span>
@@ -191,8 +189,8 @@
                 'h-10 w-full',
                 getButtonTextClass(tier),
                 tier.key === 'creator'
-                  ? 'bg-base-foreground border-transparent hover:bg-inverted-background-hover'
-                  : 'bg-secondary-background border-transparent hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
+                  ? 'border-transparent bg-base-foreground hover:bg-inverted-background-hover'
+                  : 'border-transparent bg-secondary-background hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
               )
             "
             @click="() => handleSubscribe(tier.key)"
@@ -220,16 +218,19 @@
       }"
     >
       <div class="flex flex-col gap-2">
-        <p class="text-sm text-base-foreground">
+        <p class="text-sm/normal text-base-foreground">
           {{ t('subscription.videoEstimateExplanation') }}
         </p>
         <a
-          href="https://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
+          href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-sm text-azure-600 hover:text-azure-400 underline"
+          class="flex gap-1 text-sm text-azure-600 no-underline hover:text-azure-400"
         >
-          {{ t('subscription.videoEstimateTryTemplate') }}
+          <span class="underline">
+            {{ t('subscription.videoEstimateTryTemplate') }}
+          </span>
+          <span class="no-underline" v-html="'&rarr;'"></span>
         </a>
       </div>
     </Popover>
@@ -238,6 +239,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
@@ -247,8 +249,6 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
-import { t } from '@/i18n'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
   TIER_PRICING,
@@ -258,23 +258,35 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import {
-  FirebaseAuthStoreError,
-  useFirebaseAuthStore
-} from '@/stores/firebaseAuthStore'
+import { useTelemetry } from '@/platform/telemetry'
+import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
-type CheckoutTierKey = Exclude<TierKey, 'founder'>
+type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
 
 const getCheckoutTier = (
   tierKey: CheckoutTierKey,
   billingCycle: BillingCycle
 ): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
+
+const getCheckoutAttributionForCloud =
+  async (): Promise<CheckoutAttributionMetadata> => {
+    if (__DISTRIBUTION__ !== 'cloud') {
+      return {}
+    }
+
+    const { getCheckoutAttribution } =
+      await import('@/platform/telemetry/utils/checkoutAttribution')
+
+    return getCheckoutAttribution()
+  }
 
 interface BillingCycleOption {
   label: string
@@ -290,6 +302,8 @@ interface PricingTierConfig {
   customLoRAs: boolean
   isPopular?: boolean
 }
+
+const { t, n } = useI18n()
 
 const billingCycleOptions: BillingCycleOption[] = [
   { label: t('subscription.yearly'), value: 'yearly' },
@@ -325,11 +339,14 @@ const tiers: PricingTierConfig[] = [
     isPopular: false
   }
 ]
-
-const { n } = useI18n()
-const { getAuthHeader } = useFirebaseAuthStore()
-const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
-  useSubscription()
+const {
+  isActiveSubscription,
+  isFreeTier,
+  subscriptionTier,
+  isYearlySubscription
+} = useSubscription()
+const telemetry = useTelemetry()
+const { userId } = storeToRefs(useFirebaseAuthStore())
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
@@ -337,6 +354,10 @@ const isLoading = ref(false)
 const loadingTier = ref<CheckoutTierKey | null>(null)
 const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
+
+const hasPaidSubscription = computed(
+  () => isActiveSubscription.value && !isFreeTier.value
+)
 
 const currentTierKey = computed<TierKey | null>(() =>
   subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
@@ -374,17 +395,18 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
       ? t('subscription.tierNameYearly', { name: tier.name })
       : tier.name
 
-  return isActiveSubscription.value
+  return hasPaidSubscription.value
     ? t('subscription.changeTo', { plan: planName })
     : t('subscription.subscribeTo', { plan: planName })
 }
 
-const getButtonSeverity = (tier: PricingTierConfig): 'primary' | 'secondary' =>
-  isCurrentPlan(tier.key)
-    ? 'secondary'
-    : tier.key === 'creator'
-      ? 'primary'
-      : 'secondary'
+const getButtonSeverity = (
+  tier: PricingTierConfig
+): 'primary' | 'secondary' => {
+  if (isCurrentPlan(tier.key)) return 'secondary'
+  if (tier.key === 'creator') return 'primary'
+  return 'secondary'
+}
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
@@ -400,47 +422,6 @@ const getAnnualTotal = (tier: PricingTierConfig): number =>
 const getCreditsDisplay = (tier: PricingTierConfig): number =>
   tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
 
-const initiateCheckout = async (tierKey: CheckoutTierKey) => {
-  const authHeader = await getAuthHeader()
-  if (!authHeader) {
-    throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
-  }
-
-  const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
-  const response = await fetch(
-    `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
-    {
-      method: 'POST',
-      headers: { ...authHeader, 'Content-Type': 'application/json' }
-    }
-  )
-
-  if (!response.ok) {
-    let errorMessage = 'Failed to initiate checkout'
-    try {
-      const errorData = await response.json()
-      errorMessage = errorData.message || errorMessage
-    } catch {
-      // If JSON parsing fails, try to get text response or use HTTP status
-      try {
-        const errorText = await response.text()
-        errorMessage =
-          errorText || `HTTP ${response.status} ${response.statusText}`
-      } catch {
-        errorMessage = `HTTP ${response.status} ${response.statusText}`
-      }
-    }
-
-    throw new FirebaseAuthStoreError(
-      t('toastMessages.failedToInitiateSubscription', {
-        error: errorMessage
-      })
-    )
-  }
-
-  return await response.json()
-}
-
 const handleSubscribe = wrapWithErrorHandlingAsync(
   async (tierKey: CheckoutTierKey) => {
     if (!isCloud || isLoading.value || isCurrentPlan(tierKey)) return
@@ -449,7 +430,20 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
     loadingTier.value = tierKey
 
     try {
-      if (isActiveSubscription.value) {
+      if (hasPaidSubscription.value) {
+        const checkoutAttribution = await getCheckoutAttributionForCloud()
+        if (userId.value) {
+          telemetry?.trackBeginCheckout({
+            user_id: userId.value,
+            tier: tierKey,
+            cycle: currentBillingCycle.value,
+            checkout_type: 'change',
+            ...checkoutAttribution,
+            ...(currentTierKey.value
+              ? { previous_tier: currentTierKey.value }
+              : {})
+          })
+        }
         // Pass the target tier to create a deep link to subscription update confirmation
         const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
         const targetPlan = {
@@ -470,10 +464,11 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           await accessBillingPortal(checkoutTier)
         }
       } else {
-        const response = await initiateCheckout(tierKey)
-        if (response.checkout_url) {
-          window.open(response.checkout_url, '_blank')
-        }
+        await performSubscriptionCheckout(
+          tierKey,
+          currentBillingCycle.value,
+          true
+        )
       }
     } finally {
       isLoading.value = false

@@ -1,20 +1,21 @@
 <template>
   <nav
     ref="sideToolbarRef"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2 pointer-events-auto"
+    data-testid="side-toolbar"
+    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
     :class="{
       'small-sidebar': isSmall,
-      'connected-sidebar': isConnected,
+      'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
-      'border-r border-[var(--interface-stroke)] shadow-interface': isConnected
+      'border-r border-(--interface-stroke) shadow-interface': isConnected
     }"
   >
     <div
       :class="
         isOverflowing
           ? 'side-tool-bar-container overflow-y-auto'
-          : 'flex flex-col h-full'
+          : 'flex h-full flex-col'
       "
     >
       <div ref="topToolbarRef" :class="groupClasses">
@@ -40,12 +41,13 @@
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"
         />
-        <SidebarHelpCenterIcon :is-small="isSmall" />
-        <SidebarBottomPanelToggleButton :is-small="isSmall" />
+        <SidebarHelpCenterIcon v-if="!isIntegratedTabBar" :is-small="isSmall" />
+        <SidebarBottomPanelToggleButton v-if="!isCloud" :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
         <SidebarSettingsButton :is-small="isSmall" />
       </div>
     </div>
+    <HelpCenterPopups :is-small="isSmall" />
   </nav>
 </template>
 
@@ -53,16 +55,19 @@
 import { useResizeObserver } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import HelpCenterPopups from '@/components/helpcenter/HelpCenterPopups.vue'
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useKeybindingStore } from '@/stores/keybindingStore'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
@@ -73,6 +78,7 @@ import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 
+const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
@@ -89,6 +95,9 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
+const isIntegratedTabBar = computed(
+  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
+)
 const isConnected = computed(
   () =>
     selectedTab.value ||
@@ -136,17 +145,17 @@ const onTabClick = async (item: SidebarTabExtension) => {
 
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
-  const keybinding = keybindingStore.getKeybindingByCommandId(
-    `Workspace.ToggleSidebarTab.${tab.id}`
-  )
-  return keybinding ? ` (${keybinding.combo.toString()})` : ''
+  const shortcut = keybindingStore
+    .getKeybindingByCommandId(`Workspace.ToggleSidebarTab.${tab.id}`)
+    ?.combo.toString()
+  return shortcut ? t('g.shortcutSuffix', { shortcut }) : ''
 }
 
 const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
-    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0' +
-      (isConnected.value ? '' : ' rounded-lg shadow-interface')
+    'sidebar-item-group flex shrink-0 flex-col items-center overflow-hidden',
+    !isConnected.value && 'pointer-events-auto rounded-lg shadow-interface'
   )
 )
 
@@ -246,8 +255,6 @@ onMounted(() => {
 </style>
 
 <style scoped>
-@reference "tailwindcss";
-
 .floating-sidebar {
   padding: var(--sidebar-padding);
 }

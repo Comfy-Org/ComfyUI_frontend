@@ -3,6 +3,7 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import { TestIds } from './selectors'
 import { VueNodeFixture } from './utils/vueNodeFixtures'
 
 export class VueNodeHelpers {
@@ -148,9 +149,9 @@ export class VueNodeHelpers {
    * Get a specific widget by node title and widget name
    */
   getWidgetByName(nodeTitle: string, widgetName: string): Locator {
-    return this.getNodeByTitle(nodeTitle).locator(
-      `_vue=[widget.name="${widgetName}"]`
-    )
+    return this.getNodeByTitle(nodeTitle).getByLabel(widgetName, {
+      exact: true
+    })
   }
 
   /**
@@ -159,8 +160,18 @@ export class VueNodeHelpers {
   getInputNumberControls(widget: Locator) {
     return {
       input: widget.locator('input'),
-      incrementButton: widget.locator('button').first(),
-      decrementButton: widget.locator('button').nth(1)
+      decrementButton: widget.getByTestId(TestIds.widgets.decrement),
+      incrementButton: widget.getByTestId(TestIds.widgets.increment)
     }
+  }
+
+  /**
+   * Enter the subgraph of a node.
+   * @param nodeId - The ID of the node to enter the subgraph of. If not provided, the first matched subgraph will be entered.
+   */
+  async enterSubgraph(nodeId?: string): Promise<void> {
+    const locator = nodeId ? this.getNodeLocator(nodeId) : this.page
+    const editButton = locator.getByTestId(TestIds.widgets.subgraphEnterButton)
+    await editButton.click()
   }
 }

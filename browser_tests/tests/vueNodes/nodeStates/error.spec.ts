@@ -7,7 +7,7 @@ const ERROR_CLASS = /border-node-stroke-error/
 
 test.describe('Vue Node Error', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
   })
 
@@ -15,7 +15,7 @@ test.describe('Vue Node Error', () => {
     comfyPage
   }) => {
     await comfyPage.setup()
-    await comfyPage.loadWorkflow('missing/missing_nodes')
+    await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
 
     // Expect error state on missing unknown node
     const unknownNode = comfyPage.page.locator('[data-node-id]').filter({
@@ -28,7 +28,7 @@ test.describe('Vue Node Error', () => {
     comfyPage
   }) => {
     await comfyPage.setup()
-    await comfyPage.loadWorkflow('nodes/execution_error')
+    await comfyPage.workflow.loadWorkflow('nodes/execution_error')
     await comfyPage.runButton.click()
 
     const raiseErrorNode = comfyPage.vueNodes.getNodeByTitle('Raise Error')

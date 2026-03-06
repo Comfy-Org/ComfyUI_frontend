@@ -8,9 +8,10 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
-import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
+import { electronAPI as getElectronAPI } from '@/utils/envUtil'
 ;(async () => {
-  if (!isElectron()) return
+  if (!isDesktop) return
 
   const electronAPI = getElectronAPI()
   const desktopAppVersion = await electronAPI.getElectronVersion()
@@ -18,7 +19,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
   const toastStore = useToastStore()
   const { staticUrls, buildDocsUrl } = useExternalLink()
 
-  const onChangeRestartApp = (newValue: string, oldValue: string) => {
+  const onChangeRestartApp = (newValue: unknown, oldValue: unknown) => {
     // Add a delay to allow changes to take effect before restarting.
     if (oldValue !== undefined && newValue !== oldValue) {
       electronAPI.restartApp('Restart ComfyUI to apply changes.', 1500)

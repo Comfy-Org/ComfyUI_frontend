@@ -1,5 +1,5 @@
 # Description: Validates JSON syntax in all tracked .json files (excluding tsconfig*.json) using jq
-name: "CI: JSON Validation"
+name: 'CI: JSON Validation'
 
 on:
   push:
@@ -13,6 +13,6 @@ jobs:
   json-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Validate JSON syntax
         run: ./scripts/cicd/check-json.sh

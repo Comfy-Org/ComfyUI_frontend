@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob).
+
 ## Project Structure & Module Organization
 
 - Source: `src/`
@@ -19,21 +21,25 @@
 - i18n: `src/i18n.ts`,
 - Entry Point: `src/main.ts`.
 - Tests:
-  - unit/component in `tests-ui/` and `src/**/*.test.ts`
+  - unit/component in `src/**/*.test.ts`
   - E2E (Playwright) in `browser_tests/**/*.spec.ts`
 - Public assets: `public/`
 - Build output: `dist/`
 - Configs
   - `vite.config.mts`
-  - `vitest.config.ts`
   - `playwright.config.ts`
   - `eslint.config.ts`
-  - `.prettierrc`
+  - `.oxfmtrc.json`
+  - `.oxlintrc.json`
   - etc.
 
 ## Monorepo Architecture
 
 The project uses **Nx** for build orchestration and task management
+
+## Package Manager
+
+This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g., `pnpm test:unit`, `pnpm lint`). To run arbitrary packages not in scripts, use `pnpx` or `pnpm dlx` — never `npx`.
 
 ## Build, Test, and Development Commands
 
@@ -42,10 +48,25 @@ The project uses **Nx** for build orchestration and task management
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm preview`: Preview the production build locally
 - `pnpm test:unit`: Run Vitest unit tests
-- `pnpm test:browser`: Run Playwright E2E tests (`browser_tests/`)
+- `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
-- `pnpm format` / `pnpm format:check`: Prettier
+- `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
+- `pnpm storybook`: Start Storybook development server
+
+## Development Workflow
+
+1. Make code changes
+2. Run relevant tests
+3. Run `pnpm typecheck`, `pnpm lint`, `pnpm format`
+4. Check if README updates are needed
+5. Suggest docs.comfy.org updates for user-facing changes
+
+## Git Conventions
+
+- Use `prefix:` format: `feat:`, `fix:`, `test:`
+- Add "Fixes #n" to PR descriptions
+- Never mention Claude/AI in commits
 
 ## Coding Style & Naming Conventions
 
@@ -55,7 +76,7 @@ The project uses **Nx** for build orchestration and task management
     - Composition API only
   - Tailwind 4 styling
     - Avoid `<style>` blocks
-- Style: (see `.prettierrc`)
+- Style: (see `.oxfmtrc.json`)
   - Indent 2 spaces
   - single quotes
   - no trailing semicolons
@@ -63,6 +84,9 @@ The project uses **Nx** for build orchestration and task management
 - Imports:
   - sorted/grouped by plugin
   - run `pnpm format` before committing
+  - use separate `import type` statements, not inline `type` in mixed imports
+    - ✅ `import type { Foo } from './foo'` + `import { bar } from './foo'`
+    - ❌ `import { bar, type Foo } from './foo'`
 - ESLint:
   - Vue + TS rules
   - no floating promises
@@ -72,7 +96,6 @@ The project uses **Nx** for build orchestration and task management
   - Vue components in PascalCase (e.g., `MenuHamburger.vue`)
   - composables `useXyz.ts`
   - Pinia stores `*Store.ts`
-
 
 ## Commit & Pull Request Guidelines
 
@@ -111,15 +134,18 @@ The project uses **Nx** for build orchestration and task management
 
     ```typescript
     const { nodes, showTotal = true } = defineProps<{
-    nodes: ApiNodeCost[]
-    showTotal?: boolean
+      nodes: ApiNodeCost[]
+      showTotal?: boolean
     }>()
     ```
 
   - Prefer reactive props destructuring to `const props = defineProps<...>`
   - Do not use `withDefaults` or runtime props declaration
   - Do not import Vue macros unnecessarily
-  - Prefer `useModel` to separately defining a prop and emit
+  - Prefer `defineModel` to separately defining a prop and emit for v-model bindings
+  - Define slots via template usage, not `defineSlots`
+  - Use same-name shorthand for slot prop bindings: `:isExpanded` instead of `:is-expanded="isExpanded"`
+  - Derive component types using `vue-component-type-helpers` (`ComponentProps`, `ComponentSlots`) instead of separate type files
   - Be judicious with addition of new refs or other state
     - If it's possible to accomplish the design goals with just a prop, don't add a `ref`
     - If it's possible to use the `ref` or prop directly, don't add a `computed`
@@ -137,7 +163,7 @@ The project uses **Nx** for build orchestration and task management
 8. Implement proper error handling
 9. Follow Vue 3 style guide and naming conventions
 10. Use Vite for fast development and building
-11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json
+11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
 12. Avoid new usage of PrimeVue components
 13. Write tests for all changes, especially bug fixes to catch future regressions
 14. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
@@ -154,6 +180,8 @@ The project uses **Nx** for build orchestration and task management
 25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
 
 ## Testing Guidelines
+
+See @docs/testing/\*.md for detailed patterns.
 
 - Frameworks:
   - Vitest (unit/component, happy-dom)
@@ -240,7 +268,7 @@ A particular type of complexity is over-engineering, where developers have made 
 
 ## Repository Navigation
 
-- Check README files in key folders (tests-ui, browser_tests, composables, etc.)
+- Check README files in key folders (browser_tests, composables, etc.)
 - Prefer running single tests for performance
 - Use --help for unfamiliar CLI tools
 
@@ -268,10 +296,19 @@ When referencing Comfy-Org repos:
   - Use `cn()` inline in the template when feasible instead of creating a `computed` to hold the value
 - NEVER use `!important` or the `!` important prefix for tailwind classes
   - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
+- NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
+  - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
 
 ## Agent-only rules
 
 Rules for agent-based coding tasks.
+
+### Chrome DevTools MCP
+
+When using `take_snapshot` to inspect dropdowns, listboxes, or other components with dynamic options:
+
+- Use `verbose: true` to see the full accessibility tree including list items
+- Non-verbose snapshots often omit nested options in comboboxes/listboxes
 
 ### Temporary Files
 

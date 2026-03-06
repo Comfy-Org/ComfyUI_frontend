@@ -3,18 +3,18 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-component-node-background lg-node pb-1 contain-style contain-layout w-[350px] rounded-2xl touch-none flex flex-col border-1 border-solid outline-transparent outline-2 border-node-stroke',
+        'lg-node flex w-[350px] touch-none flex-col rounded-2xl border border-solid border-node-stroke bg-component-node-background pb-1 outline-2 outline-transparent contain-layout contain-style',
         position
       )
     "
   >
     <div
-      class="flex flex-col justify-center items-center relative pointer-events-none"
+      class="pointer-events-none relative flex flex-col items-center justify-center"
     >
       <NodeHeader :node-data="nodeData" />
     </div>
     <div
-      class="flex flex-1 flex-col gap-1 pb-2 pointer-events-none"
+      class="pointer-events-none flex flex-1 flex-col gap-1 pb-2"
       :data-testid="`node-body-${nodeData.id}`"
     >
       <NodeSlots :node-data="nodeData" />
@@ -36,6 +36,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
@@ -56,6 +57,7 @@ const nodeData = computed<VueNodeData>(() => {
   const widgets = Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => widgetStore.inputIsWidget(input))
     .map(([name, input]) => ({
+      nodeId: '-1',
       name,
       type: input.widgetType || input.type,
       value:
@@ -69,8 +71,11 @@ const nodeData = computed<VueNodeData>(() => {
       options: {
         hidden: input.hidden,
         advanced: input.advanced,
-        values: input.type === 'COMBO' ? input.options : undefined // For combo widgets
-      }
+        values:
+          input.type === 'COMBO' && Array.isArray(input.options)
+            ? input.options
+            : undefined
+      } satisfies IWidgetOptions
     }))
 
   const inputs: INodeInputSlot[] = Object.entries(nodeDef.inputs || {})

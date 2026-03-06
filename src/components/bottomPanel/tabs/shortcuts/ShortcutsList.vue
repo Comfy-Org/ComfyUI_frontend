@@ -1,6 +1,9 @@
 <template>
   <div class="shortcuts-list flex justify-center">
-    <div class="grid h-full w-[90%] grid-cols-1 gap-4 md:grid-cols-3 md:gap-24">
+    <div
+      data-testid="shortcuts-columns"
+      class="grid h-full w-[90%] grid-cols-1 gap-4 md:grid-cols-3 md:gap-24"
+    >
       <div
         v-for="(subcategoryCommands, subcategory) in filteredSubcategories"
         :key="subcategory"
@@ -16,7 +19,7 @@
           <div
             v-for="command in subcategoryCommands"
             :key="command.id"
-            class="shortcut-item flex items-center justify-between rounded py-2 transition-colors duration-200"
+            class="shortcut-item flex items-center justify-between rounded-sm py-2 transition-colors duration-200"
           >
             <div class="shortcut-info grow pr-4">
               <div class="shortcut-name text-sm font-medium">
@@ -32,7 +35,7 @@
                 <span
                   v-for="key in command.keybinding!.combo.getKeySequences()"
                   :key="key"
-                  class="key-badge min-w-6 rounded bg-muted-background px-2 py-1 text-center font-mono text-xs"
+                  class="key-badge min-w-6 rounded-sm bg-muted-background px-2 py-1 text-center font-mono text-xs"
                 >
                   {{ formatKey(key) }}
                 </span>

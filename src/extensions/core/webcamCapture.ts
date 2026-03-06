@@ -1,4 +1,5 @@
 import { t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { api } from '../../scripts/api'
@@ -66,7 +67,7 @@ app.registerExtension({
       }
     }
   },
-  nodeCreated(node) {
+  nodeCreated(node: LGraphNode) {
     if ((node.type, node.constructor.comfyClass !== 'WebcamCapture')) return
 
     // @ts-expect-error fixme ts strict error

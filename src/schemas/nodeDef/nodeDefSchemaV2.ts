@@ -64,6 +64,21 @@ const zImageCompareInputSpec = zBaseInputOptions.extend({
   options: z.record(z.unknown()).optional()
 })
 
+const zBoundingBoxInputSpec = zBaseInputOptions.extend({
+  type: z.literal('BOUNDING_BOX'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  component: z.enum(['ImageCrop']).optional(),
+  default: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number()
+    })
+    .optional()
+})
+
 const zMarkdownInputSpec = zBaseInputOptions.extend({
   type: z.literal('MARKDOWN'),
   name: z.string(),
@@ -111,6 +126,15 @@ const zTextareaInputSpec = zBaseInputOptions.extend({
     .optional()
 })
 
+const zCurvePoint = z.tuple([z.number(), z.number()])
+
+const zCurveInputSpec = zBaseInputOptions.extend({
+  type: z.literal('CURVE'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  default: z.array(zCurvePoint).optional()
+})
+
 const zCustomInputSpec = zBaseInputOptions.extend({
   type: z.string(),
   name: z.string(),
@@ -126,10 +150,12 @@ const zInputSpec = z.union([
   zColorInputSpec,
   zImageInputSpec,
   zImageCompareInputSpec,
+  zBoundingBoxInputSpec,
   zMarkdownInputSpec,
   zChartInputSpec,
   zGalleriaInputSpec,
   zTextareaInputSpec,
+  zCurveInputSpec,
   zCustomInputSpec
 ])
 
@@ -158,6 +184,7 @@ export const zComfyNodeDef = z.object({
   python_module: z.string(),
   deprecated: z.boolean().optional(),
   experimental: z.boolean().optional(),
+  dev_only: z.boolean().optional(),
   api_node: z.boolean().optional()
 })
 
@@ -169,9 +196,11 @@ type StringInputSpec = z.infer<typeof zStringInputSpec>
 export type ComboInputSpec = z.infer<typeof zComboInputSpec>
 export type ColorInputSpec = z.infer<typeof zColorInputSpec>
 export type ImageCompareInputSpec = z.infer<typeof zImageCompareInputSpec>
+export type BoundingBoxInputSpec = z.infer<typeof zBoundingBoxInputSpec>
 export type ChartInputSpec = z.infer<typeof zChartInputSpec>
 export type GalleriaInputSpec = z.infer<typeof zGalleriaInputSpec>
 export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
+export type CurveInputSpec = z.infer<typeof zCurveInputSpec>
 export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
 
 export type InputSpec = z.infer<typeof zInputSpec>

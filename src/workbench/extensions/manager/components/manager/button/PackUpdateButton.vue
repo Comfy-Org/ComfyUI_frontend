@@ -3,14 +3,16 @@
     v-tooltip.top="
       hasDisabledUpdatePacks ? $t('manager.disabledNodesWontUpdate') : null
     "
-    variant="textonly"
-    class="border"
-    size="sm"
+    variant="primary"
+    :size
     :disabled="isUpdating"
     @click="updateAllPacks"
   >
     <DotSpinner v-if="isUpdating" duration="1s" :size="12" />
-    <span>{{ $t('manager.updateAll') }}</span>
+    <i v-else class="icon-[lucide--refresh-cw]" />
+    <span>{{
+      nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')
+    }}</span>
   </Button>
 </template>
 
@@ -19,14 +21,20 @@ import { ref } from 'vue'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button/button.variants'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 type NodePack = components['schemas']['Node']
 
-const { nodePacks, hasDisabledUpdatePacks } = defineProps<{
+const {
+  nodePacks,
+  hasDisabledUpdatePacks,
+  size = 'sm'
+} = defineProps<{
   nodePacks: NodePack[]
   hasDisabledUpdatePacks?: boolean
+  size?: ButtonVariants['size']
 }>()
 
 const isUpdating = ref<boolean>(false)

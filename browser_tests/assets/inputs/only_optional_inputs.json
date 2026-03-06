@@ -29,9 +29,7 @@
       "properties": {
         "Node name for S&R": "DevToolsNodeWithOnlyOptionalInput"
       },
-      "widgets_values": [
-        ""
-      ]
+      "widgets_values": [""]
     }
   ],
   "links": [],

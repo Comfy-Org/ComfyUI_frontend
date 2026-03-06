@@ -64,7 +64,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -461,7 +461,6 @@ jobs:
               echo "::warning::Failed to delete ${branch}"
             fi
           done < "$FILE"
-
 
       - name: Remove needs-backport label
         if: steps.filter-targets.outputs.skip != 'true' && success()

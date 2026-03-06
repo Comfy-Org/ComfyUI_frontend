@@ -88,11 +88,16 @@ export const useVersionCompatibilityStore = defineStore(
       return Date.now() < dismissedUntil
     })
 
+    const warningsDisabled = computed(() =>
+      settingStore.get('Comfy.VersionCompatibility.DisableWarnings')
+    )
+
     const shouldShowWarning = computed(() => {
-      const warningsDisabled = settingStore.get(
-        'Comfy.VersionCompatibility.DisableWarnings'
+      return (
+        hasVersionMismatch.value &&
+        !isDismissed.value &&
+        !warningsDisabled.value
       )
-      return hasVersionMismatch.value && !isDismissed.value && !warningsDisabled
     })
 
     const warningMessage = computed(() => {

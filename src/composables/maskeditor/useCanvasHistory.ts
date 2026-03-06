@@ -1,12 +1,17 @@
 import { ref, computed } from 'vue'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
+// Define the state interface for better readability
+interface CanvasState {
+  mask: ImageData | ImageBitmap
+  rgb: ImageData | ImageBitmap
+  img: ImageData | ImageBitmap
+}
+
 export function useCanvasHistory(maxStates = 20) {
   const store = useMaskEditorStore()
 
-  const states = ref<
-    { mask: ImageData | ImageBitmap; rgb: ImageData | ImageBitmap }[]
-  >([])
+  const states = ref<CanvasState[]>([])
   const currentStateIndex = ref(-1)
   const initialized = ref(false)
 
@@ -22,22 +27,29 @@ export function useCanvasHistory(maxStates = 20) {
   })
 
   const saveInitialState = () => {
-    const maskCtx = store.maskCtx
-    const rgbCtx = store.rgbCtx
-    const maskCanvas = store.maskCanvas
-    const rgbCanvas = store.rgbCanvas
+    const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = store
 
-    if (!maskCtx || !rgbCtx || !maskCanvas || !rgbCanvas) {
+    // Ensure all 3 contexts and canvases are ready
+    if (
+      !maskCtx ||
+      !rgbCtx ||
+      !imgCtx ||
+      !maskCanvas ||
+      !rgbCanvas ||
+      !imgCanvas
+    ) {
       requestAnimationFrame(saveInitialState)
       return
     }
 
-    if (!maskCanvas.width || !rgbCanvas.width) {
+    if (!maskCanvas.width || !rgbCanvas.width || !imgCanvas.width) {
       requestAnimationFrame(saveInitialState)
       return
     }
 
     states.value = []
+
+    // Capture all three layers
     const maskState = maskCtx.getImageData(
       0,
       0,
@@ -50,35 +62,51 @@ export function useCanvasHistory(maxStates = 20) {
       rgbCanvas.width,
       rgbCanvas.height
     )
-    states.value.push({ mask: maskState, rgb: rgbState })
+    const imgState = imgCtx.getImageData(
+      0,
+      0,
+      imgCanvas.width,
+      imgCanvas.height
+    )
+
+    states.value.push({ mask: maskState, rgb: rgbState, img: imgState })
     currentStateIndex.value = 0
     initialized.value = true
   }
 
   const saveState = (
     providedMaskData?: ImageData | ImageBitmap,
-    providedRgbData?: ImageData | ImageBitmap
+    providedRgbData?: ImageData | ImageBitmap,
+    providedImgData?: ImageData | ImageBitmap
   ) => {
-    const maskCtx = store.maskCtx
-    const rgbCtx = store.rgbCtx
-    const maskCanvas = store.maskCanvas
-    const rgbCanvas = store.rgbCanvas
+    const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = store
 
-    if (!maskCtx || !rgbCtx || !maskCanvas || !rgbCanvas) return
+    if (
+      !maskCtx ||
+      !rgbCtx ||
+      !imgCtx ||
+      !maskCanvas ||
+      !rgbCanvas ||
+      !imgCanvas
+    )
+      return
 
     if (!initialized.value || currentStateIndex.value === -1) {
       saveInitialState()
       return
     }
 
+    // Clear redo history
     states.value = states.value.slice(0, currentStateIndex.value + 1)
 
     let maskState: ImageData | ImageBitmap
     let rgbState: ImageData | ImageBitmap
+    let imgState: ImageData | ImageBitmap
 
-    if (providedMaskData && providedRgbData) {
+    if (providedMaskData && providedRgbData && providedImgData) {
       maskState = providedMaskData
       rgbState = providedRgbData
+      imgState = providedImgData
     } else {
       maskState = maskCtx.getImageData(
         0,
@@ -87,71 +115,84 @@ export function useCanvasHistory(maxStates = 20) {
         maskCanvas.height
       )
       rgbState = rgbCtx.getImageData(0, 0, rgbCanvas.width, rgbCanvas.height)
+      imgState = imgCtx.getImageData(0, 0, imgCanvas.width, imgCanvas.height)
     }
 
-    states.value.push({ mask: maskState, rgb: rgbState })
+    states.value.push({ mask: maskState, rgb: rgbState, img: imgState })
     currentStateIndex.value++
 
+    // Maintain max history size and clean up memory
     if (states.value.length > maxStates) {
       const removed = states.value.shift()
-      // Cleanup ImageBitmaps to avoid memory leaks
       if (removed) {
-        if (removed.mask instanceof ImageBitmap) removed.mask.close()
-        if (removed.rgb instanceof ImageBitmap) removed.rgb.close()
+        cleanupState(removed)
       }
       currentStateIndex.value--
     }
   }
 
   const undo = () => {
-    if (!canUndo.value) {
-      alert('No more undo states available')
-      return
-    }
-
+    if (!canUndo.value) return
     currentStateIndex.value--
     restoreState(states.value[currentStateIndex.value])
   }
 
   const redo = () => {
-    if (!canRedo.value) {
-      alert('No more redo states available')
-      return
-    }
-
+    if (!canRedo.value) return
     currentStateIndex.value++
     restoreState(states.value[currentStateIndex.value])
   }
 
-  const restoreState = (state: {
-    mask: ImageData | ImageBitmap
-    rgb: ImageData | ImageBitmap
-  }) => {
-    const maskCtx = store.maskCtx
-    const rgbCtx = store.rgbCtx
-    if (!maskCtx || !rgbCtx) return
+  const restoreState = (state: CanvasState) => {
+    const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = store
+    if (
+      !maskCtx ||
+      !rgbCtx ||
+      !imgCtx ||
+      !maskCanvas ||
+      !rgbCanvas ||
+      !imgCanvas
+    )
+      return
 
-    if (state.mask instanceof ImageBitmap) {
-      maskCtx.clearRect(0, 0, state.mask.width, state.mask.height)
-      maskCtx.drawImage(state.mask, 0, 0)
-    } else {
-      maskCtx.putImageData(state.mask, 0, 0)
+    // Update canvas dimensions to match state (handles rotation undo/redo)
+    const refData = state.mask
+    const newWidth = refData.width
+    const newHeight = refData.height
+
+    if (maskCanvas.width !== newWidth || maskCanvas.height !== newHeight) {
+      maskCanvas.width = newWidth
+      maskCanvas.height = newHeight
+      rgbCanvas.width = newWidth
+      rgbCanvas.height = newHeight
+      imgCanvas.width = newWidth
+      imgCanvas.height = newHeight
     }
 
-    if (state.rgb instanceof ImageBitmap) {
-      rgbCtx.clearRect(0, 0, state.rgb.width, state.rgb.height)
-      rgbCtx.drawImage(state.rgb, 0, 0)
-    } else {
-      rgbCtx.putImageData(state.rgb, 0, 0)
-    }
+    const layers = [
+      { ctx: maskCtx, data: state.mask },
+      { ctx: rgbCtx, data: state.rgb },
+      { ctx: imgCtx, data: state.img }
+    ]
+
+    layers.forEach(({ ctx, data }) => {
+      if (data instanceof ImageBitmap) {
+        ctx.clearRect(0, 0, data.width, data.height)
+        ctx.drawImage(data, 0, 0)
+      } else {
+        ctx.putImageData(data, 0, 0)
+      }
+    })
+  }
+
+  const cleanupState = (state: CanvasState) => {
+    if (state.mask instanceof ImageBitmap) state.mask.close()
+    if (state.rgb instanceof ImageBitmap) state.rgb.close()
+    if (state.img instanceof ImageBitmap) state.img.close()
   }
 
   const clearStates = () => {
-    // Cleanup bitmaps
-    states.value.forEach((state) => {
-      if (state.mask instanceof ImageBitmap) state.mask.close()
-      if (state.rgb instanceof ImageBitmap) state.rgb.close()
-    })
+    states.value.forEach(cleanupState)
     states.value = []
     currentStateIndex.value = -1
     initialized.value = false

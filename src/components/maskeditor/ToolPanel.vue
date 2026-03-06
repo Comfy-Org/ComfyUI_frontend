@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full z-8888 flex flex-col justify-between bg-comfy-menu-bg">
+  <div class="z-8888 flex h-full flex-col justify-between bg-comfy-menu-bg">
     <div class="flex flex-col">
       <div
         v-for="tool in allTools"
@@ -19,7 +19,7 @@
     </div>
 
     <div
-      class="flex flex-col items-center cursor-pointer rounded-md mb-2 transition-colors duration-200 hover:bg-secondary-background-hover"
+      class="mb-2 flex cursor-pointer flex-col items-center rounded-md transition-colors duration-200 hover:bg-secondary-background-hover"
       :title="t('maskEditor.clickToResetZoom')"
       @click="onResetZoom"
     >
@@ -31,18 +31,19 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 import { iconsHtml } from '@/extensions/core/maskeditor/constants'
 import type { Tools } from '@/extensions/core/maskeditor/types'
 import { allTools } from '@/extensions/core/maskeditor/types'
-import { t } from '@/i18n'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 const { toolManager } = defineProps<{
   toolManager: ReturnType<typeof useToolManager>
 }>()
 
+const { t } = useI18n()
 const store = useMaskEditorStore()
 
 const onToolSelect = (tool: Tools) => {

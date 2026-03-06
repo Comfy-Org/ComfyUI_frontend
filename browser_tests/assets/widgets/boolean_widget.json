@@ -5,14 +5,8 @@
     {
       "id": 11,
       "type": "DevToolsNodeWithBooleanInput",
-      "pos": [
-        0,
-        30
-      ],
-      "size": [
-        315,
-        58
-      ],
+      "pos": [0, 30],
+      "size": [315, 58],
       "flags": {
         "collapsed": false
       },
@@ -23,9 +17,7 @@
       "properties": {
         "Node name for S&R": "DevToolsNodeWithBooleanInput"
       },
-      "widgets_values": [
-        false
-      ]
+      "widgets_values": [false]
     }
   ],
   "links": [],

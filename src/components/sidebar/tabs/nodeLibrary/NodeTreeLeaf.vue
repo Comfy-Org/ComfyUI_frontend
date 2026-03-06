@@ -1,5 +1,10 @@
 <template>
-  <div ref="container" class="node-lib-node-container">
+  <div
+    ref="container"
+    class="node-lib-node-container size-full"
+    data-testid="node-tree-leaf"
+    :data-node-name="nodeDef.display_name"
+  >
     <TreeExplorerTreeNode :node="node" @contextmenu="handleContextMenu">
       <template #before-label>
         <Tag
@@ -13,10 +18,7 @@
           severity="danger"
         />
       </template>
-      <template
-        v-if="nodeDef.name.startsWith(useSubgraphStore().typePrefix)"
-        #actions
-      >
+      <template v-if="isUserBlueprint" #actions>
         <Button
           variant="destructive"
           size="icon-sm"
@@ -57,7 +59,7 @@
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="$t('g.learnMore')"
-          @click.stop="props.openNodeHelp(nodeDef)"
+          @click.stop="onHelpClick"
         >
           <i class="pi pi-question size-3.5" />
         </Button>
@@ -85,6 +87,7 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -112,6 +115,13 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
 const toggleBookmark = async () => {
   await nodeBookmarkStore.toggleBookmark(nodeDef.value)
 }
+
+const onHelpClick = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'node_library_help_button'
+  })
+  props.openNodeHelp(nodeDef.value)
+}
 const editBlueprint = async () => {
   if (!props.node.data)
     throw new Error(
@@ -120,8 +130,18 @@ const editBlueprint = async () => {
   await useSubgraphStore().editBlueprint(props.node.data.name)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
+const subgraphStore = useSubgraphStore()
+const isUserBlueprint = computed(() => {
+  const name = nodeDef.value.name
+  if (!name.startsWith(subgraphStore.typePrefix)) return false
+  return !subgraphStore.isGlobalBlueprint(
+    name.slice(subgraphStore.typePrefix.length)
+  )
+})
 const menuItems = computed<MenuItem[]>(() => {
-  const items: MenuItem[] = [
+  if (!isUserBlueprint.value) return []
+
+  return [
     {
       label: t('g.delete'),
       icon: 'pi pi-trash',
@@ -129,15 +149,14 @@ const menuItems = computed<MenuItem[]>(() => {
       command: deleteBlueprint
     }
   ]
-  return items
 })
 function handleContextMenu(event: Event) {
-  if (!nodeDef.value.name.startsWith(useSubgraphStore().typePrefix)) return
+  if (!isUserBlueprint.value) return
   menu.value?.show(event)
 }
 function deleteBlueprint() {
   if (!props.node.data) return
-  void useSubgraphStore().deleteBlueprint(props.node.data.name)
+  void subgraphStore.deleteBlueprint(props.node.data.name)
 }
 
 const nodePreviewStyle = ref<CSSProperties>({
@@ -187,11 +206,3 @@ onUnmounted(() => {
   nodeContentElement.value?.removeEventListener('mouseleave', handleMouseLeave)
 })
 </script>
-
-<style scoped>
-@reference '../../../../assets/css/style.css';
-
-.node-lib-node-container {
-  @apply h-full w-full;
-}
-</style>

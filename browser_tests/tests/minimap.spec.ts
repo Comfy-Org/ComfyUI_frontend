@@ -1,16 +1,15 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
-test.describe('Minimap', () => {
+test.describe('Minimap', { tag: '@canvas' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setSetting('Comfy.Minimap.Visible', true)
-    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
-    await comfyPage.loadWorkflow('default')
-    await comfyPage.page.waitForFunction(
-      () => window['app'] && window['app'].canvas
-    )
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', true)
+    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.page.waitForFunction(() => window.app && window.app.canvas)
   })
 
   test('Validate minimap is visible by default', async ({ comfyPage }) => {
@@ -35,7 +34,9 @@ test.describe('Minimap', () => {
   })
 
   test('Validate minimap toggle button state', async ({ comfyPage }) => {
-    const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
+    const toggleButton = comfyPage.page.getByTestId(
+      TestIds.canvas.toggleMinimapButton
+    )
 
     await expect(toggleButton).toBeVisible()
 
@@ -45,7 +46,9 @@ test.describe('Minimap', () => {
 
   test('Validate minimap can be toggled off and on', async ({ comfyPage }) => {
     const minimapContainer = comfyPage.page.locator('.litegraph-minimap')
-    const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
+    const toggleButton = comfyPage.page.getByTestId(
+      TestIds.canvas.toggleMinimapButton
+    )
 
     await expect(minimapContainer).toBeVisible()
 

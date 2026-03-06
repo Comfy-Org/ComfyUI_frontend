@@ -11,7 +11,7 @@
       content: { class: '!p-0' },
       mask: { class: '!bg-black/70' }
     }"
-    :style="{ width: '90vw', maxWidth: '800px' }"
+    :style="{ width: '90vw' }"
   >
     <div class="relative">
       <Button

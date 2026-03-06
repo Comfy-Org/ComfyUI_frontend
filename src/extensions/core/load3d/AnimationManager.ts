@@ -1,9 +1,10 @@
 import * as THREE from 'three'
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
-import {
-  type AnimationItem,
-  type AnimationManagerInterface,
-  type EventManagerInterface
+import type {
+  AnimationItem,
+  AnimationManagerInterface,
+  EventManagerInterface
 } from '@/extensions/core/load3d/interfaces'
 
 export class AnimationManager implements AnimationManagerInterface {
@@ -38,7 +39,10 @@ export class AnimationManager implements AnimationManagerInterface {
     this.eventManager.emitEvent('animationListChange', [])
   }
 
-  setupModelAnimations(model: THREE.Object3D, originalModel: any): void {
+  setupModelAnimations(
+    model: THREE.Object3D,
+    originalModel: THREE.Object3D | THREE.BufferGeometry | GLTF | null
+  ): void {
     if (this.currentAnimation) {
       this.currentAnimation.stopAllAction()
       this.animationActions = []

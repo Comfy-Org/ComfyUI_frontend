@@ -2,13 +2,14 @@ import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { BillingPortalTargetTier } from '@/stores/firebaseAuthStore'
@@ -51,6 +52,17 @@ export const useFirebaseAuthActions = () => {
   }
 
   const logout = wrapWithErrorHandlingAsync(async () => {
+    const workflowStore = useWorkflowStore()
+    if (workflowStore.modifiedWorkflows.length > 0) {
+      const dialogService = useDialogService()
+      const confirmed = await dialogService.confirm({
+        title: t('auth.signOut.unsavedChangesTitle'),
+        message: t('auth.signOut.unsavedChangesMessage'),
+        type: 'dirtyClose'
+      })
+      if (!confirmed) return
+    }
+
     await authStore.logout()
     toastStore.add({
       severity: 'success',
@@ -83,7 +95,7 @@ export const useFirebaseAuthActions = () => {
   )
 
   const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
-    const { isActiveSubscription } = useSubscription()
+    const { isActiveSubscription } = useBillingContext()
     if (!isActiveSubscription.value) return
 
     const response = await authStore.initiateCreditPurchase({
@@ -104,9 +116,9 @@ export const useFirebaseAuthActions = () => {
   }, reportError)
 
   const accessBillingPortal = wrapWithErrorHandlingAsync<
-    [targetTier?: BillingPortalTargetTier],
+    [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
     void
-  >(async (targetTier) => {
+  >(async (targetTier, openInNewTab = true) => {
     const response = await authStore.accessBillingPortal(targetTier)
     if (!response.billing_portal_url) {
       throw new Error(
@@ -115,7 +127,11 @@ export const useFirebaseAuthActions = () => {
         })
       )
     }
-    window.open(response.billing_portal_url, '_blank')
+    if (openInNewTab) {
+      window.open(response.billing_portal_url, '_blank')
+    } else {
+      globalThis.location.href = response.billing_portal_url
+    }
   }, reportError)
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
@@ -202,21 +218,6 @@ export const useFirebaseAuthActions = () => {
     [createReauthenticationRecovery<[string], void>()]
   )
 
-  const deleteAccount = wrapWithErrorHandlingAsync(
-    async () => {
-      await authStore.deleteAccount()
-      toastStore.add({
-        severity: 'success',
-        summary: t('auth.deleteAccount.success'),
-        detail: t('auth.deleteAccount.successDetail'),
-        life: 5000
-      })
-    },
-    reportError,
-    undefined,
-    [createReauthenticationRecovery<[], void>()]
-  )
-
   return {
     logout,
     sendPasswordReset,
@@ -228,7 +229,6 @@ export const useFirebaseAuthActions = () => {
     signInWithEmail,
     signUpWithEmail,
     updatePassword,
-    deleteAccount,
     accessError,
     reportError
   }

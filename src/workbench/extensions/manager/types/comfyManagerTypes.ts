@@ -14,16 +14,12 @@ export const IsInstallingKey: InjectionKey<Ref<boolean>> =
 
 export enum ManagerTab {
   All = 'all',
-  Installed = 'installed',
+  NotInstalled = 'notInstalled',
+  AllInstalled = 'allInstalled',
+  UpdateAvailable = 'updateAvailable',
+  Conflicting = 'conflicting',
   Workflow = 'workflow',
-  Missing = 'missing',
-  UpdateAvailable = 'updateAvailable'
-}
-
-export interface TabItem {
-  id: ManagerTab
-  label: string
-  icon: string
+  Missing = 'missing'
 }
 
 export type TaskLog = {
@@ -35,11 +31,6 @@ export type TaskLog = {
 export interface UseNodePacksOptions {
   immediate?: boolean
   maxConcurrent?: number
-}
-
-export interface SearchOption<T> {
-  id: T
-  label: string
 }
 
 export enum SortableAlgoliaField {

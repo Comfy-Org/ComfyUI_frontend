@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'relative flex w-full items-center gap-2 bg-comfy-input cursor-text text-comfy-input-foreground',
+        'relative flex w-full cursor-text items-center gap-2 bg-comfy-input text-comfy-input-foreground',
         customClass,
         wrapperStyle
       )
@@ -14,14 +14,19 @@
       :placeholder
       :autofocus
       unstyled
-      class="absolute inset-0 size-full pl-11 border-none outline-none bg-transparent text-sm"
+      :class="
+        cn(
+          'absolute inset-0 size-full border-none bg-transparent text-sm outline-none',
+          isLarge ? 'pl-11' : 'pl-8'
+        )
+      "
       :aria-label="placeholder"
     />
     <Button
       v-if="filterIcon"
       size="icon"
       variant="textonly"
-      class="filter-button absolute right-0 inset-y-0 m-0 p-0"
+      class="filter-button absolute inset-y-0 right-0 m-0 p-0"
       @click="$emit('showFilter', $event)"
     >
       <i :class="filterIcon" />
@@ -29,7 +34,7 @@
     <InputIcon v-if="!modelValue" :class="icon" />
     <Button
       v-if="modelValue"
-      class="clear-button absolute left-0"
+      :class="cn('clear-button absolute', isLarge ? 'left-2' : 'left-0')"
       variant="textonly"
       size="icon"
       @click="modelValue = ''"
@@ -83,6 +88,8 @@ const {
   class?: string
 }>()
 
+const isLarge = computed(() => size === 'lg')
+
 const emit = defineEmits<{
   (e: 'search', value: string, filters: TFilter[]): void
   (e: 'showFilter', event: Event): void
@@ -109,7 +116,10 @@ watchDebounced(
 
 const wrapperStyle = computed(() => {
   if (showBorder) {
-    return cn('rounded p-2 border border-solid border-border-default')
+    return cn(
+      'box-border rounded-sm border border-solid border-border-default p-2',
+      isLarge.value ? 'h-10' : 'h-8'
+    )
   }
 
   // Size-specific classes matching button sizes for consistency
@@ -123,8 +133,6 @@ const wrapperStyle = computed(() => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 :deep(.p-inputtext) {
   --p-form-field-padding-x: 0.625rem;
 }

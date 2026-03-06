@@ -1,3 +1,5 @@
+import type { ComponentProps } from 'vue-component-type-helpers'
+
 import { Form } from '@primevue/forms'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
@@ -63,7 +65,7 @@ describe('ApiKeyForm', () => {
     mockLoading.mockReset()
   })
 
-  const mountComponent = (props: any = {}) => {
+  const mountComponent = (props: ComponentProps<typeof ApiKeyForm> = {}) => {
     return mount(ApiKeyForm, {
       global: {
         plugins: [PrimeVue, createPinia(), i18n],

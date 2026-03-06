@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { TaskStatus } from '@/schemas/apiSchema'
+import type {
+  JobListItem,
+  JobStatus
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 
@@ -34,94 +37,89 @@ function resetStores() {
   queue.runningTasks = []
   queue.historyTasks = []
 
-  exec.nodeProgressStatesByPrompt = {}
+  exec.nodeProgressStatesByJob = {}
+}
+
+function makeTask(
+  id: string,
+  priority: number,
+  fields: Partial<JobListItem> & { status: JobStatus; create_time: number }
+): TaskItemImpl {
+  const job: JobListItem = {
+    id,
+    priority,
+    last_state_update: null,
+    update_time: fields.create_time,
+    ...fields
+  }
+  return new TaskItemImpl(job)
 }
 
 function makePendingTask(
   id: string,
-  index: number,
-  createTimeMs?: number
+  priority: number,
+  createTimeMs: number
 ): TaskItemImpl {
-  const extraData = {
-    client_id: 'c1',
-    ...(typeof createTimeMs === 'number' ? { create_time: createTimeMs } : {})
-  }
-  return new TaskItemImpl('Pending', [index, id, {}, extraData, []])
+  return makeTask(id, priority, {
+    status: 'pending',
+    create_time: createTimeMs
+  })
 }
 
 function makeRunningTask(
   id: string,
-  index: number,
-  createTimeMs?: number
+  priority: number,
+  createTimeMs: number
 ): TaskItemImpl {
-  const extraData = {
-    client_id: 'c1',
-    ...(typeof createTimeMs === 'number' ? { create_time: createTimeMs } : {})
-  }
-  return new TaskItemImpl('Running', [index, id, {}, extraData, []])
+  return makeTask(id, priority, {
+    status: 'in_progress',
+    create_time: createTimeMs
+  })
 }
 
 function makeRunningTaskWithStart(
   id: string,
-  index: number,
+  priority: number,
   startedSecondsAgo: number
 ): TaskItemImpl {
   const start = Date.now() - startedSecondsAgo * 1000
-  const status: TaskStatus = {
-    status_str: 'success',
-    completed: false,
-    messages: [['execution_start', { prompt_id: id, timestamp: start } as any]]
-  }
-  return new TaskItemImpl(
-    'Running',
-    [index, id, {}, { client_id: 'c1', create_time: start - 5000 }, []],
-    status
-  )
+  return makeTask(id, priority, {
+    status: 'in_progress',
+    create_time: start - 5000,
+    update_time: start
+  })
 }
 
 function makeHistoryTask(
   id: string,
-  index: number,
+  priority: number,
   durationSec: number,
   ok: boolean,
   errorMessage?: string
 ): TaskItemImpl {
-  const start = Date.now() - durationSec * 1000 - 1000
-  const end = start + durationSec * 1000
-  const messages: TaskStatus['messages'] = ok
-    ? [
-        ['execution_start', { prompt_id: id, timestamp: start } as any],
-        ['execution_success', { prompt_id: id, timestamp: end } as any]
-      ]
-    : [
-        ['execution_start', { prompt_id: id, timestamp: start } as any],
-        [
-          'execution_error',
-          {
-            prompt_id: id,
-            timestamp: end,
-            node_id: '1',
-            node_type: 'Node',
-            executed: [],
-            exception_message:
-              errorMessage || 'Demo error: Node failed during execution',
-            exception_type: 'RuntimeError',
-            traceback: [],
-            current_inputs: {},
-            current_outputs: {}
-          } as any
-        ]
-      ]
-  const status: TaskStatus = {
-    status_str: ok ? 'success' : 'error',
-    completed: true,
-    messages
-  }
-  return new TaskItemImpl(
-    'History',
-    [index, id, {}, { client_id: 'c1', create_time: start }, []],
-    status
-  )
+  const now = Date.now()
+  const executionEndTime = now
+  const executionStartTime = now - durationSec * 1000
+  return makeTask(id, priority, {
+    status: ok ? 'completed' : 'failed',
+    create_time: executionStartTime - 5000,
+    update_time: now,
+    execution_start_time: executionStartTime,
+    execution_end_time: executionEndTime,
+    execution_error: errorMessage
+      ? {
+          prompt_id: id,
+          timestamp: now,
+          node_id: '1',
+          node_type: 'ExampleNode',
+          exception_message: errorMessage,
+          exception_type: 'RuntimeError',
+          traceback: [],
+          current_inputs: {},
+          current_outputs: {}
+        }
+      : undefined
+  })
 }
 
 export const Queued: Story = {
@@ -133,20 +131,24 @@ export const Queued: Story = {
       const exec = useExecutionStore()
 
       const jobId = 'job-queued-1'
-      const queueIndex = 104
+      const priority = 104
 
       // Current job in pending
       queue.pendingTasks = [
-        makePendingTask(jobId, queueIndex, Date.now() - 90_000)
+        makePendingTask(jobId, priority, Date.now() - 90_000)
       ]
       // Add some other pending jobs to give context
-      queue.pendingTasks.push(makePendingTask('job-older-1', 100))
-      queue.pendingTasks.push(makePendingTask('job-older-2', 101))
+      queue.pendingTasks.push(
+        makePendingTask('job-older-1', 100, Date.now() - 60_000)
+      )
+      queue.pendingTasks.push(
+        makePendingTask('job-older-2', 101, Date.now() - 30_000)
+      )
 
-      // Queued at (in metadata on prompt[4])
+      // Queued at (in metadata on job tuple)
 
       // One running workflow
-      exec.nodeProgressStatesByPrompt = {
+      exec.nodeProgressStatesByJob = {
         p1: {
           '1': {
             value: 1,
@@ -156,7 +158,7 @@ export const Queued: Story = {
             prompt_id: 'p1'
           }
         }
-      } as any
+      }
 
       return { args: { ...args, jobId } }
     },
@@ -177,13 +179,13 @@ export const QueuedParallel: Story = {
       const exec = useExecutionStore()
 
       const jobId = 'job-queued-parallel'
-      const queueIndex = 210
+      const priority = 210
 
       // Current job in pending with some ahead
       queue.pendingTasks = [
         makePendingTask('job-ahead-1', 200, Date.now() - 180_000),
         makePendingTask('job-ahead-2', 205, Date.now() - 150_000),
-        makePendingTask(jobId, queueIndex, Date.now() - 120_000)
+        makePendingTask(jobId, priority, Date.now() - 120_000)
       ]
 
       // Seen 2 minutes ago - set via prompt metadata above
@@ -196,7 +198,7 @@ export const QueuedParallel: Story = {
       ]
 
       // Two parallel workflows running
-      exec.nodeProgressStatesByPrompt = {
+      exec.nodeProgressStatesByJob = {
         p1: {
           '1': {
             value: 1,
@@ -215,7 +217,7 @@ export const QueuedParallel: Story = {
             prompt_id: 'p2'
           }
         }
-      } as any
+      }
 
       return { args: { ...args, jobId } }
     },
@@ -236,9 +238,9 @@ export const Running: Story = {
       const exec = useExecutionStore()
 
       const jobId = 'job-running-1'
-      const queueIndex = 300
+      const priority = 300
       queue.runningTasks = [
-        makeRunningTask(jobId, queueIndex, Date.now() - 65_000)
+        makeRunningTask(jobId, priority, Date.now() - 65_000)
       ]
       queue.historyTasks = [
         makeHistoryTask('hist-r1', 250, 30, true),
@@ -246,7 +248,7 @@ export const Running: Story = {
         makeHistoryTask('hist-r3', 252, 60, true)
       ]
 
-      exec.nodeProgressStatesByPrompt = {
+      exec.nodeProgressStatesByJob = {
         p1: {
           '1': {
             value: 5,
@@ -256,7 +258,7 @@ export const Running: Story = {
             prompt_id: 'p1'
           }
         }
-      } as any
+      }
 
       return { args: { ...args, jobId } }
     },
@@ -277,10 +279,10 @@ export const QueuedZeroAheadSingleRunning: Story = {
       const exec = useExecutionStore()
 
       const jobId = 'job-queued-zero-ahead-single'
-      const queueIndex = 510
+      const priority = 510
 
       queue.pendingTasks = [
-        makePendingTask(jobId, queueIndex, Date.now() - 45_000)
+        makePendingTask(jobId, priority, Date.now() - 45_000)
       ]
 
       queue.historyTasks = [
@@ -291,7 +293,7 @@ export const QueuedZeroAheadSingleRunning: Story = {
 
       queue.runningTasks = [makeRunningTaskWithStart('running-1', 505, 20)]
 
-      exec.nodeProgressStatesByPrompt = {
+      exec.nodeProgressStatesByJob = {
         p1: {
           '1': {
             value: 1,
@@ -301,7 +303,7 @@ export const QueuedZeroAheadSingleRunning: Story = {
             prompt_id: 'p1'
           }
         }
-      } as any
+      }
 
       return { args: { ...args, jobId } }
     },
@@ -322,10 +324,10 @@ export const QueuedZeroAheadMultiRunning: Story = {
       const exec = useExecutionStore()
 
       const jobId = 'job-queued-zero-ahead-multi'
-      const queueIndex = 520
+      const priority = 520
 
       queue.pendingTasks = [
-        makePendingTask(jobId, queueIndex, Date.now() - 20_000)
+        makePendingTask(jobId, priority, Date.now() - 20_000)
       ]
 
       queue.historyTasks = [
@@ -339,7 +341,7 @@ export const QueuedZeroAheadMultiRunning: Story = {
         makeRunningTaskWithStart('running-b', 507, 10)
       ]
 
-      exec.nodeProgressStatesByPrompt = {
+      exec.nodeProgressStatesByJob = {
         p1: {
           '1': {
             value: 2,
@@ -358,7 +360,7 @@ export const QueuedZeroAheadMultiRunning: Story = {
             prompt_id: 'p2'
           }
         }
-      } as any
+      }
 
       return { args: { ...args, jobId } }
     },
@@ -378,8 +380,8 @@ export const Completed: Story = {
       const queue = useQueueStore()
 
       const jobId = 'job-completed-1'
-      const queueIndex = 400
-      queue.historyTasks = [makeHistoryTask(jobId, queueIndex, 37, true)]
+      const priority = 400
+      queue.historyTasks = [makeHistoryTask(jobId, priority, 37, true)]
 
       return { args: { ...args, jobId } }
     },
@@ -399,11 +401,11 @@ export const Failed: Story = {
       const queue = useQueueStore()
 
       const jobId = 'job-failed-1'
-      const queueIndex = 410
+      const priority = 410
       queue.historyTasks = [
         makeHistoryTask(
           jobId,
-          queueIndex,
+          priority,
           12,
           false,
           'Example error: invalid inputs for node X'

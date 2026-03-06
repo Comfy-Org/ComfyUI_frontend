@@ -1,9 +1,6 @@
 <template>
-  <div class="flex justify-end gap-2 w-full">
-    <div
-      v-if="currentStep === 1 && flags.huggingfaceModelImportEnabled"
-      class="mr-auto flex items-center gap-2"
-    >
+  <div class="flex w-full justify-end gap-2">
+    <div v-if="currentStep === 1" class="mr-auto flex items-center gap-2">
       <i class="icon-[lucide--circle-question-mark] text-muted-foreground" />
       <Button
         variant="muted-textonly"
@@ -22,17 +19,6 @@
         {{ $t('assetBrowser.providerHuggingFace') }}
       </Button>
     </div>
-    <Button
-      v-else-if="currentStep === 1"
-      variant="muted-textonly"
-      size="lg"
-      class="mr-auto underline"
-      data-attr="upload-model-step1-help-link"
-      @click="showCivitaiHelp = true"
-    >
-      <i class="icon-[lucide--circle-question-mark]" />
-      <span>{{ $t('assetBrowser.uploadModelHowDoIFindThis') }}</span>
-    </Button>
     <Button
       v-if="currentStep === 1"
       variant="muted-textonly"
@@ -63,10 +49,7 @@
       :disabled="!canFetchMetadata || isFetchingMetadata"
       @click="emit('fetchMetadata')"
     >
-      <i
-        v-if="isFetchingMetadata"
-        class="icon-[lucide--loader-circle] animate-spin"
-      />
+      <Loader v-if="isFetchingMetadata" />
       <span>{{ $t('g.continue') }}</span>
     </Button>
     <Button
@@ -77,17 +60,36 @@
       :disabled="!canUploadModel || isUploading"
       @click="emit('upload')"
     >
-      <i v-if="isUploading" class="icon-[lucide--loader-circle] animate-spin" />
+      <Loader v-if="isUploading" />
       <span>{{ $t('assetBrowser.upload') }}</span>
     </Button>
-    <Button
-      v-else-if="currentStep === 3 && uploadStatus === 'success'"
-      variant="secondary"
-      data-attr="upload-model-step3-finish-button"
-      @click="emit('close')"
+    <template
+      v-else-if="
+        currentStep === 3 &&
+        (uploadStatus === 'success' || uploadStatus === 'processing')
+      "
     >
-      {{ $t('assetBrowser.finish') }}
-    </Button>
+      <Button
+        variant="muted-textonly"
+        size="lg"
+        data-attr="upload-model-step3-import-another-button"
+        @click="emit('importAnother')"
+      >
+        {{ $t('assetBrowser.importAnother') }}
+      </Button>
+      <Button
+        variant="secondary"
+        size="lg"
+        data-attr="upload-model-step3-finish-button"
+        @click="emit('close')"
+      >
+        {{
+          uploadStatus === 'processing'
+            ? $t('g.close')
+            : $t('assetBrowser.finish')
+        }}
+      </Button>
+    </template>
     <VideoHelpDialog
       v-model="showCivitaiHelp"
       video-url="https://media.comfy.org/compressed_768/civitai_howto.webm"
@@ -104,11 +106,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import Loader from '@/components/loader/Loader.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
-
-const { flags } = useFeatureFlags()
 
 const showCivitaiHelp = ref(false)
 const showHuggingFaceHelp = ref(false)
@@ -119,7 +119,7 @@ defineProps<{
   isUploading: boolean
   canFetchMetadata: boolean
   canUploadModel: boolean
-  uploadStatus: 'idle' | 'uploading' | 'success' | 'error'
+  uploadStatus?: 'processing' | 'success' | 'error'
 }>()
 
 const emit = defineEmits<{
@@ -127,5 +127,6 @@ const emit = defineEmits<{
   (e: 'fetchMetadata'): void
   (e: 'upload'): void
   (e: 'close'): void
+  (e: 'importAnother'): void
 }>()
 </script>

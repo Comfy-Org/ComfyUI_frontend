@@ -87,12 +87,12 @@
           <template #top>
             <CardTop ratio="landscape">
               <template #default>
-                <div class="h-full w-full bg-blue-500"></div>
+                <div class="size-full bg-blue-500"></div>
               </template>
               <template #top-right>
                 <Button
                   size="icon"
-                  class="!bg-white !text-neutral-900"
+                  class="bg-white! text-neutral-900!"
                   @click="() => {}"
                 >
                   <i class="icon-[lucide--info]" />
@@ -117,7 +117,7 @@
     </template>
 
     <template #rightPanel>
-      <RightSidePanel></RightSidePanel>
+      <div class="size-full bg-modal-panel-background pr-6 pb-8 pl-4"></div>
     </template>
   </BaseModalLayout>
 </template>
@@ -136,7 +136,6 @@ import SingleSelect from '@/components/input/SingleSelect.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
-import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'

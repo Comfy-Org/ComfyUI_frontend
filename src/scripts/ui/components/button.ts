@@ -21,8 +21,8 @@ type ComfyButtonProps = {
 }
 
 export class ComfyButton implements ComfyComponent<HTMLElement> {
-  #over = 0
-  #popupOpen = false
+  private _over = 0
+  private _popupOpen = false
   isOver = false
   iconElement = $el('i.mdi')
   contentElement = $el('span')
@@ -123,7 +123,7 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
     this.element.addEventListener('click', (e) => {
       if (this.popup) {
         // we are either a touch device or triggered by click not hover
-        if (!this.#over) {
+        if (!this._over) {
           this.popup.toggle()
         }
       }
@@ -157,7 +157,7 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
       internalClasses.push('disabled')
     }
     if (this.popup) {
-      if (this.#popupOpen) {
+      if (this._popupOpen) {
         internalClasses.push('popup-open')
       } else {
         internalClasses.push('popup-closed')
@@ -172,16 +172,16 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
     if (mode === 'hover') {
       for (const el of [this.element, this.popup.element]) {
         el.addEventListener('mouseenter', () => {
-          this.popup.open = !!++this.#over
+          this.popup.open = !!++this._over
         })
         el.addEventListener('mouseleave', () => {
-          this.popup.open = !!--this.#over
+          this.popup.open = !!--this._over
         })
       }
     }
 
     popup.addEventListener('change', () => {
-      this.#popupOpen = popup.open
+      this._popupOpen = popup.open
       this.updateClasses()
     })
 

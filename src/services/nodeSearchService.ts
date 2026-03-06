@@ -14,7 +14,7 @@ export class NodeSearchService {
   constructor(data: ComfyNodeDefImpl[]) {
     this.nodeFuseSearch = new FuseSearch(data, {
       fuseOptions: {
-        keys: ['name', 'display_name'],
+        keys: ['name', 'display_name', 'search_aliases'],
         includeScore: true,
         threshold: 0.3,
         shouldSort: false,

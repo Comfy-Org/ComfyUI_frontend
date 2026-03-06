@@ -1,193 +1,208 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
+import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
+import type { MaybeElement } from '@vueuse/core'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, useTemplateRef } from 'vue'
 
+import AppBuilder from '@/components/builder/AppBuilder.vue'
+import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
-import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
-import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { cn } from '@/utils/tailwindUtil'
+import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
+import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
+import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useAppMode } from '@/composables/useAppMode'
+import { useStablePrimeVueSplitterSizer } from '@/composables/useStablePrimeVueSplitterSizer'
 import {
-  isValidWidgetValue,
-  safeWidgetMapper
-} from '@/composables/graph/useGraphNodeManager'
-import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
-import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useTelemetry } from '@/platform/telemetry'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
-import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { useQueueSettingsStore } from '@/stores/queueStore'
-import { isElectron } from '@/utils/envUtil'
+  BUILDER_MIN_SIZE,
+  CENTER_PANEL_SIZE,
+  SIDEBAR_MIN_SIZE,
+  SIDE_PANEL_SIZE
+} from '@/constants/splitterConstants'
+import { useAppModeStore } from '@/stores/appModeStore'
 
-const nodeOutputStore = useNodeOutputStore()
-const commandStore = useCommandStore()
-const nodeDatas = computed(() => {
-  function nodeToNodeData(node: LGraphNode) {
-    const mapper = safeWidgetMapper(node, new Map())
-    const widgets =
-      node.widgets?.map((widget) => {
-        const safeWidget = mapper(widget)
-        safeWidget.callback = function (value) {
-          if (!isValidWidgetValue(value)) return
-          widget.value = value ?? undefined
-          return widget.callback?.(widget.value)
-        }
-        return safeWidget
-      }) ?? []
-    //Only widgets is actually used
-    return {
-      id: `${node.id}`,
-      title: node.title,
-      type: node.type,
-      mode: 0,
-      selected: false,
-      executing: false,
-      widgets
-    }
-  }
-  return app.rootGraph.nodes
-    .filter((node) => node.mode === 0 && node.widgets?.length)
-    .map(nodeToNodeData)
+const settingStore = useSettingStore()
+const workspaceStore = useWorkspaceStore()
+const { isBuilderMode, isArrangeMode } = useAppMode()
+const appModeStore = useAppModeStore()
+const { hasOutputs } = storeToRefs(appModeStore)
+
+const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
+
+const activeTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
+const sidebarOnLeft = computed(
+  () => settingStore.get('Comfy.Sidebar.Location') === 'left'
+)
+const showLeftBuilder = computed(
+  () => !sidebarOnLeft.value && isArrangeMode.value
+)
+const showRightBuilder = computed(
+  () => sidebarOnLeft.value && isArrangeMode.value
+)
+const hasLeftPanel = computed(
+  () =>
+    isArrangeMode.value ||
+    (sidebarOnLeft.value && activeTab.value) ||
+    (!sidebarOnLeft.value && !isBuilderMode.value && hasOutputs.value)
+)
+const hasRightPanel = computed(
+  () =>
+    isArrangeMode.value ||
+    (sidebarOnLeft.value && !isBuilderMode.value && hasOutputs.value) ||
+    (!sidebarOnLeft.value && activeTab.value)
+)
+
+function sidePanelMinSize(isBuilder: boolean, isHidden: boolean) {
+  if (isBuilder) return BUILDER_MIN_SIZE
+  if (isHidden) return undefined
+  return SIDEBAR_MIN_SIZE
+}
+
+// Remount splitter when panel structure changes so initializePanels()
+// properly sets flexBasis for the current set of panels.
+const splitterKey = computed(() => {
+  const left = hasLeftPanel.value ? 'L' : ''
+  const right = hasRightPanel.value ? 'R' : ''
+  return isArrangeMode.value ? 'arrange' : `app-${left}${right}`
 })
-const { isLoggedIn } = useCurrentUser()
-const isDesktop = isElectron()
 
-const batchCountWidget = {
-  options: { step2: 1, precision: 1, min: 1, max: 100 },
-  value: 1,
-  name: t('Number of generations'),
-  type: 'number'
-}
+const leftPanelRef = useTemplateRef<MaybeElement>('leftPanel')
+const rightPanelRef = useTemplateRef<MaybeElement>('rightPanel')
 
-const { batchCount } = storeToRefs(useQueueSettingsStore())
+const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+  [
+    { ref: leftPanelRef, storageKey: 'Comfy.LinearView.LeftPanelWidth' },
+    { ref: rightPanelRef, storageKey: 'Comfy.LinearView.RightPanelWidth' }
+  ],
+  [activeTab, splitterKey]
+)
 
-//TODO: refactor out of this file.
-//code length is small, but changes should propagate
-async function runButtonClick(e: Event) {
-  const isShiftPressed = 'shiftKey' in e && e.shiftKey
-  const commandId = isShiftPressed
-    ? 'Comfy.QueuePromptFront'
-    : 'Comfy.QueuePrompt'
+const TYPEFORM_WIDGET_ID = 'gmVqFi8l'
 
-  useTelemetry()?.trackUiButtonClicked({
-    button_id: 'queue_run_linear'
-  })
-  if (batchCount.value > 1) {
-    useTelemetry()?.trackUiButtonClicked({
-      button_id: 'queue_run_multiple_batches_submitted'
-    })
-  }
-  await commandStore.execute(commandId, {
-    metadata: {
-      subscribe_to_run: false,
-      trigger_source: 'button'
-    }
-  })
-}
-function openFeedback() {
-  //TODO: Does not link to a linear specific feedback section
-  window.open(
-    'https://support.comfy.org/hc/en-us/requests/new?ticket_form_id=40026345549204',
-    '_blank',
-    'noopener,noreferrer'
-  )
-}
+const bottomLeftRef = useTemplateRef('bottomLeftRef')
+const bottomRightRef = useTemplateRef('bottomRightRef')
+const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 </script>
 <template>
-  <div class="absolute w-full h-full">
-    <div class="workflow-tabs-container pointer-events-auto h-9.5 w-full">
+  <MobileDisplay v-if="mobileDisplay" />
+  <div v-else class="absolute size-full">
+    <div
+      class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
+    >
       <div class="flex h-full items-center">
         <WorkflowTabs />
         <TopbarBadges />
+        <TopbarSubscribeButton />
       </div>
     </div>
     <Splitter
-      class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
-      :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
+      :key="splitterKey"
+      class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full border-none"
+      @resizestart="$event.originalEvent.preventDefault()"
+      @resizeend="onResizeEnd"
     >
-      <SplitterPanel :size="1" class="min-w-min bg-comfy-menu-bg">
+      <SplitterPanel
+        v-if="hasLeftPanel"
+        ref="leftPanel"
+        :size="SIDE_PANEL_SIZE"
+        :min-size="
+          sidePanelMinSize(showLeftBuilder, showRightBuilder && !activeTab)
+        "
+        :style="
+          showRightBuilder && !activeTab ? { display: 'none' } : undefined
+        "
+        :class="
+          cn(
+            'arrange-panel overflow-hidden outline-none',
+            showLeftBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-78'
+          )
+        "
+      >
+        <AppBuilder v-if="showLeftBuilder" />
         <div
-          class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto border-r-1 border-node-component-border"
+          v-else-if="sidebarOnLeft && activeTab"
+          class="size-full overflow-x-hidden border-r border-border-subtle"
         >
-          <ExtensionSlot :extension="useAssetsSidebarTab()" />
+          <ExtensionSlot :extension="activeTab" />
         </div>
+        <LinearControls
+          v-else-if="!isArrangeMode"
+          ref="linearWorkflowRef"
+          :toast-to="unrefElement(bottomLeftRef) ?? undefined"
+        />
       </SplitterPanel>
       <SplitterPanel
-        :size="98"
-        class="flex flex-row overflow-y-auto flex-wrap min-w-min gap-4 m-4"
+        id="linearCenterPanel"
+        :size="CENTER_PANEL_SIZE"
+        class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
       >
-        <img
-          v-for="previewUrl in nodeOutputStore.latestOutput"
-          :key="previewUrl"
-          class="pointer-events-none object-contain flex-1 max-h-full"
-          :src="previewUrl"
+        <LinearProgressBar
+          class="absolute top-0 left-0 z-21 w-[calc(100%+16px)]"
         />
-        <img
-          v-if="nodeOutputStore.latestOutput.length === 0"
-          class="pointer-events-none object-contain flex-1 max-h-full brightness-50 opacity-10"
-          src="/assets/images/comfy-logo-mono.svg"
+        <LinearPreview
+          :run-button-click="linearWorkflowRef?.runButtonClick"
+          :typeform-widget-id="TYPEFORM_WIDGET_ID"
         />
-      </SplitterPanel>
-      <SplitterPanel :size="1" class="flex flex-col gap-1 p-1 min-w-min">
-        <div
-          class="actionbar-container flex h-12 items-center rounded-lg border border-[var(--interface-stroke)] p-2 gap-2 bg-comfy-menu-bg justify-end"
-        >
-          <Button variant="secondary" @click="openFeedback">
-            {{ t('g.feedback') }}
-          </Button>
-          <Button
-            variant="secondary"
-            class="min-w-max"
-            @click="useCanvasStore().linearMode = false"
-          >
-            {{ t('linearMode.openWorkflow') }}
-            <i class="icon-[comfy--workflow]" />
-          </Button>
-          <Button
-            variant="inverted"
-            @click="useWorkflowService().exportWorkflow('workflow', 'workflow')"
-          >
-            {{ t('linearMode.share') }}
-          </Button>
-          <CurrentUserButton v-if="isLoggedIn" />
-          <LoginButton v-else-if="isDesktop" />
+        <div class="absolute top-4 left-4 z-21">
+          <AppModeToolbar v-if="!isBuilderMode" />
         </div>
+        <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
+        <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
+      </SplitterPanel>
+      <SplitterPanel
+        v-if="hasRightPanel"
+        ref="rightPanel"
+        :size="SIDE_PANEL_SIZE"
+        :min-size="
+          sidePanelMinSize(showRightBuilder, showLeftBuilder && !activeTab)
+        "
+        :style="showLeftBuilder && !activeTab ? { display: 'none' } : undefined"
+        :class="
+          cn(
+            'arrange-panel overflow-hidden outline-none',
+            showRightBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-78'
+          )
+        "
+      >
+        <AppBuilder v-if="showRightBuilder" />
+        <LinearControls
+          v-else-if="sidebarOnLeft && !isArrangeMode"
+          ref="linearWorkflowRef"
+          :toast-to="unrefElement(bottomRightRef) ?? undefined"
+        />
         <div
-          class="rounded-lg border p-2 gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col"
+          v-else-if="activeTab"
+          class="h-full overflow-x-hidden border-l border-border-subtle"
         >
-          <div
-            class="grow-1 flex justify-start flex-col overflow-y-auto contain-size *:max-h-100"
-          >
-            <NodeWidgets
-              v-for="nodeData of nodeDatas"
-              :key="nodeData.id"
-              :node-data
-              class="border-b-1 border-node-component-border pt-1 pb-2 last:border-none"
-            />
-          </div>
-          <div class="p-4 pb-0 border-t border-node-component-border">
-            <WidgetInputNumberInput
-              v-model="batchCount"
-              :widget="batchCountWidget"
-              class="*:[.min-w-56]:basis-0"
-            />
-            <Button class="w-full mt-4" @click="runButtonClick">
-              <i class="icon-[lucide--play]" />
-              {{ t('menu.run') }}
-            </Button>
-          </div>
+          <ExtensionSlot :extension="activeTab" />
         </div>
       </SplitterPanel>
     </Splitter>
   </div>
 </template>
+
+<style scoped>
+:deep(.p-splitter-gutter) {
+  pointer-events: auto;
+}
+
+:deep(.p-splitter-gutter:hover),
+:deep(.p-splitter-gutter[data-p-gutter-resizing='true']) {
+  transition: background-color 0.2s ease 300ms;
+  background-color: var(--p-primary-color);
+}
+
+/* Hide gutter next to hidden arrange panels */
+:deep(.arrange-panel[style*='display: none'] + .p-splitter-gutter),
+:deep(.p-splitter-gutter + .arrange-panel[style*='display: none']) {
+  display: none;
+}
+</style>

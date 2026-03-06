@@ -12,7 +12,7 @@
         :aria-label="$t('load3d.lightIntensity')"
         @click="toggleLightIntensity"
       >
-        <i class="pi pi-sun text-lg text-white" />
+        <i class="pi pi-sun text-lg text-base-foreground" />
       </Button>
       <div
         v-show="showLightIntensity"

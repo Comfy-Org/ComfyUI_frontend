@@ -55,7 +55,7 @@ export function useWorkflowActionsService() {
       if (settingStore.get('Comfy.PromptFilename')) {
         const input = await dialogService.prompt({
           title: t('workflowService.exportWorkflow'),
-          message: t('workflowService.enterFilename') + ':',
+          message: t('workflowService.enterFilenamePrompt'),
           defaultValue: filename
         })
         // User cancelled the prompt

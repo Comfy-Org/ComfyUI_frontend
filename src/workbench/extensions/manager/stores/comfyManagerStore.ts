@@ -2,13 +2,13 @@ import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import { ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
+import { t } from '@/i18n'
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useServerLogs } from '@/composables/useServerLogs'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useDialogService } from '@/services/dialogService'
+
 import { normalizePackKeys } from '@/utils/packUtils'
 import { useManagerQueue } from '@/workbench/extensions/manager/composables/useManagerQueue'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
@@ -30,9 +30,7 @@ type UpdateAllPacksParams = components['schemas']['UpdateAllPacksParams']
  * Store for state of installed node packs
  */
 export const useComfyManagerStore = defineStore('comfyManager', () => {
-  const { t } = useI18n()
   const managerService = useComfyManagerService()
-  const { showManagerProgressDialog } = useDialogService()
 
   const installedPacks = ref<InstalledPacksResponse>({})
   const enabledPacksIds = ref<Set<string>>(new Set())
@@ -60,14 +58,18 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const managerQueue = useManagerQueue(taskHistory, taskQueue, installedPacks)
 
   // Listen for task completion events to clean up installing state
-  useEventListener(app.api, 'cm-task-completed', (event: any) => {
-    const taskId = event.detail?.ui_id
-    if (taskId && taskIdToPackId.value.has(taskId)) {
-      const packId = taskIdToPackId.value.get(taskId)!
-      installingPacksIds.value.delete(packId)
-      taskIdToPackId.value.delete(taskId)
+  useEventListener(
+    app.api,
+    'cm-task-completed',
+    (event: CustomEvent<{ ui_id?: string }>) => {
+      const taskId = event.detail?.ui_id
+      if (taskId && taskIdToPackId.value.has(taskId)) {
+        const packId = taskIdToPackId.value.get(taskId)!
+        installingPacksIds.value.delete(packId)
+        taskIdToPackId.value.delete(taskId)
+      }
     }
-  })
+  )
 
   const setStale = () => {
     isStale.value = true
@@ -204,8 +206,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     })
 
     try {
-      // Show progress dialog immediately when task is queued
-      showManagerProgressDialog()
       managerQueue.isProcessing.value = true
 
       // Prepare logging hook
@@ -392,44 +392,3 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     enablePack
   }
 })
-
-/**
- * Store for state of the manager progress dialog content.
- * The dialog itself is managed by the dialog store. This store is used to
- * manage the visibility of the dialog's content, header, footer.
- */
-export const useManagerProgressDialogStore = defineStore(
-  'managerProgressDialog',
-  () => {
-    const isExpanded = ref(false)
-    const activeTabIndex = ref(0)
-
-    const setActiveTabIndex = (index: number) => {
-      activeTabIndex.value = index
-    }
-
-    const getActiveTabIndex = () => {
-      return activeTabIndex.value
-    }
-
-    const toggle = () => {
-      isExpanded.value = !isExpanded.value
-    }
-
-    const collapse = () => {
-      isExpanded.value = false
-    }
-
-    const expand = () => {
-      isExpanded.value = true
-    }
-    return {
-      isExpanded,
-      toggle,
-      collapse,
-      expand,
-      setActiveTabIndex,
-      getActiveTabIndex
-    }
-  }
-)

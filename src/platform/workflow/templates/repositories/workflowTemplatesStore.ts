@@ -1,14 +1,15 @@
-import Fuse from 'fuse.js'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { i18n, st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import { getCategoryIcon } from '@/utils/categoryIcons'
+import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
+import { zLogoIndex } from '../schemas/templateSchema'
+import type { LogoIndex } from '../schemas/templateSchema'
 import type {
   TemplateGroup,
   TemplateInfo,
@@ -32,6 +33,7 @@ export const useWorkflowTemplatesStore = defineStore(
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const englishTemplates = shallowRef<WorkflowTemplates[]>([])
+    const logoIndex = shallowRef<LogoIndex>({})
     const isLoaded = ref(false)
     const knownTemplateNames = ref(new Set<string>())
 
@@ -251,24 +253,6 @@ export const useWorkflowTemplatesStore = defineStore(
     })
 
     /**
-     * Fuse.js instance for advanced template searching and filtering
-     */
-    const templateFuse = computed(() => {
-      const fuseOptions = {
-        keys: [
-          { name: 'searchableText', weight: 0.4 },
-          { name: 'title', weight: 0.3 },
-          { name: 'name', weight: 0.2 },
-          { name: 'tags', weight: 0.1 }
-        ],
-        threshold: 0.3,
-        includeScore: true
-      }
-
-      return new Fuse(enhancedTemplates.value, fuseOptions)
-    })
-
-    /**
      * Filter templates by category ID using stored filter mappings
      */
     const filterTemplatesByCategory = (categoryId: string) => {
@@ -276,9 +260,18 @@ export const useWorkflowTemplatesStore = defineStore(
         return enhancedTemplates.value
       }
 
-      if (categoryId === 'basics') {
+      if (categoryId.startsWith('basics-')) {
         // Filter for templates from categories marked as essential
-        return enhancedTemplates.value.filter((t) => t.isEssential)
+        return enhancedTemplates.value.filter(
+          (t) =>
+            t.isEssential &&
+            t.category?.toLowerCase().replace(/\s+/g, '-') ===
+              categoryId.replace('basics-', '')
+        )
+      }
+
+      if (categoryId === 'popular') {
+        return enhancedTemplates.value
       }
 
       if (categoryId === 'partner-nodes') {
@@ -333,20 +326,34 @@ export const useWorkflowTemplatesStore = defineStore(
         icon: getCategoryIcon('all')
       })
 
-      // 2. Basics (isEssential categories) - always second if it exists
-      const essentialCat = coreTemplates.value.find(
+      // 1.5. Popular categories
+
+      items.push({
+        id: 'popular',
+        label: st('templateWorkflows.category.Popular', 'Popular'),
+        icon: 'icon-[lucide--flame]'
+      })
+
+      // 2. Basics (isEssential categories) - always beneath All Templates if they exist
+      const essentialCats = coreTemplates.value.filter(
         (cat) => cat.isEssential && cat.templates.length > 0
       )
 
-      if (essentialCat) {
-        const categoryTitle = essentialCat.title ?? 'Getting Started'
-        items.push({
-          id: 'basics',
-          label: st(
-            `templateWorkflows.category.${normalizeI18nKey(categoryTitle)}`,
-            categoryTitle
-          ),
-          icon: 'icon-[lucide--graduation-cap]'
+      if (essentialCats.length > 0) {
+        essentialCats.forEach((essentialCat) => {
+          const categoryIcon = essentialCat.icon
+          const categoryTitle = essentialCat.title ?? 'Getting Started'
+          const categoryId = generateCategoryId('basics', essentialCat.title)
+          items.push({
+            id: categoryId,
+            label: st(
+              `templateWorkflows.category.${normalizeI18nKey(categoryTitle)}`,
+              categoryTitle
+            ),
+            icon:
+              categoryIcon ||
+              getCategoryIcon(essentialCat.type || 'getting-started')
+          })
         })
       }
 
@@ -375,7 +382,7 @@ export const useWorkflowTemplatesStore = defineStore(
           const group = categoryGroups.get(categoryGroup)!
 
           // Generate unique ID for this category
-          const categoryId = `${categoryGroup.toLowerCase().replace(/\s+/g, '-')}-${category.title.toLowerCase().replace(/\s+/g, '-')}`
+          const categoryId = generateCategoryId(categoryGroup, category.title)
 
           // Store the filter mapping
           categoryFilters.value.set(categoryId, {
@@ -465,33 +472,79 @@ export const useWorkflowTemplatesStore = defineStore(
       return items
     })
 
+    async function fetchCoreTemplates() {
+      const locale = i18n.global.locale.value
+      const [coreResult, englishResult, logoIndexResult] = await Promise.all([
+        api.getCoreWorkflowTemplates(locale),
+        isCloud && locale !== 'en'
+          ? api.getCoreWorkflowTemplates('en')
+          : Promise.resolve([]),
+        fetchLogoIndex()
+      ])
+
+      coreTemplates.value = coreResult
+      englishTemplates.value = englishResult
+      logoIndex.value = logoIndexResult
+
+      const coreNames = coreTemplates.value.flatMap((category) =>
+        category.templates.map((template) => template.name)
+      )
+      const customNames = Object.values(customTemplates.value).flat()
+      knownTemplateNames.value = new Set([...coreNames, ...customNames])
+    }
+
     async function loadWorkflowTemplates() {
       try {
         if (!isLoaded.value) {
           customTemplates.value = await api.getWorkflowTemplates()
-          const locale = i18n.global.locale.value
-
-          const [coreResult, englishResult] = await Promise.all([
-            api.getCoreWorkflowTemplates(locale),
-            isCloud && locale !== 'en'
-              ? api.getCoreWorkflowTemplates('en')
-              : Promise.resolve([])
-          ])
-
-          coreTemplates.value = coreResult
-          englishTemplates.value = englishResult
-
-          const coreNames = coreTemplates.value.flatMap((category) =>
-            category.templates.map((template) => template.name)
-          )
-          const customNames = Object.values(customTemplates.value).flat()
-          knownTemplateNames.value = new Set([...coreNames, ...customNames])
-
+          await fetchCoreTemplates()
           isLoaded.value = true
         }
       } catch (error) {
         console.error('Error fetching workflow templates:', error)
       }
+    }
+
+    watch(
+      () => i18n.global.locale.value,
+      async () => {
+        if (!isLoaded.value) return
+        try {
+          await fetchCoreTemplates()
+        } catch (error) {
+          console.error('Error reloading templates for new locale:', error)
+        }
+      }
+    )
+
+    async function fetchLogoIndex(): Promise<LogoIndex> {
+      try {
+        const response = await fetch(api.fileURL('/templates/index_logo.json'))
+        const contentType = response.headers.get('content-type')
+        if (!contentType?.includes('application/json')) return {}
+        const data = await response.json()
+        const result = zLogoIndex.safeParse(data)
+        return result.success ? result.data : {}
+      } catch {
+        return {}
+      }
+    }
+
+    function getLogoUrl(provider: string): string {
+      const logoPath = logoIndex.value[provider]
+      if (!logoPath) return ''
+
+      // Validate path to prevent directory traversal and ensure safe file extensions
+      const safePathPattern = /^[a-zA-Z0-9_\-./]+\.(png|jpg|jpeg|svg|webp)$/i
+      if (
+        !safePathPattern.test(logoPath) ||
+        logoPath.includes('..') ||
+        logoPath.startsWith('/')
+      ) {
+        return ''
+      }
+
+      return api.fileURL(`/templates/${logoPath}`)
     }
 
     function getEnglishMetadata(templateName: string): {
@@ -525,13 +578,13 @@ export const useWorkflowTemplatesStore = defineStore(
       groupedTemplates,
       navGroupedTemplates,
       enhancedTemplates,
-      templateFuse,
       filterTemplatesByCategory,
       isLoaded,
       loadWorkflowTemplates,
       knownTemplateNames,
       getTemplateByName,
-      getEnglishMetadata
+      getEnglishMetadata,
+      getLogoUrl
     }
   }
 )

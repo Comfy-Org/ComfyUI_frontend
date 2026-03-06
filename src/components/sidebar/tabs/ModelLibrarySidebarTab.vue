@@ -25,13 +25,17 @@
         <SearchBox
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
-          :placeholder="$t('g.searchModels') + '...'"
+          :placeholder="
+            $t('g.searchPlaceholder', {
+              subject: $t('sideToolbar.labels.models')
+            })
+          "
           @search="handleSearch"
         />
       </div>
     </template>
     <template #body>
-      <ElectronDownloadItems v-if="isElectron()" />
+      <ElectronDownloadItems v-if="isDesktop" />
 
       <Divider type="dashed" class="m-2" />
       <TreeExplorer
@@ -65,7 +69,7 @@ import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
 import { ResourceState, useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
-import { isElectron } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
 import { buildTree } from '@/utils/treeUtil'
 
 const modelStore = useModelStore()

@@ -5,9 +5,9 @@
     v-tooltip.left="tooltipConfig"
     :class="
       cn(
-        'lg-slot lg-slot--input flex items-center group rounded-r-lg m-0',
+        'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
         'cursor-crosshair',
-        props.dotOnly ? 'lg-slot--dot-only' : 'pr-6',
+        dotOnly ? 'lg-slot--dot-only' : 'pr-6',
         {
           'lg-slot--connected': props.connected,
           'lg-slot--compatible': props.compatible,
@@ -22,8 +22,9 @@
       ref="connectionDotRef"
       :class="
         cn(
-          '-translate-x-1/2 w-3',
-          hasSlotError && 'ring-2 ring-error ring-offset-0 rounded-full'
+          'w-3 -translate-x-1/2',
+          hasError &&
+            'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-error before:ring-offset-0'
         )
       "
       :slot-data
@@ -33,21 +34,20 @@
     />
 
     <!-- Slot Name -->
-    <div class="h-full flex items-center min-w-0">
+    <div class="flex h-full min-w-0 items-center">
       <span
-        v-if="!dotOnly"
+        v-if="!props.dotOnly && !hasNoLabel"
         :class="
           cn(
             'truncate text-node-component-slot-text',
-            hasSlotError && 'text-error font-medium'
+            hasError && 'font-medium text-error'
           )
         "
       >
         {{
           slotData.label ||
           slotData.localized_name ||
-          slotData.name ||
-          `Input ${index}`
+          (slotData.name ?? `Input ${index}`)
         }}
       </span>
     </div>
@@ -65,35 +65,31 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
-import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface InputSlotProps {
+  slotData: INodeSlot
+  compatible?: boolean
+  connected?: boolean
+  dotOnly?: boolean
+  hasError?: boolean
+  index: number
   nodeType?: string
   nodeId?: string
-  slotData: INodeSlot
-  index: number
-  connected?: boolean
-  compatible?: boolean
-  dotOnly?: boolean
   socketless?: boolean
 }
 
 const props = defineProps<InputSlotProps>()
 
-const executionStore = useExecutionStore()
-
-const hasSlotError = computed(() => {
-  const nodeErrors = executionStore.lastNodeErrors?.[props.nodeId ?? '']
-  if (!nodeErrors) return false
-
-  const slotName = props.slotData.name
-  return nodeErrors.errors.some(
-    (error) => error.extra_info?.input_name === slotName
-  )
-})
+const hasNoLabel = computed(
+  () =>
+    !props.slotData.label &&
+    !props.slotData.localized_name &&
+    props.slotData.name === ''
+)
+const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
 
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()

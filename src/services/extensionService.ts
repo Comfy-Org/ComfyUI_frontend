@@ -3,15 +3,17 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { KeybindingImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
+import { app } from '@/scripts/app'
+import type { ComfyApp } from '@/scripts/app'
 
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
@@ -135,18 +137,40 @@ export const useExtensionService = () => {
     }
   }
 
+  type RemoveLastAppParam<T> = T extends (
+    ...args: [...infer Rest, ComfyApp]
+  ) => infer R
+    ? (...args: Rest) => R
+    : T
+
+  type KnownExtensionMethods = Exclude<keyof ComfyExtension, number | symbol> &
+    string
+
+  type ComfyExtensionMethod<T extends KnownExtensionMethods> =
+    ComfyExtension[T] extends (...args: unknown[]) => unknown
+      ? ComfyExtension[T]
+      : (...args: unknown[]) => unknown
+
+  type ComfyExtensionParamsWithoutApp<T extends KnownExtensionMethods> =
+    RemoveLastAppParam<ComfyExtensionMethod<T>>
   /**
    * Invoke an extension callback
    * @param {keyof ComfyExtension} method The extension callback to execute
-   * @param  {any[]} args Any arguments to pass to the callback
+   * @param  {unknown[]} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensions = (method: keyof ComfyExtension, ...args: any[]) => {
-    const results: any[] = []
+  const invokeExtensions = <T extends KnownExtensionMethods>(
+    method: T,
+    ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
+  ) => {
+    const results: ReturnType<ComfyExtensionMethod<T>>[] = []
     for (const ext of extensionStore.enabledExtensions) {
       if (method in ext) {
         try {
-          results.push(ext[method](...args, app))
+          const fn = ext[method]
+          if (typeof fn === 'function') {
+            results.push(fn.call(ext, ...args, app))
+          }
         } catch (error) {
           console.error(
             `Error calling extension '${ext.name}' method '${method}'`,
@@ -164,23 +188,28 @@ export const useExtensionService = () => {
    * Invoke an async extension callback
    * Each callback will be invoked concurrently
    * @param {string} method The extension callback to execute
-   * @param  {...any} args Any arguments to pass to the callback
+   * @param  {...unknown} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensionsAsync = async (
-    method: keyof ComfyExtension,
-    ...args: any[]
+  const invokeExtensionsAsync = async <T extends KnownExtensionMethods>(
+    method: T,
+    ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
     return await Promise.all(
       extensionStore.enabledExtensions.map(async (ext) => {
         if (method in ext) {
           try {
+            const fn = ext[method]
+            if (typeof fn !== 'function') {
+              return
+            }
+
             // Set current extension name for legacy compatibility tracking
             if (method === 'setup') {
               legacyMenuCompat.setCurrentExtension(ext.name)
             }
 
-            const result = await ext[method](...args, app)
+            const result = await fn.call(ext, ...args, app)
 
             // Clear current extension after setup
             if (method === 'setup') {

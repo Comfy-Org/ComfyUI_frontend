@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerRef"
-    class="relative flex h-full w-full items-center justify-center overflow-hidden"
+    class="relative flex size-full items-center justify-center overflow-hidden"
     :class="containerClass"
   >
     <Skeleton
@@ -38,6 +38,7 @@
 <script setup lang="ts">
 import Skeleton from 'primevue/skeleton'
 import { computed, onUnmounted, ref, watch } from 'vue'
+import type { StyleValue } from 'vue'
 
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useMediaCache } from '@/services/mediaCacheService'
@@ -55,7 +56,7 @@ const {
   alt?: string
   containerClass?: ClassValue
   imageClass?: ClassValue
-  imageStyle?: Record<string, any>
+  imageStyle?: StyleValue
   rootMargin?: string
 }>()
 

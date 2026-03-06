@@ -1,10 +1,6 @@
 <template>
-  <Button
-    variant="textonly"
-    :size
-    class="border border-red-500"
-    @click="uninstallItems"
-  >
+  <Button variant="destructive" :size @click="uninstallItems">
+    <i class="icon-[lucide--trash-2]" />
     {{
       nodePacks.length > 1
         ? t('manager.uninstallSelected')

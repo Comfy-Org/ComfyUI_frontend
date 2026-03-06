@@ -11,15 +11,15 @@
         )
       }
     }"
+    @hide="onMenuHide"
   >
     <template #item="{ item, props }">
       <Button
         variant="secondary"
-        size="sm"
         class="w-full justify-start"
         v-bind="props.action"
       >
-        <i :class="item.icon" class="size-4" />
+        <i v-if="item.icon" :class="item.icon" class="size-4" />
         <span>{{
           typeof item.label === 'function' ? item.label() : (item.label ?? '')
         }}</span>
@@ -29,15 +29,17 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
+import type { ComponentPublicInstance } from 'vue'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
+import { isPreviewableMediaType } from '@/utils/formatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -45,29 +47,62 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetContext, MediaKind } from '../schemas/mediaAssetSchema'
 
-const { asset, assetType, fileKind, showDeleteButton } = defineProps<{
+const {
+  asset,
+  assetType,
+  fileKind,
+  showDeleteButton,
+  selectedAssets,
+  isBulkMode
+} = defineProps<{
   asset: AssetItem
   assetType: AssetContext['type']
   fileKind: MediaKind
   showDeleteButton?: boolean
+  selectedAssets?: AssetItem[]
+  isBulkMode?: boolean
 }>()
 
 const emit = defineEmits<{
   zoom: []
+  hide: []
   'asset-deleted': []
+  'bulk-download': [assets: AssetItem[]]
+  'bulk-delete': [assets: AssetItem[]]
+  'bulk-add-to-workflow': [assets: AssetItem[]]
+  'bulk-open-workflow': [assets: AssetItem[]]
+  'bulk-export-workflow': [assets: AssetItem[]]
 }>()
 
-const contextMenu = ref<InstanceType<typeof ContextMenu>>()
+type ContextMenuInstance = ComponentPublicInstance & {
+  show: (event: MouseEvent) => void
+  hide: () => void
+  container?: HTMLElement
+  $el?: HTMLElement
+}
+
+const contextMenu = ref<ContextMenuInstance | null>(null)
+const isVisible = ref(false)
 const actions = useMediaAssetActions()
 const { t } = useI18n()
 
-// Close context menu when clicking outside
-onClickOutside(
-  computed(() => (contextMenu.value as any)?.$el),
-  () => {
-    hide()
-  }
-)
+function getOverlayEl(): HTMLElement | null {
+  return contextMenu.value?.container ?? contextMenu.value?.$el ?? null
+}
+
+function dismissIfOutside(event: Event) {
+  if (!isVisible.value) return
+  const overlay = getOverlayEl()
+  if (!overlay) return
+  if (overlay.contains(event.target as Node)) return
+  hide()
+}
+
+useEventListener(window, 'pointerdown', dismissIfOutside, { capture: true })
+useEventListener(window, 'scroll', dismissIfOutside, {
+  capture: true,
+  passive: true
+})
 
 const showAddToWorkflow = computed(() => {
   // Output assets can always be added
@@ -112,8 +147,68 @@ const contextMenuItems = computed<MenuItem[]>(() => {
 
   const items: MenuItem[] = []
 
-  // Inspect (if not 3D)
-  if (fileKind !== '3D') {
+  // Check if current asset is part of the selection
+  const isCurrentAssetSelected = selectedAssets?.some(
+    (selectedAsset) => selectedAsset.id === asset.id
+  )
+
+  // Bulk mode: Show selected count and bulk actions only if current asset is selected
+  if (
+    isBulkMode &&
+    selectedAssets &&
+    selectedAssets.length > 0 &&
+    isCurrentAssetSelected
+  ) {
+    // Header item showing selected count
+    items.push({
+      label: t('mediaAsset.selection.multipleSelectedAssets'),
+      disabled: true
+    })
+
+    // Bulk Add to Workflow
+    items.push({
+      label: t('mediaAsset.selection.insertAllAssetsAsNodes'),
+      icon: 'icon-[comfy--node]',
+      command: () => emit('bulk-add-to-workflow', selectedAssets)
+    })
+
+    // Bulk Open Workflow
+    items.push({
+      label: t('mediaAsset.selection.openWorkflowAll'),
+      icon: 'icon-[comfy--workflow]',
+      command: () => emit('bulk-open-workflow', selectedAssets)
+    })
+
+    // Bulk Export Workflow
+    items.push({
+      label: t('mediaAsset.selection.exportWorkflowAll'),
+      icon: 'icon-[lucide--file-output]',
+      command: () => emit('bulk-export-workflow', selectedAssets)
+    })
+
+    // Bulk Download
+    items.push({
+      label: t('mediaAsset.selection.downloadSelectedAll'),
+      icon: 'icon-[lucide--download]',
+      command: () => emit('bulk-download', selectedAssets)
+    })
+
+    // Bulk Delete (if allowed)
+    if (shouldShowDeleteButton.value) {
+      items.push({
+        label: t('mediaAsset.selection.deleteSelectedAll'),
+        icon: 'icon-[lucide--trash-2]',
+        command: () => emit('bulk-delete', selectedAssets)
+      })
+    }
+
+    return items
+  }
+
+  // Individual mode: Show all menu options
+
+  // Inspect
+  if (isPreviewableMediaType(fileKind)) {
     items.push({
       label: t('mediaAsset.actions.inspect'),
       icon: 'icon-[lucide--zoom-in]',
@@ -124,7 +219,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   // Add to workflow (conditional)
   if (showAddToWorkflow.value) {
     items.push({
-      label: t('mediaAsset.actions.addToWorkflow'),
+      label: t('mediaAsset.actions.insertAsNodeInWorkflow'),
       icon: 'icon-[comfy--node]',
       command: () => actions.addWorkflow(asset)
     })
@@ -172,8 +267,8 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       icon: 'icon-[lucide--trash-2]',
       command: async () => {
         if (asset) {
-          const success = await actions.confirmDelete(asset)
-          if (success) {
+          const confirmed = await actions.deleteAssets(asset)
+          if (confirmed) {
             emit('asset-deleted')
           }
         }
@@ -184,11 +279,18 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   return items
 })
 
-const show = (event: MouseEvent) => {
+function onMenuHide() {
+  isVisible.value = false
+  emit('hide')
+}
+
+function show(event: MouseEvent) {
+  isVisible.value = true
   contextMenu.value?.show(event)
 }
 
-const hide = () => {
+function hide() {
+  isVisible.value = false
   contextMenu.value?.hide()
 }
 

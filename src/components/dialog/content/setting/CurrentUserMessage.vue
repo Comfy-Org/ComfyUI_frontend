@@ -5,9 +5,10 @@
     severity="info"
     icon="pi pi-user"
     pt:text="w-full"
+    data-testid="current-user-indicator"
   >
     <div class="flex items-center justify-between">
-      <div>
+      <div class="tabular-nums">
         {{ $t('g.currentUser') }}: {{ userStore.currentUser?.username }}
       </div>
       <Button

@@ -1,14 +1,19 @@
 import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
 import type { ContextMenu } from './ContextMenu'
-import type { LGraphNode, NodeId } from './LGraphNode'
+import type { LGraphNode, NodeId, NodeProperty } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import type { SubgraphInput } from './subgraph/SubgraphInput'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
-import type { LinkDirection, RenderShape } from './types/globalEnums'
+import type {
+  LGraphEventMode,
+  LinkDirection,
+  RenderShape
+} from './types/globalEnums'
 import type { IBaseWidget } from './types/widgets'
 
 export type Dictionary<T> = { [key: string]: T }
@@ -46,6 +51,11 @@ export type SharedIntersection<T1, T2> = {
 }
 
 export type CanvasColour = string | CanvasGradient | CanvasPattern
+
+export interface ColorStop {
+  readonly offset: number
+  readonly color: readonly [r: number, g: number, b: number]
+}
 
 /**
  * Any object that has a {@link boundingRect}.
@@ -253,7 +263,10 @@ type KeysOfType<T, Match> = Exclude<
 >
 
 /** The names of all (optional) methods and functions in T */
-export type MethodNames<T> = KeysOfType<T, ((...args: any) => any) | undefined>
+export type MethodNames<T> = KeysOfType<
+  T,
+  ((...args: unknown[]) => unknown) | undefined
+>
 export interface NewNodePosition {
   node: LGraphNode
   newPos: {
@@ -328,6 +341,8 @@ export interface INodeFlags {
   collapsed?: boolean
   /** Configuration setting for {@link LGraphNode.connectInputToOutput} */
   keepAllLinksOnBypass?: boolean
+  /** Node is in ghost placement mode (semi-transparent, following cursor) */
+  ghost?: boolean
 }
 
 /**
@@ -338,6 +353,7 @@ export interface INodeFlags {
  */
 export interface IWidgetLocator {
   name: string
+  type?: string
 }
 
 export interface INodeInputSlot extends INodeSlot {
@@ -359,6 +375,22 @@ export interface INodeOutputSlot extends INodeSlot {
   links: LinkId[] | null
   _data?: unknown
   slot_index?: number
+}
+
+/** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
+export interface CreateNodeOptions {
+  pos?: Point
+  size?: Size
+  properties?: Dictionary<NodeProperty | undefined>
+  flags?: Partial<INodeFlags>
+  mode?: LGraphEventMode
+  color?: string
+  bgcolor?: string
+  boxcolor?: string
+  title?: string
+  shape?: RenderShape
+  inputs?: Partial<INodeInputSlot>[]
+  outputs?: Partial<INodeOutputSlot>[]
 }
 
 /** Links */
@@ -458,28 +490,6 @@ export interface ISubgraphInput extends INodeInputSlot {
 }
 
 /**
- * Shorthand for {@link Parameters} of optional callbacks.
- * @example
- * ```ts
- * const { onClick } = CustomClass.prototype
- * CustomClass.prototype.onClick = function (...args: CallbackParams<typeof onClick>) {
- *   const r = onClick?.apply(this, args)
- *   // ...
- *   return r
- * }
- * ```
- */
-export type CallbackParams<T extends ((...args: any) => any) | undefined> =
-  Parameters<Exclude<T, undefined>>
-
-/**
- * Shorthand for {@link ReturnType} of optional callbacks.
- * @see {@link CallbackParams}
- */
-export type CallbackReturn<T extends ((...args: any) => any) | undefined> =
-  ReturnType<Exclude<T, undefined>>
-
-/**
  * An object that can be hovered over.
  */
 export interface Hoverable extends HasBoundingRect {
@@ -491,4 +501,69 @@ export interface Hoverable extends HasBoundingRect {
   onPointerMove(e: CanvasPointerEvent): void
   onPointerEnter?(e?: CanvasPointerEvent): void
   onPointerLeave?(e?: CanvasPointerEvent): void
+}
+
+/**
+ * Callback for panel widget value changes.
+ */
+export type PanelWidgetCallback = (
+  name: string | undefined,
+  value: TWidgetValue,
+  options: PanelWidgetOptions
+) => void
+
+/**
+ * Options for panel widgets.
+ */
+export interface PanelWidgetOptions {
+  label?: string
+  type?: string
+  widget?: string
+  values?: Array<string | IContextMenuValue<unknown, unknown, unknown> | null>
+  callback?: PanelWidgetCallback
+}
+
+/**
+ * A button element with optional options property.
+ */
+export interface PanelButton extends HTMLButtonElement {
+  options?: unknown
+}
+
+/**
+ * A widget element with options and value properties.
+ */
+export interface PanelWidget extends HTMLDivElement {
+  options?: PanelWidgetOptions
+  value?: TWidgetValue
+}
+
+/**
+ * A dialog panel created by LGraphCanvas.createPanel().
+ * Extends HTMLDivElement with additional properties and methods for panel management.
+ */
+export interface Panel extends HTMLDivElement {
+  header: HTMLElement
+  title_element: HTMLSpanElement
+  content: HTMLDivElement
+  alt_content: HTMLDivElement
+  footer: HTMLDivElement
+  node?: LGraphNode
+  onOpen?: () => void
+  onClose?: () => void
+  close(): void
+  toggleAltContent(force?: boolean): void
+  toggleFooterVisibility(force?: boolean): void
+  clear(): void
+  addHTML(code: string, classname?: string, on_footer?: boolean): HTMLDivElement
+  addButton(name: string, callback: () => void, options?: unknown): PanelButton
+  addSeparator(): void
+  addWidget(
+    type: string,
+    name: string,
+    value: TWidgetValue,
+    options?: PanelWidgetOptions,
+    callback?: PanelWidgetCallback
+  ): PanelWidget
+  inner_showCodePad?(property: string): void
 }

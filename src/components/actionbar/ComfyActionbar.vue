@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full items-center">
+  <div class="flex h-full items-center" :class="cn(!isDocked && '-ml-2')">
     <div
       v-if="isDragging && !isDocked"
       :class="actionbarClass"
@@ -10,6 +10,7 @@
     </div>
 
     <Panel
+      ref="panelRef"
       class="pointer-events-auto"
       :style="style"
       :class="panelClass"
@@ -18,12 +19,12 @@
         content: { class: isDocked ? 'p-0' : 'p-1' }
       }"
     >
-      <div ref="panelRef" class="flex items-center select-none gap-2">
+      <div class="relative flex items-center gap-2 select-none">
         <span
           ref="dragHandleRef"
           :class="
             cn(
-              'drag-handle cursor-grab w-3 h-max',
+              'drag-handle h-max w-3 cursor-grab',
               isDragging && 'cursor-grabbing'
             )
           "
@@ -41,8 +42,48 @@
         >
           <i class="icon-[lucide--x] size-4" />
         </Button>
+        <Button
+          v-tooltip.bottom="queueHistoryTooltipConfig"
+          variant="secondary"
+          size="md"
+          :aria-pressed="
+            isQueuePanelV2Enabled
+              ? activeSidebarTabId === 'job-history'
+              : queueOverlayExpanded
+          "
+          class="relative px-3"
+          data-testid="queue-overlay-toggle"
+          @click="toggleQueueOverlay"
+          @contextmenu.stop.prevent="showQueueContextMenu"
+        >
+          <span class="text-sm font-normal tabular-nums">
+            {{ activeJobsLabel }}
+          </span>
+          <StatusBadge
+            v-if="activeJobsCount > 0"
+            data-testid="active-jobs-indicator"
+            variant="dot"
+            class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+          />
+          <span class="sr-only">
+            {{
+              isQueuePanelV2Enabled
+                ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+                : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+            }}
+          </span>
+        </Button>
+        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
     </Panel>
+
+    <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
+      <QueueInlineProgress
+        :hidden="shouldHideInlineProgress"
+        :radius-class="cn(isDocked ? 'rounded-[7px]' : 'rounded-[5px]')"
+        data-testid="queue-inline-progress"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -51,51 +92,72 @@ import {
   useDraggable,
   useEventListener,
   useLocalStorage,
+  unrefElement,
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
+import ContextMenu from 'primevue/contextmenu'
+import type { MenuItem } from 'primevue/menuitem'
 import Panel from 'primevue/panel'
 import { computed, nextTick, ref, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import StatusBadge from '@/components/common/StatusBadge.vue'
+import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
 
-const settingsStore = useSettingStore()
+const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
+  topMenuContainer?: HTMLElement | null
+  queueOverlayExpanded?: boolean
+}>()
+
+const emit = defineEmits<{
+  (event: 'update:progressTarget', target: HTMLElement | null): void
+}>()
+
+const settingStore = useSettingStore()
 const commandStore = useCommandStore()
-const { t } = useI18n()
-const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
+const executionStore = useExecutionStore()
+const queueStore = useQueueStore()
+const sidebarTabStore = useSidebarTabStore()
+const { t, n } = useI18n()
+const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
+const { activeJobsCount } = storeToRefs(queueStore)
+const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 
-const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
+const position = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
+const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
+  useQueueFeatureFlags()
 
-const tabContainer = document.querySelector('.workflow-tabs-container')
-const panelRef = ref<HTMLElement | null>(null)
+const panelRef = ref<ComponentPublicInstance | null>(null)
+const panelElement = computed<HTMLElement | null>(() => {
+  const element = unrefElement(panelRef)
+  return element instanceof HTMLElement ? element : null
+})
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const { x, y, style, isDragging } = useDraggable(panelRef, {
+const { x, y, style, isDragging } = useDraggable(panelElement, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
-  containerElement: document.body,
-  onMove: (event) => {
-    // Prevent dragging the menu over the top of the tabs
-    const minY = tabContainer?.getBoundingClientRect().bottom ?? 40
-    if (event.y < minY) {
-      event.y = minY
-    }
-  }
+  containerElement: document.body
 })
 
 // Update storedPosition when x or y changes
@@ -109,11 +171,12 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  if (panelRef.value) {
+  const panel = panelElement.value
+  if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelRef.value.offsetWidth
-    const menuHeight = panelRef.value.offsetHeight
+    const menuWidth = panel.offsetWidth
+    const menuHeight = panel.offsetHeight
 
     if (menuWidth === 0 || menuHeight === 0) {
       return
@@ -189,11 +252,12 @@ watch(
 )
 
 const adjustMenuPosition = () => {
-  if (panelRef.value) {
+  const panel = panelElement.value
+  if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelRef.value.offsetWidth
-    const menuHeight = panelRef.value.offsetHeight
+    const menuWidth = panel.offsetWidth
+    const menuHeight = panel.offsetHeight
 
     // Calculate distances to all edges
     const distanceLeft = lastDragState.value.x
@@ -260,6 +324,28 @@ const onMouseLeaveDropZone = () => {
   }
 }
 
+const inlineProgressTarget = computed(() => {
+  if (
+    !visible.value ||
+    !isQueuePanelV2Enabled.value ||
+    !isRunProgressBarEnabled.value
+  ) {
+    return null
+  }
+  if (isDocked.value) return topMenuContainer ?? null
+  return panelElement.value
+})
+const shouldHideInlineProgress = computed(
+  () => !isQueuePanelV2Enabled.value && queueOverlayExpanded
+)
+watch(
+  panelElement,
+  (target) => {
+    emit('update:progressTarget', target)
+  },
+  { immediate: true }
+)
+
 // Handle drag state changes
 watch(isDragging, (dragging) => {
   if (dragging) {
@@ -280,28 +366,75 @@ watch(isDragging, (dragging) => {
 const cancelJobTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.interrupt'))
 )
+const queueHistoryTooltipConfig = computed(() =>
+  buildTooltipConfig(
+    t(
+      isQueuePanelV2Enabled.value
+        ? 'sideToolbar.queueProgressOverlay.viewJobHistory'
+        : 'sideToolbar.queueProgressOverlay.expandCollapsedQueue'
+    )
+  )
+)
+const activeJobsLabel = computed(() => {
+  const count = activeJobsCount.value
+  return t(
+    'sideToolbar.queueProgressOverlay.activeJobsShort',
+    { count: n(count) },
+    count
+  )
+})
+const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
+const queueContextMenuItems = computed<MenuItem[]>(() => [
+  {
+    label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
+    icon: 'icon-[lucide--list-x] text-destructive-background',
+    class: '*:text-destructive-background',
+    disabled: queueStore.pendingTasks.length === 0,
+    command: () => {
+      void handleClearQueue()
+    }
+  }
+])
 
 const cancelCurrentJob = async () => {
   if (isExecutionIdle.value) return
   await commandStore.execute('Comfy.Interrupt')
+}
+const toggleQueueOverlay = () => {
+  if (isQueuePanelV2Enabled.value) {
+    sidebarTabStore.toggleSidebarTab('job-history')
+    return
+  }
+  commandStore.execute('Comfy.Queue.ToggleOverlay')
+}
+const showQueueContextMenu = (event: MouseEvent) => {
+  queueContextMenu.value?.show(event)
+}
+const handleClearQueue = async () => {
+  const pendingJobIds = queueStore.pendingTasks
+    .map((task) => task.jobId)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+
+  await commandStore.execute('Comfy.ClearPendingTasks')
+  executionStore.clearInitializationByJobIds(pendingJobIds)
 }
 
 const actionbarClass = computed(() =>
   cn(
     'w-[200px] border-dashed border-blue-500 opacity-80',
     'm-1.5 flex items-center justify-center self-stretch',
-    'rounded-md before:w-50 before:-ml-50 before:h-full',
+    'rounded-md before:-ml-50 before:h-full before:w-50',
     'pointer-events-auto',
     isMouseOverDropZone.value &&
-      'border-[3px] opacity-100 scale-105 shadow-[0_0_20px] shadow-blue-500'
+      'scale-105 border-[3px] opacity-100 shadow-[0_0_20px] shadow-blue-500'
   )
 )
 const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto z-1300',
-    isDragging.value && 'select-none pointer-events-none',
+    isDragging.value && 'pointer-events-none select-none',
     isDocked.value
-      ? 'p-0 static border-none bg-transparent'
+      ? 'static border-none bg-transparent p-0'
       : 'fixed shadow-interface'
   )
 )

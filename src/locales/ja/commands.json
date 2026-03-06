@@ -1,4 +1,40 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "アップデートを確認"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "カスタムノードフォルダーを開く"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "入力フォルダーを開く"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "ログフォルダーを開く"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "extra_model_paths.yaml を開く"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "モデルフォルダーを開く"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "出力フォルダーを開く"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "開発者ツールを開く"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "デスクトップユーザーガイド"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "終了"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "再インストール"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "再起動"
+  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "選択したノードの3Dビューアー（ベータ）を開く"
   },
@@ -7,6 +43,9 @@
   },
   "Comfy_BrowseTemplates": {
     "label": "テンプレートを参照"
+  },
+  "Comfy_Canvas_CopySelected": {
+    "label": "コピー"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "選択したアイテムを削除"
@@ -29,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "選択したノードを上に移動"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "貼り付け"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "ビューをリセット"
   },
   "Comfy_Canvas_Resize": {
     "label": "選択したノードのサイズ変更"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "すべて選択"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "キャンバスのリンク表示を切り替える"
@@ -155,17 +200,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "更新を確認"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "プログレスダイアログの切り替え"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "マスクエディタでブラシサイズを縮小"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "マスクエディタでブラシサイズを大きくする"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "MaskEditorでカラーピッカーを開く"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "マスクエディタで左右反転"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "マスクエディタで上下反転"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "選択したノードのマスクエディタを開く"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "マスクエディタで左回転"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "マスクエディタで右回転"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "モデルのアンロード"
@@ -197,11 +254,17 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "選択した出力ノードをキューに追加"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "ジョブ履歴を切り替え"
+  },
   "Comfy_Redo": {
     "label": "やり直す"
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "ノード定義を更新"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "ワークフローの名前を変更"
   },
   "Comfy_SaveWorkflow": {
     "label": "ワークフローを保存する"
@@ -212,6 +275,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "設定ダイアログを表示"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "サブグラフの説明を設定"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "サブグラフの検索エイリアスを設定"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "実験的: AssetAPIを有効化"
   },
@@ -220,6 +289,12 @@
   },
   "Comfy_ToggleHelpCenter": {
     "label": "ヘルプセンター"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "リニアモードを切り替え"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Queue Panel V2 を切り替え"
   },
   "Comfy_ToggleTheme": {
     "label": "テーマの切り替え（ダーク/ライト）"
@@ -252,10 +327,10 @@
     "label": "パネル下部の切り替え"
   },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "ターミナルパネル下部の切り替え"
+    "label": "ターミナル下部パネルを切り替え"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "ログパネル下部の切り替え"
+    "label": "ログ下部パネルを切り替え"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "必須な下部パネルを切り替え"
@@ -268,6 +343,10 @@
   },
   "Workspace_ToggleFocusMode": {
     "label": "フォーカスモードの切り替え"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "アプリサイドバーを切り替え",
+    "tooltip": "アプリ"
   },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "アセットサイドバーの表示切り替え",

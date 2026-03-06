@@ -1,6 +1,11 @@
 <template>
   <div class="relative inline-flex items-center">
-    <Button size="icon" variant="secondary" @click="popover?.toggle">
+    <Button
+      size="icon"
+      variant="secondary"
+      v-bind="$attrs"
+      @click="popover?.toggle"
+    >
       <i
         :class="
           cn(
@@ -59,6 +64,10 @@ import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
+
+defineOptions({
+  inheritAttrs: false
+})
 
 interface MoreButtonProps {
   isVertical?: boolean

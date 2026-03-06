@@ -161,7 +161,7 @@ describe('TopbarBadge', () => {
       )
 
       expect(wrapper.find('.bg-gold-600').exists()).toBe(true)
-      expect(wrapper.find('.text-gold-600').exists()).toBe(true)
+      expect(wrapper.find('.text-warning-background').exists()).toBe(true)
     })
 
     it('uses default error icon for error variant', () => {
@@ -185,7 +185,9 @@ describe('TopbarBadge', () => {
         'full'
       )
 
-      expect(wrapper.find('.pi-exclamation-triangle').exists()).toBe(true)
+      expect(wrapper.find('.icon-\\[lucide--triangle-alert\\]').exists()).toBe(
+        true
+      )
     })
   })
 

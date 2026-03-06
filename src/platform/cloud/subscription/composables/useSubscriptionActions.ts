@@ -1,7 +1,7 @@
 import { onMounted, ref } from 'vue'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -15,7 +15,7 @@ export function useSubscriptionActions() {
   const authActions = useFirebaseAuthActions()
   const commandStore = useCommandStore()
   const telemetry = useTelemetry()
-  const { fetchStatus } = useSubscription()
+  const { fetchStatus } = useBillingContext()
 
   const isLoadingSupport = ref(false)
 
@@ -24,7 +24,7 @@ export function useSubscriptionActions() {
   })
 
   const handleAddApiCredits = () => {
-    dialogService.showTopUpCreditsDialog()
+    void dialogService.showTopUpCreditsDialog()
   }
 
   const handleMessageSupport = async () => {

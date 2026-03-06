@@ -1,12 +1,51 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Проверить обновления"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "Открыть папку пользовательских узлов"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "Открыть папку входных данных"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "Открыть папку логов"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "Открыть extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "Открыть папку моделей"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "Открыть папку выходных данных"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "Открыть инструменты разработчика"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "Руководство пользователя для Desktop"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "Выйти"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "Переустановить"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "Перезапустить"
+  },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "Открыть 3D-просмотрщик (бета) для выбранного узла"
+    "label": "Открыть 3D-просмотрщик (Бета) для выбранного узла"
   },
   "Comfy_BrowseModelAssets": {
     "label": "Экспериментально: Просмотр ресурсов моделей"
   },
   "Comfy_BrowseTemplates": {
     "label": "Просмотр шаблонов"
+  },
+  "Comfy_Canvas_CopySelected": {
+    "label": "Копировать"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Удалить выбранные элементы"
@@ -29,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "Переместить выбранные узлы вверх"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "Вставить"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Сбросить вид"
   },
   "Comfy_Canvas_Resize": {
     "label": "Изменить размер выбранных узлов"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "Выбрать все"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Переключить видимость ссылки"
@@ -155,17 +200,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Проверить наличие обновлений"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Переключить диалоговое окно прогресса"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "Уменьшить размер кисти в MaskEditor"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "Увеличить размер кисти в MaskEditor"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "Открыть палитру цветов в MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Отразить по горизонтали в MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Отразить по вертикали в MaskEditor"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Открыть редактор масок для выбранной ноды"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Повернуть влево в MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Повернуть вправо в MaskEditor"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Выгрузить модели"
@@ -197,11 +254,17 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "Добавить выбранные выходные узлы в очередь"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "Показать/скрыть историю заданий"
+  },
   "Comfy_Redo": {
     "label": "Повторить"
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "Обновить определения нод"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "Переименовать рабочий процесс"
   },
   "Comfy_SaveWorkflow": {
     "label": "Сохранить рабочий процесс"
@@ -212,6 +275,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Показать диалог настроек"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "Установить описание подграфа"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "Установить поисковые псевдонимы подграфа"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "Экспериментально: Включить AssetAPI"
   },
@@ -220,6 +289,12 @@
   },
   "Comfy_ToggleHelpCenter": {
     "label": "Центр поддержки"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "переключить линейный режим"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Переключить панель очереди V2"
   },
   "Comfy_ToggleTheme": {
     "label": "Переключить тему (Тёмная/Светлая)"
@@ -252,10 +327,10 @@
     "label": "Переключить нижнюю панель"
   },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "Переключить нижнюю панель терминала"
+    "label": "Показать/скрыть нижнюю панель терминала"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "Переключить нижнюю панель логов"
+    "label": "Показать/скрыть нижнюю панель логов"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "Показать/скрыть основную нижнюю панель"
@@ -268,6 +343,10 @@
   },
   "Workspace_ToggleFocusMode": {
     "label": "Переключить режим фокуса"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "Переключить боковую панель приложений",
+    "tooltip": "Приложения"
   },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "Переключить боковую панель ресурсов",

@@ -5,10 +5,7 @@
     {
       "id": 1,
       "type": "UNKNOWN NODE",
-      "pos": [
-        48,
-        86
-      ],
+      "pos": [48, 86],
       "size": {
         "0": 358.80780029296875,
         "1": 314.7989501953125
@@ -36,14 +33,7 @@
       "properties": {
         "Node name for S&R": "UNKNOWN NODE"
       },
-      "widgets_values": [
-        "wd-v1-4-moat-tagger-v2",
-        0.35,
-        0.85,
-        false,
-        false,
-        ""
-      ]
+      "widgets_values": ["wd-v1-4-moat-tagger-v2", 0.35, 0.85, false, false, ""]
     }
   ],
   "links": [],
@@ -52,9 +42,7 @@
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        0, 0
-      ]
+      "offset": [0, 0]
     }
   },
   "version": 0.4

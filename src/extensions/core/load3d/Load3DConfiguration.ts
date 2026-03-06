@@ -156,8 +156,9 @@ class Load3DConfiguration {
 
     return {
       upDirection: 'original',
-      materialMode: 'original'
-    } as ModelConfig
+      materialMode: 'original',
+      showSkeleton: false
+    }
   }
 
   private applySceneConfig(config: SceneConfig, bgImagePath?: string) {

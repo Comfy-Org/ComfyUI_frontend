@@ -1,15 +1,14 @@
+import { computed } from 'vue'
+
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import UploadModelDialog from '@/platform/assets/components/UploadModelDialog.vue'
 import UploadModelDialogHeader from '@/platform/assets/components/UploadModelDialogHeader.vue'
 import UploadModelUpgradeModal from '@/platform/assets/components/UploadModelUpgradeModal.vue'
 import UploadModelUpgradeModalHeader from '@/platform/assets/components/UploadModelUpgradeModalHeader.vue'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { UseAsyncStateReturn } from '@vueuse/core'
-import { computed } from 'vue'
 
 export function useModelUpload(
-  execute?: UseAsyncStateReturn<AssetItem[], [], true>['execute']
+  onUploadSuccess?: () => Promise<unknown> | void
 ) {
   const dialogStore = useDialogStore()
   const { flags } = useFeatureFlags()
@@ -17,7 +16,6 @@ export function useModelUpload(
 
   function showUploadDialog() {
     if (!flags.privateModelsEnabled) {
-      // Show upgrade modal if private models are disabled
       dialogStore.showDialog({
         key: 'upload-model-upgrade',
         headerComponent: UploadModelUpgradeModalHeader,
@@ -25,25 +23,24 @@ export function useModelUpload(
         dialogComponentProps: {
           pt: {
             header: 'py-0! pl-0!',
-            content: 'p-0!'
+            content: 'p-0! overflow-y-hidden!'
           }
         }
       })
     } else {
-      // Show regular upload modal
       dialogStore.showDialog({
         key: 'upload-model',
         headerComponent: UploadModelDialogHeader,
         component: UploadModelDialog,
         props: {
           onUploadSuccess: async () => {
-            await execute?.()
+            await onUploadSuccess?.()
           }
         },
         dialogComponentProps: {
           pt: {
             header: 'py-0! pl-0!',
-            content: 'p-0!'
+            content: 'p-0! overflow-y-hidden!'
           }
         }
       })

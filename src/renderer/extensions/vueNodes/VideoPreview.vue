@@ -7,7 +7,7 @@
     <!-- Video Wrapper -->
     <div
       ref="videoWrapperEl"
-      class="relative h-full w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-transparent"
       tabindex="0"
       role="region"
       :aria-label="$t('g.videoPreview')"
@@ -20,11 +20,14 @@
       <!-- Error State -->
       <div
         v-if="videoError"
-        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white py-8"
+        role="alert"
+        class="flex flex-auto flex-col items-center justify-center bg-muted-background py-8 text-center text-base-foreground"
       >
-        <i class="mb-2 icon-[lucide--video-off] h-12 w-12 text-smoke-400" />
-        <p class="text-sm text-smoke-300">{{ $t('g.videoFailedToLoad') }}</p>
-        <p class="mt-1 text-xs text-smoke-400">
+        <i class="mb-2 icon-[lucide--video-off] size-12 text-base-foreground" />
+        <p class="text-sm text-base-foreground">
+          {{ $t('g.videoFailedToLoad') }}
+        </p>
+        <p class="mt-1 text-xs text-base-foreground">
           {{ getVideoFilename(currentVideoUrl) }}
         </p>
       </div>
@@ -62,7 +65,7 @@
           :aria-label="$t('g.downloadVideo')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] h-4 w-4" />
+          <i class="icon-[lucide--download] size-4" />
         </button>
 
         <!-- Close Button -->
@@ -72,14 +75,14 @@
           :aria-label="$t('g.removeVideo')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] h-4 w-4" />
+          <i class="icon-[lucide--x] size-4" />
         </button>
       </div>
 
       <!-- Multiple Videos Navigation -->
       <div
         v-if="hasMultipleVideos"
-        class="absolute right-2 bottom-2 left-2 flex justify-center gap-1"
+        class="absolute inset-x-2 bottom-2 flex justify-center gap-1"
       >
         <button
           v-for="(_, index) in imageUrls"
@@ -118,7 +121,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { cn } from '@/utils/tailwindUtil'
 
 interface VideoPreviewProps {
@@ -153,7 +156,15 @@ const hasMultipleVideos = computed(() => props.imageUrls.length > 1)
 // Watch for URL changes and reset state
 watch(
   () => props.imageUrls,
-  (newUrls) => {
+  (newUrls, oldUrls) => {
+    // Only reset state if URLs actually changed (not just array reference)
+    const urlsChanged =
+      !oldUrls ||
+      newUrls.length !== oldUrls.length ||
+      newUrls.some((url, i) => url !== oldUrls[i])
+
+    if (!urlsChanged) return
+
     // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {
       currentIndex.value = 0
@@ -164,7 +175,7 @@ watch(
     videoError.value = false
     showLoader.value = newUrls.length > 0
   },
-  { deep: true, immediate: true }
+  { immediate: true }
 )
 
 // Event handlers
@@ -204,11 +215,15 @@ const handleRemove = () => {
 }
 
 const setCurrentIndex = (index: number) => {
+  if (currentIndex.value === index) return
   if (index >= 0 && index < props.imageUrls.length) {
+    const urlChanged = props.imageUrls[index] !== currentVideoUrl.value
     currentIndex.value = index
-    actualDimensions.value = null
-    showLoader.value = true
     videoError.value = false
+    if (urlChanged) {
+      actualDimensions.value = null
+      showLoader.value = true
+    }
   }
 }
 
@@ -230,12 +245,13 @@ const handleFocusOut = (event: FocusEvent) => {
   }
 }
 
-const getNavigationDotClass = (index: number) => {
-  return [
-    'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer',
-    index === currentIndex.value ? 'bg-white' : 'bg-white/50 hover:bg-white/80'
-  ]
-}
+const getNavigationDotClass = (index: number) =>
+  cn(
+    'size-2 cursor-pointer rounded-full border-0 transition-all duration-200',
+    index === currentIndex.value
+      ? 'bg-base-foreground'
+      : 'bg-base-foreground/50 hover:bg-base-foreground/80'
+  )
 
 const handleKeyDown = (event: KeyboardEvent) => {
   if (props.imageUrls.length <= 1) return

@@ -1,6 +1,13 @@
-import type { DropdownItem, SortOption } from './types'
+import { t } from '@/i18n'
+import type { AssetSortOption } from '@/platform/assets/types/filterTypes'
+import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
 
-export async function defaultSearcher(query: string, items: DropdownItem[]) {
+import type { FormDropdownItem, SortOption } from './types'
+
+export async function defaultSearcher(
+  query: string,
+  items: FormDropdownItem[]
+) {
   if (query.trim() === '') return items
   const words = query.trim().toLowerCase().split(' ')
   return items.filter((item) => {
@@ -9,20 +16,23 @@ export async function defaultSearcher(query: string, items: DropdownItem[]) {
   })
 }
 
-export function getDefaultSortOptions(): SortOption[] {
+/**
+ * Create a SortOption that delegates to the shared sortAssets utility
+ */
+function createSortOption(
+  id: AssetSortOption,
+  name: string
+): SortOption<AssetSortOption> {
+  return {
+    id,
+    name,
+    sorter: ({ items }) => sortAssets(items, id)
+  }
+}
+
+export function getDefaultSortOptions(): SortOption<AssetSortOption>[] {
   return [
-    {
-      name: 'Default',
-      id: 'default',
-      sorter: ({ items }) => items.slice()
-    },
-    {
-      name: 'A-Z',
-      id: 'a-z',
-      sorter: ({ items }) =>
-        items.slice().sort((a, b) => {
-          return a.name.localeCompare(b.name)
-        })
-    }
+    createSortOption('default', t('assetBrowser.sortDefault')),
+    createSortOption('name-asc', t('assetBrowser.sortAZ'))
   ]
 }

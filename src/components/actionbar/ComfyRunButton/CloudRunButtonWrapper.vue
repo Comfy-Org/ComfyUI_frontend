@@ -8,10 +8,10 @@
 import { computed } from 'vue'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 
-const { isActiveSubscription } = useSubscription()
+const { isActiveSubscription } = useBillingContext()
 
 const currentButton = computed(() =>
   isActiveSubscription.value ? ComfyQueueButton : SubscribeToRunButton

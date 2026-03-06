@@ -7,16 +7,14 @@ import {
   clearTopupTracking as clearTopupUtil,
   startTopupTracking as startTopupUtil
 } from '@/platform/telemetry/topupTracker'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { app } from '@/scripts/app'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { NodeSourceType } from '@/types/nodeSource'
-import { reduceAllNodes } from '@/utils/graphTraversalUtil'
+import type { AuditLog } from '@/services/customerEventsService'
+
+import { getExecutionContext } from '../../utils/getExecutionContext'
 
 import type {
   AuthMetadata,
   CreditTopupMetadata,
+  EnterLinearMetadata,
   ExecutionContext,
   ExecutionTriggerSource,
   ExecutionErrorMetadata,
@@ -29,6 +27,7 @@ import type {
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
+  SubscriptionMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
@@ -216,13 +215,16 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
 
-  trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
+  trackSubscription(
+    event: 'modal_opened' | 'subscribe_clicked',
+    metadata?: SubscriptionMetadata
+  ): void {
     const eventName =
       event === 'modal_opened'
         ? TelemetryEvents.SUBSCRIPTION_REQUIRED_MODAL_OPENED
         : TelemetryEvents.SUBSCRIBE_NOW_BUTTON_CLICKED
 
-    this.trackEvent(eventName)
+    this.trackEvent(eventName, metadata)
   }
 
   trackAddApiCreditButtonClicked(): void {
@@ -260,7 +262,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     startTopupUtil()
   }
 
-  checkForCompletedTopup(events: any[] | undefined | null): boolean {
+  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
     return checkTopupUtil(events)
   }
 
@@ -272,7 +274,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     subscribe_to_run?: boolean
     trigger_source?: ExecutionTriggerSource
   }): void {
-    const executionContext = this.getExecutionContext()
+    const executionContext = getExecutionContext()
 
     const runButtonProperties: RunButtonProperties = {
       subscribe_to_run: options?.subscribe_to_run || false,
@@ -283,6 +285,8 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       subgraph_count: executionContext.subgraph_count,
       has_api_nodes: executionContext.has_api_nodes,
       api_node_names: executionContext.api_node_names,
+      has_toolkit_nodes: executionContext.has_toolkit_nodes,
+      toolkit_node_names: executionContext.toolkit_node_names,
       trigger_source: options?.trigger_source
     }
 
@@ -354,6 +358,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
   }
 
+  trackEnterLinear(metadata: EnterLinearMetadata): void {
+    this.trackEvent(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
+  }
+
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.trackEvent(TelemetryEvents.PAGE_VISIBILITY_CHANGED, metadata)
   }
@@ -391,7 +399,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   trackWorkflowExecution(): void {
-    const context = this.getExecutionContext()
+    const context = getExecutionContext()
     const eventContext: ExecutionContext = {
       ...context,
       trigger_source: this.lastTriggerSource ?? 'unknown'
@@ -414,99 +422,5 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
-  }
-
-  getExecutionContext(): ExecutionContext {
-    const workflowStore = useWorkflowStore()
-    const templatesStore = useWorkflowTemplatesStore()
-    const nodeDefStore = useNodeDefStore()
-    const activeWorkflow = workflowStore.activeWorkflow
-
-    // Calculate node metrics in a single traversal
-    type NodeMetrics = {
-      custom_node_count: number
-      api_node_count: number
-      subgraph_count: number
-      total_node_count: number
-      has_api_nodes: boolean
-      api_node_names: string[]
-    }
-
-    const nodeCounts = reduceAllNodes<NodeMetrics>(
-      app.rootGraph,
-      (metrics, node) => {
-        const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-        const isCustomNode =
-          nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
-        const isApiNode = nodeDef?.api_node === true
-        const isSubgraph = node.isSubgraphNode?.() === true
-
-        if (isApiNode) {
-          metrics.has_api_nodes = true
-          const canonicalName = nodeDef?.name
-          if (
-            canonicalName &&
-            !metrics.api_node_names.includes(canonicalName)
-          ) {
-            metrics.api_node_names.push(canonicalName)
-          }
-        }
-
-        metrics.custom_node_count += isCustomNode ? 1 : 0
-        metrics.api_node_count += isApiNode ? 1 : 0
-        metrics.subgraph_count += isSubgraph ? 1 : 0
-        metrics.total_node_count += 1
-
-        return metrics
-      },
-      {
-        custom_node_count: 0,
-        api_node_count: 0,
-        subgraph_count: 0,
-        total_node_count: 0,
-        has_api_nodes: false,
-        api_node_names: []
-      }
-    )
-
-    if (activeWorkflow?.filename) {
-      const isTemplate = templatesStore.knownTemplateNames.has(
-        activeWorkflow.filename
-      )
-
-      if (isTemplate) {
-        const template = templatesStore.getTemplateByName(
-          activeWorkflow.filename
-        )
-
-        const englishMetadata = templatesStore.getEnglishMetadata(
-          activeWorkflow.filename
-        )
-
-        return {
-          is_template: true,
-          workflow_name: activeWorkflow.filename,
-          template_source: template?.sourceModule,
-          template_category: englishMetadata?.category ?? template?.category,
-          template_tags: englishMetadata?.tags ?? template?.tags,
-          template_models: englishMetadata?.models ?? template?.models,
-          template_use_case: englishMetadata?.useCase ?? template?.useCase,
-          template_license: englishMetadata?.license ?? template?.license,
-          ...nodeCounts
-        }
-      }
-
-      return {
-        is_template: false,
-        workflow_name: activeWorkflow.filename,
-        ...nodeCounts
-      }
-    }
-
-    return {
-      is_template: false,
-      workflow_name: undefined,
-      ...nodeCounts
-    }
   }
 }

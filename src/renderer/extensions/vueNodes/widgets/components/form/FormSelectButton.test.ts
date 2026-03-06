@@ -8,7 +8,7 @@ describe('FormSelectButton Core Component', () => {
   // Type-safe helper for mounting component
   const mountComponent = (
     modelValue: string | null | undefined = null,
-    options: (string | number | Record<string, any>)[] = [],
+    options: unknown[] = [],
     props: Record<string, unknown> = {}
   ) => {
     return mount(FormSelectButton, {
@@ -17,7 +17,11 @@ describe('FormSelectButton Core Component', () => {
       },
       props: {
         modelValue,
-        options: options as any,
+        options: options as (
+          | string
+          | number
+          | { label: string; value: string | number }
+        )[],
         ...props
       }
     })
@@ -89,7 +93,7 @@ describe('FormSelectButton Core Component', () => {
       expect(button.classes()).toContain('h-6')
       expect(button.classes()).toContain('px-5')
       expect(button.classes()).toContain('py-[5px]')
-      expect(button.classes()).toContain('rounded')
+      expect(button.classes()).toContain('rounded-sm')
       expect(button.classes()).toContain('text-center')
       expect(button.classes()).toContain('text-xs')
       expect(button.classes()).toContain('font-normal')
@@ -474,7 +478,7 @@ describe('FormSelectButton Core Component', () => {
     })
 
     it('handles mixed type options safely', () => {
-      const mixedOptions: any[] = [
+      const mixedOptions: unknown[] = [
         'string',
         123,
         { label: 'Object', value: 'obj' }

@@ -33,7 +33,7 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="icon-[lucide--external-link] text-primary w-4 h-4 ml-auto"
+            class="ml-auto icon-[lucide--external-link] size-4 text-primary"
           />
           <i
             v-if="menuItem.key === 'more'"
@@ -88,7 +88,7 @@
       data-testid="whats-new-section"
     >
       <h3
-        class="section-description flex items-center gap-2.5 self-stretch px-8 pt-2 pb-2"
+        class="section-description flex items-center gap-2.5 self-stretch px-8 py-2"
       >
         {{ $t('helpCenter.whatsNew') }}
       </h3>
@@ -102,7 +102,7 @@
         <article
           v-for="release in releaseStore.recentReleases"
           :key="release.id || release.version"
-          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded p-2 transition-colors hover:bg-interface-menu-component-surface-hovered"
+          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-interface-menu-component-surface-hovered"
           role="button"
           tabindex="0"
           @click="onReleaseClick(release)"
@@ -159,13 +159,13 @@ import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
@@ -241,7 +241,7 @@ const moreItems = computed<MenuItem[]>(() => {
       key: 'desktop-guide',
       type: 'item',
       label: t('helpCenter.desktopUserGuide'),
-      visible: isElectron(),
+      visible: isDesktop,
       action: () => {
         trackResourceClick('docs', true)
         openExternalLink(
@@ -257,7 +257,7 @@ const moreItems = computed<MenuItem[]>(() => {
       key: 'dev-tools',
       type: 'item',
       label: t('helpCenter.openDevTools'),
-      visible: isElectron(),
+      visible: isDesktop,
       action: () => {
         openDevTools()
         emit('close')
@@ -266,13 +266,13 @@ const moreItems = computed<MenuItem[]>(() => {
     {
       key: 'divider-1',
       type: 'divider',
-      visible: isElectron()
+      visible: isDesktop
     },
     {
       key: 'reinstall',
       type: 'item',
       label: t('helpCenter.reinstall'),
-      visible: isElectron(),
+      visible: isDesktop,
       action: () => {
         onReinstall()
         emit('close')
@@ -374,7 +374,7 @@ const menuItems = computed<MenuItem[]>(() => {
     })
   }
   // Update ComfyUI - only for non-desktop, non-cloud with new manager UI
-  if (!isElectron() && !isCloud && isNewManagerUI.value) {
+  if (!isDesktop && !isCloud && isNewManagerUI.value) {
     items.push({
       key: 'update-comfyui',
       type: 'item',
@@ -551,13 +551,13 @@ const onSubmenuLeave = (): void => {
 }
 
 const openDevTools = (): void => {
-  if (isElectron()) {
+  if (isDesktop) {
     electronAPI().openDevTools()
   }
 }
 
 const onReinstall = (): void => {
-  if (isElectron()) {
+  if (isDesktop) {
     void electronAPI().reinstall()
   }
 }

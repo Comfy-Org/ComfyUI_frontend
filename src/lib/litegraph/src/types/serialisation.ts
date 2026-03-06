@@ -111,6 +111,8 @@ export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
    * @see {@link ExportedSubgraph.subgraphs}
    */
   type: UUID
+  /** Custom properties for this subgraph instance */
+  properties?: Dictionary<NodeProperty | undefined>
 }
 
 /**
@@ -135,6 +137,10 @@ export interface ISerialisedGraph extends BaseExportedGraph {
 export interface ExportedSubgraph extends SerialisableGraph {
   /** The display name of the subgraph. */
   name: string
+  /** Optional category for organizing subgraph blueprints in the node library. */
+  category?: string
+  /** Optional description shown as tooltip when hovering over the subgraph node. */
+  description?: string
   inputNode: ExportedSubgraphIONode
   outputNode: ExportedSubgraphIONode
   /** Ordered list of inputs to the subgraph itself. Similar to a reroute, with the input side in the graph, and the output side in the subgraph. */

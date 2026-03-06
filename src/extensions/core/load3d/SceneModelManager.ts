@@ -30,6 +30,8 @@ export class SceneModelManager implements ModelManagerInterface {
   originalURL: string | null = null
   appliedTexture: THREE.Texture | null = null
   textureLoader: THREE.TextureLoader
+  skeletonHelper: THREE.SkeletonHelper | null = null
+  showSkeleton: boolean = false
 
   private scene: THREE.Scene
   private renderer: THREE.WebGLRenderer
@@ -414,7 +416,67 @@ export class SceneModelManager implements ModelManagerInterface {
       this.appliedTexture = null
     }
 
+    if (this.skeletonHelper) {
+      this.scene.remove(this.skeletonHelper)
+      this.skeletonHelper.dispose()
+      this.skeletonHelper = null
+    }
+    this.showSkeleton = false
+
     this.originalMaterials = new WeakMap()
+  }
+
+  hasSkeleton(): boolean {
+    if (!this.currentModel) return false
+    let found = false
+    this.currentModel.traverse((child) => {
+      if (child instanceof THREE.SkinnedMesh && child.skeleton) {
+        found = true
+      }
+    })
+    return found
+  }
+
+  setShowSkeleton(show: boolean): void {
+    this.showSkeleton = show
+
+    if (show) {
+      if (!this.skeletonHelper && this.currentModel) {
+        let rootBone: THREE.Bone | null = null
+        this.currentModel.traverse((child) => {
+          if (child instanceof THREE.Bone && !rootBone) {
+            if (!(child.parent instanceof THREE.Bone)) {
+              rootBone = child
+            }
+          }
+        })
+
+        if (rootBone) {
+          this.skeletonHelper = new THREE.SkeletonHelper(rootBone)
+          this.scene.add(this.skeletonHelper)
+        } else {
+          let skinnedMesh: THREE.SkinnedMesh | null = null
+          this.currentModel.traverse((child) => {
+            if (child instanceof THREE.SkinnedMesh && !skinnedMesh) {
+              skinnedMesh = child
+            }
+          })
+
+          if (skinnedMesh) {
+            this.skeletonHelper = new THREE.SkeletonHelper(skinnedMesh)
+            this.scene.add(this.skeletonHelper)
+          }
+        }
+      } else if (this.skeletonHelper) {
+        this.skeletonHelper.visible = true
+      }
+    } else {
+      if (this.skeletonHelper) {
+        this.skeletonHelper.visible = false
+      }
+    }
+
+    this.eventManager.emitEvent('skeletonVisibilityChange', show)
   }
 
   addModelToScene(model: THREE.Object3D): void {

@@ -1,16 +1,26 @@
+import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 
 import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useCommandStore } from './commandStore'
 
 export const useMenuItemStore = defineStore('menuItem', () => {
+  const canvasStore = useCanvasStore()
   const commandStore = useCommandStore()
   const menuItems = ref<MenuItem[]>([])
   const menuItemHasActiveStateChildren = ref<Record<string, boolean>>({})
+  const hasSeenLinear = ref(false)
+
+  whenever(
+    () => canvasStore.linearMode,
+    () => (hasSeenLinear.value = true),
+    { immediate: true, once: true }
+  )
 
   const registerMenuGroup = (path: string[], items: MenuItem[]) => {
     let currentLevel = menuItems.value
@@ -55,21 +65,20 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       )
     }
   }
+  function commandIdToMenuItem(commandId: string, path?: string[]): MenuItem {
+    const command = commandStore.getCommand(commandId)
+    return {
+      command: () => commandStore.execute(command.id),
+      label: command.menubarLabel,
+      icon: command.icon,
+      tooltip: command.tooltip,
+      comfyCommand: command,
+      parentPath: path?.join('.')
+    }
+  }
 
   const registerCommands = (path: string[], commandIds: string[]) => {
-    const items = commandIds
-      .map((commandId) => commandStore.getCommand(commandId))
-      .map(
-        (command) =>
-          ({
-            command: () => commandStore.execute(command.id),
-            label: command.menubarLabel,
-            icon: command.icon,
-            tooltip: command.tooltip,
-            comfyCommand: command,
-            parentPath: path.join('.')
-          }) as MenuItem
-      )
+    const items = commandIds.map((id) => commandIdToMenuItem(id, path))
     registerMenuGroup(path, items)
   }
 
@@ -103,6 +112,8 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     registerCommands,
     loadExtensionMenuCommands,
     registerCoreMenuCommands,
-    menuItemHasActiveStateChildren
+    menuItemHasActiveStateChildren,
+    hasSeenLinear,
+    commandIdToMenuItem
   }
 })

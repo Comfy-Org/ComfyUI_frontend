@@ -1,15 +1,15 @@
 <template>
   <div
-    class="flex gap-4 items-center justify-between px-6 pt-2 pb-6"
+    class="flex items-center justify-between gap-4 px-6 pt-2 pb-6"
     data-component-id="asset-filter-bar"
   >
     <div
-      class="flex gap-4 items-center"
+      class="flex items-center gap-4"
       data-component-id="asset-filter-bar-left"
     >
       <MultiSelect
         v-if="availableFileFormats.length > 0"
-        v-model="fileFormats"
+        v-model="activeFileFormatObjects"
         :label="$t('assetBrowser.fileFormats')"
         :options="availableFileFormats"
         class="min-w-32"
@@ -19,7 +19,7 @@
 
       <MultiSelect
         v-if="availableBaseModels.length > 0"
-        v-model="baseModels"
+        v-model="activeBaseModelObjects"
         :label="$t('assetBrowser.baseModels')"
         :options="availableBaseModels"
         class="min-w-32"
@@ -28,11 +28,11 @@
       />
 
       <SingleSelect
-        v-if="hasMutableAssets"
+        v-if="showOwnershipFilter"
         v-model="ownership"
         :label="$t('assetBrowser.ownership')"
         :options="ownershipOptions"
-        class="min-w-42"
+        class="min-w-32"
         data-component-id="asset-filter-ownership"
         @update:model-value="handleFilterChange"
       />
@@ -48,7 +48,7 @@
         @update:model-value="handleFilterChange"
       >
         <template #icon>
-          <i class="icon-[lucide--arrow-up-down] size-3" />
+          <i class="icon-[lucide--arrow-up-down]" />
         </template>
       </SingleSelect>
     </div>
@@ -57,64 +57,71 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { SelectOption } from '@/components/input/types'
-import { t } from '@/i18n'
-import type { OwnershipOption } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetFilterState,
+  AssetSortOption,
+  OwnershipOption
+} from '@/platform/assets/types/filterTypes'
 
-const SORT_OPTIONS = [
-  { name: t('assetBrowser.sortRecent'), value: 'recent' },
-  { name: t('assetBrowser.sortAZ'), value: 'name-asc' },
-  { name: t('assetBrowser.sortZA'), value: 'name-desc' }
-] as const
+const { t } = useI18n()
 
-type SortOption = (typeof SORT_OPTIONS)[number]['value']
+const sortOptions = computed(() => [
+  { name: t('assetBrowser.sortRecent'), value: 'recent' as const },
+  { name: t('assetBrowser.sortAZ'), value: 'name-asc' as const },
+  { name: t('assetBrowser.sortZA'), value: 'name-desc' as const }
+])
 
-const sortOptions = [...SORT_OPTIONS]
-
-const ownershipOptions = [
-  { name: t('assetBrowser.ownershipAll'), value: 'all' },
-  { name: t('assetBrowser.ownershipMyModels'), value: 'my-models' },
-  { name: t('assetBrowser.ownershipPublicModels'), value: 'public-models' }
-]
-
-export interface FilterState {
-  fileFormats: string[]
-  baseModels: string[]
-  sortBy: string
-  ownership: OwnershipOption
-}
-
-const { assets = [], allAssets = [] } = defineProps<{
+const { assets = [], showOwnershipFilter = false } = defineProps<{
   assets?: AssetItem[]
-  allAssets?: AssetItem[]
+  showOwnershipFilter?: boolean
 }>()
 
-const fileFormats = ref<SelectOption[]>([])
-const baseModels = ref<SelectOption[]>([])
-const sortBy = ref<SortOption>('recent')
+const selectedFileFormats = ref<SelectOption[]>([])
+const selectedBaseModels = ref<SelectOption[]>([])
+const sortBy = ref<AssetSortOption>('recent')
 const ownership = ref<OwnershipOption>('all')
 
-const { availableFileFormats, availableBaseModels } =
-  useAssetFilterOptions(assets)
+const { availableFileFormats, availableBaseModels, ownershipOptions } =
+  useAssetFilterOptions(() => assets)
 
-const hasMutableAssets = computed(() => {
-  const assetsToCheck = allAssets.length ? allAssets : assets
-  return assetsToCheck.some((asset) => asset.is_immutable === false)
+// Only show selected items that exist in the current scope
+const activeFileFormatObjects = computed({
+  get() {
+    return selectedFileFormats.value.filter((opt) =>
+      availableFileFormats.value.some((a) => a.value === opt.value)
+    )
+  },
+  set(value: SelectOption[]) {
+    selectedFileFormats.value = value
+  }
+})
+
+const activeBaseModelObjects = computed({
+  get() {
+    return selectedBaseModels.value.filter((opt) =>
+      availableBaseModels.value.some((a) => a.value === opt.value)
+    )
+  },
+  set(value: SelectOption[]) {
+    selectedBaseModels.value = value
+  }
 })
 
 const emit = defineEmits<{
-  filterChange: [filters: FilterState]
+  filterChange: [filters: AssetFilterState]
 }>()
 
 function handleFilterChange() {
   emit('filterChange', {
-    fileFormats: fileFormats.value.map((option: SelectOption) => option.value),
-    baseModels: baseModels.value.map((option: SelectOption) => option.value),
+    fileFormats: activeFileFormatObjects.value.map((opt) => opt.value),
+    baseModels: activeBaseModelObjects.value.map((opt) => opt.value),
     sortBy: sortBy.value,
     ownership: ownership.value
   })

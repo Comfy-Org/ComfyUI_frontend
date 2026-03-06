@@ -75,8 +75,12 @@ export interface FuseSearchable {
   postProcessSearchScores: (scores: SearchAuxScore) => SearchAuxScore
 }
 
-function isFuseSearchable(item: any): item is FuseSearchable {
-  return 'postProcessSearchScores' in item
+function isFuseSearchable(item: unknown): item is FuseSearchable {
+  return (
+    typeof item === 'object' &&
+    item !== null &&
+    'postProcessSearchScores' in item
+  )
 }
 
 /**

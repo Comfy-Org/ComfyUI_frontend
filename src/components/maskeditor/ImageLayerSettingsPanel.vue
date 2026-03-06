@@ -1,8 +1,6 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <h3
-      class="text-center text-[15px] font-sans text-[var(--descrip-text)] mt-2.5"
-    >
+    <h3 class="mt-2.5 text-center font-sans text-[15px] text-(--descrip-text)">
       {{ t('maskEditor.layers') }}
     </h3>
 
@@ -15,12 +13,12 @@
       @update:model-value="onMaskOpacityChange"
     />
 
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
       t('maskEditor.maskBlendingOptions')
     }}</span>
 
     <div
-      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] -mt-2 -mb-1.5"
+      class="relative -mt-2 -mb-1.5 flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px]"
     >
       <select
         class="maskEditor_sidePanelDropdown"
@@ -33,11 +31,11 @@
       </select>
     </div>
 
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
       t('maskEditor.maskLayer')
     }}</span>
     <div
-      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       :style="{
         border: store.activeLayer === 'mask' ? '2px solid #007acc' : 'none'
       }"
@@ -66,11 +64,11 @@
       </button>
     </div>
 
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
       t('maskEditor.paintLayer')
     }}</span>
     <div
-      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       :style="{
         border: store.activeLayer === 'rgb' ? '2px solid #007acc' : 'none'
       }"
@@ -106,11 +104,11 @@
       </button>
     </div>
 
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
       t('maskEditor.baseImageLayer')
     }}</span>
     <div
-      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
     >
       <input
         type="checkbox"
@@ -131,12 +129,12 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useCanvasManager } from '@/composables/maskeditor/useCanvasManager'
 import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 import type { ImageLayer } from '@/extensions/core/maskeditor/types'
 import { MaskBlendMode, Tools } from '@/extensions/core/maskeditor/types'
-import { t } from '@/i18n'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 import SliderControl from './controls/SliderControl.vue'
@@ -145,6 +143,7 @@ const { toolManager } = defineProps<{
   toolManager?: ReturnType<typeof useToolManager>
 }>()
 
+const { t } = useI18n()
 const store = useMaskEditorStore()
 const canvasManager = useCanvasManager()
 

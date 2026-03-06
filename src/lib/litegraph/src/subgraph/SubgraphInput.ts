@@ -35,14 +35,14 @@ export class SubgraphInput extends SubgraphSlot {
   events = new CustomEventTarget<SubgraphInputEventMap>()
 
   /** The linked widget that this slot is connected to. */
-  #widgetRef?: WeakRef<IBaseWidget>
+  private _widgetRef?: WeakRef<IBaseWidget>
 
   get _widget() {
-    return this.#widgetRef?.deref()
+    return this._widgetRef?.deref()
   }
 
   set _widget(widget) {
-    this.#widgetRef = widget ? new WeakRef(widget) : undefined
+    this._widgetRef = widget ? new WeakRef(widget) : undefined
   }
 
   override connect(
@@ -87,10 +87,13 @@ export class SubgraphInput extends SubgraphSlot {
         return
       }
 
-      this._widget ??= inputWidget
+      // Keep the widget reference in sync with the active upstream widget.
+      // Stale references can appear across nested promotion rebinds.
+      this._widget = inputWidget
       this.events.dispatch('input-connected', {
         input: slot,
-        widget: inputWidget
+        widget: inputWidget,
+        node
       })
     }
 
@@ -187,7 +190,7 @@ export class SubgraphInput extends SubgraphSlot {
    * @returns `true` if the connection is valid, otherwise `false`.
    */
   matchesWidget(otherWidget: IBaseWidget): boolean {
-    const widget = this.#widgetRef?.deref()
+    const widget = this._widgetRef?.deref()
     if (!widget) return true
 
     if (
@@ -206,6 +209,8 @@ export class SubgraphInput extends SubgraphSlot {
 
   override disconnect(): void {
     super.disconnect()
+
+    this._widget = undefined
 
     this.events.dispatch('input-disconnected', { input: this })
   }

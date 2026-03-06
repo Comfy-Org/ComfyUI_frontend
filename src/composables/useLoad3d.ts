@@ -1,5 +1,6 @@
+import type { MaybeRef } from 'vue'
+
 import { toRef } from '@vueuse/core'
-import type { MaybeRef } from '@vueuse/core'
 import { nextTick, ref, toRaw, watch } from 'vue'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -9,6 +10,7 @@ import type {
   CameraConfig,
   CameraState,
   CameraType,
+  EventCallback,
   LightConfig,
   MaterialMode,
   ModelConfig,
@@ -40,8 +42,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const modelConfig = ref<ModelConfig>({
     upDirection: 'original',
-    materialMode: 'original'
+    materialMode: 'original',
+    showSkeleton: false
   })
+
+  const hasSkeleton = ref(false)
 
   const cameraConfig = ref<CameraConfig>({
     cameraType: 'perspective',
@@ -214,14 +219,15 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         return modelPath
       }
 
-      const [subfolder, filename] = Load3dUtils.splitFilePath(modelPath)
-      return api.apiURL(
-        Load3dUtils.getResourceURL(
-          subfolder,
-          filename,
-          isPreview.value ? 'output' : 'input'
-        )
-      )
+      const trimmed = modelPath.trim()
+      const hasOutputSuffix = trimmed.endsWith('[output]')
+      const cleanPath = hasOutputSuffix
+        ? trimmed.replace(/\s*\[output\]$/, '')
+        : trimmed
+      const type = hasOutputSuffix || isPreview.value ? 'output' : 'input'
+
+      const [subfolder, filename] = Load3dUtils.splitFilePath(cleanPath)
+      return api.apiURL(Load3dUtils.getResourceURL(subfolder, filename, type))
     } catch (error) {
       console.error('Failed to construct model URL:', error)
       return null
@@ -273,6 +279,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         nodeRef.value.properties['Model Config'] = newValue
         load3d.setUpDirection(newValue.upDirection)
         load3d.setMaterialMode(newValue.materialMode)
+        load3d.setShowSkeleton(newValue.showSkeleton)
       }
     },
     { deep: true }
@@ -503,6 +510,28 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       loading.value = false
       isSplatModel.value = load3d?.isSplatModel() ?? false
       isPlyModel.value = load3d?.isPlyModel() ?? false
+      hasSkeleton.value = load3d?.hasSkeleton() ?? false
+      // Reset skeleton visibility when loading new model
+      modelConfig.value.showSkeleton = false
+
+      if (load3d) {
+        const node = nodeRef.value
+
+        const modelWidget = node?.widgets?.find(
+          (w) => w.name === 'model_file' || w.name === 'image'
+        )
+        const value = modelWidget?.value
+        if (typeof value === 'string') {
+          void Load3dUtils.generateThumbnailIfNeeded(
+            load3d,
+            value,
+            isPreview.value ? 'output' : 'input'
+          )
+        }
+      }
+    },
+    skeletonVisibilityChange: (value: boolean) => {
+      modelConfig.value.showSkeleton = value
     },
     exportLoadingStart: (message: string) => {
       loadingMessage.value = message || t('load3d.exportingModel')
@@ -554,7 +583,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const handleEvents = (action: 'add' | 'remove') => {
     Object.entries(eventConfig).forEach(([event, handler]) => {
       const method = `${action}EventListener` as const
-      load3d?.[method](event, handler)
+      load3d?.[method](event, handler as EventCallback)
     })
   }
 
@@ -584,6 +613,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     isPreview,
     isSplatModel,
     isPlyModel,
+    hasSkeleton,
     hasRecording,
     recordingDuration,
     animations,

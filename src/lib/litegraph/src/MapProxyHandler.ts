@@ -30,7 +30,7 @@ export class MapProxyHandler<V> implements ProxyHandler<
     return [...target.keys()].map(String)
   }
 
-  get(target: Map<number | string, V>, p: string | symbol): any {
+  get(target: Map<number | string, V>, p: string | symbol): V | undefined {
     // Workaround does not support link IDs of "values", "entries", "constructor", etc.
     if (p in target) return Reflect.get(target, p, target)
     if (typeof p === 'symbol') return
@@ -42,7 +42,7 @@ export class MapProxyHandler<V> implements ProxyHandler<
   set(
     target: Map<number | string, V>,
     p: string | symbol,
-    newValue: any
+    newValue: V
   ): boolean {
     if (typeof p === 'symbol') return false
 
@@ -55,7 +55,7 @@ export class MapProxyHandler<V> implements ProxyHandler<
     return target.delete(p as number | string)
   }
 
-  static bindAllMethods(map: Map<any, any>): void {
+  static bindAllMethods(map: Map<unknown, unknown>): void {
     map.clear = map.clear.bind(map)
     map.delete = map.delete.bind(map)
     map.forEach = map.forEach.bind(map)

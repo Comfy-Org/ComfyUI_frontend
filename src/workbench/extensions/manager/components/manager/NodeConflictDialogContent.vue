@@ -1,10 +1,10 @@
 <template>
   <div class="flex w-138 flex-col">
     <ContentDivider :width="1" />
-    <div class="flex h-full w-full flex-col gap-2 px-4 py-6">
+    <div class="flex size-full flex-col gap-2 px-4 py-6">
       <!-- Description -->
       <div v-if="showAfterWhatsNew">
-        <p class="m-0 mb-4 text-sm leading-4 text-base-foreground">
+        <p class="m-0 mb-4 text-sm/4 text-base-foreground">
           {{ $t('manager.conflicts.description') }}
           <br /><br />
           {{ $t('manager.conflicts.info') }}
@@ -50,7 +50,8 @@
           <div
             v-for="(packageName, i) in importFailedConflicts"
             :key="i"
-            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
+            :aria-label="`Import failed package: ${packageName}`"
+            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
           >
             <span class="text-xs text-muted">
               {{ packageName }}
@@ -98,7 +99,8 @@
           <div
             v-for="(conflict, i) in allConflictDetails"
             :key="i"
-            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
+            :aria-label="`Conflict: ${getConflictMessage(conflict, t)}`"
+            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
           >
             <span class="text-xs text-muted">{{
               getConflictMessage(conflict, t)
@@ -146,7 +148,7 @@
           <div
             v-for="conflictResult in conflictData"
             :key="conflictResult.package_id"
-            class="conflict-list-item flex h-6 shrink-0 items-center justify-between px-4"
+            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
           >
             <span class="text-xs text-muted">
               {{ conflictResult.package_name }}
@@ -236,8 +238,3 @@ const toggleExtensionsPanel = () => {
   importFailedExpanded.value = false
 }
 </script>
-<style scoped>
-.conflict-list-item:hover {
-  background-color: rgb(0 122 255 / 0.2);
-}
-</style>

@@ -1,9 +1,6 @@
 <template>
-  <div
-    ref="rootEl"
-    class="relative h-full w-full overflow-hidden bg-neutral-900"
-  >
-    <div class="p-terminal h-full w-full rounded-none p-2">
+  <div ref="rootEl" class="relative size-full overflow-hidden bg-neutral-900">
+    <div class="p-terminal size-full rounded-none p-2">
       <div ref="terminalEl" class="terminal-host h-full" />
     </div>
     <Button
@@ -15,7 +12,7 @@
       size="sm"
       :class="
         cn('absolute top-2 right-8 transition-opacity', {
-          'opacity-0 pointer-events-none select-none': !isHovered
+          'pointer-events-none opacity-0 select-none': !isHovered
         })
       "
       :aria-label="tooltipText"
@@ -35,7 +32,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
 import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
@@ -85,7 +83,7 @@ const showContextMenu = (event: MouseEvent) => {
   electronAPI()?.showContextMenu({ type: 'text' })
 }
 
-if (isElectron()) {
+if (isDesktop) {
   useEventListener(terminalEl, 'contextmenu', showContextMenu)
 }
 
@@ -102,13 +100,12 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@reference '../../../../assets/css/style.css';
-
 :deep(.p-terminal) .xterm {
-  @apply overflow-hidden;
+  overflow: hidden;
 }
 
 :deep(.p-terminal) .xterm-screen {
-  @apply bg-neutral-900 overflow-hidden;
+  overflow: hidden;
+  background-color: var(--color-neutral-900);
 }
 </style>

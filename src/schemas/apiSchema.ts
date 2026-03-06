@@ -1,21 +1,20 @@
 import { z } from 'zod'
 
 import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
-import {
-  zComfyWorkflow,
-  zNodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
-import { zKeybinding } from '@/schemas/keyBindingSchema'
+import { zKeybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
 const zNodeType = z.string()
-export const zQueueIndex = z.number()
-export const zPromptId = z.string()
-export type PromptId = z.infer<typeof zPromptId>
+const zJobId = z.string()
+export type JobId = z.infer<typeof zJobId>
 export const resultItemType = z.enum(['input', 'output', 'temp'])
 export type ResultItemType = z.infer<typeof resultItemType>
+
+const zCustomNodesI18n = z.record(z.string(), z.unknown())
+export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>
 
 const zResultItem = z.object({
   filename: z.string().optional(),
@@ -35,6 +34,9 @@ const zOutputs = z
 
 export type NodeExecutionOutput = z.infer<typeof zOutputs>
 
+export type NodeOutputWith<T extends Record<string, unknown>> =
+  NodeExecutionOutput & T
+
 // WS messages
 const zStatusWsMessageStatus = z.object({
   exec_info: z.object({
@@ -50,7 +52,7 @@ const zStatusWsMessage = z.object({
 const zProgressWsMessage = z.object({
   value: z.number().int(),
   max: z.number().int(),
-  prompt_id: zPromptId,
+  prompt_id: zJobId,
   node: zNodeId
 })
 
@@ -59,21 +61,21 @@ const zNodeProgressState = z.object({
   max: z.number(),
   state: z.enum(['pending', 'running', 'finished', 'error']),
   node_id: zNodeId,
-  prompt_id: zPromptId,
+  prompt_id: zJobId,
   display_node_id: zNodeId.optional(),
   parent_node_id: zNodeId.optional(),
   real_node_id: zNodeId.optional()
 })
 
 const zProgressStateWsMessage = z.object({
-  prompt_id: zPromptId,
+  prompt_id: zJobId,
   nodes: z.record(zNodeId, zNodeProgressState)
 })
 
 const zExecutingWsMessage = z.object({
   node: zNodeId,
   display_node: zNodeId,
-  prompt_id: zPromptId
+  prompt_id: zJobId
 })
 
 const zExecutedWsMessage = zExecutingWsMessage.extend({
@@ -82,7 +84,7 @@ const zExecutedWsMessage = zExecutingWsMessage.extend({
 })
 
 const zExecutionWsMessageBase = z.object({
-  prompt_id: zPromptId,
+  prompt_id: zJobId,
   timestamp: z.number().int()
 })
 
@@ -135,6 +137,30 @@ const zLogRawResponse = z.object({
 
 const zFeatureFlagsWsMessage = z.record(z.string(), z.any())
 
+const zAssetDownloadWsMessage = z.object({
+  task_id: z.string(),
+  asset_name: z.string(),
+  bytes_total: z.number(),
+  bytes_downloaded: z.number(),
+  progress: z.number(),
+  status: z.enum(['created', 'running', 'completed', 'failed']),
+  asset_id: z.string().optional(),
+  error: z.string().optional()
+})
+
+const zAssetExportWsMessage = z.object({
+  task_id: z.string(),
+  export_name: z.string().optional(),
+  assets_total: z.number(),
+  assets_attempted: z.number(),
+  assets_failed: z.number(),
+  bytes_total: z.number(),
+  bytes_processed: z.number(),
+  progress: z.number(),
+  status: z.enum(['created', 'running', 'completed', 'failed']),
+  error: z.string().optional()
+})
+
 export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
 export type StatusWsMessage = z.infer<typeof zStatusWsMessage>
 export type ProgressWsMessage = z.infer<typeof zProgressWsMessage>
@@ -154,139 +180,14 @@ export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 export type NodeProgressState = z.infer<typeof zNodeProgressState>
 export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
+export type AssetDownloadWsMessage = z.infer<typeof zAssetDownloadWsMessage>
+export type AssetExportWsMessage = z.infer<typeof zAssetExportWsMessage>
 // End of ws messages
 
 export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 
-const zPromptInputItem = z.object({
-  inputs: z.record(z.string(), z.any()),
-  class_type: zNodeType
-})
-
-const zPromptInputs = z.record(zPromptInputItem)
-
-const zExtraPngInfo = z
-  .object({
-    workflow: zComfyWorkflow
-  })
-  .passthrough()
-
-export const zExtraData = z
-  .object({
-    /** extra_pnginfo can be missing is backend execution gets a validation error. */
-    extra_pnginfo: zExtraPngInfo.optional(),
-    client_id: z.string().optional(),
-    // Cloud/Adapters: creation time in milliseconds when available
-    create_time: z.number().int().optional()
-  })
-  // Allow backend/adapters/extensions to add arbitrary metadata
-  .passthrough()
-const zOutputsToExecute = z.array(zNodeId)
-
-const zExecutionStartMessage = z.tuple([
-  z.literal('execution_start'),
-  zExecutionStartWsMessage
-])
-
-const zExecutionSuccessMessage = z.tuple([
-  z.literal('execution_success'),
-  zExecutionSuccessWsMessage
-])
-
-const zExecutionCachedMessage = z.tuple([
-  z.literal('execution_cached'),
-  zExecutionCachedWsMessage
-])
-
-const zExecutionInterruptedMessage = z.tuple([
-  z.literal('execution_interrupted'),
-  zExecutionInterruptedWsMessage
-])
-
-const zExecutionErrorMessage = z.tuple([
-  z.literal('execution_error'),
-  zExecutionErrorWsMessage
-])
-
-const zStatusMessage = z.union([
-  zExecutionStartMessage,
-  zExecutionSuccessMessage,
-  zExecutionCachedMessage,
-  zExecutionInterruptedMessage,
-  zExecutionErrorMessage
-])
-
-export const zStatus = z.object({
-  status_str: z.enum(['success', 'error']),
-  completed: z.boolean(),
-  messages: z.array(zStatusMessage)
-})
-
-const zTaskPrompt = z.tuple([
-  zQueueIndex,
-  zPromptId,
-  zPromptInputs,
-  zExtraData,
-  zOutputsToExecute
-])
-
-const zRunningTaskItem = z.object({
-  taskType: z.literal('Running'),
-  prompt: zTaskPrompt,
-  // @Deprecated
-  remove: z.object({
-    name: z.literal('Cancel'),
-    cb: z.function()
-  })
-})
-
-const zPendingTaskItem = z.object({
-  taskType: z.literal('Pending'),
-  prompt: zTaskPrompt
-})
-
 export const zTaskOutput = z.record(zNodeId, zOutputs)
-
-const zNodeOutputsMeta = z.object({
-  node_id: zNodeId,
-  display_node: zNodeId,
-  prompt_id: zPromptId.optional(),
-  read_node_id: zNodeId.optional()
-})
-
-export const zTaskMeta = z.record(zNodeId, zNodeOutputsMeta)
-
-const zHistoryTaskItem = z.object({
-  taskType: z.literal('History'),
-  prompt: zTaskPrompt,
-  status: zStatus.optional(),
-  outputs: zTaskOutput,
-  meta: zTaskMeta.optional()
-})
-
-const zTaskItem = z.union([
-  zRunningTaskItem,
-  zPendingTaskItem,
-  zHistoryTaskItem
-])
-
-const zTaskType = z.union([
-  z.literal('Running'),
-  z.literal('Pending'),
-  z.literal('History')
-])
-
-export type TaskType = z.infer<typeof zTaskType>
-export type TaskPrompt = z.infer<typeof zTaskPrompt>
-export type TaskStatus = z.infer<typeof zStatus>
 export type TaskOutput = z.infer<typeof zTaskOutput>
-
-// `/queue`
-export type RunningTaskItem = z.infer<typeof zRunningTaskItem>
-export type PendingTaskItem = z.infer<typeof zPendingTaskItem>
-// `/history`
-export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>
-export type TaskItem = z.infer<typeof zTaskItem>
 
 const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())
@@ -317,6 +218,12 @@ const zPromptResponse = z.object({
   error: z.union([z.string(), zError])
 })
 
+const zPromptError = z.object({
+  type: z.string(),
+  message: z.string(),
+  details: z.string()
+})
+
 const zDeviceStats = z.object({
   name: z.string(),
   type: z.string(),
@@ -341,7 +248,9 @@ const zSystemStats = z.object({
     // Cloud-specific fields
     cloud_version: z.string().optional(),
     comfyui_frontend_version: z.string().optional(),
-    workflow_templates_version: z.string().optional()
+    workflow_templates_version: z.string().optional(),
+    installed_templates_version: z.string().optional(),
+    required_templates_version: z.string().optional()
   }),
   devices: z.array(zDeviceStats)
 })
@@ -387,6 +296,7 @@ const zSettings = z.object({
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
+  'Comfy.UI.TabBarLayout': z.enum(['Default', 'Integrated']),
   'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
@@ -400,12 +310,14 @@ const zSettings = z.object({
   'Comfy.Graph.CanvasInfo': z.boolean(),
   'Comfy.Graph.CanvasMenu': z.boolean(),
   'Comfy.Graph.CtrlShiftZoom': z.boolean(),
+  'Comfy.Graph.DeduplicateSubgraphNodeIds': z.boolean(),
   'Comfy.Graph.LiveSelection': z.boolean(),
   'Comfy.Graph.LinkMarkers': z.nativeEnum(LinkMarkerShape),
   'Comfy.Graph.ZoomSpeed': z.number(),
   'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.GroupSelectedNodes.Padding': z.number(),
   'Comfy.Locale': z.string(),
+  'Comfy.NodeLibrary.NewDesign': z.boolean(),
   'Comfy.NodeLibrary.Bookmarks': z.array(z.string()),
   'Comfy.NodeLibrary.Bookmarks.V2': z.array(z.string()),
   'Comfy.NodeLibrary.BookmarksCustomization': z.record(
@@ -417,7 +329,11 @@ const zSettings = z.object({
   'Comfy.ModelLibrary.AutoLoadAll': z.boolean(),
   'Comfy.ModelLibrary.NameFormat': z.enum(['filename', 'title']),
   'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
-  'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
+  'Comfy.NodeSearchBoxImpl': z.enum([
+    'default',
+    'v1 (legacy)',
+    'litegraph (legacy)'
+  ]),
   'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),
   'Comfy.NodeSearchBoxImpl.ShowIdName': z.boolean(),
   'Comfy.NodeSearchBoxImpl.ShowNodeFrequency': z.boolean(),
@@ -427,6 +343,7 @@ const zSettings = z.object({
   'Comfy.Node.MiddleClickRerouteNode': z.boolean(),
   'Comfy.Node.ShowDeprecated': z.boolean(),
   'Comfy.Node.ShowExperimental': z.boolean(),
+  'Comfy.NodeReplacement.Enabled': z.boolean(),
   'Comfy.Pointer.ClickBufferTime': z.number(),
   'Comfy.Pointer.ClickDrift': z.number(),
   'Comfy.Pointer.DoubleClickTime': z.number(),
@@ -455,6 +372,8 @@ const zSettings = z.object({
   'Comfy.Notification.ShowVersionUpdates': z.boolean(),
   'Comfy.QueueButton.BatchCountLimit': z.number(),
   'Comfy.Queue.MaxHistoryItems': z.number(),
+  'Comfy.Queue.History.Expanded': z.boolean(),
+  'Comfy.WorkflowActions.SeenItems': z.array(z.string()),
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
   'Comfy.Extension.Disabled': z.array(z.string()),
@@ -491,6 +410,8 @@ const zSettings = z.object({
   'Comfy.VueNodes.Enabled': z.boolean(),
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
+  'Comfy.Queue.QPOV2': z.boolean(),
+  'Comfy.Queue.ShowRunProgressBar': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
@@ -526,6 +447,8 @@ const zSettings = z.object({
   'Comfy.Templates.SelectedRunsOn': z.array(z.string()),
   'Comfy.Templates.SortBy': z.enum([
     'default',
+    'recommended',
+    'popular',
     'alphabetical',
     'newest',
     'vram-low-to-high',
@@ -537,12 +460,16 @@ const zSettings = z.object({
   'single.setting': z.any(),
   'LiteGraph.Node.DefaultPadding': z.boolean(),
   'LiteGraph.Pointer.TrackpadGestures': z.boolean(),
-  'Comfy.VersionCompatibility.DisableWarnings': z.boolean()
+  'Comfy.VersionCompatibility.DisableWarnings': z.boolean(),
+  'Comfy.RightSidePanel.IsOpen': z.boolean(),
+  'Comfy.RightSidePanel.ShowErrorsTab': z.boolean(),
+  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
 export type ExtensionsResponse = z.infer<typeof zExtensionsResponse>
 export type PromptResponse = z.infer<typeof zPromptResponse>
+export type PromptError = z.infer<typeof zPromptError>
 export type NodeError = z.infer<typeof zNodeError>
 export type Settings = z.infer<typeof zSettings>
 export type DeviceStats = z.infer<typeof zDeviceStats>
@@ -553,3 +480,31 @@ export type UserDataFullInfo = z.infer<typeof zUserDataFullInfo>
 export type TerminalSize = z.infer<typeof zTerminalSize>
 export type LogEntry = z.infer<typeof zLogEntry>
 export type LogsRawResponse = z.infer<typeof zLogRawResponse>
+
+export const zComfyHubProfile = z.object({
+  username: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  coverImageUrl: z.string().nullish(),
+  profilePictureUrl: z.string().nullish()
+})
+
+export type ComfyHubProfile = z.infer<typeof zComfyHubProfile>
+
+export const zAssetInfo = z.object({
+  id: z.string(),
+  name: z.string(),
+  preview_url: z.string(),
+  storage_url: z.string(),
+  model: z.boolean(),
+  public: z.boolean(),
+  in_library: z.boolean()
+})
+
+export type AssetInfo = z.infer<typeof zAssetInfo>
+
+export const zShareableAssetsResponse = z.object({
+  assets: z.array(zAssetInfo)
+})
+
+export type ShareableAssetsResponse = z.infer<typeof zShareableAssetsResponse>

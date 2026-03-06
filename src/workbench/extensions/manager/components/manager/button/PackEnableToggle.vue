@@ -6,10 +6,12 @@
         value: $t('manager.conflicts.warningTooltip'),
         showDelay: 300
       }"
-      class="flex h-6 w-6 cursor-pointer items-center justify-center"
+      class="flex size-6 cursor-pointer items-center justify-center"
       @click="showConflictModal(true)"
     >
-      <i class="pi pi-exclamation-triangle text-xl text-yellow-500"></i>
+      <i
+        class="icon-[lucide--triangle-alert] text-xl text-warning-background"
+      />
     </div>
     <ToggleSwitch
       v-if="!canToggleDirectly"
@@ -34,10 +36,11 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useDialogService } from '@/services/dialogService'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { useNodeConflictDialog } from '@/workbench/extensions/manager/composables/useNodeConflictDialog'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
@@ -51,8 +54,9 @@ const { t } = useI18n()
 const { isPackEnabled, enablePack, disablePack, installedPacks } =
   useComfyManagerStore()
 const { getConflictsForPackageByID } = useConflictDetectionStore()
-const { showNodeConflictDialog } = useDialogService()
+const { show: showNodeConflictDialog } = useNodeConflictDialog()
 const { acknowledgmentState, markConflictsAsSeen } = useConflictAcknowledgment()
+const { showImportFailedDialog } = useImportFailedDetection(nodePack.id || '')
 
 const isLoading = ref(false)
 
@@ -81,23 +85,36 @@ const canToggleDirectly = computed(() => {
 const showConflictModal = (skipModalDismissed: boolean) => {
   let modal_dismissed = acknowledgmentState.value.modal_dismissed
   if (skipModalDismissed) modal_dismissed = false
+
   if (packageConflict.value && !modal_dismissed) {
-    showNodeConflictDialog({
-      conflictedPackages: [packageConflict.value],
-      buttonText: !isEnabled.value
-        ? t('manager.conflicts.enableAnyway')
-        : t('manager.conflicts.understood'),
-      onButtonClick: async () => {
-        if (!isEnabled.value) {
-          await handleEnable()
+    // Check if there's an import failed conflict first
+    const hasImportFailed = packageConflict.value.conflicts.some(
+      (conflict) => conflict.type === 'import_failed'
+    )
+    if (hasImportFailed) {
+      // Show import failed dialog instead of general conflict dialog
+      showImportFailedDialog(() => {
+        markConflictsAsSeen()
+      })
+    } else {
+      // Show general conflict dialog for other types of conflicts
+      showNodeConflictDialog({
+        conflictedPackages: [packageConflict.value],
+        buttonText: !isEnabled.value
+          ? t('manager.conflicts.enableAnyway')
+          : t('manager.conflicts.understood'),
+        onButtonClick: async () => {
+          if (!isEnabled.value) {
+            await handleEnable()
+          }
+        },
+        dialogComponentProps: {
+          onClose: () => {
+            markConflictsAsSeen()
+          }
         }
-      },
-      dialogComponentProps: {
-        onClose: () => {
-          markConflictsAsSeen()
-        }
-      }
-    })
+      })
+    }
   }
 }
 
