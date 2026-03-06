@@ -15,25 +15,30 @@ export function createMonotoneInterpolator(
 
   const sorted = [...points].sort((a, b) => a[0] - b[0])
   const n = sorted.length
-  const xs = sorted.map((p) => p[0])
-  const ys = sorted.map((p) => p[1])
+  const xs = new Float64Array(n)
+  const ys = new Float64Array(n)
 
-  const deltas: number[] = []
-  const slopes: number[] = []
+  for (let i = 0; i < n; i++) {
+    xs[i] = sorted[i][0]
+    ys[i] = sorted[i][1]
+  }
+
+  const deltas = new Float64Array(n - 1)
+  const slopes = new Float64Array(n)
   for (let i = 0; i < n - 1; i++) {
     const dx = xs[i + 1] - xs[i]
-    deltas.push(dx === 0 ? 0 : (ys[i + 1] - ys[i]) / dx)
+    deltas[i] = dx === 0 ? 0 : (ys[i + 1] - ys[i]) / dx
   }
 
-  slopes.push(deltas[0] ?? 0)
+  slopes[0] = deltas[0] ?? 0
   for (let i = 1; i < n - 1; i++) {
     if (deltas[i - 1] * deltas[i] <= 0) {
-      slopes.push(0)
+      slopes[i] = 0
     } else {
-      slopes.push((deltas[i - 1] + deltas[i]) / 2)
+      slopes[i] = (deltas[i - 1] + deltas[i]) / 2
     }
   }
-  slopes.push(deltas[n - 2] ?? 0)
+  slopes[n - 1] = deltas[n - 2] ?? 0
 
   for (let i = 0; i < n - 1; i++) {
     if (deltas[i] === 0) {
