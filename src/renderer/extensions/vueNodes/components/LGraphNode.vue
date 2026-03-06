@@ -52,7 +52,9 @@
   >
     <AppOutput
       v-if="
-        lgraphNode?.constructor?.nodeData?.output_node && isSelectOutputsMode
+        lgraphNode?.constructor?.nodeData?.output_node &&
+        isSelectOutputsMode &&
+        nodeData.mode === LGraphEventMode.ALWAYS
       "
       :id="nodeData.id"
     />

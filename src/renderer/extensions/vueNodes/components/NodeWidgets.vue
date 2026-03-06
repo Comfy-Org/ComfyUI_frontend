@@ -53,7 +53,7 @@
           />
         </div>
         <!-- Widget Component -->
-        <AppInput :id="widget.id" :name="widget.name" :is-select-inputs-mode>
+        <AppInput :id="widget.id" :name="widget.name" :enable="canSelectInputs">
           <component
             :is="widget.vueComponent"
             v-model="widget.value"
@@ -89,6 +89,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -154,6 +155,9 @@ onErrorCaptured((error) => {
   return false
 })
 
+const canSelectInputs = computed(
+  () => isSelectInputsMode.value && nodeData?.mode === LGraphEventMode.ALWAYS
+)
 const nodeType = computed(() => nodeData?.type || '')
 const settingStore = useSettingStore()
 const showAdvanced = computed(
