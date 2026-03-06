@@ -7,7 +7,7 @@
     <!-- Video Wrapper -->
     <div
       ref="videoWrapperEl"
-      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-transparent"
       tabindex="0"
       role="region"
       :aria-label="$t('g.videoPreview')"
@@ -247,7 +247,7 @@ const handleFocusOut = (event: FocusEvent) => {
 
 const getNavigationDotClass = (index: number) =>
   cn(
-    'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer',
+    'size-2 cursor-pointer rounded-full border-0 transition-all duration-200',
     index === currentIndex.value
       ? 'bg-base-foreground'
       : 'bg-base-foreground/50 hover:bg-base-foreground/80'

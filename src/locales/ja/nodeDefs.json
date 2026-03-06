@@ -3947,6 +3947,10 @@
     "description": "テキストプロンプトに基づいて既存の画像を編集します",
     "display_name": "Grok画像編集",
     "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "複数の画像が画像入力に接続されている場合のみ使用できます。"
+      },
       "control_after_generate": {
         "name": "生成後の制御"
       },
@@ -3998,6 +4002,9 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "画像生成に使用するテキストプロンプト"
+      },
+      "resolution": {
+        "name": "解像度"
       },
       "seed": {
         "name": "シード値",
@@ -5853,6 +5860,9 @@
       },
       "mode": {
         "name": "モード"
+      },
+      "model": {
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト"
