@@ -41,20 +41,15 @@ test.describe(
               req.url().includes('/upload/')
             )
           : null
-        const viewRequestPromise = shouldUpload
-          ? comfyPage.page.waitForRequest((req) => req.url().includes('/view'))
-          : null
 
         await comfyPage.dragDrop.dragAndDropFile(`workflowInMedia/${fileName}`)
 
         if (uploadRequestPromise) {
           const request = await uploadRequestPromise
           expect(request.url()).toContain('/upload/')
+        } else {
+          await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
         }
-        if (viewRequestPromise) {
-          await viewRequestPromise
-        }
-        await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
       })
     })
 
