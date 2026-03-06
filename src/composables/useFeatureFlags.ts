@@ -22,7 +22,10 @@ export enum ServerFeatureFlag {
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
-  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled'
+  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
+  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
+  COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
+  COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled'
 }
 
 /**
@@ -109,6 +112,27 @@ export function useFeatureFlags() {
         remoteConfig.value.node_library_essentials_enabled ??
         api.getServerFeature(
           ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
+          false
+        )
+      )
+    },
+    get workflowSharingEnabled() {
+      return (
+        remoteConfig.value.workflow_sharing_enabled ??
+        api.getServerFeature(ServerFeatureFlag.WORKFLOW_SHARING_ENABLED, false)
+      )
+    },
+    get comfyHubUploadEnabled() {
+      return (
+        remoteConfig.value.comfyhub_upload_enabled ??
+        api.getServerFeature(ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED, false)
+      )
+    },
+    get comfyHubProfileGateEnabled() {
+      return (
+        remoteConfig.value.comfyhub_profile_gate_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
           false
         )
       )
