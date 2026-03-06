@@ -9,6 +9,21 @@ interface UseCurveEditorOptions {
   modelValue: Ref<CurvePoint[]>
 }
 
+function insertSorted(
+  points: CurvePoint[],
+  point: CurvePoint
+): [CurvePoint[], number] {
+  let lo = 0
+  let hi = points.length
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1
+    if (points[mid][0] < point[0]) lo = mid + 1
+    else hi = mid
+  }
+  const result = [...points.slice(0, lo), point, ...points.slice(lo)]
+  return [result, lo]
+}
+
 export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
   const dragIndex = ref(-1)
   let cleanupDrag: (() => void) | null = null
@@ -77,11 +92,10 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
     if (e.ctrlKey) return
 
     const newPoint: CurvePoint = [x, y]
-    const newPoints: CurvePoint[] = [...modelValue.value, newPoint]
-    newPoints.sort((a, b) => a[0] - b[0])
+    const [newPoints, insertIndex] = insertSorted(modelValue.value, newPoint)
     modelValue.value = newPoints
 
-    startDrag(newPoints.indexOf(newPoint), e)
+    startDrag(insertIndex, e)
   }
 
   function startDrag(index: number, e: PointerEvent) {
@@ -106,11 +120,10 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
       if (dragIndex.value < 0) return
       const [x, y] = svgCoords(ev)
       const movedPoint: CurvePoint = [x, y]
-      const newPoints = [...modelValue.value]
-      newPoints[dragIndex.value] = movedPoint
-      newPoints.sort((a, b) => a[0] - b[0])
+      const remaining = modelValue.value.filter((_, i) => i !== dragIndex.value)
+      const [newPoints, newIndex] = insertSorted(remaining, movedPoint)
       modelValue.value = newPoints
-      dragIndex.value = newPoints.indexOf(movedPoint)
+      dragIndex.value = newIndex
     }
 
     const endDrag = () => {
