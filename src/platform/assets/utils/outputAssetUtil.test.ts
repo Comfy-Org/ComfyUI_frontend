@@ -119,9 +119,10 @@ describe('resolveOutputAssetItems', () => {
     expect(mocks.getPreviewableOutputsFromJobDetail).toHaveBeenCalledWith(
       jobDetail
     )
+    // Outputs are reversed so the most recent appears first
     expect(results.map((asset) => asset.name)).toEqual([
-      'full.png',
-      'preview.png'
+      'preview.png',
+      'full.png'
     ])
   })
 
