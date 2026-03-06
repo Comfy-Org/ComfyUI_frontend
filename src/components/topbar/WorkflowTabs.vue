@@ -76,7 +76,7 @@
         v-if="isLoggedIn"
         :show-arrow="false"
         compact
-        class="shrink-0 p-1"
+        class="shrink-0 p-1 grid w-10"
       />
       <LoginButton v-else-if="isDesktop" class="p-1" />
     </div>
