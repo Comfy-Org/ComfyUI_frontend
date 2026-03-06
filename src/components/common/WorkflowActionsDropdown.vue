@@ -49,6 +49,15 @@ function toggleLinearMode() {
     metadata: { source }
   })
 }
+
+const tooltipPt = {
+  root: {
+    style: { transform: 'translateX(calc(50% - 16px))' }
+  },
+  arrow: {
+    class: '!left-[16px]'
+  }
+}
 </script>
 
 <template>
@@ -58,12 +67,13 @@ function toggleLinearMode() {
         class="pointer-events-auto inline-flex items-center rounded-lg bg-secondary-background"
       >
         <Button
-          v-tooltip="{
+          v-tooltip.bottom="{
             value: canvasStore.linearMode
               ? t('breadcrumbsMenu.enterNodeGraph')
               : t('breadcrumbsMenu.enterAppMode'),
             showDelay: 300,
-            hideDelay: 300
+            hideDelay: 300,
+            pt: tooltipPt
           }"
           :aria-label="
             canvasStore.linearMode
