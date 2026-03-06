@@ -117,26 +117,30 @@ export function useFeatureFlags() {
       )
     },
     get workflowSharingEnabled() {
-      // UI is also gated on `isCloud` in TopMenuSection; default false
-      // to match other flags' opt-in convention.
-      return resolveFlag(
-        ServerFeatureFlag.WORKFLOW_SHARING_ENABLED,
-        remoteConfig.value.workflow_sharing_enabled,
-        false
+      return (
+        remoteConfig.value.workflow_sharing_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.WORKFLOW_SHARING_ENABLED,
+          false
+        )
       )
     },
     get comfyHubUploadEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
-        remoteConfig.value.comfyhub_upload_enabled,
-        false
+      return (
+        remoteConfig.value.comfyhub_upload_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
+          false
+        )
       )
     },
     get comfyHubProfileGateEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
-        remoteConfig.value.comfyhub_profile_gate_enabled,
-        false
+      return (
+        remoteConfig.value.comfyhub_profile_gate_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
+          false
+        )
       )
     }
   })
