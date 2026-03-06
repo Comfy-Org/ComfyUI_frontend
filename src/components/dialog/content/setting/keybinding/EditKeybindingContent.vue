@@ -1,7 +1,7 @@
 <template>
   <div class="flex w-96 flex-col border-t border-border-default p-4">
     <input
-      class="mb-2 w-full rounded-sm border border-border-default bg-secondary-background px-3 py-2 text-center text-foreground shadow-none focus:outline-none"
+      class="text-foreground mb-2 w-full rounded-sm border border-border-default bg-secondary-background px-3 py-2 text-center shadow-none focus:outline-none"
       :value="dialogState.newCombo?.toString() ?? ''"
       :placeholder="$t('g.enterYourKeybind')"
       :aria-label="$t('g.enterYourKeybind')"
