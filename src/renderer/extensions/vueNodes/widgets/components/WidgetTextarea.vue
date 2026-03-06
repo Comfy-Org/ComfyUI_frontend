@@ -17,19 +17,22 @@
     <Textarea
       v-bind="filteredProps"
       :id
+      ref="textareaRef"
       v-model="modelValue"
       :class="
         cn(
           WidgetInputBaseClass,
           'size-full text-xs resize-none',
-          !hideLayoutField && 'pt-5'
+          !hideLayoutField && 'pt-5',
+          isClipTextEncode &&
+            'selection:text-transparent selection:bg-blue-500/50'
         )
       "
       :placeholder
       :readonly="isReadOnly"
       :style="isClipTextEncode ? '-webkit-text-fill-color: transparent;' : ''"
       data-capture-wheel="true"
-      @scroll="syncScroll"
+      @scroll.passive="syncScroll"
       @pointerdown.capture.stop
       @pointermove.capture.stop
       @pointerup.capture.stop
@@ -41,12 +44,11 @@
       aria-hidden="true"
       :class="
         cn(
-          'absolute inset-0 z-11 pointer-events-none',
-          'text-xs whitespace-pre-wrap wrap-break-word font-[monospace]',
+          'pointer-events-none absolute inset-0',
+          'text-xs font-[monospace] whitespace-pre-wrap wrap-break-word overflow-y-auto',
           'border border-transparent px-2.75 pb-5',
-          !hideLayoutField ? 'pt-5' : 'pt-2',
-          'overflow-y-auto',
-          '[scrollbar-color:transparent_transparent] [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent'
+          '[scrollbar-color:transparent_transparent] [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent',
+          !hideLayoutField ? 'pt-5' : 'pt-2'
         )
       "
       v-html="sanitizedHighlightedText"
@@ -55,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useId, ref } from 'vue'
+import { computed, useId, ref, watch, nextTick } from 'vue'
 import dompurify from 'dompurify'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -105,6 +107,7 @@ const isReadOnly = computed(
   () => widget.options?.read_only ?? widget.options?.disabled ?? false
 )
 
+const textareaRef = ref<InstanceType<typeof Textarea> | null>(null)
 const overlayRef = ref<HTMLElement | null>(null)
 const highlightedText = useTextareaHighlighting(modelValue, isClipTextEncode)
 
@@ -112,11 +115,29 @@ const sanitizedHighlightedText = computed(() => {
   return dompurify.sanitize(highlightedText.value)
 })
 
-const syncScroll = (e: Event) => {
-  if (overlayRef.value) {
-    const target = e.target as HTMLElement
+const syncScroll = (e?: Event) => {
+  if (!overlayRef.value) return
+
+  let target: HTMLElement
+  if (e) {
+    target = e.target as HTMLElement
+  } else {
+    target = textareaRef.value?.$el ?? textareaRef.value
+  }
+
+  if (target) {
     overlayRef.value.scrollTop = target.scrollTop
     overlayRef.value.scrollLeft = target.scrollLeft
   }
 }
+
+watch(
+  isClipTextEncode,
+  (newValue) => {
+    if (newValue) {
+      nextTick(() => syncScroll())
+    }
+  },
+  { immediate: true }
+)
 </script>
