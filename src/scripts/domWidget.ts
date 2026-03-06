@@ -1,6 +1,7 @@
 import _ from 'es-toolkit/compat'
 import { type Component, toRaw } from 'vue'
 
+import { useDomValueBridge } from '@/composables/element/useDomValueBridge'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import {
   LGraphNode,
@@ -379,6 +380,16 @@ export const addWidget = <W extends BaseDOMWidget<object | string>>(
   })
 }
 
+function isValueElement(
+  el: HTMLElement
+): el is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement {
+  return (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLTextAreaElement ||
+    el instanceof HTMLSelectElement
+  )
+}
+
 LGraphNode.prototype.addDOMWidget = function <
   T extends HTMLElement,
   V extends object | string
@@ -389,6 +400,19 @@ LGraphNode.prototype.addDOMWidget = function <
   element: T,
   options: DOMWidgetOptions<V> = {}
 ): DOMWidget<T, V> {
+  // Auto-bridge value-bearing elements when no getValue/setValue provided.
+  // This gives extension authors automatic widgetValueStore integration.
+  if (!options.getValue && !options.setValue && isValueElement(element)) {
+    const bridgedValue = useDomValueBridge(element)
+    options = {
+      ...options,
+      getValue: (() => bridgedValue.value) as () => V,
+      setValue: ((v: V) => {
+        bridgedValue.value = String(v)
+      }) as (v: V) => void
+    }
+  }
+
   const widget = new DOMWidgetImpl({
     node: this,
     name,
