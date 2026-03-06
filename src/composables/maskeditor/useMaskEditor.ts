@@ -2,6 +2,11 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useDialogStore } from '@/stores/dialogStore'
 import TopBarHeader from '@/components/maskeditor/dialog/TopBarHeader.vue'
 import MaskEditorContent from '@/components/maskeditor/MaskEditorContent.vue'
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useMaskEditorLoader } from '@/composables/maskeditor/useMaskEditorLoader'
+import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
+import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
 
 export function useMaskEditor() {
   const openMaskEditor = (node: LGraphNode) => {
@@ -42,7 +47,34 @@ export function useMaskEditor() {
     })
   }
 
+  const clearMask = async (node: LGraphNode) => {
+    if (!node) {
+      return
+    }
+
+    const dataStore = useMaskEditorDataStore()
+    const editorStore = useMaskEditorStore()
+    const loader = useMaskEditorLoader()
+    const saver = useMaskEditorSaver()
+    const canvasTools = useCanvasTools()
+
+    try {
+      await loader.loadFromNode(node)
+
+      if (!dataStore.inputData) throw new Error('Failed to load image data')
+
+      canvasTools.clearMask()
+      await saver.save()
+    } catch (error) {
+      throw error
+    } finally {
+      dataStore.reset()
+      editorStore.resetState()
+    }
+  }
+
   return {
-    openMaskEditor
+    openMaskEditor,
+    clearMask
   }
 }

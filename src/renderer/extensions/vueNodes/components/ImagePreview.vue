@@ -157,12 +157,6 @@ const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 
-import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { useMaskEditorLoader } from '@/composables/maskeditor/useMaskEditorLoader'
-import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
-import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
-
 const actionButtonClass =
   'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'
 
@@ -253,19 +247,9 @@ const handleClearMask = async () => {
   if (!node) return
 
   isClearingMask.value = true
-  const dataStore = useMaskEditorDataStore()
-  const editorStore = useMaskEditorStore()
-  const loader = useMaskEditorLoader()
-  const saver = useMaskEditorSaver()
-  const canvasTools = useCanvasTools()
 
   try {
-    await loader.loadFromNode(node)
-
-    if (!dataStore.inputData) throw new Error('Failed to load image data')
-
-    canvasTools.clearMask()
-    await saver.save()
+    await maskEditor.clearMask(node)
   } catch (error) {
     useToast().add({
       severity: 'error',
@@ -276,8 +260,6 @@ const handleClearMask = async () => {
     })
   } finally {
     isClearingMask.value = false
-    dataStore.reset()
-    editorStore.resetState()
   }
 }
 
