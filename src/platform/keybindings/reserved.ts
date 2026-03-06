@@ -1,26 +1,26 @@
 export const RESERVED_BY_BROWSER = new Set([
-  'Ctrl + t',
-  'Ctrl + w',
-  'Ctrl + n',
-  'Ctrl + Shift + n',
-  'Ctrl + Tab',
-  'Ctrl + Shift + Tab',
-  'Ctrl + Shift + Delete',
-  'Ctrl + h',
-  'Ctrl + j',
-  'Ctrl + d',
-  'Ctrl + Shift + b',
-  'Ctrl + Shift + o',
-  'Ctrl + Shift + i',
-  'Ctrl + Shift + j',
-  'F5',
-  'Ctrl + F5',
-  'Ctrl + r',
-  'Ctrl + Shift + r',
-  'F7',
-  'F11',
-  'F12',
-  'Alt + F4'
+  'Ctrl + t', // New tab (all browsers)
+  'Ctrl + w', // Close tab (all browsers)
+  'Ctrl + n', // New window (all browsers)
+  'Ctrl + Shift + n', // New incognito/private window (all browsers)
+  'Ctrl + Tab', // Next tab (all browsers)
+  'Ctrl + Shift + Tab', // Previous tab (all browsers)
+  'Ctrl + Shift + Delete', // Clear browsing data (Chrome, Edge, Firefox)
+  'Ctrl + h', // History (all browsers)
+  'Ctrl + j', // Downloads (Chrome, Edge)
+  'Ctrl + d', // Bookmark current page (all browsers)
+  'Ctrl + Shift + b', // Toggle bookmarks bar (Chrome, Edge)
+  'Ctrl + Shift + o', // Bookmarks manager (Chrome, Edge)
+  'Ctrl + Shift + i', // DevTools (all browsers)
+  'Ctrl + Shift + j', // DevTools console (Chrome, Edge)
+  'F5', // Reload page (all browsers)
+  'Ctrl + F5', // Hard reload (all browsers)
+  'Ctrl + r', // Reload page (all browsers)
+  'Ctrl + Shift + r', // Hard reload (all browsers)
+  'F7', // Caret browsing (Firefox, Edge)
+  'F11', // Toggle fullscreen (all browsers)
+  'F12', // DevTools (all browsers)
+  'Alt + F4' // Close window (Windows, all browsers)
 ])
 
 export const RESERVED_BY_TEXT_INPUT = new Set([

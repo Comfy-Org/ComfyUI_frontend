@@ -1,11 +1,11 @@
 <template>
   <div class="flex w-96 flex-col border-t border-border-default p-4">
     <InputText
-      ref="keybindingInput"
       class="mb-2 bg-secondary-background text-center"
       :model-value="dialogState.newCombo?.toString() ?? ''"
       :placeholder="$t('g.enterYourKeybind')"
       autocomplete="off"
+      autofocus
       fluid
       @keydown.stop.prevent="captureKeybinding"
     />
@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
@@ -43,7 +43,6 @@ const { dialogState, onUpdateCombo } = defineProps<{
 }>()
 
 const keybindingStore = useKeybindingStore()
-const keybindingInput = ref<InstanceType<typeof InputText> | null>(null)
 
 const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
   if (!dialogState.newCombo) return null
@@ -57,11 +56,4 @@ function captureKeybinding(event: KeyboardEvent) {
   }
   onUpdateCombo(KeyComboImpl.fromEvent(event))
 }
-
-onMounted(() => {
-  setTimeout(() => {
-    // @ts-expect-error - $el is an internal property of the InputText component
-    keybindingInput.value?.$el?.focus()
-  }, 100)
-})
 </script>

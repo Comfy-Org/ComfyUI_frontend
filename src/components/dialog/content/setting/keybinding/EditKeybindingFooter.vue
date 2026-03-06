@@ -4,11 +4,13 @@
       {{ $t('g.cancel') }}
     </Button>
     <Button
-      :variant="hasConflict ? 'destructive' : 'primary'"
-      size="md"
-      :disabled="
-        !dialogState.newCombo || dialogState.newCombo.isBrowserReserved
+      :variant="
+        hasConflict || dialogState.newCombo?.isBrowserReserved
+          ? 'destructive'
+          : 'primary'
       "
+      size="md"
+      :disabled="!dialogState.newCombo"
       @click="handleSave"
     >
       {{ hasConflict ? $t('g.overwrite') : $t('g.save') }}

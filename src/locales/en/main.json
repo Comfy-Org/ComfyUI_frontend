@@ -261,7 +261,7 @@
     "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
     "enterYourKeybind": "Enter your keybind",
-    "browserReservedKeybinding": "This is reserved by your browser and cannot be used in ComfyUI. Choose a different keybinding.",
+    "browserReservedKeybinding": "This shortcut is reserved by some browsers and may have unexpected results.",
     "keybindingAlreadyExists": "Keybinding already exists on",
     "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information.",
     "startRecording": "Start Recording",
