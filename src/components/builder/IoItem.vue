@@ -32,9 +32,15 @@ const entries = computed(() => {
 })
 </script>
 <template>
-  <div class="p-2 my-2 rounded-lg flex items-center-safe">
-    <span class="mr-auto" v-text="title" />
-    <span class="text-muted-foreground mr-2 text-end" v-text="subTitle" />
+  <div class="my-2 flex items-center-safe gap-2 rounded-lg p-2">
+    <div
+      class="drag-handle mr-auto inline max-w-max min-w-0 flex-[4_1_0%] truncate"
+      v-text="title"
+    />
+    <div
+      class="drag-handle inline max-w-max min-w-0 flex-[2_1_0%] truncate text-end text-muted-foreground"
+      v-text="subTitle"
+    />
     <Popover :entries>
       <template #button>
         <Button variant="muted-textonly">

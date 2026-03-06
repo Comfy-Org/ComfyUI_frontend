@@ -11,7 +11,7 @@
     }"
     @click="onLogoMenuClick($event)"
   >
-    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-black">
+    <div class="flex size-8 items-center justify-center rounded-lg bg-black">
       <ComfyLogo
         alt="ComfyUI Logo"
         class="comfyui-logo h-[18px] w-[18px] text-white"
@@ -60,7 +60,7 @@
         />
         <span
           v-if="item?.comfyCommand?.keybinding"
-          class="keybinding-tag ml-auto rounded border border-surface p-1 text-xs text-nowrap text-muted"
+          class="keybinding-tag ml-auto rounded-sm border border-surface p-1 text-xs text-nowrap text-muted"
         >
           {{ item.comfyCommand.keybinding.combo.toString() }}
         </span>

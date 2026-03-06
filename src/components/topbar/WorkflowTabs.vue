@@ -8,7 +8,7 @@
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-left h-full w-auto aspect-square"
+      class="overflow-arrow overflow-arrow-left aspect-square h-full w-auto"
       :aria-label="$t('g.scrollLeft')"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
@@ -54,7 +54,7 @@
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-right h-full w-auto aspect-square"
+      class="overflow-arrow overflow-arrow-right aspect-square h-full w-auto"
       :aria-label="$t('g.scrollRight')"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
@@ -71,7 +71,7 @@
         value: $t('sideToolbar.newBlankWorkflow'),
         showDelay: 300
       }"
-      class="new-blank-workflow-button no-drag shrink-0 rounded-none h-full w-auto aspect-square"
+      class="new-blank-workflow-button no-drag aspect-square h-full w-auto shrink-0 rounded-none"
       variant="muted-textonly"
       size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
@@ -88,7 +88,7 @@
         v-if="isLoggedIn"
         :show-arrow="false"
         compact
-        class="shrink-0 p-1"
+        class="grid w-10 shrink-0 p-1"
       />
       <LoginButton v-else-if="isDesktop" class="p-1" />
     </div>

@@ -28,13 +28,12 @@
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
-        :data-widget-name="widget.name"
       >
         <!-- Widget Input Slot Dot -->
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
+              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
               widget.slotMetadata?.linked && 'opacity-100'
             )
           "
@@ -54,21 +53,24 @@
           />
         </div>
         <!-- Widget Component -->
-        <component
-          :is="widget.vueComponent"
-          v-model="widget.value"
-          v-tooltip.left="widget.tooltipConfig"
-          :widget="widget.simplified"
-          :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :node-type="nodeType"
-          :class="
-            cn(
-              'col-span-2',
-              widget.hasError && 'text-node-stroke-error font-bold'
-            )
-          "
-          @update:model-value="widget.updateHandler"
-        />
+        <AppInput :id="widget.id" :name="widget.name" :is-select-inputs-mode>
+          <component
+            :is="widget.vueComponent"
+            v-model="widget.value"
+            v-tooltip.left="widget.tooltipConfig"
+            :widget="widget.simplified"
+            :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+            :node-type="nodeType"
+            :class="
+              cn(
+                'col-span-2',
+                widget.hasError && 'font-bold text-node-stroke-error'
+              )
+            "
+            @update:model-value="widget.updateHandler"
+            @contextmenu="widget.handleContextMenu"
+          />
+        </AppInput>
       </div>
     </template>
   </div>
@@ -83,12 +85,16 @@ import type {
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAppMode } from '@/composables/useAppMode'
+import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 // Import widget components directly
@@ -117,6 +123,7 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
+const { isSelectInputsMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
 const promotionStore = usePromotionStore()
@@ -133,6 +140,8 @@ function handleBringToFront() {
     bringNodeToFront(String(nodeData.id))
   }
 }
+
+const { handleNodeRightClick } = useNodeEventHandlers()
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
@@ -159,9 +168,11 @@ const widgetValueStore = useWidgetValueStore()
 
 interface ProcessedWidget {
   advanced: boolean
+  handleContextMenu: (e: PointerEvent) => void
   hasLayoutSize: boolean
   hasError: boolean
   hidden: boolean
+  id: string
   name: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
@@ -204,9 +215,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
 
-    // Build options from store state, with slot-linked override for disabled
+    // Build options from store state, with disabled override for
+    // slot-linked widgets or widgets with disabled state (e.g. display-only)
     const storeOptions = widgetState?.options ?? {}
-    const widgetOptions = slotMetadata?.linked
+    const isDisabled = slotMetadata?.linked || widgetState?.disabled
+    const widgetOptions = isDisabled
       ? { ...storeOptions, disabled: true }
       : storeOptions
 
@@ -240,15 +253,29 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const tooltipText = getWidgetTooltip(widget)
     const tooltipConfig = createTooltipConfig(tooltipText)
+    const handleContextMenu = (e: PointerEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      handleNodeRightClick(e, nodeId)
+      showNodeOptions(
+        e,
+        widget.name,
+        widget.nodeId !== undefined
+          ? String(stripGraphPrefix(widget.nodeId))
+          : undefined
+      )
+    }
 
     result.push({
       advanced: widget.options?.advanced ?? false,
+      handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError:
         nodeErrors?.errors?.some(
           (error) => error.extra_info?.input_name === widget.name
         ) ?? false,
       hidden: widget.options?.hidden ?? false,
+      id: String(bareWidgetId),
       name: widget.name,
       type: widget.type,
       vueComponent,

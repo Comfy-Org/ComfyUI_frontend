@@ -13,6 +13,7 @@ import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+import { createMockWidget } from './widgetTestUtils'
 
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 vi.mock(
@@ -42,23 +43,24 @@ interface WidgetSelectDropdownInstance extends ComponentPublicInstance {
 }
 
 describe('WidgetSelectDropdown custom label mapping', () => {
-  const createMockWidget = (
+  const createSelectDropdownWidget = (
     value: string = 'img_001.png',
     options: {
       values?: string[]
       getOptionLabel?: (value?: string | null) => string
     } = {},
     spec?: ComboInputSpec
-  ): SimplifiedWidget<string | undefined> => ({
-    name: 'test_image_select',
-    type: 'combo',
-    value,
-    options: {
-      values: ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
-      ...options
-    },
-    spec
-  })
+  ) =>
+    createMockWidget<string | undefined>({
+      value,
+      name: 'test_image_select',
+      type: 'combo',
+      options: {
+        values: ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
+        ...options
+      },
+      spec
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<string | undefined>,
@@ -81,7 +83,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
   describe('when custom labels are not provided', () => {
     it('uses values as labels when no mapping provided', () => {
-      const widget = createMockWidget('img_001.png')
+      const widget = createSelectDropdownWidget('img_001.png')
       const wrapper = mountComponent(widget, 'img_001.png')
 
       const inputItems = wrapper.vm.inputItems
@@ -107,7 +109,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         return mapping[value] || value
       })
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -132,7 +134,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         return `Custom: ${value}`
       })
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -160,7 +162,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         .spyOn(console, 'error')
         .mockImplementation(() => {})
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -185,7 +187,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         return `Labeled: ${value}`
       })
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -207,7 +209,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         return `Labeled: ${value}`
       })
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -229,7 +231,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         return `Output: ${value}`
       })
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -242,7 +244,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
   describe('missing value handling for template-loaded nodes', () => {
     it('creates a fallback item in "all" filter when modelValue is not in available items', () => {
-      const widget = createMockWidget('template_image.png', {
+      const widget = createSelectDropdownWidget('template_image.png', {
         values: ['img_001.png', 'photo_abc.jpg']
       })
       const wrapper = mountComponent(widget, 'template_image.png')
@@ -263,7 +265,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('does not include fallback item when filter is "inputs"', async () => {
-      const widget = createMockWidget('template_image.png', {
+      const widget = createSelectDropdownWidget('template_image.png', {
         values: ['img_001.png', 'photo_abc.jpg']
       })
       const wrapper = mountComponent(widget, 'template_image.png')
@@ -279,7 +281,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('does not include fallback item when filter is "outputs"', async () => {
-      const widget = createMockWidget('template_image.png', {
+      const widget = createSelectDropdownWidget('template_image.png', {
         values: ['img_001.png', 'photo_abc.jpg']
       })
       const wrapper = mountComponent(widget, 'template_image.png')
@@ -295,7 +297,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('does not create a fallback item when modelValue exists in available items', () => {
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         values: ['img_001.png', 'photo_abc.jpg']
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -308,9 +310,12 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('does not create a fallback item when modelValue is undefined', () => {
-      const widget = createMockWidget(undefined as unknown as string, {
-        values: ['img_001.png', 'photo_abc.jpg']
-      })
+      const widget = createSelectDropdownWidget(
+        undefined as unknown as string,
+        {
+          values: ['img_001.png', 'photo_abc.jpg']
+        }
+      )
       const wrapper = mountComponent(widget, undefined)
 
       const dropdownItems = wrapper.vm.dropdownItems

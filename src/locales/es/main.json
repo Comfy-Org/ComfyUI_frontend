@@ -326,14 +326,14 @@
     "deleteWorkflow": "Eliminar flujo de trabajo",
     "duplicate": "Duplicar",
     "enterAppMode": "Entrar en modo aplicación",
+    "enterBuilderMode": "Entrar al constructor de aplicaciones",
     "enterNewName": "Ingrese un nuevo nombre",
     "exitAppMode": "Salir del modo aplicación",
     "missingNodesWarning": "El flujo de trabajo contiene nodos no compatibles (resaltados en rojo).",
     "workflowActions": "Acciones del flujo de trabajo"
   },
   "builderMenu": {
-    "exitAppBuilder": "Salir del constructor de aplicaciones",
-    "saveApp": "Guardar aplicación"
+    "exitAppBuilder": "Salir del constructor de aplicaciones"
   },
   "builderToolbar": {
     "app": "Aplicación",
@@ -343,21 +343,25 @@
     "connectOutput": "Conectar una salida",
     "connectOutputBody1": "Tu aplicación necesita al menos una salida conectada antes de poder guardarse.",
     "connectOutputBody2": "Cambia al paso 'Seleccionar' y haz clic en los nodos de salida para agregarlos aquí.",
-    "filename": "Nombre de archivo",
+    "defaultModeAppliedAppBody": "Este flujo de trabajo se abrirá en Modo de Aplicación por defecto a partir de ahora.",
+    "defaultModeAppliedAppPrompt": "¿Te gustaría verlo ahora?",
+    "defaultModeAppliedGraphBody": "Este flujo de trabajo se abrirá como un grafo de nodos por defecto a partir de ahora.",
+    "defaultModeAppliedGraphPrompt": "¿Aún quieres ver la aplicación?",
+    "defaultModeAppliedTitle": "Configurado correctamente",
+    "defaultView": "Establecer vista predeterminada",
+    "defaultViewDescription": "Elige cómo se abre esto",
+    "defaultViewLabel": "Por defecto, este flujo de trabajo se abrirá como:",
+    "defaultViewTitle": "Establecer la vista predeterminada para este flujo de trabajo",
+    "emptyWorkflowPrompt": "¿Quieres empezar con una plantilla?",
+    "emptyWorkflowTitle": "Este flujo de trabajo no tiene nodos",
+    "inputs": "Entradas",
+    "inputsDescription": "Elige entradas",
     "label": "Constructor de aplicaciones",
     "nodeGraph": "Grafo de nodos",
     "nodeGraphDescription": "Se abre como grafo de nodos por defecto",
-    "save": "Guardar",
-    "saveAs": "Guardar como",
-    "saveAsLabel": "Guardar este flujo de trabajo como...",
-    "saveDescription": "Guardar y finalizar",
-    "saveSuccess": "Guardado exitosamente",
-    "saveSuccessAppMessage": "'{name}' ha sido guardado. Se abrirá en modo aplicación por defecto de ahora en adelante.",
-    "saveSuccessAppPrompt": "¿Te gustaría verlo ahora?",
-    "saveSuccessGraphMessage": "'{name}' ha sido guardado. Se abrirá como grafo de nodos por defecto.",
-    "select": "Seleccionar",
-    "selectDescription": "Elegir entradas/salidas",
-    "switchToSelect": "Cambiar a Seleccionar",
+    "outputs": "Salidas",
+    "outputsDescription": "Elige salidas",
+    "switchToOutputs": "Cambiar a Salidas",
     "viewApp": "Ver aplicación"
   },
   "clipboard": {
@@ -862,6 +866,7 @@
     "clearFilters": "Borrar filtros",
     "close": "Cerrar",
     "closeDialog": "Cerrar diálogo",
+    "collapseAll": "Colapsar todo",
     "color": "Color",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "Logo de ComfyOrg",
@@ -931,6 +936,7 @@
     "errorLoadingImage": "Error al cargar imagen",
     "errorLoadingVideo": "Error al cargar video",
     "essentials": "Esenciales",
+    "expandAll": "Expandir todo",
     "experimental": "BETA",
     "export": "Exportar",
     "extensionName": "Nombre de la extensión",
@@ -1031,6 +1037,7 @@
     "or": "o",
     "output": "Salida",
     "overwrite": "Sobrescribir",
+    "partner": "Socio",
     "playPause": "Reproducir/Pausar",
     "playRecording": "Reproducir grabación",
     "playbackSpeed": "Velocidad de reproducción",
@@ -1041,6 +1048,7 @@
     "progressCountOf": "de",
     "queued": "En cola",
     "ready": "Listo",
+    "recents": "Recientes",
     "reconnected": "Reconectado",
     "reconnecting": "Reconectando",
     "refresh": "Actualizar",
@@ -1332,7 +1340,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "Constructor de aplicaciones",
-      "apps": "Aplicaciones"
+      "apps": "Aplicaciones",
+      "appsEmptyMessage": "Las aplicaciones guardadas aparecerán aquí.\nHaz clic abajo para crear tu primera aplicación.",
+      "enterAppMode": "Entrar en modo de aplicación"
     },
     "arrange": {
       "atLeastOne": "al menos uno",
@@ -1341,9 +1351,10 @@
       "outputExamples": "Ejemplos: 'Guardar imagen' o 'Guardar video'",
       "outputs": "Salidas",
       "resultsLabel": "Los resultados generados por el/los nodo(s) de salida seleccionados se mostrarán aquí después de ejecutar esta aplicación",
-      "switchToSelect": "Cambia al paso 'Seleccionar' y haz clic en los nodos de salida para agregarlos aquí.",
-      "switchToSelectButton": "Cambiar a Seleccionar"
+      "switchToOutputs": "Cambia al paso 'Salida' y haz clic en los nodos de salida para agregarlos aquí.",
+      "switchToOutputsButton": "Cambiar a Salidas"
     },
+    "backToWorkflow": "Volver al flujo de trabajo",
     "beta": "Modo App Beta - Enviar comentarios",
     "builder": {
       "exit": "Salir del constructor",
@@ -1357,13 +1368,18 @@
       "outputsExample": "Ejemplos: “Guardar imagen” o “Guardar video”",
       "promptAddInputs": "Haz clic en los parámetros del nodo para agregarlos aquí como entradas",
       "promptAddOutputs": "Haz clic en los nodos de salida para agregarlos aquí. Estos serán los resultados generados.",
-      "title": "Modo constructor de aplicaciones"
+      "title": "Modo constructor de aplicaciones",
+      "unknownWidget": "Widget no visible"
     },
     "downloadAll": "Descargar todo",
     "dragAndDropImage": "Arrastra y suelta una imagen",
+    "emptyWorkflowExplanation": "Tu flujo de trabajo está vacío. Necesitas algunos nodos primero para empezar a construir una aplicación.",
+    "enterNodeGraph": "Entrar al grafo de nodos",
     "giveFeedback": "Enviar comentarios",
     "graphMode": "Modo gráfico",
     "linearMode": "Modo App",
+    "loadTemplate": "Cargar una plantilla",
+    "mobileControls": "Editar y ejecutar",
     "queue": {
       "clear": "Limpiar cola",
       "clickToClear": "Haz clic para limpiar la cola"
@@ -1371,8 +1387,8 @@
     "rerun": "Volver a ejecutar",
     "reuseParameters": "Reutilizar parámetros",
     "runCount": "Número de ejecuciones:",
+    "viewJob": "Ver tarea",
     "welcome": {
-      "backToWorkflow": "Volver al flujo de trabajo",
       "buildApp": "Crear aplicación",
       "controls": "Tus resultados aparecen abajo, tus controles están a la derecha. Todo lo demás se mantiene fuera del camino.",
       "getStarted": "Haz clic en {runButton} para comenzar.",
@@ -1747,6 +1763,7 @@
     "disabled": "Deshabilitado",
     "disabledTooltip": "El flujo de trabajo no se encolará automáticamente",
     "execute": "Ejecutar",
+    "fullscreen": "Pantalla completa",
     "help": "Ayuda",
     "helpAndFeedback": "Ayuda y comentarios",
     "hideMenu": "Ocultar menú",
@@ -1894,7 +1911,8 @@
     "Workflows": "Flujos de trabajo",
     "Zoom In": "Acercar",
     "Zoom Out": "Alejar",
-    "Zoom to fit": "Ajustar al tamaño"
+    "Zoom to fit": "Ajustar al tamaño",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "Colores de nodos",
@@ -1904,6 +1922,7 @@
     "showLinks": "Mostrar enlaces"
   },
   "missingModelsDialog": {
+    "acceptTerms": "Aceptar términos",
     "customModelsInstruction": "Tendrás que encontrarlos y descargarlos manualmente. Búscalos en línea (prueba Civitai o Hugging Face) o contacta al proveedor original del flujo de trabajo.",
     "customModelsWarning": "Algunos de estos son modelos personalizados que no reconocemos.",
     "description": "Este flujo de trabajo requiere modelos que aún no has descargado.",
@@ -2263,6 +2282,7 @@
       "installNodePack": "Instalar paquete de nodos",
       "installed": "Instalado",
       "installing": "Instalando...",
+      "ossManagerDisabledHint": "Para instalar los nodos que faltan, primero ejecuta {pipCmd} en tu entorno de Python para instalar Node Manager, luego reinicia ComfyUI con la bandera {flag}.",
       "ossMessage": "Este flujo de trabajo utiliza nodos personalizados que aún no has instalado.",
       "searchInManager": "Buscar en el Gestor de Nodos",
       "title": "Paquetes de nodos faltantes",
@@ -2629,8 +2649,16 @@
     "nodeLibrary": "Biblioteca de nodos",
     "nodeLibraryTab": {
       "allNodes": "Todos los nodos",
+      "blueprints": "Planos",
       "custom": "Personalizado",
       "essentials": "Esenciales",
+      "filter": "Filtrar",
+      "filterOptions": {
+        "blueprints": "Planos",
+        "comfyNodes": "Nodos Comfy",
+        "extensions": "Extensiones",
+        "partnerNodes": "Nodos de socios"
+      },
       "groupBy": "Agrupar por",
       "groupStrategies": {
         "category": "Categoría",
@@ -2640,10 +2668,18 @@
         "source": "Fuente",
         "sourceDesc": "Agrupar por tipo de fuente (Core, Custom, API)"
       },
+      "noBookmarkedNodes": "Aún no hay favoritos",
       "resetView": "Restablecer vista a la predeterminada",
       "sections": {
+        "bookmarked": "Favoritos",
+        "comfyBlueprints": "Planos Comfy",
+        "comfyNodes": "Nodos Comfy",
+        "extensions": "Extensiones",
         "favoriteNode": "Nodo favorito",
         "favorites": "Favoritos",
+        "myBlueprints": "Mis planos",
+        "partnerNodes": "Nodos de socios",
+        "subgraphBlueprints": "Planos de subgráficos",
         "unfavoriteNode": "Quitar de favoritos"
       },
       "sortBy": {
@@ -2697,6 +2733,7 @@
       "searchJobs": "Buscar...",
       "showAssets": "Mostrar recursos",
       "showAssetsPanel": "Mostrar panel de recursos",
+      "showRunProgressBar": "Mostrar barra de progreso de ejecución",
       "sortBy": "Ordenar por",
       "sortJobs": "Ordenar trabajos",
       "stubClipTextEncode": "CLIP Text Encode:",
@@ -2887,6 +2924,7 @@
     "resubscribe": "Volver a suscribirse",
     "resubscribeSuccess": "¡Suscripción reactivada correctamente!",
     "resubscribeTo": "Volver a suscribirse a {plan}",
+    "subscribeForMore": "Mejorar",
     "subscribeNow": "Suscribirse Ahora",
     "subscribeTo": "Suscribirse a {plan}",
     "subscribeToComfyCloud": "Suscribirse a Comfy Cloud",
@@ -2917,6 +2955,7 @@
     "upgrade": "MEJORAR",
     "upgradePlan": "Mejorar plan",
     "upgradeTo": "Mejorar a {plan}",
+    "upgradeToAddCredits": "Mejorar para añadir créditos",
     "usdPerMonth": "USD / mes",
     "usdPerMonthPerMember": "USD / mes / miembro",
     "videoEstimateExplanation": "Estas estimaciones se basan en la plantilla Wan 2.2 Imagen a Video usando la configuración predeterminada (5 segundos, 640x640, 16fps, muestreo de 4 pasos).",
@@ -3182,7 +3221,9 @@
     "enterFilename": "Introduzca el nombre del archivo",
     "enterFilenamePrompt": "Introduce el nombre del archivo:",
     "exportWorkflow": "Exportar flujo de trabajo",
-    "saveWorkflow": "Guardar flujo de trabajo"
+    "saveWorkflow": "Guardar flujo de trabajo",
+    "savedAsApp": "Convertido a flujo de trabajo de aplicación",
+    "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos"
   },
   "workspace": {
     "addedToWorkspace": "Has sido añadido a {workspaceName}",

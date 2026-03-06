@@ -8,7 +8,7 @@
       v-if="!hideButtons"
       :aria-label="t('g.decrement')"
       data-testid="decrement"
-      class="h-full w-8 rounded-r-none hover:bg-base-foreground/20 disabled:opacity-30"
+      class="aspect-8/7 h-full rounded-r-none hover:bg-base-foreground/20 disabled:opacity-30"
       variant="muted-textonly"
       :disabled="!canDecrement"
       tabindex="-1"
@@ -16,7 +16,7 @@
     >
       <i class="pi pi-minus" />
     </Button>
-    <div class="relative min-w-[4ch] flex-1 py-1.5 my-0.25">
+    <div class="relative my-0.25 min-w-[4ch] flex-1 py-1.5">
       <input
         ref="inputField"
         v-bind="inputAttrs"
@@ -24,7 +24,7 @@
         :disabled
         :class="
           cn(
-            'bg-transparent border-0 focus:outline-0 p-1 truncate text-sm absolute inset-0'
+            'absolute inset-0 truncate border-0 bg-transparent p-1 text-sm focus:outline-0'
           )
         "
         inputmode="decimal"
@@ -53,7 +53,7 @@
       v-if="!hideButtons"
       :aria-label="t('g.increment')"
       data-testid="increment"
-      class="h-full w-8 rounded-l-none hover:bg-base-foreground/20 disabled:opacity-30"
+      class="aspect-8/7 h-full rounded-l-none hover:bg-base-foreground/20 disabled:opacity-30"
       variant="muted-textonly"
       :disabled="!canIncrement"
       tabindex="-1"

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex gap-3 items-center">
+  <div class="flex items-center gap-3">
     <SearchBox
       :model-value="searchQuery"
       :placeholder="
@@ -7,7 +7,7 @@
       "
       @update:model-value="handleSearchChange"
     />
-    <div class="flex gap-1.5 items-center">
+    <div class="flex items-center gap-1.5">
       <MediaAssetFilterButton
         v-if="isCloud"
         v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"

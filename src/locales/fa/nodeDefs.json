@@ -3778,6 +3778,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -3944,6 +3947,10 @@
     "description": "ویرایش یک تصویر موجود بر اساس یک متن راهنما",
     "display_name": "ویرایش تصویر Grok",
     "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "فقط زمانی مجاز است که چندین تصویر به ورودی تصویر متصل باشند."
+      },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
@@ -3995,6 +4002,9 @@
       "prompt": {
         "name": "راهنما",
         "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "resolution": {
+        "name": "وضوح"
       },
       "seed": {
         "name": "بذر",
@@ -5850,6 +5860,9 @@
       },
       "mode": {
         "name": "حالت"
+      },
+      "model": {
+        "name": "مدل"
       },
       "prompt": {
         "name": "پرامپت"
@@ -18151,6 +18164,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته"
+      },
+      "clip_vision_output": {
+        "name": "خروجی clip vision"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "pose_end": {
+        "name": "پایان pose",
+        "tooltip": "گام پایان برای استفاده از pose conditioning."
+      },
+      "pose_start": {
+        "name": "شروع pose",
+        "tooltip": "گام شروع برای استفاده از pose conditioning."
+      },
+      "pose_strength": {
+        "name": "قدرت pose",
+        "tooltip": "قدرت pose در latent."
+      },
+      "pose_video": {
+        "name": "ویدئوی pose",
+        "tooltip": "ویدئو برای pose conditioning استفاده می‌شود. به نصف وضوح ویدئوی اصلی کاهش داده می‌شود."
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "reference_image": {
+        "name": "تصویر مرجع"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent خالی با اندازه تولید."
       }
     }
   },

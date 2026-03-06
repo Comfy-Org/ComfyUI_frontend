@@ -3778,6 +3778,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -3944,6 +3947,10 @@
     "description": "تعديل صورة موجودة بناءً على مطالبة نصية",
     "display_name": "تعديل صورة Grok",
     "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع",
+        "tooltip": "مسموح فقط عند توصيل عدة صور بمدخل الصورة."
+      },
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
       },
@@ -3995,6 +4002,9 @@
       "prompt": {
         "name": "المطالبة",
         "tooltip": "المطالبة النصية المستخدمة لتوليد الصورة"
+      },
+      "resolution": {
+        "name": "الدقة"
       },
       "seed": {
         "name": "البذرة",
@@ -5850,6 +5860,9 @@
       },
       "mode": {
         "name": "الوضع"
+      },
+      "model": {
+        "name": "النموذج"
       },
       "prompt": {
         "name": "الموجه"
@@ -18151,6 +18164,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "حجم الدفعة"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول"
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "pose_end": {
+        "name": "نهاية الوضعية",
+        "tooltip": "خطوة النهاية لاستخدام تكييف الوضعية."
+      },
+      "pose_start": {
+        "name": "بدء الوضعية",
+        "tooltip": "خطوة البدء لاستخدام تكييف الوضعية."
+      },
+      "pose_strength": {
+        "name": "قوة الوضعية",
+        "tooltip": "قوة الفضاء الكامن للوضعية."
+      },
+      "pose_video": {
+        "name": "فيديو الوضعية",
+        "tooltip": "الفيديو المستخدم لتكييف الوضعية. سيتم تقليل دقته إلى نصف دقة الفيديو الرئيسي."
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "reference_image": {
+        "name": "صورة مرجعية"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سلبي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "كامن",
+        "tooltip": "فضاء كامن فارغ بحجم التوليد."
       }
     }
   },

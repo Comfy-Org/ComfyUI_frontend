@@ -4,7 +4,7 @@
     enter-from-class="-translate-y-3 opacity-0"
     enter-to-class="translate-y-0 opacity-100"
   >
-    <div v-if="isVisible" class="flex justify-end w-full pointer-events-none">
+    <div v-if="isVisible" class="pointer-events-none flex w-full justify-end">
       <div
         role="alert"
         aria-live="assertive"
@@ -32,12 +32,12 @@
             <li
               v-for="(message, idx) in groupedErrorMessages"
               :key="idx"
-              class="flex items-baseline gap-2 text-sm leading-snug text-muted-foreground min-w-0"
+              class="flex min-w-0 items-baseline gap-2 text-sm/snug text-muted-foreground"
             >
               <span
                 class="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground"
               />
-              <span class="break-words line-clamp-3 whitespace-pre-wrap">{{
+              <span class="line-clamp-3 wrap-break-word whitespace-pre-wrap">{{
                 message
               }}</span>
             </li>

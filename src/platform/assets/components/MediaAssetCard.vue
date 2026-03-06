@@ -13,10 +13,10 @@
     :tabindex="loading ? -1 : 0"
     :class="
       cn(
-        'flex flex-col overflow-hidden cursor-pointer p-2 transition-colors duration-200 rounded-lg',
-        'gap-2 select-none group',
+        'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
+        'group gap-2 select-none',
         selected
-          ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
+          ? 'ring-3 ring-modal-card-border-highlighted ring-inset'
           : 'hover:bg-modal-card-background-hovered/20'
       )
     "
@@ -84,22 +84,24 @@
     <!-- Bottom Area: Media Info -->
     <div class="flex-1">
       <!-- Loading State -->
-      <div v-if="loading" class="flex justify-between items-start">
+      <div v-if="loading" class="flex items-start justify-between">
         <div class="flex flex-col gap-1">
           <div
-            class="h-4 w-24 animate-pulse rounded bg-modal-card-background"
+            class="h-4 w-24 animate-pulse rounded-sm bg-modal-card-background"
           />
           <div
-            class="h-3 w-20 animate-pulse rounded bg-modal-card-background"
+            class="h-3 w-20 animate-pulse rounded-sm bg-modal-card-background"
           />
         </div>
-        <div class="h-6 w-12 animate-pulse rounded bg-modal-card-background" />
+        <div
+          class="h-6 w-12 animate-pulse rounded-sm bg-modal-card-background"
+        />
       </div>
 
       <!-- Content -->
       <div
         v-else-if="asset && adaptedAsset"
-        class="flex justify-between items-end gap-1.5"
+        class="flex items-end justify-between gap-1.5"
       >
         <!-- Left side: Media name and metadata -->
         <div class="flex flex-col gap-1">
@@ -113,7 +115,7 @@
         </div>
 
         <!-- Right side: Output count -->
-        <div v-if="showOutputCount" class="flex-shrink-0">
+        <div v-if="showOutputCount" class="shrink-0">
           <Button
             v-tooltip.top.pt:pointer-events-none="
               $t('mediaAsset.actions.seeMoreOutputs')

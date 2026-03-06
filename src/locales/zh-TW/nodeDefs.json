@@ -3778,6 +3778,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -3944,6 +3947,10 @@
     "description": "根據文字提示修改現有圖像",
     "display_name": "Grok 圖像編輯",
     "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "僅當多張圖片連接到圖片輸入時才允許。"
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -3995,6 +4002,9 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "用於生成圖像的文字提示"
+      },
+      "resolution": {
+        "name": "解析度"
       },
       "seed": {
         "name": "seed",
@@ -5850,6 +5860,9 @@
       },
       "mode": {
         "name": "模式"
+      },
+      "model": {
+        "name": "模型"
       },
       "prompt": {
         "name": "提示詞"
@@ -18151,6 +18164,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "negative": {
+        "name": "負向"
+      },
+      "pose_end": {
+        "name": "姿勢結束步驟",
+        "tooltip": "結束使用姿勢條件的步驟。"
+      },
+      "pose_start": {
+        "name": "姿勢起始步驟",
+        "tooltip": "開始使用姿勢條件的步驟。"
+      },
+      "pose_strength": {
+        "name": "姿勢強度",
+        "tooltip": "姿勢 latent 的強度。"
+      },
+      "pose_video": {
+        "name": "姿勢影片",
+        "tooltip": "用於姿勢條件的影片。將會縮小為主影片解析度的一半。"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "reference_image": {
+        "name": "參考圖片"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "負向",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "生成尺寸的空 latent。"
       }
     }
   },

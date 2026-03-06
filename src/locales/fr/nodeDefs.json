@@ -3778,6 +3778,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -3944,6 +3947,10 @@
     "description": "Modifiez une image existante à partir d'une invite textuelle",
     "display_name": "Grok Image Edit",
     "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d'aspect",
+        "tooltip": "Autorisé uniquement lorsque plusieurs images sont connectées à l'entrée image."
+      },
       "control_after_generate": {
         "name": "contrôle après génération"
       },
@@ -3995,6 +4002,9 @@
       "prompt": {
         "name": "invite",
         "tooltip": "L'invite textuelle utilisée pour générer l'image"
+      },
+      "resolution": {
+        "name": "résolution"
       },
       "seed": {
         "name": "graine",
@@ -5850,6 +5860,9 @@
       },
       "mode": {
         "name": "mode"
+      },
+      "model": {
+        "name": "modèle"
       },
       "prompt": {
         "name": "invite"
@@ -18151,6 +18164,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "pose_end": {
+        "name": "fin_de_pose",
+        "tooltip": "Étape de fin pour utiliser le conditionnement de pose."
+      },
+      "pose_start": {
+        "name": "début_de_pose",
+        "tooltip": "Étape de début pour utiliser le conditionnement de pose."
+      },
+      "pose_strength": {
+        "name": "force_de_pose",
+        "tooltip": "Force du latent de pose."
+      },
+      "pose_video": {
+        "name": "vidéo_de_pose",
+        "tooltip": "Vidéo utilisée pour le conditionnement de pose. Sera réduite à la moitié de la résolution de la vidéo principale."
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "reference_image": {
+        "name": "image_de_référence"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latent vide de la taille de génération."
       }
     }
   },

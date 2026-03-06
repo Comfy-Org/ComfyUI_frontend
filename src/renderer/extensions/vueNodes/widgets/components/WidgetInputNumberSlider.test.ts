@@ -7,19 +7,20 @@ import Slider from '@/components/ui/slider/Slider.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
+import { createMockWidget } from './widgetTestUtils'
 
-function createMockWidget(
+function createSliderWidget(
   value: number = 5,
   options: SimplifiedWidget['options'] = {},
   callback?: (value: number) => void
 ): SimplifiedWidget<number> {
-  return {
+  return createMockWidget<number>({
+    value,
     name: 'test_slider',
     type: 'float',
-    value,
     options: { min: 0, max: 100, step: 1, precision: 0, ...options },
     callback
-  }
+  })
 }
 
 function mountComponent(
@@ -53,7 +54,7 @@ function getNumberInput(wrapper: ReturnType<typeof mount>) {
 describe('WidgetInputNumberSlider Value Binding', () => {
   describe('Props and Values', () => {
     it('passes modelValue to slider component', () => {
-      const widget = createMockWidget(5)
+      const widget = createSliderWidget(5)
       const wrapper = mountComponent(widget, 5)
 
       const slider = wrapper.findComponent({ name: 'Slider' })
@@ -61,10 +62,10 @@ describe('WidgetInputNumberSlider Value Binding', () => {
     })
 
     it('handles different initial values', () => {
-      const widget1 = createMockWidget(5)
+      const widget1 = createSliderWidget(5)
       const wrapper1 = mountComponent(widget1, 5)
 
-      const widget2 = createMockWidget(10)
+      const widget2 = createSliderWidget(10)
       const wrapper2 = mountComponent(widget2, 10)
 
       const slider1 = wrapper1.findComponent({ name: 'Slider' })
@@ -77,21 +78,21 @@ describe('WidgetInputNumberSlider Value Binding', () => {
 
   describe('Component Rendering', () => {
     it('renders slider component', () => {
-      const widget = createMockWidget(5)
+      const widget = createSliderWidget(5)
       const wrapper = mountComponent(widget, 5)
 
       expect(wrapper.findComponent({ name: 'Slider' }).exists()).toBe(true)
     })
 
     it('renders input field', () => {
-      const widget = createMockWidget(5)
+      const widget = createSliderWidget(5)
       const wrapper = mountComponent(widget, 5)
 
       expect(wrapper.find('input[inputmode="numeric"]').exists()).toBe(true)
     })
 
     it('displays initial value in input field', () => {
-      const widget = createMockWidget(42)
+      const widget = createSliderWidget(42)
       const wrapper = mountComponent(widget, 42)
 
       const input = getNumberInput(wrapper)
@@ -101,7 +102,7 @@ describe('WidgetInputNumberSlider Value Binding', () => {
 
   describe('Widget Options', () => {
     it('passes widget options to PrimeVue components', () => {
-      const widget = createMockWidget(5, { min: -10, max: 50 })
+      const widget = createSliderWidget(5, { min: -10, max: 50 })
       const wrapper = mountComponent(widget, 5)
 
       const slider = wrapper.findComponent({ name: 'Slider' })
@@ -110,7 +111,7 @@ describe('WidgetInputNumberSlider Value Binding', () => {
     })
 
     it('handles negative value ranges', () => {
-      const widget = createMockWidget(0, { min: -100, max: 100 })
+      const widget = createSliderWidget(0, { min: -100, max: 100 })
       const wrapper = mountComponent(widget, 0)
 
       const slider = wrapper.findComponent({ name: 'Slider' })
@@ -120,7 +121,7 @@ describe('WidgetInputNumberSlider Value Binding', () => {
 
     describe('Step Size', () => {
       it('should default to 1', () => {
-        const widget = createMockWidget(5)
+        const widget = createSliderWidget(5)
         const wrapper = mountComponent(widget, 5)
 
         const slider = wrapper.findComponent({ name: 'Slider' })
@@ -128,7 +129,7 @@ describe('WidgetInputNumberSlider Value Binding', () => {
       })
 
       it('should get the step2 value if present', () => {
-        const widget = createMockWidget(5, { step2: 0.01 })
+        const widget = createSliderWidget(5, { step2: 0.01 })
         const wrapper = mountComponent(widget, 5)
 
         const slider = wrapper.findComponent({ name: 'Slider' })
@@ -136,7 +137,7 @@ describe('WidgetInputNumberSlider Value Binding', () => {
       })
 
       it('should be 1 for precision 0', () => {
-        const widget = createMockWidget(5, { precision: 0 })
+        const widget = createSliderWidget(5, { precision: 0 })
         const wrapper = mountComponent(widget, 5)
 
         const slider = wrapper.findComponent({ name: 'Slider' })
@@ -144,7 +145,7 @@ describe('WidgetInputNumberSlider Value Binding', () => {
       })
 
       it('should be .1 for precision 1', () => {
-        const widget = createMockWidget(5, { precision: 1 })
+        const widget = createSliderWidget(5, { precision: 1 })
         const wrapper = mountComponent(widget, 5)
 
         const slider = wrapper.findComponent({ name: 'Slider' })
@@ -152,7 +153,7 @@ describe('WidgetInputNumberSlider Value Binding', () => {
       })
 
       it('should be .00001 for precision 5', () => {
-        const widget = createMockWidget(5, { precision: 5 })
+        const widget = createSliderWidget(5, { precision: 5 })
         const wrapper = mountComponent(widget, 5)
 
         const slider = wrapper.findComponent({ name: 'Slider' })

@@ -93,6 +93,11 @@ function useNodeEventHandlersIndividual() {
 
     // Update the node title in LiteGraph for persistence
     node.title = newTitle
+
+    // If this is a subgraph node, sync the subgraph name for breadcrumb reactivity
+    if (node.isSubgraphNode?.()) {
+      node.subgraph.name = newTitle
+    }
   }
 
   /**

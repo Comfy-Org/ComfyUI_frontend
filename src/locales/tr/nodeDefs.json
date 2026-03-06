@@ -3778,6 +3778,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -3944,6 +3947,10 @@
     "description": "Mevcut bir görüntüyü metin istemine göre değiştir",
     "display_name": "Grok Görüntü Düzenle",
     "inputs": {
+      "aspect_ratio": {
+        "name": "en-boy oranı",
+        "tooltip": "Yalnızca birden fazla görsel, görsel girişine bağlandığında kullanılabilir."
+      },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
@@ -3995,6 +4002,9 @@
       "prompt": {
         "name": "istem",
         "tooltip": "Görüntüyü oluşturmak için kullanılan metin istemi"
+      },
+      "resolution": {
+        "name": "çözünürlük"
       },
       "seed": {
         "name": "tohum",
@@ -5850,6 +5860,9 @@
       },
       "mode": {
         "name": "mod"
+      },
+      "model": {
+        "name": "model"
       },
       "prompt": {
         "name": "istem"
@@ -18151,6 +18164,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "toplu_boyutu"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "pose_end": {
+        "name": "poz_bitişi",
+        "tooltip": "Poz koşullandırmasının biteceği adım."
+      },
+      "pose_start": {
+        "name": "poz_başlangıcı",
+        "tooltip": "Poz koşullandırmasının başlayacağı adım."
+      },
+      "pose_strength": {
+        "name": "poz_gücü",
+        "tooltip": "Poz latentinin gücü."
+      },
+      "pose_video": {
+        "name": "poz_videosu",
+        "tooltip": "Poz koşullandırması için kullanılan video. Ana videonun çözünürlüğünün yarısına düşürülecek."
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "reference_image": {
+        "name": "referans_görsel"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Üretim boyutunda boş latent."
       }
     }
   },

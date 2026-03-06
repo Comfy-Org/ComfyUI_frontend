@@ -326,14 +326,14 @@
     "deleteWorkflow": "ワークフローを削除",
     "duplicate": "複製",
     "enterAppMode": "アプリモードに入る",
+    "enterBuilderMode": "アプリビルダーに入る",
     "enterNewName": "新しい名前を入力",
     "exitAppMode": "アプリモードを終了",
     "missingNodesWarning": "ワークフローに未対応のノードが含まれています（赤でハイライト）。",
     "workflowActions": "ワークフロー操作"
   },
   "builderMenu": {
-    "exitAppBuilder": "アプリビルダーを終了",
-    "saveApp": "アプリを保存"
+    "exitAppBuilder": "アプリビルダーを終了"
   },
   "builderToolbar": {
     "app": "アプリ",
@@ -343,21 +343,25 @@
     "connectOutput": "出力を接続",
     "connectOutputBody1": "アプリを保存するには、少なくとも1つの出力を接続する必要があります。",
     "connectOutputBody2": "「選択」ステップに切り替えて、出力ノードをクリックしてここに追加してください。",
-    "filename": "ファイル名",
+    "defaultModeAppliedAppBody": "このワークフローは今後デフォルトでアプリモードで開きます。",
+    "defaultModeAppliedAppPrompt": "今すぐ表示しますか？",
+    "defaultModeAppliedGraphBody": "このワークフローは今後デフォルトでノードグラフとして開きます。",
+    "defaultModeAppliedGraphPrompt": "アプリを引き続き表示しますか？",
+    "defaultModeAppliedTitle": "正常に設定されました",
+    "defaultView": "デフォルトビューを設定",
+    "defaultViewDescription": "開き方を選択してください",
+    "defaultViewLabel": "デフォルトでは、このワークフローは次のように開きます：",
+    "defaultViewTitle": "このワークフローのデフォルトビューを設定",
+    "emptyWorkflowPrompt": "テンプレートから始めますか？",
+    "emptyWorkflowTitle": "このワークフローにはノードがありません",
+    "inputs": "入力",
+    "inputsDescription": "入力を選択",
     "label": "アプリビルダー",
     "nodeGraph": "ノードグラフ",
     "nodeGraphDescription": "デフォルトでノードグラフとして開きます",
-    "save": "保存",
-    "saveAs": "名前を付けて保存",
-    "saveAsLabel": "このワークフローを次の形式で保存...",
-    "saveDescription": "保存して終了",
-    "saveSuccess": "保存に成功しました",
-    "saveSuccessAppMessage": "「{name}」が保存されました。今後はデフォルトでアプリモードで開きます。",
-    "saveSuccessAppPrompt": "今すぐ表示しますか？",
-    "saveSuccessGraphMessage": "「{name}」が保存されました。今後はデフォルトでノードグラフとして開きます。",
-    "select": "選択",
-    "selectDescription": "入力／出力を選択",
-    "switchToSelect": "選択に切り替え",
+    "outputs": "出力",
+    "outputsDescription": "出力を選択",
+    "switchToOutputs": "出力に切り替え",
     "viewApp": "アプリを表示"
   },
   "clipboard": {
@@ -862,6 +866,7 @@
     "clearFilters": "フィルターをクリア",
     "close": "閉じる",
     "closeDialog": "ダイアログを閉じる",
+    "collapseAll": "すべて折りたたむ",
     "color": "色",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "ComfyOrgロゴ",
@@ -931,6 +936,7 @@
     "errorLoadingImage": "画像の読み込みエラー",
     "errorLoadingVideo": "ビデオの読み込みエラー",
     "essentials": "必須",
+    "expandAll": "すべて展開",
     "experimental": "ベータ",
     "export": "エクスポート",
     "extensionName": "拡張機能名",
@@ -1031,6 +1037,7 @@
     "or": "または",
     "output": "出力",
     "overwrite": "上書き",
+    "partner": "パートナー",
     "playPause": "再生/一時停止",
     "playRecording": "録音を再生",
     "playbackSpeed": "再生速度",
@@ -1041,6 +1048,7 @@
     "progressCountOf": "の",
     "queued": "キュー中",
     "ready": "準備完了",
+    "recents": "最近使用",
     "reconnected": "再接続されました",
     "reconnecting": "再接続中",
     "refresh": "更新",
@@ -1332,7 +1340,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "アプリビルダー",
-      "apps": "アプリ"
+      "apps": "アプリ",
+      "appsEmptyMessage": "保存されたアプリはここに表示されます。\n下をクリックして最初のアプリを作成しましょう。",
+      "enterAppMode": "アプリモードに入る"
     },
     "arrange": {
       "atLeastOne": "少なくとも1つ",
@@ -1341,9 +1351,10 @@
       "outputExamples": "例：「画像を保存」や「動画を保存」",
       "outputs": "出力",
       "resultsLabel": "選択した出力ノードから生成された結果は、このアプリ実行後にここに表示されます",
-      "switchToSelect": "「選択」ステップに切り替えて、出力ノードをクリックしてここに追加してください。",
-      "switchToSelectButton": "選択に切り替え"
+      "switchToOutputs": "「出力」ステップに切り替え、出力ノードをクリックしてここに追加してください。",
+      "switchToOutputsButton": "出力に切り替え"
     },
+    "backToWorkflow": "ワークフローに戻る",
     "beta": "アプリモード ベータ版 - フィードバックを送る",
     "builder": {
       "exit": "ビルダーを終了",
@@ -1357,13 +1368,18 @@
       "outputsExample": "例：「画像を保存」「動画を保存」",
       "promptAddInputs": "ノードのパラメータをクリックして、ここに入力として追加してください",
       "promptAddOutputs": "出力ノードをクリックしてここに追加してください。これが生成される結果となります。",
-      "title": "アプリビルダーモード"
+      "title": "アプリビルダーモード",
+      "unknownWidget": "ウィジェットが表示されていません"
     },
     "downloadAll": "すべてダウンロード",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
+    "emptyWorkflowExplanation": "ワークフローが空です。アプリを作成するには、まずノードを追加してください。",
+    "enterNodeGraph": "ノードグラフに入る",
     "giveFeedback": "フィードバックを送る",
     "graphMode": "グラフモード",
     "linearMode": "アプリモード",
+    "loadTemplate": "テンプレートを読み込む",
+    "mobileControls": "編集と実行",
     "queue": {
       "clear": "キューをクリア",
       "clickToClear": "クリックしてキューをクリア"
@@ -1371,8 +1387,8 @@
     "rerun": "再実行",
     "reuseParameters": "パラメータを再利用",
     "runCount": "実行回数：",
+    "viewJob": "ジョブを表示",
     "welcome": {
-      "backToWorkflow": "ワークフローに戻る",
       "buildApp": "アプリを作成",
       "controls": "出力は下部に表示され、コントロールは右側にあります。他の要素は邪魔になりません。",
       "getStarted": "{runButton} をクリックして開始してください。",
@@ -1747,6 +1763,7 @@
     "disabled": "無効",
     "disabledTooltip": "ワークフローは自動的にキューに追加されません",
     "execute": "実行",
+    "fullscreen": "全画面表示",
     "help": "ヘルプ",
     "helpAndFeedback": "ヘルプとフィードバック",
     "hideMenu": "メニューを隠す",
@@ -1894,7 +1911,8 @@
     "Workflows": "ワークフロー",
     "Zoom In": "ズームイン",
     "Zoom Out": "ズームアウト",
-    "Zoom to fit": "全体表示にズーム"
+    "Zoom to fit": "全体表示にズーム",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "ノードの色",
@@ -1904,6 +1922,7 @@
     "showLinks": "リンクを表示"
   },
   "missingModelsDialog": {
+    "acceptTerms": "利用規約に同意する",
     "customModelsInstruction": "手動で探してダウンロードする必要があります。オンラインで検索するか（CivitaiやHugging Faceを試してください）、元のワークフロープロバイダーに連絡してください。",
     "customModelsWarning": "これらの中には、認識できないカスタムモデルが含まれています。",
     "description": "このワークフローには、まだダウンロードしていないモデルが必要です。",
@@ -2263,6 +2282,7 @@
       "installNodePack": "ノードパックをインストール",
       "installed": "インストール済み",
       "installing": "インストール中...",
+      "ossManagerDisabledHint": "不足しているノードをインストールするには、まずPython環境で {pipCmd} を実行してNode Managerをインストールし、{flag} フラグを付けてComfyUIを再起動してください。",
       "ossMessage": "このワークフローにはまだインストールしていないカスタムノードが使われています。",
       "searchInManager": "ノードマネージャーで検索",
       "title": "不足しているノードパック",
@@ -2629,8 +2649,16 @@
     "nodeLibrary": "ノードライブラリ",
     "nodeLibraryTab": {
       "allNodes": "すべてのノード",
+      "blueprints": "ブループリント",
       "custom": "カスタム",
       "essentials": "必須",
+      "filter": "フィルター",
+      "filterOptions": {
+        "blueprints": "ブループリント",
+        "comfyNodes": "Comfyノード",
+        "extensions": "拡張機能",
+        "partnerNodes": "パートナーノード"
+      },
       "groupBy": "グループ化",
       "groupStrategies": {
         "category": "カテゴリ",
@@ -2640,10 +2668,18 @@
         "source": "ソース",
         "sourceDesc": "ソースタイプ（Core、Custom、API）でグループ化"
       },
+      "noBookmarkedNodes": "お気に入りはまだありません",
       "resetView": "ビューをデフォルトにリセット",
       "sections": {
+        "bookmarked": "ブックマーク済み",
+        "comfyBlueprints": "Comfyブループリント",
+        "comfyNodes": "Comfyノード",
+        "extensions": "拡張機能",
         "favoriteNode": "お気に入りノード",
         "favorites": "お気に入り",
+        "myBlueprints": "マイブループリント",
+        "partnerNodes": "パートナーノード",
+        "subgraphBlueprints": "サブグラフブループリント",
         "unfavoriteNode": "お気に入りノードから削除"
       },
       "sortBy": {
@@ -2697,6 +2733,7 @@
       "searchJobs": "検索...",
       "showAssets": "アセットを表示",
       "showAssetsPanel": "アセットパネルを表示",
+      "showRunProgressBar": "実行進行バーを表示",
       "sortBy": "並べ替え条件",
       "sortJobs": "ジョブを並べ替え",
       "stubClipTextEncode": "CLIPテキストエンコード：",
@@ -2887,6 +2924,7 @@
     "resubscribe": "再購読する",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再購読する",
+    "subscribeForMore": "アップグレード",
     "subscribeNow": "今すぐ購読",
     "subscribeTo": "{plan}に登録",
     "subscribeToComfyCloud": "Comfy Cloudを購読",
@@ -2917,6 +2955,7 @@
     "upgrade": "アップグレード",
     "upgradePlan": "プランをアップグレード",
     "upgradeTo": "{plan}にアップグレード",
+    "upgradeToAddCredits": "クレジット追加のためアップグレード",
     "usdPerMonth": "USD / 月",
     "usdPerMonthPerMember": "USD / 月 / メンバー",
     "videoEstimateExplanation": "これらの見積もりは、Wan 2.2 画像から動画テンプレートのデフォルト設定（5秒、640x640、16fps、4ステップサンプリング）に基づいています。",
@@ -3182,7 +3221,9 @@
     "enterFilename": "ファイル名を入力",
     "enterFilenamePrompt": "ファイル名を入力してください：",
     "exportWorkflow": "ワークフローをエクスポート",
-    "saveWorkflow": "ワークフローを保存"
+    "saveWorkflow": "ワークフローを保存",
+    "savedAsApp": "アプリワークフローに変換されました",
+    "savedAsWorkflow": "ノードグラフのみのワークフローに変換されました"
   },
   "workspace": {
     "addedToWorkspace": "{workspaceName}に追加されました",
