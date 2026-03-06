@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-1">
-    <div class="max-h-[48rem] rounded border p-4">
+    <div class="max-h-192 rounded-sm border p-4">
       <Chart
         :type="chartType"
         :data="chartData"

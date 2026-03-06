@@ -326,14 +326,14 @@
     "deleteWorkflow": "Supprimer le workflow",
     "duplicate": "Dupliquer",
     "enterAppMode": "Entrer en mode application",
+    "enterBuilderMode": "Entrer dans le mode constructeur d'application",
     "enterNewName": "Entrez un nouveau nom",
     "exitAppMode": "Quitter le mode application",
     "missingNodesWarning": "Le workflow contient des nœuds non pris en charge (surlignés en rouge).",
     "workflowActions": "Actions du workflow"
   },
   "builderMenu": {
-    "exitAppBuilder": "Quitter le constructeur d'application",
-    "saveApp": "Enregistrer l'application"
+    "exitAppBuilder": "Quitter le constructeur d'application"
   },
   "builderToolbar": {
     "app": "Application",
@@ -343,22 +343,26 @@
     "connectOutput": "Connecter une sortie",
     "connectOutputBody1": "Votre application doit avoir au moins une sortie connectée avant de pouvoir être enregistrée.",
     "connectOutputBody2": "Passez à l'étape « Sélectionner » et cliquez sur les nœuds de sortie pour les ajouter ici.",
-    "filename": "Nom du fichier",
+    "defaultModeAppliedAppBody": "Ce workflow s’ouvrira désormais par défaut en mode Application.",
+    "defaultModeAppliedAppPrompt": "Voulez-vous le voir maintenant ?",
+    "defaultModeAppliedGraphBody": "Ce workflow s’ouvrira désormais par défaut sous forme de graphe de nœuds.",
+    "defaultModeAppliedGraphPrompt": "Voulez-vous tout de même voir l’application ?",
+    "defaultModeAppliedTitle": "Défini avec succès",
+    "defaultView": "Définir une vue par défaut",
+    "defaultViewDescription": "Choisissez comment cela s'ouvre",
+    "defaultViewLabel": "Par défaut, ce workflow s'ouvrira comme :",
+    "defaultViewTitle": "Définir la vue par défaut pour ce workflow",
+    "emptyWorkflowPrompt": "Voulez-vous commencer avec un modèle ?",
+    "emptyWorkflowTitle": "Ce workflow ne contient aucun nœud",
+    "inputs": "Entrées",
+    "inputsDescription": "Choisissez les entrées",
     "label": "Créateur d'applications",
     "nodeGraph": "Graphe de nœuds",
     "nodeGraphDescription": "S'ouvre par défaut en tant que graphe de nœuds",
-    "save": "Enregistrer",
-    "saveAs": "Enregistrer sous",
-    "saveAsLabel": "Enregistrer ce workflow sous ...",
-    "saveDescription": "Enregistrer et terminer",
-    "saveSuccess": "Enregistré avec succès",
-    "saveSuccessAppMessage": "« {name} » a été enregistré. Il s'ouvrira désormais par défaut en mode application.",
-    "saveSuccessAppPrompt": "Voulez-vous le voir maintenant ?",
-    "saveSuccessGraphMessage": "« {name} » a été enregistré. Il s'ouvrira par défaut en tant que graphe de nœuds.",
-    "select": "Sélectionner",
-    "selectDescription": "Choisir les entrées/sorties",
-    "switchToSelect": "Passer à Sélectionner",
-    "viewApp": "Voir l'application"
+    "outputs": "Sorties",
+    "outputsDescription": "Choisissez les sorties",
+    "switchToOutputs": "Passer aux sorties",
+    "viewApp": "Voir l’application"
   },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
@@ -862,6 +866,7 @@
     "clearFilters": "Effacer les filtres",
     "close": "Fermer",
     "closeDialog": "Fermer la boîte de dialogue",
+    "collapseAll": "Tout réduire",
     "color": "Couleur",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "Logo ComfyOrg",
@@ -931,6 +936,7 @@
     "errorLoadingImage": "Erreur lors du chargement de l'image",
     "errorLoadingVideo": "Erreur lors du chargement de la vidéo",
     "essentials": "Essentiels",
+    "expandAll": "Tout développer",
     "experimental": "BETA",
     "export": "Exportation",
     "extensionName": "Nom de l'extension",
@@ -1334,7 +1340,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "Créateur d'applications",
-      "apps": "Applications"
+      "apps": "Applications",
+      "appsEmptyMessage": "Les applications enregistrées apparaîtront ici.\nCliquez ci-dessous pour créer votre première application.",
+      "enterAppMode": "Entrer en mode application"
     },
     "arrange": {
       "atLeastOne": "au moins un",
@@ -1343,9 +1351,10 @@
       "outputExamples": "Exemples : « Enregistrer l'image » ou « Enregistrer la vidéo »",
       "outputs": "Sorties",
       "resultsLabel": "Les résultats générés à partir du ou des nœuds de sortie sélectionnés seront affichés ici après l'exécution de cette application",
-      "switchToSelect": "Passez à l'étape « Sélectionner » et cliquez sur les nœuds de sortie pour les ajouter ici.",
-      "switchToSelectButton": "Passer à Sélectionner"
+      "switchToOutputs": "Passez à l'étape « Sortie » et cliquez sur les nœuds de sortie pour les ajouter ici.",
+      "switchToOutputsButton": "Passer aux sorties"
     },
+    "backToWorkflow": "Retour au workflow",
     "beta": "Mode App Bêta - Donnez votre avis",
     "builder": {
       "exit": "Quitter le mode créateur",
@@ -1359,13 +1368,18 @@
       "outputsExample": "Exemples : « Enregistrer l’image » ou « Enregistrer la vidéo »",
       "promptAddInputs": "Cliquez sur les paramètres du nœud pour les ajouter ici comme entrées",
       "promptAddOutputs": "Cliquez sur les nœuds de sortie pour les ajouter ici. Ce seront les résultats générés.",
-      "title": "Mode créateur d’application"
+      "title": "Mode créateur d’application",
+      "unknownWidget": "Widget non visible"
     },
     "downloadAll": "Tout télécharger",
     "dragAndDropImage": "Glissez-déposez une image",
+    "emptyWorkflowExplanation": "Votre workflow est vide. Vous devez d'abord ajouter des nodes pour commencer à créer une application.",
+    "enterNodeGraph": "Entrer dans le graphique de nœuds",
     "giveFeedback": "Donner un avis",
     "graphMode": "Mode graphique",
     "linearMode": "Mode App",
+    "loadTemplate": "Charger un modèle",
+    "mobileControls": "Éditer & Exécuter",
     "queue": {
       "clear": "Vider la file d'attente",
       "clickToClear": "Cliquez pour vider la file d'attente"
@@ -1373,8 +1387,8 @@
     "rerun": "Relancer",
     "reuseParameters": "Réutiliser les paramètres",
     "runCount": "Nombre d’exécutions :",
+    "viewJob": "Voir la tâche",
     "welcome": {
-      "backToWorkflow": "Retour au workflow",
       "buildApp": "Créer une application",
       "controls": "Vos sorties apparaissent en bas, vos contrôles sont à droite. Tout le reste reste à l'écart.",
       "getStarted": "Cliquez sur {runButton} pour commencer.",
@@ -1749,6 +1763,7 @@
     "disabled": "Désactivé",
     "disabledTooltip": "Le flux de travail ne sera pas mis en file d'attente automatiquement",
     "execute": "Exécuter",
+    "fullscreen": "Plein écran",
     "help": "Aide",
     "helpAndFeedback": "Aide et commentaires",
     "hideMenu": "Masquer le menu",
@@ -1896,7 +1911,8 @@
     "Workflows": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière",
-    "Zoom to fit": "Ajuster à l'écran"
+    "Zoom to fit": "Ajuster à l'écran",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "Couleurs des nœuds",
@@ -1906,6 +1922,7 @@
     "showLinks": "Afficher les liens"
   },
   "missingModelsDialog": {
+    "acceptTerms": "Accepter les conditions",
     "customModelsInstruction": "Vous devrez les trouver et les télécharger manuellement. Cherchez-les en ligne (essayez Civitai ou Hugging Face) ou contactez le créateur du workflow d'origine.",
     "customModelsWarning": "Certains de ces modèles sont personnalisés et nous ne les reconnaissons pas.",
     "description": "Ce workflow nécessite des modèles que vous n'avez pas encore téléchargés.",
@@ -2265,6 +2282,7 @@
       "installNodePack": "Installer le pack de nœuds",
       "installed": "Installé",
       "installing": "Installation en cours...",
+      "ossManagerDisabledHint": "Pour installer les nodes manquants, exécutez d'abord {pipCmd} dans votre environnement Python pour installer le Node Manager, puis redémarrez ComfyUI avec le paramètre {flag}.",
       "ossMessage": "Ce workflow utilise des nœuds personnalisés que vous n'avez pas encore installés.",
       "searchInManager": "Rechercher dans le gestionnaire de nœuds",
       "title": "Packs de nœuds manquants",
@@ -2715,6 +2733,7 @@
       "searchJobs": "Rechercher...",
       "showAssets": "Afficher les ressources",
       "showAssetsPanel": "Afficher le panneau des ressources",
+      "showRunProgressBar": "Afficher la barre de progression d'exécution",
       "sortBy": "Trier par",
       "sortJobs": "Trier les travaux",
       "stubClipTextEncode": "CLIP Text Encode :",
@@ -3202,7 +3221,9 @@
     "enterFilename": "Entrez le nom du fichier",
     "enterFilenamePrompt": "Entrez le nom du fichier :",
     "exportWorkflow": "Exporter le flux de travail",
-    "saveWorkflow": "Enregistrer le flux de travail"
+    "saveWorkflow": "Enregistrer le flux de travail",
+    "savedAsApp": "Converti en workflow d'application",
+    "savedAsWorkflow": "Converti en workflow graphique de nœuds uniquement"
   },
   "workspace": {
     "addedToWorkspace": "Vous avez été ajouté à {workspaceName}",

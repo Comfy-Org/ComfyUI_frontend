@@ -38,7 +38,7 @@
             ref="actionbarContainerRef"
             :class="
               cn(
-                'actionbar-container relative pointer-events-auto flex gap-2 h-12 items-center rounded-lg border bg-comfy-menu-bg px-2 shadow-interface',
+                'actionbar-container pointer-events-auto relative flex h-12 items-center gap-2 rounded-lg border bg-comfy-menu-bg px-2 shadow-interface',
                 hasAnyError
                   ? 'border-destructive-background-hover'
                   : 'border-interface-stroke'
@@ -51,6 +51,7 @@
               ref="legacyCommandsContainerRef"
               class="[&:not(:has(*>*:not(:empty)))]:hidden"
             ></div>
+
             <ComfyActionbar
               :top-menu-container="actionbarContainerRef"
               :queue-overlay-expanded="isQueueOverlayExpanded"
@@ -61,6 +62,19 @@
               class="shrink-0"
             />
             <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+            <Button
+              v-if="isCloud && flags.workflowSharingEnabled"
+              v-tooltip.bottom="shareTooltipConfig"
+              variant="secondary"
+              :aria-label="t('actionbar.shareTooltip')"
+              @click="() => openShareDialog().catch(toastErrorHandler)"
+              @pointerenter="prefetchShareDialog"
+            >
+              <i class="icon-[lucide--share-2] size-4" />
+              <span class="not-md:hidden">
+                {{ t('actionbar.share') }}
+              </span>
+            </Button>
             <Button
               v-if="!isRightSidePanelOpen"
               v-tooltip.bottom="rightSidePanelTooltipConfig"
@@ -88,7 +102,7 @@
         :to="inlineProgressSummaryTarget"
       >
         <div
-          class="pointer-events-none absolute left-0 right-0 top-full mt-1 flex justify-end pr-1"
+          class="pointer-events-none absolute inset-x-0 top-full mt-1 flex justify-end pr-1"
         >
           <QueueInlineProgressSummary
             :hidden="shouldHideInlineProgressSummary"
@@ -125,6 +139,7 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -133,7 +148,12 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  openShareDialog,
+  prefetchShareDialog
+} from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -143,6 +163,7 @@ const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
+const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -164,14 +185,16 @@ const isActionbarFloating = computed(
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
 )
-const isQueuePanelV2Enabled = computed(() =>
-  settingStore.get('Comfy.Queue.QPOV2')
-)
+const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
+  useQueueFeatureFlags()
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
 )
 const shouldShowInlineProgressSummary = computed(
-  () => isQueuePanelV2Enabled.value && isActionbarEnabled.value
+  () =>
+    isQueuePanelV2Enabled.value &&
+    isActionbarEnabled.value &&
+    isRunProgressBarEnabled.value
 )
 const shouldShowQueueNotificationBanners = computed(
   () => isActionbarEnabled.value
@@ -191,6 +214,9 @@ const shouldHideInlineProgressSummary = computed(
 )
 const customNodesManagerTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.manageExtensions'))
+)
+const shareTooltipConfig = computed(() =>
+  buildTooltipConfig(t('actionbar.shareTooltip'))
 )
 
 const shouldShowRedDot = computed((): boolean => {

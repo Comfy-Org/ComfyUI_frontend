@@ -22,6 +22,12 @@ vi.mock('@/utils/colorUtil', () => ({
   adjustColor: vi.fn((color: string) => color + '_adjusted')
 }))
 
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: vi.fn().mockReturnValue({
+    nodeProgressStates: {}
+  })
+}))
+
 describe('minimapCanvasRenderer', () => {
   let mockCanvas: HTMLCanvasElement
   let mockContext: CanvasRenderingContext2D
@@ -42,7 +48,9 @@ describe('minimapCanvasRenderer', () => {
       fill: vi.fn(),
       fillStyle: '',
       strokeStyle: '',
-      lineWidth: 1
+      lineWidth: 1,
+      save: vi.fn(),
+      restore: vi.fn()
     } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
     mockCanvas = {

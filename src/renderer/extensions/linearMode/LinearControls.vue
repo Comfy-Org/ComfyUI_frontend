@@ -5,6 +5,8 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Loader from '@/components/common/Loader.vue'
+import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -17,20 +19,17 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { resolveNode } from '@/utils/litegraphUtil'
 const { t } = useI18n()
 const commandStore = useCommandStore()
-const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
@@ -45,9 +44,12 @@ const props = defineProps<{
   mobile?: boolean
 }>()
 
-const jobFinishedQueue = ref(true)
+defineEmits<{ navigateAssets: [] }>()
+
+//NOTE: due to batching, will never be greater than 2
+const pendingJobQueues = ref(0)
 const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
-  5000,
+  8000,
   { controls: true, immediate: false }
 )
 
@@ -69,11 +71,7 @@ const mappedSelections = computed(() => {
       ([id]) => id === nodeId
     ).map(([, widgetName]) => widgetName)
     unprocessedInputs = unprocessedInputs.slice(inputGroup.length)
-    const node =
-      app.rootGraph.getNodeById(nodeId) ??
-      [...app.rootGraph.subgraphs.values()]
-        .flatMap((sg) => sg.nodes)
-        .find((n) => n.id == nodeId)
+    const node = resolveNode(nodeId)
     if (!node) continue
 
     const nodeData = nodeToNodeData(node)
@@ -92,7 +90,7 @@ function getDropIndicator(node: LGraphNode) {
   const buildImageUrl = () => {
     if (!filename) return undefined
     const params = new URLSearchParams(resultItem)
-    appendCloudResParam(params, String(filename))
+    appendCloudResParam(params, resultItem.filename)
     return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
   }
 
@@ -134,23 +132,11 @@ const partitionedNodes = computed(() => {
   return parts
 })
 
-const batchCountWidget: SimplifiedWidget<number> = {
-  options: {
-    precision: 0,
-    min: 1,
-    max: settingStore.get('Comfy.QueueButton.BatchCountLimit')
-  },
-  value: 1,
-  name: t('linearMode.runCount'),
-  type: 'number'
-} as const
-
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
 async function runButtonClick(e: Event) {
-  if (!jobFinishedQueue.value) return
   try {
-    jobFinishedQueue.value = false
+    pendingJobQueues.value += 1
     resetJobToastTimeout()
     const isShiftPressed = 'shiftKey' in e && e.shiftKey
     const commandId = isShiftPressed
@@ -170,7 +156,7 @@ async function runButtonClick(e: Event) {
     })
   } finally {
     //TODO: Error state indicator for failed queue?
-    jobFinishedQueue.value = true
+    pendingJobQueues.value -= 1
   }
 }
 
@@ -179,54 +165,23 @@ defineExpose({ runButtonClick })
 <template>
   <div
     v-if="!isBuilderMode && hasOutputs"
-    class="flex flex-col min-w-80 md:h-full"
+    class="flex h-full min-w-80 flex-col"
+    v-bind="$attrs"
   >
     <section
-      v-if="mobile"
-      data-testid="linear-run-button"
-      class="p-4 pb-6 border-t border-node-component-border"
-    >
-      <WidgetInputNumberInput
-        v-model="batchCount"
-        :widget="batchCountWidget"
-        root-class="text-base-foreground grid-cols-[auto_96px]"
-        class="*:[.min-w-0]:w-24"
-      />
-      <SubscribeToRunButton v-if="!isActiveSubscription" class="w-full mt-4" />
-      <div v-else class="flex mt-4 gap-2">
-        <Button
-          variant="primary"
-          class="grow-1"
-          size="lg"
-          @click="runButtonClick"
-        >
-          <i class="icon-[lucide--play]" />
-          {{ t('menu.run') }}
-        </Button>
-        <Button
-          v-if="!executionStore.isIdle"
-          variant="destructive"
-          size="lg"
-          class="w-10 p-2"
-          @click="commandStore.execute('Comfy.Interrupt')"
-        >
-          <i class="icon-[lucide--x]" />
-        </Button>
-      </div>
-    </section>
-    <section
+      v-if="!mobile"
       data-testid="linear-workflow-info"
-      class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center md:contain-size"
+      class="flex h-12 items-center gap-2 border-x border-border-subtle bg-comfy-menu-bg px-4 py-2 contain-size"
     >
       <span
-        class="font-bold truncate"
+        class="truncate font-bold"
         v-text="workflowStore.activeWorkflow?.filename"
       />
       <div class="flex-1" />
       <Popover
         v-if="partitionedNodes[0].length"
         align="end"
-        class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height) z-100"
+        class="z-100 max-h-(--reka-popover-content-available-height) overflow-x-clip overflow-y-auto"
         side="bottom"
         :side-offset="-8"
       >
@@ -246,7 +201,7 @@ defineExpose({ runButtonClick })
             />
             <NodeWidgets
               :node-data
-              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg max-w-100"
+              class="max-w-100 gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1"
             />
           </template>
         </div>
@@ -254,11 +209,11 @@ defineExpose({ runButtonClick })
       <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
     </section>
     <div
-      class="border gap-2 md:h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
+      class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"
     >
       <section
         data-testid="linear-widgets"
-        class="grow-1 md:overflow-y-auto md:contain-size"
+        class="grow overflow-y-auto contain-size"
       >
         <template
           v-for="(nodeData, index) of appModeStore.selectedInputs.length
@@ -268,7 +223,7 @@ defineExpose({ runButtonClick })
         >
           <div
             v-if="index !== 0 && !appModeStore.selectedInputs.length"
-            class="w-full border-t-1 border-node-component-border"
+            class="w-full border-t border-node-component-border"
           />
           <DropZone
             :on-drag-over="nodeData.onDragOver"
@@ -280,34 +235,107 @@ defineExpose({ runButtonClick })
               :node-data
               :class="
                 cn(
-                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg',
+                  'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 **:[.h-7]:h-10',
                   nodeData.hasErrors &&
-                    'ring-2 ring-inset ring-node-stroke-error'
+                    'ring-2 ring-node-stroke-error ring-inset'
                 )
               "
             />
           </DropZone>
         </template>
       </section>
-      <section
-        v-if="!mobile"
-        data-testid="linear-run-button"
-        class="p-4 pb-6 border-t border-node-component-border"
+      <Teleport
+        v-if="!jobToastTimeout || pendingJobQueues > 0"
+        defer
+        :disabled="mobile"
+        :to="toastTo"
       >
-        <WidgetInputNumberInput
+        <div
+          class="flex h-10 items-center gap-2 rounded-lg bg-base-foreground p-1 pr-2 text-base-background md:h-8 md:bg-secondary-background md:text-base-foreground"
+        >
+          <template v-if="pendingJobQueues === 0">
+            <i
+              class="icon-[lucide--check] size-5 not-md:bg-success-background"
+            />
+            <span class="mr-auto" v-text="t('queue.jobAddedToQueue')" />
+            <Button
+              v-if="mobile"
+              variant="inverted"
+              @click="$emit('navigateAssets')"
+            >
+              {{ t('linearMode.viewJob') }}
+            </Button>
+          </template>
+          <template v-else>
+            <Loader size="sm" />
+            <span v-text="t('queue.jobQueueing')" />
+          </template>
+        </div>
+      </Teleport>
+      <section
+        v-if="mobile"
+        data-testid="linear-run-button"
+        class="border-t border-node-component-border p-4 pb-6"
+      >
+        <SubscribeToRunButton
+          v-if="!isActiveSubscription"
+          class="mt-4 w-full"
+        />
+        <div v-else class="mt-4 flex">
+          <Popover side="top" @open-auto-focus.prevent>
+            <template #button>
+              <Button size="lg" class="-mr-3 pr-7">
+                <i v-if="batchCount == 1" class="icon-[lucide--chevron-down]" />
+                <div v-else class="tabular-nums" v-text="`${batchCount}x`" />
+              </Button>
+            </template>
+            <div
+              class="m-1 mb-2 text-node-component-slot-text"
+              v-text="t('linearMode.runCount')"
+            />
+            <ScrubableNumberInput
+              v-model="batchCount"
+              :aria-label="t('linearMode.runCount')"
+              :min="1"
+              :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+              class="h-10 min-w-40"
+            />
+          </Popover>
+          <Button
+            variant="primary"
+            class="grow"
+            size="lg"
+            @click="runButtonClick"
+          >
+            <i class="icon-[lucide--play]" />
+            {{ t('menu.run') }}
+          </Button>
+        </div>
+      </section>
+      <section
+        v-else
+        data-testid="linear-run-button"
+        class="border-t border-node-component-border p-4 pb-6"
+      >
+        <div
+          class="m-1 mb-2 text-node-component-slot-text"
+          v-text="t('linearMode.runCount')"
+        />
+        <ScrubableNumberInput
           v-model="batchCount"
-          :widget="batchCountWidget"
-          root-class="text-base-foreground grid-cols-[auto_96px]"
-          class="*:[.min-w-0]:w-24"
+          :aria-label="t('linearMode.runCount')"
+          :min="1"
+          :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+          class="h-7 min-w-40"
         />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
-          class="w-full mt-4"
+          class="mt-4 w-full"
         />
         <Button
           v-else
           variant="primary"
-          class="w-full mt-4 text-sm"
+          class="mt-4 w-full text-sm"
           size="lg"
           @click="runButtonClick"
         >
@@ -317,24 +345,4 @@ defineExpose({ runButtonClick })
       </section>
     </div>
   </div>
-  <Teleport
-    v-if="(!jobToastTimeout || !jobFinishedQueue) && toastTo"
-    defer
-    :to="toastTo"
-  >
-    <div
-      class="bg-secondary-background text-base-foreground rounded-lg flex h-8 p-1 pr-2 gap-2 items-center"
-    >
-      <i
-        v-if="jobFinishedQueue"
-        class="icon-[lucide--check] size-5 text-muted-foreground"
-      />
-      <i v-else class="icon-[lucide--loader-circle] size-4 animate-spin" />
-      <span
-        v-text="
-          jobFinishedQueue ? t('queue.jobAddedToQueue') : t('queue.jobQueueing')
-        "
-      />
-    </div>
-  </Teleport>
 </template>

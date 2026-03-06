@@ -18,12 +18,12 @@ const hideLayoutField = useHideLayoutField()
   <div
     :class="
       cn(
-        'grid grid-cols-subgrid min-w-0 justify-between gap-1 text-node-component-slot-text',
+        'grid min-w-0 grid-cols-subgrid justify-between gap-1 text-node-component-slot-text',
         rootClass
       )
     "
   >
-    <div v-if="!hideLayoutField" class="truncate content-center-safe">
+    <div v-if="!hideLayoutField" class="content-center-safe truncate">
       <template v-if="widget.name">
         {{ widget.label || widget.name }}
       </template>

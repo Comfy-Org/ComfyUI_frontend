@@ -8,6 +8,7 @@ interface WorkflowMenuSeparator {
 
 export interface WorkflowMenuAction {
   separator?: false
+  visible?: boolean
   id: string
   label: string
   icon?: string

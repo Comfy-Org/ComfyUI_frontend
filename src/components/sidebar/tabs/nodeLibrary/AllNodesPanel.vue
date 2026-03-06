@@ -1,8 +1,8 @@
 <template>
-  <TabsContent value="all" class="flex-1 overflow-y-auto h-full">
+  <TabsContent value="all" class="h-full flex-1 overflow-y-auto">
     <!-- Favorites section -->
     <h3
-      class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground mb-0"
+      class="mb-0 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
     >
       {{ $t('sideToolbar.nodeLibraryTab.sections.bookmarked') }}
     </h3>
@@ -22,7 +22,7 @@
     <div v-for="(section, index) in sections" :key="section.category ?? index">
       <h3
         v-if="section.category && sortOrder !== 'alphabetical'"
-        class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground mb-0"
+        class="mb-0 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
       >
         {{ $t(NODE_CATEGORY_LABELS[section.category]) }}
       </h3>

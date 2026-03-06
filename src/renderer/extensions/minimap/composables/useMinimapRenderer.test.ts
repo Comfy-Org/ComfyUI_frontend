@@ -20,7 +20,9 @@ describe('useMinimapRenderer', () => {
     vi.clearAllMocks()
 
     mockContext = {
-      clearRect: vi.fn()
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn()
     } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
     mockCanvas = {

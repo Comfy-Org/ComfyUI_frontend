@@ -2,7 +2,7 @@
   <TabsContent
     ref="panelEl"
     value="essentials"
-    class="flex-1 overflow-y-auto px-3 h-full"
+    class="h-full flex-1 overflow-y-auto px-3"
   >
     <div class="flex flex-col gap-2 pb-6">
       <!-- Flat sorted grid when alphabetical -->
@@ -28,7 +28,7 @@
           @update:open="toggleFolder(folder.key, $event)"
         >
           <CollapsibleTrigger
-            class="group flex w-full cursor-pointer items-center justify-between border-0 bg-transparent py-3 px-1 text-xs font-medium tracking-wide text-muted-foreground h-8 box-content"
+            class="group box-content flex h-8 w-full cursor-pointer items-center justify-between border-0 bg-transparent px-1 py-3 text-xs font-medium tracking-wide text-muted-foreground"
           >
             <span class="uppercase">{{ folder.label }}</span>
             <i

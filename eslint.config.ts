@@ -1,6 +1,7 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
+import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
 import oxlint from 'eslint-plugin-oxlint'
@@ -77,6 +78,7 @@ export default defineConfig([
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
       'src/types/vue-shim.d.ts',
+      'packages/design-system/src/css/lucideStrokePlugin.js',
       'test-results/*',
       'vitest.setup.ts'
     ]
@@ -111,6 +113,25 @@ export default defineConfig([
   tseslintConfigs.recommended,
   // Difference in typecheck on CI vs Local
   pluginVue.configs['flat/recommended'],
+  // Tailwind CSS v4 linting (class ordering, duplicates, conflicts, etc.)
+  betterTailwindcss.configs.recommended,
+  {
+    settings: {
+      'better-tailwindcss': {
+        entryPoint: 'packages/design-system/src/css/style.css'
+      }
+    },
+    rules: {
+      // Off: requires whitelisting non-Tailwind classes (PrimeIcons, custom CSS)
+      'better-tailwindcss/no-unknown-classes': 'off',
+      // Off: may conflict with oxfmt formatting
+      'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
+      // Off: large batch change, enable and apply with `eslint --fix`
+      'better-tailwindcss/enforce-consistent-class-order': 'error',
+      'better-tailwindcss/enforce-canonical-classes': 'error',
+      'better-tailwindcss/no-deprecated-classes': 'error'
+    }
+  },
   // Disables ESLint rules that conflict with formatters
   eslintConfigPrettier,
   // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types

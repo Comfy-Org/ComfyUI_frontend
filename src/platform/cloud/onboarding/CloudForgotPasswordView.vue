@@ -3,7 +3,7 @@
     <div class="max-w-[100vw] p-2 lg:w-96">
       <!-- Header -->
       <div class="mb-8 flex flex-col gap-4">
-        <h1 class="my-0 text-xl leading-normal font-medium">
+        <h1 class="my-0 text-xl/normal font-medium">
           {{ t('cloudForgotPassword_title') }}
         </h1>
         <p class="my-0 text-base text-muted">
@@ -52,7 +52,7 @@
           <Button
             type="button"
             variant="secondary"
-            class="h-10 bg-[#2d2e32]"
+            class="h-10 bg-charcoal-500"
             @click="navigateToLogin"
           >
             {{ t('cloudForgotPassword_backToLogin') }}

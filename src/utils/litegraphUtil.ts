@@ -20,8 +20,10 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
@@ -302,6 +304,20 @@ function compressSubgraphWidgetInputSlots(
 
 export function getLinkTypeColor(typeName: string): string {
   return LGraphCanvas.link_type_colors[typeName] ?? LiteGraph.LINK_COLOR
+}
+
+export function resolveNode(
+  nodeId: NodeId,
+  graph: LGraph | null | undefined = app.rootGraph
+): LGraphNode | undefined {
+  if (!graph) return undefined
+  const found = graph.getNodeById(nodeId)
+  if (found) return found
+  for (const sg of graph.subgraphs.values()) {
+    const node = sg.getNodeById(nodeId)
+    if (node) return node
+  }
+  return undefined
 }
 
 export function isLoad3dNode(node: LGraphNode) {

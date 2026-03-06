@@ -1208,6 +1208,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     experimental: true
   },
   {
+    id: 'Comfy.Queue.ShowRunProgressBar',
+    name: 'Show run progress bar',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.41.3'
+  },
+  {
     id: 'Comfy.Node.AlwaysShowAdvancedWidgets',
     category: ['LiteGraph', 'Node Widget', 'AlwaysShowAdvancedWidgets'],
     name: 'Always show advanced widgets on all nodes',

@@ -326,14 +326,14 @@
     "deleteWorkflow": "Excluir Fluxo de Trabalho",
     "duplicate": "Duplicar",
     "enterAppMode": "Entrar no modo de aplicativo",
+    "enterBuilderMode": "Entrar no construtor de aplicativos",
     "enterNewName": "Digite um novo nome",
     "exitAppMode": "Sair do modo de aplicativo",
     "missingNodesWarning": "O fluxo de trabalho contém nós não suportados (destacados em vermelho).",
     "workflowActions": "Ações do fluxo de trabalho"
   },
   "builderMenu": {
-    "exitAppBuilder": "Sair do construtor de aplicativos",
-    "saveApp": "Salvar aplicativo"
+    "exitAppBuilder": "Sair do construtor de aplicativos"
   },
   "builderToolbar": {
     "app": "Aplicativo",
@@ -343,21 +343,25 @@
     "connectOutput": "Conectar uma saída",
     "connectOutputBody1": "Seu aplicativo precisa de pelo menos uma saída conectada antes de ser salvo.",
     "connectOutputBody2": "Altere para a etapa 'Selecionar' e clique nos nós de saída para adicioná-los aqui.",
-    "filename": "Nome do arquivo",
+    "defaultModeAppliedAppBody": "Este fluxo de trabalho será aberto no Modo de Aplicativo por padrão a partir de agora.",
+    "defaultModeAppliedAppPrompt": "Gostaria de visualizá-lo agora?",
+    "defaultModeAppliedGraphBody": "Este fluxo de trabalho será aberto como um grafo de nós por padrão a partir de agora.",
+    "defaultModeAppliedGraphPrompt": "Ainda deseja visualizar o aplicativo?",
+    "defaultModeAppliedTitle": "Definido com sucesso",
+    "defaultView": "Definir visualização padrão",
+    "defaultViewDescription": "Escolha como isso será aberto",
+    "defaultViewLabel": "Por padrão, este fluxo será aberto como:",
+    "defaultViewTitle": "Definir a visualização padrão para este fluxo",
+    "emptyWorkflowPrompt": "Deseja começar com um modelo?",
+    "emptyWorkflowTitle": "Este fluxo de trabalho não possui nós",
+    "inputs": "Entradas",
+    "inputsDescription": "Escolha as entradas",
     "label": "Construtor de aplicativos",
     "nodeGraph": "Grafo de nós",
     "nodeGraphDescription": "Abre como grafo de nós por padrão",
-    "save": "Salvar",
-    "saveAs": "Salvar como",
-    "saveAsLabel": "Salvar este fluxo de trabalho como ...",
-    "saveDescription": "Salvar e finalizar",
-    "saveSuccess": "Salvo com sucesso",
-    "saveSuccessAppMessage": "'{name}' foi salvo. Ele abrirá no Modo de Aplicativo por padrão a partir de agora.",
-    "saveSuccessAppPrompt": "Gostaria de visualizá-lo agora?",
-    "saveSuccessGraphMessage": "'{name}' foi salvo. Ele abrirá como grafo de nós por padrão.",
-    "select": "Selecionar",
-    "selectDescription": "Escolha entradas/saídas",
-    "switchToSelect": "Ir para Selecionar",
+    "outputs": "Saídas",
+    "outputsDescription": "Escolha as saídas",
+    "switchToOutputs": "Ir para Saídas",
     "viewApp": "Visualizar aplicativo"
   },
   "clipboard": {
@@ -862,6 +866,7 @@
     "clearFilters": "Limpar filtros",
     "close": "Fechar",
     "closeDialog": "Fechar diálogo",
+    "collapseAll": "Recolher tudo",
     "color": "Cor",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "Logo do ComfyOrg",
@@ -931,6 +936,7 @@
     "errorLoadingImage": "Erro ao carregar imagem",
     "errorLoadingVideo": "Erro ao carregar vídeo",
     "essentials": "Essenciais",
+    "expandAll": "Expandir tudo",
     "experimental": "BETA",
     "export": "Exportar",
     "extensionName": "Nome da extensão",
@@ -1334,7 +1340,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "Construtor de aplicativos",
-      "apps": "Aplicativos"
+      "apps": "Aplicativos",
+      "appsEmptyMessage": "Os aplicativos salvos aparecerão aqui.\nClique abaixo para criar seu primeiro aplicativo.",
+      "enterAppMode": "Entrar no modo de aplicativo"
     },
     "arrange": {
       "atLeastOne": "pelo menos um",
@@ -1343,9 +1351,10 @@
       "outputExamples": "Exemplos: 'Salvar imagem' ou 'Salvar vídeo'",
       "outputs": "Saídas",
       "resultsLabel": "Os resultados gerados pelo(s) nó(s) de saída selecionado(s) serão exibidos aqui após a execução deste aplicativo",
-      "switchToSelect": "Altere para a etapa 'Selecionar' e clique nos nós de saída para adicioná-los aqui.",
-      "switchToSelectButton": "Ir para Selecionar"
+      "switchToOutputs": "Vá para a etapa 'Saída' e clique nos nós de saída para adicioná-los aqui.",
+      "switchToOutputsButton": "Ir para Saídas"
     },
+    "backToWorkflow": "Voltar para o fluxo de trabalho",
     "beta": "Modo App Beta - Envie seu feedback",
     "builder": {
       "exit": "Sair do construtor",
@@ -1359,13 +1368,18 @@
       "outputsExample": "Exemplos: “Salvar imagem” ou “Salvar vídeo”",
       "promptAddInputs": "Clique nos parâmetros do nó para adicioná-los aqui como entradas",
       "promptAddOutputs": "Clique nos nós de saída para adicioná-los aqui. Estes serão os resultados gerados.",
-      "title": "Modo construtor de app"
+      "title": "Modo construtor de app",
+      "unknownWidget": "Widget não visível"
     },
     "downloadAll": "Baixar tudo",
     "dragAndDropImage": "Arraste e solte uma imagem",
+    "emptyWorkflowExplanation": "Seu fluxo de trabalho está vazio. Você precisa adicionar alguns nós primeiro para começar a construir um app.",
+    "enterNodeGraph": "Entrar no grafo de nós",
     "giveFeedback": "Enviar feedback",
     "graphMode": "Modo Gráfico",
     "linearMode": "Modo App",
+    "loadTemplate": "Carregar um modelo",
+    "mobileControls": "Editar e Executar",
     "queue": {
       "clear": "Limpar fila",
       "clickToClear": "Clique para limpar a fila"
@@ -1373,8 +1387,8 @@
     "rerun": "Executar novamente",
     "reuseParameters": "Reutilizar parâmetros",
     "runCount": "Número de execuções:",
+    "viewJob": "Ver tarefa",
     "welcome": {
-      "backToWorkflow": "Voltar ao fluxo de trabalho",
       "buildApp": "Criar aplicativo",
       "controls": "Seus resultados aparecem na parte inferior, seus controles estão à direita. Todo o resto fica fora do caminho.",
       "getStarted": "Clique em {runButton} para começar.",
@@ -1749,6 +1763,7 @@
     "disabled": "Desativado",
     "disabledTooltip": "O fluxo de trabalho não será enfileirado automaticamente",
     "execute": "Executar",
+    "fullscreen": "Tela cheia",
     "help": "Ajuda",
     "helpAndFeedback": "Ajuda e feedback",
     "hideMenu": "Ocultar menu",
@@ -1896,7 +1911,8 @@
     "Workflows": "Fluxos de trabalho",
     "Zoom In": "Aumentar zoom",
     "Zoom Out": "Diminuir zoom",
-    "Zoom to fit": "Ajustar zoom"
+    "Zoom to fit": "Ajustar zoom",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "Cores dos Nós",
@@ -1906,6 +1922,7 @@
     "showLinks": "Mostrar Conexões"
   },
   "missingModelsDialog": {
+    "acceptTerms": "Aceitar termos",
     "customModelsInstruction": "Você precisará encontrá-los e baixá-los manualmente. Procure por eles online (tente Civitai ou Hugging Face) ou entre em contato com o provedor original do fluxo de trabalho.",
     "customModelsWarning": "Alguns desses são modelos personalizados que não reconhecemos.",
     "description": "Este fluxo de trabalho requer modelos que você ainda não baixou.",
@@ -2265,6 +2282,7 @@
       "installNodePack": "Instalar pacote de nós",
       "installed": "Instalado",
       "installing": "Instalando...",
+      "ossManagerDisabledHint": "Para instalar nós ausentes, primeiro execute {pipCmd} no seu ambiente Python para instalar o Node Manager e depois reinicie o ComfyUI com a flag {flag}.",
       "ossMessage": "Este fluxo de trabalho usa nós personalizados que você ainda não instalou.",
       "searchInManager": "Buscar no Gerenciador de Nós",
       "title": "Pacotes de nós ausentes",
@@ -2727,6 +2745,7 @@
       "searchJobs": "Pesquisar...",
       "showAssets": "Mostrar ativos",
       "showAssetsPanel": "Mostrar painel de ativos",
+      "showRunProgressBar": "Mostrar barra de progresso da execução",
       "sortBy": "Ordenar por",
       "sortJobs": "Ordenar trabalhos",
       "stubClipTextEncode": "CLIP Text Encode:",
@@ -3214,7 +3233,9 @@
     "enterFilename": "Digite o nome do arquivo",
     "enterFilenamePrompt": "Digite o nome do arquivo:",
     "exportWorkflow": "Exportar Fluxo de Trabalho",
-    "saveWorkflow": "Salvar fluxo de trabalho"
+    "saveWorkflow": "Salvar fluxo de trabalho",
+    "savedAsApp": "Convertido para fluxo de aplicativo",
+    "savedAsWorkflow": "Convertido para fluxo apenas com grafo de nós"
   },
   "workspace": {
     "addedToWorkspace": "Você foi adicionado ao {workspaceName}",
