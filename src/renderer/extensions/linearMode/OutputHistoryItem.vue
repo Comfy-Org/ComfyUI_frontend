@@ -6,6 +6,8 @@ import {
 import type { ResultItemImpl } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
+import VideoPlayOverlay from '@/platform/assets/components/VideoPlayOverlay.vue'
+
 const { output } = defineProps<{
   output: ResultItemImpl
 }>()
@@ -19,6 +21,16 @@ const { output } = defineProps<{
     height="40"
     :src="output.url"
   />
+  <template v-if="getMediaType(output) === 'video'">
+    <video
+      class="block size-10 rounded-sm object-cover bg-secondary-background pointer-events-none"
+      preload="metadata"
+      width="40"
+      height="40"
+      :src="output.url"
+    />
+    <VideoPlayOverlay size="sm" />
+  </template>
   <i
     v-else
     :class="cn(mediaTypes[getMediaType(output)]?.iconClass, 'block size-10')"
