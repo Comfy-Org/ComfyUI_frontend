@@ -3,7 +3,7 @@ import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 
-import { getResourceURL, splitFilePath } from './load3dFileUtils'
+import { getResourceURL, splitFilePath } from '@/utils/resourceUrl'
 
 class Load3dUtils {
   static async generateThumbnailIfNeeded(

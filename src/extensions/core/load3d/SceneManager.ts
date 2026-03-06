@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-import { getResourceURL, splitFilePath } from './load3dFileUtils'
+import { getResourceURL, splitFilePath } from '@/utils/resourceUrl'
 import {
   type BackgroundRenderModeType,
   type EventManagerInterface,
