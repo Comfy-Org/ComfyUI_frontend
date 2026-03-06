@@ -40,10 +40,6 @@ const mockMenuItemStore = vi.hoisted(() => ({
   hasSeenLinear: false
 }))
 
-const mockCanvasStore = vi.hoisted(() => ({
-  linearMode: false
-}))
-
 const mockAppModeStore = vi.hoisted(() => ({
   enterBuilder: vi.fn()
 }))
@@ -71,10 +67,6 @@ vi.mock('@/stores/subgraphStore', () => ({
 
 vi.mock('@/stores/menuItemStore', () => ({
   useMenuItemStore: vi.fn(() => mockMenuItemStore)
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn(() => mockCanvasStore)
 }))
 
 vi.mock('@/stores/appModeStore', () => ({
@@ -110,7 +102,6 @@ describe('useWorkflowActionsMenu', () => {
     mockBookmarkStore.isBookmarked.mockReturnValue(false)
     mockSubgraphStore.isSubgraphBlueprint.mockReturnValue(false)
     mockMenuItemStore.hasSeenLinear = false
-    mockCanvasStore.linearMode = false
     mockFeatureFlags.flags.linearToggleEnabled = false
     mockWorkflowStore.activeWorkflow = {
       path: 'test.json',
@@ -192,7 +183,11 @@ describe('useWorkflowActionsMenu', () => {
 
   it('shows "go to workflow mode" when in linear mode', () => {
     mockFeatureFlags.flags.linearToggleEnabled = true
-    mockCanvasStore.linearMode = true
+    mockWorkflowStore.activeWorkflow = {
+      path: 'test.json',
+      isPersisted: true,
+      activeMode: 'app'
+    } as ComfyWorkflow
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const labels = menuLabels(menuItems.value)
@@ -308,6 +303,30 @@ describe('useWorkflowActionsMenu', () => {
     ).command?.()
 
     expect(mockAppModeStore.enterBuilder).toHaveBeenCalled()
+  })
+
+  it('shows "Edit app" when workflow has linear data', async () => {
+    mockFeatureFlags.flags.linearToggleEnabled = true
+    mockWorkflowStore.activeWorkflow = {
+      path: 'test.json',
+      isPersisted: true,
+      changeTracker: {
+        activeState: {
+          extra: {
+            linearData: {
+              inputs: [[1, 'widget']],
+              outputs: [2]
+            }
+          }
+        }
+      }
+    } as unknown as ComfyWorkflow
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const item = findItem(menuItems.value, 'breadcrumbsMenu.editBuilderMode')
+
+    expect(item).toBeDefined()
+    expect(item.isNew).toBeFalsy()
   })
 
   it('app mode toggle executes Comfy.ToggleLinear', async () => {
