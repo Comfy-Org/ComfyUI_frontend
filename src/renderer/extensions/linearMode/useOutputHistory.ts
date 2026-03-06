@@ -32,18 +32,22 @@ export function useOutputHistory(): {
   const appModeStore = useAppModeStore()
   const queueStore = useQueueStore()
 
+  function matchesActiveWorkflow(task: { jobId: string | number }): boolean {
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return false
+    return (
+      executionStore.jobIdToSessionWorkflowPath.get(String(task.jobId)) === path
+    )
+  }
+
   // True when there are queued/running jobs for the active workflow but no
   // in-progress output items yet.
   const mayBeActiveWorkflowPending = computed(() => {
     if (linearStore.activeWorkflowInProgressItems.length > 0) return false
-    const path = workflowStore.activeWorkflow?.path
-    if (!path) return false
-    const pathMap = executionStore.jobIdToSessionWorkflowPath
-    const matchesPath = (task: { jobId: string | number }) =>
-      pathMap.get(String(task.jobId)) === path
+    if (!workflowStore.activeWorkflow?.path) return false
     return (
-      queueStore.runningTasks.some(matchesPath) ||
-      queueStore.pendingTasks.some(matchesPath)
+      queueStore.runningTasks.some(matchesActiveWorkflow) ||
+      queueStore.pendingTasks.some(matchesActiveWorkflow)
     )
   })
 
@@ -163,19 +167,15 @@ export function useOutputHistory(): {
   })
 
   async function cancelActiveWorkflowJobs() {
-    const path = workflowStore.activeWorkflow?.path
-    if (!path) return
-    const pathMap = executionStore.jobIdToSessionWorkflowPath
-    const matchesPath = (task: { jobId: string | number }) =>
-      pathMap.get(String(task.jobId)) === path
+    if (!workflowStore.activeWorkflow?.path) return
 
     // Interrupt the running job if it belongs to this workflow
-    if (queueStore.runningTasks.some(matchesPath)) {
+    if (queueStore.runningTasks.some(matchesActiveWorkflow)) {
       void useCommandStore().execute('Comfy.Interrupt')
     } else {
       // Delete first pending job for this workflow from the queue
       for (const task of queueStore.pendingTasks) {
-        if (matchesPath(task)) {
+        if (matchesActiveWorkflow(task)) {
           await api.deleteItem('queue', String(task.jobId))
           break
         }

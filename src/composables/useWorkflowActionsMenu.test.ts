@@ -41,7 +41,20 @@ const mockMenuItemStore = vi.hoisted(() => ({
 }))
 
 const mockAppModeStore = vi.hoisted(() => ({
-  enterBuilder: vi.fn()
+  enterBuilder: vi.fn(),
+  pruneLinearData: vi.fn(
+    (
+      data?: Partial<{
+        inputs: [number | string, string][]
+        outputs: (number | string)[]
+      }>
+    ) => ({
+      inputs: data?.inputs ?? [],
+      outputs: data?.outputs ?? []
+    })
+  ),
+  selectedInputs: [] as [number | string, string][],
+  selectedOutputs: [] as (number | string)[]
 }))
 
 const mockFeatureFlags = vi.hoisted(() => ({
@@ -103,6 +116,8 @@ describe('useWorkflowActionsMenu', () => {
     mockSubgraphStore.isSubgraphBlueprint.mockReturnValue(false)
     mockMenuItemStore.hasSeenLinear = false
     mockFeatureFlags.flags.linearToggleEnabled = false
+    mockAppModeStore.selectedInputs.length = 0
+    mockAppModeStore.selectedOutputs.length = 0
     mockWorkflowStore.activeWorkflow = {
       path: 'test.json',
       isPersisted: true
@@ -309,24 +324,16 @@ describe('useWorkflowActionsMenu', () => {
     mockFeatureFlags.flags.linearToggleEnabled = true
     mockWorkflowStore.activeWorkflow = {
       path: 'test.json',
-      isPersisted: true,
-      changeTracker: {
-        activeState: {
-          extra: {
-            linearData: {
-              inputs: [[1, 'widget']],
-              outputs: [2]
-            }
-          }
-        }
-      }
-    } as unknown as ComfyWorkflow
+      isPersisted: true
+    } as ComfyWorkflow
+    mockAppModeStore.selectedInputs.push([1, 'widget'])
+    mockAppModeStore.selectedOutputs.push(2)
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const item = findItem(menuItems.value, 'breadcrumbsMenu.editBuilderMode')
 
     expect(item).toBeDefined()
-    expect(item.isNew).toBeFalsy()
+    expect(item.isNew).toBeTruthy()
   })
 
   it('app mode toggle executes Comfy.ToggleLinear', async () => {

@@ -54,7 +54,8 @@ export function useWorkflowActionsMenu(
   const menuItemStore = useMenuItemStore()
   const { flags } = useFeatureFlags()
   const { closeDialog } = useDialogStore()
-  const { enterBuilder, pruneLinearData } = useAppModeStore()
+  const appModeStore = useAppModeStore()
+  const { enterBuilder, pruneLinearData } = appModeStore
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -250,12 +251,20 @@ export function useWorkflowActionsMenu(
       prependSeparator: true
     })
 
-    const hasLinearData = (() => {
-      const ld = workflow?.changeTracker?.activeState?.extra?.linearData
-      if (ld)
-        return (ld.inputs?.length ?? 0) > 0 || (ld.outputs?.length ?? 0) > 0
-      return workflow?.path?.endsWith('.app.json') ?? false
-    })()
+    const isActive = workflow === workflowStore.activeWorkflow
+    const rawLd = isActive
+      ? {
+          inputs: appModeStore.selectedInputs,
+          outputs: appModeStore.selectedOutputs
+        }
+      : workflow?.changeTracker?.activeState?.extra?.linearData
+    let hasLinearData: boolean
+    if (rawLd) {
+      const { inputs, outputs } = pruneLinearData(rawLd)
+      hasLinearData = inputs.length > 0 || outputs.length > 0
+    } else {
+      hasLinearData = workflow?.path?.endsWith('.app.json') ?? false
+    }
 
     addItem({
       id: 'enter-builder-mode',
