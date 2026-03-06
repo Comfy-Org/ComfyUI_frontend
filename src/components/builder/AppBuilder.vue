@@ -12,7 +12,10 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  LGraphEventMode,
+  TitleMode
+} from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -159,7 +162,8 @@ function handleDown(e: MouseEvent) {
 }
 function handleClick(e: MouseEvent) {
   const [node, widget] = getHovered(e) ?? []
-  if (!node) return canvasInteractions.forwardEventToCanvas(e)
+  if (node?.mode !== LGraphEventMode.ALWAYS)
+    return canvasInteractions.forwardEventToCanvas(e)
 
   if (!widget) {
     if (!isSelectOutputsMode.value) return
@@ -192,7 +196,10 @@ function nodeToDisplayTuple(
 const renderedOutputs = computed(() => {
   void appModeStore.selectedOutputs.length
   return canvas
-    .graph!.nodes.filter((n) => n.constructor.nodeData?.output_node)
+    .graph!.nodes.filter(
+      (n) =>
+        n.constructor.nodeData?.output_node && n.mode === LGraphEventMode.ALWAYS
+    )
     .map(nodeToDisplayTuple)
 })
 const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
@@ -215,6 +222,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         v-if="isArrangeMode"
         v-slot="{ dragClass }"
         v-model="appModeStore.selectedInputs"
+        class="overflow-x-clip"
       >
         <div
           v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
