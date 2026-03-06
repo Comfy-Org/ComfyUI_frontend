@@ -20,6 +20,7 @@ export const buttonVariants = cva({
       'destructive-textonly':
         'bg-transparent text-destructive-background hover:bg-destructive-background/10',
       'overlay-white': 'bg-white text-gray-600 hover:bg-white/90',
+      base: 'bg-base-background text-base-foreground hover:bg-secondary-background-hover',
       gradient:
         'border-transparent bg-(image:--subscription-button-gradient) text-white hover:opacity-90'
     },
@@ -49,6 +50,7 @@ const variants = [
   'textonly',
   'muted-textonly',
   'destructive-textonly',
+  'base',
   'overlay-white',
   'gradient'
 ] as const satisfies Array<ButtonVariants['variant']>
