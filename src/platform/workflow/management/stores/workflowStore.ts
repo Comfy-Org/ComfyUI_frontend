@@ -103,14 +103,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * Detach the workflow from the store. lightweight helper function.
    * @param workflow The workflow to detach.
+   * @param oldPath Optional previous path to detach from (used during rename when workflow.path has already changed).
    * @returns The index of the workflow in the openWorkflowPaths array, or -1 if the workflow was not open.
    */
-  const detachWorkflow = (workflow: ComfyWorkflow) => {
-    delete workflowLookup.value[workflow.path]
-    const index = openWorkflowPaths.value.indexOf(workflow.path)
+  const detachWorkflow = (workflow: ComfyWorkflow, oldPath?: string) => {
+    const path = oldPath ?? workflow.path
+    delete workflowLookup.value[path]
+    const index = openWorkflowPaths.value.indexOf(path)
     if (index !== -1) {
       openWorkflowPaths.value = openWorkflowPaths.value.filter(
-        (path) => path !== workflow.path
+        (p) => p !== path
       )
     }
     return index
@@ -501,12 +503,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
       // Synchronously swap old path for new path in lookup and open paths
       // to avoid a tab flicker caused by an async gap between detach/attach.
-      delete workflowLookup.value[oldPath]
-      workflowLookup.value[workflow.path] = workflow
-      const openIndex = openWorkflowPaths.value.indexOf(oldPath)
-      if (openIndex !== -1) {
-        openWorkflowPaths.value.splice(openIndex, 1, workflow.path)
-      }
+      const openIndex = detachWorkflow(workflow, oldPath)
+      attachWorkflow(workflow, openIndex)
 
       draftStore.moveDraft(oldPath, newPath, workflow.key)
 
