@@ -96,11 +96,14 @@ export function histogramToPath(histogram: Uint32Array): string {
   if (max === 0) return ''
 
   const invMax = 1 / max
+  const step = 1 / 255
+  const round = (v: number) => Math.round(v * 10000) / 10000
   const parts: string[] = ['M0,1']
+  let x = 0
   for (let i = 0; i < 256; i++) {
-    const x = i / 255
-    const y = 1 - Math.min(1, histogram[i] * invMax)
-    parts.push(`L${x},${y}`)
+    const y = round(1 - Math.min(1, histogram[i] * invMax))
+    parts.push(`L${round(x)},${y}`)
+    x += step
   }
   parts.push('L1,1 Z')
   return parts.join(' ')
