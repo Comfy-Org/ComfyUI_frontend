@@ -25,7 +25,7 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
-const { allOutputs, mayBeActiveWorkflowPending, cancelActiveWorkflowJobs } =
+const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
 const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
   runButtonClick?: (e: Event) => void
@@ -73,12 +73,7 @@ async function rerun(e: Event) {
 </script>
 <template>
   <section
-    v-if="
-      selectedItem ||
-      selectedOutput ||
-      showSkeleton ||
-      mayBeActiveWorkflowPending
-    "
+    v-if="selectedItem || selectedOutput || showSkeleton || isWorkflowActive"
     data-testid="linear-output-info"
     class="flex w-full flex-wrap justify-center gap-2 p-4 text-sm tabular-nums md:z-10"
   >
@@ -107,7 +102,7 @@ async function rerun(e: Event) {
       <i class="icon-[lucide--download]" />
     </Button>
     <Button
-      v-if="(showSkeleton || mayBeActiveWorkflowPending) && !selectedItem"
+      v-if="isWorkflowActive && !selectedItem"
       variant="destructive"
       @click="cancelActiveWorkflowJobs()"
     >
@@ -147,7 +142,7 @@ async function rerun(e: Event) {
     :output="selectedOutput"
     :mobile
   />
-  <LatentPreview v-else-if="showSkeleton || mayBeActiveWorkflowPending" />
+  <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
   <LinearArrange v-else-if="isArrangeMode" />
   <LinearWelcome v-else />
   <div

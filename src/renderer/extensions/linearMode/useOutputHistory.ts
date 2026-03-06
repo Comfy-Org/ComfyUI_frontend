@@ -22,6 +22,7 @@ export function useOutputHistory(): {
   allOutputs: (item?: AssetItem) => ResultItemImpl[]
   selectFirstHistory: () => void
   mayBeActiveWorkflowPending: ComputedRef<boolean>
+  isWorkflowActive: ComputedRef<boolean>
   cancelActiveWorkflowJobs: () => Promise<void>
 } {
   const backingOutputs = useMediaAssets('output')
@@ -40,16 +41,27 @@ export function useOutputHistory(): {
     )
   }
 
-  // True when there are queued/running jobs for the active workflow but no
-  // in-progress output items yet.
-  const mayBeActiveWorkflowPending = computed(() => {
-    if (linearStore.activeWorkflowInProgressItems.length > 0) return false
+  function hasActiveWorkflowJobs(): boolean {
     if (!workflowStore.activeWorkflow?.path) return false
     return (
       queueStore.runningTasks.some(matchesActiveWorkflow) ||
       queueStore.pendingTasks.some(matchesActiveWorkflow)
     )
+  }
+
+  // True when there are queued/running jobs for the active workflow but no
+  // in-progress output items yet.
+  const mayBeActiveWorkflowPending = computed(() => {
+    if (linearStore.activeWorkflowInProgressItems.length > 0) return false
+    return hasActiveWorkflowJobs()
   })
+
+  // True when the active workflow has running/pending jobs or in-progress items.
+  const isWorkflowActive = computed(
+    () =>
+      linearStore.activeWorkflowInProgressItems.length > 0 ||
+      hasActiveWorkflowJobs()
+  )
 
   function filterByOutputNodes(items: ResultItemImpl[]): ResultItemImpl[] {
     const nodeIds = appModeStore.selectedOutputs
@@ -188,6 +200,7 @@ export function useOutputHistory(): {
     allOutputs,
     selectFirstHistory,
     mayBeActiveWorkflowPending,
+    isWorkflowActive,
     cancelActiveWorkflowJobs
   }
 }
