@@ -180,7 +180,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         />
         <div
           v-else-if="activeTab"
-          class="h-full  overflow-x-hidden border-l border-border-subtle"
+          class="h-full overflow-x-hidden border-l border-border-subtle"
         >
           <ExtensionSlot :extension="activeTab" />
         </div>

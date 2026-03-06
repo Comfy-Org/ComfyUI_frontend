@@ -31,19 +31,19 @@ const attrs = useAttrs()
     v-else-if="getMediaType(output) === 'video'"
     :src="output.url"
     :class="
-      cn('object-contain flex-1 md:contain-size md:p-3', attrs.class as string)
+      cn('flex-1 object-contain md:p-3 md:contain-size', attrs.class as string)
     "
   />
   <audio
     v-else-if="getMediaType(output) === 'audio'"
-    :class="cn('w-full m-auto', attrs.class as string)"
+    :class="cn('m-auto w-full', attrs.class as string)"
     controls
     :src="output.url"
   />
   <article
     v-else-if="getMediaType(output) === 'text'"
     :class="
-      cn('w-full max-w-128 m-auto my-12 overflow-y-auto', attrs.class as string)
+      cn('m-auto my-12 w-full max-w-lg overflow-y-auto', attrs.class as string)
     "
     v-text="output.url"
   />
