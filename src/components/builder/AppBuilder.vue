@@ -210,7 +210,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
       }}
     </div>
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <DraggableList
         v-if="isArrangeMode"
         v-slot="{ dragClass }"
@@ -246,7 +246,6 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         :label="t('nodeHelpPage.inputs')"
         enable-empty-state
         :disabled="!appModeStore.selectedInputs.length"
-        class="border-b border-border-subtle"
         :tooltip="`${t('linearMode.builder.inputsDesc')}\n${t('linearMode.builder.inputsExample')}`"
         :tooltip-delay="100"
       >
@@ -258,14 +257,10 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         </template>
         <template #empty>
           <div
-            class="w-full p-4 pt-2 text-muted-foreground"
+            class="p-4 text-muted-foreground"
             v-text="t('linearMode.builder.promptAddInputs')"
           />
         </template>
-        <div
-          class="w-full p-4 pt-2 text-muted-foreground"
-          v-text="t('linearMode.builder.promptAddInputs')"
-        />
         <DraggableList
           v-slot="{ dragClass }"
           v-model="appModeStore.selectedInputs"
@@ -295,6 +290,12 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           />
         </DraggableList>
       </PropertiesAccordionItem>
+      <div
+        v-if="isSelectInputsMode && !appModeStore.selectedInputs.length"
+        class="m-4 flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-primary-background bg-primary-background/20 text-center text-sm text-primary-background"
+      >
+        {{ t('linearMode.builder.inputPlaceholder') }}
+      </div>
       <PropertiesAccordionItem
         v-if="isSelectOutputsMode"
         :label="t('nodeHelpPage.outputs')"
@@ -311,14 +312,10 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         </template>
         <template #empty>
           <div
-            class="w-full p-4 pt-2 text-muted-foreground"
+            class="p-4 text-muted-foreground"
             v-text="t('linearMode.builder.promptAddOutputs')"
           />
         </template>
-        <div
-          class="w-full p-4 pt-2 text-muted-foreground"
-          v-text="t('linearMode.builder.promptAddOutputs')"
-        />
         <DraggableList
           v-slot="{ dragClass }"
           v-model="appModeStore.selectedOutputs"
@@ -341,6 +338,15 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           />
         </DraggableList>
       </PropertiesAccordionItem>
+      <div
+        v-if="isSelectOutputsMode && !appModeStore.selectedOutputs.length"
+        class="m-4 flex flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-warning-background bg-warning-background/20 text-center text-sm text-warning-background"
+      >
+        {{ t('linearMode.builder.outputPlaceholder') }}
+        <span class="font-bold">
+          {{ t('linearMode.builder.outputRequiredPlaceholder') }}
+        </span>
+      </div>
     </div>
   </div>
 
