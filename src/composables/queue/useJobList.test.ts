@@ -6,11 +6,12 @@ import type { Ref } from 'vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobState } from '@/types/queue'
 import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
+import { buildJobDisplay } from '@/utils/queueDisplay'
 import type { TaskItemImpl } from '@/stores/queueStore'
 
 type TestTask = {
-  promptId: string
-  queueIndex: number
+  jobId: string
+  job: { priority: number }
   mockState: JobState
   executionTime?: number
   executionEndTimestamp?: number
@@ -69,7 +70,7 @@ vi.mock('@/composables/queue/useQueueProgress', () => ({
 vi.mock('@/utils/queueDisplay', () => ({
   buildJobDisplay: vi.fn(
     (task: TaskItemImpl, state: JobState, options: BuildJobDisplayCtx) => ({
-      primary: `Job ${task.promptId}`,
+      primary: `Job ${task.jobId}`,
       secondary: `${state} meta`,
       iconName: `${state}-icon`,
       iconImageUrl: undefined,
@@ -108,21 +109,21 @@ vi.mock('@/stores/queueStore', () => ({
 }))
 
 let executionStoreMock: {
-  activePromptId: string | null
+  activeJobId: string | null
   executingNode: null | { title?: string; type?: string }
-  isPromptInitializing: (promptId?: string | number) => boolean
+  isJobInitializing: (jobId?: string | number) => boolean
 }
-let isPromptInitializingMock: (promptId?: string | number) => boolean
+let isJobInitializingMock: (jobId?: string | number) => boolean
 const ensureExecutionStore = () => {
-  if (!isPromptInitializingMock) {
-    isPromptInitializingMock = vi.fn(() => false)
+  if (!isJobInitializingMock) {
+    isJobInitializingMock = vi.fn(() => false)
   }
   if (!executionStoreMock) {
     executionStoreMock = reactive({
-      activePromptId: null as string | null,
+      activeJobId: null as string | null,
       executingNode: null as null | { title?: string; type?: string },
-      isPromptInitializing: (promptId?: string | number) =>
-        isPromptInitializingMock(promptId)
+      isJobInitializing: (jobId?: string | number) =>
+        isJobInitializingMock(jobId)
     })
   }
   return executionStoreMock
@@ -172,9 +173,8 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 const createTask = (
   overrides: Partial<TestTask> & { mockState?: JobState } = {}
 ): TestTask => ({
-  promptId:
-    overrides.promptId ?? `task-${Math.random().toString(36).slice(2, 7)}`,
-  queueIndex: overrides.queueIndex ?? 0,
+  jobId: overrides.jobId ?? `task-${Math.random().toString(36).slice(2, 7)}`,
+  job: overrides.job ?? { priority: 0 },
   mockState: overrides.mockState ?? 'pending',
   executionTime: overrides.executionTime,
   executionEndTimestamp: overrides.executionEndTimestamp,
@@ -201,7 +201,7 @@ const resetStores = () => {
   queueStore.historyTasks = []
 
   const executionStore = ensureExecutionStore()
-  executionStore.activePromptId = null
+  executionStore.activeJobId = null
   executionStore.executingNode = null
 
   const jobPreviewStore = ensureJobPreviewStore()
@@ -219,9 +219,9 @@ const resetStores = () => {
   localeRef.value = 'en-US'
   tMock.mockClear()
 
-  if (isPromptInitializingMock) {
-    vi.mocked(isPromptInitializingMock).mockReset()
-    vi.mocked(isPromptInitializingMock).mockReturnValue(false)
+  if (isJobInitializingMock) {
+    vi.mocked(isJobInitializingMock).mockReset()
+    vi.mocked(isJobInitializingMock).mockReturnValue(false)
   }
 }
 
@@ -255,27 +255,99 @@ describe('useJobList', () => {
     return api!
   }
 
+  it('tracks recently added pending jobs and clears the hint after expiry', async () => {
+    vi.useFakeTimers()
+    queueStoreMock.pendingTasks = [
+      createTask({ jobId: '1', job: { priority: 1 }, mockState: 'pending' })
+    ]
+
+    const { jobItems } = initComposable()
+    await flush()
+
+    jobItems.value
+    expect(buildJobDisplay).toHaveBeenCalledWith(
+      expect.anything(),
+      'pending',
+      expect.objectContaining({ showAddedHint: true })
+    )
+
+    vi.mocked(buildJobDisplay).mockClear()
+    await vi.advanceTimersByTimeAsync(3000)
+    await flush()
+
+    jobItems.value
+    expect(buildJobDisplay).toHaveBeenCalledWith(
+      expect.anything(),
+      'pending',
+      expect.objectContaining({ showAddedHint: false })
+    )
+  })
+
+  it('removes pending hint immediately when the task leaves the queue', async () => {
+    vi.useFakeTimers()
+    const taskId = '2'
+    queueStoreMock.pendingTasks = [
+      createTask({ jobId: taskId, job: { priority: 1 }, mockState: 'pending' })
+    ]
+
+    const { jobItems } = initComposable()
+    await flush()
+    jobItems.value
+
+    queueStoreMock.pendingTasks = []
+    await flush()
+    expect(vi.getTimerCount()).toBe(0)
+
+    vi.mocked(buildJobDisplay).mockClear()
+    queueStoreMock.pendingTasks = [
+      createTask({ jobId: taskId, job: { priority: 2 }, mockState: 'pending' })
+    ]
+    await flush()
+    jobItems.value
+    expect(buildJobDisplay).toHaveBeenCalledWith(
+      expect.anything(),
+      'pending',
+      expect.objectContaining({ showAddedHint: true })
+    )
+  })
+
+  it('cleans up timeouts on unmount', async () => {
+    vi.useFakeTimers()
+    queueStoreMock.pendingTasks = [
+      createTask({ jobId: '3', job: { priority: 1 }, mockState: 'pending' })
+    ]
+
+    initComposable()
+    await flush()
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    wrapper?.unmount()
+    wrapper = null
+    await flush()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('sorts all tasks by create time', async () => {
     queueStoreMock.pendingTasks = [
       createTask({
-        promptId: 'p',
-        queueIndex: 1,
+        jobId: 'p',
+        job: { priority: 1 },
         mockState: 'pending',
         createTime: 3000
       })
     ]
     queueStoreMock.runningTasks = [
       createTask({
-        promptId: 'r',
-        queueIndex: 5,
+        jobId: 'r',
+        job: { priority: 5 },
         mockState: 'running',
         createTime: 2000
       })
     ]
     queueStoreMock.historyTasks = [
       createTask({
-        promptId: 'h',
-        queueIndex: 3,
+        jobId: 'h',
+        job: { priority: 3 },
         mockState: 'completed',
         createTime: 1000,
         executionEndTimestamp: 5000
@@ -285,7 +357,7 @@ describe('useJobList', () => {
     const { allTasksSorted } = initComposable()
     await flush()
 
-    expect(allTasksSorted.value.map((task) => task.promptId)).toEqual([
+    expect(allTasksSorted.value.map((task) => task.jobId)).toEqual([
       'p',
       'r',
       'h'
@@ -294,9 +366,9 @@ describe('useJobList', () => {
 
   it('filters by job tab and resets failed tab when failures disappear', async () => {
     queueStoreMock.historyTasks = [
-      createTask({ promptId: 'c', queueIndex: 3, mockState: 'completed' }),
-      createTask({ promptId: 'f', queueIndex: 2, mockState: 'failed' }),
-      createTask({ promptId: 'p', queueIndex: 1, mockState: 'pending' })
+      createTask({ jobId: 'c', job: { priority: 3 }, mockState: 'completed' }),
+      createTask({ jobId: 'f', job: { priority: 2 }, mockState: 'failed' }),
+      createTask({ jobId: 'p', job: { priority: 1 }, mockState: 'pending' })
     ]
 
     const instance = initComposable()
@@ -304,15 +376,15 @@ describe('useJobList', () => {
 
     instance.selectedJobTab.value = 'Completed'
     await flush()
-    expect(instance.filteredTasks.value.map((t) => t.promptId)).toEqual(['c'])
+    expect(instance.filteredTasks.value.map((t) => t.jobId)).toEqual(['c'])
 
     instance.selectedJobTab.value = 'Failed'
     await flush()
-    expect(instance.filteredTasks.value.map((t) => t.promptId)).toEqual(['f'])
+    expect(instance.filteredTasks.value.map((t) => t.jobId)).toEqual(['f'])
     expect(instance.hasFailedJobs.value).toBe(true)
 
     queueStoreMock.historyTasks = [
-      createTask({ promptId: 'c', queueIndex: 3, mockState: 'completed' })
+      createTask({ jobId: 'c', job: { priority: 3 }, mockState: 'completed' })
     ]
     await flush()
 
@@ -323,14 +395,14 @@ describe('useJobList', () => {
   it('filters by active workflow when requested', async () => {
     queueStoreMock.pendingTasks = [
       createTask({
-        promptId: 'wf-1',
-        queueIndex: 2,
+        jobId: 'wf-1',
+        job: { priority: 2 },
         mockState: 'pending',
         workflowId: 'workflow-1'
       }),
       createTask({
-        promptId: 'wf-2',
-        queueIndex: 1,
+        jobId: 'wf-2',
+        job: { priority: 1 },
         mockState: 'pending',
         workflowId: 'workflow-2'
       })
@@ -346,28 +418,72 @@ describe('useJobList', () => {
     workflowStoreMock.activeWorkflow = { activeState: { id: 'workflow-1' } }
     await flush()
 
-    expect(instance.filteredTasks.value.map((t) => t.promptId)).toEqual([
-      'wf-1'
+    expect(instance.filteredTasks.value.map((t) => t.jobId)).toEqual(['wf-1'])
+  })
+
+  it('filters jobs by search query', async () => {
+    vi.useFakeTimers()
+    queueStoreMock.historyTasks = [
+      createTask({
+        jobId: 'alpha',
+        job: { priority: 2 },
+        mockState: 'completed',
+        createTime: 2000,
+        executionEndTimestamp: 2000
+      }),
+      createTask({
+        jobId: 'beta',
+        job: { priority: 1 },
+        mockState: 'failed',
+        createTime: 1000,
+        executionEndTimestamp: 1000
+      })
+    ]
+
+    const instance = initComposable()
+    await flush()
+    expect(instance.filteredTasks.value.map((task) => task.jobId)).toEqual([
+      'alpha',
+      'beta'
     ])
+
+    instance.searchQuery.value = 'beta'
+    await vi.advanceTimersByTimeAsync(200)
+    await flush()
+    expect(instance.filteredTasks.value.map((task) => task.jobId)).toEqual([
+      'beta'
+    ])
+
+    instance.searchQuery.value = 'failed meta'
+    await vi.advanceTimersByTimeAsync(200)
+    await flush()
+    expect(instance.filteredTasks.value.map((task) => task.jobId)).toEqual([
+      'beta'
+    ])
+
+    instance.searchQuery.value = 'does-not-exist'
+    await vi.advanceTimersByTimeAsync(200)
+    await flush()
+    expect(instance.filteredTasks.value).toEqual([])
   })
 
   it('hydrates job items with active progress and compute hours', async () => {
     queueStoreMock.runningTasks = [
       createTask({
-        promptId: 'active',
-        queueIndex: 3,
+        jobId: 'active',
+        job: { priority: 3 },
         mockState: 'running',
         executionTime: 7_200_000
       }),
       createTask({
-        promptId: 'other',
-        queueIndex: 2,
+        jobId: 'other',
+        job: { priority: 2 },
         mockState: 'running',
         executionTime: 3_600_000
       })
     ]
 
-    executionStoreMock.activePromptId = 'active'
+    executionStoreMock.activeJobId = 'active'
     executionStoreMock.executingNode = { title: 'Render Node' }
     totalPercent.value = 80
     currentNodePercent.value = 40
@@ -390,8 +506,8 @@ describe('useJobList', () => {
   it('assigns preview urls for running jobs when previews enabled', async () => {
     queueStoreMock.runningTasks = [
       createTask({
-        promptId: 'live-preview',
-        queueIndex: 1,
+        jobId: 'live-preview',
+        job: { priority: 1 },
         mockState: 'running'
       })
     ]
@@ -409,8 +525,8 @@ describe('useJobList', () => {
   it('omits preview urls when previews are disabled', async () => {
     queueStoreMock.runningTasks = [
       createTask({
-        promptId: 'disabled-preview',
-        queueIndex: 1,
+        jobId: 'disabled-preview',
+        job: { priority: 1 },
         mockState: 'running'
       })
     ]
@@ -450,29 +566,29 @@ describe('useJobList', () => {
     vi.setSystemTime(new Date('2024-01-10T12:00:00Z'))
     queueStoreMock.historyTasks = [
       createTask({
-        promptId: 'today-small',
-        queueIndex: 4,
+        jobId: 'today-small',
+        job: { priority: 4 },
         mockState: 'completed',
         executionEndTimestamp: Date.now(),
         executionTime: 2_000
       }),
       createTask({
-        promptId: 'today-large',
-        queueIndex: 3,
+        jobId: 'today-large',
+        job: { priority: 3 },
         mockState: 'completed',
         executionEndTimestamp: Date.now(),
         executionTime: 5_000
       }),
       createTask({
-        promptId: 'yesterday',
-        queueIndex: 2,
+        jobId: 'yesterday',
+        job: { priority: 2 },
         mockState: 'failed',
         executionEndTimestamp: Date.now() - 86_400_000,
         executionTime: 1_000
       }),
       createTask({
-        promptId: 'undated',
-        queueIndex: 1,
+        jobId: 'undated',
+        job: { priority: 1 },
         mockState: 'pending'
       })
     ]

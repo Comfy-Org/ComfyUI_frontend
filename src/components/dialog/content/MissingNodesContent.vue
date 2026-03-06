@@ -1,12 +1,13 @@
 <template>
   <div
+    data-testid="missing-nodes-warning"
     class="comfy-missing-nodes flex w-[490px] flex-col border-t border-border-default"
     :class="isCloud ? 'border-b' : ''"
   >
-    <div class="flex h-full w-full flex-col gap-4 p-4">
+    <div class="flex size-full flex-col gap-4 p-4">
       <!-- Description -->
       <div>
-        <p class="m-0 text-sm leading-5 text-muted-foreground">
+        <p class="m-0 text-sm/5 text-muted-foreground">
           {{
             isCloud
               ? $t('missingNodes.cloud.description')
@@ -22,10 +23,10 @@
         <!-- Section header with Replace button -->
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold uppercase text-primary">
+            <span class="text-xs font-semibold text-primary uppercase">
               {{ $t('nodeReplacement.quickFixAvailable') }}
             </span>
-            <div class="h-2 w-2 rounded-full bg-primary" />
+            <div class="size-2 rounded-full bg-primary" />
           </div>
           <Button
             v-tooltip.top="$t('nodeReplacement.replaceWarning')"
@@ -34,7 +35,7 @@
             :disabled="selectedTypes.size === 0"
             @click="handleReplaceSelected"
           >
-            <i class="icon-[lucide--refresh-cw] mr-1.5 h-4 w-4" />
+            <i class="mr-1.5 icon-[lucide--refresh-cw] size-4" />
             {{
               $t('nodeReplacement.replaceSelected', {
                 count: selectedTypes.size
@@ -45,7 +46,7 @@
 
         <!-- Replaceable nodes list -->
         <div
-          class="flex max-h-[200px] flex-col overflow-y-auto rounded-lg bg-secondary-background scrollbar-custom"
+          class="flex scrollbar-custom max-h-[200px] flex-col overflow-y-auto rounded-lg bg-secondary-background"
         >
           <!-- Select All row (sticky header) -->
           <div
@@ -54,7 +55,7 @@
                 'sticky top-0 z-10 flex items-center gap-3 border-b border-border-default bg-secondary-background px-3 py-2',
                 pendingNodes.length > 0
                   ? 'cursor-pointer hover:bg-secondary-background-hover'
-                  : 'opacity-50 pointer-events-none'
+                  : 'pointer-events-none opacity-50'
               )
             "
             tabindex="0"
@@ -67,7 +68,7 @@
             @keydown.space.prevent="toggleSelectAll"
           >
             <div
-              class="flex size-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
               :class="
                 isAllSelected || isSomeSelected
                   ? 'bg-primary-background'
@@ -76,14 +77,14 @@
             >
               <i
                 v-if="isAllSelected"
-                class="icon-[lucide--check] text-bold text-xs text-base-foreground"
+                class="text-bold icon-[lucide--check] text-xs text-base-foreground"
               />
               <i
                 v-else-if="isSomeSelected"
-                class="icon-[lucide--minus] text-bold text-xs text-base-foreground"
+                class="text-bold icon-[lucide--minus] text-xs text-base-foreground"
               />
             </div>
-            <span class="text-xs font-medium uppercase text-muted-foreground">
+            <span class="text-xs font-medium text-muted-foreground uppercase">
               {{ $t('nodeReplacement.compatibleAlternatives') }}
             </span>
           </div>
@@ -96,7 +97,7 @@
               cn(
                 'flex items-center gap-3 px-3 py-2',
                 replacedTypes.has(node.label)
-                  ? 'opacity-50 pointer-events-none'
+                  ? 'pointer-events-none opacity-50'
                   : 'cursor-pointer hover:bg-secondary-background-hover'
               )
             "
@@ -112,7 +113,7 @@
             @keydown.space.prevent="toggleNode(node.label)"
           >
             <div
-              class="flex size-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
               :class="
                 replacedTypes.has(node.label) || selectedTypes.has(node.label)
                   ? 'bg-primary-background'
@@ -123,24 +124,24 @@
                 v-if="
                   replacedTypes.has(node.label) || selectedTypes.has(node.label)
                 "
-                class="icon-[lucide--check] text-bold text-xs text-base-foreground"
+                class="text-bold icon-[lucide--check] text-xs text-base-foreground"
               />
             </div>
             <div class="flex flex-col gap-0.5">
               <div class="flex items-center gap-2">
                 <span
                   v-if="replacedTypes.has(node.label)"
-                  class="inline-flex h-4 items-center rounded-full border border-success bg-success/10 px-1.5 text-xxxs font-semibold uppercase text-success"
+                  class="border-success bg-success/10 text-success inline-flex h-4 items-center rounded-full border px-1.5 text-xxxs font-semibold uppercase"
                 >
                   {{ $t('nodeReplacement.replaced') }}
                 </span>
                 <span
                   v-else
-                  class="inline-flex h-4 items-center rounded-full border border-primary bg-primary/10 px-1.5 text-xxxs font-semibold uppercase text-primary"
+                  class="inline-flex h-4 items-center rounded-full border border-primary bg-primary/10 px-1.5 text-xxxs font-semibold text-primary uppercase"
                 >
                   {{ $t('nodeReplacement.replaceable') }}
                 </span>
-                <span class="text-sm text-foreground">
+                <span class="text-foreground text-sm">
                   {{ node.label }}
                 </span>
               </div>
@@ -159,7 +160,7 @@
       >
         <!-- Section header -->
         <div class="flex items-center gap-2">
-          <span class="text-xs font-semibold uppercase text-error">
+          <span class="text-xs font-semibold text-error uppercase">
             {{ $t('nodeReplacement.installationRequired') }}
           </span>
           <i class="icon-[lucide--info] text-xs text-error" />
@@ -167,7 +168,7 @@
 
         <!-- Non-replaceable nodes list -->
         <div
-          class="flex flex-col overflow-y-auto rounded-lg bg-secondary-background scrollbar-custom"
+          class="flex scrollbar-custom flex-col overflow-y-auto rounded-lg bg-secondary-background"
         >
           <div
             v-for="node in nonReplaceableNodes"
@@ -178,11 +179,11 @@
               <div class="flex flex-col gap-0.5">
                 <div class="flex items-center gap-2">
                   <span
-                    class="inline-flex h-4 items-center rounded-full border border-error bg-error/10 px-1.5 text-xxxs font-semibold uppercase text-error"
+                    class="inline-flex h-4 items-center rounded-full border border-error bg-error/10 px-1.5 text-xxxs font-semibold text-error uppercase"
                   >
                     {{ $t('nodeReplacement.notReplaceable') }}
                   </span>
-                  <span class="text-sm text-foreground">
+                  <span class="text-foreground text-sm">
                     {{ node.label }}
                   </span>
                 </div>
@@ -208,9 +209,9 @@
         class="flex gap-3 rounded-lg border border-warning-background bg-warning-background/10 p-3"
       >
         <i
-          class="icon-[lucide--triangle-alert] mt-0.5 h-4 w-4 shrink-0 text-warning-background"
+          class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0 text-warning-background"
         />
-        <p class="m-0 text-xs leading-5 text-neutral-foreground">
+        <p class="text-neutral-foreground m-0 text-xs/5">
           <i18n-t keypath="nodeReplacement.instructionMessage">
             <template #red>
               <span class="text-error">{{
@@ -233,6 +234,7 @@ import { isCloud } from '@/platform/distribution/types'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { cn } from '@/utils/tailwindUtil'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
@@ -244,6 +246,7 @@ const { missingNodeTypes } = defineProps<{
 const { missingCoreNodes } = useMissingNodes()
 const { replaceNodesInPlace } = useNodeReplacement()
 const dialogStore = useDialogStore()
+const executionErrorStore = useExecutionErrorStore()
 
 interface ProcessedNode {
   label: string
@@ -337,6 +340,14 @@ function handleReplaceSelected() {
   }
   replacedTypes.value = nextReplaced
   selectedTypes.value = nextSelected
+
+  // replaceNodesInPlace() handles canvas rendering via onNodeAdded(),
+  // but the modal only updates its own local UI state above.
+  // Without this call the Errors Tab would still list the replaced nodes
+  // as missing because executionErrorStore is not aware of the replacement.
+  if (result.length > 0) {
+    executionErrorStore.removeMissingNodesByType(result)
+  }
 
   // Auto-close when all replaceable nodes replaced and no non-replaceable remain
   const allReplaced = replaceableNodes.value.every((n) =>

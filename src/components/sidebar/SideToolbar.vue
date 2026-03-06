@@ -8,14 +8,14 @@
       'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
-      'border-r border-[var(--interface-stroke)] shadow-interface': isConnected
+      'border-r border-(--interface-stroke) shadow-interface': isConnected
     }"
   >
     <div
       :class="
         isOverflowing
           ? 'side-tool-bar-container overflow-y-auto'
-          : 'flex flex-col h-full'
+          : 'flex h-full flex-col'
       "
     >
       <div ref="topToolbarRef" :class="groupClasses">
@@ -45,9 +45,6 @@
         <SidebarBottomPanelToggleButton v-if="!isCloud" :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
         <SidebarSettingsButton :is-small="isSmall" />
-        <ModeToggle
-          v-if="menuItemStore.hasSeenLinear || flags.linearToggleEnabled"
-        />
       </div>
     </div>
     <HelpCenterPopups :is-small="isSmall" />
@@ -62,18 +59,15 @@ import { useI18n } from 'vue-i18n'
 
 import HelpCenterPopups from '@/components/helpcenter/HelpCenterPopups.vue'
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
-import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
@@ -90,11 +84,9 @@ const settingStore = useSettingStore()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
-const menuItemStore = useMenuItemStore()
 const sideToolbarRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
-const { flags } = useFeatureFlags()
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'
@@ -162,8 +154,8 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
-    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0',
-    !isConnected.value && 'rounded-lg shadow-interface pointer-events-auto'
+    'sidebar-item-group flex shrink-0 flex-col items-center overflow-hidden',
+    !isConnected.value && 'pointer-events-auto rounded-lg shadow-interface'
   )
 )
 
@@ -263,8 +255,6 @@ onMounted(() => {
 </style>
 
 <style scoped>
-@reference "tailwindcss";
-
 .floating-sidebar {
   padding: var(--sidebar-padding);
 }

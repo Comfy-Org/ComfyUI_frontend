@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "axios": "catalog:"
+    "axios": "catalog:",
+    "dompurify": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:"

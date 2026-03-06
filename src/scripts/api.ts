@@ -2,18 +2,23 @@ import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
+import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
+import { zShareableAssetsResponse } from '@/schemas/apiSchema'
 import type { IFuseOptions } from 'fuse.js'
-import {
-  type TemplateInfo,
-  type WorkflowTemplates
+import type {
+  TemplateIncludeOnDistributionEnum,
+  TemplateInfo,
+  WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
@@ -22,6 +27,7 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   AssetDownloadWsMessage,
+  AssetExportWsMessage,
   CustomNodesI18n,
   EmbeddingsResponse,
   ExecutedWsMessage,
@@ -156,19 +162,20 @@ interface BackendApiCalls {
   logs: LogsWsMessage
   /** Binary preview/progress data */
   b_preview: Blob
-  /** Binary preview with metadata (node_id, prompt_id) */
+  /** Binary preview with metadata (node_id, job_id) */
   b_preview_with_metadata: {
     blob: Blob
     nodeId: string
     parentNodeId: string
     displayNodeId: string
     realNodeId: string
-    promptId: string
+    jobId: string
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
   asset_download: AssetDownloadWsMessage
+  asset_export: AssetExportWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -239,8 +246,11 @@ export type GlobalSubgraphData = {
     node_pack: string
     category?: string
     search_aliases?: string[]
+    requiresCustomNodes?: string[]
+    includeOnDistributions?: TemplateIncludeOnDistributionEnum[]
   }
   data: string | Promise<string>
+  essentials_category?: string
 }
 
 function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
@@ -334,7 +344,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Feature flags received from the backend server.
    */
-  serverFeatureFlags: Record<string, unknown> = {}
+  serverFeatureFlags = ref<Record<string, unknown>>({})
 
   /**
    * The auth token for the comfy org account if the user is logged in.
@@ -464,6 +474,23 @@ export class ComfyApi extends EventTarget {
     callback: ((event: ApiEvents[TEvent]) => void) | null,
     options?: EventListenerOptions | boolean
   ): void {
+    super.removeEventListener(type, callback as EventListener, options)
+  }
+
+  addCustomEventListener(
+    type: string,
+    callback: ((event: CustomEvent<unknown>) => void) | null,
+    options?: AddEventListenerOptions | boolean
+  ) {
+    super.addEventListener(type, callback as EventListener, options)
+    this._registered.add(type)
+  }
+
+  removeCustomEventListener(
+    type: string,
+    callback: ((event: CustomEvent<unknown>) => void) | null,
+    options?: EventListenerOptions | boolean
+  ) {
     super.removeEventListener(type, callback as EventListener, options)
   }
 
@@ -643,7 +670,7 @@ export class ComfyApi extends EventTarget {
                 displayNodeId: metadata.display_node_id,
                 parentNodeId: metadata.parent_node_id,
                 realNodeId: metadata.real_node_id,
-                promptId: metadata.prompt_id
+                jobId: metadata.prompt_id
               })
 
               // Also dispatch legacy b_preview for backward compatibility
@@ -689,11 +716,12 @@ export class ComfyApi extends EventTarget {
               break
             case 'feature_flags':
               // Store server feature flags
-              this.serverFeatureFlags = msg.data
+              this.serverFeatureFlags.value = msg.data
               console.log(
                 'Server feature flags received:',
-                this.serverFeatureFlags
+                this.serverFeatureFlags.value
               )
+              this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
               if (this._registered.has(msg.type)) {
@@ -828,10 +856,47 @@ export class ComfyApi extends EventTarget {
     })
 
     if (res.status !== 200) {
-      throw new PromptExecutionError(await res.json())
+      const text = await res.text()
+      let errorResponse
+      try {
+        errorResponse = JSON.parse(text)
+      } catch {
+        errorResponse = {
+          error: {
+            type: 'server_error',
+            message: `${res.status} ${res.statusText}`,
+            details: text
+          }
+        }
+      }
+      throw new PromptExecutionError(errorResponse)
     }
 
     return await res.json()
+  }
+
+  /**
+   * Gets the list of assets and models referenced by a prompt that would
+   * need user consent before sharing.
+   */
+  async getShareableAssets(
+    prompt: ComfyApiWorkflow,
+    options?: { owned?: boolean }
+  ): Promise<ShareableAssetsResponse> {
+    const body: Record<string, unknown> = { workflow_api_json: prompt }
+    if (options?.owned !== undefined) {
+      body.owned = options.owned
+    }
+    const res = await this.fetchApi('/assets/from-workflow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+    if (res.status !== 200) {
+      throw new Error(`Failed to fetch shareable assets: ${res.status}`)
+    }
+    const data = await res.json()
+    return zShareableAssetsResponse.parse(data)
   }
 
   /**
@@ -940,7 +1005,7 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets detailed job info including outputs and workflow
-   * @param jobId The job/prompt ID
+   * @param jobId The job ID
    * @returns Full job details or undefined if not found
    */
   async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
@@ -993,14 +1058,14 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Interrupts the execution of the running prompt. If runningPromptId is provided,
+   * Interrupts the execution of the running job. If runningJobId is provided,
    * it is included in the payload as a helpful hint to the backend.
-   * @param {string | null} [runningPromptId] Optional Running Prompt ID to interrupt
+   * @param {string | null} [runningJobId] Optional Running Job ID to interrupt
    */
-  async interrupt(runningPromptId: string | null) {
+  async interrupt(runningJobId: string | null) {
     await this._postItem(
       'interrupt',
-      runningPromptId ? { prompt_id: runningPromptId } : undefined
+      runningJobId ? { prompt_id: runningJobId } : undefined
     )
   }
 
@@ -1160,9 +1225,16 @@ export class ComfyApi extends EventTarget {
 
   async getGlobalSubgraphData(id: string): Promise<string> {
     const resp = await api.fetchApi('/global_subgraphs/' + id)
-    if (resp.status !== 200) return ''
+    if (resp.status !== 200) {
+      throw new Error(
+        `Failed to fetch global subgraph '${id}': ${resp.status} ${resp.statusText}`
+      )
+    }
     const subgraph: GlobalSubgraphData = await resp.json()
-    return subgraph?.data ?? ''
+    if (!subgraph?.data) {
+      throw new Error(`Global subgraph '${id}' returned empty data`)
+    }
+    return subgraph.data as string
   }
   async getGlobalSubgraphs(): Promise<Record<string, GlobalSubgraphData>> {
     const resp = await api.fetchApi('/global_subgraphs')
@@ -1271,7 +1343,9 @@ export class ComfyApi extends EventTarget {
    * @returns true if the feature is supported, false otherwise
    */
   serverSupportsFeature(featureName: string): boolean {
-    return get(this.serverFeatureFlags, featureName) === true
+    const override = getDevOverride<boolean>(featureName)
+    if (override !== undefined) return override
+    return get(this.serverFeatureFlags.value, featureName) === true
   }
 
   /**
@@ -1281,7 +1355,9 @@ export class ComfyApi extends EventTarget {
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
-    return get(this.serverFeatureFlags, featureName, defaultValue) as T
+    const override = getDevOverride<T>(featureName)
+    if (override !== undefined) return override
+    return get(this.serverFeatureFlags.value, featureName, defaultValue) as T
   }
 
   /**
@@ -1289,7 +1365,7 @@ export class ComfyApi extends EventTarget {
    * @returns Copy of all server feature flags
    */
   getServerFeatures(): Record<string, unknown> {
-    return { ...this.serverFeatureFlags }
+    return { ...this.serverFeatureFlags.value }
   }
 
   async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {

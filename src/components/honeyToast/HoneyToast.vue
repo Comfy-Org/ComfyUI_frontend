@@ -26,13 +26,15 @@ function toggle() {
         v-if="visible"
         role="status"
         aria-live="polite"
-        class="fixed inset-x-0 bottom-6 z-9999 mx-auto w-4/5 max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg"
+        class="fixed inset-x-4 bottom-6 z-9999 mx-auto w-auto max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg transition-all duration-300 sm:inset-x-0 sm:w-min sm:min-w-0"
       >
         <div
           :class="
             cn(
-              'overflow-hidden transition-all duration-300',
-              isExpanded ? 'max-h-[400px]' : 'max-h-0'
+              'max-w-full min-w-0 overflow-hidden transition-all duration-300',
+              isExpanded
+                ? 'max-h-100 w-full sm:w-[max(400px,40vw)]'
+                : 'max-h-0 w-0'
             )
           "
         >

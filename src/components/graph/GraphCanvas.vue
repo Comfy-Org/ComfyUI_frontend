@@ -6,44 +6,51 @@
     <template v-if="showUI" #workflow-tabs>
       <div
         v-if="workflowTabsPosition === 'Topbar'"
-        class="workflow-tabs-container pointer-events-auto relative h-9.5 w-full"
+        class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
       >
         <!-- Native drag area for Electron -->
         <div
           v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-          class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
+          class="app-drag fixed top-0 left-0 z-10 h-(--comfy-topbar-height) w-full"
         />
         <div
           class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
         >
           <WorkflowTabs />
           <TopbarBadges />
+          <TopbarSubscribeButton />
         </div>
       </div>
     </template>
-    <template v-if="showUI" #side-toolbar>
+    <template v-if="showUI && !isBuilderMode" #side-toolbar>
       <SideToolbar />
     </template>
     <template v-if="showUI" #side-bar-panel>
       <div
-        class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto"
+        class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
     </template>
-    <template v-if="showUI" #topmenu>
+    <template v-if="showUI && !isBuilderMode" #topmenu>
       <TopMenuSection />
     </template>
     <template v-if="showUI" #bottom-panel>
       <BottomPanel />
     </template>
     <template v-if="showUI" #right-side-panel>
-      <NodePropertiesPanel />
+      <AppBuilder v-if="isBuilderMode" />
+      <NodePropertiesPanel v-else />
     </template>
     <template #graph-canvas-panel>
-      <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
+      <GraphCanvasMenu
+        v-if="canvasMenuEnabled && !isBuilderMode"
+        class="pointer-events-auto"
+      />
       <MiniMap
-        v-if="comfyAppReady && minimapEnabled && betaMenuEnabled"
+        v-if="
+          comfyAppReady && minimapEnabled && betaMenuEnabled && !isBuilderMode
+        "
         class="pointer-events-auto"
       />
     </template>
@@ -70,7 +77,7 @@
       :key="nodeData.id"
       :node-data="nodeData"
       :error="
-        executionStore.lastExecutionError?.node_id === nodeData.id
+        executionErrorStore.lastExecutionError?.node_id === nodeData.id
           ? 'Execution error'
           : null
       "
@@ -121,6 +128,7 @@ import { isMiddlePointerInput } from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
+import AppBuilder from '@/components/builder/AppBuilder.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
@@ -133,6 +141,7 @@ import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -152,7 +161,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
-import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
+import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
@@ -170,9 +179,11 @@ import { storeToRefs } from 'pinia'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -193,9 +204,11 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
+const { isBuilderMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const toastStore = useToastStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
@@ -376,7 +389,7 @@ watch(
 // Update node slot errors for LiteGraph nodes
 // (Vue nodes read from store directly)
 watch(
-  () => executionStore.lastNodeErrors,
+  () => executionErrorStore.lastNodeErrors,
   (lastNodeErrors) => {
     if (!comfyApp.graph) return
 
@@ -524,8 +537,13 @@ onMounted(async () => {
   await workflowPersistence.initializeWorkflow()
   workflowPersistence.restoreWorkflowTabsState()
 
+  const sharedWorkflowLoadStatus =
+    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+
   // Load template from URL if present
-  await workflowPersistence.loadTemplateFromUrlIfPresent()
+  if (sharedWorkflowLoadStatus === 'not-present') {
+    await workflowPersistence.loadTemplateFromUrlIfPresent()
+  }
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
   // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts

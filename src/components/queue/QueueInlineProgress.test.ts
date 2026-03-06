@@ -6,8 +6,8 @@ import type { Ref } from 'vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 
 const mockProgress = vi.hoisted(() => ({
-  totalPercent: null as unknown as Ref<number>,
-  currentNodePercent: null as unknown as Ref<number>
+  totalPercent: null! as Ref<number>,
+  currentNodePercent: null! as Ref<number>
 }))
 
 vi.mock('@/composables/queue/useQueueProgress', () => ({

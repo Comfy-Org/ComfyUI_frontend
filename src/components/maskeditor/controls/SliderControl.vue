@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
       label
     }}</span>
     <input
@@ -24,9 +24,7 @@ interface Props {
   modelValue: number
 }
 
-withDefaults(defineProps<Props>(), {
-  step: 1
-})
+const { label, min, max, step = 1, modelValue } = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: number]

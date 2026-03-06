@@ -115,6 +115,16 @@ export class DragDropHelper {
       const dragOverEvent = new DragEvent('dragover', eventOptions)
       const dropEvent = new DragEvent('drop', eventOptions)
 
+      const graphCanvasElement = document.querySelector('#graph-canvas')
+
+      // Keep Litegraph's drag-over node tracking in sync when the drop target is a
+      // Vue node DOM overlay outside of the graph canvas element.
+      if (graphCanvasElement && !graphCanvasElement.contains(targetElement)) {
+        graphCanvasElement.dispatchEvent(
+          new DragEvent('dragover', eventOptions)
+        )
+      }
+
       Object.defineProperty(dropEvent, 'preventDefault', {
         value: () => {},
         writable: false

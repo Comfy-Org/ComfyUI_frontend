@@ -6,6 +6,10 @@
 - Avoid repetition where possible, but not at expense of legibility
 - Prefer running single tests, not the whole suite, for performance
 
+## Widget Serialization
+
+See `docs/WIDGET_SERIALIZATION.md` for the distinction between `widget.serialize` (workflow persistence) and `widget.options.serialize` (API prompt). These are different properties checked by different code paths — a common source of confusion.
+
 ## Code Style
 
 - Prefer single line `if` syntax for concise expressions
@@ -27,6 +31,10 @@ import { LGraph } from '@/lib/litegraph/src/LGraph'
 ```
 
 **Root cause**: `LGraph` ↔ `Subgraph` circular dependency (Subgraph extends LGraph, LGraph creates Subgraph instances).
+
+## Known Limitations
+
+- Subgraph dynamic input limitations (autogrow/matchtype): see [`src/core/graph/subgraph-dynamic-input-limitations.md`](../../core/graph/subgraph-dynamic-input-limitations.md)
 
 ## Test Helpers
 

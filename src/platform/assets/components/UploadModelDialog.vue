@@ -32,7 +32,7 @@
 
     <!-- Navigation Footer - always visible -->
     <UploadModelFooter
-      class="flex-shrink-0"
+      class="shrink-0"
       :current-step="currentStep"
       :is-fetching-metadata="isFetchingMetadata"
       :is-uploading="isUploading"

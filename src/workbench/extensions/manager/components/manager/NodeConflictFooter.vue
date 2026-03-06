@@ -11,12 +11,12 @@
         {{ $t('manager.conflicts.conflictInfoTitle') }}
       </Button>
       <Button
-        v-if="props.buttonText"
+        v-if="buttonText"
         variant="secondary"
         size="sm"
         @click="handleButtonClick"
       >
-        {{ props.buttonText }}
+        {{ buttonText }}
       </Button>
     </div>
   </div>
@@ -31,10 +31,7 @@ interface Props {
   buttonText?: string
   onButtonClick?: () => void
 }
-const props = withDefaults(defineProps<Props>(), {
-  buttonText: undefined,
-  onButtonClick: undefined
-})
+const { buttonText, onButtonClick } = defineProps<Props>()
 const { buildDocsUrl } = useExternalLink()
 const dialogStore = useDialogStore()
 const handleConflictInfoClick = () => {
@@ -49,8 +46,8 @@ const handleButtonClick = () => {
   // Close the conflict dialog
   dialogStore.closeDialog({ key: 'global-node-conflict' })
   // Execute the custom button action if provided
-  if (props.onButtonClick) {
-    props.onButtonClick()
+  if (onButtonClick) {
+    onButtonClick()
   }
 }
 </script>

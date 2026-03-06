@@ -3,11 +3,12 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-defineProps<{
+const { rootClass } = defineProps<{
   widget: Pick<
     SimplifiedWidget<string | number | undefined>,
     'name' | 'label' | 'borderStyle'
   >
+  rootClass?: string
 }>()
 
 const hideLayoutField = useHideLayoutField()
@@ -15,9 +16,14 @@ const hideLayoutField = useHideLayoutField()
 
 <template>
   <div
-    class="grid grid-cols-subgrid min-w-0 justify-between gap-1 text-node-component-slot-text"
+    :class="
+      cn(
+        'grid min-w-0 grid-cols-subgrid justify-between gap-1 text-node-component-slot-text',
+        rootClass
+      )
+    "
   >
-    <div v-if="!hideLayoutField" class="truncate content-center-safe">
+    <div v-if="!hideLayoutField" class="content-center-safe truncate">
       <template v-if="widget.name">
         {{ widget.label || widget.name }}
       </template>
@@ -27,7 +33,7 @@ const hideLayoutField = useHideLayoutField()
       <div
         :class="
           cn(
-            'cursor-default min-w-0 rounded-lg focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+            'min-w-0 cursor-default rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
             widget.borderStyle
           )
         "

@@ -86,10 +86,7 @@ describe('graphHasMissingNodes', () => {
   })
 
   it('ignores nodes without a type', () => {
-    const graph = createGraph([
-      createNode(undefined),
-      createNode(null as unknown as string)
-    ])
+    const graph = createGraph([createNode(undefined), createNode(null!)])
 
     expect(graphHasMissingNodes(graph, {})).toBe(false)
   })

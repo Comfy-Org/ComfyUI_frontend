@@ -40,6 +40,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const error = ref<string | null>(null)
 
   const isActiveSubscription = computed(() => legacyIsActiveSubscription.value)
+  const isFreeTier = computed(() => subscriptionTier.value === 'FREE')
 
   const subscription = computed<SubscriptionInfo | null>(() => {
     if (!legacyIsActiveSubscription.value && !subscriptionTier.value) {
@@ -85,6 +86,10 @@ export function useLegacyBilling(): BillingState & BillingActions {
     error.value = null
     try {
       await Promise.all([fetchStatus(), fetchBalance()])
+      // Re-fetch balance if free tier credits were just lazily granted
+      if (isFreeTier.value && balance.value?.amountMicros === 0) {
+        await fetchBalance()
+      }
       isInitialized.value = true
     } catch (err) {
       error.value =
@@ -173,6 +178,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     isLoading,
     error,
     isActiveSubscription,
+    isFreeTier,
 
     // Actions
     initialize,

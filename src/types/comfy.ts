@@ -20,6 +20,7 @@ export interface AboutPageBadge {
   label: string
   url: string
   icon: string
+  severity?: 'danger' | 'warn'
 }
 
 type MenuCommandGroup = {
@@ -89,6 +90,8 @@ export type MissingNodeType =
   // Primarily used by group nodes.
   | {
       type: string
+      nodeId?: string | number
+      cnrId?: string
       hint?: string
       action?: {
         text: string

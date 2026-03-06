@@ -4,8 +4,10 @@ name: 'CI: Tests Unit'
 on:
   push:
     branches: [main, master, dev*, core/*, desktop/*]
+    paths-ignore: ['**/*.md']
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
+    paths-ignore: ['**/*.md']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

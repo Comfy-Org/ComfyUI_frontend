@@ -18,6 +18,20 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
   const coreVersion = computed(
     () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
   )
+  const templatesVersion = computed(
+    () =>
+      systemStatsStore?.systemStats?.system?.installed_templates_version ?? ''
+  )
+  const requiredTemplatesVersion = computed(
+    () =>
+      systemStatsStore?.systemStats?.system?.required_templates_version ?? ''
+  )
+  const isTemplatesOutdated = computed(
+    () =>
+      templatesVersion.value !== '' &&
+      requiredTemplatesVersion.value !== '' &&
+      templatesVersion.value !== requiredTemplatesVersion.value
+  )
 
   const coreBadges = computed<AboutPageBadge[]>(() => [
     // In electron, the ComfyUI is packaged without the git repo,
@@ -36,6 +50,18 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
       url: staticUrls.githubFrontend,
       icon: 'pi pi-github'
     },
+    ...(templatesVersion.value
+      ? [
+          {
+            label: `Templates v${templatesVersion.value}`,
+            url: 'https://pypi.org/project/comfyui-workflow-templates/',
+            icon: 'pi pi-book',
+            ...(isTemplatesOutdated.value
+              ? { severity: 'danger' as const }
+              : {})
+          }
+        ]
+      : []),
     {
       label: 'Discord',
       url: staticUrls.discord,

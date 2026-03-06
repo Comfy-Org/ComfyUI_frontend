@@ -225,6 +225,7 @@
     "login": {
       "andText": "以及",
       "backToLogin": "返回登入",
+      "backToSocialLogin": "改用 Google 或 Github 註冊",
       "confirmPasswordLabel": "確認密碼",
       "confirmPasswordPlaceholder": "請再次輸入相同密碼",
       "didntReceiveEmail": "沒有收到電子郵件？請聯絡我們：",
@@ -233,6 +234,9 @@
       "failed": "登入失敗",
       "forgotPassword": "忘記密碼？",
       "forgotPasswordError": "密碼重設郵件發送失敗",
+      "freeTierBadge": "符合免費方案資格",
+      "freeTierDescription": "使用 Google 註冊，每月可獲得 {credits} 免費點數。無需信用卡。",
+      "freeTierDescriptionGeneric": "使用 Google 註冊，每月可獲得免費點數。無需信用卡。",
       "insecureContextWarning": "此連線不安全（HTTP）。如果您繼續登入，您的憑證可能會被攻擊者攔截。",
       "loginButton": "登入",
       "loginWithGithub": "使用 Github 登入",
@@ -251,11 +255,13 @@
       "sendResetLink": "發送重設連結",
       "signInOrSignUp": "登入 / 註冊",
       "signUp": "註冊",
+      "signUpFreeTierPromo": "新用戶？{signUp} 使用 Google 註冊，每月獲得 {credits} 免費點數。",
       "success": "登入成功",
       "termsLink": "使用條款",
       "termsText": "點擊「下一步」或「註冊」即表示您同意我們的",
       "title": "登入您的帳戶",
       "useApiKey": "Comfy API 金鑰",
+      "useEmailInstead": "改用電子郵件",
       "userAvatar": "用戶頭像"
     },
     "loginButton": {
@@ -275,11 +281,14 @@
     "signOut": {
       "signOut": "登出",
       "success": "成功登出",
-      "successDetail": "您已成功登出您的帳戶。"
+      "successDetail": "您已成功登出您的帳戶。",
+      "unsavedChangesMessage": "您有尚未儲存的變更，登出後這些變更將會遺失。您確定要繼續嗎？",
+      "unsavedChangesTitle": "未儲存的變更"
     },
     "signup": {
       "alreadyHaveAccount": "已經有帳戶？",
       "emailLabel": "電子郵件",
+      "emailNotEligibleForFreeTier": "電子郵件註冊不符合免費方案資格。",
       "emailPlaceholder": "請輸入您的電子郵件",
       "passwordLabel": "密碼",
       "passwordPlaceholder": "請輸入新密碼",
@@ -291,6 +300,9 @@
       "signUpWithGoogle": "使用 Google 註冊",
       "title": "建立帳戶"
     }
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "billingOperation": {
     "subscriptionFailed": "訂閱更新失敗",
@@ -313,8 +325,44 @@
     "deleteBlueprint": "刪除藍圖",
     "deleteWorkflow": "刪除工作流程",
     "duplicate": "複製",
+    "enterAppMode": "進入應用模式",
+    "enterBuilderMode": "進入應用程式建構器",
     "enterNewName": "輸入新名稱",
-    "missingNodesWarning": "工作流程包含不支援的節點（以紅色標示）。"
+    "exitAppMode": "離開應用模式",
+    "missingNodesWarning": "工作流程包含不支援的節點（以紅色標示）。",
+    "workflowActions": "工作流程操作"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "離開應用程式建構器"
+  },
+  "builderToolbar": {
+    "app": "應用",
+    "appDescription": "預設以應用模式開啟",
+    "arrange": "預覽",
+    "arrangeDescription": "檢視應用版面",
+    "connectOutput": "連接輸出",
+    "connectOutputBody1": "您的應用必須至少連接一個輸出才能儲存。",
+    "connectOutputBody2": "切換到「選擇」步驟，點擊輸出節點以新增到這裡。",
+    "defaultModeAppliedAppBody": "此工作流程將從現在起預設以應用程式模式開啟。",
+    "defaultModeAppliedAppPrompt": "您想現在查看嗎？",
+    "defaultModeAppliedGraphBody": "此工作流程將從現在起預設以節點圖形模式開啟。",
+    "defaultModeAppliedGraphPrompt": "您還想查看應用程式嗎？",
+    "defaultModeAppliedTitle": "設定成功",
+    "defaultView": "設定預設檢視",
+    "defaultViewDescription": "選擇開啟方式",
+    "defaultViewLabel": "預設情況下，此工作流程將以以下方式開啟：",
+    "defaultViewTitle": "設定此工作流程的預設檢視",
+    "emptyWorkflowPrompt": "您想從範本開始嗎？",
+    "emptyWorkflowTitle": "此工作流程沒有節點",
+    "inputs": "輸入",
+    "inputsDescription": "選擇輸入",
+    "label": "應用建立器",
+    "nodeGraph": "節點圖",
+    "nodeGraphDescription": "預設以節點圖開啟",
+    "outputs": "輸出",
+    "outputsDescription": "選擇輸出",
+    "switchToOutputs": "切換到輸出",
+    "viewApp": "查看應用程式"
   },
   "clipboard": {
     "errorMessage": "複製到剪貼簿失敗",
@@ -608,6 +656,7 @@
     "AUDIO_ENCODER_OUTPUT": "音訊編碼器輸出",
     "AUDIO_RECORD": "音訊錄製",
     "BOOLEAN": "布林值",
+    "BOUNDING_BOX": "邊界框",
     "CAMERA_CONTROL": "攝影機控制",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP 視覺",
@@ -619,6 +668,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "條件設定",
     "CONTROL_NET": "ControlNet",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -657,6 +707,7 @@
     "OPENAI_INPUT_FILES": "OpenAI輸入檔案",
     "PHOTOMAKER": "PhotoMaker",
     "PIXVERSE_TEMPLATE": "PIXVERSE 範本",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "RECRAFT 顏色",
     "RECRAFT_CONTROLS": "RECRAFT 控制",
     "RECRAFT_V3_STYLE": "RECRAFT V3 風格",
@@ -727,11 +778,68 @@
     "noStackTrace": "沒有可用的堆疊追蹤",
     "promptExecutionError": "提示執行失敗"
   },
+  "errorOverlay": {
+    "errorCount": "{count} 個錯誤",
+    "seeErrors": "查看錯誤"
+  },
+  "essentials": {
+    "batchImage": "批次圖片",
+    "canny": "Canny 邊緣",
+    "cannyToImage": "Canny 邊緣轉圖片",
+    "cannyToVideo": "Canny 邊緣轉影片",
+    "cropImage": "裁切圖片",
+    "depthToImage": "深度轉圖片",
+    "depthToVideo": "深度轉影片",
+    "extractFrame": "擷取影格",
+    "imageCompare": "圖片比較",
+    "imageTo3DModel": "圖片轉 3D 模型",
+    "imageToImage": "圖片轉圖片",
+    "imageToVideo": "圖片轉影片",
+    "inpaintImage": "圖片修補",
+    "invert": "反相",
+    "lipsync": "唇形同步",
+    "load3DModel": "載入 3D 模型",
+    "loadAudio": "載入音訊",
+    "loadImage": "載入圖片",
+    "loadStyleLora": "載入風格 (LoRA)",
+    "loadVideo": "載入影片",
+    "musicGeneration": "音樂生成",
+    "outpaintImage": "圖片擴展",
+    "poseToImage": "姿勢轉圖片",
+    "poseToVideo": "姿勢轉影片",
+    "removeBackground": "去背",
+    "resizeImage": "調整圖片尺寸",
+    "rotate": "旋轉",
+    "save3DModel": "儲存 3D 模型",
+    "saveAudio": "儲存音訊",
+    "saveImage": "儲存圖片",
+    "saveVideo": "儲存影片",
+    "text": "文字",
+    "textGenerationLLM": "文字生成 (LLM)",
+    "textTo3DModel": "文字轉 3D 模型",
+    "textToImage": "文字轉圖片",
+    "textToVideo": "文字轉影片"
+  },
+  "exportToast": {
+    "allExportsCompleted": "所有匯出已完成",
+    "downloadExport": "下載匯出檔",
+    "downloadFailed": "下載「{name}」失敗",
+    "exportCompleted": "ZIP 下載已就緒",
+    "exportError": "匯出失敗",
+    "exportFailed": "{count} 項匯出失敗",
+    "exportFailedSingle": "建立 ZIP 匯出失敗",
+    "exportStarted": "正在準備 ZIP 下載...",
+    "exportingAssets": "正在匯出資產",
+    "noExportsInQueue": "佇列中沒有 {filter} 匯出",
+    "preparingExport": "正在準備匯出...",
+    "retryDownload": "重試下載"
+  },
   "g": {
     "1x": "1倍速",
     "2x": "2倍速",
     "about": "關於",
     "add": "新增",
+    "addNode": "新增節點...",
     "addNodeFilterCondition": "新增節點篩選條件",
     "all": "全部",
     "amount": "數量",
@@ -758,6 +866,7 @@
     "clearFilters": "清除篩選",
     "close": "關閉",
     "closeDialog": "關閉對話框",
+    "collapseAll": "全部摺疊",
     "color": "顏色",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "ComfyOrg 標誌",
@@ -818,6 +927,7 @@
     "enableSelected": "啟用所選",
     "enabled": "已啟用",
     "enabling": "啟用中",
+    "enter": "輸入",
     "enterBaseName": "輸入基礎名稱",
     "enterNewName": "輸入新名稱",
     "enterNewNamePrompt": "輸入新名稱：",
@@ -825,6 +935,8 @@
     "error": "錯誤",
     "errorLoadingImage": "載入圖片時發生錯誤",
     "errorLoadingVideo": "載入影片時發生錯誤",
+    "essentials": "基本功能",
+    "expandAll": "全部展開",
     "experimental": "實驗性",
     "export": "匯出",
     "extensionName": "擴充套件名稱",
@@ -833,9 +945,12 @@
     "failedToCopyJobId": "複製工作 ID 失敗",
     "failedToDownloadImage": "下載圖片失敗",
     "failedToDownloadVideo": "下載影片失敗",
+    "favorites": "我的最愛",
     "feedback": "意見回饋",
     "file": "檔案",
     "filter": "篩選",
+    "filterBy": "篩選依據：",
+    "filterByType": "依 {type} 篩選...",
     "findIssues": "尋找問題",
     "frameNodes": "框架節點",
     "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
@@ -854,8 +969,10 @@
     "imageUrl": "圖片網址",
     "import": "匯入",
     "inProgress": "進行中",
+    "inSubgraph": "於子圖「{name}」中",
     "increment": "增加",
     "info": "節點資訊",
+    "input": "輸入",
     "insert": "插入",
     "install": "安裝",
     "installed": "已安裝",
@@ -879,6 +996,7 @@
     "login": "登入",
     "logoAlt": "ComfyUI 標誌",
     "logs": "日誌",
+    "manageExtensions": "管理擴充功能",
     "markdown": "標記語言",
     "micPermissionDenied": "麥克風權限被拒絕",
     "migrate": "遷移",
@@ -886,6 +1004,7 @@
     "more": "更多",
     "moreOptions": "更多選項",
     "moreWorkflows": "更多工作流程",
+    "mostRelevant": "最相關",
     "multiSelectDropdown": "多選下拉式選單",
     "name": "名稱",
     "newFolder": "新資料夾",
@@ -916,7 +1035,9 @@
     "openManager": "開啟管理器",
     "openNewIssue": "開啟新問題",
     "or": "或",
+    "output": "輸出",
     "overwrite": "覆蓋",
+    "partner": "合作夥伴",
     "playPause": "播放/暫停",
     "playRecording": "播放錄製",
     "playbackSpeed": "播放速度",
@@ -927,6 +1048,7 @@
     "progressCountOf": "共",
     "queued": "已排隊",
     "ready": "就緒",
+    "recents": "最近使用",
     "reconnected": "已重新連線",
     "reconnecting": "重新連線中",
     "refresh": "重新整理",
@@ -942,6 +1064,7 @@
     },
     "releaseTitle": "{package} {version} 版本發佈",
     "reloadToApplyChanges": "重新載入以套用變更",
+    "remove": "移除",
     "removeImage": "移除圖片",
     "removeTag": "移除標籤",
     "removeVideo": "移除影片",
@@ -1006,6 +1129,7 @@
     "updated": "已更新",
     "updating": "更新中",
     "upload": "上傳",
+    "uploadAlreadyInProgress": "上傳已在進行中",
     "usageHint": "使用提示",
     "use": "使用",
     "user": "使用者",
@@ -1079,6 +1203,8 @@
     "star": "星號"
   },
   "imageCompare": {
+    "batchLabelA": "A：",
+    "batchLabelB": "B：",
     "noImages": "沒有可比較的圖像"
   },
   "imageCrop": {
@@ -1212,20 +1338,63 @@
     "helpFix": "協助修復此問題"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "應用建立器",
+      "apps": "應用",
+      "appsEmptyMessage": "已儲存的應用程式將顯示在這裡。\n點擊下方開始建立您的第一個應用程式。",
+      "enterAppMode": "進入應用程式模式"
+    },
+    "arrange": {
+      "atLeastOne": "至少一個",
+      "connectAtLeastOne": "請連接{atLeastOne}個輸出節點，讓使用者在執行後能看到結果。",
+      "noOutputs": "尚未新增任何輸出",
+      "outputExamples": "範例：「儲存圖像」或「儲存影片」",
+      "outputs": "輸出",
+      "resultsLabel": "執行此應用後，從所選輸出節點產生的結果將顯示於此",
+      "switchToOutputs": "切換到「輸出」步驟，然後點擊輸出節點以將其新增到這裡。",
+      "switchToOutputsButton": "切換到輸出"
+    },
+    "backToWorkflow": "返回工作流程",
     "beta": "App 模式 Beta - 提供回饋",
+    "builder": {
+      "exit": "離開建構器",
+      "exitConfirmMessage": "您有尚未儲存的變更將會遺失\n確定要不儲存直接離開嗎？",
+      "exitConfirmTitle": "要離開應用程式建構器嗎？",
+      "inputsDesc": "使用者可調整這些參數以產生輸出。",
+      "inputsExample": "例如：「載入圖像」、「文字提示」、「步數」",
+      "noInputs": "尚未新增任何輸入",
+      "noOutputs": "尚未新增任何輸出節點",
+      "outputsDesc": "請至少連接一個輸出節點，讓使用者在執行後能看到結果。",
+      "outputsExample": "例如：「儲存圖像」或「儲存影片」",
+      "promptAddInputs": "點擊節點參數，將其新增為輸入",
+      "promptAddOutputs": "點擊輸出節點，將其新增於此。這些將是產生的結果。",
+      "title": "應用程式建構模式",
+      "unknownWidget": "元件不可見"
+    },
     "downloadAll": "全部下載",
     "dragAndDropImage": "拖曳圖片到此",
+    "emptyWorkflowExplanation": "您的工作流程目前是空的。您需要先新增一些節點，才能開始建立應用程式。",
+    "enterNodeGraph": "進入節點圖",
+    "giveFeedback": "提供回饋",
     "graphMode": "圖形模式",
     "linearMode": "App 模式",
+    "loadTemplate": "載入範本",
+    "mobileControls": "編輯與執行",
+    "queue": {
+      "clear": "清除佇列",
+      "clickToClear": "點擊以清除佇列"
+    },
     "rerun": "重新執行",
     "reuseParameters": "重用參數",
     "runCount": "執行次數：",
+    "viewJob": "檢視任務",
     "welcome": {
-      "intro": "這是一個簡化視圖，隱藏節點圖，讓你專注於創作。",
-      "layout": "左側顯示你產生的圖片、影片和輸出，右側只保留必要的控制項。所有複雜內容都被隱藏。",
+      "buildApp": "建立應用",
+      "controls": "您的輸出會顯示在下方，控制項在右側。其他內容都不會干擾您。",
+      "getStarted": "點擊 {runButton} 開始。",
+      "message": "這是一個簡化視圖，隱藏節點圖，讓您專注於創作。",
       "sharing": "分享很簡單：建立工作流程，開啟 App 模式，右鍵分頁並匯出。其他人開啟你的檔案時，會直接進入這個乾淨的視圖。你可以將強大的工作流程分享成簡單工具，無需理解節點圖。",
-      "title": "歡迎使用 App 模式",
-      "widget": "如果想控制哪些設定顯示，請將頂層節點轉為子圖，然後在上方工具箱使用元件推廣，選擇要公開的項目。"
+      "title": "歡迎使用 App 模式"
     }
   },
   "load3d": {
@@ -1434,6 +1603,9 @@
     "nodePack": "節點包",
     "nodePackInfo": "節點包資訊",
     "notAvailable": "不可用",
+    "packInstall": {
+      "nodeIdRequired": "安裝需要節點 ID"
+    },
     "packsSelected": "已選擇套件",
     "repository": "儲存庫",
     "restartToApplyChanges": "請重新啟動 ComfyUI 以套用變更",
@@ -1558,6 +1730,7 @@
       "downloadSelectedAll": "全部下載",
       "downloadStarted": "正在下載 {count} 個檔案...",
       "downloadsStarted": "已開始下載 {count} 個檔案",
+      "exportStarted": "正在準備 {count} 個檔案的 ZIP 匯出",
       "exportWorkflowAll": "全部匯出工作流程",
       "failedToAddNodes": "加入節點至工作流程失敗",
       "failedToDeleteAssets": "刪除選取資源失敗",
@@ -1590,6 +1763,7 @@
     "disabled": "已停用",
     "disabledTooltip": "工作流程將不會自動排入佇列",
     "execute": "執行",
+    "fullscreen": "全螢幕",
     "help": "說明",
     "helpAndFeedback": "說明與回饋",
     "hideMenu": "隱藏選單",
@@ -1609,6 +1783,8 @@
     "runWorkflowFront": "執行工作流程（前方排隊）",
     "settings": "設定",
     "showMenu": "顯示選單",
+    "stopRunInstant": "立即停止執行",
+    "stopRunInstantTooltip": "停止執行",
     "theme": "主題",
     "toggleBottomPanel": "切換下方面板"
   },
@@ -1634,6 +1810,7 @@
     "Contact Support": "聯絡支援",
     "Convert Selection to Subgraph": "將選取內容轉為子圖",
     "Convert selected nodes to group node": "將選取節點轉為群組節點",
+    "Copy": "複製",
     "Custom Nodes (Legacy)": "自訂節點（舊版）",
     "Custom Nodes Manager": "自訂節點管理員",
     "Decrease Brush Size in MaskEditor": "在 MaskEditor 中減小筆刷大小",
@@ -1688,6 +1865,7 @@
     "Open Outputs Folder": "開啟輸出資料夾",
     "Open Sign In Dialog": "開啟登入對話框",
     "Open extra_model_paths_yaml": "開啟 extra_model_paths.yaml",
+    "Paste": "貼上",
     "Pin/Unpin Selected Items": "釘選/取消釘選選取項目",
     "Pin/Unpin Selected Nodes": "釘選/取消釘選選取節點",
     "Previous Opened Workflow": "上一個已開啟的工作流程",
@@ -1707,6 +1885,7 @@
     "Rotate Right in MaskEditor": "在遮罩編輯器中向右旋轉",
     "Save": "儲存",
     "Save As": "另存新檔",
+    "Select All": "全選",
     "Set Subgraph Description": "設定子圖描述",
     "Set Subgraph Search Aliases": "設定子圖搜尋別名",
     "Show Keybindings Dialog": "顯示快捷鍵對話框",
@@ -1732,7 +1911,8 @@
     "Workflows": "工作流程",
     "Zoom In": "放大",
     "Zoom Out": "縮小",
-    "Zoom to fit": "縮放至適合大小"
+    "Zoom to fit": "縮放至適合大小",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "節點顏色",
@@ -1742,11 +1922,19 @@
     "showLinks": "顯示連結"
   },
   "missingModelsDialog": {
+    "acceptTerms": "接受條款",
+    "customModelsInstruction": "您需要自行尋找並下載這些模型。請在網路上搜尋（可嘗試 Civitai 或 Hugging Face），或聯絡原始工作流程提供者。",
+    "customModelsWarning": "其中有些是我們無法識別的自訂模型。",
+    "description": "此工作流程需要您尚未下載的模型。",
     "doNotAskAgain": "不要再顯示此訊息",
-    "missingModels": "缺少模型",
-    "missingModelsMessage": "載入圖形時，找不到以下模型",
+    "downloadAll": "全部下載",
+    "downloadAvailable": "下載可用項目",
+    "footerDescription": "請下載並將這些模型放置在正確的資料夾中。\n缺少模型的節點會在畫布上以紅色標示。",
+    "gotIt": "知道了",
     "reEnableInSettings": "請在{link}中重新啟用",
-    "reEnableInSettingsLink": "設定"
+    "reEnableInSettingsLink": "設定",
+    "title": "此工作流程缺少模型",
+    "totalSize": "總下載大小："
   },
   "missingNodes": {
     "cloud": {
@@ -1769,6 +1957,14 @@
       "tooltip": "您正在使用 ComfyUI 的夜間版本。請使用反饋按鈕分享您對這些功能的看法。"
     }
   },
+  "nightlySurvey": {
+    "accept": "好的，我願意協助！",
+    "description": "您已經使用過這個功能。能否花一點時間分享您的回饋？",
+    "dontAskAgain": "不要再詢問",
+    "loadError": "載入問卷失敗。請稍後再試。",
+    "notNow": "暫時不要",
+    "title": "協助我們改進"
+  },
   "nodeCategories": {
     "": "",
     "3d": "3D",
@@ -1776,6 +1972,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "字節跳動",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "雙子星",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1858,11 +2055,13 @@
     "scheduling": "排程",
     "sd": "SD",
     "sd3": "sd3",
+    "shader": "著色器",
     "sigmas": "西格瑪值",
     "stable_cascade": "stable_cascade",
     "string": "字串",
     "style_model": "風格模型",
     "text": "文字",
+    "textgen": "文字生成",
     "training": "訓練",
     "transform": "轉換",
     "unet": "UNet",
@@ -1907,7 +2106,10 @@
     "openNodeManager": "開啟節點管理器",
     "quickFixAvailable": "可用快速修復",
     "redHighlight": "紅色",
+    "replaceAll": "全部替換",
+    "replaceAllWarning": "將替換此群組中所有可用的節點。",
     "replaceFailed": "替換節點失敗",
+    "replaceNode": "替換節點",
     "replaceSelected": "替換所選 ({count})",
     "replaceWarning": "這將永久修改工作流程。如有疑慮，請先儲存副本。",
     "replaceable": "可替換",
@@ -1915,7 +2117,11 @@
     "replacedAllNodes": "已替換 {count} 種節點類型",
     "replacedNode": "已替換節點：{nodeType}",
     "selectAll": "全選",
-    "skipForNow": "暫時略過"
+    "skipForNow": "暫時略過",
+    "swapNodesGuide": "以下節點可以自動替換為相容的替代品。",
+    "swapNodesTitle": "交換節點",
+    "unknownNode": "未知",
+    "willBeReplacedBy": "此節點將被替換為："
   },
   "nodeTemplates": {
     "enterName": "輸入名稱",
@@ -1933,6 +2139,19 @@
       "windows": "Windows（支援 CUDA 的 NVIDIA 顯示卡）"
     },
     "title": "您的裝置不受支援"
+  },
+  "painter": {
+    "background": "背景",
+    "brush": "畫筆",
+    "clear": "清除",
+    "color": "顏色選擇器",
+    "eraser": "橡皮擦",
+    "hardness": "硬度",
+    "height": "高度",
+    "size": "游標大小",
+    "tool": "工具",
+    "uploadError": "上傳繪圖圖像失敗：{status} - {statusText}",
+    "width": "寬度"
   },
   "progressToast": {
     "allDownloadsCompleted": "所有下載已完成",
@@ -2015,6 +2234,12 @@
     "advancedInputs": "進階輸入",
     "bypass": "繞過",
     "color": "節點顏色",
+    "enterSubgraph": "進入子圖",
+    "errorHelp": "如需更多協助，請{github}或{support}",
+    "errorHelpGithub": "提交 GitHub 問題",
+    "errorHelpSupport": "聯絡我們的客服",
+    "errors": "錯誤",
+    "executionErrorOccurred": "執行時發生錯誤。請查看「錯誤」分頁以取得詳細資訊。",
     "fallbackGroupTitle": "群組",
     "fallbackNodeTitle": "節點",
     "favorites": "已收藏輸入",
@@ -2048,7 +2273,25 @@
     "inputsNone": "無輸入",
     "inputsNoneTooltip": "此節點沒有輸入",
     "locateNode": "在畫布上定位節點",
+    "missingNodePacks": {
+      "applyChanges": "套用變更",
+      "cloudMessage": "此工作流程需要 Comfy Cloud 尚未提供的自訂節點。",
+      "collapse": "收合",
+      "expand": "展開",
+      "installAll": "全部安裝",
+      "installNodePack": "安裝節點包",
+      "installed": "已安裝",
+      "installing": "安裝中⋯⋯",
+      "ossManagerDisabledHint": "若要安裝缺少的節點，請先在您的 Python 環境中執行 {pipCmd} 以安裝 Node Manager，然後使用 {flag} 旗標重新啟動 ComfyUI。",
+      "ossMessage": "此工作流程使用了你尚未安裝的自訂節點。",
+      "searchInManager": "在節點管理器中搜尋",
+      "title": "缺少節點包",
+      "unknownPack": "未知的節點包",
+      "unsupportedTitle": "不支援的節點包",
+      "viewInManager": "在管理器中檢視"
+    },
     "mute": "靜音",
+    "noErrors": "沒有錯誤",
     "noSelection": "請選擇節點以檢視其屬性與資訊。",
     "nodeState": "節點狀態",
     "nodes": "節點",
@@ -2057,10 +2300,25 @@
     "normal": "一般",
     "parameters": "參數",
     "pinned": "已釘選",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統發生了非預期的錯誤。"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流程中沒有任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。"
+      },
+      "server_error_cloud": {
+        "desc": "伺服器發生非預期錯誤。請稍後再試。"
+      },
+      "server_error_local": {
+        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。"
+      }
+    },
     "properties": "屬性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重設所有參數",
     "resetToDefault": "重設為預設值",
+    "seeError": "查看錯誤",
     "settings": "設定",
     "showAdvancedInputsButton": "顯示進階輸入",
     "showInput": "顯示輸入",
@@ -2285,6 +2543,7 @@
     "CustomColorPalettes": "自訂色彩調色盤",
     "DevMode": "開發者模式",
     "EditTokenWeight": "編輯權重",
+    "Error System": "錯誤系統",
     "Execution": "執行",
     "Extension": "擴充功能",
     "General": "一般",
@@ -2301,6 +2560,7 @@
     "Menu": "選單",
     "ModelLibrary": "模型庫",
     "Node": "節點",
+    "Node Library": "節點庫",
     "Node Search Box": "節點搜尋框",
     "Node Widget": "節點元件",
     "NodeLibrary": "節點庫",
@@ -2359,6 +2619,10 @@
     "backToAssets": "返回所有資源",
     "browseTemplates": "瀏覽範例模板",
     "downloads": "下載",
+    "folderView": {
+      "errorDetail": "無法取得此作業的輸出。請再試一次。",
+      "errorSummary": "載入輸出失敗"
+    },
     "generatedAssetsHeader": "已產生資產",
     "helpCenter": "說明中心",
     "importedAssetsHeader": "已匯入資產",
@@ -2384,6 +2648,17 @@
     "noImportedFiles": "找不到已匯入的檔案",
     "nodeLibrary": "節點庫",
     "nodeLibraryTab": {
+      "allNodes": "所有節點",
+      "blueprints": "藍圖",
+      "custom": "自訂",
+      "essentials": "基本功能",
+      "filter": "篩選",
+      "filterOptions": {
+        "blueprints": "藍圖",
+        "comfyNodes": "Comfy 節點",
+        "extensions": "擴充功能",
+        "partnerNodes": "合作夥伴節點"
+      },
       "groupBy": "分組依據",
       "groupStrategies": {
         "category": "類別",
@@ -2393,7 +2668,20 @@
         "source": "來源",
         "sourceDesc": "依來源類型分組（核心、自訂、API）"
       },
+      "noBookmarkedNodes": "尚未有收藏",
       "resetView": "重設檢視為預設值",
+      "sections": {
+        "bookmarked": "已收藏",
+        "comfyBlueprints": "Comfy 藍圖",
+        "comfyNodes": "Comfy 節點",
+        "extensions": "擴充功能",
+        "favoriteNode": "收藏節點",
+        "favorites": "我的最愛",
+        "myBlueprints": "我的藍圖",
+        "partnerNodes": "合作夥伴節點",
+        "subgraphBlueprints": "子圖藍圖",
+        "unfavoriteNode": "取消收藏節點"
+      },
       "sortBy": {
         "alphabetical": "字母順序",
         "alphabeticalDesc": "在分組內以字母排序",
@@ -2402,6 +2690,7 @@
       },
       "sortMode": "排序模式"
     },
+    "nodes": "節點",
     "openWorkflow": "在本機檔案系統中開啟工作流程",
     "queue": "佇列",
     "queueProgressOverlay": {
@@ -2409,14 +2698,17 @@
       "activeJobsShort": "{count} 個進行中",
       "activeJobsSuffix": "執行中作業",
       "cancelJobTooltip": "取消作業",
+      "clearAllJobsTooltip": "取消所有執行中的作業",
       "clearHistory": "清除作業佇列歷史",
       "clearHistoryDialogAssetsNote": "這些作業產生的資產不會被刪除，隨時可從資產面板檢視。",
       "clearHistoryDialogDescription": "下方所有已完成或失敗的作業將會從此作業佇列面板中移除。",
       "clearHistoryDialogTitle": "要清除作業佇列歷史嗎？",
+      "clearHistoryMenuAssetsNote": "媒體資產不會被刪除。",
       "clearQueueTooltip": "清除佇列",
       "clearQueued": "清除已排入佇列",
       "colonPercent": "：{percent}",
       "currentNode": "目前節點：",
+      "dockedJobHistory": "固定工作歷史",
       "expandCollapsedQueue": "展開作業佇列",
       "filterAllWorkflows": "所有工作流程",
       "filterBy": "篩選依據",
@@ -2438,8 +2730,10 @@
       "running": "執行中",
       "runningJobsLabel": "{count} 執行中",
       "runningQueuedSummary": "{running} 執行中, {queued} 已排隊",
+      "searchJobs": "搜尋...",
       "showAssets": "顯示資產",
       "showAssetsPanel": "顯示資產面板",
+      "showRunProgressBar": "顯示運行進度條",
       "sortBy": "排序依據",
       "sortJobs": "排序作業",
       "stubClipTextEncode": "CLIP 文字編碼：",
@@ -2479,14 +2773,17 @@
     "cannotDeleteGlobal": "無法刪除已安裝的藍圖",
     "confirmDelete": "此操作將永久從您的程式庫中移除藍圖",
     "confirmDeleteTitle": "刪除藍圖？",
+    "disconnected": "已斷線",
     "enterDescription": "輸入描述",
     "enterSearchAliases": "輸入搜尋別名（以逗號分隔）",
     "hidden": "隱藏 / 巢狀參數",
     "hideAll": "全部隱藏",
+    "linked": "（已連結）",
     "loadFailure": "載入子圖藍圖失敗",
     "overwriteBlueprint": "儲存將以您的變更覆蓋目前的藍圖",
     "overwriteBlueprintTitle": "覆蓋現有藍圖？",
     "promoteOutsideSubgraph": "不在子圖中時無法提升小工具",
+    "promoteWidget": "推廣元件：{name}",
     "publish": "發佈子圖",
     "publishSuccess": "已儲存至節點庫",
     "publishSuccessMessage": "您可以在節點庫的「子圖藍圖」中找到您的子圖藍圖",
@@ -2494,7 +2791,8 @@
     "searchAliases": "搜尋別名",
     "showAll": "顯示全部",
     "showRecommended": "顯示建議的小工具",
-    "shown": "在節點上顯示"
+    "shown": "在節點上顯示",
+    "unpromoteWidget": "取消推廣元件：{name}"
   },
   "subscription": {
     "addApiCredits": "新增 API 點數",
@@ -2502,7 +2800,9 @@
     "addCreditsLabel": "隨時可儲值點數",
     "benefits": {
       "benefit1": "合作節點每月點數 — 需要時可隨時加值",
-      "benefit2": "每項任務最多運行 30 分鐘"
+      "benefit1FreeTier": "每月更多點數，隨時加值",
+      "benefit2": "每項任務最多運行 30 分鐘",
+      "benefit3": "可自帶模型（Creator & Pro）"
     },
     "beta": "測試版",
     "billedMonthly": "每月收費",
@@ -2540,6 +2840,21 @@
     "description": "選擇最適合您的方案",
     "descriptionWorkspace": "為您的工作區選擇最佳方案",
     "expiresDate": "將於 {date} 到期",
+    "freeTier": {
+      "description": "您的免費方案每月包含 {credits} 點數，可體驗 Comfy Cloud。",
+      "descriptionGeneric": "您的免費方案每月包含點數額度，可體驗 Comfy Cloud。",
+      "nextRefresh": "您的點數將於 {date} 重置。",
+      "outOfCredits": {
+        "subtitle": "訂閱以解鎖加值與更多功能",
+        "title": "您的免費點數已用完"
+      },
+      "subscribeCta": "訂閱以獲得更多",
+      "title": "您目前使用的是免費方案",
+      "topUpBlocked": {
+        "title": "解鎖加值與更多功能"
+      },
+      "upgradeCta": "查看方案"
+    },
     "gpuLabel": "RTX 6000 Pro（96GB VRAM）",
     "haveQuestions": "有疑問或想了解企業方案？",
     "invoiceHistory": "發票記錄",
@@ -2550,6 +2865,7 @@
     "maxDuration": {
       "creator": "30 分鐘",
       "founder": "30 分鐘",
+      "free": "30 分鐘",
       "pro": "1 小時",
       "standard": "30 分鐘"
     },
@@ -2608,6 +2924,7 @@
     "resubscribe": "重新訂閱",
     "resubscribeSuccess": "訂閱已重新啟用",
     "resubscribeTo": "重新訂閱 {plan}",
+    "subscribeForMore": "升級",
     "subscribeNow": "立即訂閱",
     "subscribeTo": "訂閱 {plan}",
     "subscribeToComfyCloud": "訂閱 Comfy Cloud",
@@ -2622,6 +2939,9 @@
       "founder": {
         "name": "創始版"
       },
+      "free": {
+        "name": "免費"
+      },
       "pro": {
         "name": "專業版"
       },
@@ -2635,6 +2955,7 @@
     "upgrade": "升級",
     "upgradePlan": "升級方案",
     "upgradeTo": "升級至 {plan}",
+    "upgradeToAddCredits": "升級以增加點數",
     "usdPerMonth": "美元／月",
     "usdPerMonthPerMember": "美元／月／成員",
     "videoEstimateExplanation": "此估算以 Wan 2.2 圖轉影範本的預設設定（5 秒、640x640、16fps、4 步採樣）為基礎。",
@@ -2732,6 +3053,7 @@
     "emptyCanvas": "畫布為空",
     "errorCopyImage": "複製圖片時發生錯誤：{error}",
     "errorLoadingModel": "載入模型時發生錯誤",
+    "errorOpenImage": "開啟圖像時發生錯誤：{error}",
     "errorSaveSetting": "儲存設定 {id} 時發生錯誤：{err}",
     "exportSuccess": "已成功將模型匯出為 {format}",
     "failedExecutionPathResolution": "無法解析所選節點的路徑",
@@ -2858,9 +3180,14 @@
     "dropPrompt": "拖放您的檔案或"
   },
   "widgets": {
+    "boolean": {
+      "false": "否",
+      "true": "是"
+    },
     "node2only": "僅限 Node 2.0",
     "selectModel": "選擇模型",
     "uploadSelect": {
+      "maxSelectionReached": "已達到最大選取限制",
       "placeholder": "選擇...",
       "placeholderAudio": "選擇音訊...",
       "placeholderImage": "選擇圖片...",
@@ -2894,7 +3221,9 @@
     "enterFilename": "輸入檔案名稱",
     "enterFilenamePrompt": "請輸入檔案名稱：",
     "exportWorkflow": "匯出工作流程",
-    "saveWorkflow": "儲存工作流程"
+    "saveWorkflow": "儲存工作流程",
+    "savedAsApp": "已轉換為應用程式工作流程",
+    "savedAsWorkflow": "已轉換為僅節點圖工作流程"
   },
   "workspace": {
     "addedToWorkspace": "你已被加入 {workspaceName}",

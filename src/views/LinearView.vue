@@ -1,192 +1,208 @@
 <script setup lang="ts">
-import {
-  breakpointsTailwind,
-  unrefElement,
-  useBreakpoints,
-  whenever
-} from '@vueuse/core'
+import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
+import type { MaybeElement } from '@vueuse/core'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { ref, useTemplateRef } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { storeToRefs } from 'pinia'
+import { computed, useTemplateRef } from 'vue'
 
-import ModeToggle from '@/components/sidebar/ModeToggle.vue'
+import AppBuilder from '@/components/builder/AppBuilder.vue'
+import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
+import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { cn } from '@/utils/tailwindUtil'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
-import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
-import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
+import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useAppMode } from '@/composables/useAppMode'
+import { useStablePrimeVueSplitterSizer } from '@/composables/useStablePrimeVueSplitterSizer'
+import {
+  BUILDER_MIN_SIZE,
+  CENTER_PANEL_SIZE,
+  SIDEBAR_MIN_SIZE,
+  SIDE_PANEL_SIZE
+} from '@/constants/splitterConstants'
+import { useAppModeStore } from '@/stores/appModeStore'
 
-const { t } = useI18n()
-const nodeOutputStore = useNodeOutputStore()
 const settingStore = useSettingStore()
+const workspaceStore = useWorkspaceStore()
+const { isBuilderMode, isArrangeMode } = useAppMode()
+const appModeStore = useAppModeStore()
+const { hasOutputs } = storeToRefs(appModeStore)
 
 const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 
-const hasPreview = ref(false)
-whenever(
-  () => nodeOutputStore.latestPreview[0],
-  () => (hasPreview.value = true)
+const activeTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
+const sidebarOnLeft = computed(
+  () => settingStore.get('Comfy.Sidebar.Location') === 'left'
+)
+const showLeftBuilder = computed(
+  () => !sidebarOnLeft.value && isArrangeMode.value
+)
+const showRightBuilder = computed(
+  () => sidebarOnLeft.value && isArrangeMode.value
+)
+const hasLeftPanel = computed(
+  () =>
+    isArrangeMode.value ||
+    (sidebarOnLeft.value && activeTab.value) ||
+    (!sidebarOnLeft.value && !isBuilderMode.value && hasOutputs.value)
+)
+const hasRightPanel = computed(
+  () =>
+    isArrangeMode.value ||
+    (sidebarOnLeft.value && !isBuilderMode.value && hasOutputs.value) ||
+    (!sidebarOnLeft.value && activeTab.value)
 )
 
-const selectedItem = ref<AssetItem>()
-const selectedOutput = ref<ResultItemImpl>()
-const canShowPreview = ref(true)
-const outputHistoryRef = useTemplateRef('outputHistoryRef')
+function sidePanelMinSize(isBuilder: boolean, isHidden: boolean) {
+  if (isBuilder) return BUILDER_MIN_SIZE
+  if (isHidden) return undefined
+  return SIDEBAR_MIN_SIZE
+}
 
-const topLeftRef = useTemplateRef('topLeftRef')
-const topRightRef = useTemplateRef('topRightRef')
+// Remount splitter when panel structure changes so initializePanels()
+// properly sets flexBasis for the current set of panels.
+const splitterKey = computed(() => {
+  const left = hasLeftPanel.value ? 'L' : ''
+  const right = hasRightPanel.value ? 'R' : ''
+  return isArrangeMode.value ? 'arrange' : `app-${left}${right}`
+})
+
+const leftPanelRef = useTemplateRef<MaybeElement>('leftPanel')
+const rightPanelRef = useTemplateRef<MaybeElement>('rightPanel')
+
+const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+  [
+    { ref: leftPanelRef, storageKey: 'Comfy.LinearView.LeftPanelWidth' },
+    { ref: rightPanelRef, storageKey: 'Comfy.LinearView.RightPanelWidth' }
+  ],
+  [activeTab, splitterKey]
+)
+
+const TYPEFORM_WIDGET_ID = 'gmVqFi8l'
+
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 </script>
 <template>
-  <div
-    class="absolute w-full h-full"
-    @wheel.capture="(e: WheelEvent) => outputHistoryRef?.onWheel(e)"
-  >
-    <div class="workflow-tabs-container pointer-events-auto h-9.5 w-full">
+  <MobileDisplay v-if="mobileDisplay" />
+  <div v-else class="absolute size-full">
+    <div
+      class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
+    >
       <div class="flex h-full items-center">
         <WorkflowTabs />
         <TopbarBadges />
-      </div>
-    </div>
-    <div
-      v-if="mobileDisplay"
-      class="justify-center border-border-subtle border-t overflow-y-scroll h-[calc(100%-38px)] bg-comfy-menu-bg"
-    >
-      <MobileMenu />
-      <div class="flex flex-col text-muted-foreground">
-        <LinearPreview
-          :latent-preview="
-            canShowPreview && hasPreview
-              ? nodeOutputStore.latestPreview[0]
-              : undefined
-          "
-          :run-button-click="linearWorkflowRef?.runButtonClick"
-          :selected-item
-          :selected-output
-          mobile
-        />
-      </div>
-      <OutputHistory
-        ref="outputHistoryRef"
-        mobile
-        @update-selection="
-          ([item, output, canShow]) => {
-            selectedItem = item
-            selectedOutput = output
-            canShowPreview = canShow
-            hasPreview = false
-          }
-        "
-      />
-      <LinearControls ref="linearWorkflowRef" mobile />
-      <div class="text-base-foreground flex items-center gap-4">
-        <div class="border-r border-border-subtle mr-auto">
-          <ModeToggle class="m-2" />
-        </div>
-        <div v-text="t('linearMode.beta')" />
-        <TypeformPopoverButton data-tf-widget="gmVqFi8l" class="mx-2" />
+        <TopbarSubscribeButton />
       </div>
     </div>
     <Splitter
-      v-else
-      class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
-      :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
-      @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
+      :key="splitterKey"
+      class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full border-none"
+      @resizestart="$event.originalEvent.preventDefault()"
+      @resizeend="onResizeEnd"
     >
       <SplitterPanel
-        id="linearLeftPanel"
-        :size="1"
-        class="min-w-min outline-none"
+        v-if="hasLeftPanel"
+        ref="leftPanel"
+        :size="SIDE_PANEL_SIZE"
+        :min-size="
+          sidePanelMinSize(showLeftBuilder, showRightBuilder && !activeTab)
+        "
+        :style="
+          showRightBuilder && !activeTab ? { display: 'none' } : undefined
+        "
+        :class="
+          cn(
+            'arrange-panel overflow-hidden outline-none',
+            showLeftBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-78'
+          )
+        "
       >
-        <OutputHistory
-          v-if="settingStore.get('Comfy.Sidebar.Location') === 'left'"
-          ref="outputHistoryRef"
-          :scroll-reset-button-to="unrefElement(bottomLeftRef) ?? undefined"
-          @update-selection="
-            ([item, output, canShow]) => {
-              selectedItem = item
-              selectedOutput = output
-              canShowPreview = canShow
-              hasPreview = false
-            }
-          "
-        />
+        <AppBuilder v-if="showLeftBuilder" />
+        <div
+          v-else-if="sidebarOnLeft && activeTab"
+          class="size-full overflow-x-hidden border-r border-border-subtle"
+        >
+          <ExtensionSlot :extension="activeTab" />
+        </div>
         <LinearControls
-          v-else
+          v-else-if="!isArrangeMode"
           ref="linearWorkflowRef"
           :toast-to="unrefElement(bottomLeftRef) ?? undefined"
-          :notes-to="unrefElement(topLeftRef) ?? undefined"
         />
-        <div />
       </SplitterPanel>
       <SplitterPanel
         id="linearCenterPanel"
-        :size="98"
-        class="flex flex-col min-w-min gap-4 mx-2 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
+        :size="CENTER_PANEL_SIZE"
+        class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
       >
-        <LinearPreview
-          :latent-preview="
-            canShowPreview && hasPreview
-              ? nodeOutputStore.latestPreview[0]
-              : undefined
-          "
-          :run-button-click="linearWorkflowRef?.runButtonClick"
-          :selected-item
-          :selected-output
+        <LinearProgressBar
+          class="absolute top-0 left-0 z-21 w-[calc(100%+16px)]"
         />
-        <div ref="topLeftRef" class="absolute z-21 top-4 left-4" />
-        <div ref="topRightRef" class="absolute z-21 top-4 right-4" />
-        <div ref="bottomLeftRef" class="absolute z-20 bottom-4 left-4" />
-        <div ref="bottomRightRef" class="absolute z-20 bottom-24 right-4" />
-        <div
-          class="absolute z-20 bottom-4 right-4 text-base-foreground flex items-center gap-4"
-        >
-          <div v-text="t('linearMode.beta')" />
-          <TypeformPopoverButton
-            data-tf-widget="gmVqFi8l"
-            :align="
-              settingStore.get('Comfy.Sidebar.Location') === 'left'
-                ? 'end'
-                : 'start'
-            "
-          />
+        <LinearPreview
+          :run-button-click="linearWorkflowRef?.runButtonClick"
+          :typeform-widget-id="TYPEFORM_WIDGET_ID"
+        />
+        <div class="absolute top-4 left-4 z-21">
+          <AppModeToolbar v-if="!isBuilderMode" />
         </div>
+        <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
+        <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
       </SplitterPanel>
       <SplitterPanel
-        id="linearRightPanel"
-        :size="1"
-        class="min-w-min outline-none"
+        v-if="hasRightPanel"
+        ref="rightPanel"
+        :size="SIDE_PANEL_SIZE"
+        :min-size="
+          sidePanelMinSize(showRightBuilder, showLeftBuilder && !activeTab)
+        "
+        :style="showLeftBuilder && !activeTab ? { display: 'none' } : undefined"
+        :class="
+          cn(
+            'arrange-panel overflow-hidden outline-none',
+            showRightBuilder ? 'min-w-78 bg-comfy-menu-bg' : 'min-w-78'
+          )
+        "
       >
+        <AppBuilder v-if="showRightBuilder" />
         <LinearControls
-          v-if="settingStore.get('Comfy.Sidebar.Location') === 'left'"
+          v-else-if="sidebarOnLeft && !isArrangeMode"
           ref="linearWorkflowRef"
           :toast-to="unrefElement(bottomRightRef) ?? undefined"
-          :notes-to="unrefElement(topRightRef) ?? undefined"
         />
-        <OutputHistory
-          v-else
-          ref="outputHistoryRef"
-          :scroll-reset-button-to="unrefElement(bottomRightRef) ?? undefined"
-          @update-selection="
-            ([item, output, canShow]) => {
-              selectedItem = item
-              selectedOutput = output
-              canShowPreview = canShow
-              hasPreview = false
-            }
-          "
-        />
-        <div />
+        <div
+          v-else-if="activeTab"
+          class="h-full overflow-x-hidden border-l border-border-subtle"
+        >
+          <ExtensionSlot :extension="activeTab" />
+        </div>
       </SplitterPanel>
     </Splitter>
   </div>
 </template>
+
+<style scoped>
+:deep(.p-splitter-gutter) {
+  pointer-events: auto;
+}
+
+:deep(.p-splitter-gutter:hover),
+:deep(.p-splitter-gutter[data-p-gutter-resizing='true']) {
+  transition: background-color 0.2s ease 300ms;
+  background-color: var(--p-primary-color);
+}
+
+/* Hide gutter next to hidden arrange panels */
+:deep(.arrange-panel[style*='display: none'] + .p-splitter-gutter),
+:deep(.p-splitter-gutter + .arrange-panel[style*='display: none']) {
+  display: none;
+}
+</style>

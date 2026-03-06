@@ -1,13 +1,13 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col px-2 justify-center"
+    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
   >
     <!-- Image Wrapper -->
     <div
       ref="imageWrapperEl"
-      class="h-full w-full overflow-hidden rounded-[5px] bg-muted-background relative"
+      class="relative flex min-h-0 w-full flex-1 overflow-hidden rounded-[5px] bg-transparent"
       tabindex="0"
       role="img"
       :aria-label="$t('g.imagePreview')"
@@ -21,11 +21,9 @@
       <div
         v-if="imageError"
         role="alert"
-        class="flex size-full flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
+        class="flex size-full flex-1 flex-col items-center justify-around self-center py-8 text-center text-base-foreground"
       >
-        <i
-          class="mb-2 icon-[lucide--image-off] h-12 w-12 text-base-foreground"
-        />
+        <i class="mb-2 icon-[lucide--image-off] size-12 text-base-foreground" />
         <p class="text-sm text-base-foreground">
           {{ $t('g.imageFailedToLoad') }}
         </p>
@@ -40,10 +38,9 @@
       <!-- Main Image -->
       <img
         v-if="!imageError"
-        ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block size-full object-contain pointer-events-none contain-size"
+        class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -61,7 +58,7 @@
           :aria-label="$t('g.editOrMaskImage')"
           @click="handleEditMask"
         >
-          <i-comfy:mask class="h-4 w-4" />
+          <i-comfy:mask class="size-4" />
         </button>
 
         <!-- Download Button -->
@@ -71,7 +68,7 @@
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] h-4 w-4" />
+          <i class="icon-[lucide--download] size-4" />
         </button>
 
         <!-- Close Button -->
@@ -81,7 +78,7 @@
           :aria-label="$t('g.removeImage')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] h-4 w-4" />
+          <i class="icon-[lucide--x] size-4" />
         </button>
       </div>
     </div>
@@ -128,9 +125,9 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -142,7 +139,7 @@ interface ImagePreviewProps {
 const props = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
-const commandStore = useCommandStore()
+const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 
 const actionButtonClass =
@@ -156,7 +153,6 @@ const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
 
-const currentImageEl = ref<HTMLImageElement>()
 const imageWrapperEl = ref<HTMLDivElement>()
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
@@ -209,6 +205,10 @@ const handleImageLoad = (event: Event) => {
   if (img.naturalWidth && img.naturalHeight) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
+
+  if (props.nodeId) {
+    nodeOutputStore.syncLegacyNodeImgs(props.nodeId, img, currentIndex.value)
+  }
 }
 
 const handleImageError = () => {
@@ -218,19 +218,11 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
-// In vueNodes mode, we need to set them manually before opening the mask editor.
-const setupNodeForMaskEditor = () => {
-  if (!props.nodeId || !currentImageEl.value) return
-  const node = app.rootGraph?.getNodeById(props.nodeId)
-  if (!node) return
-  node.imageIndex = currentIndex.value
-  node.imgs = [currentImageEl.value]
-  app.canvas?.select(node)
-}
-
 const handleEditMask = () => {
-  setupNodeForMaskEditor()
-  void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
+  if (!props.nodeId) return
+  const node = app.rootGraph?.getNodeById(Number(props.nodeId))
+  if (!node) return
+  maskEditor.openMaskEditor(node)
 }
 
 const handleDownload = () => {
@@ -249,15 +241,24 @@ const handleDownload = () => {
 
 const handleRemove = () => {
   if (!props.nodeId) return
+  const node = app.rootGraph?.getNodeById(Number(props.nodeId))
   nodeOutputStore.removeNodeOutputs(props.nodeId)
+  if (node) {
+    node.imgs = undefined
+    const imageWidget = node.widgets?.find((w) => w.name === 'image')
+    if (imageWidget) {
+      imageWidget.value = ''
+    }
+  }
 }
 
 const setCurrentIndex = (index: number) => {
   if (currentIndex.value === index) return
   if (index >= 0 && index < props.imageUrls.length) {
+    const urlChanged = props.imageUrls[index] !== currentImageUrl.value
     currentIndex.value = index
-    startDelayedLoader()
     imageError.value = false
+    if (urlChanged) startDelayedLoader()
   }
 }
 

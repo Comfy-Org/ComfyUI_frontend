@@ -1,10 +1,10 @@
 <template>
   <WidgetLayoutField :widget="widget">
-    <div :class="cn(WidgetInputBaseClass, 'flex items-center gap-2 pl-3 pr-2')">
+    <div :class="cn(WidgetInputBaseClass, 'flex items-center gap-2 pr-2 pl-3')">
       <Slider
         :model-value="[modelValue]"
         v-bind="filteredProps"
-        class="flex-grow text-xs"
+        class="grow text-xs"
         :step="stepValue"
         :aria-label="widget.name"
         @update:model-value="updateLocalValue"

@@ -22,9 +22,13 @@ function buildGroupedJobItems(): JobGroup[] {
 
 const groupedJobItems = computed<JobGroup[]>(buildGroupedJobItems)
 
+export const jobTabs = ['All', 'Completed', 'Failed'] as const
+export const jobSortModes = ['mostRecent', 'totalGenerationTime'] as const
+
 const selectedJobTab = ref<JobTab>('All')
 const selectedWorkflowFilter = ref<'all' | 'current'>('all')
 const selectedSortMode = ref<JobSortMode>('mostRecent')
+const searchQuery = ref('')
 const currentNodeName = ref('KSampler')
 function buildEmptyTasks(): TaskItemImpl[] {
   return []
@@ -48,6 +52,7 @@ export function useJobList() {
     selectedJobTab,
     selectedWorkflowFilter,
     selectedSortMode,
+    searchQuery,
     hasFailedJobs,
     allTasksSorted,
     filteredTasks,

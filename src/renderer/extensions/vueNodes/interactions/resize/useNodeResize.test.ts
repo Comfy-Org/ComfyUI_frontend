@@ -108,7 +108,7 @@ function createPointerEvent(
     preventDefault: vi.fn(),
     stopPropagation: vi.fn(),
     ...overrides
-  } as unknown as PointerEvent
+  } as Partial<PointerEvent> as PointerEvent
 }
 
 function startResizeAt(

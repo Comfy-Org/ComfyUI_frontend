@@ -2,13 +2,14 @@
   <div
     v-show="widgetState.visible"
     ref="widgetElement"
-    class="dom-widget"
+    class="dom-widget size-full"
     :title="tooltip"
     :style="style"
   >
     <component
       :is="widget.component"
       v-if="isComponentWidget(widget)"
+      class="size-full"
       :model-value="widget.value"
       :widget="widget"
       v-bind="widget.props"
@@ -68,7 +69,11 @@ const updateDomClipping = () => {
     return
   }
 
-  const isSelected = selectedNode === widgetState.widget.node
+  const override = widgetState.positionOverride
+  const overrideInGraph =
+    override && lgCanvas.graph?.getNodeById(override.node.id)
+  const ownerNode = overrideInGraph ? override.node : widgetState.widget.node
+  const isSelected = selectedNode === ownerNode
   const renderArea = selectedNode?.renderArea
   const offset = lgCanvas.ds.offset
   const scale = lgCanvas.ds.scale
@@ -97,25 +102,39 @@ const updateDomClipping = () => {
  * and update the position of the widget accordingly.
  */
 const { left, top } = useElementBounding(canvasStore.getCanvas().canvas)
+
+function composeStyle() {
+  const override = widgetState.positionOverride
+  const isDisabled = override
+    ? (override.widget.computedDisabled ?? widget.computedDisabled)
+    : widget.computedDisabled
+
+  style.value = {
+    ...positionStyle.value,
+    ...(enableDomClipping.value ? clippingStyle.value : {}),
+    zIndex: widgetState.zIndex,
+    pointerEvents: widgetState.readonly || isDisabled ? 'none' : 'auto',
+    opacity: isDisabled ? 0.5 : 1
+  }
+}
+
 watch(
-  [() => widgetState, left, top],
-  ([widgetState, _, __]) => {
+  [() => widgetState, left, top, enableDomClipping],
+  ([widgetState]) => {
     updatePosition(widgetState)
     if (enableDomClipping.value) {
       updateDomClipping()
     }
-
-    style.value = {
-      ...positionStyle.value,
-      ...(enableDomClipping.value ? clippingStyle.value : {}),
-      zIndex: widgetState.zIndex,
-      pointerEvents:
-        widgetState.readonly || widget.computedDisabled ? 'none' : 'auto',
-      opacity: widget.computedDisabled ? 0.5 : 1
-    }
+    composeStyle()
   },
   { deep: true }
 )
+
+// Recompose style when clippingStyle updates asynchronously via RAF.
+// updateClipPath() schedules clip-path calculation in a requestAnimationFrame,
+// so clippingStyle.value updates after the main watcher has already composed
+// style. This watcher ensures the new clip-path is applied to the DOM.
+watch(clippingStyle, composeStyle, { deep: true })
 
 watch(
   () => widgetState.visible,
@@ -143,8 +162,17 @@ onMounted(() => {
     widget.options.selectOn ?? ['focus', 'click'],
     () => {
       const lgCanvas = canvasStore.canvas
-      lgCanvas?.selectNode(widgetState.widget.node)
-      lgCanvas?.bringToFront(widgetState.widget.node)
+      if (!lgCanvas) return
+
+      const override = widgetState.positionOverride
+      const overrideInGraph =
+        override && lgCanvas.graph?.getNodeById(override.node.id)
+      const ownerNode = overrideInGraph
+        ? override.node
+        : widgetState.widget.node
+
+      lgCanvas.selectNode(ownerNode)
+      lgCanvas.bringToFront(ownerNode)
     }
   )
 })
@@ -161,6 +189,8 @@ const mountElementIfVisible = () => {
   if (widgetElement.value.contains(widget.element)) {
     return
   }
+
+  widget.element.classList.add('h-full', 'w-full')
   widgetElement.value.appendChild(widget.element)
 }
 
@@ -183,11 +213,3 @@ watch(
 
 whenever(() => !canvasStore.linearMode, mountElementIfVisible)
 </script>
-
-<style scoped>
-@reference '../../../assets/css/style.css';
-
-.dom-widget > * {
-  @apply h-full w-full;
-}
-</style>

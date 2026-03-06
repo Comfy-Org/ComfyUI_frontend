@@ -242,6 +242,20 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
+    // Exclude proprietary ABCROM fonts from non-cloud builds
+    {
+      name: 'exclude-proprietary-fonts',
+      generateBundle(_options, bundle) {
+        if (DISTRIBUTION !== 'cloud') {
+          // Remove ABCROM font files from bundle
+          for (const [fileName] of Object.entries(bundle)) {
+            if (/ABCROM.*\.(woff2?|ttf|otf)$/i.test(fileName)) {
+              delete bundle[fileName]
+            }
+          }
+        }
+      }
+    },
     // Inject legacy user stylesheet links for desktop/localhost only
     {
       name: 'inject-user-stylesheet-links',
@@ -604,7 +618,8 @@ export default defineConfig({
     retry: process.env.CI ? 2 : 0,
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
       reporter: ['text', 'json', 'html']

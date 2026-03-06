@@ -9,6 +9,8 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { usePromotionStore } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import type { DragAndScaleState } from './DragAndScale'
@@ -106,7 +108,7 @@ export interface LGraphConfig {
 }
 
 /** Options for {@link LGraph.add} method. */
-interface GraphAddOptions {
+export interface GraphAddOptions {
   /** If true, skip recomputing execution order after adding the node. */
   skipComputeOrder?: boolean
   /** If true, the node will be semi-transparent and follow the cursor until placed or cancelled. */
@@ -351,6 +353,12 @@ export class LGraph
   clear(): void {
     this.stop()
     this.status = LGraph.STATUS_STOPPED
+
+    const graphId = this.id
+    if (this.isRootGraph && graphId !== zeroUuid) {
+      usePromotionStore().clearGraph(graphId)
+      useWidgetValueStore().clearGraph(graphId)
+    }
 
     this.id = zeroUuid
     this.revision = 0
@@ -965,16 +973,16 @@ export class LGraph
       node.flags.ghost = true
     }
 
-    // Register all widgets with the WidgetValueStore now that node has a valid ID.
-    // Widgets added before the node was in the graph deferred their setNodeId call.
+    node.graph = this
+    this._version++
+
+    // Register all widgets with the WidgetValueStore now that node has a
+    // valid ID and graph reference.
     if (node.widgets) {
       for (const widget of node.widgets) {
         if (isNodeBindable(widget)) widget.setNodeId(node.id)
       }
     }
-
-    node.graph = this
-    this._version++
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
@@ -1063,13 +1071,23 @@ export class LGraph
     }
 
     if (node.isSubgraphNode()) {
-      forEachNode(node.subgraph, (innerNode) => {
-        innerNode.onRemoved?.()
-        innerNode.graph?.onNodeRemoved?.(innerNode)
-        if (innerNode.isSubgraphNode())
-          this.rootGraph.subgraphs.delete(innerNode.subgraph.id)
-      })
-      this.rootGraph.subgraphs.delete(node.subgraph.id)
+      const allGraphs = [this.rootGraph, ...this.rootGraph.subgraphs.values()]
+      const hasRemainingReferences = allGraphs.some((graph) =>
+        graph.nodes.some(
+          (candidate) =>
+            candidate !== node &&
+            candidate.isSubgraphNode() &&
+            candidate.type === node.subgraph.id
+        )
+      )
+
+      if (!hasRemainingReferences) {
+        forEachNode(node.subgraph, (innerNode) => {
+          innerNode.onRemoved?.()
+          innerNode.graph?.onNodeRemoved?.(innerNode)
+        })
+        this.rootGraph.subgraphs.delete(node.subgraph.id)
+      }
     }
 
     // callback
@@ -1861,6 +1879,7 @@ export class LGraph
         })
       )
     )
+
     return { subgraph, node: subgraphNode as SubgraphNode }
   }
 
@@ -1929,15 +1948,20 @@ export class LGraph
       node.id = this.last_node_id
       n_info.id = this.last_node_id
 
+      // Strip links from serialized data before configure to prevent
+      // onConnectionsChange from resolving subgraph-internal link IDs
+      // against the parent graph's link map (which may contain unrelated
+      // links with the same numeric IDs).
+      for (const input of n_info.inputs ?? []) {
+        input.link = null
+      }
+      for (const output of n_info.outputs ?? []) {
+        output.links = []
+      }
+
       this.add(node, true)
       node.configure(n_info)
       node.setPos(node.pos[0] + offsetX, node.pos[1] + offsetY)
-      for (const input of node.inputs) {
-        input.link = null
-      }
-      for (const output of node.outputs) {
-        output.links = []
-      }
       toSelect.push(node)
     }
     const groups = structuredClone(
@@ -2042,9 +2066,19 @@ export class LGraph
       })
     }
     this.remove(subgraphNode)
-    this.subgraphs.delete(subgraphNode.subgraph.id)
+
+    // Deduplicate links by (oid, oslot, tid, tslot) to prevent repeated
+    // disconnect/reconnect cycles on widget inputs that can shift slot indices.
+    const seenLinks = new Set<string>()
+    const dedupedNewLinks = newLinks.filter((link) => {
+      const key = `${link.oid}:${link.oslot}:${link.tid}:${link.tslot}`
+      if (seenLinks.has(key)) return false
+      seenLinks.add(key)
+      return true
+    })
+
     const linkIdMap = new Map<LinkId, LinkId[]>()
-    for (const newLink of newLinks) {
+    for (const newLink of dedupedNewLinks) {
       let created: LLink | null | undefined
       if (newLink.oid == SUBGRAPH_INPUT_ID) {
         if (!(this instanceof Subgraph)) {
@@ -2102,7 +2136,7 @@ export class LGraph
       toSelect.push(migratedReroute)
     }
     //iterate over newly created links to update reroute parentIds
-    for (const newLink of newLinks) {
+    for (const newLink of dedupedNewLinks) {
       const linkInstance = this.links.get(newLink.id)
       if (!linkInstance) {
         continue
@@ -2318,7 +2352,6 @@ export class LGraph
       const usedSubgraphs = [...this._subgraphs.values()]
         .filter((subgraph) => usedSubgraphIds.has(subgraph.id))
         .map((x) => x.asSerialisable())
-
       if (usedSubgraphs.length > 0) {
         data.definitions = { subgraphs: usedSubgraphs }
       }
@@ -2657,6 +2690,8 @@ export class Subgraph
 
   /** The display name of the subgraph. */
   name: string = 'Unnamed Subgraph'
+  /** Optional description shown as tooltip when hovering over the subgraph node. */
+  description?: string
 
   readonly inputNode = new SubgraphInputNode(this)
   readonly outputNode = new SubgraphOutputNode(this)
@@ -2707,9 +2742,10 @@ export class Subgraph
       | (ISerialisedGraph & ExportedSubgraph)
       | (SerialisableGraph & ExportedSubgraph)
   ): void {
-    const { name, inputs, outputs, widgets } = data
+    const { name, description, inputs, outputs, widgets } = data
 
     this.name = name
+    this.description = description
     if (inputs) {
       this.inputs.length = 0
       for (const input of inputs) {
@@ -2920,6 +2956,7 @@ export class Subgraph
       revision: this.revision,
       config: this.config,
       name: this.name,
+      ...(this.description && { description: this.description }),
       inputNode: this.inputNode.asSerialisable(),
       outputNode: this.outputNode.asSerialisable(),
       inputs: this.inputs.map((x) => x.asSerialisable()),

@@ -107,6 +107,32 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       )
     })
 
+    it('invokes afterClose callback when dialog is closed', () => {
+      mockNewUserService.isNewUser.mockReturnValue(false)
+      const afterClose = vi.fn()
+
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show('command', { afterClose })
+
+      const onClose =
+        mockDialogService.showLayoutDialog.mock.calls[0][0].props.onClose
+      onClose()
+
+      expect(mockDialogStore.closeDialog).toHaveBeenCalled()
+      expect(afterClose).toHaveBeenCalled()
+    })
+
+    it('does not fail when afterClose is not provided', () => {
+      mockNewUserService.isNewUser.mockReturnValue(false)
+
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show('command')
+
+      const onClose =
+        mockDialogService.showLayoutDialog.mock.calls[0][0].props.onClose
+      expect(() => onClose()).not.toThrow()
+    })
+
     it('tracks telemetry with source', () => {
       mockNewUserService.isNewUser.mockReturnValue(false)
 

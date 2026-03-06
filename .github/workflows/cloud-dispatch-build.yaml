@@ -1,0 +1,45 @@
+---
+# Dispatches a frontend-asset-build event to the cloud repo on push to
+# cloud/* branches and main. The cloud repo handles the actual build,
+# GCS upload, and secret management (Sentry, Algolia, GCS creds).
+#
+# This is fire-and-forget — it does NOT wait for the cloud workflow to
+# complete. Status is visible in the cloud repo's Actions tab.
+
+name: Cloud Frontend Build Dispatch
+
+on:
+  push:
+    branches:
+      - 'cloud/*'
+      - 'main'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: cloud-dispatch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    # Fork guard: prevent forks from dispatching to the cloud repo
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build client payload
+        id: payload
+        run: |
+          payload="$(jq -nc \
+            --arg ref "${GITHUB_SHA}" \
+            --arg branch "${GITHUB_REF_NAME}" \
+            '{ref: $ref, branch: $branch}')"
+          echo "json=${payload}" >> "${GITHUB_OUTPUT}"
+
+      - name: Dispatch to cloud repo
+        uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4.0.1
+        with:
+          token: ${{ secrets.CLOUD_DISPATCH_TOKEN }}
+          repository: Comfy-Org/cloud
+          event-type: frontend-asset-build
+          client-payload: ${{ steps.payload.outputs.json }}

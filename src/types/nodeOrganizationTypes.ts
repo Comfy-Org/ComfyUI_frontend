@@ -1,7 +1,9 @@
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 
 export type GroupingStrategyId = 'category' | 'module' | 'source'
 export type SortingStrategyId = 'original' | 'alphabetical'
+export type TabId = 'essentials' | 'all' | 'blueprints'
 
 /**
  * Strategy for grouping nodes into tree structure
@@ -41,4 +43,26 @@ export interface NodeSortStrategy {
 export interface NodeOrganizationOptions {
   groupBy?: string
   sortBy?: string
+}
+
+export type NodeCategoryId =
+  | 'blueprints'
+  | 'partnerNodes'
+  | 'comfyNodes'
+  | 'extensions'
+
+export const NODE_CATEGORY_LABELS: Record<NodeCategoryId, string> = {
+  blueprints: 'sideToolbar.nodeLibraryTab.sections.subgraphBlueprints',
+  partnerNodes: 'sideToolbar.nodeLibraryTab.sections.partnerNodes',
+  comfyNodes: 'sideToolbar.nodeLibraryTab.sections.comfyNodes',
+  extensions: 'sideToolbar.nodeLibraryTab.sections.extensions'
+}
+
+export interface NodeSection {
+  /** Filter category identifier */
+  category?: NodeCategoryId
+  /** Section title (i18n key) for tabs that don't use category-based labels */
+  title?: string
+  /** Tree of nodes in this section */
+  tree: TreeNode
 }

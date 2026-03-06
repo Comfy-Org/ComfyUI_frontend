@@ -121,3 +121,51 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
 export function createNodeExecutionId(nodeIds: NodeId[]): NodeExecutionId {
   return nodeIds.join(':')
 }
+
+/**
+ * Returns all ancestor execution IDs for a given execution ID, including itself.
+ *
+ * Example: "65:70:63" → ["65", "65:70", "65:70:63"]
+ */
+export function getAncestorExecutionIds(
+  executionId: string | NodeExecutionId
+): NodeExecutionId[] {
+  const parts = executionId.split(':')
+  return Array.from({ length: parts.length }, (_, i) =>
+    parts.slice(0, i + 1).join(':')
+  )
+}
+
+/**
+ * Returns all ancestor execution IDs for a given execution ID, excluding itself.
+ *
+ * Example: "65:70:63" → ["65", "65:70"]
+ */
+export function getParentExecutionIds(
+  executionId: string | NodeExecutionId
+): NodeExecutionId[] {
+  return getAncestorExecutionIds(executionId).slice(0, -1)
+}
+
+/**
+ * Compare two NodeExecutionIds for ascending numeric sort order.
+ * Splits each ID by ":" and compares segments numerically left to right.
+ *
+ * Example order: "1" < "1:20" < "2" < "10:11:12"
+ */
+export function compareExecutionId(
+  a: string | undefined,
+  b: string | undefined
+): number {
+  const parse = (id: string | undefined) => (id ?? '').split(':').map(Number)
+  const idA = parse(a)
+  const idB = parse(b)
+  for (let i = 0; i < Math.max(idA.length, idB.length); i++) {
+    const segA = idA[i] ?? 0
+    const segB = idB[i] ?? 0
+    const diff =
+      (Number.isNaN(segA) ? 0 : segA) - (Number.isNaN(segB) ? 0 : segB)
+    if (diff !== 0) return diff
+  }
+  return 0
+}

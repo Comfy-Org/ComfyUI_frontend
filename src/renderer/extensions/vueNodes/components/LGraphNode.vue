@@ -9,24 +9,24 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'group/node bg-node-component-header-surface lg-node absolute text-sm',
-        'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
+        'group/node lg-node absolute bg-node-component-header-surface text-sm',
+        'min-h-(--node-height) w-(--node-width) min-w-[225px] contain-layout contain-style',
         shapeClass,
-        'touch-none flex flex-col',
-        'border-1 border-solid border-component-node-border',
+        'flex touch-none flex-col',
+        'border border-solid border-component-node-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
-          'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-3 focus-visible:outline-node-component-outline',
+          'ring-node-component-ring hover:ring-7',
+        'outline-3 outline-transparent focus-visible:outline-node-component-outline',
         borderClass,
         outlineClass,
         cursorClass,
         {
-          [`${beforeShapeClass} before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0`]:
+          [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0 before:bg-bypass/60`]:
             bypassed,
           [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0`]:
             muted,
-          'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
+          'bg-primary-500/10 ring-4 ring-primary-500': isDraggingOver
         },
         shouldHandleNodePointerEvents && !nodeData.flags?.ghost
           ? 'pointer-events-auto'
@@ -50,9 +50,17 @@
     @dragleave="handleDragLeave"
     @drop.stop.prevent="handleDrop"
   >
+    <AppOutput
+      v-if="
+        lgraphNode?.constructor?.nodeData?.output_node &&
+        isSelectOutputsMode &&
+        nodeData.mode === LGraphEventMode.ALWAYS
+      "
+      :id="nodeData.id"
+    />
     <div
       v-if="displayHeader"
-      class="flex flex-col justify-center items-center relative"
+      class="relative flex flex-col items-center justify-center"
     >
       <template v-if="isCollapsed">
         <SlotConnectionDot
@@ -80,7 +88,7 @@
       v-if="isCollapsed && executing && progress !== undefined"
       :class="
         cn(
-          'absolute inset-x-4 -bottom-[1px] translate-y-1/2 rounded-full',
+          'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
           progressClasses
         )
       "
@@ -104,68 +112,116 @@
       </div>
 
       <div
-        class="flex flex-1 flex-col gap-1 pt-1 pb-3 bg-component-node-background rounded-b-2xl"
+        class="flex flex-1 flex-col gap-1 rounded-b-2xl bg-component-node-background pt-1 pb-3"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <NodeSlots :node-data="nodeData" />
 
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
-        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
-          <NodeContent :node-data="nodeData" :media="nodeMedia" />
+        <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
+          <NodeContent
+            v-if="nodeMedia"
+            :node-data="nodeData"
+            :media="nodeMedia"
+          />
+          <NodeContent
+            v-for="preview in promotedPreviews"
+            :key="`${preview.interiorNodeId}-${preview.widgetName}`"
+            :node-data="nodeData"
+            :media="preview"
+          />
         </div>
         <!-- Live mid-execution preview images -->
         <LivePreview
           v-if="shouldShowPreviewImg"
           :image-url="latestPreviewUrl"
         />
-        <NodeBadges v-bind="badges" :pricing="undefined" />
+        <NodeBadges v-bind="badges" :pricing="undefined" class="mt-auto" />
       </div>
     </template>
-    <Button
-      variant="textonly"
+    <div
+      v-if="
+        (hasAnyError && showErrorsTabEnabled) ||
+        lgraphNode?.isSubgraphNode() ||
+        showAdvancedState ||
+        showAdvancedInputsButton
+      "
       :class="
         cn(
-          'w-full h-7 rounded-b-2xl py-2 -z-1 text-xs rounded-t-none',
-          hasAnyError && 'hover:bg-destructive-background-hover',
-          !isCollapsed && '-mt-5 pt-7 h-12'
+          '-z-1 flex h-7 w-full divide-x divide-component-node-border overflow-hidden rounded-t-none rounded-b-2xl text-xs',
+          !isCollapsed && '-mt-5 h-12'
         )
       "
-      as-child
     >
-      <button
-        v-if="hasAnyError"
-        @click.stop="
-          settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
-          useRightSidePanelStore().openPanel('error')
+      <Button
+        v-if="lgraphNode?.isSubgraphNode()"
+        variant="textonly"
+        :class="
+          cn(
+            'h-full flex-1 rounded-none',
+            hasAnyError &&
+              showErrorsTabEnabled &&
+              !nodeData.color &&
+              'bg-node-component-header-surface',
+            isCollapsed ? 'py-2' : 'pt-7 pb-2'
+          )
         "
-      >
-        <span>{{ t('g.error') }}</span>
-        <i class="icon-[lucide--info] size-4" />
-      </button>
-      <button
-        v-else-if="lgraphNode?.isSubgraphNode()"
         data-testid="subgraph-enter-button"
         @click.stop="handleEnterSubgraph"
       >
-        <span>{{ t('g.enterSubgraph') }}</span>
-        <i class="icon-[comfy--workflow] size-4" />
-      </button>
-      <button
-        v-else-if="showAdvancedState || showAdvancedInputsButton"
+        <span class="truncate">{{
+          hasAnyError && showErrorsTabEnabled
+            ? t('g.enter')
+            : t('g.enterSubgraph')
+        }}</span>
+        <i class="icon-[comfy--workflow] size-4 shrink-0" />
+      </Button>
+
+      <Button
+        v-if="hasAnyError && showErrorsTabEnabled"
+        variant="textonly"
+        :class="
+          cn(
+            'h-full flex-1 rounded-none bg-error hover:bg-destructive-background-hover',
+            isCollapsed ? 'py-2' : 'pt-7 pb-2'
+          )
+        "
+        @click.stop="useRightSidePanelStore().openPanel('errors')"
+      >
+        <span class="truncate">{{ t('g.error') }}</span>
+        <i class="icon-[lucide--info] size-4 shrink-0" />
+      </Button>
+
+      <!-- Advanced inputs (non-subgraph nodes only) -->
+      <Button
+        v-if="
+          !lgraphNode?.isSubgraphNode() &&
+          (showAdvancedState || showAdvancedInputsButton)
+        "
+        variant="textonly"
+        :class="
+          cn('h-full flex-1 rounded-none', isCollapsed ? 'py-2' : 'pt-7 pb-2')
+        "
         @click.stop="showAdvancedState = !showAdvancedState"
       >
         <template v-if="showAdvancedState">
-          <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
-          <i class="icon-[lucide--chevron-up] size-4" />
+          <span class="truncate">{{
+            t('rightSidePanel.hideAdvancedInputsButton')
+          }}</span>
+          <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
         </template>
         <template v-else>
-          <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
-          <i class="icon-[lucide--settings-2] size-4" />
+          <span class="truncate">{{
+            t('rightSidePanel.showAdvancedInputsButton')
+          }}</span>
+          <i class="icon-[lucide--settings-2] size-4 shrink-0" />
         </template>
-      </button>
-    </Button>
-    <template v-if="!isCollapsed && nodeData.resizable !== false">
+      </Button>
+    </div>
+    <template
+      v-if="!isCollapsed && nodeData.resizable !== false && !isSelectMode"
+    >
       <div
         v-for="handle in RESIZE_HANDLES"
         :key="handle.corner"
@@ -184,7 +240,7 @@
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 12 12"
-          :class="cn('w-2/5 h-2/5 absolute', handle.svgPositionClasses)"
+          :class="cn('absolute size-2/5', handle.svgPositionClasses)"
           :style="
             handle.svgTransform ? { transform: handle.svgTransform } : undefined
           "
@@ -219,7 +275,9 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
+import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { hasUnpromotedWidgets } from '@/core/graph/subgraph/unpromotedWidgetUtils'
 import { st } from '@/i18n'
 import {
   LGraphCanvas,
@@ -234,8 +292,10 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -249,8 +309,8 @@ import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useN
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isTransparent } from '@/utils/colorUtil'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -281,6 +341,7 @@ const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
 
+const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
@@ -296,9 +357,9 @@ const isSelected = computed(() => {
 
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
-const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const hasExecutionError = computed(
-  () => executionStore.lastExecutionErrorNodeId === nodeData.id
+  () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
 )
 
 const hasAnyError = computed((): boolean => {
@@ -306,9 +367,16 @@ const hasAnyError = computed((): boolean => {
     hasExecutionError.value ||
     nodeData.hasErrors ||
     error ||
-    (executionStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
+    executionErrorStore.getNodeErrors(nodeLocatorId.value) ||
+    (lgraphNode.value &&
+      (executionErrorStore.isContainerWithInternalError(lgraphNode.value) ||
+        executionErrorStore.isContainerWithMissingNode(lgraphNode.value)))
   )
 })
+
+const showErrorsTabEnabled = computed(() =>
+  settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+)
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 
@@ -483,7 +551,7 @@ watch(isCollapsed, (collapsed) => {
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
-  // Show custom content if node has media outputs
+  if (promotedPreviews.value.length > 0) return true
   return !!nodeMedia.value && nodeMedia.value.urls.length > 0
 })
 
@@ -597,15 +665,17 @@ const lgraphNode = computed(() => {
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
+// TODO: Surface subgraph info more cleanly in VueNodeData instead of
+// reaching through lgraphNode for promoted preview resolution.
+const { promotedPreviews } = usePromotedPreviews(lgraphNode)
+
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
 
   // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
-    const interiorNodes = node.subgraph.nodes
-    const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
-    return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
+    return hasUnpromotedWidgets(node)
   }
 
   // For regular nodes: show button if there are advanced widgets and they're currently hidden

@@ -200,6 +200,12 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   }))
 }))
 
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: vi.fn().mockReturnValue({
+    nodeProgressStates: {}
+  })
+}))
+
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { api } from '@/scripts/api'
 
