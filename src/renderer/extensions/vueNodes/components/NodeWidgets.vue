@@ -53,7 +53,11 @@
           />
         </div>
         <!-- Widget Component -->
-        <AppInput :id="widget.id" :name="widget.name" :enable="canSelectInputs">
+        <AppInput
+          :id="widget.id"
+          :name="widget.name"
+          :enable="canSelectInputs && !widget.simplified.options?.disabled"
+        >
           <component
             :is="widget.vueComponent"
             v-model="widget.value"
