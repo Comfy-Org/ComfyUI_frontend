@@ -3,9 +3,16 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { isCloud } from '@/platform/distribution/types'
+import {
+  openShareDialog,
+  prefetchShareDialog
+} from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -18,6 +25,8 @@ const workspaceStore = useWorkspaceStore()
 const { enableAppBuilder } = useAppMode()
 const appModeStore = useAppModeStore()
 const { enterBuilder } = appModeStore
+const { toastErrorHandler } = useErrorHandling()
+const { flags } = useFeatureFlags()
 const { hasNodes } = storeToRefs(appModeStore)
 const tooltipOptions = { showDelay: 300, hideDelay: 300 }
 
@@ -59,6 +68,21 @@ function openTemplates() {
       @click="enterBuilder"
     >
       <i class="icon-[lucide--hammer] size-4" />
+    </Button>
+    <Button
+      v-if="isCloud && flags.workflowSharingEnabled"
+      v-tooltip.right="{
+        value: t('actionbar.shareTooltip'),
+        ...tooltipOptions
+      }"
+      variant="secondary"
+      size="unset"
+      :aria-label="t('actionbar.shareTooltip')"
+      class="size-10 rounded-lg"
+      @click="() => openShareDialog().catch(toastErrorHandler)"
+      @pointerenter="prefetchShareDialog"
+    >
+      <i class="icon-[lucide--send] size-4" />
     </Button>
 
     <div
