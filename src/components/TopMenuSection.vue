@@ -51,6 +51,7 @@
               ref="legacyCommandsContainerRef"
               class="[&:not(:has(*>*:not(:empty)))]:hidden"
             ></div>
+
             <ComfyActionbar
               :top-menu-container="actionbarContainerRef"
               :queue-overlay-expanded="isQueueOverlayExpanded"
@@ -61,6 +62,19 @@
               class="shrink-0"
             />
             <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+            <Button
+              v-if="isCloud && flags.workflowSharingEnabled"
+              v-tooltip.bottom="shareTooltipConfig"
+              variant="secondary"
+              :aria-label="t('actionbar.shareTooltip')"
+              @click="() => openShareDialog().catch(toastErrorHandler)"
+              @pointerenter="prefetchShareDialog"
+            >
+              <i class="icon-[lucide--share-2] size-4" />
+              <span class="not-md:hidden">
+                {{ t('actionbar.share') }}
+              </span>
+            </Button>
             <Button
               v-if="!isRightSidePanelOpen"
               v-tooltip.bottom="rightSidePanelTooltipConfig"
@@ -134,7 +148,12 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  openShareDialog,
+  prefetchShareDialog
+} from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -144,6 +163,7 @@ const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
+const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -194,6 +214,9 @@ const shouldHideInlineProgressSummary = computed(
 )
 const customNodesManagerTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.manageExtensions'))
+)
+const shareTooltipConfig = computed(() =>
+  buildTooltipConfig(t('actionbar.shareTooltip'))
 )
 
 const shouldShowRedDot = computed((): boolean => {

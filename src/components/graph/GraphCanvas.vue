@@ -537,8 +537,13 @@ onMounted(async () => {
   await workflowPersistence.initializeWorkflow()
   workflowPersistence.restoreWorkflowTabsState()
 
+  const sharedWorkflowLoadStatus =
+    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+
   // Load template from URL if present
-  await workflowPersistence.loadTemplateFromUrlIfPresent()
+  if (sharedWorkflowLoadStatus === 'not-present') {
+    await workflowPersistence.loadTemplateFromUrlIfPresent()
+  }
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
   // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts

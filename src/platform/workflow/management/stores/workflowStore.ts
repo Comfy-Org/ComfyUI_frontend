@@ -255,6 +255,20 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return workflow
   }
 
+  const ensureWorkflowId = (
+    workflowData?: ComfyWorkflowJSON
+  ): ComfyWorkflowJSON => {
+    const base = workflowData
+      ? (JSON.parse(JSON.stringify(workflowData)) as ComfyWorkflowJSON)
+      : (JSON.parse(defaultGraphJSON) as ComfyWorkflowJSON)
+
+    if (!base.id) {
+      base.id = generateUUID()
+    }
+
+    return base
+  }
+
   /**
    * Helper to create a new temporary workflow
    */
@@ -268,9 +282,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
       size: -1
     })
 
-    workflow.originalContent = workflow.content = workflowData
-      ? JSON.stringify(workflowData)
-      : defaultGraphJSON
+    const initialWorkflowData = ensureWorkflowId(workflowData)
+    workflow.originalContent = workflow.content =
+      JSON.stringify(initialWorkflowData)
 
     workflowLookup.value[workflow.path] = workflow
     return workflow
@@ -284,9 +298,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
 
+    const normalizedWorkflowData = workflowData
+      ? ensureWorkflowId(workflowData)
+      : undefined
+
     // Try to reuse an existing loaded workflow with the same filename
     // that is not stored in the workflows directory
-    if (path && workflowData) {
+    if (path && normalizedWorkflowData) {
       const existingWorkflow = workflows.value.find(
         (w) => w.fullFilename === path
       )
@@ -296,12 +314,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
           ComfyWorkflow.basePath.slice(0, -1)
         )
       ) {
-        existingWorkflow.changeTracker.reset(workflowData)
+        existingWorkflow.changeTracker.reset(normalizedWorkflowData)
         return existingWorkflow
       }
     }
 
-    return createNewWorkflow(fullPath, workflowData)
+    return createNewWorkflow(fullPath, normalizedWorkflowData)
   }
 
   /**
