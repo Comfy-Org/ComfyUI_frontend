@@ -7,6 +7,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const PASTED_IMAGE_EXPIRY_MS = 2000
 
@@ -92,12 +93,15 @@ export const useNodeImageUpload = (
     }
   }
 
+  const nodeOutputStore = useNodeOutputStore()
+
   const handleUploadBatch = async (files: File[]) => {
     if (node.isUploading) {
       useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
       return []
     }
     node.isUploading = true
+    nodeOutputStore.setNodeUploading(node.id, true)
 
     try {
       node.imgs = undefined
@@ -114,6 +118,7 @@ export const useNodeImageUpload = (
       return validPaths
     } finally {
       node.isUploading = false
+      nodeOutputStore.setNodeUploading(node.id, false)
       node.graph?.setDirtyCanvas(true)
     }
   }

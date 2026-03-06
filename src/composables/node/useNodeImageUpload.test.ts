@@ -2,11 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-const { mockFetchApi, mockAddAlert, mockUpdateInputs } = vi.hoisted(() => ({
-  mockFetchApi: vi.fn(),
-  mockAddAlert: vi.fn(),
-  mockUpdateInputs: vi.fn()
-}))
+const { mockFetchApi, mockAddAlert, mockUpdateInputs, mockSetNodeUploading } =
+  vi.hoisted(() => ({
+    mockFetchApi: vi.fn(),
+    mockAddAlert: vi.fn(),
+    mockUpdateInputs: vi.fn(),
+    mockSetNodeUploading: vi.fn()
+  }))
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
 
@@ -41,6 +43,10 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({ updateInputs: mockUpdateInputs })
+}))
+
+vi.mock('@/stores/nodeOutputStore', () => ({
+  useNodeOutputStore: () => ({ setNodeUploading: mockSetNodeUploading })
 }))
 
 function createMockNode(): LGraphNode {

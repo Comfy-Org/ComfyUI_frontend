@@ -48,6 +48,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
   const latestPreview = ref<string[]>([])
 
+  const uploadingNodeIds = ref(new Set<string>())
+
+  function setNodeUploading(nodeId: string | number, uploading: boolean) {
+    const id = String(nodeId)
+    if (uploading) {
+      uploadingNodeIds.value.add(id)
+    } else {
+      uploadingNodeIds.value.delete(id)
+    }
+    uploadingNodeIds.value = new Set(uploadingNodeIds.value)
+  }
+
+  function isNodeUploading(nodeId: string | number): boolean {
+    return uploadingNodeIds.value.has(String(nodeId))
+  }
+
   function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
     scheduledRevoke[locator]?.stop()
 
@@ -462,6 +478,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     snapshotOutputs,
     restoreOutputs,
     resetAllOutputsAndPreviews,
+
+    // Upload state
+    setNodeUploading,
+    isNodeUploading,
 
     // State
     nodeOutputs,

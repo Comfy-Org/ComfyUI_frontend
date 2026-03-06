@@ -37,13 +37,23 @@
       </div>
       <!-- Main Image -->
       <img
-        v-if="!imageError"
+        v-if="!imageError && !isUploading"
         :src="currentImageUrl"
         :alt="imageAltText"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
       />
+
+      <!-- Upload Spinner Overlay -->
+      <div
+        v-if="isUploading"
+        class="absolute inset-0 flex items-center justify-center"
+      >
+        <i
+          class="icon-[lucide--loader-circle] size-8 animate-spin text-base-foreground"
+        />
+      </div>
 
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
@@ -85,7 +95,10 @@
 
     <!-- Image Dimensions -->
     <div class="pt-2 text-center text-xs text-base-foreground">
-      <span v-if="imageError" class="text-red-400">
+      <span v-if="isUploading" class="text-base-foreground">
+        {{ $t('g.uploading') }}...
+      </span>
+      <span v-else-if="imageError" class="text-red-400">
         {{ $t('g.errorLoadingImage') }}
       </span>
       <span v-else-if="showLoader" class="text-base-foreground">
@@ -134,6 +147,8 @@ interface ImagePreviewProps {
   readonly imageUrls: readonly string[]
   /** Optional node ID for context-aware actions */
   readonly nodeId?: string
+  /** Whether a file is being uploaded to this node */
+  readonly isUploading?: boolean
 }
 
 const props = defineProps<ImagePreviewProps>()

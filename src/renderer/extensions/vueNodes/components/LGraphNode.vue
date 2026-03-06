@@ -122,6 +122,7 @@
             v-if="nodeMedia"
             :node-data="nodeData"
             :media="nodeMedia"
+            :is-uploading="isNodeUploading"
           />
           <NodeContent
             v-for="preview in promotedPreviews"
@@ -743,6 +744,8 @@ const nodeMedia = computed(() => {
 
   return { type, urls } as const
 })
+
+const isNodeUploading = computed(() => nodeOutputs.isNodeUploading(nodeData.id))
 
 const nodeContainerRef = ref<HTMLDivElement>()
 

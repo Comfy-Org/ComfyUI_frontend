@@ -20,6 +20,7 @@
         v-else-if="hasMedia && media?.type === 'image'"
         :image-urls="media.urls"
         :node-id="nodeId"
+        :is-uploading="isUploading"
         class="mt-2 flex-auto"
       />
     </slot>
@@ -43,14 +44,15 @@ interface NodeContentProps {
     type: 'image' | 'video' | 'audio'
     urls: string[]
   }
+  isUploading?: boolean
 }
 
-const props = defineProps<NodeContentProps>()
+const { nodeData, media, isUploading = false } = defineProps<NodeContentProps>()
 
-const hasMedia = computed(() => props.media && props.media.urls.length > 0)
+const hasMedia = computed(() => media && media.urls.length > 0)
 
 // Get node ID from nodeData
-const nodeId = computed(() => props.nodeData?.id?.toString())
+const nodeId = computed(() => nodeData?.id?.toString())
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
