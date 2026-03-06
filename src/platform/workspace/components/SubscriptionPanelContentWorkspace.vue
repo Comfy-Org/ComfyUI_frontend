@@ -5,7 +5,7 @@
       v-if="isSettingUp"
       class="rounded-2xl border border-interface-stroke p-6"
     >
-      <div class="flex items-center gap-2 text-muted-foreground py-4">
+      <div class="flex items-center gap-2 py-4 text-muted-foreground">
         <i class="pi pi-spin pi-spinner" />
         <span>{{ $t('billingOperation.subscriptionProcessing') }}</span>
       </div>
@@ -23,10 +23,10 @@
           <i class="pi pi-info-circle" />
         </div>
         <div class="flex flex-col gap-2">
-          <h2 class="text-sm font-bold text-text-primary m-0 pt-1.5">
+          <h2 class="m-0 pt-1.5 text-sm font-bold text-text-primary">
             {{ $t('subscription.canceledCard.title') }}
           </h2>
-          <p class="text-sm text-text-secondary m-0">
+          <p class="m-0 text-sm text-text-secondary">
             {{
               $t('subscription.canceledCard.description', {
                 date: formattedEndDate
@@ -147,7 +147,7 @@
                     v-if="!isFreeTierPlan"
                     size="lg"
                     variant="secondary"
-                    class="rounded-lg px-4 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                    class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
                     @click="manageSubscription"
                   >
                     {{ $t('subscription.managePayment') }}
@@ -177,11 +177,11 @@
           </div>
         </div>
 
-        <div class="flex flex-col lg:flex-row lg:items-stretch gap-6 pt-6">
+        <div class="flex flex-col gap-6 pt-6 lg:flex-row lg:items-stretch">
           <div class="flex flex-col">
-            <div class="flex flex-col gap-3 h-full">
+            <div class="flex h-full flex-col gap-3">
               <div
-                class="relative flex flex-col gap-6 rounded-2xl p-5 bg-secondary-background justify-between h-full"
+                class="relative flex h-full flex-col justify-between gap-6 rounded-2xl bg-secondary-background p-5"
               >
                 <Button
                   variant="muted-textonly"
@@ -190,7 +190,7 @@
                   :loading="isLoadingBalance"
                   @click="handleRefresh"
                 >
-                  <i class="pi pi-sync text-text-secondary text-sm" />
+                  <i class="pi pi-sync text-sm text-text-secondary" />
                 </Button>
 
                 <div class="flex flex-col gap-2">
@@ -211,7 +211,7 @@
                 <table class="text-sm text-muted">
                   <tbody>
                     <tr>
-                      <td class="pr-4 font-bold text-left align-middle">
+                      <td class="pr-4 text-left align-middle font-bold">
                         <Skeleton
                           v-if="isLoadingBalance"
                           width="5rem"
@@ -226,7 +226,7 @@
                       </td>
                     </tr>
                     <tr>
-                      <td class="pr-4 font-bold text-left align-middle">
+                      <td class="pr-4 text-left align-middle font-bold">
                         <Skeleton
                           v-if="isLoadingBalance"
                           width="3rem"
@@ -257,7 +257,7 @@
                   <Button
                     v-if="isFreeTierPlan"
                     variant="gradient"
-                    class="p-2 min-h-8 rounded-lg text-sm font-normal w-full"
+                    class="min-h-8 w-full rounded-lg p-2 text-sm font-normal"
                     @click="handleUpgradeToAddCredits"
                   >
                     {{ $t('subscription.upgradeToAddCredits') }}
@@ -265,7 +265,7 @@
                   <Button
                     v-else
                     variant="secondary"
-                    class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                    class="min-h-8 rounded-lg bg-interface-menu-component-surface-selected p-2 text-sm font-normal text-text-primary"
                     @click="handleAddApiCredits"
                   >
                     {{ $t('subscription.addCredits') }}
@@ -316,20 +316,20 @@
           !isInPersonalWorkspace &&
           permissions.canManageSubscription
         "
-        class="mt-6 flex gap-1 rounded-2xl border border-interface-stroke p-6 justify-between items-center text-sm"
+        class="mt-6 flex items-center justify-between gap-1 rounded-2xl border border-interface-stroke p-6 text-sm"
       >
         <div class="flex flex-col gap-2">
-          <h4 class="text-sm text-text-primary m-0">
+          <h4 class="m-0 text-sm text-text-primary">
             {{ $t('subscription.nextMonthInvoice') }}
           </h4>
           <span
-            class="text-muted-foreground underline cursor-pointer"
+            class="cursor-pointer text-muted-foreground underline"
             @click="manageSubscription"
           >
             {{ $t('subscription.invoiceHistory') }}
           </span>
         </div>
-        <div class="flex flex-col gap-2 items-end">
+        <div class="flex flex-col items-end gap-2">
           <h4 class="m-0 font-bold">${{ nextMonthInvoice }}</h4>
           <h5 class="m-0 text-muted-foreground">
             {{ $t('subscription.memberCount', memberCount) }}
@@ -347,7 +347,7 @@
           href="https://www.comfy.org/cloud/pricing"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-sm underline hover:opacity-80 text-muted"
+          class="text-sm text-muted underline hover:opacity-80"
         >
           {{ $t('subscription.viewMoreDetailsPlans') }}
         </a>

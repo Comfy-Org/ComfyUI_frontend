@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'relative flex w-full items-center gap-2 bg-comfy-input cursor-text text-comfy-input-foreground',
+        'relative flex w-full cursor-text items-center gap-2 bg-comfy-input text-comfy-input-foreground',
         customClass,
         wrapperStyle
       )
@@ -16,7 +16,7 @@
       unstyled
       :class="
         cn(
-          'absolute inset-0 size-full border-none outline-none bg-transparent text-sm',
+          'absolute inset-0 size-full border-none bg-transparent text-sm outline-none',
           isLarge ? 'pl-11' : 'pl-8'
         )
       "
@@ -26,7 +26,7 @@
       v-if="filterIcon"
       size="icon"
       variant="textonly"
-      class="filter-button absolute right-0 inset-y-0 m-0 p-0"
+      class="filter-button absolute inset-y-0 right-0 m-0 p-0"
       @click="$emit('showFilter', $event)"
     >
       <i :class="filterIcon" />
@@ -117,7 +117,7 @@ watchDebounced(
 const wrapperStyle = computed(() => {
   if (showBorder) {
     return cn(
-      'rounded p-2 border border-solid border-border-default box-border',
+      'box-border rounded-sm border border-solid border-border-default p-2',
       isLarge.value ? 'h-10' : 'h-8'
     )
   }

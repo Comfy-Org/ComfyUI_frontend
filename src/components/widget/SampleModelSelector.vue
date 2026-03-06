@@ -87,12 +87,12 @@
           <template #top>
             <CardTop ratio="landscape">
               <template #default>
-                <div class="h-full w-full bg-blue-500"></div>
+                <div class="size-full bg-blue-500"></div>
               </template>
               <template #top-right>
                 <Button
                   size="icon"
-                  class="!bg-white !text-neutral-900"
+                  class="bg-white! text-neutral-900!"
                   @click="() => {}"
                 >
                   <i class="icon-[lucide--info]" />

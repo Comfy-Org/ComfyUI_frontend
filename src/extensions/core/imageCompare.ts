@@ -29,7 +29,7 @@ useExtensionService().registerExtension({
 
       const toUrl = (record: Record<string, string>) => {
         const params = new URLSearchParams(record)
-        appendCloudResParam(params)
+        appendCloudResParam(params, record.filename)
         return api.apiURL(`/view?${params}${rand}`)
       }
 

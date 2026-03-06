@@ -187,7 +187,7 @@ onBeforeUnmount(() => {
           >
             <template #header>
               <div class="flex w-full items-center justify-between py-2">
-                <div class="flex flex-col text-sm leading-normal font-medium">
+                <div class="flex flex-col text-sm/normal font-medium">
                   <span>{{ log.taskName }}</span>
                   <span class="text-muted">
                     {{
@@ -233,7 +233,7 @@ onBeforeUnmount(() => {
                   :key="logIndex"
                   class="text-muted"
                 >
-                  <pre class="break-words whitespace-pre-wrap">{{
+                  <pre class="wrap-break-word whitespace-pre-wrap">{{
                     logLine
                   }}</pre>
                 </div>

@@ -24,12 +24,12 @@
     </div>
 
     <!-- Body -->
-    <div class="flex flex-1 flex-col gap-4 px-4 py-4">
+    <div class="flex flex-1 flex-col gap-4 p-4">
       <slot />
     </div>
 
     <!-- Footer -->
-    <div class="flex items-center justify-end gap-4 px-4 py-4">
+    <div class="flex items-center justify-end gap-4 p-4">
       <slot name="footer" />
     </div>
   </div>

@@ -55,7 +55,7 @@ function handleOpen(open: boolean) {
           variant="secondary"
           size="unset"
           :aria-label="t('breadcrumbsMenu.workflowActions')"
-          class="relative h-10 rounded-lg pl-3 pr-2 pointer-events-auto gap-1 data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
+          class="pointer-events-auto relative h-10 gap-1 rounded-lg pr-2 pl-3 data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
         >
           <i
             class="size-4"
@@ -79,7 +79,7 @@ function handleOpen(open: boolean) {
         :align
         :side-offset="5"
         :collision-padding="10"
-        class="z-1000 rounded-lg px-2 py-3 min-w-56 bg-base-background shadow-interface border border-border-subtle"
+        class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
       >
         <WorkflowActionsList :items="menuItems" />
       </DropdownMenuContent>

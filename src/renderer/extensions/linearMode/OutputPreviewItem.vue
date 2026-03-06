@@ -6,16 +6,13 @@ const { latentPreview } = defineProps<{
 }>()
 </script>
 <template>
-  <div class="relative size-10">
+  <div class="w-10">
     <img
       v-if="latentPreview"
       class="block size-10 rounded-sm object-cover"
       :src="latentPreview"
     />
-    <div v-else class="size-10 rounded-sm skeleton-shimmer" />
-    <LinearProgressBar
-      class="absolute inset-0 size-full bg-transparent"
-      :overall-opacity="0.7"
-    />
+    <div v-else class="skeleton-shimmer size-10 rounded-sm" />
+    <LinearProgressBar class="mt-1 h-1 w-10" rounded />
   </div>
 </template>

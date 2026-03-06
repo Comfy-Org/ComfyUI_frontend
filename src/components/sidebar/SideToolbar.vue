@@ -8,14 +8,14 @@
       'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
-      'border-r border-[var(--interface-stroke)] shadow-interface': isConnected
+      'border-r border-(--interface-stroke) shadow-interface': isConnected
     }"
   >
     <div
       :class="
         isOverflowing
           ? 'side-tool-bar-container overflow-y-auto'
-          : 'flex flex-col h-full'
+          : 'flex h-full flex-col'
       "
     >
       <div ref="topToolbarRef" :class="groupClasses">
@@ -154,8 +154,8 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
-    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0',
-    !isConnected.value && 'rounded-lg shadow-interface pointer-events-auto'
+    'sidebar-item-group flex shrink-0 flex-col items-center overflow-hidden',
+    !isConnected.value && 'pointer-events-auto rounded-lg shadow-interface'
   )
 )
 
