@@ -3373,10 +3373,6 @@
     "addedToWorkspace": "Has sido añadido a {workspaceName}",
     "inviteAccepted": "Invitación aceptada",
     "inviteFailed": "No se pudo aceptar la invitación",
-    "unsavedChanges": {
-      "message": "Tienes cambios no guardados. ¿Quieres descartarlos y cambiar de espacio de trabajo?",
-      "title": "Cambios no guardados"
-    },
     "viewWorkspace": "Ver espacio de trabajo"
   },
   "workspaceAuth": {
