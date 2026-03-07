@@ -92,10 +92,6 @@
         backgroundColor: applyLightThemeColor(nodeData?.color)
       }"
     >
-      <AppOutput
-        v-if="lgraphNode?.constructor?.nodeData?.output_node && isSelectMode"
-        :id="nodeData.id"
-      />
       <div
         v-if="displayHeader"
         class="relative flex flex-col items-center justify-center"
