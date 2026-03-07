@@ -61,12 +61,7 @@ export function usePanAndZoom() {
 
   const invalidatePanZoom = (): void => {
     // Single validation check upfront
-    if (
-      !image.value?.width ||
-      !image.value?.height ||
-      !pan_offset.value ||
-      !zoom_ratio.value
-    ) {
+    if (!image.value?.width || !image.value?.height || !zoom_ratio.value) {
       console.warn('Missing required properties for pan/zoom')
       return
     }

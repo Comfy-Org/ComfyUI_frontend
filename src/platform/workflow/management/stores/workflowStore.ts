@@ -576,19 +576,19 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (node?.isSubgraphNode()) return node.subgraph
   }
 
-  const getSubgraphsFromInstanceIds = (
+  function getSubgraphsFromInstanceIds(
     currentGraph: LGraph | Subgraph,
-    subgraphNodeIds: string[],
-    subgraphs: Subgraph[] = []
-  ): Subgraph[] => {
-    const currentPart = subgraphNodeIds.shift()
-    if (currentPart === undefined) return subgraphs
-
-    const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
-    if (subgraph === undefined) throw new Error('Subgraph not found')
-
-    subgraphs.push(subgraph)
-    return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
+    subgraphNodeIds: readonly string[]
+  ): Subgraph[] {
+    const subgraphs: Subgraph[] = []
+    let graph: LGraph | Subgraph = currentGraph
+    for (const id of subgraphNodeIds) {
+      const subgraph = subgraphNodeIdToSubgraph(id, graph)
+      if (subgraph === undefined) throw new Error('Subgraph not found')
+      subgraphs.push(subgraph)
+      graph = subgraph
+    }
+    return subgraphs
   }
 
   //FIXME: use existing util function
@@ -602,8 +602,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return
     }
 
-    // Parse the execution ID (e.g., "123:456:789")
-    const subgraphNodeIds = id.split(':')
+    // Parse the execution ID (e.g., "subgraphId1:subgraphId2:nodeId")
+    const parts = id.split(':')
+    const nodeId = parts.at(-1)
+    const subgraphNodeIds = parts.slice(0, -1)
 
     // Start from the root graph
     const graph = comfyApp.rootGraph
@@ -611,7 +613,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     // If the last subgraph is the active subgraph, return the node ID
     const subgraphs = getSubgraphsFromInstanceIds(graph, subgraphNodeIds)
     if (subgraphs.at(-1) === subgraph) {
-      return subgraphNodeIds.at(-1)
+      return nodeId
     }
   }
 

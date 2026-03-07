@@ -1134,7 +1134,7 @@ export class LGraphNode
     const link_id = this.inputs[slot].link
     const link = this.graph._links.get(link_id)
     // bug: weird case but it happens sometimes
-    if (!link) return null
+    if (!link) return
 
     if (!force_update) return link.data
 
@@ -2284,7 +2284,7 @@ export class LGraphNode
   findInputSlot<TReturn extends true>(
     name: string,
     returnObj?: TReturn
-  ): INodeInputSlot
+  ): INodeInputSlot | -1
   findInputSlot(name: string, returnObj: boolean = false) {
     const { inputs } = this
     if (!inputs) return -1
@@ -2310,7 +2310,7 @@ export class LGraphNode
   findOutputSlot<TReturn extends true>(
     name: string,
     returnObj?: TReturn
-  ): INodeOutputSlot
+  ): INodeOutputSlot | -1
   findOutputSlot(name: string, returnObj: boolean = false) {
     const { outputs } = this
     if (!outputs) return -1
@@ -2392,7 +2392,7 @@ export class LGraphNode
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
-  ): INodeInputSlot
+  ): INodeInputSlot | -1
   findInputSlotByType(
     type: ISlotType,
     returnObj?: boolean,
@@ -2422,7 +2422,7 @@ export class LGraphNode
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
-  ): INodeOutputSlot
+  ): INodeOutputSlot | -1
   findOutputSlotByType(
     type: ISlotType,
     returnObj?: boolean,

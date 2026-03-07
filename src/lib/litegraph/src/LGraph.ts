@@ -1802,11 +1802,10 @@ export class LGraph
         link.target_id = subgraphNode.id
         link.target_slot = i - 1
         if (subgraphInput instanceof SubgraphInput) {
-          subgraphInput.connect(
-            subgraphNode.findInputSlotByType(link.type, true, true),
-            subgraphNode,
-            link.parentId
-          )
+          const slot = subgraphNode.findInputSlotByType(link.type, true, true)
+          if (slot !== -1) {
+            subgraphInput.connect(slot, subgraphNode, link.parentId)
+          }
         } else {
           throw new TypeError('Subgraph input node is not a SubgraphInput')
         }
@@ -1844,11 +1843,14 @@ export class LGraph
           link.origin_slot = i - 1
           this.links.set(link.id, link)
           if (subgraphOutput instanceof SubgraphOutput) {
-            subgraphOutput.connect(
-              subgraphNode.findOutputSlotByType(link.type, true, true),
-              subgraphNode,
-              link.parentId
+            const slot = subgraphNode.findOutputSlotByType(
+              link.type,
+              true,
+              true
             )
+            if (slot !== -1) {
+              subgraphOutput.connect(slot, subgraphNode, link.parentId)
+            }
           } else {
             throw new TypeError('Subgraph input node is not a SubgraphInput')
           }
