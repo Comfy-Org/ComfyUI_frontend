@@ -11,6 +11,10 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { resolveNode } from '@/utils/litegraphUtil'
 
+export function nodeTypeValidForApp(type: string) {
+  return !['Note', 'MarkdownNote'].includes(type)
+}
+
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const workflowStore = useWorkflowStore()

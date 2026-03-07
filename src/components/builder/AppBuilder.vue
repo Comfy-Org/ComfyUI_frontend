@@ -27,7 +27,7 @@ import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -162,7 +162,7 @@ function handleDown(e: MouseEvent) {
 }
 function handleClick(e: MouseEvent) {
   const [node, widget] = getHovered(e) ?? []
-  if (node?.mode !== LGraphEventMode.ALWAYS)
+  if (node?.mode !== LGraphEventMode.ALWAYS || !nodeTypeValidForApp(node.type))
     return canvasInteractions.forwardEventToCanvas(e)
 
   if (!widget) {
