@@ -65,7 +65,7 @@ jobs:
 
       - name: Install Claude Code
         shell: bash
-        run: npm install -g @anthropic-ai/claude-code
+        run: npm install -g @anthropic-ai/claude-code@2.1.71
 
       # --- Virtual display + recording: Linux ---
       - name: Setup Xvfb (Linux)
