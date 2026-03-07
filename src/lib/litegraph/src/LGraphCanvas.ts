@@ -7169,7 +7169,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         for (let iK = 0; iK < nSlots; iK++) {
           const opt = document.createElement('option')
           opt.value = aSlots[iK]
-          opt.innerHTML = aSlots[iK]
+          opt.textContent = aSlots[iK]
           selIn.append(opt)
           if (
             // @ts-expect-error Property missing from interface definition
@@ -7196,7 +7196,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         for (const aSlot of aSlots) {
           const opt = document.createElement('option')
           opt.value = aSlot
-          opt.innerHTML = aSlot
+          opt.textContent = aSlot
           selOut.append(opt)
           if (
             options.type_filter_out !== false &&
@@ -7373,7 +7373,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       timeout = null
       let str = input.value
       first = null
-      helper.innerHTML = ''
+      helper.replaceChildren()
       if (!str && !options.show_all_if_empty) return
 
       if (that.onSearchBox) {
@@ -7801,7 +7801,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         options.height + (typeof options.height === 'number' ? 'px' : '')
     if (options.closable) {
       const close = document.createElement('span')
-      close.innerHTML = '&#10005;'
+      close.textContent = '\u2715'
       close.classList.add('close')
       close.addEventListener('click', function () {
         root.close()
@@ -7847,7 +7847,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     root.clear = function () {
-      this.content.innerHTML = ''
+      this.content.replaceChildren()
     }
 
     root.addHTML = function (
@@ -8021,7 +8021,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const inner_refresh = () => {
       // clear
-      panel.content.innerHTML = ''
+      panel.content.replaceChildren()
       panel.addHTML(
         // @ts-expect-error - desc property
         `<span class='node_type'>${node.type}</span><span class='node_desc'>${node.constructor.desc || ''}</span><span class='separator'></span>`
