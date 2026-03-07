@@ -8,7 +8,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 const { id, name } = defineProps<{
   id: string
-  isSelectMode: boolean
+  enable: boolean
   name: string
 }>()
 
@@ -25,8 +25,8 @@ function togglePromotion() {
 </script>
 <template>
   <div
-    v-if="isSelectMode"
-    class="col-span-2 flex flex-row pointer-events-auto cursor-pointer gap-1 relative"
+    v-if="enable"
+    class="pointer-events-auto relative col-span-2 flex cursor-pointer flex-row gap-1"
     @pointerdown.capture.stop.prevent="togglePromotion"
     @click.capture.stop.prevent
     @pointerup.capture.stop.prevent
@@ -36,27 +36,27 @@ function togglePromotion() {
     <div
       :class="
         cn(
-          'border-primary-background border rounded-sm size-4 self-center m-1',
-          isPromoted && 'bg-primary-background flex items-center'
+          'm-1 size-4 self-center rounded-sm border border-primary-background',
+          isPromoted && 'flex items-center bg-primary-background'
         )
       "
     >
       <i
         v-if="isPromoted"
-        class="icon-[lucide--check] bg-primary-foreground place-center"
+        class="bg-primary-foreground place-center icon-[lucide--check]"
       />
     </div>
     <div
       :class="
         cn(
-          'grid grid-cols-2 items-stretch ring-primary-background rounded-lg pointer-events-none flex-1',
+          'pointer-events-none grid flex-1 grid-cols-2 items-stretch rounded-lg ring-primary-background',
           isPromoted && 'ring-2'
         )
       "
     >
       <slot />
     </div>
-    <div class="absolute size-full hover:bg-primary-background/10 rounded-lg" />
+    <div class="absolute size-full rounded-lg hover:bg-primary-background/10" />
   </div>
   <slot v-else />
 </template>

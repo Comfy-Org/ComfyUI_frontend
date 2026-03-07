@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "数式",
+    "inputs": {
+      "expression": {
+        "name": "式"
+      },
+      "values": {
+        "name": "値"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "スイッチ",
     "inputs": {
@@ -3947,6 +3966,10 @@
     "description": "テキストプロンプトに基づいて既存の画像を編集します",
     "display_name": "Grok画像編集",
     "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "複数の画像が画像入力に接続されている場合のみ使用できます。"
+      },
       "control_after_generate": {
         "name": "生成後の制御"
       },
@@ -3998,6 +4021,9 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "画像生成に使用するテキストプロンプト"
+      },
+      "resolution": {
+        "name": "解像度"
       },
       "seed": {
         "name": "シード値",
@@ -5853,6 +5879,9 @@
       },
       "mode": {
         "name": "モード"
+      },
+      "model": {
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト"
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "3DモデルにUV展開を行い、UVテクスチャを生成します。入力モデルは30,000面未満である必要があります。",
+    "display_name": "Hunyuan3D: モデルからUVへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "入力3Dモデル（GLB、OBJ、またはFBX）"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "3Dモデルにスマートリトポロジーを実行します。GLB/OBJ形式をサポート、最大200MB、高ポリゴンモデルに推奨。",
+    "display_name": "Hunyuan3D: スマートトポロジー",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "face_level": {
+        "name": "面レベル",
+        "tooltip": "ポリゴン削減レベル。"
+      },
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "入力3Dモデル（GLBまたはOBJ）"
+      },
+      "polygon_type": {
+        "name": "ポリゴンタイプ",
+        "tooltip": "表面構成タイプ。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

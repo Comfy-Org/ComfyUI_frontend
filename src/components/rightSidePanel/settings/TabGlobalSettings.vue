@@ -131,12 +131,12 @@ function openFullSettings() {
         <LayoutField :label="t('rightSidePanel.globalSettings.gridSpacing')">
           <div
             :class="
-              cn(WidgetInputBaseClass, 'flex items-center gap-2 pl-3 pr-2')
+              cn(WidgetInputBaseClass, 'flex items-center gap-2 pr-2 pl-3')
             "
           >
             <Slider
               :model-value="[gridSpacing]"
-              class="flex-grow text-xs"
+              class="grow text-xs"
               :min="GRID_SIZE_MIN"
               :max="GRID_SIZE_MAX"
               :step="GRID_SIZE_STEP"
@@ -179,7 +179,7 @@ function openFullSettings() {
             :pt="{
               option: 'text-xs',
               dropdown: 'w-8',
-              label: cn('truncate min-w-[4ch]', $slots.default && 'mr-5'),
+              label: cn('min-w-[4ch] truncate', $slots.default && 'mr-5'),
               overlay: 'w-fit min-w-full'
             }"
             data-capture-wheel="true"
@@ -197,7 +197,7 @@ function openFullSettings() {
 
     <!-- View all settings button -->
     <div
-      class="flex items-center justify-center p-4 border-b border-interface-stroke"
+      class="flex items-center justify-center border-b border-interface-stroke p-4"
     >
       <Button
         variant="muted-textonly"

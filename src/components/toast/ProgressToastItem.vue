@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Loader from '@/components/loader/Loader.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { cn } from '@/utils/tailwindUtil'
@@ -34,7 +35,7 @@ const isPending = computed(() => job.status === 'created')
       }}</span>
     </div>
 
-    <div class="flex flex-shrink-0 items-center gap-2">
+    <div class="flex shrink-0 items-center gap-2">
       <template v-if="isFailed">
         <i
           class="icon-[lucide--circle-alert] size-4 text-destructive-background"
@@ -47,9 +48,7 @@ const isPending = computed(() => job.status === 'created')
       </template>
 
       <template v-else-if="isRunning">
-        <i
-          class="icon-[lucide--loader-circle] size-4 animate-spin text-base-foreground"
-        />
+        <Loader size="sm" class="text-base-foreground" />
         <span class="text-xs text-base-foreground">
           {{ progressPercent }}%
         </span>

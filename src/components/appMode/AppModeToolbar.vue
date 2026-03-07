@@ -3,26 +3,37 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import Button from '@/components/ui/button/Button.vue'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useAppMode } from '@/composables/useAppMode'
+import { isCloud } from '@/platform/distribution/types'
+import {
+  openShareDialog,
+  prefetchShareDialog
+} from '@/platform/workflow/sharing/composables/lazyShareDialog'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
-import { useAppMode } from '@/composables/useAppMode'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const workspaceStore = useWorkspaceStore()
 const { enableAppBuilder } = useAppMode()
-const { enterBuilder } = useAppModeStore()
+const appModeStore = useAppModeStore()
+const { enterBuilder } = appModeStore
+const { toastErrorHandler } = useErrorHandling()
+const { flags } = useFeatureFlags()
+const { hasNodes } = storeToRefs(appModeStore)
 const tooltipOptions = { showDelay: 300, hideDelay: 300 }
 
 const isAssetsActive = computed(
   () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'assets'
 )
-const isWorkflowsActive = computed(
-  () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'workflows'
+const isAppsActive = computed(
+  () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'apps'
 )
 
 function openAssets() {
@@ -30,38 +41,13 @@ function openAssets() {
 }
 
 function showApps() {
-  void commandStore.execute('Workspace.ToggleSidebarTab.workflows')
-}
-
-function openTemplates() {
-  useWorkflowTemplateSelectorDialog().show('sidebar')
+  void commandStore.execute('Workspace.ToggleSidebarTab.apps')
 }
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 pointer-events-auto">
-    <WorkflowActionsDropdown source="app_mode_toolbar">
-      <template #button="{ hasUnseenItems }">
-        <Button
-          v-tooltip.right="{
-            value: t('sideToolbar.labels.menu'),
-            ...tooltipOptions
-          }"
-          variant="secondary"
-          size="unset"
-          :aria-label="t('sideToolbar.labels.menu')"
-          class="relative h-10 rounded-lg pl-3 pr-2 gap-1 data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
-        >
-          <i class="icon-[lucide--panels-top-left] size-4" />
-          <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
-          <span
-            v-if="hasUnseenItems"
-            aria-hidden="true"
-            class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
-          />
-        </Button>
-      </template>
-    </WorkflowActionsDropdown>
+  <div class="pointer-events-auto flex flex-col gap-2">
+    <WorkflowActionsDropdown source="app_mode_toolbar" />
 
     <Button
       v-if="enableAppBuilder"
@@ -71,15 +57,31 @@ function openTemplates() {
       }"
       variant="secondary"
       size="unset"
+      :disabled="!hasNodes"
       :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       class="size-10 rounded-lg"
       @click="enterBuilder"
     >
       <i class="icon-[lucide--hammer] size-4" />
     </Button>
+    <Button
+      v-if="isCloud && flags.workflowSharingEnabled"
+      v-tooltip.right="{
+        value: t('actionbar.shareTooltip'),
+        ...tooltipOptions
+      }"
+      variant="secondary"
+      size="unset"
+      :aria-label="t('actionbar.shareTooltip')"
+      class="size-10 rounded-lg"
+      @click="() => openShareDialog().catch(toastErrorHandler)"
+      @pointerenter="prefetchShareDialog"
+    >
+      <i class="icon-[lucide--send] size-4" />
+    </Button>
 
     <div
-      class="flex flex-col w-10 rounded-lg bg-secondary-background overflow-hidden"
+      class="flex w-10 flex-col overflow-hidden rounded-lg bg-secondary-background"
     >
       <Button
         v-tooltip.right="{
@@ -104,25 +106,10 @@ function openTemplates() {
         variant="textonly"
         size="unset"
         :aria-label="t('linearMode.appModeToolbar.apps')"
-        :class="
-          cn('size-10', isWorkflowsActive && 'bg-secondary-background-hover')
-        "
+        :class="cn('size-10', isAppsActive && 'bg-secondary-background-hover')"
         @click="showApps"
       >
         <i class="icon-[lucide--panels-top-left] size-4" />
-      </Button>
-      <Button
-        v-tooltip.right="{
-          value: t('sideToolbar.templates'),
-          ...tooltipOptions
-        }"
-        variant="textonly"
-        size="unset"
-        :aria-label="t('sideToolbar.templates')"
-        class="size-10"
-        @click="openTemplates"
-      >
-        <i class="icon-[comfy--template] size-4" />
       </Button>
     </div>
   </div>

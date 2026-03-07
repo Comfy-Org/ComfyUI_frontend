@@ -13,7 +13,7 @@
       :pt="{
         option: 'text-xs',
         dropdown: 'w-8',
-        label: cn('truncate min-w-[4ch]', $slots.default && 'mr-5'),
+        label: cn('min-w-[4ch] truncate', $slots.default && 'mr-5'),
         overlay: 'w-fit min-w-full'
       }"
       data-capture-wheel="true"
@@ -24,7 +24,7 @@
         />
       </template>
     </SelectPlus>
-    <div class="absolute top-5 right-8 h-4 w-7 -translate-y-4/5 flex">
+    <div class="absolute top-5 right-8 flex h-4 w-7 -translate-y-4/5">
       <slot />
     </div>
   </WidgetLayoutField>

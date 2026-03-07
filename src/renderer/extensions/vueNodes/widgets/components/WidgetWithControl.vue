@@ -45,10 +45,10 @@ watch(controlModel, props.widget.controlWidget.update)
           <Button
             variant="textonly"
             size="sm"
-            class="h-4 w-7 p-0 self-center rounded-xl bg-primary-background/30 hover:bg-primary-background-hover/30"
+            class="h-4 w-7 self-center rounded-xl bg-primary-background/30 p-0 hover:bg-primary-background-hover/30"
           >
             <i
-              :class="`${controlButtonIcon} text-primary-background text-xs w-full`"
+              :class="`${controlButtonIcon} w-full text-xs text-primary-background`"
             />
           </Button>
         </template>

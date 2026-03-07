@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "粘贴"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "粘贴并连接"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "重置视图"
   },
@@ -343,6 +346,10 @@
   },
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "切换应用侧边栏",
+    "tooltip": "应用"
   },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "切换资产侧边栏",

@@ -63,7 +63,7 @@
     </Message>
 
     <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="h-8 w-8" />
+    <ProgressSpinner v-if="loading" class="size-8" />
     <Button
       v-else
       type="submit"

@@ -7,6 +7,7 @@ import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLib
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAppsSidebarTab } from '@/platform/workflow/management/composables/useAppsSidebarTab'
 import { useWorkflowsSidebarTab } from '@/platform/workflow/management/composables/useWorkflowsSidebarTab'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -135,6 +136,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())
+    registerSidebarTab(useAppsSidebarTab())
 
     const menuStore = useMenuItemStore()
 

@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.41.10",
+  "version": "1.42.0",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -60,6 +60,7 @@
     "@comfyorg/registry-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
+    "@formkit/auto-animate": "catalog:",
     "@iconify/json": "catalog:",
     "@primeuix/forms": "catalog:",
     "@primeuix/styled": "catalog:",
@@ -100,6 +101,7 @@
     "loglevel": "^1.9.2",
     "marked": "^15.0.11",
     "pinia": "catalog:",
+    "posthog-js": "catalog:",
     "primeicons": "catalog:",
     "primevue": "catalog:",
     "reka-ui": "catalog:",
@@ -146,6 +148,7 @@
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
     "eslint-import-resolver-typescript": "catalog:",
+    "eslint-plugin-better-tailwindcss": "catalog:",
     "eslint-plugin-import-x": "catalog:",
     "eslint-plugin-oxlint": "catalog:",
     "eslint-plugin-storybook": "catalog:",
@@ -191,6 +194,9 @@
     "vue-tsc": "catalog:",
     "zip-dir": "^2.0.0",
     "zod-to-json-schema": "catalog:"
+  },
+  "engines": {
+    "node": "24.x"
   },
   "pnpm": {
     "overrides": {

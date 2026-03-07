@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "Coller"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "Coller avec connexion"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Réinitialiser la vue"
   },
@@ -343,6 +346,10 @@
   },
   "Workspace_ToggleFocusMode": {
     "label": "Basculer le mode focus"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "Basculer la barre latérale des applications",
+    "tooltip": "Applications"
   },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "Afficher/Masquer la barre latérale des ressources",

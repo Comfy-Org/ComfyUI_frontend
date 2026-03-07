@@ -42,7 +42,7 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 })
 
 const actionButtonStyle = cn(
-  'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-node-component-border transition-all duration-150'
+  'h-8 rounded-lg bg-zinc-500/20 outline-1 -outline-offset-1 outline-node-component-border transition-all duration-150'
 )
 
 const layoutSwitchItemStyle =
@@ -114,7 +114,7 @@ function toggleBaseModelSelection(item: FilterOption) {
         cn(
           actionButtonStyle,
           'hover:outline-component-node-widget-background-highlighted/80',
-          'focus-within:outline-component-node-widget-background-highlighted/80 focus-within:ring-0'
+          'focus-within:ring-0 focus-within:outline-component-node-widget-background-highlighted/80'
         )
       "
     />
@@ -155,9 +155,9 @@ function toggleBaseModelSelection(item: FilterOption) {
       <div
         :class="
           cn(
-            'flex flex-col gap-2 p-2 min-w-32',
+            'flex min-w-32 flex-col gap-2 p-2',
             'bg-component-node-background',
-            'rounded-lg outline outline-offset-[-1px] outline-component-node-border'
+            'rounded-lg outline -outline-offset-1 outline-component-node-border'
           )
         "
       >
@@ -166,7 +166,7 @@ function toggleBaseModelSelection(item: FilterOption) {
           :key="item.name"
           variant="textonly"
           size="unset"
-          :class="cn('flex justify-between items-center h-6 text-left')"
+          :class="cn('flex h-6 items-center justify-between text-left')"
           @click="handleSortSelected(item)"
         >
           <span>{{ item.name }}</span>
@@ -217,9 +217,9 @@ function toggleBaseModelSelection(item: FilterOption) {
       <div
         :class="
           cn(
-            'flex flex-col gap-2 p-2 min-w-32',
+            'flex min-w-32 flex-col gap-2 p-2',
             'bg-component-node-background',
-            'rounded-lg outline outline-offset-[-1px] outline-component-node-border'
+            'rounded-lg outline -outline-offset-1 outline-component-node-border'
           )
         "
       >
@@ -228,7 +228,7 @@ function toggleBaseModelSelection(item: FilterOption) {
           :key="item.value"
           variant="textonly"
           size="unset"
-          :class="cn('flex justify-between items-center h-6 text-left')"
+          :class="cn('flex h-6 items-center justify-between text-left')"
           @click="handleOwnershipSelected(item)"
         >
           <span>{{ item.name }}</span>
@@ -279,9 +279,9 @@ function toggleBaseModelSelection(item: FilterOption) {
       <div
         :class="
           cn(
-            'flex flex-col gap-2 p-2 min-w-32',
+            'flex min-w-32 flex-col gap-2 p-2',
             'bg-component-node-background',
-            'rounded-lg outline outline-offset-[-1px] outline-component-node-border'
+            'rounded-lg outline -outline-offset-1 outline-component-node-border'
           )
         "
       >
@@ -290,7 +290,7 @@ function toggleBaseModelSelection(item: FilterOption) {
           :key="item.value"
           variant="textonly"
           size="unset"
-          :class="cn('flex justify-between items-center h-6 text-left')"
+          :class="cn('flex h-6 items-center justify-between text-left')"
           @click="toggleBaseModelSelection(item)"
         >
           <span>{{ item.name }}</span>
@@ -303,7 +303,7 @@ function toggleBaseModelSelection(item: FilterOption) {
         <Button
           variant="textonly"
           size="unset"
-          :class="cn('flex justify-between items-center h-6 text-left')"
+          :class="cn('flex h-6 items-center justify-between text-left')"
           @click="baseModelSelected = new Set()"
         >
           {{ t('g.clearFilters') }}
@@ -315,7 +315,7 @@ function toggleBaseModelSelection(item: FilterOption) {
       :class="
         cn(
           actionButtonStyle,
-          'flex justify-center items-center p-1 gap-1 hover:outline-component-node-widget-background-highlighted'
+          'flex items-center justify-center gap-1 p-1 hover:outline-component-node-widget-background-highlighted'
         )
       "
     >

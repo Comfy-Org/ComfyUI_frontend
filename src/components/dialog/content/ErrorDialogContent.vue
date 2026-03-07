@@ -28,7 +28,9 @@
     <template v-if="reportOpen">
       <Divider />
       <ScrollPanel class="h-[400px] w-full max-w-[80vw]">
-        <pre class="break-words whitespace-pre-wrap">{{ reportContent }}</pre>
+        <pre class="wrap-break-word whitespace-pre-wrap">{{
+          reportContent
+        }}</pre>
       </ScrollPanel>
       <Divider />
     </template>

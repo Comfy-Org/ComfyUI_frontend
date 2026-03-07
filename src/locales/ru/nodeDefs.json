@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Математическое выражение",
+    "inputs": {
+      "expression": {
+        "name": "выражение"
+      },
+      "values": {
+        "name": "значения"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Переключатель",
     "inputs": {
@@ -3947,6 +3966,10 @@
     "description": "Изменить существующее изображение на основе текстового запроса",
     "display_name": "Grok Image Edit",
     "inputs": {
+      "aspect_ratio": {
+        "name": "соотношение сторон",
+        "tooltip": "Разрешено только при подключении нескольких изображений к входу изображения."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -3998,6 +4021,9 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Текстовый запрос, используемый для генерации изображения"
+      },
+      "resolution": {
+        "name": "разрешение"
       },
       "seed": {
         "name": "seed",
@@ -5853,6 +5879,9 @@
       },
       "mode": {
         "name": "режим"
+      },
+      "model": {
+        "name": "модель"
       },
       "prompt": {
         "name": "промпт"
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Выполнить UV-развёртку 3D-модели для генерации UV-текстуры. Входная модель должна содержать менее 30000 граней.",
+    "display_name": "Hunyuan3D: Модель в UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model_3d": {
+        "name": "3D-модель",
+        "tooltip": "Входная 3D-модель (GLB, OBJ или FBX)"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты всегда недетерминированы независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Выполнить умную ретопологию 3D-модели. Поддерживаются форматы GLB/OBJ; максимум 200 МБ; рекомендуется для высокополигональных моделей.",
+    "display_name": "Hunyuan3D: Умная топология",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "face_level": {
+        "name": "уровень граней",
+        "tooltip": "Уровень редукции полигонов."
+      },
+      "model_3d": {
+        "name": "3D-модель",
+        "tooltip": "Входная 3D-модель (GLB или OBJ)"
+      },
+      "polygon_type": {
+        "name": "тип полигона",
+        "tooltip": "Тип композиции поверхности."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты всегда недетерминированы независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

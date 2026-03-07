@@ -247,7 +247,7 @@ General-purpose composables:
 | `useTreeExpansion`          | Handles tree node expansion state                         |
 
 | `useWorkflowAutoSave` | Handles automatic workflow saving |
-| `useWorkflowPersistence` | Manages workflow persistence |
+| `useWorkflowPersistenceV2` | Manages workflow persistence |
 | `useWorkflowValidation` | Validates workflow integrity |
 
 ## Usage Guidelines

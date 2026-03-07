@@ -11,7 +11,7 @@ import {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 import { api } from './api'
@@ -77,6 +77,7 @@ export class ChangeTracker {
       scale: app.canvas.ds.scale,
       offset: [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
     }
+    this.nodeOutputs = useNodeOutputStore().snapshotOutputs()
     const navigation = useSubgraphNavigationStore().exportState()
     // Always store the navigation state, even if empty (root level)
     this.subgraphState = { navigation }

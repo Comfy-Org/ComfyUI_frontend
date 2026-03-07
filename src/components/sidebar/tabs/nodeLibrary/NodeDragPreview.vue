@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div
       v-if="isDragging && draggedNode && showPreview"
-      class="pointer-events-none fixed z-[10000]"
+      class="pointer-events-none fixed z-10000"
       :style="{
         left: `${previewPosition.x + 12}px`,
         top: `${previewPosition.y + 12}px`

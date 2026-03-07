@@ -22,8 +22,10 @@ test.describe('Vue Node Bypass', () => {
       await comfyPage.page.getByText('Load Checkpoint').click()
       await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
 
-      const checkpointNode =
-        comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+      const checkpointNode = comfyPage.page
+        .locator('[data-node-id]')
+        .filter({ hasText: 'Load Checkpoint' })
+        .getByTestId('node-inner-wrapper')
       await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -41,8 +43,14 @@ test.describe('Vue Node Bypass', () => {
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.page.getByText('KSampler').click({ modifiers: ['Control'] })
 
-    const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
-    const ksamplerNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    const checkpointNode = comfyPage.page
+      .locator('[data-node-id]')
+      .filter({ hasText: 'Load Checkpoint' })
+      .getByTestId('node-inner-wrapper')
+    const ksamplerNode = comfyPage.page
+      .locator('[data-node-id]')
+      .filter({ hasText: 'KSampler' })
+      .getByTestId('node-inner-wrapper')
 
     await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
     await expect(checkpointNode).toHaveClass(BYPASS_CLASS)

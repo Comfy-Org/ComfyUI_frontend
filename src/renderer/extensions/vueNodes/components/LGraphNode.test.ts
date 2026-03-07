@@ -41,6 +41,23 @@ vi.mock(
   })
 )
 
+vi.mock('@/scripts/app', () => ({
+  app: {
+    rootGraph: { getNodeById: vi.fn() },
+    canvas: { setDirty: vi.fn() }
+  }
+}))
+
+vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    getNodeByLocatorId: vi.fn(() => ({
+      isSubgraphNode: () => false
+    }))
+  }
+})
+
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({
     toastErrorHandler: vi.fn()
@@ -184,8 +201,13 @@ describe('LGraphNode', () => {
 
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
-    expect(wrapper.classes()).toContain('outline-3')
+    // Root div should have the selection class
     expect(wrapper.classes()).toContain('outline-node-component-outline')
+
+    // The layered outline overlay should be present
+    const overlay = wrapper.find('[data-testid="node-state-outline-overlay"]')
+    expect(overlay.exists()).toBe(true)
+    expect(overlay.classes()).toContain('border-node-component-outline')
   })
 
   it('should render progress indicator when executing prop is true', () => {
@@ -193,7 +215,13 @@ describe('LGraphNode', () => {
 
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
+    // Root div should have the executing class
     expect(wrapper.classes()).toContain('outline-node-stroke-executing')
+
+    // The layered outline overlay should be present
+    const overlay = wrapper.find('[data-testid="node-state-outline-overlay"]')
+    expect(overlay.exists()).toBe(true)
+    expect(overlay.classes()).toContain('border-node-stroke-executing')
   })
 
   it('should initialize height CSS vars for collapsed nodes', () => {
