@@ -7,6 +7,9 @@
   "license": "GPL-3.0-only",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "build:desktop": "nx build @comfyorg/desktop-ui",
     "build-storybook": "storybook build",
