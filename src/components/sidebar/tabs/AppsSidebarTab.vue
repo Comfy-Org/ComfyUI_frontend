@@ -22,9 +22,8 @@
             ? $t('linearMode.appModeToolbar.appsEmptyMessage')
             : `${$t('linearMode.appModeToolbar.appsEmptyMessage')}\n${$t('linearMode.appModeToolbar.appsEmptyMessageAction')}`
         "
-        :button-label="
-          isAppMode ? undefined : $t('linearMode.appModeToolbar.enterAppMode')
-        "
+        button-icon="icon-[lucide--hammer]"
+        :button-label="isAppMode ? undefined : $t('linearMode.buildAnApp')"
         @action="enterAppMode"
       />
     </template>
