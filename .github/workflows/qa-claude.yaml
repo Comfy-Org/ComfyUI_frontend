@@ -28,8 +28,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      issues: write
-      packages: read
     env:
       QA_ARTIFACTS: ${{ runner.temp }}/qa-artifacts
     steps:
