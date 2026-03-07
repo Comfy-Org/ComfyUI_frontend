@@ -553,6 +553,48 @@ test.describe(
         const nodeBody = subgraphVueNode.locator('[data-testid="node-body-5"]')
         await expect(nodeBody).toBeVisible()
       })
+
+      test('Promoted preview renders when outputs are injected for interior node', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-preview-node'
+        )
+        await comfyPage.vueNodes.waitForNodes()
+
+        const subgraphVueNode = comfyPage.vueNodes.getNodeLocator('5')
+        await expect(subgraphVueNode).toBeVisible()
+
+        // Simulate backend sending execution results for interior SaveImage
+        // node (id 10) inside the SubgraphNode (id 5).
+        // The executed event handler converts execution ID "5:10" to a
+        // NodeLocatorId using the subgraph UUID, then sets both
+        // app.nodeOutputs and the reactive nodeOutputs ref.
+        await comfyPage.page.evaluate(() => {
+          const api = window.app!.api
+          api.dispatchEvent(
+            new CustomEvent('executed', {
+              detail: {
+                node: '5:10',
+                display_node: '5:10',
+                output: {
+                  images: [
+                    {
+                      filename: 'example.png',
+                      subfolder: '',
+                      type: 'input'
+                    }
+                  ]
+                }
+              }
+            })
+          )
+        })
+
+        // The promoted preview should render an image inside the SubgraphNode
+        const previewImage = subgraphVueNode.locator('.image-preview img')
+        await expect(previewImage).toBeVisible({ timeout: 5_000 })
+      })
     })
 
     test.describe('Nested Promoted Widget Disabled State', () => {

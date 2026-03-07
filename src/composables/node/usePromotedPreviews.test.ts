@@ -266,6 +266,38 @@ describe(usePromotedPreviews, () => {
     expect(promotedPreviews.value).toEqual([])
   })
 
+  it('re-evaluates when promotion is added after initial mount', () => {
+    const setup = createSetup()
+    addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+
+    // Mount BEFORE any promotions exist
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([])
+
+    // Add promotion AFTER mount
+    usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
+      setup.subgraphNode.id,
+      '10',
+      '$$canvas-image-preview'
+    )
+
+    // Seed outputs
+    const mockUrls = ['/view?filename=output.png']
+    seedOutputs(setup.subgraph.id, [10])
+    getNodeImageUrls.mockReturnValue(mockUrls)
+
+    // The computed should re-evaluate and return the preview
+    expect(promotedPreviews.value).toEqual([
+      {
+        interiorNodeId: '10',
+        widgetName: '$$canvas-image-preview',
+        type: 'image',
+        urls: mockUrls
+      }
+    ])
+  })
+
   it('ignores non-$$ promoted widgets', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10 })

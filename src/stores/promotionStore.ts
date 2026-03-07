@@ -13,24 +13,35 @@ export const usePromotionStore = defineStore('promotion', () => {
   const graphPromotions = ref(new Map<UUID, Map<NodeId, PromotionEntry[]>>())
   const graphRefCounts = ref(new Map<UUID, Map<string, number>>())
 
+  /**
+   * Monotonic counter incremented on every mutation. Dependents read this
+   * inside their computed/watch to guarantee re-evaluation even when the
+   * nested Map proxies don't propagate change notifications reliably.
+   */
+  const _version = ref(0)
+  function _touch() {
+    _version.value++
+  }
+
   function _getPromotionsForGraph(
     graphId: UUID
   ): Map<NodeId, PromotionEntry[]> {
-    const promotions = graphPromotions.value.get(graphId)
+    let promotions = graphPromotions.value.get(graphId)
     if (promotions) return promotions
 
-    const nextPromotions = new Map<NodeId, PromotionEntry[]>()
-    graphPromotions.value.set(graphId, nextPromotions)
-    return nextPromotions
+    graphPromotions.value.set(graphId, new Map<NodeId, PromotionEntry[]>())
+    // Re-read through the reactive proxy so callers get the tracked version
+    promotions = graphPromotions.value.get(graphId)!
+    return promotions
   }
 
   function _getRefCountsForGraph(graphId: UUID): Map<string, number> {
-    const refCounts = graphRefCounts.value.get(graphId)
+    let refCounts = graphRefCounts.value.get(graphId)
     if (refCounts) return refCounts
 
-    const nextRefCounts = new Map<string, number>()
-    graphRefCounts.value.set(graphId, nextRefCounts)
-    return nextRefCounts
+    graphRefCounts.value.set(graphId, new Map<string, number>())
+    refCounts = graphRefCounts.value.get(graphId)!
+    return refCounts
   }
 
   function _makeKey(interiorNodeId: string, widgetName: string): string {
@@ -62,6 +73,8 @@ export const usePromotionStore = defineStore('promotion', () => {
     graphId: UUID,
     subgraphNodeId: NodeId
   ): PromotionEntry[] {
+    // Read version to establish reactive dependency
+    void _version.value
     return _getPromotionsForGraph(graphId).get(subgraphNodeId) ?? []
   }
 
@@ -107,6 +120,7 @@ export const usePromotionStore = defineStore('promotion', () => {
     } else {
       promotions.set(subgraphNodeId, [...entries])
     }
+    _touch()
   }
 
   function promote(
@@ -165,11 +179,13 @@ export const usePromotionStore = defineStore('promotion', () => {
 
     // Reordering does not change membership, so ref-counts remain valid.
     promotions.set(subgraphNodeId, entries)
+    _touch()
   }
 
   function clearGraph(graphId: UUID): void {
     graphPromotions.value.delete(graphId)
     graphRefCounts.value.delete(graphId)
+    _touch()
   }
 
   return {
