@@ -35,10 +35,14 @@ jobs:
     steps:
       - name: Build client payload
         id: payload
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            REF="${{ github.event.pull_request.head.sha }}"
-            BRANCH="${{ github.event.pull_request.head.ref }}"
+          if [ "${EVENT_NAME}" = "pull_request" ]; then
+            REF="${PR_HEAD_SHA}"
+            BRANCH="${PR_HEAD_REF}"
           else
             REF="${GITHUB_SHA}"
             BRANCH="${GITHUB_REF_NAME}"
