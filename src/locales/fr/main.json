@@ -3373,10 +3373,6 @@
     "addedToWorkspace": "Vous avez été ajouté à {workspaceName}",
     "inviteAccepted": "Invitation acceptée",
     "inviteFailed": "Échec de l'acceptation de l'invitation",
-    "unsavedChanges": {
-      "message": "Vous avez des modifications non enregistrées. Voulez-vous les abandonner et changer d’espace de travail ?",
-      "title": "Modifications non enregistrées"
-    },
     "viewWorkspace": "Voir l’espace de travail"
   },
   "workspaceAuth": {

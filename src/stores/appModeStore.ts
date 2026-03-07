@@ -12,6 +12,10 @@ import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { resolveNode } from '@/utils/litegraphUtil'
 
+export function nodeTypeValidForApp(type: string) {
+  return !['Note', 'MarkdownNote'].includes(type)
+}
+
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const workflowStore = useWorkflowStore()
