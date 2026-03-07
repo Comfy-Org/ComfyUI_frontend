@@ -615,8 +615,7 @@ const enterFolderView = async (asset: AssetItem) => {
     toast.add({
       severity: 'error',
       summary: t('sideToolbar.folderView.errorSummary'),
-      detail: t('sideToolbar.folderView.errorDetail'),
-      life: 5000
+      detail: t('sideToolbar.folderView.errorDetail')
     })
     exitFolderView()
   }
@@ -662,8 +661,7 @@ const copyJobId = async () => {
       toast.add({
         severity: 'error',
         summary: t('mediaAsset.jobIdToast.error'),
-        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed'),
-        life: 3000
+        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed')
       })
     }
   }
