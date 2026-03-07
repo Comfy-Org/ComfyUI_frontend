@@ -139,7 +139,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { switchWithConfirmation } = useWorkspaceSwitch()
+const { switchWorkspace } = useWorkspaceSwitch()
 const { subscription } = useBillingContext()
 
 const tierKeyMap: Record<string, string> = {
@@ -225,7 +225,7 @@ function getTierLabel(workspace: AvailableWorkspace): string | null {
 }
 
 async function handleSelectWorkspace(workspace: AvailableWorkspace) {
-  const success = await switchWithConfirmation(workspace.id)
+  const success = await switchWorkspace(workspace.id)
   if (success) {
     emit('select', workspace)
   }

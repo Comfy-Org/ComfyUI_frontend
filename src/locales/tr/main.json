@@ -2984,10 +2984,6 @@
     "addedToWorkspace": "{workspaceName} çalışma alanına eklendiniz",
     "inviteAccepted": "Davet kabul edildi",
     "inviteFailed": "Davet kabul edilemedi",
-    "unsavedChanges": {
-      "message": "Kaydedilmemiş değişiklikleriniz var. Bunları iptal edip çalışma alanlarını değiştirmek istiyor musunuz?",
-      "title": "Kaydedilmemiş Değişiklikler"
-    },
     "viewWorkspace": "Çalışma alanını görüntüle"
   },
   "workspaceAuth": {

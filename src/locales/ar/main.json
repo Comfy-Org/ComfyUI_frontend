@@ -2984,10 +2984,6 @@
     "addedToWorkspace": "تمت إضافتك إلى {workspaceName}",
     "inviteAccepted": "تم قبول الدعوة",
     "inviteFailed": "فشل في قبول الدعوة",
-    "unsavedChanges": {
-      "message": "لديك تغييرات غير محفوظة. هل تريد تجاهلها والانتقال إلى مساحة عمل أخرى؟",
-      "title": "تغييرات غير محفوظة"
-    },
     "viewWorkspace": "عرض مساحة العمل"
   },
   "workspaceAuth": {
