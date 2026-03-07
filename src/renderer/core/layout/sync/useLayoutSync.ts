@@ -26,8 +26,9 @@ export function useLayoutSync() {
     stopSync()
     // Subscribe to layout changes
     unsubscribe.value = layoutStore.onChange((change) => {
-      // Apply changes to LiteGraph regardless of source
-      // The layout store is the single source of truth
+      // Apply changes to LiteGraph regardless of source.
+      // The layout store is the single source of truth;
+      // this is a one-way projection: store → LiteGraph.
       for (const nodeId of change.nodeIds) {
         const layout = layoutStore.getNodeLayoutRef(nodeId).value
         if (!layout) continue
@@ -35,28 +36,10 @@ export function useLayoutSync() {
         const liteNode = canvas.graph?.getNodeById(parseInt(nodeId))
         if (!liteNode) continue
 
-        if (
-          liteNode.pos[0] !== layout.position.x ||
-          liteNode.pos[1] !== layout.position.y
-        ) {
-          liteNode.pos[0] = layout.position.x
-          liteNode.pos[1] = layout.position.y
-        }
-
-        // Note: layout.size.height is the content height without title.
-        // LiteGraph's measure() will add titleHeight to get boundingRect.
-        // Do NOT use addNodeTitleHeight here - that would double-count the title.
-        if (
-          liteNode.size[0] !== layout.size.width ||
-          liteNode.size[1] !== layout.size.height
-        ) {
-          // Update internal size directly (like position above) to avoid
-          // the size setter writing back to layoutStore with Canvas source,
-          // which would create a feedback loop through handleLayoutChange.
-          liteNode.size[0] = layout.size.width
-          liteNode.size[1] = layout.size.height
-          liteNode.onResize?.(liteNode.size)
-        }
+        // Use applyStoreProjection to write directly to backing arrays
+        // without triggering pos/size setters (which would write back
+        // to the store and create a feedback loop).
+        liteNode.applyStoreProjection(layout.position, layout.size)
       }
 
       // Trigger single redraw for all changes

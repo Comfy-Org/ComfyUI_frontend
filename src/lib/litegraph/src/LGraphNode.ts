@@ -537,6 +537,33 @@ export class LGraphNode
     this.pos = [x, y]
   }
 
+  /**
+   * Apply position and size from the layout store without triggering
+   * store mutations. Used exclusively by store→LiteGraph projection
+   * (e.g. useLayoutSync) to avoid feedback loops.
+   */
+  applyStoreProjection(
+    pos: { x: number; y: number },
+    size: { width: number; height: number }
+  ): boolean {
+    let changed = false
+
+    if (this._pos[0] !== pos.x || this._pos[1] !== pos.y) {
+      this._pos[0] = pos.x
+      this._pos[1] = pos.y
+      changed = true
+    }
+
+    if (this._size[0] !== size.width || this._size[1] !== size.height) {
+      this._size[0] = size.width
+      this._size[1] = size.height
+      this.onResize?.(this._size)
+      changed = true
+    }
+
+    return changed
+  }
+
   public get size() {
     return this._size
   }
