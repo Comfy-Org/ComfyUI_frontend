@@ -202,7 +202,9 @@ const renderedOutputs = computed(() => {
   return canvas
     .graph!.nodes.filter(
       (n) =>
-        n.constructor.nodeData?.output_node && n.mode === LGraphEventMode.ALWAYS
+        n.constructor.nodeData?.output_node &&
+        n.mode === LGraphEventMode.ALWAYS &&
+        !n.has_errors
     )
     .map(nodeToDisplayTuple)
 })
