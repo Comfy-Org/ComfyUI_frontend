@@ -9,6 +9,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   LGraph,
@@ -1274,47 +1275,71 @@ export class ComfyApp {
           useLitegraphService().fitView()
         }
       }
-    } catch (error) {
-      useDialogService().showErrorDialog(error, {
-        title: t('errorDialog.loadWorkflowTitle'),
-        reportType: 'loadWorkflowError'
-      })
-      console.error(error)
-      return
     }
-    forEachNode(this.rootGraph, (node) => {
-      const size = node.computeSize()
-      size[0] = Math.max(node.size[0], size[0])
-      size[1] = Math.max(node.size[1], size[1])
-      node.setSize(size)
-      if (node.widgets) {
-        // If you break something in the backend and want to patch workflows in the frontend
-        // This is the place to do this
-        for (let widget of node.widgets) {
-          if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
-            if (widget.name == 'sampler_name') {
-              if (
-                typeof widget.value === 'string' &&
-                widget.value.startsWith('sample_')
-              ) {
-                widget.value = widget.value.slice(7)
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      try {
+        // @ts-expect-error Discrepancies between zod and litegraph - in progress
+        this.rootGraph.configure(graphData)
+
+        // Save original renderer version before scaling (it gets modified during scaling)
+        const originalMainGraphRenderer =
+          this.rootGraph.extra.workflowRendererVersion
+
+        // Scale main graph
+        ensureCorrectLayoutScale(originalMainGraphRenderer)
+
+        // Scale all subgraphs that were loaded with the workflow
+        // Use original main graph renderer as fallback (not the modified one)
+        for (const subgraph of this.rootGraph.subgraphs.values()) {
+          ensureCorrectLayoutScale(
+            subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
+            subgraph
+          )
+        }
+
+        if (canvasVisible) fitView()
+      } catch (error) {
+        useDialogService().showErrorDialog(error, {
+          title: t('errorDialog.loadWorkflowTitle'),
+          reportType: 'loadWorkflowError'
+        })
+        console.error(error)
+        return
+      }
+      forEachNode(this.rootGraph, (node) => {
+        const size = node.computeSize()
+        size[0] = Math.max(node.size[0], size[0])
+        size[1] = Math.max(node.size[1], size[1])
+        node.setSize(size)
+        if (node.widgets) {
+          // If you break something in the backend and want to patch workflows in the frontend
+          // This is the place to do this
+          for (let widget of node.widgets) {
+            if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
+              if (widget.name == 'sampler_name') {
+                if (
+                  typeof widget.value === 'string' &&
+                  widget.value.startsWith('sample_')
+                ) {
+                  widget.value = widget.value.slice(7)
+                }
               }
             }
-          }
-          if (
-            node.type == 'KSampler' ||
-            node.type == 'KSamplerAdvanced' ||
-            node.type == 'PrimitiveNode'
-          ) {
-            if (widget.name == 'control_after_generate') {
-              if (widget.value === true) {
-                widget.value = 'randomize'
-              } else if (widget.value === false) {
-                widget.value = 'fixed'
+            if (
+              node.type == 'KSampler' ||
+              node.type == 'KSamplerAdvanced' ||
+              node.type == 'PrimitiveNode'
+            ) {
+              if (widget.name == 'control_after_generate') {
+                if (widget.value === true) {
+                  widget.value = 'randomize'
+                } else if (widget.value === false) {
+                  widget.value = 'fixed'
+                }
               }
             }
-          }
-          if (reset_invalid_values) {
             if (widget.type == 'combo') {
               const values = widget.options.values as
                 | (string | number | boolean)[]
@@ -1322,60 +1347,73 @@ export class ComfyApp {
               if (
                 values &&
                 values.length > 0 &&
-                !values.includes(widget.value as string | number | boolean)
+                (widget.value == null ||
+                  (reset_invalid_values &&
+                    !values.includes(
+                      widget.value as string | number | boolean
+                    )))
               ) {
                 widget.value = values[0]
               }
             }
           }
         }
+
+        useExtensionService().invokeExtensions('loadedGraphNode', node)
+      })
+
+      await useExtensionService().invokeExtensionsAsync(
+        'afterConfigureGraph',
+        missingNodeTypes
+      )
+
+      const telemetryPayload = {
+        missing_node_count: missingNodeTypes.length,
+        missing_node_types: missingNodeTypes.map((node) =>
+          typeof node === 'string' ? node : node.type
+        ),
+        open_source: openSource ?? 'unknown'
+      }
+      useTelemetry()?.trackWorkflowOpened(telemetryPayload)
+      useTelemetry()?.trackWorkflowImported(telemetryPayload)
+      await useWorkflowService().afterLoadNewGraph(
+        workflow,
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+      )
+
+      // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
+      // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
+      if (!canvasVisible && (!workflow || typeof workflow === 'string')) {
+        this.canvas.resize()
+        requestAnimationFrame(() => fitView())
       }
 
-      useExtensionService().invokeExtensions('loadedGraphNode', node)
-    })
+      // Store pending warnings on the workflow for deferred display
+      const activeWf = useWorkspaceStore().workflow.activeWorkflow
+      if (activeWf) {
+        const warnings: PendingWarnings = {}
+        if (missingNodeTypes.length && showMissingNodesDialog) {
+          warnings.missingNodeTypes = missingNodeTypes
+        }
+        if (missingModels.length && showMissingModelsDialog) {
+          const paths = await api.getFolderPaths()
+          warnings.missingModels = { missingModels: missingModels, paths }
+        }
+        if (warnings.missingNodeTypes || warnings.missingModels) {
+          activeWf.pendingWarnings = warnings
+        }
+      }
 
-    await useExtensionService().invokeExtensionsAsync(
-      'afterConfigureGraph',
-      missingNodeTypes
-    )
+      if (!deferWarnings) {
+        useWorkflowService().showPendingWarnings()
+      }
 
-    const telemetryPayload = {
-      missing_node_count: missingNodeTypes.length,
-      missing_node_types: missingNodeTypes.map((node) =>
-        typeof node === 'string' ? node : node.type
-      ),
-      open_source: openSource ?? 'unknown'
+      requestAnimationFrame(() => {
+        this.canvas.setDirty(true, true)
+      })
+    } finally {
+      ChangeTracker.isLoadingGraph = false
     }
-    useTelemetry()?.trackWorkflowOpened(telemetryPayload)
-    useTelemetry()?.trackWorkflowImported(telemetryPayload)
-    await useWorkflowService().afterLoadNewGraph(
-      workflow,
-      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-    )
-
-    // Store pending warnings on the workflow for deferred display
-    const activeWf = useWorkspaceStore().workflow.activeWorkflow
-    if (activeWf) {
-      const warnings: PendingWarnings = {}
-      if (missingNodeTypes.length && showMissingNodesDialog) {
-        warnings.missingNodeTypes = missingNodeTypes
-      }
-      if (missingModels.length && showMissingModelsDialog) {
-        const paths = await api.getFolderPaths()
-        warnings.missingModels = { missingModels: missingModels, paths }
-      }
-      if (warnings.missingNodeTypes || warnings.missingModels) {
-        activeWf.pendingWarnings = warnings
-      }
-    }
-
-    if (!deferWarnings) {
-      useWorkflowService().showPendingWarnings()
-    }
-
-    requestAnimationFrame(() => {
-      this.canvas.setDirty(true, true)
-    })
   }
 
   async graphToPrompt(graph = this.rootGraph) {
