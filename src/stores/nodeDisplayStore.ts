@@ -73,7 +73,7 @@ export const useNodeDisplayStore = defineStore('nodeDisplay', () => {
       }
 
       if (existing[key] !== update[key]) {
-        ;(existing as unknown as Record<string, unknown>)[key] = update[key]
+        Object.assign(existing, { [key]: update[key] })
         changed = true
       }
     }

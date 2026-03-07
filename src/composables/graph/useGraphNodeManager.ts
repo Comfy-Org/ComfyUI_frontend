@@ -20,7 +20,6 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import { useNodeDisplayStore } from '@/stores/nodeDisplayStore'
-import type { NodeDisplayState } from '@/stores/nodeDisplayStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -420,18 +419,14 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     graphId ? nodeDisplayStore.getNode(graphId, nodeId) : undefined
   )
 
-  function pres(): NodeDisplayState | undefined {
-    return presentationRef.value
-  }
-
   const data: VueNodeData = {
     id: nodeId,
     get title() {
-      return pres()?.title ?? ''
+      return presentationRef.value?.title ?? ''
     },
     type: nodeType,
     get mode() {
-      return pres()?.mode ?? 0
+      return presentationRef.value?.mode ?? 0
     },
     titleMode: node.title_mode,
     selected: node.selected || false,
@@ -444,21 +439,21 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     inputs: reactiveInputs,
     outputs: node.outputs ? [...node.outputs] : undefined,
     get flags() {
-      const f = pres()?.flags
+      const f = presentationRef.value?.flags
       return f ? { ...f } : undefined
     },
     get color() {
-      return pres()?.color
+      return presentationRef.value?.color
     },
     get bgcolor() {
-      return pres()?.bgcolor
+      return presentationRef.value?.bgcolor
     },
     resizable: node.resizable,
     get shape() {
-      return pres()?.shape
+      return presentationRef.value?.shape
     },
     get showAdvanced() {
-      return pres()?.showAdvanced
+      return presentationRef.value?.showAdvanced
     }
   }
 

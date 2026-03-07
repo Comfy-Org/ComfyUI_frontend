@@ -192,17 +192,15 @@ describe('LGraphNode presentation tracking', () => {
       expect(store.getNode(TEST_GRAPH_ID, '1')?.showAdvanced).toBe(true)
     })
 
-    it('same-value title assignment does not call syncDisplayStore', () => {
+    it('same-value title assignment does not update store', () => {
+      const updateSpy = vi.spyOn(store, 'updateNode')
+
       node.title = 'X'
       expect(store.getNode(TEST_GRAPH_ID, '1')?.title).toBe('X')
+      expect(updateSpy).toHaveBeenCalledTimes(1)
 
-      const syncSpy = vi.spyOn(
-        node as unknown as Record<string, (...args: unknown[]) => void>,
-        'syncDisplayStore'
-      )
       node.title = 'X'
-
-      expect(syncSpy).not.toHaveBeenCalled()
+      expect(updateSpy).toHaveBeenCalledTimes(1)
     })
   })
 })

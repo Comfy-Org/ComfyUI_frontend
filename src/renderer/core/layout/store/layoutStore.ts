@@ -392,15 +392,11 @@ class LayoutStoreImpl implements LayoutStore {
 
   getMinZIndex(): number {
     let min = 0
-    let first = true
     for (const [, ynode] of this.ynodes) {
       if (ynode) {
         const layout = yNodeToLayout(ynode)
         if (layout) {
-          if (first || layout.zIndex < min) {
-            min = layout.zIndex
-            first = false
-          }
+          min = Math.min(min, layout.zIndex)
         }
       }
     }

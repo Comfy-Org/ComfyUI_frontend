@@ -47,13 +47,15 @@ export function useLayoutSync() {
 
       // Sync render order when z-index changes
       if (change.operation.type === 'setNodeZIndex') {
-        graph._nodes.sort((a, b) => {
-          const zA =
-            layoutStore.getNodeLayoutRef(String(a.id)).value?.zIndex ?? 0
-          const zB =
-            layoutStore.getNodeLayoutRef(String(b.id)).value?.zIndex ?? 0
-          return zA - zB
-        })
+        const zIndexMap = new Map(
+          graph._nodes.map((n) => [
+            n.id,
+            layoutStore.getNodeLayoutRef(String(n.id)).value?.zIndex ?? 0
+          ])
+        )
+        graph._nodes.sort(
+          (a, b) => (zIndexMap.get(a.id) ?? 0) - (zIndexMap.get(b.id) ?? 0)
+        )
       }
 
       // Trigger single redraw for all changes

@@ -261,19 +261,13 @@ export class LGraphNode
   static keepAllLinksOnBypass: boolean = false
 
   /** The title text of the node. */
-  _title: string = ''
+  private _title: string = ''
 
   private _mode: LGraphEventMode = LGraphEventMode.ALWAYS
   private _color?: string
   private _bgcolor?: string
   private _showAdvanced?: boolean
   private _flags: INodeFlags = {}
-
-  private syncDisplayStore(update: NodeDisplayUpdate): void {
-    const graphId = this.graph?.rootGraph.id
-    if (!graphId) return
-    useNodeDisplayStore().updateNode(graphId, String(this.id), update)
-  }
 
   private applyPresentationChange(
     oldValue: unknown,
@@ -282,7 +276,9 @@ export class LGraphNode
   ): void {
     if (oldValue === newValue) return
 
-    this.syncDisplayStore(update)
+    const graphId = this.graph?.rootGraph.id
+    if (!graphId) return
+    useNodeDisplayStore().updateNode(graphId, String(this.id), update)
   }
 
   private setTrackedFlagEnumerable(
