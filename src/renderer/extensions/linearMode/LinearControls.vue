@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEventListener, useTimeout } from '@vueuse/core'
-import { partition, remove, takeWhile } from 'es-toolkit'
+import { remove, takeWhile } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -120,20 +120,6 @@ function nodeToNodeData(node: LGraphNode) {
     onDragOver: node.onDragOver
   }
 }
-const partitionedNodes = computed(() => {
-  const parts = partition(
-    graphNodes.value
-      .filter((node) => node.mode === 0 && node.widgets?.length)
-      .map(nodeToNodeData)
-      .reverse(),
-    (node) => ['MarkdownNote', 'Note'].includes(node.type)
-  )
-  for (const noteNode of parts[0]) {
-    for (const widget of noteNode.widgets ?? [])
-      widget.options = { ...widget.options, read_only: true }
-  }
-  return parts
-})
 
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
@@ -181,34 +167,6 @@ defineExpose({ runButtonClick })
         v-text="workflowStore.activeWorkflow?.filename"
       />
       <div class="flex-1" />
-      <Popover
-        v-if="partitionedNodes[0].length"
-        align="end"
-        class="z-100 max-h-(--reka-popover-content-available-height) overflow-x-clip overflow-y-auto"
-        side="bottom"
-        :side-offset="-8"
-      >
-        <template #button>
-          <Button variant="muted-textonly">
-            <i class="icon-[lucide--info]" />
-          </Button>
-        </template>
-        <div>
-          <template
-            v-for="(nodeData, index) in partitionedNodes[0]"
-            :key="nodeData.id"
-          >
-            <div
-              v-if="index !== 0"
-              class="w-full border-t border-border-subtle"
-            />
-            <NodeWidgets
-              :node-data
-              class="max-w-100 gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1"
-            />
-          </template>
-        </div>
-      </Popover>
       <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
     </section>
     <div
@@ -219,9 +177,7 @@ defineExpose({ runButtonClick })
         class="grow overflow-y-auto contain-size"
       >
         <template
-          v-for="(nodeData, index) of appModeStore.selectedInputs.length
-            ? mappedSelections
-            : partitionedNodes[0]"
+          v-for="(nodeData, index) of mappedSelections"
           :key="nodeData.id"
         >
           <div
