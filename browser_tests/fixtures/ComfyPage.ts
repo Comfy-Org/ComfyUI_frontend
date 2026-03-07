@@ -206,9 +206,7 @@ export class ComfyPage {
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
-    this.runButton = page
-      .getByTestId(TestIds.topbar.queueButton)
-      .getByRole('button', { name: 'Run' })
+    this.runButton = page.getByTestId(TestIds.topbar.queueButton)
     this.workflowUploadInput = page.locator('#comfy-file-input')
 
     this.searchBox = new ComfyNodeSearchBox(page)
