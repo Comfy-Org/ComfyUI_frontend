@@ -2025,7 +2025,7 @@
       "whitelistInfo": "About non-whitelisted sites"
     },
     "login": {
-      "title": "Log in to your account",
+      "title": "Welcome back! Log in to your account",
       "useApiKey": "Comfy API Key",
       "signInOrSignUp": "Sign In / Sign Up",
       "forgotPasswordError": "Failed to send password reset email",
@@ -2082,7 +2082,7 @@
       "emailNotEligibleForFreeTier": "Email sign-up is not eligible for Free Tier."
     },
     "signOut": {
-      "signOut": "Log Out",
+      "signOut": "Sign Out",
       "success": "Signed out successfully",
       "successDetail": "You have been signed out of your account.",
       "unsavedChangesTitle": "Unsaved Changes",
