@@ -3,8 +3,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { nodePresentationStore } from '@/renderer/core/nodePresentation/store/nodePresentationStore'
-import type { PresentationChange } from '@/renderer/core/nodePresentation/types'
+import { useNodeDisplayStore } from '@/stores/nodeDisplayStore'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
@@ -28,11 +28,22 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   }
 }))
 
+const TEST_GRAPH_ID = 'test-graph-id' as UUID
+
+function attachMockGraph(node: LGraphNode): void {
+  node.graph = {
+    _version: 0,
+    rootGraph: { id: TEST_GRAPH_ID }
+  } as unknown as LGraphNode['graph']
+}
+
 describe('LGraphNode presentation tracking', () => {
   let node: LGraphNode
+  let store: ReturnType<typeof useNodeDisplayStore>
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useNodeDisplayStore()
 
     Object.assign(LiteGraph, {
       NODE_TITLE_HEIGHT: 20,
@@ -40,12 +51,11 @@ describe('LGraphNode presentation tracking', () => {
       NODE_TEXT_SIZE: 14
     })
 
-    nodePresentationStore.clear()
-
     node = new LGraphNode('TestNode')
     node.id = 1
+    attachMockGraph(node)
 
-    nodePresentationStore.initializeNode('1', {
+    store.registerNode(TEST_GRAPH_ID, '1', {
       id: '1',
       title: 'TestNode',
       mode: 0,
@@ -58,43 +68,25 @@ describe('LGraphNode presentation tracking', () => {
   describe('flag mutation → store sync', () => {
     it('collapsed = true propagates to store', () => {
       node.flags.collapsed = true
-      expect(nodePresentationStore.getNode('1')?.flags.collapsed).toBe(true)
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.flags.collapsed).toBe(true)
     })
 
     it('pinned = true propagates to store', () => {
       node.flags.pinned = true
-      expect(nodePresentationStore.getNode('1')?.flags.pinned).toBe(true)
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.flags.pinned).toBe(true)
     })
 
     it('ghost = true propagates to store', () => {
       node.flags.ghost = true
-      expect(nodePresentationStore.getNode('1')?.flags.ghost).toBe(true)
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.flags.ghost).toBe(true)
     })
 
     it('setting flag back to undefined propagates to store', () => {
       node.flags.collapsed = true
-      expect(nodePresentationStore.getNode('1')?.flags.collapsed).toBe(true)
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.flags.collapsed).toBe(true)
 
       node.flags.collapsed = undefined
-      expect(
-        nodePresentationStore.getNode('1')?.flags.collapsed
-      ).toBeUndefined()
-    })
-
-    it('onChange listener receives flag change events', () => {
-      const changes: PresentationChange[] = []
-      const unsub = nodePresentationStore.onChange((c) => changes.push(c))
-
-      node.flags.ghost = true
-
-      expect(changes).toHaveLength(1)
-      expect(changes[0]).toMatchObject({
-        type: 'update',
-        nodeId: '1',
-        property: 'flags'
-      })
-
-      unsub()
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.flags.collapsed).toBeUndefined()
     })
   })
 
@@ -117,9 +109,6 @@ describe('LGraphNode presentation tracking', () => {
     })
 
     it('pin() method toggles pinned and resizable', () => {
-      const graph = { _version: 0 }
-      node.graph = graph as unknown as LGraphNode['graph']
-
       node.pin(true)
       expect(node.pinned).toBe(true)
       expect(node.resizable).toBe(false)
@@ -175,44 +164,43 @@ describe('LGraphNode presentation tracking', () => {
   describe('presentation setter → store sync', () => {
     it('title setter syncs to store', () => {
       node.title = 'New'
-      expect(nodePresentationStore.getNode('1')?.title).toBe('New')
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.title).toBe('New')
     })
 
     it('mode setter syncs to store', () => {
       node.mode = 2
-      expect(nodePresentationStore.getNode('1')?.mode).toBe(2)
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.mode).toBe(2)
     })
 
     it('color setter syncs to store', () => {
       node.color = '#ff0000'
-      expect(nodePresentationStore.getNode('1')?.color).toBe('#ff0000')
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.color).toBe('#ff0000')
     })
 
     it('bgcolor setter syncs to store', () => {
       node.bgcolor = '#00ff00'
-      expect(nodePresentationStore.getNode('1')?.bgcolor).toBe('#00ff00')
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.bgcolor).toBe('#00ff00')
     })
 
     it('shape setter converts string and syncs to store', () => {
       node.shape = 'round'
-      expect(nodePresentationStore.getNode('1')?.shape).toBe(RenderShape.ROUND)
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.shape).toBe(RenderShape.ROUND)
     })
 
     it('showAdvanced setter syncs to store', () => {
       node.showAdvanced = true
-      expect(nodePresentationStore.getNode('1')?.showAdvanced).toBe(true)
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.showAdvanced).toBe(true)
     })
 
-    it('same-value title assignment does not trigger onChange', () => {
+    it('same-value title assignment does not call syncDisplayStore', () => {
+      node.title = 'X'
+      expect(store.getNode(TEST_GRAPH_ID, '1')?.title).toBe('X')
+
+       
+      const syncSpy = vi.spyOn(node as any, 'syncDisplayStore')
       node.title = 'X'
 
-      const changes: PresentationChange[] = []
-      const unsub = nodePresentationStore.onChange((c) => changes.push(c))
-
-      node.title = 'X'
-
-      expect(changes).toHaveLength(0)
-      unsub()
+      expect(syncSpy).not.toHaveBeenCalled()
     })
   })
 })

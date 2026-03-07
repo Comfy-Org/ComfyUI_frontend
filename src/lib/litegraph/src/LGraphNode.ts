@@ -12,9 +12,8 @@ import {
 } from '@/renderer/core/layout/persistence/layoutPersistenceAdapter'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { nodePresentationStore } from '@/renderer/core/nodePresentation/store/nodePresentationStore'
-import { PresentationSource } from '@/renderer/core/nodePresentation/types'
-import type { PresentationUpdate } from '@/renderer/core/nodePresentation/types'
+import { useNodeDisplayStore } from '@/stores/nodeDisplayStore'
+import type { NodeDisplayUpdate } from '@/stores/nodeDisplayStore'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
@@ -270,22 +269,20 @@ export class LGraphNode
   private _showAdvanced?: boolean
   private _flags: INodeFlags = {}
 
-  private syncPresentationStore(update: PresentationUpdate): void {
-    nodePresentationStore.updateNode(
-      String(this.id),
-      update,
-      PresentationSource.Canvas
-    )
+  private syncDisplayStore(update: NodeDisplayUpdate): void {
+    const graphId = this.graph?.rootGraph.id
+    if (!graphId) return
+    useNodeDisplayStore().updateNode(graphId, String(this.id), update)
   }
 
   private applyPresentationChange(
     oldValue: unknown,
     newValue: unknown,
-    update: PresentationUpdate
+    update: NodeDisplayUpdate
   ): void {
     if (oldValue === newValue) return
 
-    this.syncPresentationStore(update)
+    this.syncDisplayStore(update)
   }
 
   private setTrackedFlagEnumerable(
@@ -321,7 +318,7 @@ export class LGraphNode
         value = newValue
         this.setTrackedFlagEnumerable(flag, newValue)
 
-        const flagsUpdate: NonNullable<PresentationUpdate['flags']> = {}
+        const flagsUpdate: NonNullable<NodeDisplayUpdate['flags']> = {}
         flagsUpdate[flag] = newValue
 
         this.applyPresentationChange(oldValue, newValue, { flags: flagsUpdate })
@@ -1097,7 +1094,7 @@ export class LGraphNode
    * (useGraphNodeManager.handleNodeAdded → initializeVueNodeLayout), which
    * fires on graph.add(). Property setters (title, mode, flags, etc.)
    * incrementally sync presentation state during configure() via
-   * nodePresentationStore.updateNode(). This method provides an explicit
+   * useNodeDisplayStore().updateNode(). This method provides an explicit
    * bulk-sync alternative for scenarios needing deterministic projection.
    *
    * @param info The serialized node data
@@ -1118,7 +1115,10 @@ export class LGraphNode
     })
 
     const presentation = extractPresentationFromSerialized(info)
-    nodePresentationStore.initializeNode(nodeId, presentation)
+    const graphId = this.graph?.rootGraph.id
+    if (graphId) {
+      useNodeDisplayStore().registerNode(graphId, nodeId, presentation)
+    }
   }
 
   /**

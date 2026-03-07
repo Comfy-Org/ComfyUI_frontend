@@ -3980,7 +3980,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Store hydration contract:
     // 1. graph.add(node) → handleNodeAdded → initializeVueNodeLayout
     //    (creates layout + presentation store entries from initial node state)
-    // 2. node.configure(info) → property setters → nodePresentationStore.updateNode
+    // 2. node.configure(info) → property setters → useNodeDisplayStore().updateNode
     //    (incrementally syncs presentation store with deserialized values)
     // 3. Position adjustments via setPos → pos setter → layoutStore.moveNode
     // 4. Final bounds sync via layoutStore.batchUpdateNodeBounds
