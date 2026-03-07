@@ -116,9 +116,9 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
-            ARGS='["@playwright/mcp@latest"]'
+            ARGS='["@playwright/mcp@0.0.68"]'
           else
-            ARGS='["@playwright/mcp@latest", "--headless"]'
+            ARGS='["@playwright/mcp@0.0.68", "--headless"]'
           fi
           cat > "${{ runner.temp }}/mcp-config.json" <<EOF
           {"mcpServers":{"playwright":{"command":"npx","args":${ARGS}}}}
