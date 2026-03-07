@@ -22,7 +22,7 @@ jobs:
           version: 10
       - uses: actions/setup-node@v6
         with:
-          node-version: 'lts/*'
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Get current version

@@ -183,7 +183,7 @@ const isActionbarFloating = computed(
   () => isActionbarEnabled.value && !isActionbarDocked.value
 )
 const isIntegratedTabBar = computed(
-  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
+  () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
