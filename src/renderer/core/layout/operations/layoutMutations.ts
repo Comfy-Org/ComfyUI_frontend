@@ -55,6 +55,7 @@ interface LayoutMutations {
 
   // Stacking operations
   bringNodeToFront(nodeId: NodeId): void
+  sendNodeToBack(nodeId: NodeId): void
 
   // Source tracking
   setSource(source: LayoutSource): void
@@ -192,18 +193,13 @@ export function useLayoutMutations(): LayoutMutations {
    * Bring a node to the front (highest z-index)
    */
   const bringNodeToFront = (nodeId: NodeId): void => {
-    // Get all nodes to find the highest z-index
-    const allNodes = layoutStore.getAllNodes().value
-    let maxZIndex = 0
-
-    for (const [, layout] of allNodes) {
-      if (layout.zIndex > maxZIndex) {
-        maxZIndex = layout.zIndex
-      }
-    }
-
-    // Set this node's z-index to be one higher than the current max
+    const maxZIndex = layoutStore.getMaxZIndex()
     setNodeZIndex(nodeId, maxZIndex + 1)
+  }
+
+  const sendNodeToBack = (nodeId: NodeId): void => {
+    const minZIndex = layoutStore.getMinZIndex()
+    setNodeZIndex(nodeId, minZIndex - 1)
   }
 
   /**
@@ -331,6 +327,7 @@ export function useLayoutMutations(): LayoutMutations {
     createNode,
     deleteNode,
     bringNodeToFront,
+    sendNodeToBack,
     createLink,
     deleteLink,
     createReroute,

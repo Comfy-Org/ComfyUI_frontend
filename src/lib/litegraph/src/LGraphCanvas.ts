@@ -6,6 +6,7 @@ import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -4720,6 +4721,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     graph._nodes.splice(i, 1)
     graph._nodes.push(node)
+
+    const { bringNodeToFront } = useLayoutMutations()
+    bringNodeToFront(String(node.id))
   }
 
   /**
@@ -4734,6 +4738,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     graph._nodes.splice(i, 1)
     graph._nodes.unshift(node)
+
+    const { sendNodeToBack } = useLayoutMutations()
+    sendNodeToBack(String(node.id))
   }
 
   /**

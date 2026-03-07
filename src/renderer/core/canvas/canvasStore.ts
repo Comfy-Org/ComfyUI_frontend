@@ -6,6 +6,7 @@ import type { Raw } from 'vue'
 import { useAppMode } from '@/composables/useAppMode'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
+import { useNodeSelectionStore } from '@/renderer/core/selection/store/nodeSelectionStore'
 import type {
   LGraph,
   LGraphCanvas,
@@ -39,6 +40,9 @@ export const useCanvasStore = defineStore('canvas', () => {
   const updateSelectedItems = () => {
     const items = Array.from(canvas.value?.selectedItems ?? [])
     selectedItems.value = items.map((item) => markRaw(item))
+
+    const selectionStore = useNodeSelectionStore()
+    selectionStore.syncFromCanvas(canvas.value?.selectedItems ?? [])
   }
 
   // Reactive scale percentage that syncs with app.canvas.ds.scale

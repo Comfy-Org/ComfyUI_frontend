@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -456,4 +457,79 @@ describe('layoutStore CRDT operations', () => {
       expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
     }
   )
+})
+
+describe('z-order operations', () => {
+  beforeEach(() => {
+    layoutStore.initializeFromLiteGraph([])
+  })
+
+  const createNodeWithZIndex = (id: string, zIndex: number) => {
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId: id,
+      layout: {
+        id,
+        position: { x: 0, y: 0 },
+        size: { width: 200, height: 100 },
+        zIndex,
+        visible: true,
+        bounds: { x: 0, y: 0, width: 200, height: 100 }
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+  }
+
+  it('bringNodeToFront sets highest zIndex', () => {
+    createNodeWithZIndex('node-0', 0)
+    createNodeWithZIndex('node-1', 1)
+    createNodeWithZIndex('node-2', 2)
+
+    const { bringNodeToFront } = useLayoutMutations()
+    bringNodeToFront('node-0')
+
+    const node0 = layoutStore.getNodeLayoutRef('node-0').value
+    expect(node0!.zIndex).toBeGreaterThan(2)
+  })
+
+  it('sendNodeToBack sets lowest zIndex', () => {
+    createNodeWithZIndex('node-0', 0)
+    createNodeWithZIndex('node-1', 1)
+    createNodeWithZIndex('node-2', 2)
+
+    const { sendNodeToBack } = useLayoutMutations()
+    sendNodeToBack('node-2')
+
+    const node2 = layoutStore.getNodeLayoutRef('node-2').value
+    expect(node2!.zIndex).toBeLessThan(0)
+  })
+
+  it('bringNodeToFront is idempotent for topmost node', () => {
+    createNodeWithZIndex('node-0', 0)
+    createNodeWithZIndex('node-1', 1)
+    createNodeWithZIndex('node-2', 2)
+
+    const { bringNodeToFront } = useLayoutMutations()
+    bringNodeToFront('node-2')
+
+    const node2 = layoutStore.getNodeLayoutRef('node-2').value
+    expect(node2!.zIndex).toBe(3)
+  })
+
+  it('z-order queries return correct max/min', () => {
+    createNodeWithZIndex('node-a', -5)
+    createNodeWithZIndex('node-b', 3)
+    createNodeWithZIndex('node-c', 10)
+
+    expect(layoutStore.getMaxZIndex()).toBe(10)
+    expect(layoutStore.getMinZIndex()).toBe(-5)
+  })
+
+  it('z-order queries return 0 when no nodes exist', () => {
+    expect(layoutStore.getMaxZIndex()).toBe(0)
+    expect(layoutStore.getMinZIndex()).toBe(0)
+  })
 })
