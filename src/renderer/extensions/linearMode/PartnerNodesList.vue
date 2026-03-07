@@ -11,6 +11,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
+import { trackNodePrice } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { app } from '@/scripts/app'
 import { mapAllNodes } from '@/utils/graphTraversalUtil'
 
@@ -26,6 +27,7 @@ const creditsBadges = computed(() =>
     const priceBadge = node.badges.find(isCreditsBadge)
     if (!priceBadge) return
 
+    trackNodePrice(node)
     return [node.title, toValue(priceBadge).text, node.id] as const
   })
 )
