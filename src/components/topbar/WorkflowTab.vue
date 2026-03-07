@@ -151,9 +151,7 @@ const shouldShowStatusIndicator = computed(() => {
 })
 
 const isBuilderState = computed(() => {
-  const currentMode =
-    props.workflowOption.workflow.activeMode ??
-    props.workflowOption.workflow.initialMode
+  const currentMode = props.workflowOption.workflow.activeMode
   return typeof currentMode === 'string' && currentMode.startsWith('builder:')
 })
 
