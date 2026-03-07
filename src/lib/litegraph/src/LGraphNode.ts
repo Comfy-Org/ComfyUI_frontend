@@ -255,7 +255,24 @@ export class LGraphNode
   static keepAllLinksOnBypass: boolean = false
 
   /** The title text of the node. */
-  title: string
+  _title: string = ''
+
+  get title(): string {
+    return this._title
+  }
+
+  set title(value: string) {
+    const oldValue = this._title
+    this._title = value
+    if (oldValue !== value) {
+      this.graph?.trigger('node:property:changed', {
+        nodeId: this.id,
+        property: 'title',
+        oldValue,
+        newValue: value
+      })
+    }
+  }
   /**
    * The font style used to render the node's title text.
    */
@@ -298,7 +315,24 @@ export class LGraphNode
 
   /** Execution order, automatically computed during run @see {@link LGraph.computeExecutionOrder} */
   order: number = 0
-  mode: LGraphEventMode = LGraphEventMode.ALWAYS
+  _mode: LGraphEventMode = LGraphEventMode.ALWAYS
+
+  get mode(): LGraphEventMode {
+    return this._mode
+  }
+
+  set mode(value: LGraphEventMode) {
+    const oldValue = this._mode
+    this._mode = value
+    if (oldValue !== value) {
+      this.graph?.trigger('node:property:changed', {
+        nodeId: this.id,
+        property: 'mode',
+        oldValue,
+        newValue: value
+      })
+    }
+  }
   last_serialization?: ISerialisedNode
   serialize_widgets?: boolean
   /**
