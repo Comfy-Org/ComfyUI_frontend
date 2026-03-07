@@ -220,7 +220,15 @@ Where:
 To determine the increment, check existing files:
 
 ```bash
-ls docs/qa/ | grep "$(date +%Y-%m-%d)" | wc -l
+DATE="$(date +%Y-%m-%d)"
+NEXT_INDEX="$(
+  ls docs/qa/ 2>/dev/null \
+  | sed -n "s/^${DATE}-\([0-9][0-9][0-9]\)-report\.md$/\1/p" \
+  | sort -n \
+  | tail -1 \
+  | awk '{printf "%03d", ($1 == "" ? 1 : $1 + 1)}'
+)"
+echo "$NEXT_INDEX"
 ```
 
 ### Report Template
