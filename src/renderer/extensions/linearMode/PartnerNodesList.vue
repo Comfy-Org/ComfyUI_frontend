@@ -8,9 +8,13 @@ import { computed, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/Popover.vue'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
+import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
 import { app } from '@/scripts/app'
 import { mapAllNodes } from '@/utils/graphTraversalUtil'
+
+defineProps<{ mobile?: boolean }>()
 
 const { isCreditsBadge } = usePriceBadge()
 const { t } = useI18n()
@@ -22,16 +26,43 @@ const creditsBadges = computed(() =>
     const priceBadge = node.badges.find(isCreditsBadge)
     if (!priceBadge) return
 
-    return [node.title, toValue(priceBadge).text]
+    return [node.title, toValue(priceBadge).text, node.id] as const
   })
 )
 </script>
 <template>
-  <CollapsibleRoot v-slot="{ open }" class="w-full">
-    <div
-      v-if="creditsBadges.length"
-      class="w-full border-b border-border-subtle"
+  <Popover v-if="mobile && creditsBadges.length" side="top">
+    <template #button>
+      <Button class="mr-2 size-10">
+        <i class="icon-[comfy--credits] bg-amber-400" />
+      </Button>
+    </template>
+    <section
+      class="max-h-(--reka-popover-content-available-height) overflow-y-auto"
+    >
+      <PartnerNodeItem
+        v-for="[title, price, key] in creditsBadges"
+        :key
+        :title
+        :price
+      />
+    </section>
+  </Popover>
+  <template v-else-if="creditsBadges.length === 1">
+    <PartnerNodeItem
+      v-for="[title, price, key] in creditsBadges"
+      :key
+      :title
+      :price
+      class="border-t border-border-subtle pt-2"
     />
+  </template>
+  <CollapsibleRoot
+    v-else-if="creditsBadges.length"
+    v-slot="{ open }"
+    class="flex max-h-1/2 w-full flex-col"
+  >
+    <div class="mb-1 w-full border-b border-border-subtle" />
     <CollapsibleTrigger as-child>
       <Button variant="textonly" class="w-full text-sm">
         <i class="icon-[comfy--credits] size-4 bg-amber-400" />
@@ -40,16 +71,13 @@ const creditsBadges = computed(() =>
         <i v-else class="ml-auto icon-[lucide--chevron-down]" />
       </Button>
     </CollapsibleTrigger>
-    <CollapsibleContent class="scrollbar-custom overflow-y-auto">
-      <div v-for="[title, badge] in creditsBadges" :key="title">
-        <div class="text-muted-foreground" v-text="title" />
-        <span
-          class="mt-2 mb-4 flex h-5 max-w-max items-center rounded-full bg-component-node-widget-background p-2 py-3"
-        >
-          <i class="mr-1 icon-[lucide--component] h-4 bg-amber-400" />
-          {{ badge }}
-        </span>
-      </div>
+    <CollapsibleContent class="overflow-y-auto">
+      <PartnerNodeItem
+        v-for="[title, price, key] in creditsBadges"
+        :key
+        :title
+        :price
+      />
     </CollapsibleContent>
   </CollapsibleRoot>
 </template>

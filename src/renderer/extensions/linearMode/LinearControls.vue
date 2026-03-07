@@ -275,7 +275,7 @@ defineExpose({ runButtonClick })
           </template>
         </div>
       </Teleport>
-      <PartnerNodesList />
+      <PartnerNodesList v-if="!mobile" />
       <section
         v-if="mobile"
         data-testid="linear-run-button"
@@ -286,6 +286,7 @@ defineExpose({ runButtonClick })
           class="mt-4 w-full"
         />
         <div v-else class="mt-4 flex">
+          <PartnerNodesList mobile />
           <Popover side="top" @open-auto-focus.prevent>
             <template #button>
               <Button size="lg" class="-mr-3 pr-7">
