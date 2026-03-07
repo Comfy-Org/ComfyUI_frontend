@@ -10,7 +10,7 @@
         <span>{{ $t('sideToolbar.queueProgressOverlay.viewList') }}</span>
       </span>
       <i
-        class="icon-[lucide--check] ml-auto size-4"
+        class="ml-auto icon-[lucide--check] size-4"
         :class="viewMode !== 'list' && 'opacity-0'"
       />
     </Button>
@@ -25,13 +25,13 @@
         <span>{{ $t('sideToolbar.queueProgressOverlay.viewGrid') }}</span>
       </span>
       <i
-        class="icon-[lucide--check] ml-auto size-4"
+        class="ml-auto icon-[lucide--check] size-4"
         :class="viewMode !== 'grid' && 'opacity-0'"
       />
     </Button>
 
     <template v-if="showSortOptions">
-      <div class="border-b w-full border-border-subtle my-1" />
+      <div class="my-1 w-full border-b border-border-subtle" />
 
       <Button
         variant="textonly"
@@ -40,7 +40,7 @@
       >
         <span>{{ $t('sideToolbar.mediaAssets.sortNewestFirst') }}</span>
         <i
-          class="icon-[lucide--check] ml-auto size-4"
+          class="ml-auto icon-[lucide--check] size-4"
           :class="sortBy !== 'newest' && 'opacity-0'"
         />
       </Button>
@@ -52,7 +52,7 @@
       >
         <span>{{ $t('sideToolbar.mediaAssets.sortOldestFirst') }}</span>
         <i
-          class="icon-[lucide--check] ml-auto size-4"
+          class="ml-auto icon-[lucide--check] size-4"
           :class="sortBy !== 'oldest' && 'opacity-0'"
         />
       </Button>
@@ -65,7 +65,7 @@
         >
           <span>{{ $t('sideToolbar.mediaAssets.sortLongestFirst') }}</span>
           <i
-            class="icon-[lucide--check] ml-auto size-4"
+            class="ml-auto icon-[lucide--check] size-4"
             :class="sortBy !== 'longest' && 'opacity-0'"
           />
         </Button>
@@ -77,7 +77,7 @@
         >
           <span>{{ $t('sideToolbar.mediaAssets.sortFastestFirst') }}</span>
           <i
-            class="icon-[lucide--check] ml-auto size-4"
+            class="ml-auto icon-[lucide--check] size-4"
             :class="sortBy !== 'fastest' && 'opacity-0'"
           />
         </Button>

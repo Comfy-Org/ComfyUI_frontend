@@ -11,7 +11,7 @@
       <div
         :class="
           cn(
-            'flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface justify-center',
+            'flex items-center justify-center gap-1 rounded-full hover:bg-interface-button-hover-surface',
             compact && 'size-full'
           )
         "

@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="subgraph-breadcrumb"
-    class="subgraph-breadcrumb flex w-auto drop-shadow-(--interface-panel-drop-shadow) items-center -mt-4 pt-4"
+    class="subgraph-breadcrumb -mt-3 flex w-auto items-center pt-4 pl-1 drop-shadow-(--interface-panel-drop-shadow)"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,
       'subgraph-breadcrumb-overflow': overflowingTabs
@@ -17,7 +17,7 @@
     <WorkflowActionsDropdown source="breadcrumb_subgraph_menu_selected" />
     <Button
       v-if="isInSubgraph"
-      class="back-button pointer-events-auto h-8 w-8 shrink-0 border border-transparent bg-transparent p-0 ml-1.5 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
+      class="back-button pointer-events-auto ml-1.5 size-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
       text
       severity="secondary"
       size="small"

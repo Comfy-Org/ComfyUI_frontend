@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "수학식",
+    "inputs": {
+      "expression": {
+        "name": "수식"
+      },
+      "values": {
+        "name": "값"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "스위치",
     "inputs": {
@@ -3947,6 +3966,10 @@
     "description": "텍스트 프롬프트를 기반으로 기존 이미지를 수정합니다",
     "display_name": "Grok 이미지 편집",
     "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "여러 이미지가 이미지 입력에 연결된 경우에만 허용됩니다."
+      },
       "control_after_generate": {
         "name": "생성 후 제어"
       },
@@ -3998,6 +4021,9 @@
       "prompt": {
         "name": "프롬프트",
         "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트"
+      },
+      "resolution": {
+        "name": "해상도"
       },
       "seed": {
         "name": "시드",
@@ -5853,6 +5879,9 @@
       },
       "mode": {
         "name": "모드"
+      },
+      "model": {
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트"
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "3D 모델에 UV 펼치기를 수행하여 UV 텍스처를 생성합니다. 입력 모델은 30,000개 미만의 면을 가져야 합니다.",
+    "display_name": "Hunyuan3D: 모델에서 UV로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model_3d": {
+        "name": "3D 모델",
+        "tooltip": "입력 3D 모델 (GLB, OBJ, 또는 FBX)"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "3D 모델에 스마트 리토폴로지를 수행합니다. GLB/OBJ 포맷 지원; 최대 200MB; 고폴리곤 모델에 권장됩니다.",
+    "display_name": "Hunyuan3D: 스마트 토폴로지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "face_level": {
+        "name": "면 수준",
+        "tooltip": "폴리곤 감소 수준."
+      },
+      "model_3d": {
+        "name": "3D 모델",
+        "tooltip": "입력 3D 모델 (GLB 또는 OBJ)"
+      },
+      "polygon_type": {
+        "name": "폴리곤 유형",
+        "tooltip": "표면 구성 유형."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

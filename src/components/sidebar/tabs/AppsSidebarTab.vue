@@ -2,14 +2,13 @@
   <BaseWorkflowsSidebarTab
     :title="$t('linearMode.appModeToolbar.apps')"
     :filter="isAppWorkflow"
-    :label-transform="stripAppJsonSuffix"
     hide-leaf-icon
     :search-subject="$t('linearMode.appModeToolbar.apps')"
     data-testid="apps-sidebar"
   >
     <template #alt-title>
       <span
-        class="ml-2 flex items-center rounded-full bg-primary-background px-1.5 py-0.5 text-xxs uppercase text-base-foreground"
+        class="ml-2 flex items-center rounded-full bg-primary-background px-1.5 py-0.5 text-xxs text-base-foreground uppercase"
       >
         {{ $t('g.beta') }}
       </span>
@@ -18,8 +17,13 @@
       <NoResultsPlaceholder
         button-variant="secondary"
         text-class="text-muted-foreground text-sm"
-        :message="$t('linearMode.appModeToolbar.appsEmptyMessage')"
-        :button-label="$t('linearMode.appModeToolbar.enterAppMode')"
+        :message="
+          isAppMode
+            ? $t('linearMode.appModeToolbar.appsEmptyMessage')
+            : `${$t('linearMode.appModeToolbar.appsEmptyMessage')}\n${$t('linearMode.appModeToolbar.appsEmptyMessageAction')}`
+        "
+        button-icon="icon-[lucide--hammer]"
+        :button-label="isAppMode ? undefined : $t('linearMode.buildAnApp')"
         @action="enterAppMode"
       />
     </template>
@@ -32,14 +36,10 @@ import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSide
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
-const { setMode } = useAppMode()
+const { isAppMode, setMode } = useAppMode()
 
 function isAppWorkflow(workflow: ComfyWorkflow): boolean {
   return workflow.suffix === 'app.json'
-}
-
-function stripAppJsonSuffix(label: string): string {
-  return label.replace(/\.app\.json$/i, '')
 }
 
 function enterAppMode() {

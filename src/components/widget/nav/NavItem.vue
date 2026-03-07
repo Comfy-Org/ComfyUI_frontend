@@ -5,7 +5,7 @@
       disabled: !isOverflowing,
       pt: { text: { class: 'w-max whitespace-nowrap' } }
     }"
-    class="flex cursor-pointer select-none items-center-safe gap-2 rounded-md px-4 py-3 text-sm transition-colors text-base-foreground"
+    class="flex cursor-pointer items-center-safe gap-2 rounded-md px-4 py-3 text-sm text-base-foreground transition-colors select-none"
     :class="
       active
         ? 'bg-interface-menu-component-surface-selected'
@@ -16,7 +16,7 @@
     @click="onClick"
   >
     <NavIcon v-if="icon" :icon="icon" />
-    <i v-else class="text-neutral icon-[lucide--folder] text-xs shrink-0" />
+    <i v-else class="text-neutral icon-[lucide--folder] shrink-0 text-xs" />
     <span ref="textRef" class="min-w-0 truncate">
       <slot />
     </span>

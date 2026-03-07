@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "تعبير رياضي",
+    "inputs": {
+      "expression": {
+        "name": "تعبير"
+      },
+      "values": {
+        "name": "القيم"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "مفتاح التحويل",
     "inputs": {
@@ -3947,6 +3966,10 @@
     "description": "تعديل صورة موجودة بناءً على مطالبة نصية",
     "display_name": "تعديل صورة Grok",
     "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع",
+        "tooltip": "مسموح فقط عند توصيل عدة صور بمدخل الصورة."
+      },
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
       },
@@ -3998,6 +4021,9 @@
       "prompt": {
         "name": "المطالبة",
         "tooltip": "المطالبة النصية المستخدمة لتوليد الصورة"
+      },
+      "resolution": {
+        "name": "الدقة"
       },
       "seed": {
         "name": "البذرة",
@@ -5853,6 +5879,9 @@
       },
       "mode": {
         "name": "الوضع"
+      },
+      "model": {
+        "name": "النموذج"
       },
       "prompt": {
         "name": "الموجه"
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "تنفيذ فك UV لنموذج ثلاثي الأبعاد لإنشاء نسيج UV. يجب أن يحتوي النموذج المُدخل على أقل من ٣٠٬٠٠٠ وجه.",
+    "display_name": "Hunyuan3D: من نموذج إلى UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model_3d": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": "إدخال نموذج ثلاثي الأبعاد (GLB، OBJ، أو FBX)"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "تنفيذ إعادة طوبولوجيا ذكية لنموذج ثلاثي الأبعاد. يدعم صيغ GLB/OBJ؛ الحد الأقصى ٢٠٠ ميجابايت؛ يُوصى به للنماذج عالية التفاصيل.",
+    "display_name": "Hunyuan3D: طوبولوجيا ذكية",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "face_level": {
+        "name": "مستوى الوجوه",
+        "tooltip": "مستوى تقليل المضلعات."
+      },
+      "model_3d": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": "إدخال نموذج ثلاثي الأبعاد (GLB أو OBJ)"
+      },
+      "polygon_type": {
+        "name": "نوع المضلع",
+        "tooltip": "نوع تركيب السطح."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

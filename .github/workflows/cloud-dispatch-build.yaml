@@ -13,6 +13,8 @@ on:
     branches:
       - 'cloud/*'
       - 'main'
+  pull_request:
+    types: [labeled]
   workflow_dispatch:
 
 permissions: {}
@@ -23,16 +25,31 @@ concurrency:
 
 jobs:
   dispatch:
-    # Fork guard: prevent forks from dispatching to the cloud repo
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    # Fork guard: prevent forks from dispatching to the cloud repo.
+    # For pull_request events, only dispatch when the 'preview' label is added.
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (github.event_name != 'pull_request' ||
+       github.event.label.name == 'preview')
     runs-on: ubuntu-latest
     steps:
       - name: Build client payload
         id: payload
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
+          if [ "${EVENT_NAME}" = "pull_request" ]; then
+            REF="${PR_HEAD_SHA}"
+            BRANCH="${PR_HEAD_REF}"
+          else
+            REF="${GITHUB_SHA}"
+            BRANCH="${GITHUB_REF_NAME}"
+          fi
           payload="$(jq -nc \
-            --arg ref "${GITHUB_SHA}" \
-            --arg branch "${GITHUB_REF_NAME}" \
+            --arg ref "${REF}" \
+            --arg branch "${BRANCH}" \
             '{ref: $ref, branch: $branch}')"
           echo "json=${payload}" >> "${GITHUB_OUTPUT}"
 

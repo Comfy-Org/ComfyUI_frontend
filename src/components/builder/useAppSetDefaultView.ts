@@ -8,6 +8,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import BuilderDefaultModeAppliedDialogContent from './BuilderDefaultModeAppliedDialogContent.vue'
 import DefaultViewDialogContent from './DefaultViewDialogContent.vue'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 const DIALOG_KEY = 'builder-default-view'
 const APPLIED_DIALOG_KEY = 'builder-default-view-applied'
@@ -16,6 +17,7 @@ export function useAppSetDefaultView() {
   const workflowStore = useWorkflowStore()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
+  const appModeStore = useAppModeStore()
   const { setMode } = useAppMode()
 
   const settingView = computed(() => dialogStore.isDialogOpen(DIALOG_KEY))
@@ -53,6 +55,10 @@ export function useAppSetDefaultView() {
         onViewApp: () => {
           closeAppliedDialog()
           setMode('app')
+        },
+        onExitToWorkflow: () => {
+          closeAppliedDialog()
+          appModeStore.exitBuilder()
         },
         onClose: closeAppliedDialog
       }

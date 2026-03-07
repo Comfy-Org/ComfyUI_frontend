@@ -1,6 +1,6 @@
 <template>
   <WidgetLayoutField :widget="widget">
-    <div :class="cn(WidgetInputBaseClass, 'flex items-center gap-2 pl-3 pr-2')">
+    <div :class="cn(WidgetInputBaseClass, 'flex items-center gap-2 pr-2 pl-3')">
       <GradientSlider
         v-model="modelValue"
         :stops="gradientStops"
@@ -9,7 +9,7 @@
         :step="stepValue"
         :disabled="widget.options?.disabled"
         :aria-label="widget.name"
-        class="flex-1 min-w-0"
+        class="min-w-0 flex-1"
       />
       <InputNumber
         :key="timesEmptied"

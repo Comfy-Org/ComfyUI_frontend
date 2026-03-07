@@ -65,7 +65,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -674,20 +674,6 @@ export class ComfyApp {
           this.graph.change()
           e.preventDefault()
           e.stopImmediatePropagation()
-          return
-        }
-
-        // Ctrl+C Copy
-        if (e.key === 'c' && (e.metaKey || e.ctrlKey)) {
-          return
-        }
-
-        // Ctrl+V Paste
-        if (
-          (e.key === 'v' || e.key == 'V') &&
-          (e.metaKey || e.ctrlKey) &&
-          !e.shiftKey
-        ) {
           return
         }
       }

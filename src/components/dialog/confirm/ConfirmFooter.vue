@@ -1,11 +1,11 @@
 <template>
-  <section class="w-full flex flex-wrap gap-2 justify-end px-2 pb-2">
+  <section class="flex w-full flex-wrap justify-end gap-2 px-2 pb-2">
     <Button :disabled variant="textonly" autofocus @click="$emit('cancel')">
       {{ cancelTextX }}
     </Button>
     <Button
       :disabled
-      variant="textonly"
+      :variant="confirmVariant ?? 'textonly'"
       :class="confirmClass"
       @click="$emit('confirm')"
     >
@@ -19,13 +19,21 @@ import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button/button.variants'
 
 const { t } = useI18n()
 
-const { cancelText, confirmText, confirmClass, optionsDisabled } = defineProps<{
+const {
+  cancelText,
+  confirmText,
+  confirmClass,
+  confirmVariant,
+  optionsDisabled
+} = defineProps<{
   cancelText?: string
   confirmText?: string
   confirmClass?: string
+  confirmVariant?: ButtonVariants['variant']
   optionsDisabled?: MaybeRefOrGetter<boolean>
 }>()
 
