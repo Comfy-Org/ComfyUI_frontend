@@ -579,8 +579,7 @@ const onUpdateComfyUI = async (): Promise<void> => {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: error.value || t('helpCenter.updateComfyUIFailed'),
-        life: 5000
+        detail: error.value || t('helpCenter.updateComfyUIFailed')
       })
       return
     }
@@ -597,8 +596,7 @@ const onUpdateComfyUI = async (): Promise<void> => {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: err instanceof Error ? err.message : t('g.unknownError'),
-      life: 5000
+      detail: err instanceof Error ? err.message : t('g.unknownError')
     })
   }
 }

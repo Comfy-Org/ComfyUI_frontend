@@ -213,8 +213,7 @@ const handleDownload = () => {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: t('g.failedToDownloadFile'),
-      life: 3000
+      detail: t('g.failedToDownloadFile')
     })
   }
 }

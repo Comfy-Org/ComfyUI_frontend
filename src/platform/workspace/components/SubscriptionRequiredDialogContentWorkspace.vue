@@ -137,8 +137,7 @@ async function handleSubscribeClick(payload: {
       toast.add({
         severity: 'error',
         summary: 'Unable to subscribe',
-        detail: 'This plan is not available',
-        life: 5000
+        detail: 'This plan is not available'
       })
       return
     }
@@ -148,8 +147,7 @@ async function handleSubscribeClick(payload: {
       toast.add({
         severity: 'error',
         summary: 'Unable to subscribe',
-        detail: response?.reason || 'This plan is not available',
-        life: 5000
+        detail: response?.reason || 'This plan is not available'
       })
       return
     }
@@ -164,8 +162,7 @@ async function handleSubscribeClick(payload: {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: message,
-      life: 5000
+      detail: message
     })
   } finally {
     isLoadingPreview.value = false
@@ -225,8 +222,7 @@ async function handleAddCreditCard() {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: message,
-      life: 5000
+      detail: message
     })
   } finally {
     isSubscribing.value = false
@@ -280,8 +276,7 @@ async function handleConfirmTransition() {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: message,
-      life: 5000
+      detail: message
     })
   } finally {
     isSubscribing.value = false
@@ -305,8 +300,7 @@ async function handleResubscribe() {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: message,
-      life: 5000
+      detail: message
     })
   } finally {
     isResubscribing.value = false

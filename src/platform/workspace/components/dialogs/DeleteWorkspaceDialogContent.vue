@@ -79,8 +79,7 @@ async function onDelete() {
     toast.add({
       severity: 'error',
       summary: t('workspacePanel.toast.failedToDeleteWorkspace'),
-      detail: error instanceof Error ? error.message : t('g.unknownError'),
-      life: 5000
+      detail: error instanceof Error ? error.message : t('g.unknownError')
     })
   } finally {
     loading.value = false
