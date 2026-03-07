@@ -32,16 +32,9 @@ const meta: Meta<StoryArgs> = {
     hideButtons: false
   },
   decorators: [
-    (story, context) => ({
+    (story) => ({
       components: { story },
-      setup() {
-        const isDark =
-          (context.globals.theme || 'light') === 'dark' ||
-          document.body.classList.contains('dark-theme')
-        return { bgClass: isDark ? 'bg-[#353535]' : 'bg-[#e0e0e0]' }
-      },
-      template:
-        '<div :class="[bgClass, \'w-60 rounded-lg p-4\']"><story /></div>'
+      template: '<div class="w-60"><story /></div>'
     })
   ]
 }
