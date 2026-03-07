@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
@@ -7,6 +7,13 @@ import Button from '@/components/ui/button/Button.vue'
 
 const { t } = useI18n()
 
+const titleTooltip = ref<string | null>(null)
+const subTitleTooltip = ref<string | null>(null)
+
+function isTruncated(e: MouseEvent): boolean {
+  const el = e.currentTarget as HTMLElement
+  return el.scrollWidth > el.clientWidth
+}
 const { rename, remove } = defineProps<{
   title: string
   subTitle?: string
@@ -34,8 +41,20 @@ const entries = computed(() => {
 <template>
   <div class="my-2 flex items-center-safe gap-2 rounded-lg p-2">
     <div class="drag-handle mr-auto flex min-w-0 flex-col gap-1">
-      <div class="truncate text-sm" v-text="title" />
-      <div class="truncate text-xs text-muted-foreground" v-text="subTitle" />
+      <div
+        v-tooltip.left="{ value: titleTooltip, showDelay: 300 }"
+        class="truncate text-sm"
+        @mouseenter="titleTooltip = isTruncated($event) ? title : null"
+        v-text="title"
+      />
+      <div
+        v-tooltip.left="{ value: subTitleTooltip, showDelay: 300 }"
+        class="truncate text-xs text-muted-foreground"
+        @mouseenter="
+          subTitleTooltip = isTruncated($event) ? (subTitle ?? null) : null
+        "
+        v-text="subTitle"
+      />
     </div>
     <Popover :entries>
       <template #button>
