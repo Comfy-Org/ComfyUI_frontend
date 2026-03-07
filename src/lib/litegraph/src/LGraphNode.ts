@@ -7,7 +7,13 @@ import {
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import {
+  extractLayoutFromSerialized,
+  extractPresentationFromSerialized
+} from '@/renderer/core/layout/persistence/layoutPersistenceAdapter'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { nodePresentationStore } from '@/renderer/core/nodePresentation/store/nodePresentationStore'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
@@ -1070,6 +1076,34 @@ export class LGraphNode
     }
 
     this.onConfigure?.(info)
+  }
+
+  /**
+   * Project serialized node data into layout and presentation stores.
+   *
+   * Called after configure + stabilization to sync store state with
+   * the deserialized node. Not yet wired into configure() — will be
+   * integrated in Phase 6 when a stabilization checkpoint exists.
+   *
+   * @param info The serialized node data
+   * @param nodeIndex Optional z-order index (array position during graph load)
+   */
+  notifyStoresAfterConfigure(info: ISerialisedNode, nodeIndex?: number): void {
+    const nodeId = String(this.id)
+    const layout = extractLayoutFromSerialized(info, nodeIndex)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+
+    const presentation = extractPresentationFromSerialized(info)
+    nodePresentationStore.initializeNode(nodeId, presentation)
   }
 
   /**
@@ -3942,7 +3976,7 @@ export class LGraphNode
 
       if (this.collapsed) {
         // For collapsed nodes, limit to 20 chars as before
-        displayTitle = title.substr(0, 20)
+        displayTitle = title.slice(0, 20)
       } else if (availableWidth > 0) {
         // For regular nodes, truncate based on available width
         displayTitle = truncateText(ctx, title, availableWidth)

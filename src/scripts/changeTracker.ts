@@ -9,6 +9,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -26,6 +27,46 @@ const logger = log.getLogger('ChangeTracker')
 // Change to debug for more verbose logging
 logger.setLevel('info')
 
+/**
+ * Verify that layout store state is consistent with the current graph
+ * after an undo/redo restore. Logs a warning on mismatch.
+ *
+ * During the SSOT migration, stores are re-derived from the graph
+ * snapshot via `loadGraphData` → `initializeFromLiteGraph`. This
+ * verification confirms the derivation happened correctly.
+ */
+function verifyStoreConsistency(): void {
+  if (!app.graph) return
+
+  for (const node of app.graph._nodes) {
+    const storeLayout = layoutStore.getNodeLayoutRef(String(node.id)).value
+    if (!storeLayout) continue
+
+    const posMatch =
+      Math.abs(storeLayout.position.x - node.pos[0]) < 0.01 &&
+      Math.abs(storeLayout.position.y - node.pos[1]) < 0.01
+
+    if (!posMatch) {
+      logger.warn(
+        'Store/graph position mismatch after restore for node',
+        node.id
+      )
+      return
+    }
+  }
+}
+
+/**
+ * Hybrid history system for undo/redo via full graph JSON snapshots.
+ *
+ * **Store consistency contract (SSOT migration)**:
+ * Layout and presentation stores are re-derived from the graph snapshot
+ * during `loadGraphData` (which calls `initializeFromLiteGraph` and node
+ * add hooks). After every undo/redo restore, `verifyStoreConsistency`
+ * checks that store state matches the restored graph. If a mismatch is
+ * detected a warning is logged — the snapshot remains the fallback
+ * authority until stores become primary in a later migration phase.
+ */
 export class ChangeTracker {
   static MAX_HISTORY = 50
   /**
@@ -163,6 +204,7 @@ export class ChangeTracker {
         })
         this.activeState = prevState
         this.updateModified()
+        verifyStoreConsistency()
       } finally {
         this._restoringState = false
       }

@@ -61,6 +61,11 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     mockSetDirty.mockClear()
   })
 
+  it('is marked as view-state only', () => {
+    const store = useSubgraphNavigationStore()
+    expect(store.isViewStateOnly).toBe(true)
+  })
+
   describe('saveViewport', () => {
     it('should save viewport state for root graph', () => {
       const navigationStore = useSubgraphNavigationStore()

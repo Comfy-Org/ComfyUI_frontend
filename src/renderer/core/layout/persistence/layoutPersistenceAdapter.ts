@@ -1,0 +1,85 @@
+/**
+ * Layout Persistence Adapter
+ *
+ * Defines explicit conversion boundaries between store-backed state
+ * and the serialized workflow format (ISerialisedNode).
+ *
+ * These pure functions codify the mapping contract for layout and
+ * presentation fields, enabling future migration from LiteGraph-first
+ * to store-first serialization.
+ */
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { NodeId, NodeLayout } from '@/renderer/core/layout/types'
+import type { NodePresentationState } from '@/renderer/core/nodePresentation/types'
+
+export function extractLayoutFromSerialized(
+  node: ISerialisedNode,
+  zIndex = 0
+): NodeLayout {
+  const id: NodeId = String(node.id)
+  const x = node.pos[0]
+  const y = node.pos[1]
+  const width = node.size[0]
+  const height = node.size[1]
+
+  return {
+    id,
+    position: { x, y },
+    size: { width, height },
+    zIndex,
+    visible: true,
+    bounds: { x, y, width, height }
+  }
+}
+
+export function extractPresentationFromSerialized(
+  node: ISerialisedNode
+): NodePresentationState {
+  return {
+    id: String(node.id),
+    title: node.title ?? '',
+    mode: node.mode,
+    shape: node.shape,
+    showAdvanced: node.showAdvanced,
+    color: node.color,
+    bgcolor: node.bgcolor,
+    flags: {
+      collapsed: node.flags?.collapsed,
+      pinned: node.flags?.pinned,
+      ghost: node.flags?.ghost
+    }
+  }
+}
+
+export function projectLayoutToSerialized(
+  layout: NodeLayout
+): Pick<ISerialisedNode, 'pos' | 'size'> {
+  return {
+    pos: [layout.position.x, layout.position.y],
+    size: [layout.size.width, layout.size.height]
+  }
+}
+
+export function projectPresentationToSerialized(
+  state: NodePresentationState
+): Partial<ISerialisedNode> {
+  const result: Partial<ISerialisedNode> = {
+    mode: state.mode
+  }
+
+  if (state.title) result.title = state.title
+  if (state.shape !== undefined) result.shape = state.shape
+  if (state.showAdvanced !== undefined) result.showAdvanced = state.showAdvanced
+  if (state.color) result.color = state.color
+  if (state.bgcolor) result.bgcolor = state.bgcolor
+
+  if (state.flags.collapsed || state.flags.pinned || state.flags.ghost) {
+    result.flags = {
+      collapsed: state.flags.collapsed,
+      pinned: state.flags.pinned,
+      ghost: state.flags.ghost
+    }
+  }
+
+  return result
+}
