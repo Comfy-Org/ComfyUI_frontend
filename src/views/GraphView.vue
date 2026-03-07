@@ -132,6 +132,14 @@ watch(
     } else {
       document.body.classList.add(DARK_THEME_CLASS)
     }
+    try {
+      localStorage.setItem(
+        'comfy-theme-hint',
+        newTheme.light_theme ? 'light' : 'dark'
+      )
+    } catch (e) {
+      console.warn('[GraphView] Failed to persist theme hint:', e)
+    }
 
     if (isDesktop) {
       electronAPI().changeTheme({
