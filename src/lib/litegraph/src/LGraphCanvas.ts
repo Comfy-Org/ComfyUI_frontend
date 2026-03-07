@@ -3619,13 +3619,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.deselect(node)
       this.graph?.remove(node)
     } else {
-      delete node.flags.ghost
-      this.graph?.trigger('node:property:changed', {
-        nodeId: node.id,
-        property: 'flags.ghost',
-        oldValue: true,
-        newValue: false
-      })
+      node.flags.ghost = undefined
 
       this.state.selectionChanged = true
       this.onSelectionChange?.(this.selected_nodes)
@@ -3986,7 +3980,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Store hydration contract:
     // 1. graph.add(node) → handleNodeAdded → initializeVueNodeLayout
     //    (creates layout + presentation store entries from initial node state)
-    // 2. node.configure(info) → property setters → node:property:changed events
+    // 2. node.configure(info) → property setters → nodePresentationStore.updateNode
     //    (incrementally syncs presentation store with deserialized values)
     // 3. Position adjustments via setPos → pos setter → layoutStore.moveNode
     // 4. Final bounds sync via layoutStore.batchUpdateNodeBounds

@@ -1330,8 +1330,7 @@ export class LGraph
     // Convert to discriminated union format for typed handlers
     const validEventTypes = new Set([
       'node:slot-links:changed',
-      'node:slot-errors:changed',
-      'node:property:changed'
+      'node:slot-errors:changed'
     ])
 
     if (validEventTypes.has(action) && param && typeof param === 'object') {

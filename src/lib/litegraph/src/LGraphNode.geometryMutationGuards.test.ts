@@ -43,6 +43,10 @@ describe('LGraphNode geometry mutation guards', () => {
     vi.clearAllMocks()
   })
 
+  it('preserves constructor title value', () => {
+    expect(node.title).toBe('TestNode')
+  })
+
   describe('pos setter triggers store mutation', () => {
     it('calls moveNode on layoutStore via pos setter', () => {
       node.pos = [200, 300]
@@ -140,52 +144,68 @@ describe('LGraphNode geometry mutation guards', () => {
     })
   })
 
-  describe('presentation property setters fire events', () => {
-    it('title setter fires node:property:changed', () => {
+  describe('presentation property setters avoid graph trigger emissions', () => {
+    it('title setter does not emit graph trigger events', () => {
       const graph = { trigger: vi.fn() }
       node.graph = graph as unknown as LGraphNode['graph']
 
       node.title = 'New Title'
 
-      expect(graph.trigger).toHaveBeenCalledWith(
-        'node:property:changed',
-        expect.objectContaining({
-          nodeId: node.id,
-          property: 'title',
-          newValue: 'New Title'
-        })
-      )
+      expect(graph.trigger).not.toHaveBeenCalled()
     })
 
-    it('mode setter fires node:property:changed', () => {
+    it('mode setter does not emit graph trigger events', () => {
       const graph = { trigger: vi.fn() }
       node.graph = graph as unknown as LGraphNode['graph']
 
       node.mode = 2
 
-      expect(graph.trigger).toHaveBeenCalledWith(
-        'node:property:changed',
-        expect.objectContaining({
-          nodeId: node.id,
-          property: 'mode',
-          newValue: 2
-        })
-      )
+      expect(graph.trigger).not.toHaveBeenCalled()
     })
 
-    it('shape setter fires node:property:changed', () => {
+    it('shape setter does not emit graph trigger events', () => {
       const graph = { trigger: vi.fn() }
       node.graph = graph as unknown as LGraphNode['graph']
 
       node.shape = 'round'
 
-      expect(graph.trigger).toHaveBeenCalledWith(
-        'node:property:changed',
-        expect.objectContaining({
-          nodeId: node.id,
-          property: 'shape'
-        })
-      )
+      expect(graph.trigger).not.toHaveBeenCalled()
+    })
+
+    it('color setter does not emit graph trigger events', () => {
+      const graph = { trigger: vi.fn() }
+      node.graph = graph as unknown as LGraphNode['graph']
+
+      node.color = '#ffffff'
+
+      expect(graph.trigger).not.toHaveBeenCalled()
+    })
+
+    it('bgcolor setter does not emit graph trigger events', () => {
+      const graph = { trigger: vi.fn() }
+      node.graph = graph as unknown as LGraphNode['graph']
+
+      node.bgcolor = '#222222'
+
+      expect(graph.trigger).not.toHaveBeenCalled()
+    })
+
+    it('showAdvanced setter does not emit graph trigger events', () => {
+      const graph = { trigger: vi.fn() }
+      node.graph = graph as unknown as LGraphNode['graph']
+
+      node.showAdvanced = true
+
+      expect(graph.trigger).not.toHaveBeenCalled()
+    })
+
+    it('flags.ghost mutation does not emit graph trigger events', () => {
+      const graph = { trigger: vi.fn() }
+      node.graph = graph as unknown as LGraphNode['graph']
+
+      node.flags.ghost = true
+
+      expect(graph.trigger).not.toHaveBeenCalled()
     })
 
     it('title setter does NOT fire when value is unchanged', () => {
@@ -208,65 +228,6 @@ describe('LGraphNode geometry mutation guards', () => {
 
       node.mode = 4
       expect(graph.trigger).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('applyStorePresentationProjection bypasses property change events', () => {
-    it('updates backing fields without triggering property change events', () => {
-      const graph = { trigger: vi.fn() }
-      node.graph = graph as unknown as LGraphNode['graph']
-
-      node.applyStorePresentationProjection({
-        title: 'Projected Title',
-        mode: 2,
-        color: '#ff0000',
-        bgcolor: '#00ff00'
-      })
-
-      expect(node.title).toBe('Projected Title')
-      expect(node.mode).toBe(2)
-      expect(node.color).toBe('#ff0000')
-      expect(node.bgcolor).toBe('#00ff00')
-      expect(graph.trigger).not.toHaveBeenCalled()
-    })
-
-    it('returns true when values changed', () => {
-      const changed = node.applyStorePresentationProjection({
-        title: 'New Title'
-      })
-      expect(changed).toBe(true)
-    })
-
-    it('returns false when values are unchanged', () => {
-      node.applyStorePresentationProjection({ title: 'Fixed' })
-
-      const changed = node.applyStorePresentationProjection({
-        title: 'Fixed'
-      })
-      expect(changed).toBe(false)
-    })
-
-    it('handles flags merge correctly', () => {
-      const graph = { trigger: vi.fn() }
-      node.graph = graph as unknown as LGraphNode['graph']
-
-      node.applyStorePresentationProjection({
-        flags: { collapsed: true, pinned: true }
-      })
-
-      expect(node.flags.collapsed).toBe(true)
-      expect(node.flags.pinned).toBe(true)
-      expect(graph.trigger).not.toHaveBeenCalled()
-    })
-
-    it('re-enables events after projection even if an error occurs', () => {
-      const graph = { trigger: vi.fn() }
-      node.graph = graph as unknown as LGraphNode['graph']
-
-      node.applyStorePresentationProjection({ title: 'Safe' })
-
-      node.title = 'After Projection'
-      expect(graph.trigger).toHaveBeenCalledOnce()
     })
   })
 })

@@ -2,13 +2,10 @@ import { useThrottleFn } from '@vueuse/core'
 import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import type {
-  LGraph,
-  LGraphNode,
-  LGraphTriggerEvent
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { nodePresentationStore } from '@/renderer/core/nodePresentation/store/nodePresentationStore'
 import { api } from '@/scripts/api'
 
 import { MinimapDataSourceFactory } from '../data/MinimapDataSourceFactory'
@@ -18,7 +15,6 @@ interface GraphCallbacks {
   onNodeAdded?: (node: LGraphNode) => void
   onNodeRemoved?: (node: LGraphNode) => void
   onConnectionChange?: (node: LGraphNode) => void
-  onTrigger?: (event: LGraphTriggerEvent) => void
 }
 
 export function useMinimapGraph(
@@ -40,6 +36,7 @@ export function useMinimapGraph(
 
   // Map to store original callbacks per graph ID
   const originalCallbacksMap = new Map<string, GraphCallbacks>()
+  let stopPresentationSync: (() => void) | undefined
 
   const handleGraphChangedThrottled = useThrottleFn(() => {
     onGraphChanged()
@@ -58,8 +55,7 @@ export function useMinimapGraph(
     const originalCallbacks: GraphCallbacks = {
       onNodeAdded: g.onNodeAdded,
       onNodeRemoved: g.onNodeRemoved,
-      onConnectionChange: g.onConnectionChange,
-      onTrigger: g.onTrigger
+      onConnectionChange: g.onConnectionChange
     }
     originalCallbacksMap.set(g.id, originalCallbacks)
 
@@ -78,22 +74,6 @@ export function useMinimapGraph(
       originalCallbacks.onConnectionChange?.call(this, node)
       void handleGraphChangedThrottled()
     }
-
-    g.onTrigger = function (event: LGraphTriggerEvent) {
-      originalCallbacks.onTrigger?.call(this, event)
-
-      // Listen for visual property changes that affect minimap rendering
-      if (
-        event.type === 'node:property:changed' &&
-        (event.property === 'mode' ||
-          event.property === 'bgcolor' ||
-          event.property === 'color')
-      ) {
-        // Invalidate cache for this node to force redraw
-        nodeStatesCache.delete(String(event.nodeId))
-        void handleGraphChangedThrottled()
-      }
-    }
   }
 
   const cleanupEventListeners = (oldGraph?: LGraph) => {
@@ -109,7 +89,6 @@ export function useMinimapGraph(
     g.onNodeAdded = originalCallbacks.onNodeAdded
     g.onNodeRemoved = originalCallbacks.onNodeRemoved
     g.onConnectionChange = originalCallbacks.onConnectionChange
-    g.onTrigger = originalCallbacks.onTrigger
 
     originalCallbacksMap.delete(g.id)
   }
@@ -174,6 +153,30 @@ export function useMinimapGraph(
 
   const init = () => {
     setupEventListeners()
+
+    stopPresentationSync = nodePresentationStore.onChange((change) => {
+      if (change.type !== 'update') return
+
+      if (
+        change.property !== 'mode' &&
+        change.property !== 'bgcolor' &&
+        change.property !== 'color'
+      ) {
+        return
+      }
+
+      const currentGraph = graph.value
+      if (!currentGraph) return
+
+      const isNodeInCurrentGraph = currentGraph._nodes.some(
+        (node) => String(node.id) === String(change.nodeId)
+      )
+      if (!isNodeInCurrentGraph) return
+
+      nodeStatesCache.delete(String(change.nodeId))
+      void handleGraphChangedThrottled()
+    })
+
     api.addEventListener('graphChanged', handleGraphChangedThrottled)
 
     watch(layoutStoreVersion, () => {
@@ -182,6 +185,9 @@ export function useMinimapGraph(
   }
 
   const destroy = () => {
+    stopPresentationSync?.()
+    stopPresentationSync = undefined
+
     cleanupEventListeners()
     api.removeEventListener('graphChanged', handleGraphChangedThrottled)
     nodeStatesCache.clear()

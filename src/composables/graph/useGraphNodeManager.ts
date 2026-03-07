@@ -20,8 +20,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import { nodePresentationStore } from '@/renderer/core/nodePresentation/store/nodePresentationStore'
-import { PresentationSource } from '@/renderer/core/nodePresentation/types'
-import type { PresentationUpdate } from '@/renderer/core/nodePresentation/types'
+import type { NodePresentationState } from '@/renderer/core/nodePresentation/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -32,9 +31,7 @@ import type {
   LGraph,
   LGraphBadge,
   LGraphNode,
-  LGraphTriggerAction,
-  LGraphTriggerEvent,
-  LGraphTriggerParam
+  LGraphTriggerEvent
 } from '@/lib/litegraph/src/litegraph'
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -162,40 +159,6 @@ function getSharedWidgetEnhancements(
   return {
     controlWidget: getControlWidget(widget),
     spec: nodeDefStore.getInputSpecForWidget(node, widget.name)
-  }
-}
-
-function toPresentationUpdate(
-  property: string,
-  newValue: unknown
-): PresentationUpdate | null {
-  switch (property) {
-    case 'title':
-      return { title: String(newValue) }
-    case 'mode':
-      return { mode: typeof newValue === 'number' ? newValue : 0 }
-    case 'color':
-      return {
-        color: typeof newValue === 'string' ? newValue : undefined
-      }
-    case 'bgcolor':
-      return {
-        bgcolor: typeof newValue === 'string' ? newValue : undefined
-      }
-    case 'shape':
-      return {
-        shape: typeof newValue === 'number' ? newValue : undefined
-      }
-    case 'showAdvanced':
-      return { showAdvanced: Boolean(newValue) }
-    case 'flags.collapsed':
-      return { flags: { collapsed: Boolean(newValue) } }
-    case 'flags.pinned':
-      return { flags: { pinned: Boolean(newValue) } }
-    case 'flags.ghost':
-      return { flags: { ghost: Boolean(newValue) } }
-    default:
-      return null
   }
 }
 
@@ -450,15 +413,25 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
 
   const apiNode = node.constructor?.nodeData?.api_node ?? false
   const badges = node.badges
+  const nodeId = String(node.id)
+  const presentationRef = nodePresentationStore.getNodeRef(nodeId)
 
-  return {
-    id: String(node.id),
-    title: typeof node.title === 'string' ? node.title : '',
+  function pres(): NodePresentationState | null {
+    return presentationRef.value
+  }
+
+  const data: VueNodeData = {
+    id: nodeId,
+    get title() {
+      return pres()?.title ?? ''
+    },
     type: nodeType,
-    mode: node.mode || 0,
+    get mode() {
+      return pres()?.mode ?? 0
+    },
     titleMode: node.title_mode,
     selected: node.selected || false,
-    executing: false, // Will be updated separately based on execution state
+    executing: false,
     subgraphId,
     apiNode,
     badges,
@@ -466,13 +439,26 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     widgets: safeWidgets,
     inputs: reactiveInputs,
     outputs: node.outputs ? [...node.outputs] : undefined,
-    flags: node.flags ? { ...node.flags } : undefined,
-    color: node.color || undefined,
-    bgcolor: node.bgcolor || undefined,
+    get flags() {
+      const f = pres()?.flags
+      return f ? { ...f } : undefined
+    },
+    get color() {
+      return pres()?.color
+    },
+    get bgcolor() {
+      return pres()?.bgcolor
+    },
     resizable: node.resizable,
-    shape: node.shape,
-    showAdvanced: node.showAdvanced
+    get shape() {
+      return pres()?.shape
+    },
+    get showAdvanced() {
+      return pres()?.showAdvanced
+    }
   }
+
+  return data
 }
 
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
@@ -681,109 +667,16 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       handleNodeRemoved(node, originalOnNodeRemoved)
     }
 
-    const triggerHandlers: {
-      [K in LGraphTriggerAction]: (event: LGraphTriggerParam<K>) => void
-    } = {
-      'node:property:changed': (propertyEvent) => {
-        const nodeId = String(propertyEvent.nodeId)
-        const currentData = vueNodeData.get(nodeId)
-
-        if (currentData) {
-          switch (propertyEvent.property) {
-            case 'title':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                title: String(propertyEvent.newValue)
-              })
-              break
-            case 'flags.collapsed':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                flags: {
-                  ...currentData.flags,
-                  collapsed: Boolean(propertyEvent.newValue)
-                }
-              })
-              break
-            case 'flags.ghost':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                flags: {
-                  ...currentData.flags,
-                  ghost: Boolean(propertyEvent.newValue)
-                }
-              })
-              break
-            case 'flags.pinned':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                flags: {
-                  ...currentData.flags,
-                  pinned: Boolean(propertyEvent.newValue)
-                }
-              })
-              break
-            case 'mode':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                mode:
-                  typeof propertyEvent.newValue === 'number'
-                    ? propertyEvent.newValue
-                    : 0
-              })
-              break
-            case 'color':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                color:
-                  typeof propertyEvent.newValue === 'string'
-                    ? propertyEvent.newValue
-                    : undefined
-              })
-              break
-            case 'bgcolor':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                bgcolor:
-                  typeof propertyEvent.newValue === 'string'
-                    ? propertyEvent.newValue
-                    : undefined
-              })
-              break
-            case 'shape':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                shape:
-                  typeof propertyEvent.newValue === 'number'
-                    ? propertyEvent.newValue
-                    : undefined
-              })
-              break
-            case 'showAdvanced':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                showAdvanced: Boolean(propertyEvent.newValue)
-              })
-              break
-          }
-        }
-
-        const update = toPresentationUpdate(
-          propertyEvent.property,
-          propertyEvent.newValue
-        )
-        if (update) {
-          nodePresentationStore.updateNode(
-            nodeId,
-            update,
-            PresentationSource.Canvas
-          )
-        }
-      },
-      'node:slot-errors:changed': (slotErrorsEvent) => {
+    const triggerHandlers = {
+      'node:slot-errors:changed': (slotErrorsEvent: {
+        nodeId: string | number
+      }) => {
         refreshNodeSlots(String(slotErrorsEvent.nodeId))
       },
-      'node:slot-links:changed': (slotLinksEvent) => {
+      'node:slot-links:changed': (slotLinksEvent: {
+        nodeId: string | number
+        slotType: NodeSlotType
+      }) => {
         if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
           refreshNodeSlots(String(slotLinksEvent.nodeId))
         }
@@ -792,9 +685,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     graph.onTrigger = (event: LGraphTriggerEvent) => {
       switch (event.type) {
-        case 'node:property:changed':
-          triggerHandlers['node:property:changed'](event)
-          break
         case 'node:slot-errors:changed':
           triggerHandlers['node:slot-errors:changed'](event)
           break
