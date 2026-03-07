@@ -39,7 +39,8 @@
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
         isSelectOutputsMode &&
-        nodeData.mode === LGraphEventMode.ALWAYS
+        nodeData.mode === LGraphEventMode.ALWAYS &&
+        !nodeData.hasErrors
       "
       :id="nodeData.id"
     />

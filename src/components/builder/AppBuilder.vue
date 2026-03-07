@@ -162,7 +162,11 @@ function handleDown(e: MouseEvent) {
 }
 function handleClick(e: MouseEvent) {
   const [node, widget] = getHovered(e) ?? []
-  if (node?.mode !== LGraphEventMode.ALWAYS || !nodeTypeValidForApp(node.type))
+  if (
+    node?.mode !== LGraphEventMode.ALWAYS ||
+    !nodeTypeValidForApp(node.type) ||
+    node.has_errors
+  )
     return canvasInteractions.forwardEventToCanvas(e)
 
   if (!widget) {

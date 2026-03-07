@@ -164,7 +164,8 @@ const canSelectInputs = computed(
   () =>
     isSelectInputsMode.value &&
     nodeData?.mode === LGraphEventMode.ALWAYS &&
-    nodeTypeValidForApp(nodeData.type)
+    nodeTypeValidForApp(nodeData.type) &&
+    !nodeData.hasErrors
 )
 const nodeType = computed(() => nodeData?.type || '')
 const settingStore = useSettingStore()
