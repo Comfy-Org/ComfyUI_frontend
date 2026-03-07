@@ -138,8 +138,7 @@ onMounted(async () => {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: t('toastMessages.failedToFetchLogs'),
-      life: 5000
+      detail: t('toastMessages.failedToFetchLogs')
     })
   }
 })

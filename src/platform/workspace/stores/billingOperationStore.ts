@@ -173,8 +173,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     useToastStore().add({
       severity: 'error',
       summary: defaultMessage,
-      detail: errorMessage ?? undefined,
-      life: 5000
+      detail: errorMessage ?? undefined
     })
   }
 
@@ -192,8 +191,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     useToastStore().add({
       severity: 'error',
-      summary: message,
-      life: 5000
+      summary: message
     })
   }
 
