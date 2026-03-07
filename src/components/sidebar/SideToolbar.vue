@@ -41,7 +41,7 @@
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"
         />
-        <SidebarHelpCenterIcon v-if="!isIntegratedTabBar" :is-small="isSmall" />
+        <SidebarHelpCenterIcon :is-small="isSmall" />
         <SidebarBottomPanelToggleButton v-if="!isCloud" :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
         <SidebarSettingsButton :is-small="isSmall" />
@@ -95,9 +95,6 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
-const isIntegratedTabBar = computed(
-  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
-)
 const isConnected = computed(
   () =>
     selectedTab.value ||

@@ -1765,7 +1765,6 @@
     "execute": "Ejecutar",
     "fullscreen": "Pantalla completa",
     "help": "Ayuda",
-    "helpAndFeedback": "Ayuda y comentarios",
     "hideMenu": "Ocultar menú",
     "instant": "Instantáneo",
     "instantTooltip": "El flujo de trabajo se encolará instantáneamente después de que finalice una generación",
