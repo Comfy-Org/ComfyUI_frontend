@@ -126,6 +126,10 @@ jobs:
 
       - name: Write QA prompt
         shell: bash
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          PR_NUM: ${{ github.event.pull_request.number || 'N/A' }}
+          SHA: ${{ github.sha }}
         run: |
           OS_LOWER=$(echo "$RUNNER_OS" | tr '[:upper:]' '[:lower:]')
           cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
@@ -134,9 +138,9 @@ jobs:
 
           Environment: CI=true, OS=${{ runner.os }}
           Server URL: http://127.0.0.1:8188
-          Branch: ${{ github.head_ref || github.ref_name }}
-          PR: #${{ github.event.pull_request.number }}
-          Commit: ${{ github.sha }}
+          Branch: ${BRANCH}
+          PR: #${PR_NUM}
+          Commit: ${SHA}
 
           1. Use playwright MCP tools to navigate http://127.0.0.1:8188
           2. Run the FULL QA test plan from the skill file
