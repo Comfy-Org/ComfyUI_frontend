@@ -124,6 +124,26 @@ function onCustomComboCreated(this: LGraphNode) {
   addOption(this)
 }
 
+function onBranchSelectorCreated(this: LGraphNode) {
+  this.applyToGraph = applyToGraph
+
+  this.widgets?.pop()
+  const values = () =>
+    this.inputs.slice(0, -2).map((i) => i.label ?? i.localized_name ?? i.name)
+  const comboWidget = this.addWidget('combo', 'branch', '', () => {}, {
+    values
+  })
+  this.onConnectionsChange = useChainCallback(this.onConnectionsChange, () =>
+    requestAnimationFrame(() => {
+      const vals = values()
+      if (app.configuringGraph) return
+      if (vals.includes(`${comboWidget.value}`)) return
+      comboWidget.value = vals[0] ?? ''
+      comboWidget.callback?.(comboWidget.value)
+    })
+  )
+}
+
 function onCustomIntCreated(this: LGraphNode) {
   const valueWidget = this.widgets?.[0]
   if (!valueWidget) return
@@ -226,6 +246,11 @@ app.registerExtension({
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
         onCustomComboCreated
+      )
+    else if (nodeData?.name === 'BranchNode')
+      nodeType.prototype.onNodeCreated = useChainCallback(
+        nodeType.prototype.onNodeCreated,
+        onBranchSelectorCreated
       )
     else if (nodeData?.name === 'PrimitiveInt')
       nodeType.prototype.onNodeCreated = useChainCallback(
