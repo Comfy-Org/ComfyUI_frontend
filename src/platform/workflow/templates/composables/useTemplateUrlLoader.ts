@@ -117,8 +117,7 @@ export function useTemplateUrlLoader() {
           summary: t('g.error'),
           detail: t('templateWorkflows.error.templateNotFound', {
             templateName: templateParam
-          }),
-          life: 3000
+          })
         })
       } else if (modeParam === 'linear') {
         // Set linear mode after successful template load
@@ -132,8 +131,7 @@ export function useTemplateUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('g.errorLoadingTemplate'),
-        life: 3000
+        detail: t('g.errorLoadingTemplate')
       })
     } finally {
       cleanupUrlParams()
