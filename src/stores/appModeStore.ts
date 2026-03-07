@@ -9,6 +9,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 export const useAppModeStore = defineStore('appMode', () => {
@@ -77,7 +78,7 @@ export const useAppModeStore = defineStore('appMode', () => {
         ? { inputs: selectedInputs, outputs: selectedOutputs }
         : null,
     (data) => {
-      if (!data) return
+      if (!data || ChangeTracker.isLoadingGraph) return
       const graph = app.rootGraph
       if (!graph) return
       const extra = (graph.extra ??= {})
