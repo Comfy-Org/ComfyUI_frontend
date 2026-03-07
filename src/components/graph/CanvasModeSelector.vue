@@ -25,30 +25,44 @@
     unstyled
     :pt="popoverPt"
   >
-    <div class="flex flex-col gap-1">
-      <div
-        class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+    <div
+      class="flex flex-col gap-1"
+      role="menu"
+      :aria-label="$t('graphCanvasMenu.canvasMode')"
+    >
+      <button
+        type="button"
+        role="menuitem"
+        class="flex w-full cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered focus-visible:outline-none"
+        :aria-label="$t('graphCanvasMenu.select')"
         @click="setMode('select')"
+        @keydown.arrow-down.prevent="focusNextItem"
+        @keydown.arrow-up.prevent="focusPrevItem"
       >
         <div class="flex items-center gap-2">
-          <i class="icon-[lucide--mouse-pointer-2] size-4" />
+          <i class="icon-[lucide--mouse-pointer-2] size-4" aria-hidden="true" />
           <span>{{ $t('graphCanvasMenu.select') }}</span>
         </div>
         <span class="text-[9px] text-text-primary">{{
           unlockCommandText
         }}</span>
-      </div>
+      </button>
 
-      <div
-        class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+      <button
+        type="button"
+        role="menuitem"
+        class="flex w-full cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered focus-visible:outline-none"
+        :aria-label="$t('graphCanvasMenu.hand')"
         @click="setMode('hand')"
+        @keydown.arrow-down.prevent="focusNextItem"
+        @keydown.arrow-up.prevent="focusPrevItem"
       >
         <div class="flex items-center gap-2">
-          <i class="icon-[lucide--hand] size-4" />
+          <i class="icon-[lucide--hand] size-4" aria-hidden="true" />
           <span>{{ $t('graphCanvasMenu.hand') }}</span>
         </div>
         <span class="text-[9px] text-text-primary">{{ lockCommandText }}</span>
-      </div>
+      </button>
     </div>
   </Popover>
 </template>
@@ -104,6 +118,24 @@ const setMode = (mode: 'select' | 'hand') => {
     void commandStore.execute('Comfy.Canvas.Lock')
   }
   popover.value?.hide()
+}
+
+function focusNextItem(event: KeyboardEvent) {
+  const items = getMenuItems(event)
+  const index = items.indexOf(event.target as HTMLElement)
+  items[(index + 1) % items.length]?.focus()
+}
+
+function focusPrevItem(event: KeyboardEvent) {
+  const items = getMenuItems(event)
+  const index = items.indexOf(event.target as HTMLElement)
+  items[(index - 1 + items.length) % items.length]?.focus()
+}
+
+function getMenuItems(event: KeyboardEvent): HTMLElement[] {
+  const menu = (event.target as HTMLElement).closest('[role="menu"]')
+  if (!menu) return []
+  return Array.from(menu.querySelectorAll('[role="menuitem"]'))
 }
 
 const popoverPt = computed(() => ({
