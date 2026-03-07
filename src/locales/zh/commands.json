@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "粘贴"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "粘贴并连接"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "重置视图"
   },
