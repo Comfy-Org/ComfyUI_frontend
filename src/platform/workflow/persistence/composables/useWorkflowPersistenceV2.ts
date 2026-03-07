@@ -134,23 +134,28 @@ export function useWorkflowPersistenceV2() {
 
   const loadPreviousWorkflowFromStorage = async () => {
     const sessionPath = tabState.getActivePath()
-    if (sessionPath) {
-      // 1. Try draft for session path
-      if (
-        await draftStore.loadPersistedWorkflow({
-          workflowName: null,
-          preferredPath: sessionPath
-        })
-      ) {
-        return true
-      }
+    if (!sessionPath) {
+      return await draftStore.loadPersistedWorkflow({
+        workflowName: null,
+        fallbackToLatestDraft: true
+      })
+    }
 
-      // 2. No draft — try loading saved workflow by path
-      const savedWorkflow = workflowStore.getWorkflowByPath(sessionPath)
-      if (savedWorkflow) {
-        await useWorkflowService().openWorkflow(savedWorkflow)
-        return true
-      }
+    // 1. Try draft for session path
+    if (
+      await draftStore.loadPersistedWorkflow({
+        workflowName: null,
+        preferredPath: sessionPath
+      })
+    ) {
+      return true
+    }
+
+    // 2. No draft — try loading saved workflow by path
+    const savedWorkflow = workflowStore.getWorkflowByPath(sessionPath)
+    if (savedWorkflow) {
+      await useWorkflowService().openWorkflow(savedWorkflow)
+      return true
     }
 
     // 3. Last resort: most recent draft
@@ -292,12 +297,12 @@ export function useWorkflowPersistenceV2() {
 
     // Activate the correct workflow at storedActiveIndex
     const activePath = storedWorkflows[storedActiveIndex]
-    if (activePath) {
-      const workflow = workflowStore.getWorkflowByPath(activePath)
-      if (workflow) {
-        await useWorkflowService().openWorkflow(workflow)
-      }
-    }
+    if (!activePath) return
+
+    const workflow = workflowStore.getWorkflowByPath(activePath)
+    if (!workflow) return
+
+    await useWorkflowService().openWorkflow(workflow)
   }
 
   return {
