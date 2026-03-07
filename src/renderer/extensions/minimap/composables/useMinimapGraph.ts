@@ -5,7 +5,7 @@ import type { Ref } from 'vue'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { nodePresentationStore } from '@/renderer/core/nodePresentation/store/nodePresentationStore'
+import { useNodeDisplayStore } from '@/stores/nodeDisplayStore'
 import { api } from '@/scripts/api'
 
 import { MinimapDataSourceFactory } from '../data/MinimapDataSourceFactory'
@@ -154,28 +154,19 @@ export function useMinimapGraph(
   const init = () => {
     setupEventListeners()
 
-    stopPresentationSync = nodePresentationStore.onChange((change) => {
-      if (change.type !== 'update') return
-
-      if (
-        change.property !== 'mode' &&
-        change.property !== 'bgcolor' &&
-        change.property !== 'color'
-      ) {
-        return
-      }
-
-      const currentGraph = graph.value
-      if (!currentGraph) return
-
-      const isNodeInCurrentGraph = currentGraph._nodes.some(
-        (node) => String(node.id) === String(change.nodeId)
+    const currentGraph = graph.value
+    const graphId = currentGraph?.rootGraph.id
+    if (graphId) {
+      const nodeDisplayStore = useNodeDisplayStore()
+      const displayMap = nodeDisplayStore.getDisplayMap(graphId)
+      stopPresentationSync = watch(
+        displayMap,
+        () => {
+          void handleGraphChangedThrottled()
+        },
+        { deep: true }
       )
-      if (!isNodeInCurrentGraph) return
-
-      nodeStatesCache.delete(String(change.nodeId))
-      void handleGraphChangedThrottled()
-    })
+    }
 
     api.addEventListener('graphChanged', handleGraphChangedThrottled)
 
