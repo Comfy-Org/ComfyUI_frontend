@@ -145,13 +145,13 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
       >
         <LinearProgressBar
-          class="absolute top-0 left-0 z-21 w-[calc(100%+16px)]"
+          class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
         />
         <LinearPreview
           :run-button-click="linearWorkflowRef?.runButtonClick"
           :typeform-widget-id="TYPEFORM_WIDGET_ID"
         />
-        <div class="absolute top-4 left-4 z-21">
+        <div class="absolute top-2 left-4.5 z-21">
           <AppModeToolbar v-if="!isBuilderMode" />
         </div>
         <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
