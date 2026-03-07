@@ -34,7 +34,7 @@
 import { computed } from 'vue'
 
 import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { TRANSFORM_COMPAT_OVERLAY_PROPS } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
@@ -58,9 +58,6 @@ const modelValue = defineModel<string | undefined>({
   }
 })
 
-// Transform compatibility props for overlay positioning
-const transformCompatProps = useTransformCompatOverlayProps()
-
 // Extract select options from widget options
 const selectOptions = computed(() => {
   const options = props.widget.options
@@ -77,7 +74,7 @@ const invalid = computed(
 
 const combinedProps = computed(() => ({
   ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value,
+  ...TRANSFORM_COMPAT_OVERLAY_PROPS,
   ...(invalid.value ? { placeholder: `${modelValue.value}` } : {})
 }))
 </script>

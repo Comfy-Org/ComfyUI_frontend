@@ -51,10 +51,10 @@ export function downloadFile(url: string, filename?: string): void {
 
 /**
  * Download a Blob by creating a temporary object URL and anchor element
- * @param filename - The filename to suggest to the browser
  * @param blob - The Blob to download
+ * @param filename - The filename to suggest to the browser
  */
-export function downloadBlob(filename: string, blob: Blob): void {
+export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob)
 
   triggerLinkDownload(url, filename)
@@ -138,7 +138,7 @@ async function downloadViaBlobFetch(
     extractFilenameFromContentDisposition(contentDisposition)
 
   const blob = await response.blob()
-  downloadBlob(headerFilename ?? fallbackFilename, blob)
+  downloadBlob(blob, headerFilename ?? fallbackFilename)
 }
 
 /**

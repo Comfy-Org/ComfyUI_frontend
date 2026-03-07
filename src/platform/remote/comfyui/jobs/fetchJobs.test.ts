@@ -309,8 +309,7 @@ describe('fetchJobs', () => {
 
       expect(workflow).toBeUndefined()
       expect(consoleSpy).toHaveBeenCalledWith(
-        '[extractWorkflow] Workflow validation failed:',
-        expect.any(String)
+        expect.stringContaining('Workflow does not contain a valid version')
       )
       consoleSpy.mockRestore()
     })

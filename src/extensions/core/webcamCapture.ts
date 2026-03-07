@@ -2,8 +2,8 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-import { api } from '../../scripts/api'
-import { app } from '../../scripts/app'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 const WEBCAM_READY = Symbol()
 

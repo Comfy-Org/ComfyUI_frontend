@@ -180,7 +180,7 @@ export function useToolManager(
     const isSpacePressed = keyboard.isKeyDown(' ')
 
     if (event.buttons === 4 || (event.buttons === 1 && isSpacePressed)) {
-      await panZoom.handlePanMove(event)
+      panZoom.handlePanMove(event)
       return
     }
 

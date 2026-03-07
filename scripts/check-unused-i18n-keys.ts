@@ -133,7 +133,7 @@ function isKeyUsed(key: string, sourceFiles: string[]): boolean {
 }
 
 // Main function
-async function checkNewUnusedKeys() {
+function checkNewUnusedKeys() {
   const stagedLocaleFiles = getStagedLocaleFiles()
 
   if (stagedLocaleFiles.length === 0) {
@@ -165,7 +165,7 @@ async function checkNewUnusedKeys() {
   if (unusedNewKeys.length > 0) {
     console.warn('\n⚠️  Warning: Found unused NEW i18n keys:\n')
 
-    for (const key of unusedNewKeys.sort()) {
+    for (const key of unusedNewKeys.sort((a, b) => a.localeCompare(b))) {
       console.warn(`  - ${key}`)
     }
 
@@ -183,7 +183,9 @@ async function checkNewUnusedKeys() {
 }
 
 // Run the check
-checkNewUnusedKeys().catch((err) => {
+try {
+  checkNewUnusedKeys()
+} catch (err) {
   console.error('Error checking unused keys:', err)
   process.exit(1)
-})
+}

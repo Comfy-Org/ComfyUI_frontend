@@ -39,7 +39,7 @@ export class ModelExporter {
     try {
       const response = await fetch(url)
       const blob = await response.blob()
-      downloadBlob(desiredFilename, blob)
+      downloadBlob(blob, desiredFilename)
     } catch (error) {
       console.error('Error downloading from URL:', error)
       useToastStore().addAlert(t('toastMessages.failedToDownloadFile'))
@@ -147,11 +147,11 @@ export class ModelExporter {
 
   private static saveArrayBuffer(buffer: ArrayBuffer, filename: string): void {
     const blob = new Blob([buffer], { type: 'application/octet-stream' })
-    downloadBlob(filename, blob)
+    downloadBlob(blob, filename)
   }
 
   private static saveString(text: string, filename: string): void {
     const blob = new Blob([text], { type: 'text/plain' })
-    downloadBlob(filename, blob)
+    downloadBlob(blob, filename)
   }
 }

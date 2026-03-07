@@ -2,13 +2,13 @@ import type { CSSProperties } from 'vue'
 import { ref, watch } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import type { Size, Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { Point, Size } from '@/lib/litegraph/src/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 export interface PositionConfig {
   /* The position of the element on litegraph canvas */
-  pos: Vector2
+  pos: Point
   /* The size of the element on litegraph canvas */
   size: Size
   /* The scale factor of the canvas */

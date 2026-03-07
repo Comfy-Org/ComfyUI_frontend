@@ -117,7 +117,7 @@ export function useJobMenu(
 
   // This is very magical only because it matches the respective backend implementation
   // There is or will be a better way to do this
-  const addOutputLoaderNode = async () => {
+  const addOutputLoaderNode = () => {
     const item = currentMenuItem()
     if (!item) return
     const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
@@ -200,7 +200,7 @@ export function useJobMenu(
 
     const json = JSON.stringify(data, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
-    downloadBlob(filename, blob)
+    downloadBlob(blob, filename)
   }
 
   const deleteJobAsset = async () => {

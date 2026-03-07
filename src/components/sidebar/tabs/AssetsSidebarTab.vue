@@ -533,8 +533,8 @@ const handleBulkDelete = async (assets: AssetItem[]) => {
   }
 }
 
-const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
-  await addMultipleToWorkflow(assets)
+const handleBulkAddToWorkflow = (assets: AssetItem[]) => {
+  addMultipleToWorkflow(assets)
   clearSelection()
 }
 

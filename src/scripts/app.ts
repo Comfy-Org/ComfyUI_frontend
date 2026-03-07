@@ -16,7 +16,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -230,8 +230,8 @@ export class ComfyApp {
   openClipspace: () => void = () => {}
 
   private positionConversion?: {
-    clientPosToCanvasPos: (pos: Vector2) => Vector2
-    canvasPosToClientPos: (pos: Vector2) => Vector2
+    clientPosToCanvasPos: (pos: Point) => Point
+    canvasPosToClientPos: (pos: Point) => Point
   }
 
   /**
@@ -382,32 +382,26 @@ export class ComfyApp {
   }
 
   static copyToClipspace(node: LGraphNode) {
-    var widgets = null
-    if (node.widgets) {
-      widgets = node.widgets.map(({ type, name, value }) => ({
-        type,
-        name,
-        value
-      }))
-    }
+    const widgets = node.widgets
+      ? node.widgets.map(({ type, name, value }) => ({
+          type,
+          name,
+          value
+        }))
+      : null
 
-    var imgs = undefined
-    var orig_imgs = undefined
+    let imgs: HTMLImageElement[] | undefined
+    let orig_imgs: HTMLImageElement[] | undefined
     if (node.imgs != undefined) {
-      imgs = []
-      orig_imgs = []
-
-      for (let i = 0; i < node.imgs.length; i++) {
-        imgs[i] = new Image()
-        imgs[i].src = node.imgs[i].src
-        orig_imgs[i] = imgs[i]
-      }
+      imgs = node.imgs.map((img) => {
+        const copy = new Image()
+        copy.src = img.src
+        return copy
+      })
+      orig_imgs = [...imgs]
     }
 
-    var selectedIndex = 0
-    if (node.imageIndex) {
-      selectedIndex = node.imageIndex
-    }
+    const selectedIndex = node.imageIndex ?? 0
 
     const paintedIndex = imgs ? imgs.length + 1 : 1
     const combinedIndex = imgs ? imgs.length + 2 : 2
@@ -1516,7 +1510,9 @@ export class ComfyApp {
                     workflow: queuedWorkflow
                   })
                 }
-              } catch (error) {}
+              } catch (error) {
+                console.warn('Failed to store execution job:', error)
+              }
             }
           } catch (error: unknown) {
             if (
@@ -2009,14 +2005,14 @@ export class ComfyApp {
     }
   }
 
-  clientPosToCanvasPos(pos: Vector2): Vector2 {
+  clientPosToCanvasPos(pos: Point): Point {
     if (!this.positionConversion) {
       throw new Error('clientPosToCanvasPos called before setup')
     }
     return this.positionConversion.clientPosToCanvasPos(pos)
   }
 
-  canvasPosToClientPos(pos: Vector2): Vector2 {
+  canvasPosToClientPos(pos: Point): Point {
     if (!this.positionConversion) {
       throw new Error('canvasPosToClientPos called before setup')
     }

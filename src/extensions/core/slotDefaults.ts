@@ -1,8 +1,8 @@
 import type { ComfyExtension } from '@/types/comfy'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import { app } from '../../scripts/app'
-import { ComfyWidgets } from '../../scripts/widgets'
+import { app } from '@/scripts/app'
+import { ComfyWidgets } from '@/scripts/widgets'
 
 // Adds defaults for quickly adding nodes with middle click on the input/output
 

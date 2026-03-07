@@ -196,7 +196,7 @@ export const useDialogService = () => {
     })
   }
 
-  async function prompt({
+  function prompt({
     title,
     message,
     defaultValue = '',
@@ -234,7 +234,7 @@ export const useDialogService = () => {
    * `false` if denied (e.g. no in yes/no/cancel), or
    * `null` if the dialog is cancelled or closed
    */
-  async function confirm({
+  function confirm({
     title,
     message,
     type = 'default',
@@ -423,101 +423,91 @@ export const useDialogService = () => {
     }
   } as const
 
-  async function showDeleteWorkspaceDialog(options?: {
+  async function showWorkspaceDialog(
+    key: string,
+    loader: () => Promise<{ default: Component }>,
+    props?: Record<string, unknown>
+  ) {
+    const { default: component } = await loader()
+    return dialogStore.showDialog({
+      key,
+      component,
+      props,
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  function showDeleteWorkspaceDialog(options?: {
     workspaceId?: string
     workspaceName?: string
   }) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/DeleteWorkspaceDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'delete-workspace',
-      component,
-      props: options,
-      dialogComponentProps: workspaceDialogPt
-    })
+    return showWorkspaceDialog(
+      'delete-workspace',
+      () =>
+        import('@/platform/workspace/components/dialogs/DeleteWorkspaceDialogContent.vue'),
+      options
+    )
   }
 
-  async function showCreateWorkspaceDialog(
+  function showCreateWorkspaceDialog(
     onConfirm?: (name: string) => void | Promise<void>
   ) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/CreateWorkspaceDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'create-workspace',
-      component,
-      props: { onConfirm },
-      dialogComponentProps: {
-        ...workspaceDialogPt
-      }
-    })
+    return showWorkspaceDialog(
+      'create-workspace',
+      () =>
+        import('@/platform/workspace/components/dialogs/CreateWorkspaceDialogContent.vue'),
+      { onConfirm }
+    )
   }
 
-  async function showLeaveWorkspaceDialog() {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/LeaveWorkspaceDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'leave-workspace',
-      component,
-      dialogComponentProps: workspaceDialogPt
-    })
+  function showLeaveWorkspaceDialog() {
+    return showWorkspaceDialog(
+      'leave-workspace',
+      () =>
+        import('@/platform/workspace/components/dialogs/LeaveWorkspaceDialogContent.vue')
+    )
   }
 
-  async function showEditWorkspaceDialog() {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/EditWorkspaceDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'edit-workspace',
-      component,
-      dialogComponentProps: {
-        ...workspaceDialogPt
-      }
-    })
+  function showEditWorkspaceDialog() {
+    return showWorkspaceDialog(
+      'edit-workspace',
+      () =>
+        import('@/platform/workspace/components/dialogs/EditWorkspaceDialogContent.vue')
+    )
   }
 
-  async function showRemoveMemberDialog(memberId: string) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/RemoveMemberDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'remove-member',
-      component,
-      props: { memberId },
-      dialogComponentProps: workspaceDialogPt
-    })
+  function showRemoveMemberDialog(memberId: string) {
+    return showWorkspaceDialog(
+      'remove-member',
+      () =>
+        import('@/platform/workspace/components/dialogs/RemoveMemberDialogContent.vue'),
+      { memberId }
+    )
   }
 
-  async function showInviteMemberDialog() {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'invite-member',
-      component,
-      dialogComponentProps: {
-        ...workspaceDialogPt
-      }
-    })
+  function showInviteMemberDialog() {
+    return showWorkspaceDialog(
+      'invite-member',
+      () =>
+        import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
+    )
   }
 
-  async function showInviteMemberUpsellDialog() {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/InviteMemberUpsellDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'invite-member-upsell',
-      component,
-      dialogComponentProps: {
-        ...workspaceDialogPt
-      }
-    })
+  function showInviteMemberUpsellDialog() {
+    return showWorkspaceDialog(
+      'invite-member-upsell',
+      () =>
+        import('@/platform/workspace/components/dialogs/InviteMemberUpsellDialogContent.vue')
+    )
   }
 
-  async function showRevokeInviteDialog(inviteId: string) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/RevokeInviteDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'revoke-invite',
-      component,
-      props: { inviteId },
-      dialogComponentProps: workspaceDialogPt
-    })
+  function showRevokeInviteDialog(inviteId: string) {
+    return showWorkspaceDialog(
+      'revoke-invite',
+      () =>
+        import('@/platform/workspace/components/dialogs/RevokeInviteDialogContent.vue'),
+      { inviteId }
+    )
   }
 
   function showBillingComingSoonDialog() {
@@ -538,17 +528,13 @@ export const useDialogService = () => {
     })
   }
 
-  async function showCancelSubscriptionDialog(cancelAt?: string) {
-    const { default: component } =
-      await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'cancel-subscription',
-      component,
-      props: { cancelAt },
-      dialogComponentProps: {
-        ...workspaceDialogPt
-      }
-    })
+  function showCancelSubscriptionDialog(cancelAt?: string) {
+    return showWorkspaceDialog(
+      'cancel-subscription',
+      () =>
+        import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue'),
+      { cancelAt }
+    )
   }
 
   return {

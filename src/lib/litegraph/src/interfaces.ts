@@ -16,8 +16,6 @@ import type {
 } from './types/globalEnums'
 import type { IBaseWidget } from './types/widgets'
 
-export type Dictionary<T> = { [key: string]: T }
-
 /** Allows all properties to be null.  The same as `Partial<T>`, but adds null instead of undefined. */
 export type NullableProperties<T> = {
   [P in keyof T]: T[P] | null
@@ -381,7 +379,7 @@ export interface INodeOutputSlot extends INodeSlot {
 export interface CreateNodeOptions {
   pos?: Point
   size?: Size
-  properties?: Dictionary<NodeProperty | undefined>
+  properties?: Record<string, NodeProperty | undefined>
   flags?: Partial<INodeFlags>
   mode?: LGraphEventMode
   color?: string

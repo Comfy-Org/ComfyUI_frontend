@@ -33,7 +33,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
-import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
+import { useLoad3dDrag } from '@/extensions/core/load3d/composables/useLoad3dDrag'
 
 const props = defineProps<{
   initializeLoad3d: (containerRef: HTMLElement) => Promise<void>

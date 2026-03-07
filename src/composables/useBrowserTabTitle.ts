@@ -22,7 +22,7 @@ export const useBrowserTabTitle = () => {
       : `[${Math.round(executionStore.executionProgress * 100)}%]`
   )
 
-  const newMenuEnabled = computed(
+  const isMenuBarActive = computed(
     () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
   )
 
@@ -37,13 +37,12 @@ export const useBrowserTabTitle = () => {
     () => !!workflowStore.activeWorkflow?.isPersisted
   )
 
-  const shouldShowUnsavedIndicator = computed(() => {
-    if (workspaceStore.shiftDown) return false
-    if (isAutoSaveEnabled.value) return false
-    if (!isActiveWorkflowPersisted.value) return true
-    if (isActiveWorkflowModified.value) return true
-    return false
-  })
+  const shouldShowUnsavedIndicator = computed(
+    () =>
+      !workspaceStore.shiftDown &&
+      !isAutoSaveEnabled.value &&
+      (!isActiveWorkflowPersisted.value || isActiveWorkflowModified.value)
+  )
 
   const isUnsavedText = computed(() =>
     shouldShowUnsavedIndicator.value ? ' *' : ''
@@ -87,7 +86,7 @@ export const useBrowserTabTitle = () => {
   const workflowTitle = computed(
     () =>
       executionText.value +
-      (newMenuEnabled.value ? workflowNameText.value : DEFAULT_TITLE)
+      (isMenuBarActive.value ? workflowNameText.value : DEFAULT_TITLE)
   )
 
   const title = computed(() => nodeExecutionTitle.value || workflowTitle.value)

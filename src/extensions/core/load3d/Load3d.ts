@@ -268,6 +268,36 @@ class Load3d {
     return this.isViewerMode || (this.targetWidth > 0 && this.targetHeight > 0)
   }
 
+  private calculateLetterbox(
+    containerWidth: number,
+    containerHeight: number
+  ): {
+    renderWidth: number
+    renderHeight: number
+    offsetX: number
+    offsetY: number
+  } {
+    const containerAspectRatio = containerWidth / containerHeight
+    if (containerAspectRatio > this.targetAspectRatio) {
+      const renderHeight = containerHeight
+      const renderWidth = renderHeight * this.targetAspectRatio
+      return {
+        renderWidth,
+        renderHeight,
+        offsetX: (containerWidth - renderWidth) / 2,
+        offsetY: 0
+      }
+    }
+    const renderWidth = containerWidth
+    const renderHeight = renderWidth / this.targetAspectRatio
+    return {
+      renderWidth,
+      renderHeight,
+      offsetX: 0,
+      offsetY: (containerHeight - renderHeight) / 2
+    }
+  }
+
   forceRender(): void {
     const delta = this.clock.getDelta()
     this.animationManager.update(delta)
@@ -299,22 +329,8 @@ class Load3d {
     }
 
     if (this.shouldMaintainAspectRatio()) {
-      const containerAspectRatio = containerWidth / containerHeight
-
-      let renderWidth: number
-      let renderHeight: number
-      let offsetX: number = 0
-      let offsetY: number = 0
-
-      if (containerAspectRatio > this.targetAspectRatio) {
-        renderHeight = containerHeight
-        renderWidth = renderHeight * this.targetAspectRatio
-        offsetX = (containerWidth - renderWidth) / 2
-      } else {
-        renderWidth = containerWidth
-        renderHeight = renderWidth / this.targetAspectRatio
-        offsetY = (containerHeight - renderHeight) / 2
-      }
+      const { renderWidth, renderHeight, offsetX, offsetY } =
+        this.calculateLetterbox(containerWidth, containerHeight)
 
       this.renderer.setViewport(0, 0, containerWidth, containerHeight)
       this.renderer.setScissor(0, 0, containerWidth, containerHeight)
@@ -325,8 +341,7 @@ class Load3d {
       this.renderer.setViewport(offsetX, offsetY, renderWidth, renderHeight)
       this.renderer.setScissor(offsetX, offsetY, renderWidth, renderHeight)
 
-      const renderAspectRatio = renderWidth / renderHeight
-      this.cameraManager.updateAspectRatio(renderAspectRatio)
+      this.cameraManager.updateAspectRatio(renderWidth / renderHeight)
     } else {
       // No aspect ratio constraint: fill the entire container
       this.renderer.setViewport(0, 0, containerWidth, containerHeight)
@@ -436,7 +451,7 @@ class Load3d {
           await ModelExporter.exportOBJ(model, filename, originalURL)
           break
         case 'stl':
-          ;(await ModelExporter.exportSTL(model, filename), originalURL)
+          await ModelExporter.exportSTL(model, filename, originalURL)
           break
         default:
           throw new Error(`Unsupported export format: ${format}`)
@@ -468,18 +483,10 @@ class Load3d {
       const containerHeight = this.renderer.domElement.clientHeight
 
       if (this.shouldMaintainAspectRatio()) {
-        const containerAspectRatio = containerWidth / containerHeight
-
-        let renderWidth: number
-        let renderHeight: number
-
-        if (containerAspectRatio > this.targetAspectRatio) {
-          renderHeight = containerHeight
-          renderWidth = renderHeight * this.targetAspectRatio
-        } else {
-          renderWidth = containerWidth
-          renderHeight = renderWidth / this.targetAspectRatio
-        }
+        const { renderWidth, renderHeight } = this.calculateLetterbox(
+          containerWidth,
+          containerHeight
+        )
 
         this.sceneManager.updateBackgroundSize(
           this.sceneManager.backgroundTexture,
@@ -558,7 +565,9 @@ class Load3d {
     if (this.loadingPromise) {
       try {
         await this.loadingPromise
-      } catch (e) {}
+      } catch {
+        // Previous load error is irrelevant — we only need to wait for it to settle
+      }
     }
 
     this.loadingPromise = this._loadModelInternal(url, originalFileName)
@@ -653,17 +662,10 @@ class Load3d {
     }
 
     if (this.shouldMaintainAspectRatio()) {
-      const containerAspectRatio = containerWidth / containerHeight
-      let renderWidth: number
-      let renderHeight: number
-
-      if (containerAspectRatio > this.targetAspectRatio) {
-        renderHeight = containerHeight
-        renderWidth = renderHeight * this.targetAspectRatio
-      } else {
-        renderWidth = containerWidth
-        renderHeight = renderWidth / this.targetAspectRatio
-      }
+      const { renderWidth, renderHeight } = this.calculateLetterbox(
+        containerWidth,
+        containerHeight
+      )
 
       this.renderer.setSize(containerWidth, containerHeight)
       this.cameraManager.handleResize(renderWidth, renderHeight)

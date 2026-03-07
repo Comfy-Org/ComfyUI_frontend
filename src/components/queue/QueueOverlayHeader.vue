@@ -32,7 +32,7 @@ import { useI18n } from 'vue-i18n'
 
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { buildTooltipConfig } from '@/utils/tooltipConfig'
 
 defineProps<{
   headerTitle: string

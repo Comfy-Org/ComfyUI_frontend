@@ -28,12 +28,16 @@ import { i18n } from './i18n'
 const isCloud = __DISTRIBUTION__ === 'cloud'
 
 if (isCloud) {
-  const { refreshRemoteConfig } =
-    await import('@/platform/remoteConfig/refreshRemoteConfig')
-  await refreshRemoteConfig({ useAuth: false })
+  try {
+    const { refreshRemoteConfig } =
+      await import('@/platform/remoteConfig/refreshRemoteConfig')
+    await refreshRemoteConfig({ useAuth: false })
 
-  const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
-  await initTelemetry()
+    const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
+    await initTelemetry()
+  } catch (error) {
+    console.warn('Cloud initialization failed, continuing:', error)
+  }
 }
 
 const ComfyUIPreset = definePreset(Aura, {

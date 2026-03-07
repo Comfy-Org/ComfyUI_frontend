@@ -214,7 +214,7 @@ export function useMediaAssetActions() {
    * Add a loader node to the current workflow for this asset
    * Uses shared utility to detect appropriate node type based on file extension
    */
-  const addWorkflow = async (asset?: AssetItem) => {
+  const addWorkflow = (asset?: AssetItem) => {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
@@ -366,7 +366,7 @@ export function useMediaAssetActions() {
    * Add multiple assets to the current workflow
    * Creates loader nodes for each asset
    */
-  const addMultipleToWorkflow = async (assets: AssetItem[]) => {
+  const addMultipleToWorkflow = (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
 
     const NODE_OFFSET = 50

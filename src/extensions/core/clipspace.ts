@@ -1,8 +1,8 @@
-import { app } from '../../scripts/app'
-import { ComfyApp } from '../../scripts/app'
-import { $el, ComfyDialog } from '../../scripts/ui'
+import { app } from '@/scripts/app'
+import { ComfyApp } from '@/scripts/app'
+import { $el, ComfyDialog } from '@/scripts/ui'
 
-export class ClipspaceDialog extends ComfyDialog {
+class ClipspaceDialog extends ComfyDialog {
   static items: Array<
     HTMLButtonElement & {
       contextPredicate?: () => boolean
@@ -85,10 +85,8 @@ export class ClipspaceDialog extends ComfyDialog {
   override createButtons() {
     const buttons = []
 
-    for (let idx in ClipspaceDialog.items) {
-      const item = ClipspaceDialog.items[idx]
-      if (!item.contextPredicate || item.contextPredicate())
-        buttons.push(ClipspaceDialog.items[idx])
+    for (const item of ClipspaceDialog.items) {
+      if (!item.contextPredicate || item.contextPredicate()) buttons.push(item)
     }
 
     buttons.push(

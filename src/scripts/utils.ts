@@ -6,14 +6,11 @@ import { $el } from './ui'
 
 export function clone<T>(obj: T): T {
   try {
-    if (typeof structuredClone !== 'undefined') {
-      return structuredClone(obj)
-    }
-  } catch (error) {
-    // structuredClone is stricter than using JSON.parse/stringify so fallback to that
+    return structuredClone(obj)
+  } catch {
+    // structuredClone is stricter than JSON.parse/stringify, so fall back
+    return JSON.parse(JSON.stringify(obj))
   }
-
-  return JSON.parse(JSON.stringify(obj))
 }
 
 /**
@@ -31,7 +28,7 @@ export async function addStylesheet(
   return new Promise((res, rej) => {
     let url
     if (urlOrFile.endsWith('.js')) {
-      url = urlOrFile.substr(0, urlOrFile.length - 2) + 'css'
+      url = urlOrFile.slice(0, -2) + 'css'
     } else {
       url = new URL(
         urlOrFile,
@@ -76,15 +73,12 @@ export function prop<T>(
     name: string
   ) => void
 ): T {
-  // @ts-expect-error fixme ts strict error
-  let currentValue
+  let currentValue: T = defaultValue
   Object.defineProperty(target, name, {
     get() {
-      // @ts-expect-error fixme ts strict error
       return currentValue
     },
-    set(newValue) {
-      // @ts-expect-error fixme ts strict error
+    set(newValue: T) {
       const prevValue = currentValue
       currentValue = newValue
       onChanged?.(currentValue, prevValue, target, name)
@@ -93,7 +87,7 @@ export function prop<T>(
   return defaultValue
 }
 
-export function getStorageValue(id: string) {
+export function getStorageValue(id: string): string | null {
   const clientId = api.clientId ?? api.initialClientId
   return (
     (clientId && sessionStorage.getItem(`${id}:${clientId}`)) ??

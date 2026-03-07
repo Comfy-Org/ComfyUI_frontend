@@ -11,7 +11,6 @@ import type {
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import { zShareableAssetsResponse } from '@/schemas/apiSchema'
 import type { IFuseOptions } from 'fuse.js'
@@ -226,7 +225,7 @@ type ApiEventTypes = ApiToEventType<ApiCalls>
 type ApiEvents = AsCustomEvents<ApiEventTypes>
 
 /** {@link Omit} all properties that evaluate to `never`. */
-type NeverNever<T> = {
+type OmitNeverProps<T> = {
   [K in keyof T as T[K] extends never ? never : K]: T[K]
 }
 
@@ -238,7 +237,7 @@ type PickNevers<T> = {
 /** Keys (names) of API events that _do not_ pass a {@link CustomEvent} `detail` object. */
 type SimpleApiEvents = keyof PickNevers<ApiEventTypes>
 /** Keys (names) of API events that pass a {@link CustomEvent} `detail` object. */
-type ComplexApiEvents = keyof NeverNever<ApiEventTypes>
+type ComplexApiEvents = keyof OmitNeverProps<ApiEventTypes>
 
 export type GlobalSubgraphData = {
   name: string
@@ -389,10 +388,12 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets the Firebase auth store instance using cached composable function.
    * Caches the composable function on first call, then reuses it.
-   * Returns null for non-cloud distributions.
-   * @returns The Firebase auth store instance, or null if not in cloud
+   * Returns undefined for non-cloud distributions.
+   * @returns The Firebase auth store instance, or undefined if not in cloud
    */
-  private async getAuthStore() {
+  private async getAuthStore(): Promise<
+    ReturnType<typeof useFirebaseAuthStore> | undefined
+  > {
     if (isCloud) {
       if (!this.authStoreComposable) {
         const module = await import('@/stores/firebaseAuthStore')
@@ -425,7 +426,7 @@ export class ComfyApi extends EventTarget {
     }
   }
 
-  async fetchApi(route: string, options?: RequestInit) {
+  async fetchApi(route: string, options?: RequestInit): Promise<Response> {
     const headers: HeadersInit = options?.headers ?? {}
 
     if (isCloud) {
@@ -933,7 +934,10 @@ export class ComfyApi extends EventTarget {
    * @param {string} model The model to get metadata for
    * @returns The metadata for the model
    */
-  async viewMetadata(folder: string, model: string) {
+  async viewMetadata(
+    folder: string,
+    model: string
+  ): Promise<Record<string, string | null> | null> {
     const res = await this.fetchApi(
       `/view_metadata/${folder}?filename=${encodeURIComponent(model)}`
     )
@@ -960,7 +964,11 @@ export class ComfyApi extends EventTarget {
    * @param {string} type The type of items to load, queue or history
    * @returns The items of the specified type grouped by their status
    */
-  async getItems(type: 'queue' | 'history') {
+  async getItems(
+    type: 'queue' | 'history'
+  ): Promise<
+    { Running: JobListItem[]; Pending: JobListItem[] } | JobListItem[]
+  > {
     if (type === 'queue') {
       return this.getQueue()
     }
@@ -1045,7 +1053,7 @@ export class ComfyApi extends EventTarget {
    * @param {string} type The type of item to delete, queue or history
    * @param {number} id The id of the item to delete
    */
-  async deleteItem(type: string, id: string) {
+  async deleteItem(type: string, id: string): Promise<void> {
     await this._postItem(type, { delete: [id] })
   }
 
@@ -1053,7 +1061,7 @@ export class ComfyApi extends EventTarget {
    * Clears the specified list
    * @param {string} type The type of list to clear, queue or history
    */
-  async clearItems(type: string) {
+  async clearItems(type: string): Promise<void> {
     await this._postItem(type, { clear: true })
   }
 
@@ -1062,7 +1070,7 @@ export class ComfyApi extends EventTarget {
    * it is included in the payload as a helpful hint to the backend.
    * @param {string | null} [runningJobId] Optional Running Job ID to interrupt
    */
-  async interrupt(runningJobId: string | null) {
+  async interrupt(runningJobId: string | null): Promise<void> {
     await this._postItem(
       'interrupt',
       runningJobId ? { prompt_id: runningJobId } : undefined
@@ -1116,7 +1124,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Stores a dictionary of settings for the current user
    */
-  async storeSettings(settings: Partial<Settings>) {
+  async storeSettings(settings: Partial<Settings>): Promise<Response> {
     return this.fetchApi(`/settings`, {
       method: 'POST',
       body: JSON.stringify(settings)
@@ -1126,7 +1134,10 @@ export class ComfyApi extends EventTarget {
   /**
    * Stores a setting for the current user
    */
-  async storeSetting(id: keyof Settings, value: Settings[keyof Settings]) {
+  async storeSetting(
+    id: keyof Settings,
+    value: Settings[keyof Settings]
+  ): Promise<Response> {
     return this.fetchApi(`/settings/${encodeURIComponent(id)}`, {
       method: 'POST',
       body: JSON.stringify(value)
@@ -1136,7 +1147,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets a user data file for the current user
    */
-  async getUserData(file: string, options?: RequestInit) {
+  async getUserData(file: string, options?: RequestInit): Promise<Response> {
     return this.fetchApi(`/userdata/${encodeURIComponent(file)}`, options)
   }
 
@@ -1183,7 +1194,7 @@ export class ComfyApi extends EventTarget {
    * Deletes a user data file for the current user
    * @param { string } file The name of the userdata file to delete
    */
-  async deleteUserData(file: string) {
+  async deleteUserData(file: string): Promise<Response> {
     const resp = await this.fetchApi(`/userdata/${encodeURIComponent(file)}`, {
       method: 'DELETE'
     })
@@ -1262,7 +1273,7 @@ export class ComfyApi extends EventTarget {
     const url = isCloud
       ? this.apiURL('/logs/subscribe')
       : this.internalURL('/logs/subscribe')
-    return await axios.patch(url, {
+    await axios.patch(url, {
       enabled,
       clientId: this.clientId
     })
@@ -1278,54 +1289,23 @@ export class ComfyApi extends EventTarget {
     return response.data
   }
 
-  /* Frees memory by unloading models and optionally freeing execution cache
-   * @param {Object} options - The options object
-   * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
+  /**
+   * Frees memory by unloading models and optionally freeing execution cache.
+   * @param options.freeExecutionCache - If true, also frees execution cache
+   * @returns The fetch response
    */
-  async freeMemory(options: { freeExecutionCache: boolean }) {
-    try {
-      let mode = ''
-      if (options.freeExecutionCache) {
-        mode = '{"unload_models": true, "free_memory": true}'
-      } else {
-        mode = '{"unload_models": true}'
-      }
+  async freeMemory(options: {
+    freeExecutionCache: boolean
+  }): Promise<Response> {
+    const body = options.freeExecutionCache
+      ? { unload_models: true, free_memory: true }
+      : { unload_models: true }
 
-      const res = await this.fetchApi(`/free`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: mode
-      })
-
-      if (res.status === 200) {
-        if (options.freeExecutionCache) {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models and Execution Cache have been cleared.',
-            life: 3000
-          })
-        } else {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models have been unloaded.',
-            life: 3000
-          })
-        }
-      } else {
-        useToastStore().add({
-          severity: 'error',
-          summary:
-            'Unloading of models failed. Installed ComfyUI may be an outdated version.',
-          life: 5000
-        })
-      }
-    } catch (error) {
-      useToastStore().add({
-        severity: 'error',
-        summary: 'An error occurred while trying to unload models.',
-        life: 5000
-      })
-    }
+    return this.fetchApi('/free', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
   }
 
   /**

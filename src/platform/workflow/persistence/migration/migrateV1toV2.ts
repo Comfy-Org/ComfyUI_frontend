@@ -96,7 +96,6 @@ export function migrateV1toV2(workspaceId: string = getWorkspaceId()): number {
     })
 
     if (!payloadWritten) {
-      console.warn(`[V2 Migration] Failed to write payload for ${path}`)
       continue
     }
 
@@ -116,9 +115,6 @@ export function migrateV1toV2(workspaceId: string = getWorkspaceId()): number {
     return -1
   }
 
-  if (migrated > 0) {
-    console.warn(`[V2 Migration] Migrated ${migrated} drafts from V1 to V2`)
-  }
   return migrated
 }
 
@@ -130,7 +126,6 @@ export function cleanupV1Data(workspaceId: string = getWorkspaceId()): void {
   try {
     localStorage.removeItem(V1_KEYS.drafts(workspaceId))
     localStorage.removeItem(V1_KEYS.order(workspaceId))
-    console.warn('[V2 Migration] Cleaned up V1 data')
   } catch {
     // Ignore cleanup errors
   }

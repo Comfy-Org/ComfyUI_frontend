@@ -22,8 +22,8 @@ import { useAudioService } from '@/services/audioService'
 import { type NodeLocatorId } from '@/types'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-import { api } from '../../scripts/api'
-import { app } from '../../scripts/app'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 function updateUIWidget(
@@ -352,7 +352,7 @@ app.registerExtension({
                   audioChunks.push(event.data)
                 }
 
-                mediaRecorder.onstop = async () => {
+                mediaRecorder.onstop = () => {
                   const audioBlob = new Blob(audioChunks, { type: 'audio/wav' })
 
                   useAudioService().stopAllTracks(currentStream)
@@ -407,7 +407,9 @@ app.registerExtension({
                 if (mediaRecorder) {
                   try {
                     mediaRecorder.stop()
-                  } catch {}
+                  } catch {
+                    // Recorder may already be stopped — safe to ignore
+                  }
                 }
                 useAudioService().stopAllTracks(currentStream)
                 currentStream = null

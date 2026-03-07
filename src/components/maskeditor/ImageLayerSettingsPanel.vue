@@ -200,7 +200,7 @@ const onMaskOpacityChange = (value: number) => {
   maskLayerVisible.value = value !== 0
 }
 
-const onBlendModeChange = async (event: Event) => {
+const onBlendModeChange = (event: Event) => {
   const value = (event.target as HTMLSelectElement).value
   let blendMode: MaskBlendMode
 
@@ -217,7 +217,7 @@ const onBlendModeChange = async (event: Event) => {
 
   store.maskBlendMode = blendMode
 
-  await canvasManager.updateMaskColor()
+  canvasManager.updateMaskColor()
 }
 
 const setActiveLayer = (layer: ImageLayer) => {

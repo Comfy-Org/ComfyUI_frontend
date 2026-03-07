@@ -73,11 +73,9 @@ export class CameraManager implements CameraManagerInterface {
   setControls(controls: OrbitControls): void {
     this.controls = controls
 
-    if (this.controls) {
-      this.controls.addEventListener('end', () => {
-        this.eventManager.emitEvent('cameraChanged', this.getCameraState())
-      })
-    }
+    this.controls.addEventListener('end', () => {
+      this.eventManager.emitEvent('cameraChanged', this.getCameraState())
+    })
   }
 
   getCurrentCameraType(): CameraType {
@@ -117,13 +115,11 @@ export class CameraManager implements CameraManagerInterface {
     this.activeCamera.position.copy(position)
     this.activeCamera.rotation.copy(rotation)
 
-    if (this.activeCamera instanceof THREE.OrthographicCamera) {
-      this.activeCamera.zoom = oldZoom
-      this.activeCamera.updateProjectionMatrix()
-    } else if (this.activeCamera instanceof THREE.PerspectiveCamera) {
-      this.activeCamera.zoom = oldZoom
-      this.activeCamera.updateProjectionMatrix()
-    }
+    const cam = this.activeCamera as
+      | THREE.PerspectiveCamera
+      | THREE.OrthographicCamera
+    cam.zoom = oldZoom
+    cam.updateProjectionMatrix()
 
     if (this.controls) {
       this.controls.object = this.activeCamera
@@ -160,13 +156,11 @@ export class CameraManager implements CameraManagerInterface {
 
     this.controls?.target.copy(state.target)
 
-    if (this.activeCamera instanceof THREE.OrthographicCamera) {
-      this.activeCamera.zoom = state.zoom
-      this.activeCamera.updateProjectionMatrix()
-    } else if (this.activeCamera instanceof THREE.PerspectiveCamera) {
-      this.activeCamera.zoom = state.zoom
-      this.activeCamera.updateProjectionMatrix()
-    }
+    const cam = this.activeCamera as
+      | THREE.PerspectiveCamera
+      | THREE.OrthographicCamera
+    cam.zoom = state.zoom
+    cam.updateProjectionMatrix()
 
     this.controls?.update()
   }

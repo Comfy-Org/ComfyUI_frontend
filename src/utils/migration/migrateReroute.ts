@@ -324,8 +324,7 @@ export const migrateLegacyRerouteNodes = (
     return workflow
   }
 
-  // Create a deep copy of the workflow to avoid mutating the original
-  const newWorkflow = JSON.parse(JSON.stringify(workflow)) as WorkflowJSON04
+  const newWorkflow = structuredClone(workflow)
 
   // Initialize extra structure if needed
   if (!newWorkflow.extra) {

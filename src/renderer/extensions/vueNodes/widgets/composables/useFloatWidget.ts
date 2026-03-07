@@ -87,7 +87,6 @@ export const useFloatWidget = () => {
         widget,
         'fixed',
         undefined,
-        undefined,
         transformInputSpecV2ToV1(inputSpec)
       )
       widget.linkedWidgets = [controlWidget]

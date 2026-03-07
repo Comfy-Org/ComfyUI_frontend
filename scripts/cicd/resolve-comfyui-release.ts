@@ -132,7 +132,7 @@ function resolveRelease(
     return null
   }
 
-  const [major, currentMinor, patch] = currentVersion.split('.').map(Number)
+  const [, currentMinor] = currentVersion.split('.').map(Number)
 
   // Fetch all branches
   exec('git fetch origin', frontendRepoPath)
@@ -264,7 +264,7 @@ if (!releaseInfo) {
 }
 
 // Output as JSON for GitHub Actions
-
+// oxlint-disable-next-line no-console -- CI script output
 console.log(JSON.stringify(releaseInfo, null, 2))
 
 export { resolveRelease }

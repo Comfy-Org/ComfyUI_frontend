@@ -12,7 +12,6 @@ import { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
 import { Rectangle } from './infrastructure/Rectangle'
 import type {
   CreateNodeOptions,
-  Dictionary,
   ISlotType,
   Rect,
   WhenNullish
@@ -167,7 +166,7 @@ export class LiteGraphGlobal {
   Globals = {}
 
   /** @deprecated Unused and will be deleted. */
-  searchbox_extras: Dictionary<unknown> = {}
+  searchbox_extras: Record<string, unknown> = {}
 
   /** [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback */
   node_box_coloured_when_on = false
@@ -507,7 +506,7 @@ export class LiteGraphGlobal {
 
       if (!types.includes(type)) {
         types.push(type)
-        types.sort()
+        types.sort((a, b) => a.localeCompare(b))
       }
     }
   }
@@ -611,7 +610,7 @@ export class LiteGraphGlobal {
    * @returns array with all the names of the categories
    */
   getNodeTypesCategories(filter?: string): string[] {
-    const categories: Dictionary<number> = { '': 1 }
+    const categories: Record<string, number> = { '': 1 }
     for (const i in this.registered_node_types) {
       const type = this.registered_node_types[i]
       if (type.category && !type.skip_list) {
@@ -641,8 +640,7 @@ export class LiteGraphGlobal {
 
     for (const script_file of script_files) {
       const src = script_file.src
-      if (!src || src.substr(0, folder_wildcard.length) != folder_wildcard)
-        continue
+      if (!src || !src.startsWith(folder_wildcard)) continue
 
       try {
         const dynamicScript = document.createElement('script')

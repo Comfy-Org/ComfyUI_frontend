@@ -2,7 +2,8 @@ import type Load3d from '@/extensions/core/load3d/Load3d'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+
+import { getResourceURL, splitFilePath } from '@/utils/resourceUrl'
 
 class Load3dUtils {
   static async generateThumbnailIfNeeded(
@@ -114,31 +115,9 @@ class Load3dUtils {
     return uploadPath
   }
 
-  static splitFilePath(path: string): [string, string] {
-    const folder_separator = path.lastIndexOf('/')
-    if (folder_separator === -1) {
-      return ['', path]
-    }
-    return [
-      path.substring(0, folder_separator),
-      path.substring(folder_separator + 1)
-    ]
-  }
+  static splitFilePath = splitFilePath
 
-  static getResourceURL(
-    subfolder: string,
-    filename: string,
-    type: string = 'input'
-  ): string {
-    const params = [
-      'filename=' + encodeURIComponent(filename),
-      'type=' + type,
-      'subfolder=' + subfolder,
-      app.getRandParam().substring(1)
-    ].join('&')
-
-    return `/view?${params}`
-  }
+  static getResourceURL = getResourceURL
 
   static async uploadMultipleFiles(files: FileList, subfolder: string = '3d') {
     const uploadPromises = Array.from(files).map((file) =>

@@ -48,7 +48,7 @@ export async function getPromotedWidgetCount(
   return promotedWidgets.length
 }
 
-export async function getPromotedWidgetCountByName(
+export function getPromotedWidgetCountByName(
   comfyPage: ComfyPage,
   nodeId: string,
   widgetName: string

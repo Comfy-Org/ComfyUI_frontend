@@ -1,19 +1,7 @@
 interface UVMirror {
-  /**
-   * The setting id defined for the mirror.
-   */
   settingId: string
-  /**
-   * The default mirror to use.
-   */
   mirror: string
-  /**
-   * The fallback mirror to use.
-   */
   fallbackMirror: string
-  /**
-   * The path suffix to validate the mirror is reachable.
-   */
   validationPathSuffix?: string
 }
 

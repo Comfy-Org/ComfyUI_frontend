@@ -27,6 +27,7 @@ import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 const replacePropertyName = 'Run widget replace on values'
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export class PrimitiveNode extends LGraphNode {
   controlValues?: TWidgetValue[]
   lastType?: string

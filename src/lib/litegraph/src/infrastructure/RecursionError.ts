@@ -1,9 +1,6 @@
-/**
- * Error thrown when infinite recursion is detected.
- */
 export class RecursionError extends Error {
-  constructor(subject: string) {
-    super(subject)
+  constructor(message: string = 'Circular reference detected.', cause?: Error) {
+    super(message, { cause })
     this.name = 'RecursionError'
   }
 }

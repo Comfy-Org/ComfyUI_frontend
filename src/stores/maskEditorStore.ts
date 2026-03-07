@@ -17,14 +17,24 @@ import type {
 } from '@/extensions/core/maskeditor/types'
 import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'
 
+const INITIAL_BRUSH: Brush = {
+  type: BrushShape.Arc,
+  size: 10,
+  opacity: 0.7,
+  hardness: 1,
+  stepSize: 10
+}
+
+const DEFAULT_BRUSH: Brush = {
+  type: BrushShape.Arc,
+  size: 20,
+  opacity: 1,
+  hardness: 1,
+  stepSize: 5
+}
+
 export const useMaskEditorStore = defineStore('maskEditor', () => {
-  const brushSettings = ref<Brush>({
-    type: BrushShape.Arc,
-    size: 10,
-    opacity: 0.7,
-    hardness: 1,
-    stepSize: 10
-  })
+  const brushSettings = ref<Brush>({ ...INITIAL_BRUSH })
 
   const maskBlendMode = ref<MaskBlendMode>(MaskBlendMode.Black)
   const activeLayer = ref<ImageLayer>('mask')
@@ -70,7 +80,29 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   const isPanning = ref<boolean>(false)
   const brushPreviewGradientVisible = ref<boolean>(false)
 
-  const canvasHistory = useCanvasHistory(20)
+  const canvasHistory = useCanvasHistory(
+    {
+      get maskCanvas() {
+        return maskCanvas.value
+      },
+      get maskCtx() {
+        return maskCtx.value
+      },
+      get rgbCanvas() {
+        return rgbCanvas.value
+      },
+      get rgbCtx() {
+        return rgbCtx.value
+      },
+      get imgCanvas() {
+        return imgCanvas.value
+      },
+      get imgCtx() {
+        return imgCtx.value
+      }
+    },
+    20
+  )
 
   const tgpuRoot = ref<TgpuRoot | null>(null)
 
@@ -147,11 +179,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   }
 
   function resetBrushToDefault(): void {
-    brushSettings.value.type = BrushShape.Arc
-    brushSettings.value.size = 20
-    brushSettings.value.opacity = 1
-    brushSettings.value.hardness = 1
-    brushSettings.value.stepSize = 5
+    brushSettings.value = { ...DEFAULT_BRUSH }
   }
 
   function setPaintBucketTolerance(tolerance: number): void {
@@ -199,13 +227,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   }
 
   function resetState(): void {
-    brushSettings.value = {
-      type: BrushShape.Arc,
-      size: 10,
-      opacity: 0.7,
-      hardness: 1,
-      stepSize: 5
-    }
+    brushSettings.value = { ...INITIAL_BRUSH }
     maskBlendMode.value = MaskBlendMode.Black
     activeLayer.value = 'mask'
     rgbColor.value = '#FF0000'

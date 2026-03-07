@@ -35,10 +35,12 @@ export function useAssetFilterOptions(assets: MaybeRefOrGetter<AssetItem[]>) {
 
     const uniqueExtensions = uniqWith(extensions, (a, b) => a === b)
 
-    return uniqueExtensions.sort().map((format) => ({
-      name: `.${format}`,
-      value: format
-    }))
+    return uniqueExtensions
+      .sort((a, b) => a.localeCompare(b))
+      .map((format) => ({
+        name: `.${format}`,
+        value: format
+      }))
   })
 
   /**
@@ -51,10 +53,12 @@ export function useAssetFilterOptions(assets: MaybeRefOrGetter<AssetItem[]>) {
 
     const uniqueModels = uniqWith(models, (a, b) => a === b)
 
-    return uniqueModels.sort().map((model) => ({
-      name: model,
-      value: model
-    }))
+    return uniqueModels
+      .sort((a, b) => a.localeCompare(b))
+      .map((model) => ({
+        name: model,
+        value: model
+      }))
   })
 
   return {

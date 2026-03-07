@@ -1,8 +1,7 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
-import { useExternalLink } from '@/composables/useExternalLink'
+import { useHelpCommands } from '@/composables/useHelpCommands'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
@@ -22,7 +21,6 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ExecutionTriggerSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -83,7 +81,6 @@ export function useCoreCommands(): ComfyCommand[] {
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
   const telemetry = useTelemetry()
-  const { staticUrls, buildDocsUrl } = useExternalLink()
   const settingStore = useSettingStore()
 
   const bottomPanelStore = useBottomPanelStore()
@@ -775,51 +772,7 @@ export function useCoreCommands(): ComfyCommand[] {
         }
       }
     },
-    {
-      id: 'Comfy.Help.OpenComfyUIIssues',
-      icon: 'pi pi-github',
-      label: 'Open ComfyUI Issues',
-      menubarLabel: 'ComfyUI Issues',
-      versionAdded: '1.5.5',
-      function: () => {
-        telemetry?.trackHelpResourceClicked({
-          resource_type: 'github',
-          is_external: true,
-          source: 'menu'
-        })
-        window.open(staticUrls.githubIssues, '_blank')
-      }
-    },
-    {
-      id: 'Comfy.Help.OpenComfyUIDocs',
-      icon: 'pi pi-info-circle',
-      label: 'Open ComfyUI Docs',
-      menubarLabel: 'ComfyUI Docs',
-      versionAdded: '1.5.5',
-      function: () => {
-        telemetry?.trackHelpResourceClicked({
-          resource_type: 'docs',
-          is_external: true,
-          source: 'menu'
-        })
-        window.open(buildDocsUrl('/', { includeLocale: true }), '_blank')
-      }
-    },
-    {
-      id: 'Comfy.Help.OpenComfyOrgDiscord',
-      icon: 'pi pi-discord',
-      label: 'Open Comfy-Org Discord',
-      menubarLabel: 'Comfy-Org Discord',
-      versionAdded: '1.5.5',
-      function: () => {
-        telemetry?.trackHelpResourceClicked({
-          resource_type: 'discord',
-          is_external: true,
-          source: 'menu'
-        })
-        window.open(staticUrls.discord, '_blank')
-      }
-    },
+    ...useHelpCommands(),
     {
       id: 'Workspace.SearchBox.Toggle',
       icon: 'pi pi-search',
@@ -827,16 +780,6 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.5.7',
       function: () => {
         useSearchBoxStore().toggleVisible()
-      }
-    },
-    {
-      id: 'Comfy.Help.AboutComfyUI',
-      icon: 'pi pi-info-circle',
-      label: 'Open About ComfyUI',
-      menubarLabel: 'About ComfyUI',
-      versionAdded: '1.6.4',
-      function: () => {
-        settingsDialog.showAbout()
       }
     },
     {
@@ -856,35 +799,6 @@ export function useCoreCommands(): ComfyCommand[] {
       function: async () => {
         if (workflowStore.activeWorkflow)
           await workflowService.closeWorkflow(workflowStore.activeWorkflow)
-      }
-    },
-    {
-      id: 'Comfy.ContactSupport',
-      icon: 'pi pi-question',
-      label: 'Contact Support',
-      versionAdded: '1.17.8',
-      function: () => {
-        const { userEmail, resolvedUserInfo } = useCurrentUser()
-        const supportUrl = buildSupportUrl({
-          userEmail: userEmail.value,
-          userId: resolvedUserInfo.value?.id
-        })
-        window.open(supportUrl, '_blank', 'noopener,noreferrer')
-      }
-    },
-    {
-      id: 'Comfy.Help.OpenComfyUIForum',
-      icon: 'pi pi-comments',
-      label: 'Open ComfyUI Forum',
-      menubarLabel: 'ComfyUI Forum',
-      versionAdded: '1.8.2',
-      function: () => {
-        telemetry?.trackHelpResourceClicked({
-          resource_type: 'help_feedback',
-          is_external: true,
-          source: 'menu'
-        })
-        window.open(staticUrls.forum, '_blank')
       }
     },
     {
@@ -1263,7 +1177,29 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        await api.freeMemory({ freeExecutionCache: false })
+        try {
+          const res = await api.freeMemory({ freeExecutionCache: false })
+          if (res.status === 200) {
+            useToastStore().add({
+              severity: 'success',
+              summary: 'Models have been unloaded.',
+              life: 3000
+            })
+          } else {
+            useToastStore().add({
+              severity: 'error',
+              summary:
+                'Unloading of models failed. Installed ComfyUI may be an outdated version.',
+              life: 5000
+            })
+          }
+        } catch {
+          useToastStore().add({
+            severity: 'error',
+            summary: 'An error occurred while trying to unload models.',
+            life: 5000
+          })
+        }
       }
     },
     {
@@ -1283,7 +1219,29 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        await api.freeMemory({ freeExecutionCache: true })
+        try {
+          const res = await api.freeMemory({ freeExecutionCache: true })
+          if (res.status === 200) {
+            useToastStore().add({
+              severity: 'success',
+              summary: 'Models and Execution Cache have been cleared.',
+              life: 3000
+            })
+          } else {
+            useToastStore().add({
+              severity: 'error',
+              summary:
+                'Unloading of models failed. Installed ComfyUI may be an outdated version.',
+              life: 5000
+            })
+          }
+        } catch {
+          useToastStore().add({
+            severity: 'error',
+            summary: 'An error occurred while trying to unload models.',
+            life: 5000
+          })
+        }
       }
     },
     {

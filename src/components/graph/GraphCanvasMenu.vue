@@ -1,12 +1,12 @@
 <template>
   <div>
-    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
+    <ZoomControlsModal :visible="isPopoverOpen" @close="hidePopover" />
 
     <!-- Backdrop -->
     <div
       v-if="hasActivePopup"
       class="fixed inset-0 z-1200"
-      @click="hideModal"
+      @click="hidePopover"
     ></div>
 
     <ButtonGroup
@@ -40,7 +40,7 @@
         :aria-label="t('zoomControls.label')"
         data-testid="zoom-controls-button"
         :style="stringifiedMinimapStyles.buttonStyles"
-        @click="toggleModal"
+        @click="togglePopover"
       >
         <span class="inline-flex items-center gap-1 px-2 text-xs">
           <span>{{ canvasStore.appScalePercentage }}%</span>
@@ -110,7 +110,7 @@ const settingStore = useSettingStore()
 const canvasInteractions = useCanvasInteractions()
 const minimap = useMinimap()
 
-const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
+const { isPopoverOpen, togglePopover, hidePopover, hasActivePopup } =
   useZoomControls()
 
 const stringifiedMinimapStyles = computed(() => {
@@ -157,7 +157,7 @@ const minimapCommandText = computed(() =>
 // Computed properties for button classes and states
 const zoomButtonClass = computed(() => [
   'bg-comfy-menu-bg',
-  isModalVisible.value ? 'not-active:bg-interface-panel-selected-surface!' : '',
+  isPopoverOpen.value ? 'not-active:bg-interface-panel-selected-surface!' : '',
   'hover:bg-interface-button-hover-surface!',
   'p-0',
   'h-8',

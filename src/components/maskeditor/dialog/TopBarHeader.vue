@@ -161,33 +161,33 @@ const onRedo = () => {
   store.canvasHistory.redo()
 }
 
-const onRotateLeft = async () => {
+const onRotateLeft = () => {
   try {
-    await canvasTransform.rotateCounterclockwise()
+    canvasTransform.rotateCounterclockwise()
   } catch (error) {
     console.error('[TopBarHeader] Rotate left failed:', error)
   }
 }
 
-const onRotateRight = async () => {
+const onRotateRight = () => {
   try {
-    await canvasTransform.rotateClockwise()
+    canvasTransform.rotateClockwise()
   } catch (error) {
     console.error('[TopBarHeader] Rotate right failed:', error)
   }
 }
 
-const onMirrorHorizontal = async () => {
+const onMirrorHorizontal = () => {
   try {
-    await canvasTransform.mirrorHorizontal()
+    canvasTransform.mirrorHorizontal()
   } catch (error) {
     console.error('[TopBarHeader] Mirror horizontal failed:', error)
   }
 }
 
-const onMirrorVertical = async () => {
+const onMirrorVertical = () => {
   try {
-    await canvasTransform.mirrorVertical()
+    canvasTransform.mirrorVertical()
   } catch (error) {
     console.error('[TopBarHeader] Mirror vertical failed:', error)
   }

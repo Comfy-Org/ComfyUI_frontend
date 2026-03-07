@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import QueueOverlayActive from './QueueOverlayActive.vue'
-import * as tooltipConfig from '@/composables/useTooltipConfig'
+import * as tooltipConfig from '@/utils/tooltipConfig'
 
 const i18n = createI18n({
   legacy: false,

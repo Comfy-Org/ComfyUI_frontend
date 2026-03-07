@@ -1,43 +1,18 @@
 import type { HasBoundingRect, Point, ReadOnlyRect, Rect } from './interfaces'
 import { Alignment, LinkDirection, hasFlag } from './types/globalEnums'
 
-/**
- * Calculates the distance between two points (2D vector)
- * @param a Point a as `x, y`
- * @param b Point b as `x, y`
- * @returns Distance between point {@link a} & {@link b}
- */
 export function distance(a: Readonly<Point>, b: Readonly<Point>): number {
   return Math.sqrt(
     (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])
   )
 }
 
-/**
- * Calculates the distance2 (squared) between two points (2D vector).
- * Much faster when only comparing distances (closest/furthest point).
- * @param x1 Origin point X
- * @param y1 Origin point Y
- * @param x2 Destination point X
- * @param y2 Destination point Y
- * @returns Distance2 (squared) between point [{@link x1}, {@link y1}] & [{@link x2}, {@link y2}]
- */
+/** Squared distance — faster when only comparing distances. */
 export function dist2(x1: number, y1: number, x2: number, y2: number): number {
   return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)
 }
 
-/**
- * Determines whether a point is inside a rectangle.
- *
- * Otherwise identical to {@link isInsideRectangle}, it also returns `true` if `x` equals `left` or `y` equals `top`.
- * @param x Point x
- * @param y Point y
- * @param left Rect x
- * @param top Rect y
- * @param width Rect width
- * @param height Rect height
- * @returns `true` if the point is inside the rect, otherwise `false`
- */
+/** Inclusive of top-left edge, unlike {@link isInsideRectangle}. */
 export function isInRectangle(
   x: number,
   y: number,
@@ -49,12 +24,6 @@ export function isInRectangle(
   return x >= left && x < left + width && y >= top && y < top + height
 }
 
-/**
- * Determines whether a {@link Point} is inside a {@link Rect}.
- * @param point The point to check, as `x, y`
- * @param rect The rectangle, as `x, y, width, height`
- * @returns `true` if the point is inside the rect, otherwise `false`
- */
 export function isPointInRect(
   point: Readonly<Point>,
   rect: ReadOnlyRect
@@ -67,13 +36,6 @@ export function isPointInRect(
   )
 }
 
-/**
- * Determines whether the point represented by {@link x}, {@link y} is inside a {@link Rect}.
- * @param x X co-ordinate of the point to check
- * @param y Y co-ordinate of the point to check
- * @param rect The rectangle, as `x, y, width, height`
- * @returns `true` if the point is inside the rect, otherwise `false`
- */
 export function isInRect(x: number, y: number, rect: ReadOnlyRect): boolean {
   return (
     x >= rect[0] &&
@@ -83,21 +45,7 @@ export function isInRect(x: number, y: number, rect: ReadOnlyRect): boolean {
   )
 }
 
-/**
- * Determines whether a point (`x, y`) is inside a rectangle.
- *
- * This is the original litegraph implementation.  It returns `false` if `x` is equal to `left`, or `y` is equal to `top`.
- * @deprecated
- * Use {@link isInRectangle} to match inclusive of top left.
- * This function returns a false negative when an integer point (e.g. pixel) is on the leftmost or uppermost edge of a rectangle.
- * @param x Point x
- * @param y Point y
- * @param left Rect x
- * @param top Rect y
- * @param width Rect width
- * @param height Rect height
- * @returns `true` if the point is inside the rect, otherwise `false`
- */
+/** @deprecated Use {@link isInRectangle} — this excludes the top-left edge. */
 export function isInsideRectangle(
   x: number,
   y: number,
@@ -109,12 +57,6 @@ export function isInsideRectangle(
   return left < x && left + width > x && top < y && top + height > y
 }
 
-/**
- * Determines if two rectangles have any overlap
- * @param a Rectangle A as `x, y, width, height`
- * @param b Rectangle B as `x, y, width, height`
- * @returns `true` if rectangles overlap, otherwise `false`
- */
 export function overlapBounding(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
   const aRight = a[0] + a[2]
   const aBottom = a[1] + a[3]
@@ -126,33 +68,16 @@ export function overlapBounding(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
     : true
 }
 
-/**
- * Returns the centre of a rectangle.
- * @param rect The rectangle, as `x, y, width, height`
- * @returns The centre of the rectangle, as `x, y`
- */
 export function getCentre(rect: ReadOnlyRect): Point {
   return [rect[0] + rect[2] * 0.5, rect[1] + rect[3] * 0.5]
 }
 
-/**
- * Determines if rectangle {@link a} contains the centre point of rectangle {@link b}.
- * @param a Container rectangle A as `x, y, width, height`
- * @param b Sub-rectangle B as `x, y, width, height`
- * @returns `true` if {@link a} contains most of {@link b}, otherwise `false`
- */
 export function containsCentre(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
   const centreX = b[0] + b[2] * 0.5
   const centreY = b[1] + b[3] * 0.5
   return isInRect(centreX, centreY, a)
 }
 
-/**
- * Determines if rectangle {@link a} wholly contains rectangle {@link b}.
- * @param a Container rectangle A as `x, y, width, height`
- * @param b Sub-rectangle B as `x, y, width, height`
- * @returns `true` if {@link a} wholly contains {@link b}, otherwise `false`
- */
 export function containsRect(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
   const aRight = a[0] + a[2]
   const aBottom = a[1] + a[3]
@@ -171,12 +96,6 @@ export function containsRect(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
   )
 }
 
-/**
- * Adds an offset in the specified direction to {@link out}
- * @param amount Amount of offset to add
- * @param direction Direction to add the offset to
- * @param out The {@link Point} to add the offset to
- */
 export function addDirectionalOffset(
   amount: number,
   direction: LinkDirection,
@@ -199,15 +118,7 @@ export function addDirectionalOffset(
   }
 }
 
-/**
- * Rotates an offset in 90° increments.
- *
- * Swaps/flips axis values of a 2D vector offset - effectively rotating
- * {@link offset} by 90°
- * @param offset The zero-based offset to rotate
- * @param from Direction to rotate from
- * @param to Direction to rotate to
- */
+/** Rotates a 2D offset by swapping/flipping axes in 90° increments. */
 export function rotateLink(
   offset: Point,
   from: LinkDirection,
@@ -269,19 +180,7 @@ export function rotateLink(
   }
 }
 
-/**
- * Check if a point is to to the left or right of a line.
- * Project a line from lineStart -> lineEnd.  Determine if point is to the left
- * or right of that projection.
- * {@link https://www.geeksforgeeks.org/orientation-3-ordered-points/}
- * @param lineStart The start point of the line
- * @param lineEnd The end point of the line
- * @param x X co-ordinate of the point to check
- * @param y Y co-ordinate of the point to check
- * @returns 0 if all three points are in a straight line, a negative value if
- * point is to the left of the projected line, or positive if the point is to
- * the right
- */
+/** Returns <0 if point is left of line, >0 if right, 0 if collinear. */
 export function getOrientation(
   lineStart: Readonly<Point>,
   lineEnd: Readonly<Point>,
@@ -294,14 +193,7 @@ export function getOrientation(
   )
 }
 
-/**
- * @param out The array to store the point in
- * @param a Start point
- * @param b End point
- * @param controlA Start curve control point
- * @param controlB End curve control point
- * @param t Time: factor of distance to travel along the curve (e.g 0.25 is 25% along the curve)
- */
+/** Cubic bezier interpolation at parameter t (0..1). */
 export function findPointOnCurve(
   out: Point,
   a: Readonly<Point>,
@@ -344,13 +236,6 @@ export function createBounds(
   ]
 }
 
-/**
- * Snaps the provided {@link Point} or {@link Rect} ({@link pos}) to a grid of size {@link snapTo}.
- * @param pos The point that will be snapped
- * @param snapTo The value to round up/down by (multiples thereof)
- * @returns `true` if snapTo is truthy, otherwise `false`
- * @remarks `NaN` propagates through this function and does not affect return value.
- */
 export function snapPoint(pos: Point | Rect, snapTo: number): boolean {
   if (!snapTo) return false
 

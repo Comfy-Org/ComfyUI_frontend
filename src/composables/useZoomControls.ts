@@ -1,27 +1,27 @@
 import { computed, ref } from 'vue'
 
 export function useZoomControls() {
-  const isModalVisible = ref(false)
+  const isPopoverOpen = ref(false)
 
-  const showModal = () => {
-    isModalVisible.value = true
+  const showPopover = () => {
+    isPopoverOpen.value = true
   }
 
-  const hideModal = () => {
-    isModalVisible.value = false
+  const hidePopover = () => {
+    isPopoverOpen.value = false
   }
 
-  const toggleModal = () => {
-    isModalVisible.value = !isModalVisible.value
+  const togglePopover = () => {
+    isPopoverOpen.value = !isPopoverOpen.value
   }
 
-  const hasActivePopup = computed(() => isModalVisible.value)
+  const hasActivePopup = computed(() => isPopoverOpen.value)
 
   return {
-    isModalVisible,
-    showModal,
-    hideModal,
-    toggleModal,
+    isPopoverOpen,
+    showPopover,
+    hidePopover,
+    togglePopover,
     hasActivePopup
   }
 }

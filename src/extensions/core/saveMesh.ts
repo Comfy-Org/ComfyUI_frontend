@@ -1,7 +1,7 @@
 import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
-import { useLoad3d } from '@/composables/useLoad3d'
+import { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'

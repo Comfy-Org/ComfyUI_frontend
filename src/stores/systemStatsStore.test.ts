@@ -221,7 +221,7 @@ describe('useSystemStatsStore', () => {
         expect(store.getFormFactor()).toBe('desktop-mac')
       })
 
-      it('should return "other" for unknown desktop OS', () => {
+      it('should return "desktop-linux" for Linux desktop', () => {
         store.systemStats = {
           system: {
             os: 'Linux',
@@ -236,7 +236,7 @@ describe('useSystemStatsStore', () => {
           devices: []
         }
 
-        expect(store.getFormFactor()).toBe('other')
+        expect(store.getFormFactor()).toBe('desktop-linux')
       })
     })
 

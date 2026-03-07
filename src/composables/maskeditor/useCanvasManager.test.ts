@@ -89,13 +89,13 @@ describe('useCanvasManager', () => {
   })
 
   describe('invalidateCanvas', () => {
-    it('should set canvas dimensions', async () => {
+    it('should set canvas dimensions', () => {
       const manager = useCanvasManager()
 
       const origImage = createMockImage(512, 512)
       const maskImage = createMockImage(512, 512)
 
-      await manager.invalidateCanvas(origImage, maskImage, null)
+      manager.invalidateCanvas(origImage, maskImage, null)
 
       expect(mockStore.imgCanvas.width).toBe(512)
       expect(mockStore.imgCanvas.height).toBe(512)
@@ -105,13 +105,13 @@ describe('useCanvasManager', () => {
       expect(mockStore.rgbCanvas.height).toBe(512)
     })
 
-    it('should draw original image', async () => {
+    it('should draw original image', () => {
       const manager = useCanvasManager()
 
       const origImage = createMockImage(512, 512)
       const maskImage = createMockImage(512, 512)
 
-      await manager.invalidateCanvas(origImage, maskImage, null)
+      manager.invalidateCanvas(origImage, maskImage, null)
 
       expect(mockStore.imgCtx.drawImage).toHaveBeenCalledWith(
         origImage,
@@ -122,14 +122,14 @@ describe('useCanvasManager', () => {
       )
     })
 
-    it('should draw paint image when provided', async () => {
+    it('should draw paint image when provided', () => {
       const manager = useCanvasManager()
 
       const origImage = createMockImage(512, 512)
       const maskImage = createMockImage(512, 512)
       const paintImage = createMockImage(512, 512)
 
-      await manager.invalidateCanvas(origImage, maskImage, paintImage)
+      manager.invalidateCanvas(origImage, maskImage, paintImage)
 
       expect(mockStore.rgbCtx.drawImage).toHaveBeenCalledWith(
         paintImage,
@@ -140,31 +140,31 @@ describe('useCanvasManager', () => {
       )
     })
 
-    it('should not draw paint image when null', async () => {
+    it('should not draw paint image when null', () => {
       const manager = useCanvasManager()
 
       const origImage = createMockImage(512, 512)
       const maskImage = createMockImage(512, 512)
 
-      await manager.invalidateCanvas(origImage, maskImage, null)
+      manager.invalidateCanvas(origImage, maskImage, null)
 
       expect(mockStore.rgbCtx.drawImage).not.toHaveBeenCalled()
     })
 
-    it('should prepare mask', async () => {
+    it('should prepare mask', () => {
       const manager = useCanvasManager()
 
       const origImage = createMockImage(512, 512)
       const maskImage = createMockImage(512, 512)
 
-      await manager.invalidateCanvas(origImage, maskImage, null)
+      manager.invalidateCanvas(origImage, maskImage, null)
 
       expect(mockStore.maskCtx.drawImage).toHaveBeenCalled()
       expect(mockStore.maskCtx.getImageData).toHaveBeenCalled()
       expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
     })
 
-    it('should throw error when canvas missing', async () => {
+    it('should throw error when canvas missing', () => {
       const manager = useCanvasManager()
 
       mockStore.imgCanvas = null! as HTMLCanvasElement
@@ -172,12 +172,12 @@ describe('useCanvasManager', () => {
       const origImage = createMockImage(512, 512)
       const maskImage = createMockImage(512, 512)
 
-      await expect(
+      expect(() =>
         manager.invalidateCanvas(origImage, maskImage, null)
-      ).rejects.toThrow('Canvas elements or contexts not available')
+      ).toThrow('Canvas elements or contexts not available')
     })
 
-    it('should throw error when context missing', async () => {
+    it('should throw error when context missing', () => {
       const manager = useCanvasManager()
 
       mockStore.imgCtx = null! as CanvasRenderingContext2D
@@ -185,20 +185,20 @@ describe('useCanvasManager', () => {
       const origImage = createMockImage(512, 512)
       const maskImage = createMockImage(512, 512)
 
-      await expect(
+      expect(() =>
         manager.invalidateCanvas(origImage, maskImage, null)
-      ).rejects.toThrow('Canvas elements or contexts not available')
+      ).toThrow('Canvas elements or contexts not available')
     })
   })
 
   describe('updateMaskColor', () => {
-    it('should update mask color for black blend mode', async () => {
+    it('should update mask color for black blend mode', () => {
       const manager = useCanvasManager()
 
       mockStore.maskBlendMode = MaskBlendMode.Black
       mockStore.maskColor = { r: 0, g: 0, b: 0 }
 
-      await manager.updateMaskColor()
+      manager.updateMaskColor()
 
       expect(mockStore.maskCtx.fillStyle).toBe('rgb(0, 0, 0)')
       expect(mockStore.maskCanvas.style.mixBlendMode).toBe('initial')
@@ -208,13 +208,13 @@ describe('useCanvasManager', () => {
       )
     })
 
-    it('should update mask color for white blend mode', async () => {
+    it('should update mask color for white blend mode', () => {
       const manager = useCanvasManager()
 
       mockStore.maskBlendMode = MaskBlendMode.White
       mockStore.maskColor = { r: 255, g: 255, b: 255 }
 
-      await manager.updateMaskColor()
+      manager.updateMaskColor()
 
       expect(mockStore.maskCtx.fillStyle).toBe('rgb(255, 255, 255)')
       expect(mockStore.maskCanvas.style.mixBlendMode).toBe('initial')
@@ -223,13 +223,13 @@ describe('useCanvasManager', () => {
       )
     })
 
-    it('should update mask color for negative blend mode', async () => {
+    it('should update mask color for negative blend mode', () => {
       const manager = useCanvasManager()
 
       mockStore.maskBlendMode = MaskBlendMode.Negative
       mockStore.maskColor = { r: 255, g: 255, b: 255 }
 
-      await manager.updateMaskColor()
+      manager.updateMaskColor()
 
       expect(mockStore.maskCanvas.style.mixBlendMode).toBe('difference')
       expect(mockStore.maskCanvas.style.opacity).toBe('1')
@@ -238,14 +238,14 @@ describe('useCanvasManager', () => {
       )
     })
 
-    it('should update all pixels with mask color', async () => {
+    it('should update all pixels with mask color', () => {
       const manager = useCanvasManager()
 
       mockStore.maskColor = { r: 128, g: 64, b: 32 }
       mockStore.maskCanvas.width = 100
       mockStore.maskCanvas.height = 100
 
-      await manager.updateMaskColor()
+      manager.updateMaskColor()
 
       for (let i = 0; i < mockImageData.data.length; i += 4) {
         expect(mockImageData.data[i]).toBe(128)
@@ -260,39 +260,39 @@ describe('useCanvasManager', () => {
       )
     })
 
-    it('should return early when canvas missing', async () => {
+    it('should return early when canvas missing', () => {
       const manager = useCanvasManager()
 
       mockStore.maskCanvas = null! as HTMLCanvasElement
 
-      await manager.updateMaskColor()
+      manager.updateMaskColor()
 
       expect(mockStore.maskCtx.getImageData).not.toHaveBeenCalled()
     })
 
-    it('should return early when context missing', async () => {
+    it('should return early when context missing', () => {
       const manager = useCanvasManager()
 
       mockStore.maskCtx = null! as CanvasRenderingContext2D
 
-      await manager.updateMaskColor()
+      manager.updateMaskColor()
 
       expect(mockStore.canvasBackground.style.backgroundColor).toBe('')
     })
 
-    it('should handle different opacity values', async () => {
+    it('should handle different opacity values', () => {
       const manager = useCanvasManager()
 
       mockStore.maskOpacity = 0.5
 
-      await manager.updateMaskColor()
+      manager.updateMaskColor()
 
       expect(mockStore.maskCanvas.style.opacity).toBe('0.5')
     })
   })
 
   describe('prepareMask', () => {
-    it('should invert mask alpha', async () => {
+    it('should invert mask alpha', () => {
       const manager = useCanvasManager()
 
       for (let i = 0; i < mockImageData.data.length; i += 4) {
@@ -302,14 +302,14 @@ describe('useCanvasManager', () => {
       const origImage = createMockImage(100, 100)
       const maskImage = createMockImage(100, 100)
 
-      await manager.invalidateCanvas(origImage, maskImage, null)
+      manager.invalidateCanvas(origImage, maskImage, null)
 
       for (let i = 0; i < mockImageData.data.length; i += 4) {
         expect(mockImageData.data[i + 3]).toBe(127)
       }
     })
 
-    it('should apply mask color to all pixels', async () => {
+    it('should apply mask color to all pixels', () => {
       const manager = useCanvasManager()
 
       mockStore.maskColor = { r: 100, g: 150, b: 200 }
@@ -317,7 +317,7 @@ describe('useCanvasManager', () => {
       const origImage = createMockImage(100, 100)
       const maskImage = createMockImage(100, 100)
 
-      await manager.invalidateCanvas(origImage, maskImage, null)
+      manager.invalidateCanvas(origImage, maskImage, null)
 
       for (let i = 0; i < mockImageData.data.length; i += 4) {
         expect(mockImageData.data[i]).toBe(100)
@@ -326,13 +326,13 @@ describe('useCanvasManager', () => {
       }
     })
 
-    it('should set composite operation', async () => {
+    it('should set composite operation', () => {
       const manager = useCanvasManager()
 
       const origImage = createMockImage(100, 100)
       const maskImage = createMockImage(100, 100)
 
-      await manager.invalidateCanvas(origImage, maskImage, null)
+      manager.invalidateCanvas(origImage, maskImage, null)
 
       expect(mockStore.maskCtx.globalCompositeOperation).toBe('source-over')
     })

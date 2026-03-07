@@ -1,12 +1,7 @@
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode } from './LGraphNode'
 import { LiteGraphGlobal } from './LiteGraphGlobal'
-import type {
-  ConnectingLink,
-  IContextMenuOptions,
-  Point,
-  Size
-} from './interfaces'
+import type { ConnectingLink, IContextMenuOptions, Size } from './interfaces'
 import { loadPolyfills } from './polyfills'
 import type { CanvasEventDetail } from './types/events'
 import type { RenderShape, TitleMode } from './types/globalEnums'
@@ -24,8 +19,6 @@ loadPolyfills()
 // Type definitions for litegraph.js 0.7.0
 // Project: litegraph.js
 // Definitions by: NateScarlet <https://github.com/NateScarlet>
-/** @deprecated Use {@link Point} instead. */
-export type Vector2 = Point
 
 interface IContextMenuItem {
   content: string

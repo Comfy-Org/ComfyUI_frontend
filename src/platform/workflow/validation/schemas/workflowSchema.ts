@@ -301,7 +301,7 @@ const zBaseExportableGraph = z.object({
 })
 
 /** Schema version 0.4 */
-export const zComfyWorkflow = zBaseExportableGraph
+const zComfyWorkflow = zBaseExportableGraph
   .extend({
     id: z.string().uuid().optional(),
     revision: z.number().optional(),
@@ -353,7 +353,7 @@ interface ComfyWorkflow1BaseOutput extends ComfyWorkflow1BaseType {
 }
 
 /** Schema version 1 */
-export const zComfyWorkflow1 = zBaseExportableGraph
+const zComfyWorkflow1 = zBaseExportableGraph
   .extend({
     id: z.string().uuid().optional(),
     revision: z.number().optional(),

@@ -45,19 +45,19 @@ export const usdToCredits = (usd: number): number =>
 export const creditsToUsd = (credits: number): number =>
   Math.round((credits / CREDITS_PER_USD) * 100) / 100
 
-export type FormatOptions = {
+type FormatOptions = {
   value: number
   locale?: string
   numberOptions?: Intl.NumberFormatOptions
 }
 
-export type FormatFromCentsOptions = {
+type FormatFromCentsOptions = {
   cents: number
   locale?: string
   numberOptions?: Intl.NumberFormatOptions
 }
 
-export type FormatFromUsdOptions = {
+type FormatFromUsdOptions = {
   usd: number
   locale?: string
   numberOptions?: Intl.NumberFormatOptions
@@ -113,13 +113,3 @@ export const formatUsdFromCents = ({
     locale,
     numberOptions
   })
-
-/**
- * Clamps a USD value to the allowed range for credit purchases
- * @param value - The USD amount to clamp
- * @returns The clamped value between $1 and $1000, or 0 if NaN
- */
-export const clampUsd = (value: number): number => {
-  if (Number.isNaN(value)) return 0
-  return Math.min(1000, Math.max(1, value))
-}

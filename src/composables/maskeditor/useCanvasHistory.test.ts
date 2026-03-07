@@ -1,16 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'
 
-// Define the store shape to avoid 'any' and cast to the expected type
-interface MaskEditorStoreState {
-  maskCanvas: HTMLCanvasElement | null
-  rgbCanvas: HTMLCanvasElement | null
-  imgCanvas: HTMLCanvasElement | null
-  maskCtx: CanvasRenderingContext2D | null
-  rgbCtx: CanvasRenderingContext2D | null
-  imgCtx: CanvasRenderingContext2D | null
-}
+import type { CanvasLayers } from '@/composables/maskeditor/useCanvasHistory'
+import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'
 
 // Use vi.hoisted to create isolated mock state container
 const mockRefs = vi.hoisted(() => ({
@@ -22,48 +14,26 @@ const mockRefs = vi.hoisted(() => ({
   imgCtx: null as CanvasRenderingContext2D | null
 }))
 
-const mockStore: MaskEditorStoreState = {
+const mockLayers: CanvasLayers = {
   get maskCanvas() {
     return mockRefs.maskCanvas
-  },
-  set maskCanvas(val) {
-    mockRefs.maskCanvas = val
   },
   get rgbCanvas() {
     return mockRefs.rgbCanvas
   },
-  set rgbCanvas(val) {
-    mockRefs.rgbCanvas = val
-  },
   get imgCanvas() {
     return mockRefs.imgCanvas
-  },
-  set imgCanvas(val) {
-    mockRefs.imgCanvas = val
   },
   get maskCtx() {
     return mockRefs.maskCtx
   },
-  set maskCtx(val) {
-    mockRefs.maskCtx = val
-  },
   get rgbCtx() {
     return mockRefs.rgbCtx
   },
-  set rgbCtx(val) {
-    mockRefs.rgbCtx = val
-  },
   get imgCtx() {
     return mockRefs.imgCtx
-  },
-  set imgCtx(val) {
-    mockRefs.imgCtx = val
   }
 }
-
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
 
 // Mock ImageBitmap using safe global augmentation pattern
 if (typeof globalThis.ImageBitmap === 'undefined') {
@@ -140,14 +110,14 @@ describe('useCanvasHistory', () => {
 
   describe('initialization', () => {
     it('should initialize with default values', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       expect(history.canUndo.value).toBe(false)
       expect(history.canRedo.value).toBe(false)
     })
 
     it('should save initial state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
 
@@ -173,7 +143,7 @@ describe('useCanvasHistory', () => {
         height: 0
       } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
       history.saveInitialState()
 
       expect(rafSpy).toHaveBeenCalled()
@@ -189,7 +159,7 @@ describe('useCanvasHistory', () => {
 
       mockRefs.maskCtx = null
 
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
       history.saveInitialState()
 
       expect(rafSpy).toHaveBeenCalled()
@@ -213,7 +183,7 @@ describe('useCanvasHistory', () => {
 
   describe('saveState', () => {
     it('should save a new state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       vi.mocked(mockRefs.maskCtx!.getImageData).mockClear()
@@ -234,7 +204,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should clear redo states when saving new state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -249,7 +219,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should respect maxStates limit', () => {
-      const history = useCanvasHistory(3)
+      const history = useCanvasHistory(mockLayers, 3)
 
       history.saveInitialState()
       history.saveState()
@@ -269,7 +239,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should call saveInitialState if not initialized', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveState()
 
@@ -279,7 +249,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should not save state if context is missing', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
 
@@ -299,7 +269,7 @@ describe('useCanvasHistory', () => {
 
   describe('undo', () => {
     it('should undo to previous state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -314,7 +284,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should not undo when no undo states available', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
 
@@ -330,7 +300,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should undo multiple times', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -348,7 +318,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should not undo beyond first state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -369,7 +339,7 @@ describe('useCanvasHistory', () => {
 
   describe('redo', () => {
     it('should redo to next state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -389,7 +359,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should not redo when no redo states available', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
 
@@ -405,7 +375,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should redo multiple times', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -427,7 +397,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should not redo beyond last state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -449,7 +419,7 @@ describe('useCanvasHistory', () => {
 
   describe('clearStates', () => {
     it('should clear all states', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -462,7 +432,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should allow saving initial state after clear', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.clearStates()
@@ -481,13 +451,13 @@ describe('useCanvasHistory', () => {
 
   describe('canUndo computed', () => {
     it('should be false with no states', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       expect(history.canUndo.value).toBe(false)
     })
 
     it('should be false with only initial state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
 
@@ -495,7 +465,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should be true after saving a state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -504,7 +474,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should be false after undoing to first state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -516,7 +486,7 @@ describe('useCanvasHistory', () => {
 
   describe('canRedo computed', () => {
     it('should be false with no undo', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -525,7 +495,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should be true after undo', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -535,7 +505,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should be false after redo to last state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -546,7 +516,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should be false after saving new state', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -562,7 +532,7 @@ describe('useCanvasHistory', () => {
 
   describe('restoreState', () => {
     it('should not restore if context is missing', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -583,7 +553,7 @@ describe('useCanvasHistory', () => {
 
   describe('edge cases', () => {
     it('should handle rapid state saves', async () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
 
@@ -596,7 +566,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should handle maxStates of 1', () => {
-      const history = useCanvasHistory(1)
+      const history = useCanvasHistory(mockLayers, 1)
 
       history.saveInitialState()
       history.saveState()
@@ -605,7 +575,7 @@ describe('useCanvasHistory', () => {
     })
 
     it('should handle undo/redo cycling', () => {
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
       history.saveState()
@@ -629,7 +599,7 @@ describe('useCanvasHistory', () => {
         } as Partial<HTMLCanvasElement> as HTMLCanvasElement
       }
 
-      const history = useCanvasHistory()
+      const history = useCanvasHistory(mockLayers)
 
       history.saveInitialState()
 

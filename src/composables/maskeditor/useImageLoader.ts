@@ -35,13 +35,9 @@ function useImageLoaderInternal() {
 
     store.image = baseImage
 
-    await canvasManager.invalidateCanvas(
-      baseImage,
-      maskImage,
-      paintImage || null
-    )
+    canvasManager.invalidateCanvas(baseImage, maskImage, paintImage || null)
 
-    await canvasManager.updateMaskColor()
+    canvasManager.updateMaskColor()
 
     return baseImage
   }

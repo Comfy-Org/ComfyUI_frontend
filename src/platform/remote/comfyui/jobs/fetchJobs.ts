@@ -153,9 +153,7 @@ export async function extractWorkflow(
   const rawWorkflow = parsed.data.extra_data?.extra_pnginfo?.workflow
   if (!rawWorkflow) return undefined
 
-  const validated = await validateComfyWorkflow(rawWorkflow, (error) => {
-    console.warn('[extractWorkflow] Workflow validation failed:', error)
-  })
+  const validated = await validateComfyWorkflow(rawWorkflow)
 
   return validated ?? undefined
 }

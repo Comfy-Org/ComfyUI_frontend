@@ -79,8 +79,8 @@ vi.mock('@/scripts/api', () => ({
 
 const downloadBlobMock = vi.fn()
 vi.mock('@/scripts/utils', () => ({
-  downloadBlob: (filename: string, blob: Blob) =>
-    downloadBlobMock(filename, blob)
+  downloadBlob: (blob: Blob, filename: string) =>
+    downloadBlobMock(blob, filename)
 }))
 
 const dialogServiceMock = {
@@ -594,7 +594,7 @@ describe('useJobMenu', () => {
 
     expect(dialogServiceMock.prompt).not.toHaveBeenCalled()
     expect(downloadBlobMock).toHaveBeenCalledTimes(1)
-    const [filename, blob] = downloadBlobMock.mock.calls[0]
+    const [blob, filename] = downloadBlobMock.mock.calls[0]
     expect(filename).toBe('Job 7.json')
     await expect(blob.text()).resolves.toBe(
       JSON.stringify({ foo: 'bar' }, null, 2)
@@ -621,7 +621,7 @@ describe('useJobMenu', () => {
       message: expect.stringContaining('workflowService.enterFilename'),
       defaultValue: 'Job job-1.json'
     })
-    const [filename] = downloadBlobMock.mock.calls[0]
+    const [, filename] = downloadBlobMock.mock.calls[0]
     expect(filename).toBe('custom-name.json')
   })
 
@@ -642,7 +642,7 @@ describe('useJobMenu', () => {
     await entry?.onClick?.()
 
     expect(appendJsonExtMock).toHaveBeenCalledWith('existing.json')
-    const [filename] = downloadBlobMock.mock.calls[0]
+    const [, filename] = downloadBlobMock.mock.calls[0]
     expect(filename).toBe('existing.json')
   })
 

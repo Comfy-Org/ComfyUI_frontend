@@ -56,15 +56,12 @@ export function useLazyPagination<T>(
     return Math.ceil(itemData.length / itemsPerPage)
   })
 
-  const loadNextPage = async () => {
+  const loadNextPage = () => {
     if (isLoading.value || !hasMoreItems.value) return
 
     isLoading.value = true
     const loadedPagesArray = Array.from(loadedPages.value)
     const nextPage = Math.max(...loadedPagesArray, 0) + 1
-
-    // Simulate network delay
-    // await new Promise((resolve) => setTimeout(resolve, 5000))
 
     const newLoadedPages = new Set(loadedPages.value)
     newLoadedPages.add(nextPage)

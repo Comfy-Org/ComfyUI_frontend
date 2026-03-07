@@ -39,7 +39,6 @@ import type {
   ConnectingLink,
   ContextMenuDivElement,
   DefaultConnectionColors,
-  Dictionary,
   Direction,
   IBoundaryNodes,
   IColorable,
@@ -100,7 +99,7 @@ import type {
   ISerialisedNode,
   SubgraphIO
 } from './types/serialisation'
-import type { NeverNever, PickNevers } from './types/utility'
+import type { OmitNeverProps, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
@@ -275,7 +274,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   static DEFAULT_EVENT_LINK_COLOR = '#A86'
 
   /** Link type to colour dictionary. */
-  static link_type_colors: Dictionary<string> = {
+  static link_type_colors: Record<string, string> = {
     '-1': LGraphCanvas.DEFAULT_EVENT_LINK_COLOR,
     number: '#AAA',
     node: '#DCA'
@@ -345,7 +344,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     | undefined
 
   /** Dispatches a custom event on the canvas. */
-  dispatch<T extends keyof NeverNever<LGraphCanvasEventMap>>(
+  dispatch<T extends keyof OmitNeverProps<LGraphCanvasEventMap>>(
     type: T,
     detail: LGraphCanvasEventMap[T]
   ): boolean
@@ -537,8 +536,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     output_on: string
   }
 
-  default_connection_color_byType: Dictionary<CanvasColour>
-  default_connection_color_byTypeOff: Dictionary<CanvasColour>
+  default_connection_color_byType: Record<string, CanvasColour>
+  default_connection_color_byTypeOff: Record<string, CanvasColour>
 
   /** Gets link colours. Extremely basic impl. until the legacy object dictionaries are removed. */
   colourGetter: DefaultConnectionColors = {
@@ -653,7 +652,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   render_time = 0
   fps = 0
   /** @deprecated See {@link LGraphCanvas.selectedItems} */
-  selected_nodes: Dictionary<LGraphNode> = {}
+  selected_nodes: Record<string, LGraphNode> = {}
   /** All selected nodes, groups, and reroutes */
   selectedItems: Set<Positionable> = new Set()
   /** The group currently being resized. */
@@ -669,7 +668,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   private _visible_node_ids: Set<NodeId> = new Set()
   node_over?: LGraphNode
   node_capturing_input?: LGraphNode | null
-  highlighted_links: Dictionary<boolean> = {}
+  highlighted_links: Record<string, boolean> = {}
 
   private _visibleReroutes: Set<Reroute> = new Set()
 
@@ -766,7 +765,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** called after moving a node @deprecated Does not handle multi-node move, and can return the wrong node. */
   onNodeMoved?: (node_dragged: LGraphNode | undefined) => void
   /** @deprecated Called with the deprecated {@link selected_nodes} when the selection changes. Replacement not yet impl. */
-  onSelectionChange?: (selected: Dictionary<Positionable>) => void
+  onSelectionChange?: (selected: Record<string, Positionable>) => void
   /** called when rendering a tooltip */
   onDrawLinkTooltip?: (
     ctx: CanvasRenderingContext2D,
@@ -1030,7 +1029,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @returns
    */
   static getBoundaryNodes(
-    nodes: LGraphNode[] | Dictionary<LGraphNode>
+    nodes: LGraphNode[] | Record<string, LGraphNode>
   ): NullableProperties<IBoundaryNodes> {
     const _nodes = Array.isArray(nodes) ? nodes : Object.values(nodes)
     return (
@@ -1050,7 +1049,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param align_to Node to align to (if null, align to the furthest node in the given direction)
    */
   static alignNodes(
-    nodes: Dictionary<LGraphNode>,
+    nodes: Record<string, LGraphNode>,
     direction: Direction,
     align_to?: LGraphNode
   ): void {
@@ -3966,7 +3965,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): ClipboardPasteResult | undefined {
     const data = localStorage.getItem('litegrapheditor_clipboard')
     if (!data) return
-    return this._deserializeItems(JSON.parse(data), options)
+    let parsed: ClipboardItems
+    try {
+      parsed = JSON.parse(data)
+    } catch {
+      console.warn('Failed to parse clipboard data')
+      return
+    }
+    return this._deserializeItems(parsed, options)
   }
 
   _deserializeItems(
@@ -7170,7 +7176,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         for (let iK = 0; iK < nSlots; iK++) {
           const opt = document.createElement('option')
           opt.value = aSlots[iK]
-          opt.innerHTML = aSlots[iK]
+          opt.textContent = aSlots[iK]
           selIn.append(opt)
           if (
             // @ts-expect-error Property missing from interface definition
@@ -7197,7 +7203,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         for (const aSlot of aSlots) {
           const opt = document.createElement('option')
           opt.value = aSlot
-          opt.innerHTML = aSlot
+          opt.textContent = aSlot
           selOut.append(opt)
           if (
             options.type_filter_out !== false &&
@@ -7374,7 +7380,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       timeout = null
       let str = input.value
       first = null
-      helper.innerHTML = ''
+      helper.replaceChildren()
       if (!str && !options.show_all_if_empty) return
 
       if (that.onSearchBox) {
@@ -7662,8 +7668,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value = Number(value)
       }
       if (type == 'array' || type == 'object') {
-        // @ts-expect-error JSON.parse doesn't care.
-        value = JSON.parse(value)
+        try {
+          // @ts-expect-error JSON.parse doesn't care.
+          value = JSON.parse(value)
+        } catch {
+          console.warn(`Failed to parse property "${property}" as ${type}`)
+          return
+        }
       }
       node.properties[property] = value
       if (node.graph) {
@@ -7802,7 +7813,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         options.height + (typeof options.height === 'number' ? 'px' : '')
     if (options.closable) {
       const close = document.createElement('span')
-      close.innerHTML = '&#10005;'
+      close.textContent = '\u2715'
       close.classList.add('close')
       close.addEventListener('click', function () {
         root.close()
@@ -7848,7 +7859,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     root.clear = function () {
-      this.content.innerHTML = ''
+      this.content.replaceChildren()
     }
 
     root.addHTML = function (
@@ -8022,7 +8033,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const inner_refresh = () => {
       // clear
-      panel.content.innerHTML = ''
+      panel.content.replaceChildren()
       panel.addHTML(
         // @ts-expect-error - desc property
         `<span class='node_type'>${node.type}</span><span class='node_desc'>${node.constructor.desc || ''}</span><span class='separator'></span>`
@@ -8118,7 +8129,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.onShowCustomPanelInfo?.(panel)
 
       // clear
-      panel.footer.innerHTML = ''
+      panel.footer.replaceChildren()
       panel
         .addButton('Delete', function () {
           if (node.block_delete) return
@@ -8134,9 +8145,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       panel.classList.remove('settings')
       panel.classList.add('centered')
 
-      panel.alt_content.innerHTML = "<textarea class='code'></textarea>"
-      const textarea: HTMLTextAreaElement =
-        panel.alt_content.querySelector('textarea')!
+      const textarea = document.createElement('textarea')
+      textarea.className = 'code'
+      panel.alt_content.replaceChildren(textarea)
       const fDoneWith = function () {
         panel.toggleAltContent(false)
         panel.toggleFooterVisibility(true)

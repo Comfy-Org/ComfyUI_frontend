@@ -18,7 +18,7 @@ export enum SlotShape {
   Arrow = RenderShape.ARROW,
   Grid = RenderShape.GRID,
   Circle = RenderShape.CIRCLE,
-  HollowCircle = RenderShape.HollowCircle
+  HollowCircle = RenderShape.HOLLOW_CIRCLE
 }
 
 /** @see LinkDirection */

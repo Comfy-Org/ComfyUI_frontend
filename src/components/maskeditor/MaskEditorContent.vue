@@ -149,7 +149,7 @@ const initUI = async () => {
     const imageLoader = useImageLoader()
     const image = await imageLoader.loadImages()
 
-    await panZoom.initializeCanvasPanZoom(
+    panZoom.initializeCanvasPanZoom(
       image,
       containerRef.value,
       toolPanelRef.value?.$el as HTMLElement | undefined,
@@ -181,9 +181,9 @@ onMounted(() => {
   keyboard.addListeners()
 
   if (containerRef.value) {
-    resizeObserver = new ResizeObserver(async () => {
+    resizeObserver = new ResizeObserver(() => {
       if (panZoom) {
-        await panZoom.invalidatePanZoom()
+        panZoom.invalidatePanZoom()
       }
     })
     resizeObserver.observe(containerRef.value)

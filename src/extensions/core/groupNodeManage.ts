@@ -8,11 +8,16 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-import { type ComfyApp, app } from '../../scripts/app'
-import { $el } from '../../scripts/ui'
-import { ComfyDialog } from '../../scripts/ui/dialog'
-import { DraggableList } from '../../scripts/ui/draggableList'
-import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
+import type { ComfyApp } from '@/scripts/app'
+import { app } from '@/scripts/app'
+import { $el } from '@/scripts/ui'
+import { ComfyDialog } from '@/scripts/ui/dialog'
+import { DraggableList } from '@/scripts/ui/draggableList'
+import type { GroupNodeConfig } from './groupNode'
+
+// Lazy import to break circular dependency with groupNode.ts
+// These are only called at runtime (in methods), not at module init time.
+const lazyGroupNode = () => import('./groupNode')
 import './groupNodeManage.css'
 
 const ORDER: symbol = Symbol()
@@ -112,16 +117,17 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     this.changeTab(this.selectedTab)
   }
 
-  getGroupData() {
+  async getGroupData() {
     this.groupNodeType = LiteGraph.registered_node_types[
       `${PREFIX}${SEPARATOR}` + this.selectedGroup
     ] as unknown as LGraphNodeConstructor<LGraphNode>
+    const { GroupNodeHandler } = await lazyGroupNode()
     this.groupData = GroupNodeHandler.getGroupData(this.groupNodeType)!
   }
 
-  changeGroup(group: string, reset = true): void {
+  async changeGroup(group: string, reset = true): Promise<void> {
     this.selectedGroup = group
-    this.getGroupData()
+    await this.getGroupData()
 
     const nodes = this.groupData.nodeData.nodes
     this.nodeItems = nodes.map(
@@ -344,7 +350,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     return !!outputs.length
   }
 
-  override show(groupNodeType?: string | HTMLElement | HTMLElement[]): void {
+  override show(groupNodeType?: string | HTMLElement | HTMLElement[]) {
     // Extract string type - this method repurposes the show signature
     const nodeType =
       typeof groupNodeType === 'string' ? groupNodeType : undefined
@@ -392,8 +398,8 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
         $el(
           'select',
           {
-            onchange: (e: Event) => {
-              this.changeGroup((e.target as HTMLSelectElement).value)
+            onchange: async (e: Event) => {
+              await this.changeGroup((e.target as HTMLSelectElement).value)
             }
           },
           groupNodes.map((g) =>
@@ -539,6 +545,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
                 if (groupTypeNodes) recreateNodes.push(...groupTypeNodes)
               }
 
+              const { GroupNodeConfig } = await lazyGroupNode()
               await GroupNodeConfig.registerFromWorkflow(types, [])
 
               for (const node of recreateNodes) {
@@ -547,7 +554,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
 
               this.modifications = {}
               this.app.canvas.setDirty(true, true)
-              this.changeGroup(this.selectedGroup!, false)
+              await this.changeGroup(this.selectedGroup!, false)
             }
           },
           'Save'
@@ -561,13 +568,13 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     ])
 
     this.element.replaceChildren(outer)
-    this.changeGroup(
+    this.element.showModal()
+    void this.changeGroup(
       nodeType
         ? (groupNodes.find((g) => `${PREFIX}${SEPARATOR}${g}` === nodeType) ??
             groupNodes[0])
         : groupNodes[0]
     )
-    this.element.showModal()
 
     this.element.addEventListener('close', () => {
       this.draggable?.dispose()

@@ -82,59 +82,51 @@ export const useExtensionService = () => {
       })()
     }
 
-    if (extension.onAuthUserResolved) {
-      const { onUserResolved } = useCurrentUser()
-      const handleUserResolved = wrapWithErrorHandlingAsync(
-        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, app),
+    function registerAuthHook<T extends unknown[]>(
+      hookName: string,
+      hookFn: ((...args: T) => unknown) | undefined,
+      subscribe: (cb: (...args: T) => void) => void
+    ) {
+      if (!hookFn) return
+      const handler = wrapWithErrorHandlingAsync(
+        (...args: T) => hookFn(...args),
         (error) => {
           console.error('[Extension Auth Hook Error]', {
             extension: extension.name,
-            hook: 'onAuthUserResolved',
+            hook: hookName,
             error
           })
           toastErrorHandler(error)
         }
       )
-      onUserResolved((user) => {
-        void handleUserResolved(user)
+      subscribe((...args: T) => {
+        void handler(...args)
       })
     }
 
-    if (extension.onAuthTokenRefreshed) {
-      const { onTokenRefreshed } = useCurrentUser()
-      const handleTokenRefreshed = wrapWithErrorHandlingAsync(
-        () => extension.onAuthTokenRefreshed?.(),
-        (error) => {
-          console.error('[Extension Auth Hook Error]', {
-            extension: extension.name,
-            hook: 'onAuthTokenRefreshed',
-            error
-          })
-          toastErrorHandler(error)
-        }
-      )
-      onTokenRefreshed(() => {
-        void handleTokenRefreshed()
-      })
-    }
+    const { onUserResolved, onTokenRefreshed, onUserLogout } = useCurrentUser()
 
-    if (extension.onAuthUserLogout) {
-      const { onUserLogout } = useCurrentUser()
-      const handleUserLogout = wrapWithErrorHandlingAsync(
-        () => extension.onAuthUserLogout?.(),
-        (error) => {
-          console.error('[Extension Auth Hook Error]', {
-            extension: extension.name,
-            hook: 'onAuthUserLogout',
-            error
-          })
-          toastErrorHandler(error)
-        }
-      )
-      onUserLogout(() => {
-        void handleUserLogout()
-      })
-    }
+    registerAuthHook(
+      'onAuthUserResolved',
+      extension.onAuthUserResolved
+        ? (user: AuthUserInfo) => extension.onAuthUserResolved!(user, app)
+        : undefined,
+      onUserResolved
+    )
+    registerAuthHook(
+      'onAuthTokenRefreshed',
+      extension.onAuthTokenRefreshed
+        ? () => extension.onAuthTokenRefreshed!()
+        : undefined,
+      onTokenRefreshed
+    )
+    registerAuthHook(
+      'onAuthUserLogout',
+      extension.onAuthUserLogout
+        ? () => extension.onAuthUserLogout!()
+        : undefined,
+      onUserLogout
+    )
   }
 
   type RemoveLastAppParam<T> = T extends (

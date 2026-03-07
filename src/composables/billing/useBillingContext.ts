@@ -190,39 +190,35 @@ function useBillingContextInternal(): BillingContext {
     }
   }
 
-  async function fetchStatus(): Promise<void> {
+  function fetchStatus(): Promise<void> {
     return activeContext.value.fetchStatus()
   }
 
-  async function fetchBalance(): Promise<void> {
+  function fetchBalance(): Promise<void> {
     return activeContext.value.fetchBalance()
   }
 
-  async function subscribe(
-    planSlug: string,
-    returnUrl?: string,
-    cancelUrl?: string
-  ) {
+  function subscribe(planSlug: string, returnUrl?: string, cancelUrl?: string) {
     return activeContext.value.subscribe(planSlug, returnUrl, cancelUrl)
   }
 
-  async function previewSubscribe(planSlug: string) {
+  function previewSubscribe(planSlug: string) {
     return activeContext.value.previewSubscribe(planSlug)
   }
 
-  async function manageSubscription() {
+  function manageSubscription() {
     return activeContext.value.manageSubscription()
   }
 
-  async function cancelSubscription() {
+  function cancelSubscription() {
     return activeContext.value.cancelSubscription()
   }
 
-  async function fetchPlans() {
+  function fetchPlans() {
     return activeContext.value.fetchPlans()
   }
 
-  async function requireActiveSubscription() {
+  function requireActiveSubscription() {
     return activeContext.value.requireActiveSubscription()
   }
 

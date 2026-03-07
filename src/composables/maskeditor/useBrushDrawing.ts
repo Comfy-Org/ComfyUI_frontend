@@ -32,21 +32,12 @@ const saveBrushToCache = debounce(function (key: string, brush: Brush): void {
   }
 }, 300)
 
-/**
- * Loads brush settings from local storage.
- * @param key - The storage key.
- * @returns The brush settings object or null if not found.
- */
 function loadBrushFromCache(key: string): Brush | null {
   try {
     const brushString = getStorageValue(key)
-    if (brushString) {
-      return JSON.parse(brushString) as Brush
-    } else {
-      return null
-    }
-  } catch (error) {
-    console.error('Failed to load brush from cache:', error)
+    if (brushString) return JSON.parse(brushString) as Brush
+    return null
+  } catch {
     return null
   }
 }
@@ -220,12 +211,12 @@ export function useBrushDrawing(initialSettings?: {
   // Sync GPU on Undo/Redo
   watch(
     () => store.canvasHistory.currentStateIndex,
-    async () => {
+    () => {
       // Skip update if state was just saved
       if (isSavingHistory.value) return
 
       // Update GPU textures to match restored canvas state
-      await updateGPUFromCanvas()
+      updateGPUFromCanvas()
 
       // Clear preview to remove artifacts
       if (renderer && previewContext) {
@@ -238,7 +229,7 @@ export function useBrushDrawing(initialSettings?: {
 
   watch(
     () => store.gpuTexturesNeedRecreation,
-    async (needsRecreation) => {
+    (needsRecreation) => {
       if (
         !needsRecreation ||
         !device ||
@@ -303,7 +294,7 @@ export function useBrushDrawing(initialSettings?: {
           )
         } else {
           // Fallback: read from canvas
-          await updateGPUFromCanvas()
+          updateGPUFromCanvas()
         }
 
         // Update preview canvas if it exists
@@ -426,7 +417,7 @@ export function useBrushDrawing(initialSettings?: {
   /**
    * Updates the GPU textures from the current canvas state.
    */
-  async function updateGPUFromCanvas(): Promise<void> {
+  function updateGPUFromCanvas(): void {
     if (
       !device ||
       !maskTexture ||
@@ -523,7 +514,7 @@ export function useBrushDrawing(initialSettings?: {
       })
 
       // Upload initial data
-      await updateGPUFromCanvas()
+      updateGPUFromCanvas()
 
       console.warn('✅ GPU resources initialized successfully')
 
@@ -810,7 +801,7 @@ export function useBrushDrawing(initialSettings?: {
    * Draws a point using the stroke processor for smoothing.
    * @param point - The point to draw.
    */
-  async function drawWithBetterSmoothing(point: Point): Promise<void> {
+  function drawWithBetterSmoothing(point: Point): void {
     if (!strokeProcessor) return
 
     // Process point to generate equidistant points
@@ -964,7 +955,7 @@ export function useBrushDrawing(initialSettings?: {
       strokeProcessor = new StrokeProcessor(targetSpacing)
 
       // Process first point
-      await drawWithBetterSmoothing(coords_canvas)
+      drawWithBetterSmoothing(coords_canvas)
 
       smoothingLastDrawTime.value = new Date()
     } catch (error) {
@@ -986,18 +977,17 @@ export function useBrushDrawing(initialSettings?: {
     const currentTool = store.currentTool
 
     if (diff > 20 && !isDrawing.value) {
-      requestAnimationFrame(async () => {
+      requestAnimationFrame(() => {
         if (!isDrawing.value) return // Fix: Prevent race condition
         try {
           initShape(CompositionOperation.SourceOver)
-          await gpuDrawPoint(coords_canvas)
-          // smoothingCordsArray.value.push(coords_canvas) // Removed in favor of StrokeProcessor
+          gpuDrawPoint(coords_canvas)
         } catch (error) {
           console.error('[useBrushDrawing] Drawing error:', error)
         }
       })
     } else {
-      requestAnimationFrame(async () => {
+      requestAnimationFrame(() => {
         if (!isDrawing.value) return // Fix: Prevent race condition
         try {
           if (currentTool === 'eraser' || event.buttons === 2) {
@@ -1005,7 +995,7 @@ export function useBrushDrawing(initialSettings?: {
           } else {
             initShape(CompositionOperation.SourceOver)
           }
-          await drawWithBetterSmoothing(coords_canvas)
+          drawWithBetterSmoothing(coords_canvas)
         } catch (error) {
           console.error('[useBrushDrawing] Drawing error:', error)
         }
@@ -1118,7 +1108,7 @@ export function useBrushDrawing(initialSettings?: {
    * Starts the brush adjustment interaction.
    * @param event - The pointer event.
    */
-  async function startBrushAdjustment(event: PointerEvent): Promise<void> {
+  function startBrushAdjustment(event: PointerEvent): void {
     event.preventDefault()
 
     const coords = { x: event.offsetX, y: event.offsetY }
@@ -1132,7 +1122,7 @@ export function useBrushDrawing(initialSettings?: {
    * Handles the brush adjustment movement.
    * @param event - The pointer event.
    */
-  async function handleBrushAdjustment(event: PointerEvent): Promise<void> {
+  function handleBrushAdjustment(event: PointerEvent): void {
     if (!initialPoint.value) {
       return
     }
@@ -1366,7 +1356,7 @@ export function useBrushDrawing(initialSettings?: {
    * @param point - The point to draw.
    * @param opacity - The opacity of the point.
    */
-  async function gpuDrawPoint(point: Point, opacity: number = 1) {
+  function gpuDrawPoint(point: Point, opacity: number = 1) {
     if (renderer) {
       const width = store.maskCanvas!.width
       const height = store.maskCanvas!.height

@@ -32,11 +32,9 @@ vi.mock('@/composables/queue/useJobActions', () => ({
 }))
 
 vi.mock('@/composables/useProgressBarBackground', () => ({
-  useProgressBarBackground: () => ({
-    progressBarPrimaryClass: 'bg-blue-500',
-    hasProgressPercent: (val: number | undefined) => typeof val === 'number',
-    progressPercentStyle: (val: number) => ({ width: `${val}%` })
-  })
+  progressBarPrimaryClass: 'bg-blue-500',
+  hasProgressPercent: (val: number | undefined) => typeof val === 'number',
+  progressPercentStyle: (val: number) => ({ width: `${val}%` })
 }))
 
 const i18n = createI18n({

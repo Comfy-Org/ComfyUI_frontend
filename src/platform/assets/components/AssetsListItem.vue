@@ -135,7 +135,14 @@
 </template>
 
 <script setup lang="ts">
-import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
+import {
+  progressBarContainerClass,
+  progressBarPrimaryClass,
+  progressBarSecondaryClass,
+  hasProgressPercent,
+  hasAnyProgressPercent,
+  progressPercentStyle
+} from '@/composables/useProgressBarBackground'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -177,13 +184,4 @@ const {
   progressTotalPercent?: number
   progressCurrentPercent?: number
 }>()
-
-const {
-  progressBarContainerClass,
-  progressBarPrimaryClass,
-  progressBarSecondaryClass,
-  hasProgressPercent,
-  hasAnyProgressPercent,
-  progressPercentStyle
-} = useProgressBarBackground()
 </script>

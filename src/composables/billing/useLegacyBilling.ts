@@ -137,11 +137,11 @@ export function useLegacyBilling(): BillingState & BillingActions {
     await legacySubscribe()
   }
 
-  async function previewSubscribe(
+  function previewSubscribe(
     _planSlug: string
   ): Promise<PreviewSubscribeResponse | null> {
     // Legacy billing doesn't support preview - returns null
-    return null
+    return Promise.resolve(null)
   }
 
   async function manageSubscription(): Promise<void> {
@@ -152,9 +152,10 @@ export function useLegacyBilling(): BillingState & BillingActions {
     await legacyManageSubscription()
   }
 
-  async function fetchPlans(): Promise<void> {
+  function fetchPlans(): Promise<void> {
     // Legacy billing doesn't have workspace-style plans
     // Plans are hardcoded in the UI for legacy subscriptions
+    return Promise.resolve()
   }
 
   async function requireActiveSubscription(): Promise<void> {

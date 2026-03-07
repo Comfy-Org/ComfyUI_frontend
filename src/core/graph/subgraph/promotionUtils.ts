@@ -228,7 +228,7 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     if (hasPreviewWidget()) continue
 
     // Nodes in CANVAS_IMAGE_PREVIEW_NODE_TYPES support a virtual $$
-    // preview widget. Eagerly promote it so getPseudoWidgetPreviewTargets
+    // preview widget. Eagerly promote it so resolvePseudoWidgetPreviewTargets
     // includes this node and onDrawBackground can call updatePreviews on it
     // once execution outputs arrive.
     if (supportsVirtualCanvasImagePreview(node)) {

@@ -69,11 +69,10 @@ function controlValueRunBefore() {
 }
 
 export function updateControlWidgetLabel(widget: IBaseWidget) {
-  if (controlValueRunBefore()) {
-    widget.label = t('g.control_before_generate')
-  } else {
-    widget.label = t('g.control_after_generate')
-  }
+  const key = controlValueRunBefore()
+    ? 'g.control_before_generate'
+    : 'g.control_after_generate'
+  widget.label = t(key)
 }
 
 export const IS_CONTROL_WIDGET = Symbol()
@@ -83,7 +82,6 @@ export function addValueControlWidget(
   node: LGraphNode,
   targetWidget: IBaseWidget,
   defaultValue?: string,
-  _values?: unknown,
   widgetName?: string,
   inputData?: InputSpec
 ): IComboWidget {
@@ -108,7 +106,7 @@ export function addValueControlWidgets(
   node: LGraphNode,
   targetWidget: IBaseWidget,
   defaultValue?: string,
-  options?: Record<string, any>,
+  options?: Record<string, unknown>,
   inputData?: InputSpec
 ): [IComboWidget, ...IStringWidget[]] {
   if (!defaultValue) defaultValue = 'randomize'
@@ -116,7 +114,7 @@ export function addValueControlWidgets(
 
   const getName = (defaultName: string, optionName: string) => {
     let name = defaultName
-    if (options[optionName]) {
+    if (typeof options[optionName] === 'string') {
       name = options[optionName]
     } else if (typeof inputData?.[1]?.[defaultName] === 'string') {
       name = inputData?.[1]?.[defaultName]

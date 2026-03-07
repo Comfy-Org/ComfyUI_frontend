@@ -121,7 +121,7 @@ import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { jobSortModes } from '@/composables/queue/useJobList'
 import type { JobSortMode } from '@/composables/queue/useJobList'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { buildTooltipConfig } from '@/utils/tooltipConfig'
 
 const {
   hideShowAssetsAction = false,

@@ -34,7 +34,6 @@ import type {
   ColorOption,
   CompassCorners,
   DefaultConnectionColors,
-  Dictionary,
   IColorable,
   IContextMenuValue,
   IFoundSlot,
@@ -280,7 +279,7 @@ export class LGraphNode
   private _concreteInputs: NodeInputSlot[] = []
   private _concreteOutputs: NodeOutputSlot[] = []
 
-  properties: Dictionary<NodeProperty | undefined> = {}
+  properties: Record<string, NodeProperty | undefined> = {}
   properties_info: INodePropertyInfo[] = []
   flags: INodeFlags = {}
   widgets?: IBaseWidget[]
@@ -1135,7 +1134,7 @@ export class LGraphNode
     const link_id = this.inputs[slot].link
     const link = this.graph._links.get(link_id)
     // bug: weird case but it happens sometimes
-    if (!link) return null
+    if (!link) return
 
     if (!force_update) return link.data
 
@@ -2144,12 +2143,6 @@ export class LGraphNode
     return false
   }
 
-  /**
-   * Checks if the provided point is inside this node's collapse button area.
-   * @param x X co-ordinate to check
-   * @param y Y co-ordinate to check
-   * @returns true if the x,y point is in the collapse button area, otherwise false
-   */
   isPointInCollapse(x: number, y: number): boolean {
     const squareLength = LiteGraph.NODE_TITLE_HEIGHT
     return isInRectangle(
@@ -2291,7 +2284,7 @@ export class LGraphNode
   findInputSlot<TReturn extends true>(
     name: string,
     returnObj?: TReturn
-  ): INodeInputSlot
+  ): INodeInputSlot | -1
   findInputSlot(name: string, returnObj: boolean = false) {
     const { inputs } = this
     if (!inputs) return -1
@@ -2317,7 +2310,7 @@ export class LGraphNode
   findOutputSlot<TReturn extends true>(
     name: string,
     returnObj?: TReturn
-  ): INodeOutputSlot
+  ): INodeOutputSlot | -1
   findOutputSlot(name: string, returnObj: boolean = false) {
     const { outputs } = this
     if (!outputs) return -1
@@ -2399,7 +2392,7 @@ export class LGraphNode
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
-  ): INodeInputSlot
+  ): INodeInputSlot | -1
   findInputSlotByType(
     type: ISlotType,
     returnObj?: boolean,
@@ -2429,7 +2422,7 @@ export class LGraphNode
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
-  ): INodeOutputSlot
+  ): INodeOutputSlot | -1
   findOutputSlotByType(
     type: ISlotType,
     returnObj?: boolean,
@@ -3800,7 +3793,7 @@ export class LGraphNode
 
       if (this.collapsed) {
         // For collapsed nodes, limit to 20 chars as before
-        displayTitle = title.substr(0, 20)
+        displayTitle = title.slice(0, 20)
       } else if (availableWidth > 0) {
         // For regular nodes, truncate based on available width
         displayTitle = truncateText(ctx, title, availableWidth)

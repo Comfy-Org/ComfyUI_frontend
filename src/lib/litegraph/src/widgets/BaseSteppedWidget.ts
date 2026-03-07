@@ -9,32 +9,11 @@ import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 export abstract class BaseSteppedWidget<
   TWidget extends IBaseWidget = IBaseWidget
 > extends BaseWidget<TWidget> {
-  /**
-   * Whether the widget can increment its value
-   * @returns `true` if the widget can increment its value, otherwise `false`
-   */
   abstract canIncrement(): boolean
-  /**
-   * Whether the widget can decrement its value
-   * @returns `true` if the widget can decrement its value, otherwise `false`
-   */
   abstract canDecrement(): boolean
-  /**
-   * Increment the value of the widget
-   * @param options The options for the widget event
-   */
   abstract incrementValue(options: WidgetEventOptions): void
-  /**
-   * Decrement the value of the widget
-   * @param options The options for the widget event
-   */
   abstract decrementValue(options: WidgetEventOptions): void
 
-  /**
-   * Draw the arrow buttons for the widget
-   * @param ctx The canvas rendering context
-   * @param width The width of the widget
-   */
   drawArrowButtons(ctx: CanvasRenderingContext2D, width: number) {
     const { height, text_color, disabledTextColor, y } = this
     const { arrowMargin, arrowWidth, margin } = BaseWidget

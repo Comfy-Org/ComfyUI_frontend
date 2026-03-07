@@ -7,9 +7,9 @@ import { useDialogService } from '@/services/dialogService'
 import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
-import { api } from '../../scripts/api'
-import { app } from '../../scripts/app'
-import { $el, ComfyDialog } from '../../scripts/ui'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { $el, ComfyDialog } from '@/scripts/ui'
 import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 
 // Adds the ability to save and add multiple nodes as a template
@@ -100,7 +100,9 @@ class ManageTemplates extends ComfyDialog {
     if (res.status === 200) {
       try {
         templates = await res.json()
-      } catch (error) {}
+      } catch {
+        // Invalid JSON in stored templates — fall through to return empty array
+      }
     } else if (res.status !== 404) {
       console.error(res.status + ' ' + res.statusText)
     }
@@ -113,8 +115,8 @@ class ManageTemplates extends ComfyDialog {
       await api.storeUserData(file, templates, { stringify: false })
     } catch (error) {
       console.error(error)
-      // @ts-expect-error fixme ts strict error
-      useToastStore().addAlert(error.message)
+      const message = error instanceof Error ? error.message : String(error)
+      useToastStore().addAlert(message)
     }
   }
 
@@ -152,7 +154,7 @@ class ManageTemplates extends ComfyDialog {
 
     const json = JSON.stringify({ templates: this.templates }, null, 2) // convert the data to a JSON string
     const blob = new Blob([json], { type: 'application/json' })
-    downloadBlob('node_templates.json', blob)
+    downloadBlob(blob, 'node_templates.json')
   }
 
   override show() {
@@ -296,7 +298,7 @@ class ManageTemplates extends ComfyDialog {
                       })
                       // @ts-expect-error fixme ts strict error
                       const name = (nameInput.value || t.name) + '.json'
-                      downloadBlob(name, blob)
+                      downloadBlob(blob, name)
                     }
                   }),
                   $el('button', {

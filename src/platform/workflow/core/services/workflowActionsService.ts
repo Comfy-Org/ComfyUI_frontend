@@ -66,7 +66,7 @@ export function useWorkflowActionsService() {
       // Convert workflow to formatted JSON
       const json = JSON.stringify(workflow, null, 2)
       const blob = new Blob([json], { type: 'application/json' })
-      downloadBlob(filename, blob)
+      downloadBlob(blob, filename)
 
       return { success: true }
     } catch (error) {

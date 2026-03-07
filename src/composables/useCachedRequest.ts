@@ -48,7 +48,7 @@ export function useCachedRequest<TParams, TResult>(
 
       return result
     } catch (err) {
-      // Set cache on error to prevent retrying bad requests
+      console.warn('Cached request failed, caching null result:', err)
       cache.set(cacheKey, null)
       return null
     } finally {
@@ -86,11 +86,11 @@ export function useCachedRequest<TParams, TResult>(
   /**
    * Cached version of the request function
    */
-  const call = async (params: TParams): Promise<TResult | null> => {
+  const call = (params: TParams): Promise<TResult | null> => {
     const cacheKey = cacheKeyFn(params)
 
     const cachedResult = cache.get(cacheKey)
-    if (cachedResult !== undefined) return cachedResult
+    if (cachedResult !== undefined) return Promise.resolve(cachedResult)
 
     const pendingRequest = pendingRequests.get(cacheKey)
     if (pendingRequest) return handlePendingRequest(pendingRequest)

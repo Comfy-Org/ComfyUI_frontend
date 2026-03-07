@@ -38,7 +38,7 @@ function isOpened(): boolean {
   return useDialogStore().isDialogOpen('global-mask-editor')
 }
 
-const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
+const changeBrushSize = (sizeChanger: (oldSize: number) => number) => {
   if (!isOpened()) return
 
   const store = useMaskEditorStore()
@@ -115,36 +115,36 @@ app.registerExtension({
       id: 'Comfy.MaskEditor.Rotate.Right',
       icon: 'pi pi-refresh',
       label: 'Rotate Right in MaskEditor',
-      function: async () => {
+      function: () => {
         if (!isOpened()) return
-        await useCanvasTransform().rotateClockwise()
+        useCanvasTransform().rotateClockwise()
       }
     },
     {
       id: 'Comfy.MaskEditor.Rotate.Left',
       icon: 'pi pi-undo',
       label: 'Rotate Left in MaskEditor',
-      function: async () => {
+      function: () => {
         if (!isOpened()) return
-        await useCanvasTransform().rotateCounterclockwise()
+        useCanvasTransform().rotateCounterclockwise()
       }
     },
     {
       id: 'Comfy.MaskEditor.Mirror.Horizontal',
       icon: 'pi pi-arrows-h',
       label: 'Mirror Horizontal in MaskEditor',
-      function: async () => {
+      function: () => {
         if (!isOpened()) return
-        await useCanvasTransform().mirrorHorizontal()
+        useCanvasTransform().mirrorHorizontal()
       }
     },
     {
       id: 'Comfy.MaskEditor.Mirror.Vertical',
       icon: 'pi pi-arrows-v',
       label: 'Mirror Vertical in MaskEditor',
-      function: async () => {
+      function: () => {
         if (!isOpened()) return
-        await useCanvasTransform().mirrorVertical()
+        useCanvasTransform().mirrorVertical()
       }
     }
   ],

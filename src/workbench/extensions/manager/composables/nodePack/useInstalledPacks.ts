@@ -43,7 +43,7 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
   // When installedPackIds changes, we need to update the nodePacks
   // But only if the IDs actually changed (not just array reference)
   whenever(installedPackIds, async (newIds) => {
-    const newIdsStr = newIds.sort().join(',')
+    const newIdsStr = [...newIds].sort((a, b) => a.localeCompare(b)).join(',')
     if (newIdsStr !== lastFetchedIds.value && !isInitializing.value) {
       lastFetchedIds.value = newIdsStr
       await startFetch()

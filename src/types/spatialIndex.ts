@@ -1,7 +1,13 @@
 /**
  * Type definitions for spatial indexing system
  */
-import type { Bounds } from '@/renderer/core/spatial/QuadTree'
+
+export interface Bounds {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
 /**
  * Debug information for a single QuadTree node
