@@ -39,6 +39,12 @@ async function viewWorkspace(workspaceId: string) {
   const success = await switchWorkspace(workspaceId)
   if (success) {
     toast.removeGroup('invite-accepted')
+  } else {
+    toast.add({
+      severity: 'error',
+      summary: t('workspace.switchFailed'),
+      life: 5000
+    })
   }
 }
 </script>
