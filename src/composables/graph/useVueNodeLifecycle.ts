@@ -142,22 +142,13 @@ function useVueNodeLifecycleIndividual() {
     }
   }
 
-  // Cleanup function for component unmounting
-  const cleanup = () => {
-    if (nodeManager.value) {
-      nodeManager.value.cleanup()
-      nodeManager.value = null
-    }
-  }
-
   return {
     nodeManager,
 
     // Lifecycle methods
     initializeNodeManager,
     disposeNodeManagerAndSyncs,
-    setupEmptyGraphListener,
-    cleanup
+    setupEmptyGraphListener
   }
 }
 
