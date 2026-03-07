@@ -151,7 +151,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           :run-button-click="linearWorkflowRef?.runButtonClick"
           :typeform-widget-id="TYPEFORM_WIDGET_ID"
         />
-        <div class="absolute top-4 left-4 z-21">
+        <div class="absolute top-2 left-4.5 z-21">
           <AppModeToolbar v-if="!isBuilderMode" />
         </div>
         <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
