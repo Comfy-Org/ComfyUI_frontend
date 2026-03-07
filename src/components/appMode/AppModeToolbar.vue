@@ -7,7 +7,6 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { isCloud } from '@/platform/distribution/types'
 import {
   openShareDialog,
@@ -43,10 +42,6 @@ function openAssets() {
 
 function showApps() {
   void commandStore.execute('Workspace.ToggleSidebarTab.apps')
-}
-
-function openTemplates() {
-  useWorkflowTemplateSelectorDialog().show('sidebar')
 }
 </script>
 
@@ -115,19 +110,6 @@ function openTemplates() {
         @click="showApps"
       >
         <i class="icon-[lucide--panels-top-left] size-4" />
-      </Button>
-      <Button
-        v-tooltip.right="{
-          value: t('sideToolbar.templates'),
-          ...tooltipOptions
-        }"
-        variant="textonly"
-        size="unset"
-        :aria-label="t('sideToolbar.templates')"
-        class="size-10"
-        @click="openTemplates"
-      >
-        <i class="icon-[comfy--template] size-4" />
       </Button>
     </div>
   </div>
