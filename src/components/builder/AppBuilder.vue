@@ -242,7 +242,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         <template #label>
           <div class="flex gap-3">
             {{ t('nodeHelpPage.inputs') }}
-            <i class="icon-[lucide--circle-alert] bg-muted-foreground" />
+            <i class="icon-[lucide--info] bg-muted-foreground" />
           </div>
         </template>
         <template #empty>
@@ -297,7 +297,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         <template #label>
           <div class="flex gap-3">
             {{ t('nodeHelpPage.outputs') }}
-            <i class="icon-[lucide--circle-alert] bg-muted-foreground" />
+            <i class="icon-[lucide--info] bg-muted-foreground" />
           </div>
         </template>
         <template #empty>
