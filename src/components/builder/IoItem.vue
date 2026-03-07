@@ -39,17 +39,22 @@ const entries = computed(() => {
 })
 </script>
 <template>
-  <div class="my-2 flex items-center-safe gap-2 rounded-lg p-2">
+  <div
+    class="my-2 flex items-center-safe gap-2 rounded-lg p-2"
+    data-testid="builder-io-item"
+  >
     <div class="drag-handle mr-auto flex min-w-0 flex-col gap-1">
       <div
         v-tooltip.left="{ value: titleTooltip, showDelay: 300 }"
-        class="truncate text-sm"
+        class="drag-handle truncate text-sm"
+        data-testid="builder-io-item-title"
         @mouseenter="titleTooltip = isTruncated($event) ? title : null"
         v-text="title"
       />
       <div
         v-tooltip.left="{ value: subTitleTooltip, showDelay: 300 }"
-        class="truncate text-xs text-muted-foreground"
+        class="drag-handle truncate text-xs text-muted-foreground"
+        data-testid="builder-io-item-subtitle"
         @mouseenter="
           subTitleTooltip = isTruncated($event) ? (subTitle ?? null) : null
         "
