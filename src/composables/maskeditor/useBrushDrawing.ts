@@ -32,21 +32,12 @@ const saveBrushToCache = debounce(function (key: string, brush: Brush): void {
   }
 }, 300)
 
-/**
- * Loads brush settings from local storage.
- * @param key - The storage key.
- * @returns The brush settings object or null if not found.
- */
 function loadBrushFromCache(key: string): Brush | null {
   try {
     const brushString = getStorageValue(key)
-    if (brushString) {
-      return JSON.parse(brushString) as Brush
-    } else {
-      return null
-    }
-  } catch (error) {
-    console.error('Failed to load brush from cache:', error)
+    if (brushString) return JSON.parse(brushString) as Brush
+    return null
+  } catch {
     return null
   }
 }

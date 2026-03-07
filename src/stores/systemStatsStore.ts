@@ -6,14 +6,7 @@ import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
 export const useSystemStatsStore = defineStore('systemStats', () => {
-  const fetchSystemStatsData = async () => {
-    try {
-      return await api.getSystemStats()
-    } catch (err) {
-      console.error('Error fetching system stats:', err)
-      throw err
-    }
-  }
+  const fetchSystemStatsData = () => api.getSystemStats()
 
   const {
     state: systemStats,
@@ -40,25 +33,10 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
 
     const os = systemStats.value.system.os.toLowerCase()
 
-    if (isDesktop) {
-      if (os.includes('windows')) {
-        return 'desktop-windows'
-      }
-      if (os.includes('darwin') || os.includes('mac')) {
-        return 'desktop-mac'
-      }
-    } else {
-      // Git/source installation
-      if (os.includes('windows')) {
-        return 'git-windows'
-      }
-      if (os.includes('darwin') || os.includes('mac')) {
-        return 'git-mac'
-      }
-      if (os.includes('linux')) {
-        return 'git-linux'
-      }
-    }
+    const prefix = isDesktop ? 'desktop' : 'git'
+    if (os.includes('windows')) return `${prefix}-windows`
+    if (os.includes('darwin') || os.includes('mac')) return `${prefix}-mac`
+    if (os.includes('linux')) return `${prefix}-linux`
 
     return 'other'
   }
