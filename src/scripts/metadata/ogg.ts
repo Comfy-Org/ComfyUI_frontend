@@ -1,5 +1,17 @@
 import type { ComfyMetadata } from '@/types/metadataTypes'
 
+/**
+ * Extracts ComfyUI metadata (prompt and workflow) from an Ogg/Opus audio file.
+ *
+ * Reads the file as a binary ArrayBuffer, locates the OpusTags packet by
+ * tracing Ogg pages, and parses the embedded Vorbis Comments to retrieve
+ * JSON-encoded prompt and workflow data.
+ *
+ * @param file - The Ogg/Opus file to extract metadata from.
+ * @returns A promise resolving to a {@link ComfyMetadata} object containing
+ *   the parsed `prompt` and `workflow` fields, or `undefined` for each if
+ *   not found or if parsing fails.
+ */
 export async function getOggMetadata(file: File): Promise<ComfyMetadata> {
   // Read the entire file into memory (Opus files are generally small enough)
   const arrayBuffer = await file.arrayBuffer()
@@ -29,6 +41,20 @@ export async function getOggMetadata(file: File): Promise<ComfyMetadata> {
   return parseVorbisComments(packetData, decoder)
 }
 
+/**
+ * Traverses the Ogg page structure to extract all segments belonging to the
+ * OpusTags packet.
+ *
+ * Scans pages sequentially by verifying the `OggS` capture pattern, reads
+ * the segment table from each page header, and collects contiguous segments
+ * that form the OpusTags packet. Relies on Ogg lacing rules: a segment
+ * shorter than 255 bytes signals the end of the current packet.
+ *
+ * @param data - Raw binary content of the Ogg file.
+ * @param decoder - UTF-8 TextDecoder used to identify magic strings.
+ * @returns An array of `Uint8Array` segments that together constitute the
+ *   OpusTags packet, or an empty array if the packet is not found.
+ */
 function extractOpusTags(data: Uint8Array, decoder: TextDecoder): Uint8Array[] {
   const OGG_HEADER_SIZE = 27 // Base size of the Ogg page header (from magic number to just before segment count)
   const OGG_PAGE_SEGMENTS_OFFSET = 26 // Offset position where the number of segments in the page is stored
@@ -84,6 +110,21 @@ function extractOpusTags(data: Uint8Array, decoder: TextDecoder): Uint8Array[] {
   return segments
 }
 
+/**
+ * Parses a reconstructed OpusTags packet according to the Vorbis Comments
+ * specification and extracts ComfyUI metadata fields.
+ *
+ * Skips the 8-byte `OpusTags` magic string, reads the vendor string, then
+ * iterates over user comments formatted as `KEY=VALUE` pairs. Recognises
+ * `prompt` and `workflow` keys and JSON-parses their values into the
+ * returned metadata object.
+ *
+ * @param packetData - The complete, concatenated OpusTags packet as a
+ *   `Uint8Array`.
+ * @param decoder - UTF-8 TextDecoder used to decode comment strings.
+ * @returns A {@link ComfyMetadata} object with `prompt` and/or `workflow`
+ *   populated from the embedded comments, or `undefined` for missing fields.
+ */
 function parseVorbisComments(
   packetData: Uint8Array,
   decoder: TextDecoder
