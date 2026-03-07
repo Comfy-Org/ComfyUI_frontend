@@ -193,7 +193,14 @@ import { useI18n } from 'vue-i18n'
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import QueueAssetPreview from '@/components/queue/job/QueueAssetPreview.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
+import {
+  progressBarContainerClass,
+  progressBarPrimaryClass,
+  progressBarSecondaryClass,
+  hasProgressPercent,
+  hasAnyProgressPercent,
+  progressPercentStyle
+} from '@/composables/useProgressBarBackground'
 import { buildTooltipConfig } from '@/utils/tooltipConfig'
 import type { JobState } from '@/types/queue'
 import { iconForJobState } from '@/utils/queueDisplay'
@@ -237,14 +244,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const {
-  progressBarContainerClass,
-  progressBarPrimaryClass,
-  progressBarSecondaryClass,
-  hasProgressPercent,
-  hasAnyProgressPercent,
-  progressPercentStyle
-} = useProgressBarBackground()
 
 const cancelTooltipConfig = computed(() => buildTooltipConfig(t('g.cancel')))
 const deleteTooltipConfig = computed(() => buildTooltipConfig(t('g.delete')))

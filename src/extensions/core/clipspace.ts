@@ -85,10 +85,8 @@ class ClipspaceDialog extends ComfyDialog {
   override createButtons() {
     const buttons = []
 
-    for (let idx in ClipspaceDialog.items) {
-      const item = ClipspaceDialog.items[idx]
-      if (!item.contextPredicate || item.contextPredicate())
-        buttons.push(ClipspaceDialog.items[idx])
+    for (const item of ClipspaceDialog.items) {
+      if (!item.contextPredicate || item.contextPredicate()) buttons.push(item)
     }
 
     buttons.push(

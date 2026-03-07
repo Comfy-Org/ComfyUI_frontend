@@ -640,8 +640,7 @@ export class LiteGraphGlobal {
 
     for (const script_file of script_files) {
       const src = script_file.src
-      if (!src || src.substr(0, folder_wildcard.length) != folder_wildcard)
-        continue
+      if (!src || !src.startsWith(folder_wildcard)) continue
 
       try {
         const dynamicScript = document.createElement('script')

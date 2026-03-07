@@ -78,7 +78,11 @@ import Loader from '@/components/loader/Loader.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
-import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
+import {
+  progressBarPrimaryClass,
+  hasProgressPercent,
+  progressPercentStyle
+} from '@/composables/useProgressBarBackground'
 
 const { job } = defineProps<{ job: JobListItem }>()
 
@@ -107,9 +111,6 @@ const runActiveAction = () => {
     runDeleteJob()
   }
 }
-
-const { progressBarPrimaryClass, hasProgressPercent, progressPercentStyle } =
-  useProgressBarBackground()
 
 const statusText = computed(() => job.title)
 const progressPercent = computed(() => job.progressTotalPercent)

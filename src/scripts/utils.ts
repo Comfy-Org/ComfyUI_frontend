@@ -28,7 +28,7 @@ export async function addStylesheet(
   return new Promise((res, rej) => {
     let url
     if (urlOrFile.endsWith('.js')) {
-      url = urlOrFile.substr(0, urlOrFile.length - 2) + 'css'
+      url = urlOrFile.slice(0, -2) + 'css'
     } else {
       url = new URL(
         urlOrFile,

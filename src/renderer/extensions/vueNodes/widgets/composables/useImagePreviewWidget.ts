@@ -1,5 +1,6 @@
 import { BaseWidget, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isInRectangle } from '@/lib/litegraph/src/measure'
 import type {
   IBaseWidget,
   IWidgetOptions
@@ -164,7 +165,7 @@ const renderPreview = (
       const x = col * cellWidth + shiftX
       const y = row * cellHeight + shiftY
       if (!anyHovered) {
-        anyHovered = LiteGraph.isInsideRectangle(
+        anyHovered = isInRectangle(
           mouse[0],
           mouse[1],
           x + node.pos[0],
@@ -284,7 +285,7 @@ const renderPreview = (
     sz: number,
     text: string
   ): boolean => {
-    const hovered = LiteGraph.isInsideRectangle(
+    const hovered = isInRectangle(
       mouse[0],
       mouse[1],
       x + node.pos[0],

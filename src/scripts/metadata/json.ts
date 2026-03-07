@@ -1,7 +1,12 @@
 import { isObject } from 'es-toolkit/compat'
 
-export function getDataFromJSON(file: File): Promise<Record<string, object>> {
-  return new Promise<Record<string, object>>((resolve, reject) => {
+type JsonFileData =
+  | { templates: object }
+  | { prompt: Record<string, object> }
+  | { workflow: object }
+
+export function getDataFromJSON(file: File): Promise<JsonFileData> {
+  return new Promise<JsonFileData>((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => {
       try {

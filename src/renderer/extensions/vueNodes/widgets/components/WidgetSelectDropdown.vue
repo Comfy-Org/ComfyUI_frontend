@@ -3,7 +3,7 @@ import { capitalize } from 'es-toolkit'
 import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { TRANSFORM_COMPAT_OVERLAY_PROPS } from '@/composables/useTransformCompatOverlayProps'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
@@ -69,11 +69,9 @@ const { t } = useI18n()
 const toastStore = useToastStore()
 const queueStore = useQueueStore()
 
-const transformCompatProps = useTransformCompatOverlayProps()
-
 const combinedProps = computed(() => ({
   ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value
+  ...TRANSFORM_COMPAT_OVERLAY_PROPS
 }))
 
 const getAssetData = () => {

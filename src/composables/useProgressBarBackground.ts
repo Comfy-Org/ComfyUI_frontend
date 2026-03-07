@@ -35,13 +35,11 @@ function progressPercentStyle(value: ProgressPercent) {
   return { width: `${normalized}%` }
 }
 
-export function useProgressBarBackground() {
-  return {
-    progressBarContainerClass,
-    progressBarPrimaryClass,
-    progressBarSecondaryClass,
-    hasProgressPercent,
-    hasAnyProgressPercent,
-    progressPercentStyle
-  }
+export {
+  progressBarContainerClass,
+  progressBarPrimaryClass,
+  progressBarSecondaryClass,
+  hasProgressPercent,
+  hasAnyProgressPercent,
+  progressPercentStyle
 }

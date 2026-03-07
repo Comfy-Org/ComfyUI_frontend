@@ -3965,7 +3965,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): ClipboardPasteResult | undefined {
     const data = localStorage.getItem('litegrapheditor_clipboard')
     if (!data) return
-    return this._deserializeItems(JSON.parse(data), options)
+    let parsed: ClipboardItems
+    try {
+      parsed = JSON.parse(data)
+    } catch {
+      console.warn('Failed to parse clipboard data')
+      return
+    }
+    return this._deserializeItems(parsed, options)
   }
 
   _deserializeItems(
@@ -7661,8 +7668,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value = Number(value)
       }
       if (type == 'array' || type == 'object') {
-        // @ts-expect-error JSON.parse doesn't care.
-        value = JSON.parse(value)
+        try {
+          // @ts-expect-error JSON.parse doesn't care.
+          value = JSON.parse(value)
+        } catch {
+          console.warn(`Failed to parse property "${property}" as ${type}`)
+          return
+        }
       }
       node.properties[property] = value
       if (node.graph) {
@@ -8117,7 +8129,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.onShowCustomPanelInfo?.(panel)
 
       // clear
-      panel.footer.innerHTML = ''
+      panel.footer.replaceChildren()
       panel
         .addButton('Delete', function () {
           if (node.block_delete) return
@@ -8133,9 +8145,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       panel.classList.remove('settings')
       panel.classList.add('centered')
 
-      panel.alt_content.innerHTML = "<textarea class='code'></textarea>"
-      const textarea: HTMLTextAreaElement =
-        panel.alt_content.querySelector('textarea')!
+      const textarea = document.createElement('textarea')
+      textarea.className = 'code'
+      panel.alt_content.replaceChildren(textarea)
       const fDoneWith = function () {
         panel.toggleAltContent(false)
         panel.toggleFooterVisibility(true)

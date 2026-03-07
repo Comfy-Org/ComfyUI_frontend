@@ -177,7 +177,7 @@ export async function importA1111(
   if (p > -1) {
     const embeddings = await api.getEmbeddings()
     const matchResult = parameters
-      .substr(p)
+      .slice(p)
       .split('\n')[1]
       .match(
         new RegExp('\\s*([^:]+:\\s*([^"\\{].*?|".*?"|\\{.*?\\}))\\s*(,|$)', 'g')
@@ -188,7 +188,7 @@ export async function importA1111(
       (acc: Record<string, string>, n: string) => {
         const s = n.split(':')
         if (s[1].endsWith(',')) {
-          s[1] = s[1].substr(0, s[1].length - 1)
+          s[1] = s[1].slice(0, -1)
         }
         acc[s[0].trim().toLowerCase()] = s[1].trim()
         return acc
@@ -197,7 +197,7 @@ export async function importA1111(
     )
     const p2 = parameters.lastIndexOf('\nNegative prompt:', p)
     if (p2 > -1) {
-      let positive = parameters.substr(0, p2).trim()
+      let positive = parameters.slice(0, p2).trim()
       let negative = parameters.substring(p2 + 18, p).trim()
 
       const ckptNode = LiteGraph.createNode('CheckpointLoaderSimple')
