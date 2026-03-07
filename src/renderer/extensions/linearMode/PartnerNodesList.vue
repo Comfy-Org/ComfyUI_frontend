@@ -50,7 +50,7 @@ const creditsBadges = computed(() =>
       />
     </section>
   </Popover>
-  <template v-else-if="creditsBadges.length === 1">
+  <div v-else-if="creditsBadges.length === 1">
     <PartnerNodeItem
       v-for="[title, price, key] in creditsBadges"
       :key
@@ -58,7 +58,7 @@ const creditsBadges = computed(() =>
       :price
       class="border-t border-border-subtle pt-2"
     />
-  </template>
+  </div>
   <CollapsibleRoot
     v-else-if="creditsBadges.length"
     v-slot="{ open }"

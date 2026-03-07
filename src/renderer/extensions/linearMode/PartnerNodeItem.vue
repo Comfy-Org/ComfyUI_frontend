@@ -2,10 +2,10 @@
 defineProps<{ title: string; price: string }>()
 </script>
 <template>
-  <div>
+  <div class="not-last:mb-4">
     <div class="text-muted-foreground" v-text="title" />
     <span
-      class="mt-2 mb-4 flex h-5 max-w-max items-center rounded-full bg-component-node-widget-background p-2 py-3"
+      class="mt-2 flex h-5 max-w-max items-center rounded-full bg-component-node-widget-background p-2 py-3"
     >
       <i class="mr-1 icon-[lucide--component] h-4 bg-amber-400" />
       {{ price }}
