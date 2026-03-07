@@ -301,6 +301,7 @@
     "1x": "1x",
     "2x": "2x",
     "beta": "BETA",
+    "comfyCloud": "Comfy Cloud",
     "nightly": "NIGHTLY",
     "profile": "Profile",
     "noItems": "No items",
@@ -968,7 +969,6 @@
     "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
-    "helpAndFeedback": "Help & Feedback",
     "queue": "Queue Panel",
     "fullscreen": "Fullscreen"
   },
