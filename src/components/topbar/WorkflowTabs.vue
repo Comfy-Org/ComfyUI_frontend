@@ -144,7 +144,7 @@ const { isLoggedIn } = useCurrentUser()
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
-const showCurrentUser = computed(() => isDesktop || isCloud || isLoggedIn.value)
+const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
 
 const feedbackUrl = buildFeedbackUrl()
 function openFeedback() {
