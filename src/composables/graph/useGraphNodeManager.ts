@@ -3,7 +3,7 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { reactive, shallowReactive } from 'vue'
+import { computed, reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
@@ -19,8 +19,8 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
-import { nodePresentationStore } from '@/renderer/core/nodePresentation/store/nodePresentationStore'
-import type { NodePresentationState } from '@/renderer/core/nodePresentation/types'
+import { useNodeDisplayStore } from '@/stores/nodeDisplayStore'
+import type { NodeDisplayState } from '@/stores/nodeDisplayStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -414,9 +414,13 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   const apiNode = node.constructor?.nodeData?.api_node ?? false
   const badges = node.badges
   const nodeId = String(node.id)
-  const presentationRef = nodePresentationStore.getNodeRef(nodeId)
+  const nodeDisplayStore = useNodeDisplayStore()
+  const graphId = node.graph?.rootGraph.id
+  const presentationRef = computed(() =>
+    graphId ? nodeDisplayStore.getNode(graphId, nodeId) : undefined
+  )
 
-  function pres(): NodePresentationState | null {
+  function pres(): NodeDisplayState | undefined {
     return presentationRef.value
   }
 
@@ -464,6 +468,8 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get layout mutations composable
   const { createNode, deleteNode, setSource } = useLayoutMutations()
+  const nodeDisplayStore = useNodeDisplayStore()
+  const graphId = graph.rootGraph.id
   // Safe reactive data extracted from LiteGraph nodes
   const vueNodeData = reactive(new Map<string, VueNodeData>())
 
@@ -508,7 +514,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Remove deleted nodes
     for (const id of Array.from(vueNodeData.keys())) {
       if (!currentNodes.has(id)) {
-        nodePresentationStore.removeNode(id)
+        nodeDisplayStore.removeNode(graphId, id)
         nodeRefs.delete(id)
         vueNodeData.delete(id)
       }
@@ -550,7 +556,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
 
-      nodePresentationStore.initializeNode(id, {
+      nodeDisplayStore.registerNode(graphId, id, {
         id,
         title: typeof node.title === 'string' ? node.title : '',
         mode: node.mode || 0,
@@ -617,7 +623,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
 
-    nodePresentationStore.removeNode(id)
+    nodeDisplayStore.removeNode(graphId, id)
 
     // Clean up all tracking references
     nodeRefs.delete(id)

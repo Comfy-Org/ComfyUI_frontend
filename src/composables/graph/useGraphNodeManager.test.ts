@@ -1,8 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, customRef, nextTick, watch } from 'vue'
-import type { Ref } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
@@ -12,194 +11,9 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import { nodePresentationStore } from '@/renderer/core/nodePresentation/store/nodePresentationStore'
-import { PresentationSource } from '@/renderer/core/nodePresentation/types'
-import type {
-  NodePresentationState,
-  PresentationChange,
-  PresentationUpdate
-} from '@/renderer/core/nodePresentation/types'
+import { useNodeDisplayStore } from '@/stores/nodeDisplayStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-
-vi.mock('@/renderer/core/nodePresentation/store/nodePresentationStore', () => {
-  const listeners = new Set<(change: PresentationChange) => void>()
-  const nodes = new Map<string, NodePresentationState>()
-  const refCache = new Map<
-    string,
-    { ref: Ref<NodePresentationState | null>; trigger: () => void }
-  >()
-
-  const triggerRef = (nodeId: string) => {
-    refCache.get(nodeId)?.trigger()
-  }
-
-  const emit = (change: PresentationChange) => {
-    listeners.forEach((listener) => listener(change))
-  }
-
-  return {
-    nodePresentationStore: {
-      initializeNode: vi.fn(
-        (nodeId: string, initial: NodePresentationState) => {
-          nodes.set(String(nodeId), { ...initial })
-          emit({
-            type: 'create',
-            nodeId,
-            source: PresentationSource.Canvas
-          })
-          triggerRef(String(nodeId))
-        }
-      ),
-      updateNode: vi.fn((nodeId: string, update: PresentationUpdate) => {
-        const key = String(nodeId)
-        const existing = nodes.get(key)
-        if (!existing) return
-
-        if (update.title !== undefined && existing.title !== update.title) {
-          const oldValue = existing.title
-          existing.title = update.title
-          emit({
-            type: 'update',
-            nodeId,
-            property: 'title',
-            source: PresentationSource.Canvas,
-            oldValue,
-            newValue: update.title
-          })
-        }
-
-        if (update.mode !== undefined && existing.mode !== update.mode) {
-          const oldValue = existing.mode
-          existing.mode = update.mode
-          emit({
-            type: 'update',
-            nodeId,
-            property: 'mode',
-            source: PresentationSource.Canvas,
-            oldValue,
-            newValue: update.mode
-          })
-        }
-
-        if (update.shape !== undefined && existing.shape !== update.shape) {
-          const oldValue = existing.shape
-          existing.shape = update.shape
-          emit({
-            type: 'update',
-            nodeId,
-            property: 'shape',
-            source: PresentationSource.Canvas,
-            oldValue,
-            newValue: update.shape
-          })
-        }
-
-        if ('color' in update && existing.color !== update.color) {
-          const oldValue = existing.color
-          existing.color = update.color
-          emit({
-            type: 'update',
-            nodeId,
-            property: 'color',
-            source: PresentationSource.Canvas,
-            oldValue,
-            newValue: update.color
-          })
-        }
-
-        if ('bgcolor' in update && existing.bgcolor !== update.bgcolor) {
-          const oldValue = existing.bgcolor
-          existing.bgcolor = update.bgcolor
-          emit({
-            type: 'update',
-            nodeId,
-            property: 'bgcolor',
-            source: PresentationSource.Canvas,
-            oldValue,
-            newValue: update.bgcolor
-          })
-        }
-
-        if (
-          'showAdvanced' in update &&
-          existing.showAdvanced !== update.showAdvanced
-        ) {
-          const oldValue = existing.showAdvanced
-          existing.showAdvanced = update.showAdvanced
-          emit({
-            type: 'update',
-            nodeId,
-            property: 'showAdvanced',
-            source: PresentationSource.Canvas,
-            oldValue,
-            newValue: update.showAdvanced
-          })
-        }
-
-        if (update.flags) {
-          const oldFlags = { ...(existing.flags ?? {}) }
-          const mergedFlags = { ...oldFlags, ...update.flags }
-          existing.flags = mergedFlags
-          emit({
-            type: 'update',
-            nodeId,
-            property: 'flags',
-            source: PresentationSource.Canvas,
-            oldValue: oldFlags,
-            newValue: mergedFlags
-          })
-        }
-
-        triggerRef(key)
-      }),
-      removeNode: vi.fn((nodeId: string) => {
-        const key = String(nodeId)
-        nodes.delete(key)
-        emit({
-          type: 'delete',
-          nodeId,
-          source: PresentationSource.Canvas
-        })
-        triggerRef(key)
-        refCache.delete(key)
-      }),
-      getNodeRef: vi.fn((nodeId: string) => {
-        const key = String(nodeId)
-        const cached = refCache.get(key)
-        if (cached) return cached.ref
-
-        let triggerFn: () => void
-        const r = customRef<NodePresentationState | null>((track, trigger) => {
-          triggerFn = trigger
-          return {
-            get: () => {
-              track()
-              return nodes.get(key) ?? null
-            },
-            set: () => {}
-          }
-        })
-        refCache.set(key, { ref: r, trigger: triggerFn! })
-        return r
-      }),
-      getNode: vi.fn((nodeId: string) => nodes.get(String(nodeId)) ?? null),
-      clear: vi.fn(() => {
-        nodes.clear()
-        listeners.clear()
-        refCache.clear()
-      }),
-      onChange: vi.fn((callback: (change: PresentationChange) => void) => {
-        listeners.add(callback)
-        return () => listeners.delete(callback)
-      })
-    }
-  }
-})
-
-beforeEach(() => {
-  nodePresentationStore.clear()
-})
 
 describe('Node Reactivity', () => {
   beforeEach(() => {
@@ -504,54 +318,56 @@ describe('Nested promoted widget mapping', () => {
   })
 })
 
-describe('Presentation store integration', () => {
+describe('Display store integration', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
-  it('initializes presentation store on node add', () => {
+  it('registers node in display store on node add', () => {
     const graph = new LGraph()
     useGraphNodeManager(graph)
-    vi.clearAllMocks()
 
     const node = new LGraphNode('test')
     node.title = 'My Node'
     graph.add(node)
 
-    expect(nodePresentationStore.initializeNode).toHaveBeenCalledWith(
-      String(node.id),
-      expect.objectContaining({
-        id: String(node.id),
-        title: 'My Node'
-      })
-    )
+    const displayStore = useNodeDisplayStore()
+    const state = displayStore.getNode(graph.rootGraph.id, String(node.id))
+    expect(state).toMatchObject({
+      id: String(node.id),
+      title: 'My Node'
+    })
   })
 
-  it('removes from presentation store on node removal', () => {
+  it('removes from display store on node removal', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     graph.add(node)
     useGraphNodeManager(graph)
-    vi.clearAllMocks()
+
+    const displayStore = useNodeDisplayStore()
+    expect(
+      displayStore.getNode(graph.rootGraph.id, String(node.id))
+    ).toBeDefined()
 
     graph.remove(node)
 
-    expect(nodePresentationStore.removeNode).toHaveBeenCalledWith(
-      String(node.id)
-    )
+    expect(
+      displayStore.getNode(graph.rootGraph.id, String(node.id))
+    ).toBeUndefined()
   })
 
-  it('updates vue node data on property change without store re-mirroring', () => {
+  it('updates vue node data when display store is updated', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     graph.add(node)
     const { vueNodeData } = useGraphNodeManager(graph)
-    vi.clearAllMocks()
 
-    node.title = 'Updated Title'
+    const displayStore = useNodeDisplayStore()
+    displayStore.updateNode(graph.rootGraph.id, String(node.id), {
+      title: 'Updated Title'
+    })
 
     expect(vueNodeData.get(String(node.id))?.title).toBe('Updated Title')
-    expect(nodePresentationStore.updateNode).toHaveBeenCalledOnce()
   })
 })
