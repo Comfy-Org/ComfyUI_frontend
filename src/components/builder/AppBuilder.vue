@@ -178,7 +178,7 @@ function handleClick(e: MouseEvent) {
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
-  if (!isSelectInputsMode.value) return
+  if (!isSelectInputsMode.value || widget.options.canvasOnly) return
 
   const index = appModeStore.selectedInputs.findIndex(
     ([nodeId, widgetName]) => node.id == nodeId && widget.name === widgetName
