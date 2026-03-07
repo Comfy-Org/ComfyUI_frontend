@@ -28,9 +28,11 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    env:
-      QA_ARTIFACTS: ${{ runner.temp }}/qa-artifacts
     steps:
+      - name: Set QA artifacts path
+        shell: bash
+        run: echo "QA_ARTIFACTS=$RUNNER_TEMP/qa-artifacts" >> "$GITHUB_ENV"
+
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
@@ -193,7 +195,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: qa-report-${{ runner.os }}-${{ github.run_id }}
-          path: ${{ runner.temp }}/qa-artifacts/
+          path: ${{ env.QA_ARTIFACTS }}/
           retention-days: 14
 
       - name: Cleanup (Linux)
