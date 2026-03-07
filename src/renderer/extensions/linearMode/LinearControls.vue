@@ -5,12 +5,13 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
@@ -44,7 +45,7 @@ const props = defineProps<{
   mobile?: boolean
 }>()
 
-defineEmits<{ navigateAssets: [] }>()
+defineEmits<{ navigateOutputs: [] }>()
 
 //NOTE: due to batching, will never be greater than 2
 const pendingJobQueues = ref(0)
@@ -72,7 +73,7 @@ const mappedSelections = computed(() => {
     ).map(([, widgetName]) => widgetName)
     unprocessedInputs = unprocessedInputs.slice(inputGroup.length)
     const node = resolveNode(nodeId)
-    if (!node) continue
+    if (node?.mode !== LGraphEventMode.ALWAYS) continue
 
     const nodeData = nodeToNodeData(node)
     remove(nodeData.widgets ?? [], (w) => !inputGroup.includes(w.name))
@@ -105,6 +106,7 @@ function getDropIndicator(node: LGraphNode) {
 function nodeToNodeData(node: LGraphNode) {
   const dropIndicator = getDropIndicator(node)
   const nodeData = extractVueNodeData(node)
+  remove(nodeData.widgets ?? [], (w) => w.slotMetadata?.linked ?? false)
   for (const widget of nodeData.widgets ?? []) widget.slotMetadata = undefined
 
   return {
@@ -261,7 +263,7 @@ defineExpose({ runButtonClick })
             <Button
               v-if="mobile"
               variant="inverted"
-              @click="$emit('navigateAssets')"
+              @click="$emit('navigateOutputs')"
             >
               {{ t('linearMode.viewJob') }}
             </Button>

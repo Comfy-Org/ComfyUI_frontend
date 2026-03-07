@@ -9,7 +9,8 @@ const panY = ref(0.0)
 
 function handleWheel(e: WheelEvent) {
   const zoomPaneEl = zoomPane.value
-  if (!zoomPaneEl) return
+  if (!zoomPaneEl || (e.deltaY < 0 ? zoom.value > 1200 : zoom.value < -500))
+    return
 
   zoom.value -= e.deltaY
   const { x, y, width, height } = zoomPaneEl.getBoundingClientRect()

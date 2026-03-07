@@ -35,18 +35,21 @@ test.describe(
       test(`Load workflow in ${fileName} (drop from filesystem)`, async ({
         comfyPage
       }) => {
-        const waitForUpload = filesWithUpload.has(fileName)
-        await comfyPage.dragDrop.dragAndDropFile(
-          `workflowInMedia/${fileName}`,
-          { waitForUpload }
-        )
-        if (waitForUpload) {
-          await comfyPage.page.waitForResponse(
-            (resp) => resp.url().includes('/view') && resp.status() !== 0,
-            { timeout: 10000 }
-          )
+        const shouldUpload = filesWithUpload.has(fileName)
+        const uploadRequestPromise = shouldUpload
+          ? comfyPage.page.waitForRequest((req) =>
+              req.url().includes('/upload/')
+            )
+          : null
+
+        await comfyPage.dragDrop.dragAndDropFile(`workflowInMedia/${fileName}`)
+
+        if (uploadRequestPromise) {
+          const request = await uploadRequestPromise
+          expect(request.url()).toContain('/upload/')
+        } else {
+          await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
         }
-        await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
       })
     })
 
