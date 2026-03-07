@@ -1765,7 +1765,6 @@
     "execute": "Exécuter",
     "fullscreen": "Plein écran",
     "help": "Aide",
-    "helpAndFeedback": "Aide et commentaires",
     "hideMenu": "Masquer le menu",
     "instant": "Instantané",
     "instantTooltip": "Le flux de travail sera mis en file d'attente immédiatement après la fin d'une génération",
