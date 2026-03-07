@@ -7,7 +7,8 @@ import { ref, toRefs } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
-import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+
+import ScrubableNumberInput from './ScrubableNumberInput.vue'
 
 type StoryArgs = ComponentPropsAndSlots<typeof ScrubableNumberInput>
 
@@ -31,10 +32,16 @@ const meta: Meta<StoryArgs> = {
     hideButtons: false
   },
   decorators: [
-    (story) => ({
+    (story, context) => ({
       components: { story },
+      setup() {
+        const isDark =
+          (context.globals.theme || 'light') === 'dark' ||
+          document.body.classList.contains('dark-theme')
+        return { bgClass: isDark ? 'bg-[#353535]' : 'bg-[#e0e0e0]' }
+      },
       template:
-        '<div class="dark-theme w-60 rounded-lg bg-[#353535] p-4"><story /></div>'
+        '<div :class="[bgClass, \'w-60 rounded-lg p-4\']"><story /></div>'
     })
   ]
 }
