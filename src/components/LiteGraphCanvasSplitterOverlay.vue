@@ -18,7 +18,9 @@
       <Splitter
         :key="splitterRefreshKey"
         class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
-        :state-key="isSelectMode ? 'builder-splitter' : sidebarStateKey"
+        :state-key="
+          isSelectMode ? `builder-splitter-${sidebarLocation}` : sidebarStateKey
+        "
         state-storage="local"
         @resizestart="onResizestart"
       >
