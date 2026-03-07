@@ -27,14 +27,6 @@ const logger = log.getLogger('ChangeTracker')
 // Change to debug for more verbose logging
 logger.setLevel('info')
 
-/**
- * Verify that layout store state is consistent with the current graph
- * after an undo/redo restore. Logs a warning on mismatch.
- *
- * During the SSOT migration, stores are re-derived from the graph
- * snapshot via `loadGraphData` → `initializeFromLiteGraph`. This
- * verification confirms the derivation happened correctly.
- */
 function verifyStoreConsistency(): void {
   if (!app.graph) return
 
@@ -56,17 +48,6 @@ function verifyStoreConsistency(): void {
   }
 }
 
-/**
- * Hybrid history system for undo/redo via full graph JSON snapshots.
- *
- * **Store consistency contract (SSOT migration)**:
- * Layout and presentation stores are re-derived from the graph snapshot
- * during `loadGraphData` (which calls `initializeFromLiteGraph` and node
- * add hooks). After every undo/redo restore, `verifyStoreConsistency`
- * checks that store state matches the restored graph. If a mismatch is
- * detected a warning is logged — the snapshot remains the fallback
- * authority until stores become primary in a later migration phase.
- */
 export class ChangeTracker {
   static MAX_HISTORY = 50
   /**

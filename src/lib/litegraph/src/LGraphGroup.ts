@@ -29,13 +29,6 @@ export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
 }
 
-/**
- * Groups remain legacy-owned (LiteGraph-authoritative) and are explicitly
- * out of scope for the layout SSOT migration. Group geometry, presentation,
- * and lifecycle are managed directly by this class and LGraph._groups.
- *
- * See: temp/node-layout-ssot-group-scope.md
- */
 export class LGraphGroup implements Positionable, IPinnable, IColorable {
   static minWidth = 140
   static minHeight = 80

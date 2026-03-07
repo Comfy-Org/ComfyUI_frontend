@@ -1,9 +1,3 @@
-/**
- * Layout Mutations - Simplified Direct Operations
- *
- * Provides a clean API for layout operations that are CRDT-ready.
- * Operations are synchronous and applied directly to the store.
- */
 import log from 'loglevel'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
@@ -20,16 +14,13 @@ import type {
 const logger = log.getLogger('LayoutMutations')
 
 interface LayoutMutations {
-  // Single node operations (synchronous, CRDT-ready)
   moveNode(nodeId: NodeId, position: Point): void
   resizeNode(nodeId: NodeId, size: Size): void
   setNodeZIndex(nodeId: NodeId, zIndex: number): void
 
-  // Node lifecycle operations
   createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
   deleteNode(nodeId: NodeId): void
 
-  // Link operations
   createLink(
     linkId: LinkId,
     sourceNodeId: NodeId,
@@ -39,7 +30,6 @@ interface LayoutMutations {
   ): void
   deleteLink(linkId: LinkId): void
 
-  // Reroute operations
   createReroute(
     rerouteId: RerouteId,
     position: Point,
@@ -53,36 +43,22 @@ interface LayoutMutations {
     previousPosition: Point
   ): void
 
-  // Stacking operations
   bringNodeToFront(nodeId: NodeId): void
   sendNodeToBack(nodeId: NodeId): void
 
-  // Source tracking
   setSource(source: LayoutSource): void
   setActor(actor: string): void
 }
 
-/**
- * Composable for accessing layout mutations with clean destructuring API
- */
 export function useLayoutMutations(): LayoutMutations {
-  /**
-   * Set the current mutation source
-   */
   const setSource = (source: LayoutSource): void => {
     layoutStore.setSource(source)
   }
 
-  /**
-   * Set the current actor (for CRDT)
-   */
   const setActor = (actor: string): void => {
     layoutStore.setActor(actor)
   }
 
-  /**
-   * Move a node to a new position
-   */
   const moveNode = (nodeId: NodeId, position: Point): void => {
     const normalizedNodeId = String(nodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
@@ -100,9 +76,6 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  /**
-   * Resize a node
-   */
   const resizeNode = (nodeId: NodeId, size: Size): void => {
     const normalizedNodeId = String(nodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
@@ -120,9 +93,6 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  /**
-   * Set node z-index
-   */
   const setNodeZIndex = (nodeId: NodeId, zIndex: number): void => {
     const normalizedNodeId = String(nodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
@@ -140,9 +110,6 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  /**
-   * Create a new node
-   */
   const createNode = (nodeId: NodeId, layout: Partial<NodeLayout>): void => {
     const normalizedNodeId = String(nodeId)
     const fullLayout: NodeLayout = {
@@ -170,9 +137,6 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  /**
-   * Delete a node
-   */
   const deleteNode = (nodeId: NodeId): void => {
     const normalizedNodeId = String(nodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
@@ -189,9 +153,6 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  /**
-   * Bring a node to the front (highest z-index)
-   */
   const bringNodeToFront = (nodeId: NodeId): void => {
     const maxZIndex = layoutStore.getMaxZIndex()
     setNodeZIndex(nodeId, maxZIndex + 1)
@@ -202,9 +163,6 @@ export function useLayoutMutations(): LayoutMutations {
     setNodeZIndex(nodeId, minZIndex - 1)
   }
 
-  /**
-   * Create a new link
-   */
   const createLink = (
     linkId: LinkId,
     sourceNodeId: NodeId,
@@ -235,9 +193,6 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  /**
-   * Delete a link
-   */
   const deleteLink = (linkId: LinkId): void => {
     logger.debug('Deleting link:', linkId)
     layoutStore.applyOperation({
@@ -250,9 +205,6 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  /**
-   * Create a new reroute
-   */
   const createReroute = (
     rerouteId: RerouteId,
     position: Point,
@@ -278,9 +230,6 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  /**
-   * Delete a reroute
-   */
   const deleteReroute = (rerouteId: RerouteId): void => {
     logger.debug('Deleting reroute:', rerouteId)
     layoutStore.applyOperation({
@@ -293,9 +242,6 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  /**
-   * Move a reroute
-   */
   const moveReroute = (
     rerouteId: RerouteId,
     position: Point,

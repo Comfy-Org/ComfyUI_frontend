@@ -2594,11 +2594,6 @@ export class LGraph
       this.setDirtyCanvas(true, true)
       return error
     } finally {
-      // Note: 'configured' fires at the end of LGraph.configure(), but
-      // before post-configure stabilization (layout scaling, node size
-      // adjustments, extension hooks) which happens in loadGraphData.
-      // For fully stabilized state, observe the stabilization checkpoint
-      // in loadGraphData after afterConfigureGraph extensions complete.
       this.events.dispatch('configured')
     }
   }

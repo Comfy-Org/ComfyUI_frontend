@@ -1,30 +1,15 @@
-/**
- * Composable for syncing LiteGraph with the Layout system
- *
- * Implements one-way sync from Layout Store to LiteGraph.
- * The layout store is the single source of truth.
- */
 import { onUnmounted, ref } from 'vue'
 
 import type { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-/**
- * Composable for syncing LiteGraph with the Layout system
- * This replaces the bidirectional sync with a one-way sync
- */
 export function useLayoutSync() {
   const unsubscribe = ref<() => void>()
 
-  /**
-   * Start syncing from Layout → LiteGraph
-   */
   function startSync(canvas: ReturnType<typeof useCanvasStore>['canvas']) {
     if (!canvas?.graph) return
 
-    // Cancel last subscription
     stopSync()
-    // Subscribe to layout changes
     unsubscribe.value = layoutStore.onChange((change) => {
       const graph = canvas.graph
       if (!graph) return
@@ -58,7 +43,6 @@ export function useLayoutSync() {
         )
       }
 
-      // Trigger single redraw for all changes
       canvas.setDirty(true, true)
     })
   }

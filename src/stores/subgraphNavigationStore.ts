@@ -10,19 +10,6 @@ import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
-/**
- * View-state store for subgraph navigation and viewport persistence.
- *
- * This store is explicitly **view/session state** — it is NOT part of the
- * canonical node/layout persistence contract. Changes to navigation or
- * viewport state must not trigger workflow dirty-state or undo/redo
- * history entries.
- *
- * Persistence boundary:
- * - Stored/restored by ChangeTracker for undo/redo session continuity
- * - Excluded from ChangeTracker.graphEqual() comparisons
- * - Not serialized in workflow JSON (only saved in ChangeTracker snapshots)
- */
 export const useSubgraphNavigationStore = defineStore(
   'subgraphNavigation',
   () => {

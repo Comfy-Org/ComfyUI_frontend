@@ -1,13 +1,3 @@
-/**
- * Layout Persistence Adapter
- *
- * Defines explicit conversion boundaries between store-backed state
- * and the serialized workflow format (ISerialisedNode).
- *
- * These pure functions codify the mapping contract for layout and
- * presentation fields, enabling future migration from LiteGraph-first
- * to store-first serialization.
- */
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId, NodeLayout } from '@/renderer/core/layout/types'
 import type { NodeDisplayState } from '@/stores/nodeDisplayStore'

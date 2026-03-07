@@ -3979,14 +3979,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): ClipboardPasteResult | undefined {
     const { connectInputs = false, position = this.graph_mouse } = options
 
-    // Store hydration contract:
-    // 1. graph.add(node) → handleNodeAdded → initializeVueNodeLayout
-    //    (creates layout + presentation store entries from initial node state)
-    // 2. node.configure(info) → property setters → useNodeDisplayStore().updateNode
-    //    (incrementally syncs presentation store with deserialized values)
-    // 3. Position adjustments via setPos → pos setter → layoutStore.moveNode
-    // 4. Final bounds sync via layoutStore.batchUpdateNodeBounds
-
     // if ctrl + shift + v is off, return when isConnectUnselected is true (shift is pressed) to maintain old behavior
     if (
       !LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs &&
@@ -4143,7 +4135,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // Adjust positions - routes through pos setter → layoutStore.moveNode
     const dx = position[0] - offsetX
     const dy = position[1] - offsetY
     for (const item of created) {
