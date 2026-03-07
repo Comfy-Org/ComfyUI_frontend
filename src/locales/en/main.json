@@ -3179,6 +3179,7 @@
     "loadTemplate": "Load a template",
     "cancelThisRun": "Cancel this run",
     "deleteAllAssets": "Delete all assets from this run",
+    "hasCreditCost": "Requires additional credits",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
