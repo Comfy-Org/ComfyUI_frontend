@@ -1596,6 +1596,7 @@
     "kandinsky5": "kandinsky5",
     "hooks": "hooks",
     "combine": "combine",
+    "math": "math",
     "logic": "logic",
     "cond single": "cond single",
     "context": "context",
