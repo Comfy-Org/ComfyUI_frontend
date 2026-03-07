@@ -3240,10 +3240,6 @@
     "addedToWorkspace": "Você foi adicionado ao {workspaceName}",
     "inviteAccepted": "Convite aceito",
     "inviteFailed": "Falha ao aceitar convite",
-    "unsavedChanges": {
-      "message": "Você tem alterações não salvas. Deseja descartá-las e trocar de espaço de trabalho?",
-      "title": "Alterações não salvas"
-    },
     "viewWorkspace": "Ver workspace"
   },
   "workspaceAuth": {
