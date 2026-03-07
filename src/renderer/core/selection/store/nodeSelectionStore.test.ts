@@ -48,10 +48,11 @@ describe('useNodeSelectionStore', () => {
   it('syncFromCanvas no-ops when selection unchanged', () => {
     const items = [mockPositionable(1), mockPositionable(2)]
     store.syncFromCanvas(items)
-    const versionAfterFirst = store.version
+    const idsAfterFirst = store.selectedNodeIds
 
     store.syncFromCanvas(items)
-    expect(store.version).toBe(versionAfterFirst)
+    expect(store.selectedNodeIds.size).toBe(idsAfterFirst.size)
+    expect([...store.selectedNodeIds]).toEqual([...idsAfterFirst])
   })
 
   it('clear empties selection', () => {
@@ -64,9 +65,9 @@ describe('useNodeSelectionStore', () => {
   })
 
   it('clear no-ops when already empty', () => {
-    const versionBefore = store.version
     store.clear()
-    expect(store.version).toBe(versionBefore)
+    expect(store.hasSelection).toBe(false)
+    expect(store.selectionCount).toBe(0)
   })
 
   it('isSelected returns correct boolean', () => {

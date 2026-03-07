@@ -5,7 +5,6 @@ import type { Positionable } from '@/lib/litegraph/src/interfaces'
 
 export const useNodeSelectionStore = defineStore('nodeSelection', () => {
   const selectedItemIds = ref<Set<string>>(new Set())
-  const version = ref(0)
 
   function syncFromCanvas(items: Iterable<Positionable>): void {
     const newIds = new Set<string>()
@@ -21,14 +20,12 @@ export const useNodeSelectionStore = defineStore('nodeSelection', () => {
       ![...newIds].every((id) => current.has(id))
     ) {
       selectedItemIds.value = newIds
-      version.value++
     }
   }
 
   function clear(): void {
     if (selectedItemIds.value.size > 0) {
       selectedItemIds.value = new Set()
-      version.value++
     }
   }
 
@@ -45,7 +42,6 @@ export const useNodeSelectionStore = defineStore('nodeSelection', () => {
     selectedNodeIds,
     selectionCount,
     hasSelection,
-    version,
     syncFromCanvas,
     clear,
     isSelected

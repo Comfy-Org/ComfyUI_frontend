@@ -79,11 +79,6 @@ import type {
 import { getAllNestedItems } from './utils/collections'
 import { deduplicateSubgraphNodeIds } from './utils/subgraphDeduplication'
 
-export type {
-  LGraphTriggerAction,
-  LGraphTriggerParam
-} from './types/graphTriggers'
-
 export type RendererType = 'LG' | 'Vue'
 
 export interface LGraphState {

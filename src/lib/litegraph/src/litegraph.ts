@@ -107,8 +107,6 @@ export {
   LGraph,
   type GroupNodeConfigEntry,
   type GroupNodeWorkflowData,
-  type LGraphTriggerAction,
-  type LGraphTriggerParam,
   type GraphAddOptions
 } from './LGraph'
 export type { LGraphTriggerEvent } from './types/graphTriggers'

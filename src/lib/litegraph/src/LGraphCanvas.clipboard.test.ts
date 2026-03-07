@@ -9,9 +9,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import {
   extractLayoutFromSerialized,
-  extractPresentationFromSerialized,
-  projectLayoutToSerialized,
-  projectPresentationToSerialized
+  extractPresentationFromSerialized
 } from '@/renderer/core/layout/persistence/layoutPersistenceAdapter'
 
 function createSerialisedNode(
@@ -147,48 +145,6 @@ describe('Serialization layout field preservation', () => {
 })
 
 describe('Layout persistence adapter round-trip', () => {
-  it('layout extract → project preserves pos and size', () => {
-    const serializedNode: ISerialisedNode = {
-      id: 1,
-      type: 'test',
-      pos: [150, 250],
-      size: [300, 100],
-      flags: {},
-      order: 0,
-      mode: 0
-    }
-
-    const layout = extractLayoutFromSerialized(serializedNode, 5)
-    const projected = projectLayoutToSerialized(layout)
-
-    expect(projected.pos).toEqual([150, 250])
-    expect(projected.size).toEqual([300, 100])
-  })
-
-  it('presentation extract → project preserves title and mode', () => {
-    const serializedNode: ISerialisedNode = {
-      id: 1,
-      type: 'test',
-      pos: [0, 0],
-      size: [100, 100],
-      flags: { collapsed: true, pinned: false },
-      order: 0,
-      mode: 2,
-      title: 'My Node',
-      color: '#ff0000',
-      bgcolor: '#00ff00'
-    }
-
-    const presentation = extractPresentationFromSerialized(serializedNode)
-    const projected = projectPresentationToSerialized(presentation)
-
-    expect(projected.title).toBe('My Node')
-    expect(projected.mode).toBe(2)
-    expect(projected.color).toBe('#ff0000')
-    expect(projected.bgcolor).toBe('#00ff00')
-    expect(projected.flags?.collapsed).toBe(true)
-  })
-
   it('extractLayoutFromSerialized uses provided zIndex', () => {
     const serializedNode: ISerialisedNode = {
       id: 42,

@@ -173,9 +173,7 @@ export const useSubgraphNavigationStore = defineStore(
       exportState,
       saveViewport,
       restoreViewport,
-      viewportCache,
-      /** Contract marker: this store is view/session state only. */
-      isViewStateOnly: true as const
+      viewportCache
     }
   }
 )

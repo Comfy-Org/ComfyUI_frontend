@@ -4,7 +4,7 @@ import { reactive, ref } from 'vue'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
-export interface NodeDisplayFlags {
+interface NodeDisplayFlags {
   collapsed?: boolean
   pinned?: boolean
   ghost?: boolean

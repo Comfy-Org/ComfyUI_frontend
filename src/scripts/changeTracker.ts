@@ -212,7 +212,9 @@ export class ChangeTracker {
         })
         this.activeState = prevState
         this.updateModified()
-        verifyStoreConsistency()
+        if (import.meta.env.DEV) {
+          verifyStoreConsistency()
+        }
       } finally {
         this._restoringState = false
       }

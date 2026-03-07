@@ -50,36 +50,3 @@ export function extractPresentationFromSerialized(
     }
   }
 }
-
-export function projectLayoutToSerialized(
-  layout: NodeLayout
-): Pick<ISerialisedNode, 'pos' | 'size'> {
-  return {
-    pos: [layout.position.x, layout.position.y],
-    size: [layout.size.width, layout.size.height]
-  }
-}
-
-export function projectPresentationToSerialized(
-  state: NodeDisplayState
-): Partial<ISerialisedNode> {
-  const result: Partial<ISerialisedNode> = {
-    mode: state.mode
-  }
-
-  if (state.title) result.title = state.title
-  if (state.shape !== undefined) result.shape = state.shape
-  if (state.showAdvanced !== undefined) result.showAdvanced = state.showAdvanced
-  if (state.color) result.color = state.color
-  if (state.bgcolor) result.bgcolor = state.bgcolor
-
-  if (state.flags.collapsed || state.flags.pinned || state.flags.ghost) {
-    result.flags = {
-      collapsed: state.flags.collapsed,
-      pinned: state.flags.pinned,
-      ghost: state.flags.ghost
-    }
-  }
-
-  return result
-}
