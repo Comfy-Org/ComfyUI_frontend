@@ -42,6 +42,8 @@ const i18n = createI18n({
   }
 })
 
+const mockPopoverHide = vi.fn()
+
 function createWrapper() {
   return mount(CanvasModeSelector, {
     global: {
@@ -51,7 +53,7 @@ function createWrapper() {
           template: '<div><slot /></div>',
           methods: {
             toggle: vi.fn(),
-            hide: vi.fn()
+            hide: mockPopoverHide
           }
         }
       }
@@ -60,57 +62,64 @@ function createWrapper() {
 }
 
 describe('CanvasModeSelector', () => {
-  it('should render menu items with correct ARIA roles', () => {
+  it('should render menu with menuitemradio roles and aria-checked', () => {
     const wrapper = createWrapper()
 
     const menu = wrapper.find('[role="menu"]')
     expect(menu.exists()).toBe(true)
 
-    const menuItems = wrapper.findAll('[role="menuitem"]')
+    const menuItems = wrapper.findAll('[role="menuitemradio"]')
     expect(menuItems).toHaveLength(2)
+
+    // Select mode is active (read_only: false), so select is checked
+    expect(menuItems[0].attributes('aria-checked')).toBe('true')
+    expect(menuItems[1].attributes('aria-checked')).toBe('false')
   })
 
-  it('should render menu items as buttons', () => {
+  it('should render menu items as buttons with aria-labels', () => {
     const wrapper = createWrapper()
 
-    const buttons = wrapper.findAll('[role="menuitem"]')
-    buttons.forEach((btn) => {
+    const menuItems = wrapper.findAll('[role="menuitemradio"]')
+    menuItems.forEach((btn) => {
       expect(btn.element.tagName).toBe('BUTTON')
       expect(btn.attributes('type')).toBe('button')
     })
-  })
-
-  it('should have aria-labels on menu items', () => {
-    const wrapper = createWrapper()
-
-    const menuItems = wrapper.findAll('[role="menuitem"]')
     expect(menuItems[0].attributes('aria-label')).toBe('Select')
     expect(menuItems[1].attributes('aria-label')).toBe('Hand')
+  })
+
+  it('should use roving tabindex based on active mode', () => {
+    const wrapper = createWrapper()
+
+    const menuItems = wrapper.findAll('[role="menuitemradio"]')
+    // Select is active (read_only: false) → tabindex 0
+    expect(menuItems[0].attributes('tabindex')).toBe('0')
+    // Hand is inactive → tabindex -1
+    expect(menuItems[1].attributes('tabindex')).toBe('-1')
   })
 
   it('should mark icons as aria-hidden', () => {
     const wrapper = createWrapper()
 
-    const icons = wrapper.findAll('[role="menuitem"] i')
+    const icons = wrapper.findAll('[role="menuitemradio"] i')
     icons.forEach((icon) => {
       expect(icon.attributes('aria-hidden')).toBe('true')
     })
   })
 
-  it('should have keydown handlers for arrow key navigation', () => {
+  it('should expose trigger button with aria-haspopup and aria-expanded', () => {
     const wrapper = createWrapper()
 
-    const menuItems = wrapper.findAll('[role="menuitem"]')
-    menuItems.forEach((item) => {
-      const el = item.element as HTMLElement
-      expect(el.tagName).toBe('BUTTON')
-    })
+    const trigger = wrapper.find('[aria-haspopup="menu"]')
+    expect(trigger.exists()).toBe(true)
+    expect(trigger.attributes('aria-label')).toBe('Canvas Mode')
+    expect(trigger.attributes('aria-expanded')).toBe('false')
   })
 
   it('should call focus on next item when ArrowDown is pressed', async () => {
     const wrapper = createWrapper()
 
-    const menuItems = wrapper.findAll('[role="menuitem"]')
+    const menuItems = wrapper.findAll('[role="menuitemradio"]')
     const secondItemEl = menuItems[1].element as HTMLElement
     const focusSpy = vi.spyOn(secondItemEl, 'focus')
 
@@ -121,11 +130,24 @@ describe('CanvasModeSelector', () => {
   it('should call focus on previous item when ArrowUp is pressed', async () => {
     const wrapper = createWrapper()
 
-    const menuItems = wrapper.findAll('[role="menuitem"]')
+    const menuItems = wrapper.findAll('[role="menuitemradio"]')
     const firstItemEl = menuItems[0].element as HTMLElement
     const focusSpy = vi.spyOn(firstItemEl, 'focus')
 
     await menuItems[1].trigger('keydown', { key: 'ArrowUp' })
+    expect(focusSpy).toHaveBeenCalled()
+  })
+
+  it('should close popover on Escape and restore focus to trigger', async () => {
+    const wrapper = createWrapper()
+
+    const menuItems = wrapper.findAll('[role="menuitemradio"]')
+    const trigger = wrapper.find('[aria-haspopup="menu"]')
+    const triggerEl = trigger.element as HTMLElement
+    const focusSpy = vi.spyOn(triggerEl, 'focus')
+
+    await menuItems[0].trigger('keydown', { key: 'Escape' })
+    expect(mockPopoverHide).toHaveBeenCalled()
     expect(focusSpy).toHaveBeenCalled()
   })
 })
