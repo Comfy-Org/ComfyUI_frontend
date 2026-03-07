@@ -167,11 +167,17 @@ const sidebarPanelVisible = computed(
   () => activeSidebarTab.value !== null && !isBuilderMode.value
 )
 
-const sidebarStateKey = computed(() => {
+const sidebarTabKey = computed(() => {
   return unifiedWidth.value
     ? 'unified-sidebar'
     : // When no tab is active, use a default key to maintain state
       (activeSidebarTabId.value ?? 'default-sidebar')
+})
+
+const sidebarStateKey = computed(() => {
+  const base = sidebarTabKey.value
+  const suffix = showOffsideSplitter.value ? '-with-offside' : ''
+  return `${base}-${sidebarLocation.value}${suffix}`
 })
 
 /**
