@@ -1392,6 +1392,15 @@ export class ComfyApp {
       missingNodeTypes
     )
 
+    // ──── State Stabilization Checkpoint ────
+    // All post-configure work is complete:
+    //   - Graph configured (nodes, links, groups, subgraphs)
+    //   - Layout scale normalized (ensureCorrectLayoutScale)
+    //   - Node sizes stabilized (computeSize + setSize)
+    //   - Extension hooks completed (loadedGraphNode, afterConfigureGraph)
+    // Layout and presentation stores now reflect final canonical state.
+    // History/dirty-state snapshots should only capture state after this point.
+
     const telemetryPayload = {
       missing_node_count: missingNodeTypes.length,
       missing_node_types: missingNodeTypes.map((node) =>

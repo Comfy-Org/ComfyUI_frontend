@@ -49,6 +49,8 @@ function pasteClipboardItems(data: DataTransfer): boolean {
     const binaryString = atob(match)
     const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
     const decodedData = new TextDecoder().decode(bytes)
+    // Store hydration handled internally by _deserializeItems
+    // (see store hydration contract in LGraphCanvas._deserializeItems)
     useCanvasStore().getCanvas()._deserializeItems(JSON.parse(decodedData), {})
     return true
   } catch (err) {

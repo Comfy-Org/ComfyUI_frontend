@@ -3967,7 +3967,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): ClipboardPasteResult | undefined {
     const data = localStorage.getItem('litegrapheditor_clipboard')
     if (!data) return
-    return this._deserializeItems(JSON.parse(data), options)
+    let parsed: ClipboardItems
+    try {
+      parsed = JSON.parse(data)
+    } catch {
+      console.warn('Failed to parse clipboard data')
+      return
+    }
+    return this._deserializeItems(parsed, options)
   }
 
   _deserializeItems(
@@ -3975,6 +3982,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     options: IPasteFromClipboardOptions
   ): ClipboardPasteResult | undefined {
     const { connectInputs = false, position = this.graph_mouse } = options
+
+    // Store hydration contract:
+    // 1. graph.add(node) → handleNodeAdded → initializeVueNodeLayout
+    //    (creates layout + presentation store entries from initial node state)
+    // 2. node.configure(info) → property setters → node:property:changed events
+    //    (incrementally syncs presentation store with deserialized values)
+    // 3. Position adjustments via setPos → pos setter → layoutStore.moveNode
+    // 4. Final bounds sync via layoutStore.batchUpdateNodeBounds
 
     // if ctrl + shift + v is off, return when isConnectUnselected is true (shift is pressed) to maintain old behavior
     if (
@@ -4132,7 +4147,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // Adjust positions - use move/setPos to ensure layout store is updated
+    // Adjust positions - routes through pos setter → layoutStore.moveNode
     const dx = position[0] - offsetX
     const dy = position[1] - offsetY
     for (const item of created) {
@@ -7669,8 +7684,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value = Number(value)
       }
       if (type == 'array' || type == 'object') {
-        // @ts-expect-error JSON.parse doesn't care.
-        value = JSON.parse(value)
+        try {
+          // @ts-expect-error JSON.parse doesn't care.
+          value = JSON.parse(value)
+        } catch {
+          console.warn(`Failed to parse property "${property}" as ${type}`)
+          return
+        }
       }
       node.properties[property] = value
       if (node.graph) {
@@ -8125,7 +8145,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.onShowCustomPanelInfo?.(panel)
 
       // clear
-      panel.footer.innerHTML = ''
+      panel.footer.replaceChildren()
       panel
         .addButton('Delete', function () {
           if (node.block_delete) return
@@ -8141,9 +8161,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       panel.classList.remove('settings')
       panel.classList.add('centered')
 
-      panel.alt_content.innerHTML = "<textarea class='code'></textarea>"
-      const textarea: HTMLTextAreaElement =
-        panel.alt_content.querySelector('textarea')!
+      const textarea = document.createElement('textarea')
+      textarea.className = 'code'
+      panel.alt_content.replaceChildren(textarea)
       const fDoneWith = function () {
         panel.toggleAltContent(false)
         panel.toggleFooterVisibility(true)

@@ -22,6 +22,7 @@ export const useCopy = () => {
     // copy nodes and clear clipboard
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
+      // Serializes selected items to JSON (read-only, no store mutation)
       const serializedData = canvas.copyToClipboard()
       // Use TextEncoder to handle Unicode characters properly
       const base64Data = btoa(

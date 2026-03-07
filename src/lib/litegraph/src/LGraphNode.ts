@@ -1081,9 +1081,12 @@ export class LGraphNode
   /**
    * Project serialized node data into layout and presentation stores.
    *
-   * Called after configure + stabilization to sync store state with
-   * the deserialized node. Not yet wired into configure() — will be
-   * integrated in Phase 6 when a stabilization checkpoint exists.
+   * Store initialization is primarily handled by the node lifecycle bridge
+   * (useGraphNodeManager.handleNodeAdded → initializeVueNodeLayout), which
+   * fires on graph.add(). Property setters (title, mode, flags, etc.)
+   * incrementally sync presentation state during configure() via
+   * node:property:changed events. This method provides an explicit
+   * bulk-sync alternative for scenarios needing deterministic projection.
    *
    * @param info The serialized node data
    * @param nodeIndex Optional z-order index (array position during graph load)
