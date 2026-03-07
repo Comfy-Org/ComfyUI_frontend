@@ -572,23 +572,20 @@ test.describe(
         // app.nodeOutputs and the reactive nodeOutputs ref.
         await comfyPage.page.evaluate(() => {
           const api = window.app!.api
-          api.dispatchEvent(
-            new CustomEvent('executed', {
-              detail: {
-                node: '5:10',
-                display_node: '5:10',
-                output: {
-                  images: [
-                    {
-                      filename: 'example.png',
-                      subfolder: '',
-                      type: 'input'
-                    }
-                  ]
+          api.dispatchCustomEvent('executed', {
+            prompt_id: 'test-prompt-id',
+            node: '5:10',
+            display_node: '5:10',
+            output: {
+              images: [
+                {
+                  filename: 'example.png',
+                  subfolder: '',
+                  type: 'input'
                 }
-              }
-            })
-          )
+              ]
+            }
+          })
         })
 
         // The promoted preview should render an image inside the SubgraphNode
