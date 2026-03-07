@@ -47,7 +47,6 @@ catalog:
   '@types/node': ^24.1.0
   '@types/semver': ^7.7.0
   '@types/three': ^0.169.0
-  '@typescript-eslint/parser': ^8.56.1
   '@vitejs/plugin-vue': ^6.0.0
   '@vitest/coverage-v8': ^4.0.16
   '@vitest/ui': ^4.0.16
