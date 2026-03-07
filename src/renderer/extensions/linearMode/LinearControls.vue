@@ -19,6 +19,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
+import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -274,6 +275,7 @@ defineExpose({ runButtonClick })
           </template>
         </div>
       </Teleport>
+      <PartnerNodesList />
       <section
         v-if="mobile"
         data-testid="linear-run-button"
