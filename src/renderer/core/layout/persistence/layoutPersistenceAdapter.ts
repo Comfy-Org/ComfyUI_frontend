@@ -10,7 +10,7 @@
  */
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId, NodeLayout } from '@/renderer/core/layout/types'
-import type { NodePresentationState } from '@/renderer/core/nodePresentation/types'
+import type { NodeDisplayState } from '@/stores/nodeDisplayStore'
 
 export function extractLayoutFromSerialized(
   node: ISerialisedNode,
@@ -34,7 +34,7 @@ export function extractLayoutFromSerialized(
 
 export function extractPresentationFromSerialized(
   node: ISerialisedNode
-): NodePresentationState {
+): NodeDisplayState {
   return {
     id: String(node.id),
     title: node.title ?? '',
@@ -61,7 +61,7 @@ export function projectLayoutToSerialized(
 }
 
 export function projectPresentationToSerialized(
-  state: NodePresentationState
+  state: NodeDisplayState
 ): Partial<ISerialisedNode> {
   const result: Partial<ISerialisedNode> = {
     mode: state.mode

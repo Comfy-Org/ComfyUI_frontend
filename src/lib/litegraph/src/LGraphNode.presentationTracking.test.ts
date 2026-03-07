@@ -196,8 +196,10 @@ describe('LGraphNode presentation tracking', () => {
       node.title = 'X'
       expect(store.getNode(TEST_GRAPH_ID, '1')?.title).toBe('X')
 
-       
-      const syncSpy = vi.spyOn(node as any, 'syncDisplayStore')
+      const syncSpy = vi.spyOn(
+        node as unknown as Record<string, (...args: unknown[]) => void>,
+        'syncDisplayStore'
+      )
       node.title = 'X'
 
       expect(syncSpy).not.toHaveBeenCalled()
