@@ -3406,14 +3406,11 @@
     "retryDownload": "Retry download"
   },
   "workspace": {
-    "unsavedChanges": {
-      "title": "Unsaved Changes",
-      "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
-    },
     "inviteAccepted": "Invite Accepted",
     "addedToWorkspace": "You have been added to:",
     "inviteFailed": "Failed to Accept Invite",
-    "viewWorkspace": "View workspace"
+    "viewWorkspace": "View workspace",
+    "switchFailed": "Failed to switch workspace. Please try again."
   },
   "workspaceAuth": {
     "errors": {

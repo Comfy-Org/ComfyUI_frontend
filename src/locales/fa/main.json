@@ -3240,10 +3240,6 @@
     "addedToWorkspace": "شما به {workspaceName} اضافه شدید",
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteFailed": "پذیرش دعوت ناموفق بود",
-    "unsavedChanges": {
-      "message": "شما تغییرات ذخیره‌نشده دارید. آیا می‌خواهید آن‌ها را رها کرده و فضای کاری را تغییر دهید؟",
-      "title": "تغییرات ذخیره‌نشده"
-    },
     "viewWorkspace": "مشاهده workspace"
   },
   "workspaceAuth": {

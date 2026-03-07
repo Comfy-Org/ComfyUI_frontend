@@ -3228,10 +3228,6 @@
     "addedToWorkspace": "{workspaceName}に追加されました",
     "inviteAccepted": "招待を承諾しました",
     "inviteFailed": "招待の承諾に失敗しました",
-    "unsavedChanges": {
-      "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
-      "title": "未保存の変更"
-    },
     "viewWorkspace": "ワークスペースを見る"
   },
   "workspaceAuth": {
