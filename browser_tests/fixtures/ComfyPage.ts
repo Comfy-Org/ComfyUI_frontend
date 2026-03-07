@@ -432,7 +432,10 @@ export const comfyPageFixture = base.extend<{
         'Comfy.VueNodes.AutoScaleLayout': false,
         // Disable toast warning about version compatibility, as they may or
         // may not appear - depending on upstream ComfyUI dependencies
-        'Comfy.VersionCompatibility.DisableWarnings': true
+        'Comfy.VersionCompatibility.DisableWarnings': true,
+        // Browser tests should opt into missing-model warnings explicitly so
+        // workflows do not render differently based on models present on disk.
+        'Comfy.Workflow.ShowMissingModelsWarning': false
       })
     } catch (e) {
       console.error(e)
