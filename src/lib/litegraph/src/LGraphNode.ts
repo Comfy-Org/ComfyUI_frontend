@@ -564,6 +564,87 @@ export class LGraphNode
     return changed
   }
 
+  /**
+   * Apply presentation state from the store without triggering
+   * store mutations or property change events. Used exclusively by
+   * store→LiteGraph projection to avoid feedback loops.
+   */
+  applyStorePresentationProjection(state: {
+    title?: string
+    mode?: number
+    shape?: number
+    color?: string
+    bgcolor?: string
+    showAdvanced?: boolean
+    flags?: { collapsed?: boolean; pinned?: boolean; ghost?: boolean }
+  }): boolean {
+    this.changeTracker.suppressEvents = true
+    try {
+      let changed = false
+
+      if (state.title !== undefined && this.title !== state.title) {
+        this.title = state.title
+        changed = true
+      }
+
+      if (state.mode !== undefined && this.mode !== state.mode) {
+        this.mode = state.mode
+        changed = true
+      }
+
+      if (state.shape !== undefined && this.shape !== state.shape) {
+        this.shape = state.shape
+        changed = true
+      }
+
+      if (state.color !== undefined && this.color !== state.color) {
+        this.color = state.color
+        changed = true
+      }
+
+      if (state.bgcolor !== undefined && this.bgcolor !== state.bgcolor) {
+        this.bgcolor = state.bgcolor
+        changed = true
+      }
+
+      if (
+        state.showAdvanced !== undefined &&
+        this.showAdvanced !== state.showAdvanced
+      ) {
+        this.showAdvanced = state.showAdvanced
+        changed = true
+      }
+
+      if (state.flags) {
+        if (
+          state.flags.collapsed !== undefined &&
+          this.flags.collapsed !== state.flags.collapsed
+        ) {
+          this.flags.collapsed = state.flags.collapsed
+          changed = true
+        }
+        if (
+          state.flags.pinned !== undefined &&
+          this.flags.pinned !== state.flags.pinned
+        ) {
+          this.flags.pinned = state.flags.pinned
+          changed = true
+        }
+        if (
+          state.flags.ghost !== undefined &&
+          this.flags.ghost !== state.flags.ghost
+        ) {
+          this.flags.ghost = state.flags.ghost
+          changed = true
+        }
+      }
+
+      return changed
+    } finally {
+      this.changeTracker.suppressEvents = false
+    }
+  }
+
   public get size() {
     return this._size
   }

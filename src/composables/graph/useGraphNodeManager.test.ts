@@ -11,8 +11,18 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { nodePresentationStore } from '@/renderer/core/nodePresentation/store/nodePresentationStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+
+vi.mock('@/renderer/core/nodePresentation/store/nodePresentationStore', () => ({
+  nodePresentationStore: {
+    initializeNode: vi.fn(),
+    updateNode: vi.fn(),
+    removeNode: vi.fn(),
+    clear: vi.fn()
+  }
+}))
 
 describe('Node Reactivity', () => {
   beforeEach(() => {
@@ -313,6 +323,66 @@ describe('Nested promoted widget mapping', () => {
     expect(mappedWidget?.storeName).toBe('picker')
     expect(mappedWidget?.storeNodeId).toBe(
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
+    )
+  })
+})
+
+describe('Presentation store integration', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+  })
+
+  it('initializes presentation store on node add', () => {
+    const graph = new LGraph()
+    useGraphNodeManager(graph)
+    vi.clearAllMocks()
+
+    const node = new LGraphNode('test')
+    node.title = 'My Node'
+    graph.add(node)
+
+    expect(nodePresentationStore.initializeNode).toHaveBeenCalledWith(
+      String(node.id),
+      expect.objectContaining({
+        id: String(node.id),
+        title: 'My Node'
+      })
+    )
+  })
+
+  it('removes from presentation store on node removal', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    useGraphNodeManager(graph)
+    vi.clearAllMocks()
+
+    graph.remove(node)
+
+    expect(nodePresentationStore.removeNode).toHaveBeenCalledWith(
+      String(node.id)
+    )
+  })
+
+  it('updates presentation store on property change', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    useGraphNodeManager(graph)
+    vi.clearAllMocks()
+
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'title',
+      oldValue: node.title,
+      newValue: 'Updated Title'
+    })
+
+    expect(nodePresentationStore.updateNode).toHaveBeenCalledWith(
+      String(node.id),
+      { title: 'Updated Title' },
+      'canvas'
     )
   })
 })

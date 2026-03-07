@@ -24,6 +24,9 @@ export class LGraphNodeProperties {
   /** The node this property manager belongs to */
   node: LGraphNode
 
+  /** When true, property change events are suppressed. Used for store→LiteGraph projection. */
+  suppressEvents = false
+
   /** Set of property paths that have been instrumented */
   private _instrumentedPaths = new Set<string>()
 
@@ -172,6 +175,8 @@ export class LGraphNodeProperties {
     oldValue: TValue,
     newValue: TValue
   ): void {
+    if (oldValue === newValue) return
+    if (this.suppressEvents) return
     this.node.graph?.trigger('node:property:changed', {
       nodeId: this.node.id,
       property: propertyPath,

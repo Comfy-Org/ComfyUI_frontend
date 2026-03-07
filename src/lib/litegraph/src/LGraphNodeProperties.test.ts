@@ -49,10 +49,24 @@ describe('LGraphNodeProperties', () => {
       })
     })
 
-    it('should emit event when value is set to the same value', () => {
+    it('should NOT emit event when value is set to the same value', () => {
       new LGraphNodeProperties(mockNode)
 
       mockNode.title = 'Test Node' // Same value as original
+
+      expect(mockGraph.trigger).not.toHaveBeenCalled()
+    })
+
+    it('should not emit events when suppressEvents is true', () => {
+      const propManager = new LGraphNodeProperties(mockNode)
+
+      propManager.suppressEvents = true
+      mockNode.title = 'New Title'
+
+      expect(mockGraph.trigger).not.toHaveBeenCalled()
+
+      propManager.suppressEvents = false
+      mockNode.title = 'Another Title'
 
       expect(mockGraph.trigger).toHaveBeenCalledTimes(1)
     })

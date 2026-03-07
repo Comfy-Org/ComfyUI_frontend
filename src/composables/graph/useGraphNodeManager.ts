@@ -19,6 +19,9 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
+import { nodePresentationStore } from '@/renderer/core/nodePresentation/store/nodePresentationStore'
+import { PresentationSource } from '@/renderer/core/nodePresentation/types'
+import type { PresentationUpdate } from '@/renderer/core/nodePresentation/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -159,6 +162,40 @@ function getSharedWidgetEnhancements(
   return {
     controlWidget: getControlWidget(widget),
     spec: nodeDefStore.getInputSpecForWidget(node, widget.name)
+  }
+}
+
+function toPresentationUpdate(
+  property: string,
+  newValue: unknown
+): PresentationUpdate | null {
+  switch (property) {
+    case 'title':
+      return { title: String(newValue) }
+    case 'mode':
+      return { mode: typeof newValue === 'number' ? newValue : 0 }
+    case 'color':
+      return {
+        color: typeof newValue === 'string' ? newValue : undefined
+      }
+    case 'bgcolor':
+      return {
+        bgcolor: typeof newValue === 'string' ? newValue : undefined
+      }
+    case 'shape':
+      return {
+        shape: typeof newValue === 'number' ? newValue : undefined
+      }
+    case 'showAdvanced':
+      return { showAdvanced: Boolean(newValue) }
+    case 'flags.collapsed':
+      return { flags: { collapsed: Boolean(newValue) } }
+    case 'flags.pinned':
+      return { flags: { pinned: Boolean(newValue) } }
+    case 'flags.ghost':
+      return { flags: { ghost: Boolean(newValue) } }
+    default:
+      return null
   }
 }
 
@@ -485,6 +522,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Remove deleted nodes
     for (const id of Array.from(vueNodeData.keys())) {
       if (!currentNodes.has(id)) {
+        nodePresentationStore.removeNode(id)
         nodeRefs.delete(id)
         vueNodeData.delete(id)
       }
@@ -525,6 +563,21 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Extract actual positions after configure() has potentially updated them
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
+
+      nodePresentationStore.initializeNode(id, {
+        id,
+        title: typeof node.title === 'string' ? node.title : '',
+        mode: node.mode || 0,
+        shape: node.shape,
+        showAdvanced: node.showAdvanced,
+        color: node.color || undefined,
+        bgcolor: node.bgcolor || undefined,
+        flags: {
+          collapsed: node.flags?.collapsed,
+          pinned: node.flags?.pinned,
+          ghost: node.flags?.ghost
+        }
+      })
 
       // Skip layout creation if it already exists
       // (e.g. in-place node replacement where the old node's layout is reused for the new node with the same ID).
@@ -577,6 +630,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Remove node from layout store
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
+
+    nodePresentationStore.removeNode(id)
 
     // Clean up all tracking references
     nodeRefs.delete(id)
@@ -711,6 +766,18 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
               })
               break
           }
+        }
+
+        const update = toPresentationUpdate(
+          propertyEvent.property,
+          propertyEvent.newValue
+        )
+        if (update) {
+          nodePresentationStore.updateNode(
+            nodeId,
+            update,
+            PresentationSource.Canvas
+          )
         }
       },
       'node:slot-errors:changed': (slotErrorsEvent) => {
