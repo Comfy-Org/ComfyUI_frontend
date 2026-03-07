@@ -36,7 +36,9 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons'
+    '@primevue/icons',
+    // Used by lucideStrokePlugin.js (CSS @plugin)
+    '@iconify/utils'
   ],
   ignore: [
     // Auto generated manager types
@@ -51,7 +53,9 @@ const config: KnipConfig = {
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js'
+    '.agents/checks/eslint.strict.config.js',
+    // Loaded via @plugin directive in CSS, not detected by knip
+    'packages/design-system/src/css/lucideStrokePlugin.js'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
