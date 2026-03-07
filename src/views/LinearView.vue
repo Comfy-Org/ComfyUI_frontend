@@ -85,7 +85,7 @@ const { onResizeEnd } = useStablePrimeVueSplitterSizer(
   [activeTab, splitterKey]
 )
 
-const TYPEFORM_WIDGET_ID = 'gmVqFi8l'
+const TYPEFORM_WIDGET_ID = 'jmmzmlKw'
 
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
