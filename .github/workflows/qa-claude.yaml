@@ -1,4 +1,5 @@
 # Description: Automated QA of ComfyUI frontend using Claude CLI + Playwright MCP
+# Records a video of the QA session and uploads artifacts
 # Triggers on PRs from sno-skills or qa-* branches, or via 'qa-run' label
 name: 'QA: Claude Frontend QA'
 
@@ -56,6 +57,26 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Setup virtual display and screen recording
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb ffmpeg > /dev/null 2>&1
+          # Start Xvfb virtual display at 1280x720
+          Xvfb :99 -screen 0 1280x720x24 -ac &
+          echo $! > /tmp/xvfb.pid
+          sleep 2
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+
+      - name: Start screen recording
+        run: |
+          mkdir -p /tmp/qa-artifacts
+          # Record the virtual display at 10fps with fast encoding
+          ffmpeg -y -f x11grab -video_size 1280x720 -framerate 10 \
+            -i :99.0 -c:v libx264 -preset ultrafast -crf 28 \
+            -pix_fmt yuv420p /tmp/qa-artifacts/qa-session.mp4 &
+          echo $! > /tmp/ffmpeg.pid
+          sleep 1
+          echo "Screen recording started (PID: $(cat /tmp/ffmpeg.pid))"
+
       - name: Create MCP config
         run: |
           cat > /tmp/mcp-config.json <<'MCPEOF'
@@ -63,7 +84,7 @@ jobs:
             "mcpServers": {
               "playwright": {
                 "command": "npx",
-                "args": ["@playwright/mcp@latest", "--headless"]
+                "args": ["@playwright/mcp@latest"]
               }
             }
           }
@@ -82,6 +103,7 @@ jobs:
           - Branch: ${{ github.head_ref || github.ref_name }}
           - PR: #${{ github.event.pull_request.number }}
           - Commit: ${{ github.sha }}
+          - Video recording: active (headed browser on virtual display)
 
           Instructions:
           1. Use the playwright MCP tools to navigate http://127.0.0.1:8188
@@ -90,10 +112,9 @@ jobs:
           4. Generate a QA report following the template in the skill file
           5. Save the report to docs/qa/ with today's date
           6. Commit and push the report to this branch
-          7. Post a summary comment on this PR using:
-             gh pr comment ${{ github.event.pull_request.number }} --body '<your summary>'
 
           Do NOT create a new PR. Commit directly to this branch.
+          Do NOT post a PR comment — the workflow handles that after artifacts upload.
           Be thorough but efficient — skip tests that require features not
           available in CI (e.g., file upload dialogs, real GPU execution).
           PROMPT
@@ -104,14 +125,74 @@ jobs:
           CI: 'true'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISPLAY: ':99'
         run: |
           cat /tmp/qa-prompt.txt | claude --print --verbose \
             --max-turns 128 \
             --mcp-config /tmp/mcp-config.json \
-            --allowedTools "mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot,mcp__playwright__browser_click,mcp__playwright__browser_type,mcp__playwright__browser_press_key,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_hover,mcp__playwright__browser_drag,mcp__playwright__browser_select_option,mcp__playwright__browser_handle_dialog,mcp__playwright__browser_tab_list,mcp__playwright__browser_tab_new,mcp__playwright__browser_tab_select,mcp__playwright__browser_tab_close,mcp__playwright__browser_console_messages,mcp__playwright__browser_resize,mcp__playwright__browser_wait_for,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git log:*),Bash(git diff:*),Bash(gh pr comment:*),Bash(gh pr view:*),Bash(date:*),Bash(ls:*),Bash(mkdir:*),Read,Write,Edit,Glob,Grep"
+            --allowedTools "mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot,mcp__playwright__browser_click,mcp__playwright__browser_type,mcp__playwright__browser_press_key,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_hover,mcp__playwright__browser_drag,mcp__playwright__browser_select_option,mcp__playwright__browser_handle_dialog,mcp__playwright__browser_tab_list,mcp__playwright__browser_tab_new,mcp__playwright__browser_tab_select,mcp__playwright__browser_tab_close,mcp__playwright__browser_console_messages,mcp__playwright__browser_resize,mcp__playwright__browser_wait_for,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git log:*),Bash(git diff:*),Bash(date:*),Bash(ls:*),Bash(mkdir:*),Read,Write,Edit,Glob,Grep"
+
+      - name: Stop screen recording
+        if: always()
+        run: |
+          if [ -f /tmp/ffmpeg.pid ]; then
+            # Send SIGINT for graceful mp4 finalization
+            kill -INT $(cat /tmp/ffmpeg.pid) 2>/dev/null || true
+            sleep 3
+            kill $(cat /tmp/ffmpeg.pid) 2>/dev/null || true
+          fi
+          if [ -f /tmp/qa-artifacts/qa-session.mp4 ]; then
+            SIZE=$(du -h /tmp/qa-artifacts/qa-session.mp4 | cut -f1)
+            echo "Video recorded: ${SIZE}"
+          else
+            echo "No video file found"
+          fi
+
+      - name: Collect QA artifacts
+        if: always()
+        run: |
+          # Copy screenshots and report into artifacts dir
+          cp -r docs/qa/* /tmp/qa-artifacts/ 2>/dev/null || true
+          ls -la /tmp/qa-artifacts/
+
+      - name: Upload QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: qa-report-${{ github.run_id }}
+          path: /tmp/qa-artifacts/
+          retention-days: 14
+
+      - name: Post artifact link on PR
+        if: always() && github.event.pull_request.number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ARTIFACTS_URL="${RUN_URL}#artifacts"
+
+          gh pr comment ${{ github.event.pull_request.number }} --body "$(cat <<EOF
+          ## QA Artifacts
+
+          **Run**: ${RUN_URL}
+
+          | Artifact | Details |
+          |----------|---------|
+          | Video | Screen recording of full QA session |
+          | Screenshots | Individual screenshots of each test area |
+          | Report | Full QA report markdown |
+
+          [Download all artifacts](${ARTIFACTS_URL}) (available for 14 days)
+          EOF
+          )"
 
       - name: Remove qa-run label
         if: always() && github.event.label.name == 'qa-run'
         run: gh pr edit ${{ github.event.pull_request.number }} --remove-label "qa-run"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup
+        if: always()
+        run: |
+          kill $(cat /tmp/xvfb.pid) 2>/dev/null || true
