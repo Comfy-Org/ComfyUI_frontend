@@ -96,11 +96,15 @@ export async function promptRenameWidget(
   t: (key: string) => string,
   parents?: SubgraphNode[]
 ): Promise<string | null> {
-  const newLabel = await promptWidgetLabel(widget, t)
-  if (newLabel === null) return null
+  const rawLabel = await promptWidgetLabel(widget, t)
+  if (rawLabel === null) return null
 
-  renameWidget(widget, node, newLabel, parents)
+  const normalizedLabel = rawLabel.trim()
+  if (!normalizedLabel) return null
+
+  if (!renameWidget(widget, node, normalizedLabel, parents)) return null
+
   widget.callback?.(widget.value)
   useCanvasStore().canvas?.setDirty(true)
-  return newLabel
+  return normalizedLabel
 }
