@@ -132,6 +132,24 @@ describe('NodePresentationStore', () => {
     expect(nodeRef.value).toBeNull()
   })
 
+  it('removeNode cleans up ref cache so re-init gets fresh ref', async () => {
+    nodePresentationStore.initializeNode('n5', createTestState('n5'))
+    const refBefore = nodePresentationStore.getNodeRef('n5')
+    expect(refBefore.value?.title).toBe('Node n5')
+
+    nodePresentationStore.removeNode('n5')
+    await nextTick()
+    expect(refBefore.value).toBeNull()
+
+    nodePresentationStore.initializeNode(
+      'n5',
+      createTestState('n5', { title: 'Reborn' })
+    )
+    const refAfter = nodePresentationStore.getNodeRef('n5')
+    await nextTick()
+    expect(refAfter.value?.title).toBe('Reborn')
+  })
+
   it('clear removes all state', () => {
     nodePresentationStore.initializeNode('a', createTestState('a'))
     nodePresentationStore.initializeNode('b', createTestState('b'))

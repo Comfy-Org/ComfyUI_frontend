@@ -9,13 +9,17 @@ import type {
   PresentationUpdate
 } from '@/renderer/core/nodePresentation/types'
 
+interface NodeRefEntry {
+  ref: Ref<NodePresentationState | null>
+  trigger: () => void
+}
+
 class NodePresentationStoreImpl {
   private nodes = new Map<NodeId, NodePresentationState>()
   private currentSource: PresentationSource = PresentationSource.Canvas
   private changeListeners = new Set<(change: PresentationChange) => void>()
   private version = 0
-  private nodeRefs = new Map<NodeId, Ref<NodePresentationState | null>>()
-  private nodeTriggers = new Map<NodeId, () => void>()
+  private nodeRefCache = new Map<NodeId, NodeRefEntry>()
 
   initializeNode(nodeId: NodeId, initial: NodePresentationState): void {
     this.nodes.set(nodeId, { ...initial })
@@ -107,6 +111,7 @@ class NodePresentationStoreImpl {
     })
 
     this.triggerRef(nodeId)
+    this.nodeRefCache.delete(nodeId)
   }
 
   getNode(nodeId: NodeId): NodePresentationState | null {
@@ -114,21 +119,22 @@ class NodePresentationStoreImpl {
   }
 
   getNodeRef(nodeId: NodeId): Ref<NodePresentationState | null> {
-    let nodeRef = this.nodeRefs.get(nodeId)
-    if (!nodeRef) {
-      nodeRef = customRef<NodePresentationState | null>((track, trigger) => {
-        this.nodeTriggers.set(nodeId, trigger)
-        return {
-          get: () => {
-            track()
-            return this.nodes.get(nodeId) ?? null
-          },
-          set: () => {}
-        }
-      })
-      this.nodeRefs.set(nodeId, nodeRef)
-    }
-    return nodeRef
+    const cached = this.nodeRefCache.get(nodeId)
+    if (cached) return cached.ref
+
+    let triggerFn: () => void
+    const ref = customRef<NodePresentationState | null>((track, trigger) => {
+      triggerFn = trigger
+      return {
+        get: () => {
+          track()
+          return this.nodes.get(nodeId) ?? null
+        },
+        set: () => {}
+      }
+    })
+    this.nodeRefCache.set(nodeId, { ref, trigger: triggerFn! })
+    return ref
   }
 
   setSource(source: PresentationSource): void {
@@ -167,8 +173,7 @@ class NodePresentationStoreImpl {
   }
 
   private triggerRef(nodeId: NodeId): void {
-    const trigger = this.nodeTriggers.get(nodeId)
-    if (trigger) trigger()
+    this.nodeRefCache.get(nodeId)?.trigger()
   }
 }
 

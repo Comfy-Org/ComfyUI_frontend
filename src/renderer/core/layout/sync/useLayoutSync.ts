@@ -26,6 +26,9 @@ export function useLayoutSync() {
     stopSync()
     // Subscribe to layout changes
     unsubscribe.value = layoutStore.onChange((change) => {
+      const graph = canvas.graph
+      if (!graph) return
+
       // Apply changes to LiteGraph regardless of source.
       // The layout store is the single source of truth;
       // this is a one-way projection: store → LiteGraph.
@@ -33,13 +36,24 @@ export function useLayoutSync() {
         const layout = layoutStore.getNodeLayoutRef(nodeId).value
         if (!layout) continue
 
-        const liteNode = canvas.graph?.getNodeById(parseInt(nodeId))
+        const liteNode = graph.getNodeById(parseInt(nodeId))
         if (!liteNode) continue
 
         // Use applyStoreProjection to write directly to backing arrays
         // without triggering pos/size setters (which would write back
         // to the store and create a feedback loop).
         liteNode.applyStoreProjection(layout.position, layout.size)
+      }
+
+      // Sync render order when z-index changes
+      if (change.operation.type === 'setNodeZIndex') {
+        graph._nodes.sort((a, b) => {
+          const zA =
+            layoutStore.getNodeLayoutRef(String(a.id)).value?.zIndex ?? 0
+          const zB =
+            layoutStore.getNodeLayoutRef(String(b.id)).value?.zIndex ?? 0
+          return zA - zB
+        })
       }
 
       // Trigger single redraw for all changes
