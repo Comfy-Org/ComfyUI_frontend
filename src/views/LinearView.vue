@@ -157,7 +157,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         </div>
         <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
         <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
-        <div class="absolute top-4 right-4 z-20"><ErrorOverlay /></div>
+        <div class="absolute top-4 right-4 z-20"><ErrorOverlay app-mode /></div>
       </SplitterPanel>
       <SplitterPanel
         v-if="hasRightPanel"

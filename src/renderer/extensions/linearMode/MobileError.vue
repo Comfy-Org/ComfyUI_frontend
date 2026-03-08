@@ -146,9 +146,16 @@ function copy(obj: unknown) {
       </ul>
     </div>
     <div class="flex gap-2">
-      <Button variant="textonly" size="lg" @click="setMode('graph')">{{
-        t('linearMode.viewGraph')
-      }}</Button>
+      <Button
+        variant="textonly"
+        size="lg"
+        @click="executionErrorStore.dismissErrorOverlay()"
+      >
+        {{ t('g.dismiss') }}
+      </Button>
+      <Button variant="textonly" size="lg" @click="setMode('graph')">
+        {{ t('linearMode.viewGraph') }}
+      </Button>
       <Button size="lg" @click="copy(accessibleErrors)">
         {{ t('importFailed.copyError') }}
         <i class="icon-[lucide--copy]" />

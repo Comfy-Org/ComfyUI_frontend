@@ -5,7 +5,6 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
-import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -17,6 +16,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -32,6 +32,7 @@ const canvasStore = useCanvasStore()
 const colorPaletteService = useColorPaletteService()
 const colorPaletteStore = useColorPaletteStore()
 const { isLoggedIn } = useCurrentUser()
+const executionErrorStore = useExecutionErrorStore()
 const { t } = useI18n()
 const { commandIdToMenuItem } = useMenuItemStore()
 const queueStore = useQueueStore()
@@ -44,7 +45,6 @@ const { toggle: toggleFullscreen } = useFullscreen(undefined, {
 const activeIndex = ref(1)
 const sliderPaneRef = useTemplateRef('sliderPaneRef')
 const sliderWidth = computed(() => sliderPaneRef.value?.offsetWidth)
-const { allErrorGroups } = useErrorGroups('', t)
 
 const { distanceX, isSwiping } = usePointerSwipe(sliderPaneRef, {
   disableTextSelect: true,
@@ -215,7 +215,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         <div class="relative size-4">
           <i :class="cn('size-4', icon)" />
           <div
-            v-if="index === 1 && allErrorGroups.length"
+            v-if="index === 1 && executionErrorStore.isErrorOverlayOpen"
             class="absolute -top-1 -right-1 size-2 rounded-full bg-error"
           />
           <div

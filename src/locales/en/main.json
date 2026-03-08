@@ -3232,8 +3232,9 @@
       "requiresGraph": "Something went wrong during generation. This could be due to invalid hidden inputs, missing resources, or workflow configuration issues.",
       "promptVisitGraph": "View the node graph to see the full error.",
       "getHelp": "For help, view our {0}, {1}, or {2} with the copied error.",
-      "guide": "troubleshooting guide",
+      "goto": "Show errors in graph",
       "github": "submit a GitHub issue",
+      "guide": "troubleshooting guide",
       "support": "contact our support",
       "promptShow": "Show error report"
     },
