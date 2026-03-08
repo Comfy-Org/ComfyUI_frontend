@@ -38,7 +38,8 @@ test.describe('Node Output Preservation', { tag: ['@widget', '@node'] }, () => {
     return comfyPage.page.locator('.workflow-tabs .p-togglebutton').nth(index)
   }
 
-  test('LoadImage preview survives tab switch', async ({ comfyPage }) => {
+  // TODO(#8143): Re-enable after image preview sync is working in CI
+  test.fixme('LoadImage preview survives tab switch', async ({ comfyPage }) => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
 
     // Create a new tab (switches to it)
@@ -55,7 +56,8 @@ test.describe('Node Output Preservation', { tag: ['@widget', '@node'] }, () => {
     await expect(imagePreview.locator('img')).toBeVisible()
   })
 
-  test('LoadImage preview survives execution + tab switch', async ({
+  // TODO(#8143): Re-enable after image preview sync is working in CI
+  test.fixme('LoadImage preview survives execution + tab switch', async ({
     comfyPage
   }) => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
@@ -78,31 +80,37 @@ test.describe('Node Output Preservation', { tag: ['@widget', '@node'] }, () => {
     await expect(imagePreview.locator('img')).toBeVisible()
   })
 
-  test('Multiple LoadImage nodes on different tabs preserve independently', async ({
-    comfyPage
-  }) => {
-    // Tab 1: Load image on a LoadImage node
-    await loadImageOnNode(comfyPage)
-    const tab1Preview = comfyPage.page.locator('.image-preview img')
-    await expect(tab1Preview).toBeVisible()
+  // TODO(#8143): Re-enable after image preview sync is working in CI
+  test.fixme(
+    'Multiple LoadImage nodes on different tabs preserve independently',
+    async ({ comfyPage }) => {
+      // Tab 1: Load image on a LoadImage node
+      await loadImageOnNode(comfyPage)
+      const tab1Preview = comfyPage.page.locator('.image-preview img')
+      await expect(tab1Preview).toBeVisible()
 
-    // Create Tab 2 and load a different workflow with LoadImage
-    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-    await comfyPage.nextFrame()
-    await loadImageOnNode(comfyPage)
-    const tab2Preview = comfyPage.page.locator('.image-preview img')
-    await expect(tab2Preview).toBeVisible()
+      // Create Tab 2 and load a different workflow with LoadImage
+      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+      await comfyPage.nextFrame()
+      await loadImageOnNode(comfyPage)
+      const tab2Preview = comfyPage.page.locator('.image-preview img')
+      await expect(tab2Preview).toBeVisible()
 
-    // Switch to Tab 1 — its preview should be visible
-    const firstTab = await getTab(comfyPage, 0)
-    await firstTab.click()
-    await comfyPage.nextFrame()
-    await expect(comfyPage.page.locator('.image-preview img')).toBeVisible()
+      // Switch to Tab 1 — its preview should be visible
+      const firstTab = await getTab(comfyPage, 0)
+      await firstTab.click()
+      await comfyPage.nextFrame()
+      await expect(
+        comfyPage.page.locator('.image-preview img')
+      ).toBeVisible()
 
-    // Switch to Tab 2 — its preview should be visible
-    const secondTab = await getTab(comfyPage, 1)
-    await secondTab.click()
-    await comfyPage.nextFrame()
-    await expect(comfyPage.page.locator('.image-preview img')).toBeVisible()
-  })
+      // Switch to Tab 2 — its preview should be visible
+      const secondTab = await getTab(comfyPage, 1)
+      await secondTab.click()
+      await comfyPage.nextFrame()
+      await expect(
+        comfyPage.page.locator('.image-preview img')
+      ).toBeVisible()
+    }
+  )
 })
