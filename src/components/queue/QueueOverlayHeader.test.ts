@@ -27,6 +27,7 @@ const mockGetSetting = vi.fn<(key: string) => boolean | undefined>((key) =>
   key === 'Comfy.Queue.QPOV2' ? true : undefined
 )
 const mockSetSetting = vi.fn()
+const mockSetMany = vi.fn()
 const mockSidebarTabStore = {
   activeSidebarTabId: null as string | null
 }
@@ -34,7 +35,8 @@ const mockSidebarTabStore = {
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: mockGetSetting,
-    set: mockSetSetting
+    set: mockSetSetting,
+    setMany: mockSetMany
   })
 }))
 
@@ -88,6 +90,7 @@ describe('QueueOverlayHeader', () => {
   beforeEach(() => {
     popoverCloseSpy.mockClear()
     mockSetSetting.mockClear()
+    mockSetMany.mockClear()
     mockSidebarTabStore.activeSidebarTabId = null
     mockGetSetting.mockImplementation((key: string) =>
       key === 'Comfy.Queue.QPOV2' ? true : undefined
@@ -144,17 +147,13 @@ describe('QueueOverlayHeader', () => {
     )
     await dockedJobHistoryButton.trigger('click')
 
-    expect(mockSetSetting).toHaveBeenCalledTimes(2)
-    expect(mockSetSetting).toHaveBeenNthCalledWith(
-      1,
-      'Comfy.Queue.QPOV2',
-      false
-    )
-    expect(mockSetSetting).toHaveBeenNthCalledWith(
-      2,
-      'Comfy.Queue.History.Expanded',
-      true
-    )
+    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
+    expect(mockSetMany).toHaveBeenCalledTimes(1)
+    expect(mockSetMany).toHaveBeenCalledWith({
+      'Comfy.Queue.QPOV2': false,
+      'Comfy.Queue.History.Expanded': true
+    })
+    expect(mockSetSetting).not.toHaveBeenCalled()
     expect(mockSidebarTabStore.activeSidebarTabId).toBe(null)
   })
 
@@ -169,8 +168,43 @@ describe('QueueOverlayHeader', () => {
     )
     await dockedJobHistoryButton.trigger('click')
 
+    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
     expect(mockSetSetting).toHaveBeenCalledTimes(1)
     expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', true)
+    expect(mockSetMany).not.toHaveBeenCalled()
     expect(mockSidebarTabStore.activeSidebarTabId).toBe('job-history')
+  })
+
+  it('keeps docked target open even when enabling persistence fails', async () => {
+    mockGetSetting.mockImplementation((key: string) =>
+      key === 'Comfy.Queue.QPOV2' ? false : undefined
+    )
+    mockSetSetting.mockRejectedValueOnce(new Error('persistence failed'))
+    const wrapper = mountHeader()
+
+    const dockedJobHistoryButton = wrapper.get(
+      '[data-testid="docked-job-history-action"]'
+    )
+    await dockedJobHistoryButton.trigger('click')
+
+    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
+    expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', true)
+    expect(mockSidebarTabStore.activeSidebarTabId).toBe('job-history')
+  })
+
+  it('closes the menu when disabling persistence fails', async () => {
+    mockSetMany.mockRejectedValueOnce(new Error('persistence failed'))
+    const wrapper = mountHeader()
+
+    const dockedJobHistoryButton = wrapper.get(
+      '[data-testid="docked-job-history-action"]'
+    )
+    await dockedJobHistoryButton.trigger('click')
+
+    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
+    expect(mockSetMany).toHaveBeenCalledWith({
+      'Comfy.Queue.QPOV2': false,
+      'Comfy.Queue.History.Expanded': true
+    })
   })
 })
