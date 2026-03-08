@@ -110,10 +110,16 @@ watch(
   async (newItems, _old, onCleanup) => {
     itemsKey.value = Symbol()
     let cancelled = false
+    let cleanupFn: (() => void) | undefined
     onCleanup(() => {
       cancelled = true
+      cleanupFn?.()
     })
-    const results = await searcher(searchQuery.value, newItems, () => {})
+    const results = await searcher(
+      searchQuery.value,
+      newItems,
+      (cb) => (cleanupFn = cb)
+    )
     if (!cancelled) filteredItems.value = results
   },
   { immediate: true }
