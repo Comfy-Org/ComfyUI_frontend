@@ -1,20 +1,57 @@
 import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
+import { resultItemType } from '@/schemas/apiSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
+
+const EXCLUDED_KEYS = new Set(['animated'])
+
+function isResultItemLike(item: unknown): item is ResultItem {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    return false
+  }
+
+  const candidate = item as Record<string, unknown>
+
+  if (
+    candidate.filename !== undefined &&
+    typeof candidate.filename !== 'string'
+  ) {
+    return false
+  }
+
+  if (
+    candidate.subfolder !== undefined &&
+    typeof candidate.subfolder !== 'string'
+  ) {
+    return false
+  }
+
+  if (
+    candidate.type !== undefined &&
+    !resultItemType.safeParse(candidate.type).success
+  ) {
+    return false
+  }
+
+  if (
+    candidate.filename === undefined &&
+    candidate.subfolder === undefined &&
+    candidate.type === undefined
+  ) {
+    return false
+  }
+
+  return true
+}
 
 export function flattenNodeOutput([nodeId, nodeOutput]: [
   string | number,
   NodeExecutionOutput
 ]): ResultItemImpl[] {
-  const knownOutputs: Record<string, ResultItem[]> = {}
-  if (nodeOutput.audio) knownOutputs.audio = nodeOutput.audio
-  if (nodeOutput.images) knownOutputs.images = nodeOutput.images
-  if (nodeOutput.video) knownOutputs.video = nodeOutput.video
-  if (nodeOutput.gifs) knownOutputs.gifs = nodeOutput.gifs as ResultItem[]
-  if (nodeOutput['3d']) knownOutputs['3d'] = nodeOutput['3d'] as ResultItem[]
-
-  return Object.entries(knownOutputs).flatMap(([mediaType, outputs]) =>
-    outputs.map(
-      (output) => new ResultItemImpl({ ...output, mediaType, nodeId })
+  return Object.entries(nodeOutput)
+    .filter(([key, value]) => !EXCLUDED_KEYS.has(key) && Array.isArray(value))
+    .flatMap(([mediaType, items]) =>
+      (items as unknown[])
+        .filter(isResultItemLike)
+        .map((item) => new ResultItemImpl({ ...item, mediaType, nodeId }))
     )
-  )
 }
