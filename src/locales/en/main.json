@@ -831,6 +831,7 @@
       "clearQueued": "Clear queued",
       "clearHistory": "Clear job history",
       "dockedJobHistory": "Docked Job History",
+      "showRunProgressBar": "Show run progress bar",
       "clearHistoryMenuAssetsNote": "Media assets won't be deleted.",
       "filterJobs": "Filter jobs",
       "filterBy": "Filter by",
