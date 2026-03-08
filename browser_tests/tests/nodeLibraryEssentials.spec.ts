@@ -5,11 +5,34 @@ import {
 
 test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.featureFlags.mockServerFeatures({
-      node_library_essentials_enabled: true
-    })
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setup()
+
+    // Enable the essentials feature flag via the reactive serverFeatureFlags ref.
+    // In production, this flag comes via WebSocket or remoteConfig (cloud only).
+    // The localhost test server has neither, so we set it directly.
+    await comfyPage.page.evaluate(() => {
+      window.app!.api.serverFeatureFlags.value = {
+        ...window.app!.api.serverFeatureFlags.value,
+        node_library_essentials_enabled: true
+      }
+    })
+
+    // Register a mock essential node so the essentials tab has content.
+    await comfyPage.page.evaluate(() => {
+      return window.app!.registerNodeDef('TestEssentialNode', {
+        name: 'TestEssentialNode',
+        display_name: 'Test Essential Node',
+        category: 'essentials_test',
+        input: { required: {}, optional: {} },
+        output: ['IMAGE'],
+        output_name: ['image'],
+        output_is_list: [false],
+        output_node: false,
+        python_module: 'comfy_essentials.nodes',
+        description: 'Mock essential node for testing',
+        essentials_category: 'Image Generation'
+      })
+    })
   })
 
   test('Node library opens via sidebar', async ({ comfyPage }) => {
