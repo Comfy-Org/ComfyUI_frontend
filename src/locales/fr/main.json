@@ -952,6 +952,7 @@
     "collapseAll": "Tout réduire",
     "color": "Couleur",
     "comfy": "Comfy",
+    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo ComfyOrg",
     "comingSoon": "Bientôt disponible",
     "command": "Commande",
@@ -1459,12 +1460,14 @@
       "unknownWidget": "Widget non visible"
     },
     "cancelThisRun": "Annuler cette exécution",
+    "deleteAllAssets": "Supprimer toutes les ressources de cette exécution",
     "downloadAll": "Tout télécharger",
     "dragAndDropImage": "Glissez-déposez une image",
     "emptyWorkflowExplanation": "Votre workflow est vide. Vous devez d'abord ajouter des nodes pour commencer à créer une application.",
     "enterNodeGraph": "Entrer dans le graphique de nœuds",
     "giveFeedback": "Donner un avis",
     "graphMode": "Mode graphique",
+    "hasCreditCost": "Nécessite des crédits supplémentaires",
     "linearMode": "Mode App",
     "loadTemplate": "Charger un modèle",
     "mobileControls": "Éditer & Exécuter",
@@ -3373,6 +3376,7 @@
     "addedToWorkspace": "Vous avez été ajouté à {workspaceName}",
     "inviteAccepted": "Invitation acceptée",
     "inviteFailed": "Échec de l'acceptation de l'invitation",
+    "switchFailed": "Échec du changement d’espace de travail. Veuillez réessayer.",
     "viewWorkspace": "Voir l’espace de travail"
   },
   "workspaceAuth": {
