@@ -98,11 +98,14 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           mkdir -p "$QA_ARTIFACTS"
+          # List available devices for debugging
+          ffmpeg -f avfoundation -list_devices true -i "" 2>&1 || true
+          # Use "Capture screen 0" by name for reliability on CI runners
           ffmpeg -y -f avfoundation -framerate 10 -capture_cursor 1 \
-            -i "1:none" -c:v libx264 -preset ultrafast -crf 28 \
+            -i "Capture screen 0:none" -c:v libx264 -preset ultrafast -crf 28 \
             -pix_fmt yuv420p "$QA_ARTIFACTS/qa-session.mp4" &
           echo $! > "${{ runner.temp }}/ffmpeg.pid"
-          sleep 1
+          sleep 2
 
       # --- Recording: Windows (gdigrab) ---
       - name: Install ffmpeg (Windows)
