@@ -59,6 +59,7 @@
       >
         <IconGroup background-class="bg-white">
           <Button
+            v-if="canInspect"
             variant="overlay-white"
             size="icon"
             :aria-label="$t('mediaAsset.actions.zoom')"
@@ -141,7 +142,8 @@ import {
   formatDuration,
   formatSize,
   getFilenameDetails,
-  getMediaTypeFromFilename
+  getMediaTypeFromFilename,
+  isPreviewableMediaType
 } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -217,6 +219,8 @@ const previewKind = computed((): PreviewKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
+const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
+
 // Get filename without extension
 const fileName = computed(() => {
   return getFilenameDetails(asset?.name || '').filename
@@ -278,7 +282,7 @@ const showActionsOverlay = computed(() => {
 })
 
 const handleZoomClick = () => {
-  if (asset) {
+  if (asset && canInspect.value) {
     emit('zoom', asset)
   }
 }
