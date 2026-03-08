@@ -1,33 +1,73 @@
-# Description: Automated QA of ComfyUI frontend using Claude CLI + Playwright MCP
-# Records video and uploads artifacts. Runs on Linux, macOS, and Windows.
-name: 'QA: Claude Frontend QA'
+# Automated QA of ComfyUI frontend using Claude CLI + Playwright MCP.
+# Two modes:
+#   Focused (default): Linux-only, tests areas affected by PR changes
+#   Full (qa-full label / qa-* branch): 3-OS matrix, full test plan
+name: 'PR: QA'
 
 on:
   pull_request:
     types: [opened, synchronize, labeled]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'QA mode'
+        type: choice
+        options: [focused, full]
+        default: focused
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  resolve-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.set.outputs.os }}
+      mode: ${{ steps.set.outputs.mode }}
+    steps:
+      - name: Determine QA mode
+        id: set
+        run: |
+          FULL=false
+
+          # Full QA triggers
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
+             [ "${{ inputs.mode }}" = "full" ]; then
+            FULL=true
+          fi
+          if [ "${{ github.event.label.name }}" = "qa-full" ]; then
+            FULL=true
+          fi
+
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          case "$BRANCH" in
+            sno-skills*|qa-*) FULL=true ;;
+          esac
+
+          if [ "$FULL" = "true" ]; then
+            echo 'os=["ubuntu-latest","macos-latest","windows-latest"]' >> "$GITHUB_OUTPUT"
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+          else
+            echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+            echo "mode=focused" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Mode: $([ "$FULL" = "true" ] && echo full || echo focused)"
+
   qa:
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.event.label.name == 'qa-run' ||
-      startsWith(github.head_ref, 'sno-skills') ||
-      startsWith(github.head_ref, 'qa-')
+    needs: resolve-matrix
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: ${{ fromJson(needs.resolve-matrix.outputs.os) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     permissions:
       contents: write
       pull-requests: write
+    env:
+      QA_MODE: ${{ needs.resolve-matrix.outputs.mode }}
     steps:
       - name: Set QA artifacts path
         shell: bash
@@ -98,9 +138,7 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           mkdir -p "$QA_ARTIFACTS"
-          # List available devices for debugging
           ffmpeg -f avfoundation -list_devices true -i "" 2>&1 || true
-          # Use "Capture screen 0" by name for reliability on CI runners
           ffmpeg -y -f avfoundation -framerate 10 -capture_cursor 1 \
             -i "Capture screen 0:none" -c:v libx264 -preset ultrafast -crf 28 \
             -pix_fmt yuv420p "$QA_ARTIFACTS/qa-session.mp4" &
@@ -131,6 +169,21 @@ jobs:
           {"mcpServers":{"playwright":{"command":"npx","args":["@playwright/mcp@0.0.68"]}}}
           EOF
 
+      - name: Get PR diff for focused QA
+        if: needs.resolve-matrix.outputs.mode == 'focused'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr diff ${{ github.event.pull_request.number || '' }} \
+            --repo ${{ github.repository }} > "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || \
+          git diff origin/main...HEAD > "${{ runner.temp }}/pr-diff.txt"
+
+          # Summarize changed files for the prompt
+          echo "Changed files:"
+          grep '^diff --git' "${{ runner.temp }}/pr-diff.txt" | \
+            sed 's|diff --git a/||;s| b/.*||' | sort -u | tee "${{ runner.temp }}/changed-files.txt"
+
       - name: Write QA prompt
         shell: bash
         env:
@@ -139,9 +192,11 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           OS_LOWER=$(echo "$RUNNER_OS" | tr '[:upper:]' '[:lower:]')
-          cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
-          You are running an automated QA pass on the ComfyUI frontend.
-          Read the file skills/comfy-qa/SKILL.md and follow the QA test plan.
+
+          if [ "$QA_MODE" = "full" ]; then
+            cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
+          You are running a FULL automated QA pass on the ComfyUI frontend.
+          Read the file skills/comfy-qa/SKILL.md and follow the FULL QA test plan.
 
           Environment: CI=true, OS=${{ runner.os }}
           Server URL: http://127.0.0.1:8188
@@ -158,6 +213,41 @@ jobs:
           Do NOT create a new PR. Do NOT post PR comments.
           Skip tests not available in CI (file dialogs, GPU execution).
           PROMPT
+          else
+            cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
+          You are running a FOCUSED QA pass on a pull request to the ComfyUI frontend.
+          Your goal is to verify that the changes in this PR work correctly and don't break related functionality.
+
+          Environment: CI=true, OS=${{ runner.os }}
+          Server URL: http://127.0.0.1:8188
+          Branch: ${BRANCH}
+          PR: #${PR_NUM}
+          Commit: ${SHA}
+
+          CHANGED FILES:
+          $(cat "${{ runner.temp }}/changed-files.txt" 2>/dev/null || echo "Unknown")
+
+          DIFF (truncated to 500 lines):
+          $(head -500 "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || echo "No diff available")
+
+          Instructions:
+          1. Read the diff above to understand what changed in this PR
+          2. Use playwright MCP tools to navigate http://127.0.0.1:8188
+          3. Test the specific UI areas affected by these changes
+          4. Also do a quick smoke test of core functionality (app loads, canvas renders, sidebar works)
+          5. Take screenshots of any failures or the areas you tested
+          6. Save a concise report to docs/qa/ as YYYY-MM-DD-NNN-${OS_LOWER}-report.md
+          7. Commit and push the report to this branch
+
+          Focus on:
+          - Does the changed functionality work as expected?
+          - Are there visual regressions in affected areas?
+          - Do related features still work?
+
+          Do NOT run the full QA test plan. Do NOT create a new PR. Do NOT post PR comments.
+          Skip tests not available in CI (file dialogs, GPU execution).
+          PROMPT
+          fi
 
       - name: Run Claude QA
         shell: bash
@@ -167,8 +257,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          MAX_TURNS=128
+          if [ "$QA_MODE" = "focused" ]; then MAX_TURNS=30; fi
+
           cat "${{ runner.temp }}/qa-prompt.txt" | claude --print --verbose \
-            --max-turns 128 \
+            --max-turns "$MAX_TURNS" \
             --mcp-config "${{ runner.temp }}/mcp-config.json" \
             --allowedTools "mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot,mcp__playwright__browser_click,mcp__playwright__browser_type,mcp__playwright__browser_press_key,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_hover,mcp__playwright__browser_drag,mcp__playwright__browser_select_option,mcp__playwright__browser_handle_dialog,mcp__playwright__browser_tab_list,mcp__playwright__browser_tab_new,mcp__playwright__browser_tab_select,mcp__playwright__browser_tab_close,mcp__playwright__browser_console_messages,mcp__playwright__browser_resize,mcp__playwright__browser_wait_for,Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git log:*),Bash(git diff:*),Bash(date:*),Bash(ls:*),Bash(mkdir:*),Read,Write,Edit,Glob,Grep"
 
@@ -210,7 +303,7 @@ jobs:
         run: kill $(cat "${{ runner.temp }}/xvfb.pid") 2>/dev/null || true
 
   report:
-    needs: qa
+    needs: [resolve-matrix, qa]
     if: always() && github.event.pull_request.number
     runs-on: ubuntu-latest
     permissions:
@@ -233,7 +326,6 @@ jobs:
           DEPLOY_DIR=$(mktemp -d)
           mkdir -p "$DEPLOY_DIR"
 
-          # Collect videos into deploy directory
           for os in Linux macOS Windows; do
             VID="qa-artifacts/qa-report-${os}-${{ github.run_id }}/qa-session.mp4"
             if [ -f "$VID" ]; then
@@ -242,7 +334,6 @@ jobs:
             fi
           done
 
-          # Add a simple index page
           cat > "$DEPLOY_DIR/index.html" <<'INDEXEOF'
           <!DOCTYPE html><html><body style="background:#111;color:#eee;font-family:sans-serif;padding:2em">
           <h1>QA Session Recordings</h1>
@@ -250,7 +341,6 @@ jobs:
           </body></html>
           INDEXEOF
 
-          # Deploy with branch = run ID for unique URLs
           BRANCH="run-${{ github.run_id }}"
           URL=$(wrangler pages deploy "$DEPLOY_DIR" \
             --project-name="comfyui-qa-videos" \
@@ -264,29 +354,39 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VIDEO_BASE: ${{ steps.deploy-videos.outputs.url }}
+          QA_MODE: ${{ needs.resolve-matrix.outputs.mode }}
         run: |
           RUN="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
           COMMENT_MARKER="<!-- QA_REPORT_COMMENT -->"
+
+          MODE_BADGE="🔍 Focused"
+          if [ "$QA_MODE" = "full" ]; then MODE_BADGE="🔬 Full (3-OS)"; fi
+
+          # Build video section — show all available videos
+          VIDEO_ROWS=""
+          HEADER_CELLS=""
+          VIDEO_CELLS=""
+          for os in Linux macOS Windows; do
+            VID_URL="${VIDEO_BASE}/qa-${os}.mp4"
+            if curl -sf --head "$VID_URL" >/dev/null 2>&1; then
+              HEADER_CELLS="${HEADER_CELLS}<th>${os}</th>"
+              VIDEO_CELLS="${VIDEO_CELLS}<td><video src=\"${VID_URL}\" controls width=\"320\"></video></td>"
+            fi
+          done
 
           BODY=$(cat <<EOF
           ${COMMENT_MARKER}
-          ## QA Session Recordings
+          ## QA ${MODE_BADGE}
 
           <table>
-          <tr><th>Linux</th><th>macOS</th><th>Windows</th></tr>
-          <tr>
-          <td><video src="${VIDEO_BASE}/qa-Linux.mp4" controls width="320"></video></td>
-          <td><video src="${VIDEO_BASE}/qa-macOS.mp4" controls width="320"></video></td>
-          <td><video src="${VIDEO_BASE}/qa-Windows.mp4" controls width="320"></video></td>
-          </tr>
+          <tr>${HEADER_CELLS}</tr>
+          <tr>${VIDEO_CELLS}</tr>
           </table>
 
-          **Run**: [${RUN}](${RUN}) · [Download artifacts](${RUN}#artifacts) (14 days) · [All videos](${VIDEO_BASE})
+          **Run**: [${RUN}](${RUN}) · [Download artifacts](${RUN}#artifacts) · [All videos](${VIDEO_BASE})
           EOF
           )
 
-          # Update existing comment or create new one
           EXISTING=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
             --jq ".[] | select(.body | contains(\"${COMMENT_MARKER}\")) | .id" | head -1)
 
@@ -298,10 +398,10 @@ jobs:
               --repo ${{ github.repository }} --body "$BODY"
           fi
 
-      - name: Remove qa-run label
-        if: github.event.label.name == 'qa-run'
+      - name: Remove qa-full label
+        if: github.event.label.name == 'qa-full'
         run: |
           gh pr edit ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} --remove-label "qa-run"
+            --repo ${{ github.repository }} --remove-label "qa-full"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
