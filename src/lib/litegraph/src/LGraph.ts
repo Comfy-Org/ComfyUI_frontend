@@ -1064,13 +1064,23 @@ export class LGraph
     }
 
     if (node.isSubgraphNode()) {
-      forEachNode(node.subgraph, (innerNode) => {
-        innerNode.onRemoved?.()
-        innerNode.graph?.onNodeRemoved?.(innerNode)
-        if (innerNode.isSubgraphNode())
-          this.rootGraph.subgraphs.delete(innerNode.subgraph.id)
-      })
-      this.rootGraph.subgraphs.delete(node.subgraph.id)
+      const allGraphs = [this.rootGraph, ...this.rootGraph.subgraphs.values()]
+      const hasRemainingReferences = allGraphs.some((graph) =>
+        graph.nodes.some(
+          (candidate) =>
+            candidate !== node &&
+            candidate.isSubgraphNode() &&
+            candidate.type === node.subgraph.id
+        )
+      )
+
+      if (!hasRemainingReferences) {
+        forEachNode(node.subgraph, (innerNode) => {
+          innerNode.onRemoved?.()
+          innerNode.graph?.onNodeRemoved?.(innerNode)
+        })
+        this.rootGraph.subgraphs.delete(node.subgraph.id)
+      }
     }
 
     // callback
@@ -1862,6 +1872,7 @@ export class LGraph
         })
       )
     )
+
     return { subgraph, node: subgraphNode as SubgraphNode }
   }
 
@@ -2048,7 +2059,6 @@ export class LGraph
       })
     }
     this.remove(subgraphNode)
-    this.subgraphs.delete(subgraphNode.subgraph.id)
 
     // Deduplicate links by (oid, oslot, tid, tslot) to prevent repeated
     // disconnect/reconnect cycles on widget inputs that can shift slot indices.
@@ -2335,7 +2345,6 @@ export class LGraph
       const usedSubgraphs = [...this._subgraphs.values()]
         .filter((subgraph) => usedSubgraphIds.has(subgraph.id))
         .map((x) => x.asSerialisable())
-
       if (usedSubgraphs.length > 0) {
         data.definitions = { subgraphs: usedSubgraphs }
       }

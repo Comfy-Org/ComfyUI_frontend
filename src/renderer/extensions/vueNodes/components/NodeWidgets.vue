@@ -179,6 +179,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   for (const widget of widgets) {
     if (!shouldRenderAsVue(widget)) continue
 
+    const isPromotedView = !!widget.nodeId
+
     const vueComponent =
       getComponent(widget.type) ||
       (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
@@ -186,8 +188,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const { slotMetadata } = widget
 
     // Get metadata from store (registered during BaseWidget.setNodeId)
-    const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
-    const widgetState = widgetValueStore.getWidget(bareWidgetId, widget.name)
+    const bareWidgetId = stripGraphPrefix(
+      widget.storeNodeId ?? widget.nodeId ?? nodeId
+    )
+    const storeWidgetName = widget.storeName ?? widget.name
+    const widgetState = graphId
+      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
+      : undefined
 
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
@@ -200,7 +207,6 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       ? { ...storeOptions, disabled: true }
       : storeOptions
 
-    // Derive border style from store metadata
     const borderStyle =
       widgetState?.promoted && String(widgetState?.nodeId) === String(nodeId)
         ? 'ring ring-component-node-widget-promoted'
