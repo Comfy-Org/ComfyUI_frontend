@@ -1,6 +1,9 @@
 import type { Page } from '@playwright/test'
 
-import { comfyPageFixture as test, comfyExpect as expect } from '../fixtures/ComfyPage'
+import {
+  comfyPageFixture as test,
+  comfyExpect as expect
+} from '../fixtures/ComfyPage'
 import type { WorkspaceStore } from '../types/globals'
 
 test.describe('Linear Mode', { tag: '@ui' }, () => {
@@ -8,7 +11,10 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     await comfyPage.setup()
   })
 
-  async function enterAppMode(comfyPage: { page: Page; nextFrame: () => Promise<void> }) {
+  async function enterAppMode(comfyPage: {
+    page: Page
+    nextFrame: () => Promise<void>
+  }) {
     await comfyPage.page.evaluate(() => {
       const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow
@@ -17,7 +23,10 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     await comfyPage.nextFrame()
   }
 
-  async function enterGraphMode(comfyPage: { page: Page; nextFrame: () => Promise<void> }) {
+  async function enterGraphMode(comfyPage: {
+    page: Page
+    nextFrame: () => Promise<void>
+  }) {
     await comfyPage.page.evaluate(() => {
       const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow
