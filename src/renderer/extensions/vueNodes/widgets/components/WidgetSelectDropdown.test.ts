@@ -523,9 +523,7 @@ describe('WidgetSelectDropdown undo tracking', () => {
 
     wrapper.vm.updateSelectedItems(new Set(['input-1']))
 
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([
-      'photo_abc.jpg'
-    ])
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['photo_abc.jpg'])
     expect(mockCheckState).toHaveBeenCalledOnce()
   })
 
