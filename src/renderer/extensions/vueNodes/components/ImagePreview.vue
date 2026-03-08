@@ -249,9 +249,10 @@ const handleRemove = () => {
 const setCurrentIndex = (index: number) => {
   if (currentIndex.value === index) return
   if (index >= 0 && index < props.imageUrls.length) {
+    const urlChanged = props.imageUrls[index] !== currentImageUrl.value
     currentIndex.value = index
-    startDelayedLoader()
     imageError.value = false
+    if (urlChanged) startDelayedLoader()
   }
 }
 
