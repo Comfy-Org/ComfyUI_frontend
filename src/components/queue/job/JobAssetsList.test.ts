@@ -273,4 +273,34 @@ describe('JobAssetsList', () => {
     await nextTick()
     expect(wrapper.findComponent(JobDetailsPopoverStub).exists()).toBe(false)
   })
+
+  it('shows the new popover after the previous row hides while the next row stays hovered', async () => {
+    vi.useFakeTimers()
+    const firstJob = buildJob({ id: 'job-1' })
+    const secondJob = buildJob({ id: 'job-2', title: 'Job 2' })
+    const wrapper = mountJobAssetsList([firstJob, secondJob])
+    const firstRow = wrapper.find('[data-job-id="job-1"]')
+    const secondRow = wrapper.find('[data-job-id="job-2"]')
+
+    await firstRow.trigger('mouseenter')
+    await vi.advanceTimersByTimeAsync(200)
+    await nextTick()
+    expect(wrapper.findComponent(JobDetailsPopoverStub).props('jobId')).toBe(
+      'job-1'
+    )
+
+    await firstRow.trigger('mouseleave')
+    await secondRow.trigger('mouseenter')
+
+    await vi.advanceTimersByTimeAsync(150)
+    await nextTick()
+    expect(wrapper.findComponent(JobDetailsPopoverStub).exists()).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(50)
+    await nextTick()
+
+    const popover = wrapper.findComponent(JobDetailsPopoverStub)
+    expect(popover.exists()).toBe(true)
+    expect(popover.props('jobId')).toBe('job-2')
+  })
 })
