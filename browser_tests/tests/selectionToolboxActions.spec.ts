@@ -18,7 +18,7 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
 }
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
 })
 
 test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
@@ -73,8 +73,6 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
   })
 
   test('info button opens properties panel', async ({ comfyPage }) => {
-    // Sidebar requires UseNewMenu: 'Top' for the properties panel to render
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
     await selectNodeWithPan(comfyPage, nodeRef)
 
