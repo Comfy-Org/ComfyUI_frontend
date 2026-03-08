@@ -3,14 +3,6 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
 
 test.describe('Node Output Preservation', { tag: ['@widget', '@node'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
-  })
-
   test('Execution output widget value survives tab switch', async ({
     comfyPage
   }) => {
@@ -24,6 +16,13 @@ test.describe('Node Output Preservation', { tag: ['@widget', '@node'] }, () => {
     await expect(async () => {
       expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
     }).toPass({ timeout: 5_000 })
+
+    // Enable topbar tabs after execution so we can switch workflows
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
 
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     await comfyPage.nextFrame()
@@ -46,6 +45,13 @@ test.describe('Node Output Preservation', { tag: ['@widget', '@node'] }, () => {
     await expect(async () => {
       expect(await (await outputNode1.getWidget(0)).getValue()).toBe('foo')
     }).toPass({ timeout: 5_000 })
+
+    // Enable topbar tabs after execution so we can switch workflows
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
 
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     await comfyPage.nextFrame()
