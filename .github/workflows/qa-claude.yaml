@@ -124,10 +124,8 @@ jobs:
       - name: Create MCP config
         shell: bash
         run: |
-          NPX_CMD="npx"
-          if [ "$RUNNER_OS" = "Windows" ]; then NPX_CMD="npx.cmd"; fi
           cat > "${{ runner.temp }}/mcp-config.json" <<EOF
-          {"mcpServers":{"playwright":{"command":"${NPX_CMD}","args":["@playwright/mcp@0.0.68"]}}}
+          {"mcpServers":{"playwright":{"command":"npx","args":["@playwright/mcp@0.0.68"]}}}
           EOF
 
       - name: Write QA prompt
