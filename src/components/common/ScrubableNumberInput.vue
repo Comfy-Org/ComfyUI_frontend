@@ -34,6 +34,10 @@
         @blur="handleBlur"
         @keyup.enter="handleBlur"
         @dragstart.prevent
+        @keydown.up.prevent="updateValueBy(step)"
+        @keydown.down.prevent="updateValueBy(-step)"
+        @keydown.page-up.prevent="updateValueBy(10 * step)"
+        @keydown.page-down.prevent="updateValueBy(-10 * step)"
       />
       <div
         :class="
@@ -73,8 +77,8 @@ import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
-  min,
-  max,
+  min = -Number.MAX_VALUE,
+  max = Number.MAX_VALUE,
   step = 1,
   disabled = false,
   hideButtons = false,
@@ -103,17 +107,11 @@ onClickOutside(container, () => {
 })
 
 function clamp(value: number): number {
-  const lo = min ?? -Infinity
-  const hi = max ?? Infinity
-  return Math.min(hi, Math.max(lo, value))
+  return Math.min(max, Math.max(min, value))
 }
 
-const canDecrement = computed(
-  () => modelValue.value > (min ?? -Infinity) && !disabled
-)
-const canIncrement = computed(
-  () => modelValue.value < (max ?? Infinity) && !disabled
-)
+const canDecrement = computed(() => modelValue.value > min && !disabled)
+const canIncrement = computed(() => modelValue.value < max && !disabled)
 
 const dragging = ref(false)
 const dragDelta = ref(0)
@@ -171,5 +169,9 @@ function handlePointerUp() {
 function resetDrag() {
   dragging.value = false
   dragDelta.value = 0
+}
+
+function updateValueBy(delta: number) {
+  modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))
 }
 </script>
