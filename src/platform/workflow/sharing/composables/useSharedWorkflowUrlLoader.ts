@@ -118,8 +118,7 @@ export function useSharedWorkflowUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('shareWorkflow.loadFailed'),
-        life: 3000
+        detail: t('shareWorkflow.loadFailed')
       })
       cleanupUrlParams()
       clearPreservedQuery(SHARE_NAMESPACE)
@@ -148,8 +147,7 @@ export function useSharedWorkflowUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('shareWorkflow.loadFailed'),
-        life: 5000
+        detail: t('shareWorkflow.loadFailed')
       })
       return 'failed'
     }

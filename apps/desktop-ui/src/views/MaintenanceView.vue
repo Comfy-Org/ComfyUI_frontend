@@ -189,8 +189,7 @@ const completeValidation = async () => {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: t('maintenance.error.cannotContinue'),
-      life: 5_000
+      detail: t('maintenance.error.cannotContinue')
     })
   }
 }
