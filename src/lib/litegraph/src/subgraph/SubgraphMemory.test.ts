@@ -117,11 +117,9 @@ describe.skip('SubgraphNode Memory Management', () => {
         })
       } as Partial<IWidget> as IWidget
 
-      input._widget = mockWidget
       input.widget = { name: 'promoted_widget' }
       subgraphNode.widgets.push(mockWidget)
 
-      expect(input._widget).toBe(mockWidget)
       expect(input.widget).toBeDefined()
       expect(subgraphNode.widgets).toContain(mockWidget)
 

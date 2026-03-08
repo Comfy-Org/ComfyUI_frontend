@@ -49,9 +49,12 @@ function addLinkedInteriorInput(
   const node = new LGraphNode(`Interior-${linkedInputName}`)
   const input = node.addInput(linkedInputName, '*')
   node.addWidget('text', widgetName, '', () => undefined)
-  input.widget = { name: widgetName }
   subgraph.add(node)
+
+  // Connect without .widget set so SubgraphInput creates a real link
+  // (widget-backed inputs now dispatch an event instead of creating links)
   inputSlot.connect(input, node)
+  input.widget = { name: widgetName }
 
   if (input.link == null)
     throw new Error(`Expected link to be created for input ${linkedInputName}`)

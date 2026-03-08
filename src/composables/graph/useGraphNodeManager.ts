@@ -236,7 +236,6 @@ function safeWidgetMapper(
 
     const promotedInputName = node.inputs?.find((input) => {
       if (input.name === widget.name) return true
-      if (input._widget === widget) return true
       return false
     })?.name
     const displayName = promotedInputName ?? widget.name

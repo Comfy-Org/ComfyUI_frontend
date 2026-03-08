@@ -13,7 +13,6 @@ import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   link: LinkId | null
@@ -21,17 +20,6 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
 
   get isWidgetInputSlot(): boolean {
     return !!this.widget
-  }
-
-  private _widgetRef: WeakRef<IBaseWidget> | undefined
-
-  /** Internal use only; API is not finalised and may change at any time. */
-  get _widget(): IBaseWidget | undefined {
-    return this._widgetRef?.deref()
-  }
-
-  set _widget(widget: IBaseWidget | undefined) {
-    this._widgetRef = widget ? new WeakRef(widget) : undefined
   }
 
   get collapsedPos(): Readonly<Point> {

@@ -279,6 +279,9 @@ describe('Nested promoted widget mapping', () => {
   })
 
   it('maps store identity to deepest concrete widget for two-layer promotions', () => {
+    const store = usePromotionStore()
+
+    // Inner layer: subgraphA contains innerNode with a combo widget
     const subgraphA = createTestSubgraph({
       inputs: [{ name: 'a_input', type: '*' }]
     })
@@ -287,22 +290,47 @@ describe('Nested promoted widget mapping', () => {
     innerNode.addWidget('combo', 'picker', 'a', () => undefined, {
       values: ['a', 'b']
     })
-    innerInput.widget = { name: 'picker' }
     subgraphA.add(innerNode)
+    // Connect without .widget so SubgraphInput creates a real link
     subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+    innerInput.widget = { name: 'picker' }
 
-    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
-
+    // Outer layer: subgraphB contains subgraphNodeA
     const subgraphB = createTestSubgraph({
       inputs: [{ name: 'b_input', type: '*' }]
     })
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
     subgraphB.add(subgraphNodeA)
     subgraphNodeA._internalConfigureAfterSlots()
+    // Connect without .widget so SubgraphInput creates a real link
+    const savedWidget = subgraphNodeA.inputs[0].widget
+    delete (subgraphNodeA.inputs[0] as unknown as Record<string, unknown>)
+      .widget
     subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+    subgraphNodeA.inputs[0].widget = savedWidget
 
+    // Root: graph contains subgraphNodeB
     const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
     const graph = subgraphNodeB.graph as LGraph
     graph.add(subgraphNodeB)
+
+    // Register promotions using rootGraph IDs as seen at lookup time:
+    // - subgraphNodeA.rootGraph resolves through subgraphB to its rootGraph
+    // - subgraphNodeB.rootGraph is the top-level graph
+    store.promote(
+      subgraphNodeA.rootGraph.id,
+      subgraphNodeA.id,
+      String(innerNode.id),
+      'picker'
+    )
+    // Outer promotion references the inner promoted view's widget name ('picker'),
+    // not the subgraph input name ('a_input')
+    store.promote(
+      subgraphNodeB.rootGraph.id,
+      subgraphNodeB.id,
+      String(subgraphNodeA.id),
+      'picker'
+    )
 
     const { vueNodeData } = useGraphNodeManager(graph)
     const nodeData = vueNodeData.get(String(subgraphNodeB.id))

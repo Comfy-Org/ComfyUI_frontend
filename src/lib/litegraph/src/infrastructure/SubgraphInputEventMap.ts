@@ -15,4 +15,9 @@ export interface SubgraphInputEventMap extends LGraphEventMap {
   'input-disconnected': {
     input: SubgraphInput
   }
+
+  'widget-promotion-requested': {
+    node: LGraphNode
+    widget: IBaseWidget
+  }
 }

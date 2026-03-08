@@ -52,9 +52,14 @@ function addLinkedNestedSubgraphNode(
   const input = innerSubgraphNode.addInput(linkedInputName, '*')
   if (options.widget) {
     innerSubgraphNode.addWidget('number', options.widget, 0, () => undefined)
+  }
+
+  // Connect without .widget set so SubgraphInput creates a real link
+  // (widget-backed inputs now dispatch an event instead of creating links)
+  inputSlot.connect(input, innerSubgraphNode)
+  if (options.widget) {
     input.widget = { name: options.widget }
   }
-  inputSlot.connect(input, innerSubgraphNode)
 
   if (input.link == null) {
     throw new Error(`Expected link to be created for input ${linkedInputName}`)
@@ -129,9 +134,10 @@ describe('resolveSubgraphInputTarget', () => {
     node.id = 42
     const input = node.addInput('seed_input', '*')
     node.addWidget('number', 'seed', 0, () => undefined)
-    input.widget = { name: 'seed' }
     outerSubgraph.add(node)
+    // Connect without .widget set so SubgraphInput creates a real link
     inputSlot.connect(input, node)
+    input.widget = { name: 'seed' }
 
     const result = resolveSubgraphInputTarget(outerSubgraphNode, 'seed')
 

@@ -34,17 +34,6 @@ export class SubgraphInput extends SubgraphSlot {
 
   events = new CustomEventTarget<SubgraphInputEventMap>()
 
-  /** The linked widget that this slot is connected to. */
-  private _widgetRef?: WeakRef<IBaseWidget>
-
-  get _widget() {
-    return this._widgetRef?.deref()
-  }
-
-  set _widget(widget) {
-    this._widgetRef = widget ? new WeakRef(widget) : undefined
-  }
-
   override connect(
     slot: INodeInputSlot,
     node: LGraphNode,
@@ -82,19 +71,11 @@ export class SubgraphInput extends SubgraphSlot {
 
     const inputWidget = node.getWidgetFromSlot(slot)
     if (inputWidget) {
-      if (!this.matchesWidget(inputWidget)) {
-        console.warn('Target input has invalid widget.', slot, node)
-        return
-      }
-
-      // Keep the widget reference in sync with the active upstream widget.
-      // Stale references can appear across nested promotion rebinds.
-      this._widget = inputWidget
-      this.events.dispatch('input-connected', {
-        input: slot,
-        widget: inputWidget,
-        node
+      this.events.dispatch('widget-promotion-requested', {
+        node,
+        widget: inputWidget
       })
+      return
     }
 
     const link = new LLink(
@@ -183,34 +164,8 @@ export class SubgraphInput extends SubgraphSlot {
     return widgets
   }
 
-  /**
-   * Validates that the connection between the new slot and the existing widget is valid.
-   * Used to prevent connections between widgets that are not of the same type.
-   * @param otherWidget The widget to compare to.
-   * @returns `true` if the connection is valid, otherwise `false`.
-   */
-  matchesWidget(otherWidget: IBaseWidget): boolean {
-    const widget = this._widgetRef?.deref()
-    if (!widget) return true
-
-    if (
-      otherWidget.type !== widget.type ||
-      otherWidget.options.min !== widget.options.min ||
-      otherWidget.options.max !== widget.options.max ||
-      otherWidget.options.step !== widget.options.step ||
-      otherWidget.options.step2 !== widget.options.step2 ||
-      otherWidget.options.precision !== widget.options.precision
-    ) {
-      return false
-    }
-
-    return true
-  }
-
   override disconnect(): void {
     super.disconnect()
-
-    this._widget = undefined
 
     this.events.dispatch('input-disconnected', { input: this })
   }

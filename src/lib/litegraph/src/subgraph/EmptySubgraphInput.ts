@@ -31,8 +31,19 @@ export class EmptySubgraphInput extends SubgraphInput {
     afterRerouteId?: RerouteId
   ): LLink | undefined {
     const { subgraph } = this.parent
-    const existingNames = subgraph.inputs.map((x) => x.name)
 
+    // Widget-backed slots trigger store-based promotion without
+    // creating a subgraph input slot or link.
+    const inputWidget = node.getWidgetFromSlot(slot)
+    if (inputWidget) {
+      this.events.dispatch('widget-promotion-requested', {
+        node,
+        widget: inputWidget
+      })
+      return
+    }
+
+    const existingNames = subgraph.inputs.map((x) => x.name)
     const name = nextUniqueName(slot.name, existingNames)
     const input = subgraph.addInput(name, String(slot.type))
     return input.connect(slot, node, afterRerouteId)

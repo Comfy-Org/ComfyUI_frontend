@@ -226,7 +226,7 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNode.widgets[0].name).toBe('widgetB')
   })
 
-  test('removeWidget cleans up input references', () => {
+  test('removeWidget removes from store and view cache', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
     usePromotionStore().setPromotions(
@@ -236,15 +236,15 @@ describe('Subgraph proxyWidgets', () => {
     )
 
     const view = subgraphNode.widgets[0]
-    // Simulate an input referencing the widget
-    subgraphNode.addInput('stringWidget', '*')
-    const input = subgraphNode.inputs[subgraphNode.inputs.length - 1]
-    input._widget = view
-
     subgraphNode.removeWidget(view)
 
-    expect(input._widget).toBeUndefined()
     expect(subgraphNode.widgets).toHaveLength(0)
+    expect(
+      usePromotionStore().getPromotions(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id
+      )
+    ).toHaveLength(0)
   })
 
   test('serialize does not produce widgets_values for promoted views', () => {
@@ -283,5 +283,141 @@ describe('Subgraph proxyWidgets', () => {
       ['1', 'widgetA'],
       ['1', 'widgetB']
     ])
+  })
+})
+
+describe('SubgraphInput widget-slot connection behavior', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('connecting a widget slot to SubgraphInput promotes via store, not link', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'widget_input', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraphNode._internalConfigureAfterSlots()
+    subgraphNode.graph!.add(subgraphNode)
+
+    const innerNode = new LGraphNode('InnerNode')
+    const innerInput = innerNode.addInput('myWidget', '*')
+    innerNode.addWidget('text', 'myWidget', 'val', () => {})
+    innerInput.widget = { name: 'myWidget' }
+    subgraph.add(innerNode)
+
+    const subgraphInputSlot = subgraph.inputNode.slots[0]
+    const link = subgraphInputSlot.connect(innerInput, innerNode)
+
+    // Should NOT create a link for widget-slot connections
+    expect(link).toBeUndefined()
+
+    // Should promote via the store
+    const store = usePromotionStore()
+    expect(
+      store.isPromoted(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id,
+        String(innerNode.id),
+        'myWidget'
+      )
+    ).toBe(true)
+  })
+
+  test('connecting an already-promoted widget to SubgraphInput unpromotes it', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'widget_input', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraphNode._internalConfigureAfterSlots()
+    subgraphNode.graph!.add(subgraphNode)
+
+    const innerNode = new LGraphNode('InnerNode')
+    const innerInput = innerNode.addInput('myWidget', '*')
+    innerNode.addWidget('text', 'myWidget', 'val', () => {})
+    innerInput.widget = { name: 'myWidget' }
+    subgraph.add(innerNode)
+
+    const store = usePromotionStore()
+    // Pre-promote the widget
+    store.promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      String(innerNode.id),
+      'myWidget'
+    )
+    expect(
+      store.isPromoted(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id,
+        String(innerNode.id),
+        'myWidget'
+      )
+    ).toBe(true)
+
+    // Connect again — should toggle (unpromote)
+    const subgraphInputSlot = subgraph.inputNode.slots[0]
+    const link = subgraphInputSlot.connect(innerInput, innerNode)
+
+    expect(link).toBeUndefined()
+    expect(
+      store.isPromoted(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id,
+        String(innerNode.id),
+        'myWidget'
+      )
+    ).toBe(false)
+  })
+
+  test('connecting a non-widget slot to SubgraphInput still creates a link', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'data_input', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraphNode._internalConfigureAfterSlots()
+    subgraphNode.graph!.add(subgraphNode)
+
+    const innerNode = new LGraphNode('InnerNode')
+    const innerInput = innerNode.addInput('data', '*')
+    // No widget on this input
+    subgraph.add(innerNode)
+
+    const subgraphInputSlot = subgraph.inputNode.slots[0]
+    const link = subgraphInputSlot.connect(innerInput, innerNode)
+
+    // Non-widget connections should still create a link
+    expect(link).toBeDefined()
+  })
+
+  test('EmptySubgraphInput promotes widget without creating input slot', () => {
+    const [subgraphNode] = setupSubgraph(0)
+    const subgraph = subgraphNode.subgraph
+    const store = usePromotionStore()
+
+    const innerNode = new LGraphNode('InnerNode')
+    const innerInput = innerNode.addInput('picker_input', '*')
+    innerNode.addWidget('combo', 'picker', 'a', () => undefined, {
+      values: ['a', 'b']
+    })
+    innerInput.widget = { name: 'picker' }
+    subgraph.add(innerNode)
+
+    const inputCountBefore = subgraph.inputs.length
+    const emptySlot = subgraph.inputNode.emptySlot
+    emptySlot.connect(innerInput, innerNode)
+
+    // No new subgraph input slot should be created
+    expect(subgraph.inputs).toHaveLength(inputCountBefore)
+    // No new input slot on the SubgraphNode
+    expect(subgraphNode.inputs).toHaveLength(inputCountBefore)
+    // Widget should be promoted in the store
+    expect(
+      store.isPromoted(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id,
+        String(innerNode.id),
+        'picker'
+      )
+    ).toBe(true)
   })
 })

@@ -405,10 +405,12 @@ describe('SubgraphNode.widgets getter', () => {
     innerInput.widget = { name: 'picker' }
     subgraph.add(innerNode)
 
-    subgraph.inputNode.slots[0].connect(innerInput, innerNode)
+    // Wire up listeners before connecting so the event is handled
     subgraphNode._internalConfigureAfterSlots()
+    subgraph.inputNode.slots[0].connect(innerInput, innerNode)
 
     const store = usePromotionStore()
+    // While id is -1, promotions are buffered — not in the store
     expect(store.getPromotions(subgraphNode.rootGraph.id, -1)).toStrictEqual([])
 
     subgraphNode.graph?.add(subgraphNode)
@@ -431,29 +433,40 @@ describe('SubgraphNode.widgets getter', () => {
     subgraphNode.graph?.add(subgraphNode)
 
     const firstNode = new LGraphNode('FirstNode')
-    const firstInput = firstNode.addInput('picker_input', '*')
     firstNode.addWidget('combo', 'picker', 'a', () => {}, {
       values: ['a', 'b']
     })
-    firstInput.widget = { name: 'picker' }
     subgraph.add(firstNode)
-    const subgraphInputSlot = subgraph.inputNode.slots[0]
-    subgraphInputSlot.connect(firstInput, firstNode)
-
-    // Mirror user-driven rebind behavior: move the slot connection from first
-    // source to second source, rather than keeping both links connected.
-    subgraphInputSlot.disconnect()
 
     const secondNode = new LGraphNode('SecondNode')
-    const secondInput = secondNode.addInput('picker_input', '*')
     secondNode.addWidget('combo', 'picker', 'b', () => {}, {
       values: ['a', 'b']
     })
-    secondInput.widget = { name: 'picker' }
     subgraph.add(secondNode)
-    subgraphInputSlot.connect(secondInput, secondNode)
 
-    const promotions = usePromotionStore().getPromotions(
+    const store = usePromotionStore()
+
+    // Promote first source, then demote and promote second source
+    store.promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      String(firstNode.id),
+      'picker'
+    )
+    store.demote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      String(firstNode.id),
+      'picker'
+    )
+    store.promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      String(secondNode.id),
+      'picker'
+    )
+
+    const promotions = store.getPromotions(
       subgraphNode.rootGraph.id,
       subgraphNode.id
     )
@@ -467,31 +480,21 @@ describe('SubgraphNode.widgets getter', () => {
     expect(subgraphNode.widgets[0].value).toBe('b')
   })
 
-  test('preserves distinct promoted display names when two inputs share one concrete widget name', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [
-        { name: 'strength_model', type: '*' },
-        { name: 'strength_model_1', type: '*' }
-      ]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 90 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const innerNode = new LGraphNode('InnerNumberNode')
-    const firstInput = innerNode.addInput('strength_model', '*')
-    const secondInput = innerNode.addInput('strength_model_1', '*')
+  test('two store entries for different widgets on the same node produce two views', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
     innerNode.addWidget('number', 'strength_model', 1, () => {})
-    firstInput.widget = { name: 'strength_model' }
-    secondInput.widget = { name: 'strength_model' }
-    subgraph.add(innerNode)
+    innerNode.addWidget('number', 'strength_clip', 0.5, () => {})
 
-    subgraph.inputNode.slots[0].connect(firstInput, innerNode)
-    subgraph.inputNode.slots[1].connect(secondInput, innerNode)
+    setPromotions(subgraphNode, [
+      [String(innerNode.id), 'strength_model'],
+      [String(innerNode.id), 'strength_clip']
+    ])
 
     expect(subgraphNode.widgets).toHaveLength(2)
-    expect(subgraphNode.widgets.map((widget) => widget.name)).toStrictEqual([
+    expect(subgraphNode.widgets.map((w) => w.name)).toStrictEqual([
       'strength_model',
-      'strength_model_1'
+      'strength_clip'
     ])
   })
 
@@ -500,52 +503,32 @@ describe('SubgraphNode.widgets getter', () => {
     expect(subgraphNode.widgets).toEqual([])
   })
 
-  test('widgets getter prefers live linked entries over stale store entries', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'widgetA', type: '*' }]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 91 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const liveNode = new LGraphNode('LiveNode')
-    const liveInput = liveNode.addInput('widgetA', '*')
-    liveNode.addWidget('text', 'widgetA', 'a', () => {})
-    liveInput.widget = { name: 'widgetA' }
-    subgraph.add(liveNode)
-    subgraph.inputNode.slots[0].connect(liveInput, liveNode)
+  test('store entries for missing interior nodes produce disconnected fallback views', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
 
     setPromotions(subgraphNode, [
-      [String(liveNode.id), 'widgetA'],
+      [String(innerNodes[0].id), 'widgetA'],
       ['9999', 'missingWidget']
     ])
 
-    expect(subgraphNode.widgets).toHaveLength(1)
+    expect(subgraphNode.widgets).toHaveLength(2)
     expect(subgraphNode.widgets[0].name).toBe('widgetA')
+    expect(subgraphNode.widgets[0].type).toBe('text')
+    expect(subgraphNode.widgets[1].name).toBe('missingWidget')
+    expect(subgraphNode.widgets[1].type).toBe('button')
   })
 
-  test('partial linked coverage does not destructively prune unresolved store promotions', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [
-        { name: 'widgetA', type: '*' },
-        { name: 'widgetB', type: '*' }
-      ]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 92 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const liveNode = new LGraphNode('LiveNode')
-    const liveInput = liveNode.addInput('widgetA', '*')
-    liveNode.addWidget('text', 'widgetA', 'a', () => {})
-    liveInput.widget = { name: 'widgetA' }
-    subgraph.add(liveNode)
-    subgraph.inputNode.slots[0].connect(liveInput, liveNode)
+  test('widgets getter does not prune unresolved store promotions', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
 
     setPromotions(subgraphNode, [
-      [String(liveNode.id), 'widgetA'],
+      [String(innerNodes[0].id), 'widgetA'],
       ['9999', 'widgetB']
     ])
 
-    // Trigger widgets getter reconciliation in partial-linked state.
+    // Trigger widgets getter — should not prune missing entries
     void subgraphNode.widgets
 
     const promotions = usePromotionStore().getPromotions(
@@ -553,7 +536,7 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.id
     )
     expect(promotions).toStrictEqual([
-      { interiorNodeId: String(liveNode.id), widgetName: 'widgetA' },
+      { interiorNodeId: String(innerNodes[0].id), widgetName: 'widgetA' },
       { interiorNodeId: '9999', widgetName: 'widgetB' }
     ])
   })
@@ -634,39 +617,52 @@ describe('SubgraphNode.widgets getter', () => {
     expect(subgraphNode.widgets).toHaveLength(1)
   })
 
-  test('migrates legacy -1 entries via _resolveLegacyEntry', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
-    innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
+  test('gracefully drops unresolvable legacy -1 entries', () => {
+    const [subgraphNode] = setupSubgraph()
 
-    // Simulate a slot-connected widget so legacy resolution works
-    const subgraph = subgraphNode.subgraph
-    subgraph.addInput('stringWidget', '*')
+    // Legacy -1 format with no link to resolve against
+    subgraphNode.properties.proxyWidgets = [['-1', 'stringWidget']]
     subgraphNode._internalConfigureAfterSlots()
 
-    // The _internalConfigureAfterSlots would have set up the slot-connected
-    // widget via _setWidget if there's a link. For unit testing legacy
-    // migration, we need to set up the input._widget manually.
-    const input = subgraphNode.inputs.find((i) => i.name === 'stringWidget')
-    if (input) {
-      input._widget = createPromotedWidgetView(
-        subgraphNode,
-        String(innerNodes[0].id),
-        'stringWidget'
-      )
-    }
+    const entries = usePromotionStore().getPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+    expect(entries).toStrictEqual([])
+  })
+
+  test('migrates legacy -1 entries via _resolveLegacyEntry when link exists', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'stringWidget', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 50 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const innerNode = new LGraphNode('InnerNode')
+    const innerInput = innerNode.addInput('stringWidget', '*')
+    innerNode.addWidget('text', 'stringWidget', 'value', () => {})
+    innerInput.widget = { name: 'stringWidget' }
+    subgraph.add(innerNode)
+
+    // Create a non-widget link manually so legacy resolution has something to find
+    const subgraphInputSlot = subgraph.inputNode.slots[0]
+    // Temporarily remove .widget so connect creates a link
+    const savedWidget = innerInput.widget
+    delete (innerInput as unknown as Record<string, unknown>).widget
+    subgraphInputSlot.connect(innerInput, innerNode)
+    innerInput.widget = savedWidget
 
     // Set legacy -1 format via properties and re-run hydration
     subgraphNode.properties.proxyWidgets = [['-1', 'stringWidget']]
     subgraphNode._internalConfigureAfterSlots()
 
-    // Migration should have rewritten the store with resolved IDs
     const entries = usePromotionStore().getPromotions(
       subgraphNode.rootGraph.id,
       subgraphNode.id
     )
     expect(entries).toStrictEqual([
       {
-        interiorNodeId: String(innerNodes[0].id),
+        interiorNodeId: String(innerNode.id),
         widgetName: 'stringWidget'
       }
     ])
@@ -984,29 +980,40 @@ function createInspectableCanvasContext(fillText = vi.fn()) {
 }
 
 function createTwoLevelNestedSubgraph() {
-  const subgraphA = createTestSubgraph({
-    inputs: [{ name: 'a_input', type: '*' }]
-  })
+  const subgraphA = createTestSubgraph()
   const innerNode = new LGraphNode('InnerComboNode')
-  const innerInput = innerNode.addInput('picker_input', '*')
   const comboWidget = innerNode.addWidget('combo', 'picker', 'a', () => {}, {
     values: ['a', 'b']
   })
-  innerInput.widget = { name: 'picker' }
   subgraphA.add(innerNode)
-  subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
 
   const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
-
-  const subgraphB = createTestSubgraph({
-    inputs: [{ name: 'b_input', type: '*' }]
-  })
-  subgraphB.add(subgraphNodeA)
   subgraphNodeA._internalConfigureAfterSlots()
-  subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+  // Level A: promote innerNode.picker on subgraphNodeA
+  const store = usePromotionStore()
+  store.promote(
+    subgraphNodeA.rootGraph.id,
+    subgraphNodeA.id,
+    String(innerNode.id),
+    'picker'
+  )
+
+  const subgraphB = createTestSubgraph()
+  subgraphB.add(subgraphNodeA)
 
   const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
-  return { innerNode, comboWidget, subgraphNodeB }
+  subgraphNodeB._internalConfigureAfterSlots()
+
+  // Level B: promote subgraphNodeA.picker on subgraphNodeB
+  store.promote(
+    subgraphNodeB.rootGraph.id,
+    subgraphNodeB.id,
+    String(subgraphNodeA.id),
+    'picker'
+  )
+
+  return { innerNode, comboWidget, subgraphNodeA, subgraphNodeB }
 }
 
 describe('promoted combo rendering', () => {
@@ -1126,30 +1133,10 @@ describe('promoted combo rendering', () => {
     expect(promotedWidget.value).toBe('b')
   })
 
-  test('state lookup does not use promotion store fallback when intermediate view is unavailable', () => {
-    const subgraphA = createTestSubgraph({
-      inputs: [{ name: 'strength_model', type: '*' }]
-    })
-    const innerNode = new LGraphNode('InnerNumberNode')
-    const innerInput = innerNode.addInput('strength_model', '*')
-    innerNode.addWidget('number', 'strength_model', 1, () => {})
-    innerInput.widget = { name: 'strength_model' }
-    subgraphA.add(innerNode)
-    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+  test('nested promotion shows button fallback when intermediate view is unavailable', () => {
+    const { subgraphNodeA, subgraphNodeB } = createTwoLevelNestedSubgraph()
 
-    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 47 })
-
-    const subgraphB = createTestSubgraph({
-      inputs: [{ name: 'strength_model', type: '*' }]
-    })
-    subgraphB.add(subgraphNodeA)
-    subgraphNodeA._internalConfigureAfterSlots()
-    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
-
-    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 46 })
-
-    // Simulate transient stale intermediate view state by forcing host 47
-    // to report no promoted widgets while promotionStore still has entries.
+    // Force subgraphNodeA to report no promoted widgets
     Object.defineProperty(subgraphNodeA, 'widgets', {
       get: () => [],
       configurable: true
@@ -1158,30 +1145,10 @@ describe('promoted combo rendering', () => {
     expect(subgraphNodeB.widgets[0].type).toBe('button')
   })
 
-  test('state lookup does not use input-widget fallback when intermediate promotions are absent', () => {
-    const subgraphA = createTestSubgraph({
-      inputs: [{ name: 'strength_model', type: '*' }]
-    })
-    const innerNode = new LGraphNode('InnerNumberNode')
-    const innerInput = innerNode.addInput('strength_model', '*')
-    innerNode.addWidget('number', 'strength_model', 1, () => {})
-    innerInput.widget = { name: 'strength_model' }
-    subgraphA.add(innerNode)
-    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+  test('nested promotion shows button fallback when intermediate promotions are cleared', () => {
+    const { subgraphNodeA, subgraphNodeB } = createTwoLevelNestedSubgraph()
 
-    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 47 })
-
-    const subgraphB = createTestSubgraph({
-      inputs: [{ name: 'strength_model', type: '*' }]
-    })
-    subgraphB.add(subgraphNodeA)
-    subgraphNodeA._internalConfigureAfterSlots()
-    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
-
-    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 46 })
-
-    // Simulate a transient where intermediate promotions are unavailable but
-    // input _widget binding is already updated.
+    // Clear intermediate promotions
     usePromotionStore().setPromotions(
       subgraphNodeA.rootGraph.id,
       subgraphNodeA.id,
@@ -1191,109 +1158,92 @@ describe('promoted combo rendering', () => {
       get: () => [],
       configurable: true
     })
-
-    expect(subgraphNodeB.widgets[0].type).toBe('button')
-  })
-
-  test('state lookup does not use subgraph-link fallback when intermediate bindings are unavailable', () => {
-    const subgraphA = createTestSubgraph({
-      inputs: [{ name: 'strength_model', type: '*' }]
-    })
-    const innerNode = new LGraphNode('InnerNumberNode')
-    const innerInput = innerNode.addInput('strength_model', '*')
-    innerNode.addWidget('number', 'strength_model', 1, () => {})
-    innerInput.widget = { name: 'strength_model' }
-    subgraphA.add(innerNode)
-    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
-
-    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 47 })
-
-    const subgraphB = createTestSubgraph({
-      inputs: [{ name: 'strength_model', type: '*' }]
-    })
-    subgraphB.add(subgraphNodeA)
-    subgraphNodeA._internalConfigureAfterSlots()
-    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
-
-    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 46 })
-
-    usePromotionStore().setPromotions(
-      subgraphNodeA.rootGraph.id,
-      subgraphNodeA.id,
-      []
-    )
-    Object.defineProperty(subgraphNodeA, 'widgets', {
-      get: () => [],
-      configurable: true
-    })
-    subgraphNodeA.inputs[0]._widget = undefined
 
     expect(subgraphNodeB.widgets[0].type).toBe('button')
   })
 
   test('nested promotion keeps concrete widget types at top level', () => {
-    const subgraphA = createTestSubgraph({
-      inputs: [
-        { name: 'lora_name', type: '*' },
-        { name: 'strength_model', type: '*' }
-      ]
-    })
+    const subgraphA = createTestSubgraph()
     const innerNode = new LGraphNode('InnerLoraNode')
-    const comboInput = innerNode.addInput('lora_name', '*')
-    const numberInput = innerNode.addInput('strength_model', '*')
     innerNode.addWidget('combo', 'lora_name', 'a', () => {}, {
       values: ['a', 'b']
     })
     innerNode.addWidget('number', 'strength_model', 1, () => {})
-    comboInput.widget = { name: 'lora_name' }
-    numberInput.widget = { name: 'strength_model' }
     subgraphA.add(innerNode)
-    subgraphA.inputNode.slots[0].connect(comboInput, innerNode)
-    subgraphA.inputNode.slots[1].connect(numberInput, innerNode)
 
     const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 60 })
-
-    const subgraphB = createTestSubgraph({
-      inputs: [
-        { name: 'lora_name', type: '*' },
-        { name: 'strength_model', type: '*' }
-      ]
-    })
-    subgraphB.add(subgraphNodeA)
     subgraphNodeA._internalConfigureAfterSlots()
-    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
-    subgraphB.inputNode.slots[1].connect(subgraphNodeA.inputs[1], subgraphNodeA)
+
+    const store = usePromotionStore()
+    store.promote(
+      subgraphNodeA.rootGraph.id,
+      subgraphNodeA.id,
+      String(innerNode.id),
+      'lora_name'
+    )
+    store.promote(
+      subgraphNodeA.rootGraph.id,
+      subgraphNodeA.id,
+      String(innerNode.id),
+      'strength_model'
+    )
+
+    const subgraphB = createTestSubgraph()
+    subgraphB.add(subgraphNodeA)
 
     const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 61 })
+    subgraphNodeB._internalConfigureAfterSlots()
+
+    store.promote(
+      subgraphNodeB.rootGraph.id,
+      subgraphNodeB.id,
+      String(subgraphNodeA.id),
+      'lora_name'
+    )
+    store.promote(
+      subgraphNodeB.rootGraph.id,
+      subgraphNodeB.id,
+      String(subgraphNodeA.id),
+      'strength_model'
+    )
 
     expect(subgraphNodeB.widgets[0].type).toBe('combo')
     expect(subgraphNodeB.widgets[1].type).toBe('number')
   })
 
-  test('input promotion from promoted view stores immediate source node id', () => {
-    const subgraphA = createTestSubgraph({
-      inputs: [{ name: 'lora_name', type: '*' }]
-    })
+  test('store-based promotion stores immediate source node id, not deep inner node', () => {
+    const subgraphA = createTestSubgraph()
     const innerNode = new LGraphNode('InnerNode')
-    const innerInput = innerNode.addInput('lora_name', '*')
     innerNode.addWidget('combo', 'lora_name', 'a', () => {}, {
       values: ['a', 'b']
     })
-    innerInput.widget = { name: 'lora_name' }
     subgraphA.add(innerNode)
-    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
 
     const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 70 })
-
-    const subgraphB = createTestSubgraph({
-      inputs: [{ name: 'lora_name', type: '*' }]
-    })
-    subgraphB.add(subgraphNodeA)
     subgraphNodeA._internalConfigureAfterSlots()
-    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+    const store = usePromotionStore()
+    store.promote(
+      subgraphNodeA.rootGraph.id,
+      subgraphNodeA.id,
+      String(innerNode.id),
+      'lora_name'
+    )
+
+    const subgraphB = createTestSubgraph()
+    subgraphB.add(subgraphNodeA)
 
     const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 71 })
-    const promotions = usePromotionStore().getPromotions(
+    subgraphNodeB._internalConfigureAfterSlots()
+
+    store.promote(
+      subgraphNodeB.rootGraph.id,
+      subgraphNodeB.id,
+      String(subgraphNodeA.id),
+      'lora_name'
+    )
+
+    const promotions = store.getPromotions(
       subgraphNodeB.rootGraph.id,
       subgraphNodeB.id
     )

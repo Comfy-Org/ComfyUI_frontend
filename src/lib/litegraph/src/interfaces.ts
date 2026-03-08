@@ -14,7 +14,6 @@ import type {
   LinkDirection,
   RenderShape
 } from './types/globalEnums'
-import type { IBaseWidget } from './types/widgets'
 
 export type Dictionary<T> = { [key: string]: T }
 
@@ -360,11 +359,6 @@ export interface INodeInputSlot extends INodeSlot {
   link: LinkId | null
   widget?: IWidgetLocator
   alwaysVisible?: boolean
-
-  /**
-   * Internal use only; API is not finalised and may change at any time.
-   */
-  _widget?: IBaseWidget
 }
 
 export interface IWidgetInputSlot extends INodeInputSlot {
