@@ -14,15 +14,8 @@ export interface TestGraphAccess {
   _nodes_by_id: Record<string, LGraphNode>
 }
 
-interface AppReadiness {
-  featureFlagsReceived: boolean
-  apiInitialized: boolean
-  appInitialized: boolean
-}
-
 interface CapturedMessages {
   clientFeatureFlags: unknown
-  serverFeatureFlags: unknown
 }
 
 declare global {
@@ -40,7 +33,6 @@ declare global {
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
-    __appReadiness?: AppReadiness
 
     /**
      * WebSocket store used by test fixtures for mocking WebSocket connections.
