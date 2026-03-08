@@ -1,6 +1,7 @@
 # Execution Workflow
 
 ## Per-Branch Execution Order
+
 1. Smallest gap first (validation run)
 2. Medium gap next (quick win)
 3. Largest gap last (main effort)
@@ -85,6 +86,7 @@ If verification fails, stop and fix before proceeding to the next wave. Do not c
 ## Conflict Resolution Patterns
 
 ### 1. Content Conflicts (accept theirs)
+
 ```python
 import re
 pattern = r'<<<<<<< HEAD\n(.*?)=======\n(.*?)>>>>>>> [^\n]+\n'
@@ -92,6 +94,7 @@ content = re.sub(pattern, r'\2', content, flags=re.DOTALL)
 ```
 
 ### 2. Modify/Delete (two cases!)
+
 ```bash
 # Case A: PR introduces NEW files not on target → keep them
 git add $FILE
@@ -101,12 +104,15 @@ git rm $FILE
 ```
 
 ### 3. Binary Files (snapshots)
+
 ```bash
 git checkout --theirs $FILE && git add $FILE
 ```
 
 ### 4. Locale Files
+
 Usually adding new i18n keys — accept theirs, validate JSON:
+
 ```bash
 python3 -c "import json; json.load(open('src/locales/en/main.json'))" && echo "Valid"
 ```
@@ -114,6 +120,7 @@ python3 -c "import json; json.load(open('src/locales/en/main.json'))" && echo "V
 ## Merge Conflicts After Other Merges
 
 When merging multiple PRs to the same branch, later PRs may conflict with earlier merges:
+
 ```bash
 git fetch origin TARGET_BRANCH
 git rebase origin/TARGET_BRANCH
@@ -135,4 +142,4 @@ gh pr merge $PR --squash --admin
 8. **Always validate JSON** after resolving locale file conflicts
 9. **Dep refresh PRs** — skip on stable branches. Risk of transitive dep regressions outweighs audit cleanup. Cherry-pick individual CVE fixes instead.
 10. **Verify after each wave** — run `pnpm typecheck` on the target branch after merging a batch. Catching breakage early prevents compounding errors.
-11. **Cloud-only PRs don't belong on core/* branches** — app mode, cloud auth, and cloud-specific UI changes are irrelevant to local users. Always check PR scope against branch scope before backporting.
+11. **Cloud-only PRs don't belong on core/\* branches** — app mode, cloud auth, and cloud-specific UI changes are irrelevant to local users. Always check PR scope against branch scope before backporting.

@@ -18,23 +18,24 @@ Cherry-pick backport management for Comfy-Org/ComfyUI_frontend stable release br
 
 ## System Context
 
-| Item | Value |
-|------|-------|
-| Repo | `~/ComfyUI_frontend` (Comfy-Org/ComfyUI_frontend) |
-| Merge strategy | Squash merge (`gh pr merge --squash --admin`) |
-| Automation | `pr-backport.yaml` GitHub Action (label-driven) |
-| Tracking dir | `~/temp/backport-session/` |
+| Item           | Value                                             |
+| -------------- | ------------------------------------------------- |
+| Repo           | `~/ComfyUI_frontend` (Comfy-Org/ComfyUI_frontend) |
+| Merge strategy | Squash merge (`gh pr merge --squash --admin`)     |
+| Automation     | `pr-backport.yaml` GitHub Action (label-driven)   |
+| Tracking dir   | `~/temp/backport-session/`                        |
 
 ## Branch Scope Rules
 
 **Critical: Match PRs to the correct target branches.**
 
-| Branch prefix | Scope | Example |
-|---------------|-------|---------|
-| `cloud/*` | Cloud-hosted ComfyUI only | App mode, cloud auth, cloud-specific UI |
-| `core/*` | Local/self-hosted ComfyUI only | Core editor, local workflows, node system |
+| Branch prefix | Scope                          | Example                                   |
+| ------------- | ------------------------------ | ----------------------------------------- |
+| `cloud/*`     | Cloud-hosted ComfyUI only      | App mode, cloud auth, cloud-specific UI   |
+| `core/*`      | Local/self-hosted ComfyUI only | Core editor, local workflows, node system |
 
 **⚠️ NEVER backport cloud-only PRs to `core/*` branches.** Cloud-only changes (app mode, cloud auth, cloud billing UI, cloud-specific API calls) are irrelevant to local users and waste effort. Before backporting any PR to a `core/*` branch, check:
+
 - Does the PR title/description mention "app mode", "cloud", or cloud-specific features?
 - Does the PR only touch files like `appModeStore.ts`, cloud auth, or cloud-specific components?
 - If yes → skip for `core/*` branches (may still apply to `cloud/*` branches)
@@ -42,30 +43,34 @@ Cherry-pick backport management for Comfy-Org/ComfyUI_frontend stable release br
 ## ⚠️ Gotchas (Learn from Past Sessions)
 
 ### Use `gh api` for Labels — NOT `gh pr edit`
+
 `gh pr edit --add-label` triggers Projects Classic deprecation errors. Always use:
+
 ```bash
 gh api repos/Comfy-Org/ComfyUI_frontend/issues/$PR/labels \
   -f "labels[]=needs-backport" -f "labels[]=TARGET_BRANCH"
 ```
 
 ### Automation Over-Reports Conflicts
+
 The `pr-backport.yaml` action reports more conflicts than reality. `git cherry-pick -m 1` with git auto-merge handles many cases the automation can't. Always attempt manual cherry-pick before skipping.
 
 ### Never Skip Based on Conflict File Count
+
 12 or 27 conflicting files can be trivial (snapshots, new files). **Categorize conflicts first**, then decide. See Conflict Triage below.
 
 ## Conflict Triage
 
 **Always categorize before deciding to skip. High conflict count ≠ hard conflicts.**
 
-| Type | Symptom | Resolution |
-|------|---------|------------|
-| **Binary snapshots (PNGs)** | `.png` files in conflict list | `git checkout --theirs $FILE && git add $FILE` — always trivial |
-| **Modify/delete (new file)** | PR introduces files not on target | `git add $FILE` — keep the new file |
-| **Modify/delete (removed)** | Target removed files the PR modifies | `git rm $FILE` — file no longer relevant |
-| **Content conflicts** | Marker-based (`<<<<<<<`) | Accept theirs via python regex (see below) |
-| **Add/add** | Both sides added same file | Accept theirs, verify no logic conflict |
-| **Locale/JSON files** | i18n key additions | Accept theirs, validate JSON after |
+| Type                         | Symptom                              | Resolution                                                      |
+| ---------------------------- | ------------------------------------ | --------------------------------------------------------------- |
+| **Binary snapshots (PNGs)**  | `.png` files in conflict list        | `git checkout --theirs $FILE && git add $FILE` — always trivial |
+| **Modify/delete (new file)** | PR introduces files not on target    | `git add $FILE` — keep the new file                             |
+| **Modify/delete (removed)**  | Target removed files the PR modifies | `git rm $FILE` — file no longer relevant                        |
+| **Content conflicts**        | Marker-based (`<<<<<<<`)             | Accept theirs via python regex (see below)                      |
+| **Add/add**                  | Both sides added same file           | Accept theirs, verify no logic conflict                         |
+| **Locale/JSON files**        | i18n key additions                   | Accept theirs, validate JSON after                              |
 
 ```python
 # Accept theirs for content conflicts
@@ -75,6 +80,7 @@ content = re.sub(pattern, r'\2', content, flags=re.DOTALL)
 ```
 
 ### Escalation Triggers (Flag for Human)
+
 - **Package.json/lockfile changes** → skip on stable (transitive dep regression risk)
 - **Core type definition changes** → requires human judgment
 - **Business logic conflicts** (not just imports/exports) → requires domain knowledge
@@ -83,12 +89,13 @@ content = re.sub(pattern, r'\2', content, flags=re.DOTALL)
 ## Auto-Skip Categories
 
 Skip these without discussion:
+
 - **Dep refresh PRs** — Risk of transitive dep regressions on stable. Cherry-pick individual CVE fixes instead.
 - **CI/tooling changes** — Not user-facing
 - **Test-only / lint rule changes** — Not user-facing
 - **Revert pairs** — If PR A reverted by PR B, skip both. If fixed version (PR C) exists, backport only C.
 - **Features not on target branch** — e.g., Painter, GLSLShader, appModeStore on core/1.40
-- **Cloud-only PRs on core/* branches** — App mode, cloud auth, cloud billing. These only affect cloud-hosted ComfyUI.
+- **Cloud-only PRs on core/\* branches** — App mode, cloud auth, cloud billing. These only affect cloud-hosted ComfyUI.
 
 ## Wave Verification
 
@@ -110,6 +117,7 @@ If typecheck fails, stop and investigate before continuing. A broken branch afte
 ## Continuous Backporting Recommendation
 
 Large backport sessions (50+ PRs) are expensive and error-prone. Prefer continuous backporting:
+
 - Backport bug fixes as they merge to main (same day or next day)
 - Use the automation labels immediately after merge
 - Reserve session-style bulk backporting for catching up after gaps
@@ -118,6 +126,7 @@ Large backport sessions (50+ PRs) are expensive and error-prone. Prefer continuo
 ## Quick Reference
 
 ### Label-Driven Automation (default path)
+
 ```bash
 gh api repos/Comfy-Org/ComfyUI_frontend/issues/$PR/labels \
   -f "labels[]=needs-backport" -f "labels[]=TARGET_BRANCH"
@@ -125,6 +134,7 @@ gh api repos/Comfy-Org/ComfyUI_frontend/issues/$PR/labels \
 ```
 
 ### Manual Worktree Cherry-Pick (conflict fallback)
+
 ```bash
 git worktree add /tmp/backport-$BRANCH origin/$BRANCH
 cd /tmp/backport-$BRANCH
@@ -134,6 +144,7 @@ git cherry-pick -m 1 $MERGE_SHA
 ```
 
 ### PR Title Convention
+
 ```
 [backport TARGET_BRANCH] Original Title (#ORIGINAL_PR)
 ```

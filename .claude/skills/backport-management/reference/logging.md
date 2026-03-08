@@ -3,17 +3,20 @@
 ## During Execution
 
 Maintain `execution-log.md` with per-branch tables:
+
 ```markdown
-| PR# | Title | Status | Backport PR | Notes |
-|-----|-------|--------|-------------|-------|
-| #XXXX | Title | ✅ Merged / ⏭️ Skip / ⏸️ Deferred | #YYYY | Details |
+| PR#   | Title | Status                            | Backport PR | Notes   |
+| ----- | ----- | --------------------------------- | ----------- | ------- |
+| #XXXX | Title | ✅ Merged / ⏭️ Skip / ⏸️ Deferred | #YYYY       | Details |
 ```
 
 ## Wave Verification Log
 
 Track verification results per wave:
+
 ```markdown
 ## Wave N Verification — TARGET_BRANCH
+
 - PRs merged: #A, #B, #C
 - Typecheck: ✅ Pass / ❌ Fail
 - Issues found: (if any)
@@ -26,24 +29,29 @@ Track verification results per wave:
 # Backport Session Report
 
 ## Summary
+
 | Branch | Candidates | Merged | Skipped | Deferred | Rate |
-|--------|-----------|--------|---------|----------|------|
+| ------ | ---------- | ------ | ------- | -------- | ---- |
 
 ## Deferred Items (Needs Human)
+
 | PR# | Title | Branch | Issue |
 
 ## Conflict Resolutions Requiring Review
+
 | PR# | Branch | Conflict Type | Resolution Summary |
 
 ## Automation Performance
-| Metric | Value |
-|--------|-------|
-| Auto success rate | X% |
-| Manual resolution rate | X% |
-| Overall clean rate | X% |
-| Wave verification pass rate | X% |
+
+| Metric                      | Value |
+| --------------------------- | ----- |
+| Auto success rate           | X%    |
+| Manual resolution rate      | X%    |
+| Overall clean rate          | X%    |
+| Wave verification pass rate | X%    |
 
 ## Process Recommendations
+
 - Were there clusters of related PRs that should have been backported together?
 - Any PRs that should have been backported sooner (continuous backporting candidates)?
 - Feature branches that need tracking for future sessions?
@@ -78,6 +86,7 @@ graph TD
 Use the `mermaid` tool to render this diagram and present it alongside the summary table as the session's final deliverable.
 
 ## Files to Track
+
 - `candidate_list.md` — all candidates per branch
 - `decisions.md` — MUST/SHOULD/SKIP with rationale
 - `wave-plan.md` — execution order
