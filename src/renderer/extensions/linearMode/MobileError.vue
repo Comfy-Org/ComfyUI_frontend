@@ -44,7 +44,7 @@ const accessibleErrors = computed(() =>
       if (!extra_info) return []
 
       const selectedInput = appModeStore.selectedInputs.find(
-        ([id, name]) => id === k && extra_info.input_name === name
+        ([id, name]) => id == k && extra_info.input_name === name
       )
       if (!selectedInput) return []
 

@@ -24,6 +24,8 @@ import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
+defineEmits<{ navigateControls: [] }>()
+
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const mediaActions = useMediaAssetActions()
@@ -135,7 +137,10 @@ async function rerun(e: Event) {
       ]"
     />
   </section>
-  <MobileError v-if="mobile && executionErrorStore.isErrorOverlayOpen" />
+  <MobileError
+    v-if="mobile && executionErrorStore.isErrorOverlayOpen"
+    @navigate-controls="$emit('navigateControls')"
+  />
   <ImagePreview
     v-else-if="canShowPreview && latentPreview"
     :mobile

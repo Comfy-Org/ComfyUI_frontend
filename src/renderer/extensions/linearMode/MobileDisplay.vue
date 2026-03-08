@@ -194,7 +194,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         <div
           class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
         >
-          <LinearPreview mobile @navigate-controsl="activeIndex = 0" />
+          <LinearPreview mobile @navigate-controls="activeIndex = 0" />
         </div>
         <AssetsSidebarTab
           class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"
