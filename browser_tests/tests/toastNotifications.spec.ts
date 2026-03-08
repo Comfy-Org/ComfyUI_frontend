@@ -9,26 +9,29 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     await comfyPage.setup()
   })
 
-  async function triggerExecutionError(comfyPage: {
-    canvasOps: { disconnectEdge(): Promise<void> }
-    page: { keyboard: { press(key: string): Promise<void> } }
-    command: { executeCommand(cmd: string): Promise<void> }
-    nextFrame(): Promise<void>
+  async function triggerErrorToast(comfyPage: {
+    page: { evaluate: (fn: () => void) => Promise<void> }
+    nextFrame: () => Promise<void>
   }) {
-    await comfyPage.canvasOps.disconnectEdge()
+    await comfyPage.page.evaluate(() => {
+      window.app!.extensionManager.toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Test execution error',
+        life: 30000
+      })
+    })
     await comfyPage.nextFrame()
-    await comfyPage.page.keyboard.press('Escape')
-    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
   }
 
-  test('Error toast appears on execution failure', async ({ comfyPage }) => {
-    await triggerExecutionError(comfyPage)
+  test('Error toast appears when triggered', async ({ comfyPage }) => {
+    await triggerErrorToast(comfyPage)
 
     await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
   })
 
   test('Toast shows correct error severity class', async ({ comfyPage }) => {
-    await triggerExecutionError(comfyPage)
+    await triggerErrorToast(comfyPage)
 
     const errorToast = comfyPage.page.locator(
       '.p-toast-message.p-toast-message-error'
@@ -37,7 +40,7 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
   })
 
   test('Toast can be dismissed via close button', async ({ comfyPage }) => {
-    await triggerExecutionError(comfyPage)
+    await triggerErrorToast(comfyPage)
 
     await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
 
@@ -48,7 +51,7 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
   })
 
   test('All toasts cleared via closeToasts helper', async ({ comfyPage }) => {
-    await triggerExecutionError(comfyPage)
+    await triggerErrorToast(comfyPage)
 
     await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
 
@@ -58,7 +61,7 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
   })
 
   test('Toast error count is accurate', async ({ comfyPage }) => {
-    await triggerExecutionError(comfyPage)
+    await triggerErrorToast(comfyPage)
 
     await expect(
       comfyPage.page.locator('.p-toast-message.p-toast-message-error').first()

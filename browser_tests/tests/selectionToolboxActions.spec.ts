@@ -4,7 +4,7 @@ import {
 } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
 })
 
 test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
@@ -20,8 +20,11 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
 
-    // Click bypass button to bypass the node
-    await comfyPage.page.locator('[data-testid="bypass-button"]').click()
+    const bypassButton = comfyPage.page.locator(
+      '[data-testid="bypass-button"]'
+    )
+    await expect(bypassButton).toBeVisible()
+    await bypassButton.click()
     await comfyPage.nextFrame()
 
     await expect(nodeRef).toBeBypassed()
@@ -30,8 +33,8 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.nodeOps.selectNodes(['KSampler'])
     await comfyPage.nextFrame()
 
-    // Click bypass button again to un-bypass
-    await comfyPage.page.locator('[data-testid="bypass-button"]').click()
+    await expect(bypassButton).toBeVisible()
+    await bypassButton.click()
     await comfyPage.nextFrame()
 
     await expect(nodeRef).not.toBeBypassed()
@@ -45,7 +48,11 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       () => window.app!.graph!._nodes.length
     )
 
-    await comfyPage.page.locator('[data-testid="delete-button"]').click()
+    const deleteButton = comfyPage.page.locator(
+      '[data-testid="delete-button"]'
+    )
+    await expect(deleteButton).toBeVisible()
+    await deleteButton.click()
     await comfyPage.nextFrame()
 
     const newCount = await comfyPage.page.evaluate(
@@ -58,7 +65,9 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.nodeOps.selectNodes(['KSampler'])
     await comfyPage.nextFrame()
 
-    await comfyPage.page.locator('[data-testid="info-button"]').click()
+    const infoButton = comfyPage.page.locator('[data-testid="info-button"]')
+    await expect(infoButton).toBeVisible()
+    await infoButton.click()
     await comfyPage.nextFrame()
 
     await expect(
@@ -110,7 +119,11 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       () => window.app!.graph!._nodes.length
     )
 
-    await comfyPage.page.locator('[data-testid="delete-button"]').click()
+    const deleteButton = comfyPage.page.locator(
+      '[data-testid="delete-button"]'
+    )
+    await expect(deleteButton).toBeVisible()
+    await deleteButton.click()
     await comfyPage.nextFrame()
 
     const newCount = await comfyPage.page.evaluate(

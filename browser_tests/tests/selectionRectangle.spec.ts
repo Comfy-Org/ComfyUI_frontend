@@ -15,17 +15,15 @@ test.describe('@canvas Selection Rectangle', () => {
     const totalCount = await comfyPage.vueNodes.getNodeCount()
     expect(totalCount).toBeGreaterThan(0)
 
-    await comfyPage.canvas.click({ position: { x: 10, y: 10 } })
-    await comfyPage.nextFrame()
-    await comfyPage.page.keyboard.press('Control+a')
+    // Use canvas press for keyboard shortcuts (doesn't need click target)
+    await comfyPage.canvas.press('Control+a')
     await comfyPage.nextFrame()
 
     expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(totalCount)
   })
 
   test('Click empty space deselects all', async ({ comfyPage }) => {
-    await comfyPage.canvas.click({ position: { x: 10, y: 10 } })
-    await comfyPage.page.keyboard.press('Control+a')
+    await comfyPage.canvas.press('Control+a')
     await comfyPage.nextFrame()
     expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBeGreaterThan(0)
 
@@ -68,6 +66,7 @@ test.describe('@canvas Selection Rectangle', () => {
   }) => {
     expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(0)
 
+    // Use page.mouse directly for drag operations to avoid canvas click issues
     await comfyPage.page.mouse.move(10, 400)
     await comfyPage.page.mouse.down()
     await comfyPage.page.mouse.move(800, 600, { steps: 10 })
