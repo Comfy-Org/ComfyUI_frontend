@@ -119,4 +119,19 @@ describe(flattenNodeOutput, () => {
     expect(result).toHaveLength(1)
     expect(result[0].mediaType).toBe('images')
   })
+
+  it('excludes partial ResultItem objects missing required fields', () => {
+    const output = {
+      images: [
+        { filename: 'valid.png', subfolder: '', type: 'output' },
+        { filename: 'no-subfolder.png' },
+        { subfolder: '', type: 'output' }
+      ]
+    } as unknown as NodeExecutionOutput
+
+    const result = flattenNodeOutput(['1', output])
+
+    expect(result).toHaveLength(1)
+    expect(result[0].filename).toBe('valid.png')
+  })
 })

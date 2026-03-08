@@ -49,7 +49,6 @@ const attrs = useAttrs()
   />
   <Preview3d
     v-else-if="getMediaType(output) === '3d'"
-    :key="output.url"
     :class="attrs.class as string"
     :model-url="output.url"
   />

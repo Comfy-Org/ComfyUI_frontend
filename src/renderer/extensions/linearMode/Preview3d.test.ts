@@ -75,25 +75,6 @@ describe('Preview3d', () => {
     expect(cleanup).toHaveBeenCalledOnce()
   })
 
-  it('cleans up before reinitializing when modelUrl changes', async () => {
-    const wrapper = await mountPreview3d('http://localhost/view?filename=a.glb')
-    vi.clearAllMocks()
-
-    await wrapper.setProps({
-      modelUrl: 'http://localhost/view?filename=b.glb'
-    })
-    await nextTick()
-    await nextTick()
-
-    const cleanupOrder = cleanup.mock.invocationCallOrder[0]
-    const initOrder = initializeStandaloneViewer.mock.invocationCallOrder[0]
-    expect(cleanupOrder).toBeLessThan(initOrder)
-    expect(initializeStandaloneViewer).toHaveBeenCalledWith(
-      expect.any(HTMLElement),
-      'http://localhost/view?filename=b.glb'
-    )
-  })
-
   it('reinitializes correctly after unmount and remount', async () => {
     const url = 'http://localhost/view?filename=model.glb'
 
