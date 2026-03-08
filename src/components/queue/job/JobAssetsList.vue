@@ -55,7 +55,7 @@
               v-else-if="job.state === 'completed'"
               variant="textonly"
               size="sm"
-              @click.stop="emitViewItem(job)"
+              @click.stop="emitCompletedViewItem(job)"
             >
               {{ t('menuLabels.View') }}
             </Button>
@@ -234,6 +234,11 @@ const emitViewItem = (job: JobListItem) => {
     resetActiveDetails()
     emit('viewItem', job)
   }
+}
+
+const emitCompletedViewItem = (job: JobListItem) => {
+  resetActiveDetails()
+  emit('viewItem', job)
 }
 
 const emitCancelItem = (job: JobListItem) => {

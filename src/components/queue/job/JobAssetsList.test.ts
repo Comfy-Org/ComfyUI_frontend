@@ -165,6 +165,26 @@ describe('JobAssetsList', () => {
     expect(wrapper.emitted('viewItem')).toBeUndefined()
   })
 
+  it('emits viewItem from the View button for completed jobs without preview output', async () => {
+    const job = buildJob({
+      iconImageUrl: undefined,
+      taskRef: createTaskRef()
+    })
+    const wrapper = mountJobAssetsList([job])
+    const jobRow = wrapper.find(`[data-job-id="${job.id}"]`)
+
+    await jobRow.trigger('mouseenter')
+    const viewButton = wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'menuLabels.View')
+    expect(viewButton).toBeDefined()
+
+    await viewButton!.trigger('click')
+    await nextTick()
+
+    expect(wrapper.emitted('viewItem')).toEqual([[job]])
+  })
+
   it('shows and hides the job details popover with hover delays', async () => {
     vi.useFakeTimers()
     const job = buildJob()
