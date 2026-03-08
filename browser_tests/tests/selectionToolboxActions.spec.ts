@@ -2,9 +2,23 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../fixtures/ComfyPage'
+import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+import type { ComfyPage } from '../fixtures/ComfyPage'
+
+async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
+  const nodePos = await nodeRef.getPosition()
+  await comfyPage.page.evaluate((pos) => {
+    const canvas = window.app!.canvas
+    canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
+    canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2 + 100
+    canvas.setDirty(true, true)
+  }, nodePos)
+  await comfyPage.nextFrame()
+  await nodeRef.click('title')
+}
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
@@ -15,10 +29,8 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
   })
 
   test('bypass button toggles node bypass state', async ({ comfyPage }) => {
-    await comfyPage.nodeOps.selectNodes(['KSampler'])
-    await comfyPage.nextFrame()
-
     const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
+    await selectNodeWithPan(comfyPage, nodeRef)
 
     const bypassButton = comfyPage.page.locator(
       '[data-testid="bypass-button"]'
@@ -30,8 +42,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await expect(nodeRef).toBeBypassed()
 
     // Re-select the node to show toolbox again
-    await comfyPage.nodeOps.selectNodes(['KSampler'])
-    await comfyPage.nextFrame()
+    await selectNodeWithPan(comfyPage, nodeRef)
 
     await expect(bypassButton).toBeVisible()
     await bypassButton.click()
@@ -41,8 +52,8 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
   })
 
   test('delete button removes selected node', async ({ comfyPage }) => {
-    await comfyPage.nodeOps.selectNodes(['KSampler'])
-    await comfyPage.nextFrame()
+    const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
+    await selectNodeWithPan(comfyPage, nodeRef)
 
     const initialCount = await comfyPage.page.evaluate(
       () => window.app!.graph!._nodes.length
@@ -62,8 +73,10 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
   })
 
   test('info button opens properties panel', async ({ comfyPage }) => {
-    await comfyPage.nodeOps.selectNodes(['KSampler'])
-    await comfyPage.nextFrame()
+    // Sidebar requires UseNewMenu: 'Top' for the properties panel to render
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
+    await selectNodeWithPan(comfyPage, nodeRef)
 
     const infoButton = comfyPage.page.locator('[data-testid="info-button"]')
     await expect(infoButton).toBeVisible()
@@ -78,8 +91,8 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
   test('refresh button is visible when node is selected', async ({
     comfyPage
   }) => {
-    await comfyPage.nodeOps.selectNodes(['KSampler'])
-    await comfyPage.nextFrame()
+    const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
+    await selectNodeWithPan(comfyPage, nodeRef)
 
     await expect(
       comfyPage.page.locator('[data-testid="refresh-button"]')
@@ -92,10 +105,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.nextFrame()
 
-    await comfyPage.nodeOps.selectNodes([
-      'KSampler',
-      'CLIP Text Encode (Prompt)'
-    ])
+    await comfyPage.nodeOps.selectNodes(['KSampler', 'Empty Latent Image'])
     await comfyPage.nextFrame()
 
     await expect(
@@ -109,10 +119,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.nextFrame()
 
-    await comfyPage.nodeOps.selectNodes([
-      'KSampler',
-      'CLIP Text Encode (Prompt)'
-    ])
+    await comfyPage.nodeOps.selectNodes(['KSampler', 'Empty Latent Image'])
     await comfyPage.nextFrame()
 
     const initialCount = await comfyPage.page.evaluate(
