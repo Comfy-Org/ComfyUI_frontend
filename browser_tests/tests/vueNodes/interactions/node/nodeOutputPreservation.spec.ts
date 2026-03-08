@@ -3,6 +3,11 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
 
 test.describe('Node Output Preservation', { tag: ['@widget', '@node'] }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+  })
+
   test('Execution output widget value survives tab switch', async ({
     comfyPage
   }) => {
