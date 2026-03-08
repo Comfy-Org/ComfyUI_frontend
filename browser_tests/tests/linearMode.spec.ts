@@ -4,10 +4,10 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
-import type { WorkspaceStore } from '../types/globals'
 
 test.describe('Linear Mode', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setup()
   })
 
@@ -15,10 +15,36 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     page: Page
     nextFrame: () => Promise<void>
   }) {
+    // LinearControls requires hasOutputs to be true. Serialize the current
+    // graph, inject linearData with output node IDs, then reload so the
+    // appModeStore picks up the outputs via its activeWorkflow watcher.
+    await comfyPage.page.evaluate(async () => {
+      const graph = window.app!.graph
+      if (!graph) return
+
+      const outputNodeIds = graph.nodes
+        .filter(
+          (n: { type?: string }) =>
+            n.type === 'SaveImage' || n.type === 'PreviewImage'
+        )
+        .map((n: { id: number | string }) => String(n.id))
+
+      // Serialize, inject linearData, and reload to sync stores
+      const workflow = graph.serialize() as unknown as Record<string, unknown>
+      const extra = (workflow.extra ?? {}) as Record<string, unknown>
+      extra.linearData = { inputs: [], outputs: outputNodeIds }
+      workflow.extra = extra
+      await window.app!.loadGraphData(
+        workflow as unknown as Parameters<
+          NonNullable<typeof window.app>['loadGraphData']
+        >[0]
+      )
+    })
+    await comfyPage.nextFrame()
+
+    // Toggle to app mode via the command which sets canvasStore.linearMode
     await comfyPage.page.evaluate(() => {
-      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
-        .activeWorkflow
-      if (workflow) workflow.activeMode = 'app'
+      window.app!.extensionManager.command.execute('Comfy.ToggleLinear')
     })
     await comfyPage.nextFrame()
   }
@@ -28,9 +54,7 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     nextFrame: () => Promise<void>
   }) {
     await comfyPage.page.evaluate(() => {
-      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
-        .activeWorkflow
-      if (workflow) workflow.activeMode = 'graph'
+      window.app!.extensionManager.command.execute('Comfy.ToggleLinear')
     })
     await comfyPage.nextFrame()
   }
