@@ -90,8 +90,17 @@ test.describe(
       }) => {
         await comfyPage.workflow.loadWorkflow('default')
 
-        // Select the SaveImage node (id 9 in default workflow)
+        // Pan to SaveImage node (rightmost, may be off-screen in CI)
         const saveNode = await comfyPage.nodeOps.getNodeRefById('9')
+        const savePos = await saveNode.getPosition()
+        await comfyPage.page.evaluate((pos) => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
+          canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2
+          canvas.setDirty(true, true)
+        }, savePos)
+        await comfyPage.nextFrame()
+
         await saveNode.click('title')
         const subgraphNode = await saveNode.convertToSubgraph()
         await comfyPage.nextFrame()
@@ -428,8 +437,17 @@ test.describe(
       }) => {
         await comfyPage.workflow.loadWorkflow('default')
 
-        // Select SaveImage (id 9)
+        // Pan to SaveImage node (rightmost, may be off-screen in CI)
         const saveNode = await comfyPage.nodeOps.getNodeRefById('9')
+        const savePos = await saveNode.getPosition()
+        await comfyPage.page.evaluate((pos) => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
+          canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2
+          canvas.setDirty(true, true)
+        }, savePos)
+        await comfyPage.nextFrame()
+
         await saveNode.click('title')
         const subgraphNode = await saveNode.convertToSubgraph()
         await comfyPage.nextFrame()
