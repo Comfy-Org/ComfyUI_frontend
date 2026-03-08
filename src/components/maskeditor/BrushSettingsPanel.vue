@@ -72,12 +72,12 @@
         />
       </div>
       <SliderControl
-        v-model="brushSize"
+        v-model="brushSizeSliderValue"
         class="flex-1"
         label=""
-        :min="1"
-        :max="250"
-        :step="1"
+        :min="0"
+        :max="1"
+        :step="0.001"
       />
     </div>
 
@@ -180,6 +180,26 @@ const textButtonClass =
 const brushSize = computed({
   get: () => store.brushSettings.size,
   set: (value: number) => store.setBrushSize(value)
+})
+
+const rawSliderValue = ref<number | null>(null)
+
+const brushSizeSliderValue = computed({
+  get: () => {
+    if (rawSliderValue.value !== null) {
+      const cachedSize = Math.round(Math.pow(250, rawSliderValue.value))
+      if (cachedSize === brushSize.value) {
+        return rawSliderValue.value
+      }
+    }
+
+    return Math.log(brushSize.value) / Math.log(250)
+  },
+  set: (value: number) => {
+    rawSliderValue.value = value
+    const size = Math.round(Math.pow(250, value))
+    store.setBrushSize(size)
+  }
 })
 
 const brushOpacity = computed({
