@@ -2984,10 +2984,6 @@
     "addedToWorkspace": "你已被加入 {workspaceName}",
     "inviteAccepted": "已接受邀請",
     "inviteFailed": "接受邀請失敗",
-    "unsavedChanges": {
-      "message": "您有未儲存的變更。是否要捨棄這些變更並切換工作區？",
-      "title": "未儲存的變更"
-    },
     "viewWorkspace": "檢視工作區"
   },
   "workspaceAuth": {
