@@ -1,11 +1,21 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick } from 'vue'
 
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import type { JobListItem as ApiJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 import JobAssetsList from './JobAssetsList.vue'
+
+const JobDetailsPopoverStub = defineComponent({
+  name: 'JobDetailsPopover',
+  props: {
+    jobId: { type: String, required: true },
+    workflowId: { type: String, default: undefined }
+  },
+  template: '<div class="job-details-popover-stub" />'
+})
 
 vi.mock('vue-i18n', () => {
   return {
@@ -46,6 +56,7 @@ const createTaskRef = (preview?: ResultItemImpl): TaskItemImpl => {
     create_time: Date.now(),
     preview_output: null,
     outputs_count: preview ? 1 : 0,
+    workflow_id: 'workflow-1',
     priority: 0
   }
   const flatOutputs = preview ? [preview] : []
@@ -71,9 +82,19 @@ const mountJobAssetsList = (jobs: JobListItem[]) => {
   ]
 
   return mount(JobAssetsList, {
-    props: { displayedJobGroups }
+    props: { displayedJobGroups },
+    global: {
+      stubs: {
+        teleport: true,
+        JobDetailsPopover: JobDetailsPopoverStub
+      }
+    }
   })
 }
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('JobAssetsList', () => {
   it('emits viewItem on preview-click for completed jobs with preview', async () => {
@@ -142,5 +163,68 @@ describe('JobAssetsList', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.emitted('viewItem')).toBeUndefined()
+  })
+
+  it('shows and hides the job details popover with hover delays', async () => {
+    vi.useFakeTimers()
+    const job = buildJob()
+    const wrapper = mountJobAssetsList([job])
+    const jobRow = wrapper.find(`[data-job-id="${job.id}"]`)
+
+    await jobRow.trigger('mouseenter')
+    await vi.advanceTimersByTimeAsync(199)
+    await nextTick()
+    expect(wrapper.findComponent(JobDetailsPopoverStub).exists()).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(1)
+    await nextTick()
+
+    const popover = wrapper.findComponent(JobDetailsPopoverStub)
+    expect(popover.exists()).toBe(true)
+    expect(popover.props()).toMatchObject({
+      jobId: job.id,
+      workflowId: 'workflow-1'
+    })
+
+    await jobRow.trigger('mouseleave')
+    await vi.advanceTimersByTimeAsync(149)
+    await nextTick()
+    expect(wrapper.findComponent(JobDetailsPopoverStub).exists()).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(1)
+    await nextTick()
+    expect(wrapper.findComponent(JobDetailsPopoverStub).exists()).toBe(false)
+  })
+
+  it('keeps the job details popover open while hovering the popover', async () => {
+    vi.useFakeTimers()
+    const job = buildJob()
+    const wrapper = mountJobAssetsList([job])
+    const jobRow = wrapper.find(`[data-job-id="${job.id}"]`)
+
+    await jobRow.trigger('mouseenter')
+    await vi.advanceTimersByTimeAsync(200)
+    await nextTick()
+
+    await jobRow.trigger('mouseleave')
+    await vi.advanceTimersByTimeAsync(100)
+    await nextTick()
+
+    const popover = wrapper.find('.job-details-popover')
+    expect(popover.exists()).toBe(true)
+
+    await popover.trigger('mouseenter')
+    await vi.advanceTimersByTimeAsync(100)
+    await nextTick()
+    expect(wrapper.findComponent(JobDetailsPopoverStub).exists()).toBe(true)
+
+    await popover.trigger('mouseleave')
+    await vi.advanceTimersByTimeAsync(149)
+    await nextTick()
+    expect(wrapper.findComponent(JobDetailsPopoverStub).exists()).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(1)
+    await nextTick()
+    expect(wrapper.findComponent(JobDetailsPopoverStub).exists()).toBe(false)
   })
 })
