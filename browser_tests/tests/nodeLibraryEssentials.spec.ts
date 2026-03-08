@@ -5,6 +5,9 @@ import {
 
 test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.featureFlags.mockServerFeatures({
+      node_library_essentials_enabled: true
+    })
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setup()
   })
@@ -85,9 +88,7 @@ test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
     const essentialsTab = comfyPage.page.getByRole('tab', {
       name: /essentials/i
     })
-    const allNodesTab = comfyPage.page.getByRole('tab', {
-      name: /all nodes/i
-    })
+    const allNodesTab = comfyPage.page.getByRole('tab', { name: /^all$/i })
 
     await essentialsTab.click()
     const essentialCards = comfyPage.page.locator('[data-node-name]')
