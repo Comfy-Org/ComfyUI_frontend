@@ -19,7 +19,8 @@ test.describe('Node Output Preservation', { tag: ['@widget', '@node'] }, () => {
     const outputNode = await comfyPage.nodeOps.getNodeRefById(1)
     expect(await (await outputNode.getWidget(0)).getValue()).toBe('')
 
-    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+    await outputNode.click('title')
+    await comfyPage.command.executeCommand('Comfy.QueueSelectedOutputNodes')
     await expect(async () => {
       expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
     }).toPass({ timeout: 5_000 })
@@ -40,7 +41,8 @@ test.describe('Node Output Preservation', { tag: ['@widget', '@node'] }, () => {
     await comfyPage.workflow.loadWorkflow('execution/partial_execution')
 
     const outputNode1 = await comfyPage.nodeOps.getNodeRefById(1)
-    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+    await outputNode1.click('title')
+    await comfyPage.command.executeCommand('Comfy.QueueSelectedOutputNodes')
     await expect(async () => {
       expect(await (await outputNode1.getWidget(0)).getValue()).toBe('foo')
     }).toPass({ timeout: 5_000 })
