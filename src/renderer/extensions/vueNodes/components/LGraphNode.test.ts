@@ -17,10 +17,16 @@ const mockData = vi.hoisted(() => ({
   mockLgraphNode: null as Record<string, unknown> | null
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  getLocatorIdFromNodeData: vi.fn(() => 'test-node-123'),
-  getNodeByLocatorId: vi.fn(() => mockData.mockLgraphNode)
-}))
+vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    getLocatorIdFromNodeData: vi.fn(() => 'test-node-123'),
+    getNodeByLocatorId: vi.fn(
+      () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+    )
+  }
+})
 
 vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
   return {
@@ -54,16 +60,6 @@ vi.mock('@/scripts/app', () => ({
     canvas: { setDirty: vi.fn() }
   }
 }))
-
-vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    getNodeByLocatorId: vi.fn(() => ({
-      isSubgraphNode: () => false
-    }))
-  }
-})
 
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({
