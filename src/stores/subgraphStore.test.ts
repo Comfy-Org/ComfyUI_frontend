@@ -225,6 +225,68 @@ describe('useSubgraphStore', () => {
     })
   })
 
+  it('should handle global blueprint with empty data gracefully', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await mockFetch(
+      {},
+      {
+        broken_blueprint: {
+          name: 'Broken Blueprint',
+          info: { node_pack: 'test_pack' },
+          data: ''
+        }
+      }
+    )
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to load subgraph blueprint',
+      expect.any(Error)
+    )
+    expect(store.subgraphBlueprints).toHaveLength(0)
+    consoleSpy.mockRestore()
+  })
+
+  it('should handle global blueprint with rejected data promise gracefully', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await mockFetch(
+      {},
+      {
+        failing_blueprint: {
+          name: 'Failing Blueprint',
+          info: { node_pack: 'test_pack' },
+          data: Promise.reject(new Error('Network error')) as unknown as string
+        }
+      }
+    )
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to load subgraph blueprint',
+      expect.any(Error)
+    )
+    expect(store.subgraphBlueprints).toHaveLength(0)
+    consoleSpy.mockRestore()
+  })
+
+  it('should load valid global blueprints even when others fail', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await mockFetch(
+      {},
+      {
+        broken: {
+          name: 'Broken',
+          info: { node_pack: 'test_pack' },
+          data: ''
+        },
+        valid: {
+          name: 'Valid Blueprint',
+          info: { node_pack: 'test_pack' },
+          data: JSON.stringify(mockGraph)
+        }
+      }
+    )
+    expect(consoleSpy).toHaveBeenCalled()
+    expect(store.subgraphBlueprints).toHaveLength(1)
+    consoleSpy.mockRestore()
+  })
+
   describe('search_aliases support', () => {
     it('should include search_aliases from workflow extra', async () => {
       const mockGraphWithAliases = {

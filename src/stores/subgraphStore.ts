@@ -198,13 +198,19 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     }
     async function loadInstalledBlueprints() {
       async function loadGlobalBlueprint([k, v]: [string, GlobalSubgraphData]) {
+        const data = await v.data
+        if (typeof data !== 'string' || data.trim().length === 0) {
+          throw new Error(
+            `Global blueprint '${v.name}' (${k}) returned empty content`
+          )
+        }
         const path = SubgraphBlueprint.basePath + v.name + '.json'
         const blueprint = new SubgraphBlueprint({
           path,
           modified: Date.now(),
           size: -1
         })
-        blueprint.originalContent = blueprint.content = await v.data
+        blueprint.originalContent = blueprint.content = data
         blueprint.filename = v.name
         useWorkflowStore().attachWorkflow(blueprint)
         const loaded = await blueprint.load()
@@ -238,16 +244,19 @@ export const useSubgraphStore = defineStore('subgraph', () => {
           return false
         return true
       })
-      await Promise.allSettled(filteredEntries.map(loadGlobalBlueprint))
+      return Promise.allSettled(filteredEntries.map(loadGlobalBlueprint))
     }
 
     const userSubs = (
       await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
     ).filter((f) => f.path.endsWith('.json'))
-    const settled = await Promise.allSettled([
-      ...userSubs.map(loadBlueprint),
-      loadInstalledBlueprints()
+    const [globalResult, ...userResults] = await Promise.allSettled([
+      loadInstalledBlueprints(),
+      ...userSubs.map(loadBlueprint)
     ])
+    const globalResults =
+      globalResult.status === 'fulfilled' ? globalResult.value : []
+    const settled = [...globalResults, ...userResults]
 
     const errors = settled.filter((i) => 'reason' in i).map((i) => i.reason)
     errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
