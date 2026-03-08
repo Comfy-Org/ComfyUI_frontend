@@ -134,7 +134,7 @@ const listGridStyle = {
 }
 
 function getAssetPrimaryText(asset: AssetItem): string {
-  return truncateFilename(asset.name)
+  return truncateFilename(asset.display_name || asset.name)
 }
 
 function getAssetMediaType(asset: AssetItem) {

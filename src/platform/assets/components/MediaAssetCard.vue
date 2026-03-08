@@ -225,7 +225,7 @@ const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
 
 // Get filename without extension
 const fileName = computed(() => {
-  return getFilenameDetails(asset?.name || '').filename
+  return getFilenameDetails(asset?.display_name || asset?.name || '').filename
 })
 
 // Adapt AssetItem to legacy AssetMeta format for existing components

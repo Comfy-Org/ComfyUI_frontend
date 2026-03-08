@@ -569,7 +569,7 @@ const handleZoomClick = (asset: AssetItem) => {
     const dialogStore = useDialogStore()
     dialogStore.showDialog({
       key: 'asset-3d-viewer',
-      title: asset.name,
+      title: asset.display_name || asset.name,
       component: Load3dViewerContent,
       props: {
         modelUrl: asset.preview_url || ''
