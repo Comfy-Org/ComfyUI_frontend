@@ -140,6 +140,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   setNodeId(nodeId: NodeId): void {
     this._state = useWidgetValueStore().registerWidget({
       ...this._state,
+      value: this.value,
       nodeId
     })
   }
