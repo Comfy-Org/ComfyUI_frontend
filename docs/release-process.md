@@ -57,8 +57,12 @@ v1.40.1 ── A ── B ── C ── [bump to 1.41.0]
   AND they sit on `core/1.40` where they could later ship as v1.40.2 via a
   patch bump on that branch.
 
+There's no divergence — it's the same commits in both. The only difference is
+whether future work (1.41+ features) gets mixed in, which the branch prevents.
 This is intentional — `core/1.40` exists so ComfyUI can stay on the 1.40.x
-line and receive patches without jumping to 1.41.
+line and receive patches without jumping to 1.41. The same code ends up in
+both places because it was developed during the 1.40 era — 1.41.0 just happens
+to be the first release that includes it on `main`.
 
 ## Summary Table
 
