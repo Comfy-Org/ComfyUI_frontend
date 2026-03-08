@@ -118,6 +118,7 @@ const activeDetails = ref<{ jobId: string; workflowId?: string } | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
 const popoverPosition = ref<{ top: number; right: number } | null>(null)
 const hideTimer = ref<number | null>(null)
+const hideTimerJobId = ref<string | null>(null)
 const showTimer = ref<number | null>(null)
 
 const clearHideTimer = () => {
@@ -125,6 +126,7 @@ const clearHideTimer = () => {
     clearTimeout(hideTimer.value)
     hideTimer.value = null
   }
+  hideTimerJobId.value = null
 }
 
 const clearShowTimer = () => {
@@ -155,7 +157,6 @@ const resetActiveDetails = () => {
 }
 
 const scheduleDetailsShow = (job: JobListItem, rowElement: HTMLElement) => {
-  clearHideTimer()
   clearShowTimer()
   activeRowElement.value = rowElement
   showTimer.value = window.setTimeout(() => {
@@ -171,8 +172,13 @@ const scheduleDetailsShow = (job: JobListItem, rowElement: HTMLElement) => {
 const scheduleDetailsHide = (jobId?: string) => {
   if (!jobId) return
 
-  clearHideTimer()
   clearShowTimer()
+  if (hideTimerJobId.value && hideTimerJobId.value !== jobId) {
+    return
+  }
+
+  clearHideTimer()
+  hideTimerJobId.value = jobId
   hideTimer.value = window.setTimeout(() => {
     if (activeDetails.value?.jobId === jobId) {
       activeDetails.value = null
@@ -180,6 +186,7 @@ const scheduleDetailsHide = (jobId?: string) => {
       popoverPosition.value = null
     }
     hideTimer.value = null
+    hideTimerJobId.value = null
   }, 150)
 }
 
