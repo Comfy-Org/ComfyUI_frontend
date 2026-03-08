@@ -1204,7 +1204,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Docked job history/queue panel',
     type: 'boolean',
     tooltip:
-      'Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout.',
+      'Replaces the floating job queue panel with an equivalent job queue embedded in the job history side panel. You can disable this to return to the floating panel layout.',
     defaultValue: false,
     experimental: true
   },
