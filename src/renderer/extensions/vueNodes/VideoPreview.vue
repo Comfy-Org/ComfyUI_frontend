@@ -21,7 +21,7 @@
       <div
         v-if="videoError"
         role="alert"
-        class="flex flex-auto flex-col items-center justify-center bg-muted-background py-8 text-center text-base-foreground"
+        class="flex flex-auto flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
       >
         <i class="mb-2 icon-[lucide--video-off] size-12 text-base-foreground" />
         <p class="text-sm text-base-foreground">
@@ -247,7 +247,7 @@ const handleFocusOut = (event: FocusEvent) => {
 
 const getNavigationDotClass = (index: number) =>
   cn(
-    'size-2 cursor-pointer rounded-full border-0 transition-all duration-200',
+    'size-2 rounded-full transition-all duration-200 border-0 cursor-pointer',
     index === currentIndex.value
       ? 'bg-base-foreground'
       : 'bg-base-foreground/50 hover:bg-base-foreground/80'

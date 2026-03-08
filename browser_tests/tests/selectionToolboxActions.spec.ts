@@ -18,9 +18,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.nodeOps.selectNodes(['KSampler'])
     await comfyPage.nextFrame()
 
-    const nodeRef = (
-      await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-    )[0]
+    const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
 
     // Click bypass button to bypass the node
     await comfyPage.page.locator('[data-testid="bypass-button"]').click()

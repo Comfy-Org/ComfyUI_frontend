@@ -9,7 +9,12 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     await comfyPage.setup()
   })
 
-  async function triggerExecutionError(comfyPage: { canvasOps: { disconnectEdge(): Promise<void> }; page: { keyboard: { press(key: string): Promise<void> } }; command: { executeCommand(cmd: string): Promise<void> }; nextFrame(): Promise<void> }) {
+  async function triggerExecutionError(comfyPage: {
+    canvasOps: { disconnectEdge(): Promise<void> }
+    page: { keyboard: { press(key: string): Promise<void> } }
+    command: { executeCommand(cmd: string): Promise<void> }
+    nextFrame(): Promise<void>
+  }) {
     await comfyPage.canvasOps.disconnectEdge()
     await comfyPage.nextFrame()
     await comfyPage.page.keyboard.press('Escape')
@@ -36,9 +41,7 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
 
     await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
 
-    const closeButton = comfyPage.page
-      .locator('.p-toast-close-button')
-      .first()
+    const closeButton = comfyPage.page.locator('.p-toast-close-button').first()
     await closeButton.click()
 
     await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
