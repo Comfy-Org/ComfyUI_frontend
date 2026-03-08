@@ -10,78 +10,72 @@ import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
 // src/stores/nodeOutputStore.test.ts.
 // Tracked in: https://github.com/Comfy-Org/ComfyUI_frontend/issues/8143
 test.describe('Node Output Preservation', { tag: ['@widget', '@node'] }, () => {
-  test.fixme(
-    'Execution output widget value survives tab switch',
-    async ({ comfyPage }) => {
-      await comfyPage.setupSettings({
-        'Comfy.UseNewMenu': 'Top',
-        'Comfy.Workflow.WorkflowTabsPosition': 'Topbar',
-        'Comfy.VueNodes.Enabled': false
-      })
-      await comfyPage.setup()
+  test.fixme('Execution output widget value survives tab switch', async ({
+    comfyPage
+  }) => {
+    await comfyPage.setupSettings({
+      'Comfy.UseNewMenu': 'Top',
+      'Comfy.Workflow.WorkflowTabsPosition': 'Topbar',
+      'Comfy.VueNodes.Enabled': false
+    })
+    await comfyPage.setup()
 
-      await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+    await comfyPage.workflow.loadWorkflow('execution/partial_execution')
 
-      const outputNode = await comfyPage.nodeOps.getNodeRefById(1)
-      expect(await (await outputNode.getWidget(0)).getValue()).toBe('')
+    const outputNode = await comfyPage.nodeOps.getNodeRefById(1)
+    expect(await (await outputNode.getWidget(0)).getValue()).toBe('')
 
-      await outputNode.click('title')
-      await comfyPage.command.executeCommand('Comfy.QueueSelectedOutputNodes')
-      await expect(async () => {
-        expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
-      }).toPass({ timeout: 5_000 })
+    await outputNode.click('title')
+    await comfyPage.command.executeCommand('Comfy.QueueSelectedOutputNodes')
+    await expect(async () => {
+      expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
+    }).toPass({ timeout: 5_000 })
 
-      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-      await comfyPage.nextFrame()
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.nextFrame()
 
-      const firstTab = comfyPage.menu.topbar.getWorkflowTab(
-        'partial_execution'
-      )
-      await firstTab.click()
-      await comfyPage.nextFrame()
+    const firstTab = comfyPage.menu.topbar.getWorkflowTab('partial_execution')
+    await firstTab.click()
+    await comfyPage.nextFrame()
 
-      await expect(async () => {
-        expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
-      }).toPass({ timeout: 5_000 })
-    }
-  )
+    await expect(async () => {
+      expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
+    }).toPass({ timeout: 5_000 })
+  })
 
-  test.fixme(
-    'Outputs on different tabs are independent',
-    async ({ comfyPage }) => {
-      await comfyPage.setupSettings({
-        'Comfy.UseNewMenu': 'Top',
-        'Comfy.Workflow.WorkflowTabsPosition': 'Topbar',
-        'Comfy.VueNodes.Enabled': false
-      })
-      await comfyPage.setup()
+  test.fixme('Outputs on different tabs are independent', async ({
+    comfyPage
+  }) => {
+    await comfyPage.setupSettings({
+      'Comfy.UseNewMenu': 'Top',
+      'Comfy.Workflow.WorkflowTabsPosition': 'Topbar',
+      'Comfy.VueNodes.Enabled': false
+    })
+    await comfyPage.setup()
 
-      await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+    await comfyPage.workflow.loadWorkflow('execution/partial_execution')
 
-      const outputNode1 = await comfyPage.nodeOps.getNodeRefById(1)
-      await outputNode1.click('title')
-      await comfyPage.command.executeCommand('Comfy.QueueSelectedOutputNodes')
-      await expect(async () => {
-        expect(await (await outputNode1.getWidget(0)).getValue()).toBe('foo')
-      }).toPass({ timeout: 5_000 })
+    const outputNode1 = await comfyPage.nodeOps.getNodeRefById(1)
+    await outputNode1.click('title')
+    await comfyPage.command.executeCommand('Comfy.QueueSelectedOutputNodes')
+    await expect(async () => {
+      expect(await (await outputNode1.getWidget(0)).getValue()).toBe('foo')
+    }).toPass({ timeout: 5_000 })
 
-      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-      await comfyPage.nextFrame()
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.nextFrame()
 
-      const newOutputCount = await comfyPage.page.evaluate(
-        () => Object.keys(window.app!.nodeOutputs).length
-      )
-      expect(newOutputCount).toBe(0)
+    const newOutputCount = await comfyPage.page.evaluate(
+      () => Object.keys(window.app!.nodeOutputs).length
+    )
+    expect(newOutputCount).toBe(0)
 
-      const firstTab = comfyPage.menu.topbar.getWorkflowTab(
-        'partial_execution'
-      )
-      await firstTab.click()
-      await comfyPage.nextFrame()
+    const firstTab = comfyPage.menu.topbar.getWorkflowTab('partial_execution')
+    await firstTab.click()
+    await comfyPage.nextFrame()
 
-      await expect(async () => {
-        expect(await (await outputNode1.getWidget(0)).getValue()).toBe('foo')
-      }).toPass({ timeout: 5_000 })
-    }
-  )
+    await expect(async () => {
+      expect(await (await outputNode1.getWidget(0)).getValue()).toBe('foo')
+    }).toPass({ timeout: 5_000 })
+  })
 })
