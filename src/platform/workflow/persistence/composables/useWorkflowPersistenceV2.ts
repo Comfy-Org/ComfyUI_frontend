@@ -268,10 +268,11 @@ export function useWorkflowPersistenceV2() {
     const storedWorkflows = storedTabState?.paths ?? []
     const storedActiveIndex = storedTabState?.activeIndex ?? -1
 
-    tabStateRestored = true
-
     const isRestorable = storedWorkflows.length > 0 && storedActiveIndex >= 0
-    if (!isRestorable) return
+    if (!isRestorable) {
+      tabStateRestored = true
+      return
+    }
 
     storedWorkflows.forEach((path: string) => {
       if (workflowStore.getWorkflowByPath(path)) return
@@ -294,6 +295,8 @@ export function useWorkflowPersistenceV2() {
       left: storedWorkflows.slice(0, storedActiveIndex),
       right: storedWorkflows.slice(storedActiveIndex)
     })
+
+    tabStateRestored = true
 
     // Activate the correct workflow at storedActiveIndex
     const activePath = storedWorkflows[storedActiveIndex]
