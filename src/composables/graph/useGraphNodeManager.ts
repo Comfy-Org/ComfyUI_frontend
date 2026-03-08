@@ -414,10 +414,10 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   const badges = node.badges
   const nodeId = String(node.id)
   const nodeDisplayStore = useNodeDisplayStore()
-  const graphId = node.graph?.rootGraph.id
-  const presentationRef = computed(() =>
-    graphId ? nodeDisplayStore.getNode(graphId, nodeId) : undefined
-  )
+  const presentationRef = computed(() => {
+    const graphId = node.graph?.rootGraph?.id
+    return graphId ? nodeDisplayStore.getNode(graphId, nodeId) : undefined
+  })
 
   const data: VueNodeData = {
     id: nodeId,

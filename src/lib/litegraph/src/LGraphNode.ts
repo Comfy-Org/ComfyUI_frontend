@@ -276,7 +276,7 @@ export class LGraphNode
   ): void {
     if (oldValue === newValue) return
 
-    const graphId = this.graph?.rootGraph.id
+    const graphId = this.graph?.rootGraph?.id
     if (!graphId) return
     useNodeDisplayStore().updateNode(graphId, String(this.id), update)
   }
@@ -1111,7 +1111,7 @@ export class LGraphNode
     })
 
     const presentation = extractPresentationFromSerialized(info)
-    const graphId = this.graph?.rootGraph.id
+    const graphId = this.graph?.rootGraph?.id
     if (graphId) {
       useNodeDisplayStore().registerNode(graphId, nodeId, presentation)
     }

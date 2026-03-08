@@ -155,7 +155,7 @@ export function useMinimapGraph(
     setupEventListeners()
 
     const currentGraph = graph.value
-    const graphId = currentGraph?.rootGraph.id
+    const graphId = currentGraph?.rootGraph?.id
     if (graphId) {
       const nodeDisplayStore = useNodeDisplayStore()
       const displayMap = nodeDisplayStore.getDisplayMap(graphId)

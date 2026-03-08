@@ -1,4 +1,6 @@
 // oxlint-disable no-empty-pattern
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { test as baseTest } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -33,13 +35,22 @@ interface DirtyFixtures {
   basicSerialisableGraph: SerialisableGraph
 }
 
-export const test = baseTest.extend<LitegraphFixtures>({
+const withPinia = baseTest.extend({
+  // Auto-fixture: sets up Pinia for every test
+   
+  _pinia: [
+    async ({}, use) => {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      await use(undefined)
+    },
+    { auto: true }
+  ]
+})
+
+export const test = withPinia.extend<LitegraphFixtures>({
   minimalGraph: async ({}, use) => {
-    // Before each test function
     const serialisable = structuredClone(minimalSerialisableGraph)
     const lGraph = new LGraph(serialisable)
-
-    // use the fixture value
     await use(lGraph)
   },
   minimalSerialisableGraph: structuredClone(minimalSerialisableGraph),

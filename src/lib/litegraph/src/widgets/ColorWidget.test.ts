@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -44,6 +46,7 @@ describe('ColorWidget', () => {
     vi.useFakeTimers()
     // Reset modules to get fresh globalColorInput state
     vi.resetModules()
+    setActivePinia(createTestingPinia({ stubActions: false }))
 
     const litegraph = await import('@/lib/litegraph/src/litegraph')
     LGraphNode = litegraph.LGraphNode
