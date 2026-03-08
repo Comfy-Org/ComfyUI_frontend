@@ -77,9 +77,7 @@ test.describe('Errors tab in right side panel', { tag: '@ui' }, () => {
     await expect(comfyPage.canvas).toBeVisible()
   })
 
-  test('Collapse all button collapses error groups', async ({
-    comfyPage
-  }) => {
+  test('Collapse all button collapses error groups', async ({ comfyPage }) => {
     await triggerExecutionError(comfyPage)
 
     const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
