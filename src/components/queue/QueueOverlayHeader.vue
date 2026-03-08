@@ -4,18 +4,6 @@
   >
     <div class="min-w-0 flex-1 px-2 text-[14px] font-normal text-text-primary">
       <span>{{ headerTitle }}</span>
-      <span
-        v-if="showConcurrentIndicator"
-        class="ml-4 inline-flex items-center gap-1 text-blue-100"
-      >
-        <span class="inline-block size-2 rounded-full bg-blue-100" />
-        <span>
-          <span class="font-bold">{{ concurrentWorkflowCount }}</span>
-          <span class="ml-1">{{
-            t('sideToolbar.queueProgressOverlay.running')
-          }}</span>
-        </span>
-      </span>
     </div>
     <div
       class="inline-flex h-6 items-center gap-2 text-[12px] leading-none text-text-primary"
@@ -48,8 +36,6 @@ import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 defineProps<{
   headerTitle: string
-  showConcurrentIndicator: boolean
-  concurrentWorkflowCount: number
   queuedCount: number
 }>()
 

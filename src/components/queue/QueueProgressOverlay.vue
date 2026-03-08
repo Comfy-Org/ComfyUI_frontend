@@ -17,8 +17,6 @@
         v-model:selected-sort-mode="selectedSortMode"
         class="flex-1 min-h-0"
         :header-title="headerTitle"
-        :show-concurrent-indicator="showConcurrentIndicator"
-        :concurrent-workflow-count="concurrentWorkflowCount"
         :queued-count="queuedCount"
         :displayed-job-groups="displayedJobGroups"
         :has-failed-jobs="hasFailedJobs"
@@ -182,13 +180,6 @@ const headerTitle = computed(() => {
     queued: queuedJobsLabel.value
   })
 })
-
-const concurrentWorkflowCount = computed(
-  () => executionStore.runningWorkflowCount
-)
-const showConcurrentIndicator = computed(
-  () => concurrentWorkflowCount.value > 1
-)
 
 const {
   selectedJobTab,
