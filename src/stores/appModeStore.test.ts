@@ -242,6 +242,52 @@ describe('appModeStore', () => {
       expect(store.selectedOutputs).toEqual([1])
     })
 
+    it('preserves inputs during graph loading when nodes are not yet available', async () => {
+      // Simulate the race condition: graph is loading, nodes don't exist yet
+      mockResolveNode.mockReturnValue(undefined)
+
+      const { ChangeTracker } = await import('@/scripts/changeTracker')
+      ChangeTracker.isLoadingGraph = true
+      try {
+        workflowStore.activeWorkflow = workflowWithLinearData(
+          [
+            [1, 'seed'],
+            [2, 'prompt']
+          ],
+          [3]
+        )
+        await nextTick()
+
+        // Inputs and outputs should NOT be pruned during loading
+        expect(store.selectedInputs).toEqual([
+          [1, 'seed'],
+          [2, 'prompt']
+        ])
+        expect(store.selectedOutputs).toEqual([3])
+      } finally {
+        ChangeTracker.isLoadingGraph = false
+      }
+    })
+
+    it('prunes inputs when graph is not loading and nodes are missing', async () => {
+      const { ChangeTracker } = await import('@/scripts/changeTracker')
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+
+      mockResolveNode.mockReturnValue(undefined)
+
+      workflowStore.activeWorkflow = workflowWithLinearData(
+        [
+          [1, 'seed'],
+          [2, 'prompt']
+        ],
+        [3]
+      )
+      await nextTick()
+
+      expect(store.selectedInputs).toEqual([])
+      expect(store.selectedOutputs).toEqual([])
+    })
+
     it('hasOutputs is false when all output nodes are deleted', async () => {
       mockResolveNode.mockReturnValue(undefined)
 

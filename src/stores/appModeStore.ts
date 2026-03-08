@@ -39,11 +39,13 @@ export const useAppModeStore = defineStore('appMode', () => {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
 
+    const canPrune = app.rootGraph && !ChangeTracker.isLoadingGraph
+
     return {
-      inputs: app.rootGraph
+      inputs: canPrune
         ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
         : rawInputs,
-      outputs: app.rootGraph
+      outputs: canPrune
         ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
         : rawOutputs
     }
