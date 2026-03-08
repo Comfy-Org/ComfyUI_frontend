@@ -90,6 +90,10 @@ jobs:
           sleep 1
 
       # --- Recording: macOS (avfoundation) ---
+      - name: Install ffmpeg (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg
+
       - name: Start recording (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -101,6 +105,11 @@ jobs:
           sleep 1
 
       # --- Recording: Windows (gdigrab) ---
+      - name: Install ffmpeg (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install ffmpeg -y --no-progress
+
       - name: Start recording (Windows)
         if: runner.os == 'Windows'
         shell: bash
