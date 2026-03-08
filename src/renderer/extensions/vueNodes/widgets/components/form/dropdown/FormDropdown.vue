@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -101,9 +101,23 @@ const maxSelectable = computed(() => {
   return 1
 })
 
-const itemsKey = computed(() => items.map((item) => item.id).join('|'))
+const itemsKey = ref<symbol>(Symbol())
 
 const filteredItems = ref<FormDropdownItem[]>([])
+
+watch(
+  () => items,
+  async (newItems, _old, onCleanup) => {
+    itemsKey.value = Symbol()
+    let cancelled = false
+    onCleanup(() => {
+      cancelled = true
+    })
+    const results = await searcher(searchQuery.value, newItems, () => {})
+    if (!cancelled) filteredItems.value = results
+  },
+  { immediate: true }
+)
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
   const sorter = sortOptions.find((option) => option.id === 'default')?.sorter
