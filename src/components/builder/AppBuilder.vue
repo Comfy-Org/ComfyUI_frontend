@@ -26,7 +26,7 @@ import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -144,7 +144,11 @@ function handleDown(e: MouseEvent) {
 }
 function handleClick(e: MouseEvent) {
   const [node, widget] = getHovered(e) ?? []
-  if (node?.mode !== LGraphEventMode.ALWAYS)
+  if (
+    node?.mode !== LGraphEventMode.ALWAYS ||
+    !nodeTypeValidForApp(node.type) ||
+    node.has_errors
+  )
     return canvasInteractions.forwardEventToCanvas(e)
 
   if (!widget) {
@@ -180,7 +184,9 @@ const renderedOutputs = computed(() => {
   return canvas
     .graph!.nodes.filter(
       (n) =>
-        n.constructor.nodeData?.output_node && n.mode === LGraphEventMode.ALWAYS
+        n.constructor.nodeData?.output_node &&
+        n.mode === LGraphEventMode.ALWAYS &&
+        !n.has_errors
     )
     .map(nodeToDisplayTuple)
 })
