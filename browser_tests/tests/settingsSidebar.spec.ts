@@ -11,23 +11,20 @@ test.describe('Settings Sidebar', { tag: '@ui' }, () => {
 
   test('Settings button is visible in sidebar', async ({ comfyPage }) => {
     await expect(comfyPage.menu.sideToolbar).toBeVisible()
-    const settingsButton =
-      comfyPage.menu.sideToolbar.getByLabel(/settings/i)
+    const settingsButton = comfyPage.menu.sideToolbar.getByLabel(/settings/i)
     await expect(settingsButton).toBeVisible()
   })
 
   test('Clicking settings button opens settings dialog', async ({
     comfyPage
   }) => {
-    const settingsButton =
-      comfyPage.menu.sideToolbar.getByLabel(/settings/i)
+    const settingsButton = comfyPage.menu.sideToolbar.getByLabel(/settings/i)
     await settingsButton.click()
     await expect(comfyPage.settingDialog.root).toBeVisible()
   })
 
   test('Settings dialog shows categories', async ({ comfyPage }) => {
-    const settingsButton =
-      comfyPage.menu.sideToolbar.getByLabel(/settings/i)
+    const settingsButton = comfyPage.menu.sideToolbar.getByLabel(/settings/i)
     await settingsButton.click()
     await expect(comfyPage.settingDialog.root).toBeVisible()
     await expect(comfyPage.settingDialog.categories.first()).toBeVisible()
@@ -35,8 +32,7 @@ test.describe('Settings Sidebar', { tag: '@ui' }, () => {
   })
 
   test('Settings dialog can be closed with Escape', async ({ comfyPage }) => {
-    const settingsButton =
-      comfyPage.menu.sideToolbar.getByLabel(/settings/i)
+    const settingsButton = comfyPage.menu.sideToolbar.getByLabel(/settings/i)
     await settingsButton.click()
     await expect(comfyPage.settingDialog.root).toBeVisible()
     await comfyPage.page.keyboard.press('Escape')
@@ -44,24 +40,18 @@ test.describe('Settings Sidebar', { tag: '@ui' }, () => {
   })
 
   test('Settings search box is functional', async ({ comfyPage }) => {
-    const settingsButton =
-      comfyPage.menu.sideToolbar.getByLabel(/settings/i)
+    const settingsButton = comfyPage.menu.sideToolbar.getByLabel(/settings/i)
     await settingsButton.click()
     await expect(comfyPage.settingDialog.root).toBeVisible()
     await comfyPage.settingDialog.searchBox.fill('color')
     await expect(comfyPage.settingDialog.searchBox).toHaveValue('color')
   })
 
-  test('Settings dialog can navigate to About panel', async ({
-    comfyPage
-  }) => {
-    const settingsButton =
-      comfyPage.menu.sideToolbar.getByLabel(/settings/i)
+  test('Settings dialog can navigate to About panel', async ({ comfyPage }) => {
+    const settingsButton = comfyPage.menu.sideToolbar.getByLabel(/settings/i)
     await settingsButton.click()
     await expect(comfyPage.settingDialog.root).toBeVisible()
     await comfyPage.settingDialog.goToAboutPanel()
-    await expect(
-      comfyPage.page.locator('.about-container')
-    ).toBeVisible()
+    await expect(comfyPage.page.locator('.about-container')).toBeVisible()
   })
 })

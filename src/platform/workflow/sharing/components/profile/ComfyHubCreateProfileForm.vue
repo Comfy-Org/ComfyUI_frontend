@@ -24,7 +24,7 @@
           {{ $t('comfyHubProfile.chooseProfilePicture') }}
         </label>
         <label
-          class="flex size-13 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-green-600/50 to-green-900"
+          class="flex size-13 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-linear-to-b from-green-600/50 to-green-900"
         >
           <input
             id="profile-picture"

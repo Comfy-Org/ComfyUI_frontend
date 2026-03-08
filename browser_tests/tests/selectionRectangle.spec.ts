@@ -55,8 +55,7 @@ test.describe('@canvas Selection Rectangle', () => {
   })
 
   test('Selected nodes have visual indicator', async ({ comfyPage }) => {
-    const checkpointNode =
-      comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+    const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
 
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.nextFrame()

@@ -102,10 +102,11 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     if (hasLogs) {
       await logsTab.click()
 
-      const xtermScreen = bottomPanel.root.locator(
-        '.xterm, .xterm-screen'
-      )
-      const hasXterm = await xtermScreen.first().isVisible().catch(() => false)
+      const xtermScreen = bottomPanel.root.locator('.xterm, .xterm-screen')
+      const hasXterm = await xtermScreen
+        .first()
+        .isVisible()
+        .catch(() => false)
 
       if (hasXterm) {
         await expect(xtermScreen.first()).toBeVisible()

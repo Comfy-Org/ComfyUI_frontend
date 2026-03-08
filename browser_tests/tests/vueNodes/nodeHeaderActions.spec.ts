@@ -27,9 +27,7 @@ test.describe('Vue Node Header Actions', { tag: '@node' }, () => {
     await expect(vueNode.body).not.toBeVisible()
   })
 
-  test('Clicking collapse button again expands node', async ({
-    comfyPage
-  }) => {
+  test('Clicking collapse button again expands node', async ({ comfyPage }) => {
     const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
     await vueNode.toggleCollapse()
