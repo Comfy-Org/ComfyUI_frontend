@@ -143,10 +143,47 @@ export function useWorkflowActionsMenu(
       isRoot
     )
 
-    addItem(
-      t('breadcrumbsMenu.clearWorkflow'),
-      'pi pi-trash',
-      async () => {
+    addItem({
+      id: 'share',
+      label: t('breadcrumbsMenu.share'),
+      icon: 'icon-[comfy--send]',
+      command: async () => {},
+      visible: false
+    })
+
+    addItem({
+      id: 'enter-app-mode',
+      label: t('breadcrumbsMenu.enterAppMode'),
+      icon: 'icon-[lucide--panels-top-left]',
+      command: toggleLinear,
+      visible: showAppModeItems && !isLinearMode,
+      prependSeparator: true,
+      isNew: true
+    })
+
+    addItem({
+      id: 'exit-app-mode',
+      label: t('breadcrumbsMenu.exitAppMode'),
+      icon: 'icon-[comfy--workflow]',
+      command: toggleLinear,
+      visible: isLinearMode,
+      prependSeparator: true
+    })
+
+    addItem({
+      id: 'enter-builder-mode',
+      label: t('breadcrumbsMenu.enterBuilderMode'),
+      icon: 'icon-[lucide--hammer]',
+      command: () => enterBuilder(),
+      visible: showAppModeItems,
+      isNew: true
+    })
+
+    addItem({
+      id: 'clear-workflow',
+      label: t('breadcrumbsMenu.clearWorkflow'),
+      icon: 'pi pi-trash',
+      command: async () => {
         await ensureWorkflowActive(workflow)
         await commandStore.execute('Comfy.ClearWorkflow')
       },
