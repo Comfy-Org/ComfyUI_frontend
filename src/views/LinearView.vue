@@ -9,6 +9,7 @@ import { computed, useTemplateRef } from 'vue'
 import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
+import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
@@ -156,6 +157,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         </div>
         <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
         <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
+        <div class="absolute top-4 right-4 z-20"><ErrorOverlay /></div>
       </SplitterPanel>
       <SplitterPanel
         v-if="hasRightPanel"

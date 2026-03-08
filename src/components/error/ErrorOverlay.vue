@@ -94,6 +94,7 @@ function dismiss() {
 }
 
 function seeErrors() {
+  canvasStore.linearMode = false
   if (canvasStore.canvas) {
     canvasStore.canvas.deselectAll()
     canvasStore.updateSelectedItems()
