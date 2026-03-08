@@ -1,6 +1,7 @@
-import { expect } from '@playwright/test'
-
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import {
+  comfyPageFixture as test,
+  comfyExpect as expect
+} from '../fixtures/ComfyPage'
 
 test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -74,7 +75,9 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
     ).toHaveCount(2)
   })
 
-  test('Collapse all / Expand all toggles sections', async ({ comfyPage }) => {
+  test('Expand all / Collapse all toggles sections', async ({
+    comfyPage
+  }) => {
     await comfyPage.actionbar.propertiesButton.click()
     const { propertiesPanel } = comfyPage.menu
 
@@ -84,20 +87,22 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
       'CLIP Text Encode (Prompt)'
     ])
 
-    const collapseButton = propertiesPanel.root.getByRole('button', {
-      name: 'Collapse all'
-    })
-    await expect(collapseButton).toBeVisible()
-    await collapseButton.click()
-
+    // Sections default to collapsed when multiple nodes are selected,
+    // so the button initially shows "Expand all"
     const expandButton = propertiesPanel.root.getByRole('button', {
       name: 'Expand all'
     })
     await expect(expandButton).toBeVisible()
     await expandButton.click()
 
-    // After expanding, the button label switches back to "Collapse all"
+    const collapseButton = propertiesPanel.root.getByRole('button', {
+      name: 'Collapse all'
+    })
     await expect(collapseButton).toBeVisible()
+    await collapseButton.click()
+
+    // After collapsing, the button label switches back to "Expand all"
+    await expect(expandButton).toBeVisible()
   })
 
   test('Properties panel can be closed', async ({ comfyPage }) => {
@@ -106,8 +111,10 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
 
     await expect(propertiesPanel.root).toBeVisible()
 
-    // Click the properties button again to close
-    await comfyPage.actionbar.propertiesButton.click()
+    // The actionbar toggle button hides when the panel is open,
+    // so use the close button inside the panel itself
+    const closeButton = comfyPage.page.getByLabel('Toggle properties panel')
+    await closeButton.click()
     await expect(propertiesPanel.root).toBeHidden()
   })
 })

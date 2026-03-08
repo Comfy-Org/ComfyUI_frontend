@@ -9,14 +9,15 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setup()
+
+    // Expand the queue overlay so the JobHistoryActionsMenu is visible
+    await comfyPage.page.getByTestId('queue-overlay-toggle').click()
   })
 
   async function openMoreOptionsPopover(comfyPage: {
-    page: { locator(sel: string): Locator }
+    page: { getByLabel(label: string | RegExp): Locator }
   }) {
-    const moreButton = comfyPage.page
-      .locator('.icon-\\[lucide--more-horizontal\\]')
-      .first()
+    const moreButton = comfyPage.page.getByLabel(/More options/i).first()
     await moreButton.click()
   }
 

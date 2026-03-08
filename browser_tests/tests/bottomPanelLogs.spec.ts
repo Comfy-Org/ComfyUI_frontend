@@ -1,6 +1,7 @@
-import { expect } from '@playwright/test'
-
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import {
+  comfyPageFixture as test,
+  comfyExpect as expect
+} from '../fixtures/ComfyPage'
 
 test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -77,7 +78,11 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     const hasLogs = await logsTab.isVisible().catch(() => false)
 
     if (hasLogs) {
-      await logsTab.click()
+      const isAlreadyActive =
+        (await logsTab.getAttribute('aria-selected')) === 'true'
+      if (!isAlreadyActive) {
+        await logsTab.click()
+      }
 
       const xtermContainer = bottomPanel.root.locator('.xterm')
       const hasXterm = await xtermContainer.isVisible().catch(() => false)
@@ -100,7 +105,11 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     const hasLogs = await logsTab.isVisible().catch(() => false)
 
     if (hasLogs) {
-      await logsTab.click()
+      const isAlreadyActive =
+        (await logsTab.getAttribute('aria-selected')) === 'true'
+      if (!isAlreadyActive) {
+        await logsTab.click()
+      }
 
       const xtermScreen = bottomPanel.root.locator('.xterm, .xterm-screen')
       const hasXterm = await xtermScreen
