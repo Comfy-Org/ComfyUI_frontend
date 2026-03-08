@@ -53,9 +53,7 @@ test.describe('Queue Notification Banners', { tag: '@ui' }, () => {
 
     await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
 
-    const closeButton = comfyPage.page
-      .locator('.p-toast-close-button')
-      .first()
+    const closeButton = comfyPage.page.locator('.p-toast-close-button').first()
     await closeButton.click()
 
     await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
