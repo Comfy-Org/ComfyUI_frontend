@@ -75,7 +75,7 @@ The `pr-backport.yaml` action reports more conflicts than reality. `git cherry-p
 ```python
 # Accept theirs for content conflicts
 import re
-pattern = r'<<<<<<< HEAD\n(.*?)=======\n(.*?)>>>>>>> [^\n]+\n'
+pattern = r'<<<<<<< HEAD\n(.*?)=======\n(.*?)>>>>>>> [^\n]+\n?'
 content = re.sub(pattern, r'\2', content, flags=re.DOTALL)
 ```
 

@@ -41,9 +41,13 @@ done
 ```bash
 git fetch origin TARGET_BRANCH
 git worktree add /tmp/backport-TARGET origin/TARGET_BRANCH
-
 cd /tmp/backport-TARGET
-for each conflict PR:
+
+for PR in ${CONFLICT_PRS[@]}; do
+  # Refresh target ref so each branch is based on current HEAD
+  git fetch origin TARGET_BRANCH
+  git checkout origin/TARGET_BRANCH
+
   git checkout -b backport-$PR-to-TARGET origin/TARGET_BRANCH
   git cherry-pick -m 1 $MERGE_SHA
 
@@ -56,14 +60,15 @@ for each conflict PR:
   GIT_EDITOR=true git cherry-pick --continue
 
   git push origin backport-$PR-to-TARGET
-  gh pr create --base TARGET_BRANCH --head backport-$PR-to-TARGET \
+  NEW_PR=$(gh pr create --base TARGET_BRANCH --head backport-$PR-to-TARGET \
     --title "[backport TARGET] TITLE (#$PR)" \
-    --body "Backport of #$PR..."
+    --body "Backport of #$PR..." | grep -oP '\d+$')
   gh pr merge $NEW_PR --squash --admin
   sleep 3
 done
 
 # Cleanup
+cd -
 git worktree remove /tmp/backport-TARGET --force
 ```
 
@@ -89,7 +94,7 @@ If verification fails, stop and fix before proceeding to the next wave. Do not c
 
 ```python
 import re
-pattern = r'<<<<<<< HEAD\n(.*?)=======\n(.*?)>>>>>>> [^\n]+\n'
+pattern = r'<<<<<<< HEAD\n(.*?)=======\n(.*?)>>>>>>> [^\n]+\n?'
 content = re.sub(pattern, r'\2', content, flags=re.DOTALL)
 ```
 
