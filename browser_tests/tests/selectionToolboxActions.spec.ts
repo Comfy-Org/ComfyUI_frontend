@@ -32,9 +32,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
     await selectNodeWithPan(comfyPage, nodeRef)
 
-    const bypassButton = comfyPage.page.locator(
-      '[data-testid="bypass-button"]'
-    )
+    const bypassButton = comfyPage.page.locator('[data-testid="bypass-button"]')
     await expect(bypassButton).toBeVisible()
     await bypassButton.click({ force: true })
     await comfyPage.nextFrame()
@@ -59,9 +57,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       () => window.app!.graph!._nodes.length
     )
 
-    const deleteButton = comfyPage.page.locator(
-      '[data-testid="delete-button"]'
-    )
+    const deleteButton = comfyPage.page.locator('[data-testid="delete-button"]')
     await expect(deleteButton).toBeVisible()
     await deleteButton.click({ force: true })
     await comfyPage.nextFrame()
@@ -124,9 +120,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       () => window.app!.graph!._nodes.length
     )
 
-    const deleteButton = comfyPage.page.locator(
-      '[data-testid="delete-button"]'
-    )
+    const deleteButton = comfyPage.page.locator('[data-testid="delete-button"]')
     await expect(deleteButton).toBeVisible()
     await deleteButton.click({ force: true })
     await comfyPage.nextFrame()
