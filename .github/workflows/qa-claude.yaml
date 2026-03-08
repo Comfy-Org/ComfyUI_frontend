@@ -216,24 +216,87 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - name: Post artifact links on PR
+      - name: Download QA artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: qa-artifacts
+          pattern: qa-report-*
+
+      - name: Deploy videos to Cloudflare Pages
+        id: deploy-videos
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npm install -g wrangler@^4.0.0 >/dev/null 2>&1
+
+          DEPLOY_DIR=$(mktemp -d)
+          mkdir -p "$DEPLOY_DIR"
+
+          # Collect videos into deploy directory
+          for os in Linux macOS Windows; do
+            VID="qa-artifacts/qa-report-${os}-${{ github.run_id }}/qa-session.mp4"
+            if [ -f "$VID" ]; then
+              cp "$VID" "$DEPLOY_DIR/qa-${os}.mp4"
+              echo "Found ${os} video ($(du -h "$VID" | cut -f1))"
+            fi
+          done
+
+          # Add a simple index page
+          cat > "$DEPLOY_DIR/index.html" <<'INDEXEOF'
+          <!DOCTYPE html><html><body style="background:#111;color:#eee;font-family:sans-serif;padding:2em">
+          <h1>QA Session Recordings</h1>
+          <p><a href="qa-Linux.mp4">Linux</a> · <a href="qa-macOS.mp4">macOS</a> · <a href="qa-Windows.mp4">Windows</a></p>
+          </body></html>
+          INDEXEOF
+
+          # Deploy with branch = run ID for unique URLs
+          BRANCH="run-${{ github.run_id }}"
+          URL=$(wrangler pages deploy "$DEPLOY_DIR" \
+            --project-name="comfyui-qa-videos" \
+            --branch="$BRANCH" 2>&1 \
+            | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
+
+          echo "url=${URL:-https://${BRANCH}.comfyui-qa-videos.pages.dev}" >> "$GITHUB_OUTPUT"
+          echo "Deployed to: ${URL}"
+
+      - name: Post QA comment on PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VIDEO_BASE: ${{ steps.deploy-videos.outputs.url }}
         run: |
           RUN="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
-            --body "## QA Artifacts — Multi-OS
 
-          **Run**: ${RUN}
+          COMMENT_MARKER="<!-- QA_REPORT_COMMENT -->"
 
-          | OS | Artifact | Recording |
-          |----|----------|-----------|
-          | Linux | qa-report-Linux-${{ github.run_id }} | Xvfb + x11grab |
-          | macOS | qa-report-macOS-${{ github.run_id }} | avfoundation |
-          | Windows | qa-report-Windows-${{ github.run_id }} | gdigrab |
+          BODY=$(cat <<EOF
+          ${COMMENT_MARKER}
+          ## QA Session Recordings
 
-          [Download artifacts](${RUN}#artifacts) (14 days)"
+          <table>
+          <tr><th>Linux</th><th>macOS</th><th>Windows</th></tr>
+          <tr>
+          <td><video src="${VIDEO_BASE}/qa-Linux.mp4" controls width="320"></video></td>
+          <td><video src="${VIDEO_BASE}/qa-macOS.mp4" controls width="320"></video></td>
+          <td><video src="${VIDEO_BASE}/qa-Windows.mp4" controls width="320"></video></td>
+          </tr>
+          </table>
+
+          **Run**: [${RUN}](${RUN}) · [Download artifacts](${RUN}#artifacts) (14 days) · [All videos](${VIDEO_BASE})
+          EOF
+          )
+
+          # Update existing comment or create new one
+          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq ".[] | select(.body | contains(\"${COMMENT_MARKER}\")) | .id" | head -1)
+
+          if [ -n "$EXISTING" ]; then
+            gh api --method PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
+              --field body="$BODY"
+          else
+            gh pr comment ${{ github.event.pull_request.number }} \
+              --repo ${{ github.repository }} --body "$BODY"
+          fi
 
       - name: Remove qa-run label
         if: github.event.label.name == 'qa-run'
