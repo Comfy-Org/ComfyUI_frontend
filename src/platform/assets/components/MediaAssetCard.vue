@@ -36,7 +36,7 @@
 
       <!-- Content based on asset type -->
       <component
-        :is="getTopComponent(fileKind)"
+        :is="getTopComponent(previewKind)"
         v-else-if="asset && adaptedAsset"
         :asset="adaptedAsset"
         :context="{ type: assetType }"
@@ -152,17 +152,21 @@ import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
+type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
+
 const mediaComponents = {
   top: {
     video: defineAsyncComponent(() => import('./MediaVideoTop.vue')),
     audio: defineAsyncComponent(() => import('./MediaAudioTop.vue')),
     image: defineAsyncComponent(() => import('./MediaImageTop.vue')),
-    '3D': defineAsyncComponent(() => import('./Media3DTop.vue'))
+    '3D': defineAsyncComponent(() => import('./Media3DTop.vue')),
+    text: defineAsyncComponent(() => import('./MediaTextTop.vue')),
+    other: defineAsyncComponent(() => import('./MediaOtherTop.vue'))
   }
 }
 
-function getTopComponent(kind: MediaKind) {
-  return mediaComponents.top[kind] || mediaComponents.top.image
+function getTopComponent(kind: PreviewKind) {
+  return mediaComponents.top[kind] || mediaComponents.top.other
 }
 
 const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
@@ -206,7 +210,11 @@ const assetType = computed(() => {
 
 // Determine file type from extension
 const fileKind = computed((): MediaKind => {
-  return getMediaTypeFromFilename(asset?.name || '') as MediaKind
+  return getMediaTypeFromFilename(asset?.name || '')
+})
+
+const previewKind = computed((): PreviewKind => {
+  return getMediaTypeFromFilename(asset?.name || '')
 })
 
 // Get filename without extension

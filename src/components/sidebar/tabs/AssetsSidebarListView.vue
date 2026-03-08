@@ -43,7 +43,7 @@
                 item.isChild && 'pl-6'
               )
             "
-            :preview-url="item.asset.preview_url"
+            :preview-url="getAssetPreviewUrl(item.asset)"
             :preview-alt="item.asset.name"
             :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
             :is-video-preview="isVideoAsset(item.asset)"
@@ -140,6 +140,14 @@ function getAssetMediaType(asset: AssetItem) {
 
 function isVideoAsset(asset: AssetItem): boolean {
   return getAssetMediaType(asset) === 'video'
+}
+
+function getAssetPreviewUrl(asset: AssetItem): string {
+  const mediaType = getAssetMediaType(asset)
+  if (mediaType === 'image' || mediaType === 'video') {
+    return asset.preview_url || ''
+  }
+  return ''
 }
 
 function getAssetSecondaryText(asset: AssetItem): string {
