@@ -138,8 +138,7 @@ async function onCreateLink() {
     toast.add({
       severity: 'error',
       summary: t('workspacePanel.inviteMemberDialog.linkCopyFailed'),
-      detail: error instanceof Error ? error.message : undefined,
-      life: 3000
+      detail: error instanceof Error ? error.message : undefined
     })
   } finally {
     loading.value = false
@@ -161,8 +160,7 @@ async function onCopyLink() {
   } catch {
     toast.add({
       severity: 'error',
-      summary: t('workspacePanel.inviteMemberDialog.linkCopyFailed'),
-      life: 3000
+      summary: t('workspacePanel.inviteMemberDialog.linkCopyFailed')
     })
   }
 }

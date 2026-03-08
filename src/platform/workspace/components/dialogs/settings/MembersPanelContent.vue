@@ -543,8 +543,7 @@ async function handleCopyInviteLink(invite: PendingInvite) {
   } catch {
     toast.add({
       severity: 'error',
-      summary: t('g.error'),
-      life: 3000
+      summary: t('g.error')
     })
   }
 }
