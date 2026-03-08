@@ -27,7 +27,8 @@ test.describe('@canvas Selection Rectangle', () => {
     await comfyPage.nextFrame()
     expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBeGreaterThan(0)
 
-    await comfyPage.vueNodes.clearSelection()
+    // Click on the canvas element at a position unlikely to hit any node
+    await comfyPage.canvas.click({ position: { x: 5, y: 5 }, force: true })
     await comfyPage.nextFrame()
 
     expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(0)
@@ -66,10 +67,20 @@ test.describe('@canvas Selection Rectangle', () => {
   }) => {
     expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(0)
 
-    // Use page.mouse directly for drag operations to avoid canvas click issues
-    await comfyPage.page.mouse.move(10, 400)
+    // Get the canvas bounding box and drag across the entire canvas area
+    const canvasBox = await comfyPage.canvas.boundingBox()
+    expect(canvasBox).not.toBeNull()
+
+    await comfyPage.page.mouse.move(
+      canvasBox!.x + 5,
+      canvasBox!.y + 5
+    )
     await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(800, 600, { steps: 10 })
+    await comfyPage.page.mouse.move(
+      canvasBox!.x + canvasBox!.width - 5,
+      canvasBox!.y + canvasBox!.height - 5,
+      { steps: 10 }
+    )
     await comfyPage.page.mouse.up()
     await comfyPage.nextFrame()
 
