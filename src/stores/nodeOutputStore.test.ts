@@ -221,6 +221,253 @@ describe('nodeOutputStore getPreviewParam', () => {
   })
 })
 
+describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('should round-trip outputs through snapshot and restore', () => {
+    const store = useNodeOutputStore()
+
+    // Set input previews via execution path
+    const inputOutput = createMockOutputs([
+      { filename: 'example.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId('3', inputOutput)
+
+    const execOutput = createMockOutputs([
+      { filename: 'ComfyUI_00001.png', subfolder: '', type: 'temp' }
+    ])
+    store.setNodeOutputsByExecutionId('4', execOutput)
+
+    // Snapshot
+    const snapshot = store.snapshotOutputs()
+
+    // Clear everything
+    store.resetAllOutputsAndPreviews()
+    expect(Object.keys(app.nodeOutputs)).toHaveLength(0)
+    expect(Object.keys(store.nodeOutputs)).toHaveLength(0)
+
+    // Restore from snapshot
+    store.restoreOutputs(snapshot)
+
+    expect(app.nodeOutputs['3']).toStrictEqual(inputOutput)
+    expect(app.nodeOutputs['4']).toStrictEqual(execOutput)
+    expect(store.nodeOutputs['3']).toStrictEqual(inputOutput)
+    expect(store.nodeOutputs['4']).toStrictEqual(execOutput)
+  })
+
+  it('should return a deep clone from snapshotOutputs', () => {
+    const store = useNodeOutputStore()
+
+    const output = createMockOutputs([{ filename: 'a.png' }])
+    store.setNodeOutputsByExecutionId('1', output)
+
+    const snapshot = store.snapshotOutputs()
+
+    // Mutate the snapshot
+    snapshot['1'].images![0].filename = 'mutated.png'
+    snapshot['99'] = createMockOutputs([{ filename: 'new.png' }])
+
+    // Store should be unchanged
+    expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('a.png')
+    expect(app.nodeOutputs['1']?.images?.[0]?.filename).toBe('a.png')
+    expect(store.nodeOutputs['99']).toBeUndefined()
+  })
+})
+
+describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('should clear all outputs and previews for multiple nodes', () => {
+    const store = useNodeOutputStore()
+
+    store.setNodeOutputsByExecutionId(
+      '1',
+      createMockOutputs([{ filename: 'a.png' }])
+    )
+    store.setNodeOutputsByExecutionId(
+      '2',
+      createMockOutputs([{ filename: 'b.png' }])
+    )
+    store.setNodeOutputsByExecutionId(
+      '3',
+      createMockOutputs([{ filename: 'c.png', type: 'input' }])
+    )
+
+    expect(Object.keys(store.nodeOutputs)).toHaveLength(3)
+    expect(Object.keys(app.nodeOutputs)).toHaveLength(3)
+
+    store.resetAllOutputsAndPreviews()
+
+    expect(Object.keys(store.nodeOutputs)).toHaveLength(0)
+    expect(Object.keys(app.nodeOutputs)).toHaveLength(0)
+    expect(Object.keys(app.nodePreviewImages)).toHaveLength(0)
+  })
+})
+
+describe('nodeOutputStore restoreOutputs + execution interaction', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('should allow execution to update outputs after restore', () => {
+    const store = useNodeOutputStore()
+
+    // Simulate tab restore with existing input preview
+    const inputOutput = createMockOutputs([
+      { filename: 'uploaded.png', subfolder: '', type: 'input' }
+    ])
+    const savedOutputs: Record<string, ExecutedWsMessage['output']> = {
+      '3': inputOutput
+    }
+    store.restoreOutputs(savedOutputs)
+
+    expect(store.nodeOutputs['3']).toStrictEqual(inputOutput)
+
+    // Simulate execution sending new output for a different node
+    const execOutput = createMockOutputs([
+      { filename: 'ComfyUI_00001.png', subfolder: '', type: 'temp' }
+    ])
+    store.setNodeOutputsByExecutionId('4', execOutput)
+
+    // Both should be present
+    expect(store.nodeOutputs['3']).toStrictEqual(inputOutput)
+    expect(store.nodeOutputs['4']).toStrictEqual(execOutput)
+    expect(app.nodeOutputs['3']).toStrictEqual(inputOutput)
+    expect(app.nodeOutputs['4']).toStrictEqual(execOutput)
+  })
+
+  it('should overwrite existing output when execution sends new data for same node', () => {
+    const store = useNodeOutputStore()
+
+    // Restore with input preview
+    const inputOutput = createMockOutputs([
+      { filename: 'uploaded.png', subfolder: '', type: 'input' }
+    ])
+    store.restoreOutputs({ '3': inputOutput })
+
+    // Execution sends new output for the same node (non-merge)
+    const execOutput = createMockOutputs([
+      { filename: 'result.png', subfolder: '', type: 'temp' }
+    ])
+    store.setNodeOutputsByExecutionId('3', execOutput)
+
+    // On current main (without PR #9123 guard), execution overwrites
+    expect(store.nodeOutputs['3']).toStrictEqual(execOutput)
+    expect(app.nodeOutputs['3']).toStrictEqual(execOutput)
+  })
+})
+
+describe('nodeOutputStore merge mode interactions', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('should merge new images with existing input preview images', () => {
+    const store = useNodeOutputStore()
+
+    // Set initial input preview
+    const inputOutput = createMockOutputs([
+      { filename: 'uploaded.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId('3', inputOutput)
+
+    // Merge new execution images
+    const execOutput = createMockOutputs([
+      { filename: 'result.png', subfolder: '', type: 'temp' }
+    ])
+    store.setNodeOutputsByExecutionId('3', execOutput, { merge: true })
+
+    // Should have both images concatenated
+    expect(store.nodeOutputs['3']?.images).toHaveLength(2)
+    expect(app.nodeOutputs['3']?.images).toHaveLength(2)
+    expect(store.nodeOutputs['3']?.images?.[0]?.filename).toBe('uploaded.png')
+    expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('result.png')
+  })
+
+  it('should not duplicate when merge is called with empty images array', () => {
+    const store = useNodeOutputStore()
+
+    // Set initial input preview
+    const inputOutput = createMockOutputs([
+      { filename: 'uploaded.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId('3', inputOutput)
+
+    // Merge with empty images
+    const emptyOutput = createMockOutputs([])
+    store.setNodeOutputsByExecutionId('3', emptyOutput, { merge: true })
+
+    // Images should remain from the merge (empty concat = same)
+    expect(store.nodeOutputs['3']?.images).toHaveLength(1)
+    expect(store.nodeOutputs['3']?.images?.[0]?.filename).toBe('uploaded.png')
+  })
+})
+
+describe('nodeOutputStore setNodeOutputs (widget path)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('should return early for empty string filename', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, '')
+
+    expect(store.nodeOutputs['5']).toBeUndefined()
+    expect(app.nodeOutputs['5']).toBeUndefined()
+  })
+
+  it('should return early for null node', () => {
+    const store = useNodeOutputStore()
+
+    store.setNodeOutputs(null as unknown as LGraphNode, 'test.png')
+
+    expect(Object.keys(store.nodeOutputs)).toHaveLength(0)
+  })
+
+  it('should set outputs for valid string filename', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'test.png')
+
+    expect(store.nodeOutputs['5']).toBeDefined()
+    expect(store.nodeOutputs['5']?.images).toHaveLength(1)
+    expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('test.png')
+    expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
+  })
+
+  it('should skip empty array of filenames after createOutputs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, [])
+
+    expect(store.nodeOutputs['5']).toBeUndefined()
+    expect(app.nodeOutputs['5']).toBeUndefined()
+  })
+})
+
 describe('nodeOutputStore syncLegacyNodeImgs', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
