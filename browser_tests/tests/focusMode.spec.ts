@@ -1,4 +1,7 @@
-import { comfyExpect as expect, comfyPageFixture as test } from '../fixtures/ComfyPage'
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '../fixtures/ComfyPage'
 
 test.describe('Focus Mode', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
