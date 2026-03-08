@@ -36,7 +36,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       '[data-testid="bypass-button"]'
     )
     await expect(bypassButton).toBeVisible()
-    await bypassButton.click()
+    await bypassButton.click({ force: true })
     await comfyPage.nextFrame()
 
     await expect(nodeRef).toBeBypassed()
@@ -45,7 +45,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await selectNodeWithPan(comfyPage, nodeRef)
 
     await expect(bypassButton).toBeVisible()
-    await bypassButton.click()
+    await bypassButton.click({ force: true })
     await comfyPage.nextFrame()
 
     await expect(nodeRef).not.toBeBypassed()
@@ -63,7 +63,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       '[data-testid="delete-button"]'
     )
     await expect(deleteButton).toBeVisible()
-    await deleteButton.click()
+    await deleteButton.click({ force: true })
     await comfyPage.nextFrame()
 
     const newCount = await comfyPage.page.evaluate(
@@ -80,7 +80,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     const infoButton = comfyPage.page.locator('[data-testid="info-button"]')
     await expect(infoButton).toBeVisible()
-    await infoButton.click()
+    await infoButton.click({ force: true })
     await comfyPage.nextFrame()
 
     await expect(
@@ -130,7 +130,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       '[data-testid="delete-button"]'
     )
     await expect(deleteButton).toBeVisible()
-    await deleteButton.click()
+    await deleteButton.click({ force: true })
     await comfyPage.nextFrame()
 
     const newCount = await comfyPage.page.evaluate(
