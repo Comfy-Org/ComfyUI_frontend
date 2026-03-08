@@ -37,7 +37,7 @@ interface DirtyFixtures {
 
 const withPinia = baseTest.extend({
   // Auto-fixture: sets up Pinia for every test
-   
+
   _pinia: [
     async ({}, use) => {
       setActivePinia(createTestingPinia({ stubActions: false }))
