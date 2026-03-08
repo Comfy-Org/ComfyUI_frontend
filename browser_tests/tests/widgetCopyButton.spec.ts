@@ -36,10 +36,7 @@ test.describe('Widget copy button', { tag: '@ui' }, () => {
         has: comfyPage.page.locator('.icon-\\[lucide--copy\\]')
       })
       if ((await button.count()) > 0) {
-        await expect(button.first()).toHaveAttribute(
-          'aria-label',
-          /copy/i
-        )
+        await expect(button.first()).toHaveAttribute('aria-label', /copy/i)
       }
     }
   })
@@ -68,9 +65,7 @@ test.describe('Widget copy button', { tag: '@ui' }, () => {
   test('Copy button exists within textarea widget group container', async ({
     comfyPage
   }) => {
-    const groupContainers = comfyPage.page.locator(
-      '[data-node-id] div.group'
-    )
+    const groupContainers = comfyPage.page.locator('[data-node-id] div.group')
     const count = await groupContainers.count()
 
     if (count > 0) {

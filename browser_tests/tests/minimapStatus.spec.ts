@@ -25,9 +25,7 @@ test.describe('Minimap Status', { tag: '@ui' }, () => {
     await expect(minimap.locator('.minimap-viewport')).toBeVisible()
   })
 
-  test('Minimap toggle button exists in canvas menu', async ({
-    comfyPage
-  }) => {
+  test('Minimap toggle button exists in canvas menu', async ({ comfyPage }) => {
     const toggleButton = comfyPage.page.getByTestId(
       TestIds.canvas.toggleMinimapButton
     )
