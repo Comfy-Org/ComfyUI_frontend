@@ -89,28 +89,9 @@ jobs:
           echo $! > "${{ runner.temp }}/ffmpeg.pid"
           sleep 1
 
-      # --- Recording: macOS (avfoundation) ---
-      - name: Start recording (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          mkdir -p "$QA_ARTIFACTS"
-          ffmpeg -y -f avfoundation -framerate 10 -capture_cursor 1 \
-            -i "1:none" -c:v libx264 -preset ultrafast -crf 28 \
-            -pix_fmt yuv420p "$QA_ARTIFACTS/qa-session.mp4" 2>/dev/null &
-          echo $! > "${{ runner.temp }}/ffmpeg.pid"
-          sleep 1
-
-      # --- Recording: Windows (gdigrab) ---
-      - name: Start recording (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          mkdir -p "$QA_ARTIFACTS"
-          ffmpeg -y -f gdigrab -framerate 10 -i desktop \
-            -c:v libx264 -preset ultrafast -crf 28 \
-            -pix_fmt yuv420p "$QA_ARTIFACTS/qa-session.mp4" 2>/dev/null &
-          echo $! > "${{ runner.temp }}/ffmpeg.pid"
-          sleep 1
+      # Note: Screen recording is only available on Linux (Xvfb provides a
+      # virtual display). On macOS/Windows, Playwright runs --headless so
+      # there is no visible browser to capture.
 
       - name: Create MCP config
         shell: bash
