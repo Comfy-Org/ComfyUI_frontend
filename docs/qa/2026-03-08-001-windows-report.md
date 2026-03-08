@@ -23,21 +23,21 @@ This report covers:
 
 ## Summary
 
-| Category        | Pass | Fail | Skip                      | Total |
-| --------------- | ---- | ---- | ------------------------- | ----- |
-| Routes & Load   | 0    | 0    | 4 (no browser tools)      | 4     |
-| Canvas          | 0    | 0    | 14 (no browser tools)     | 14    |
-| Node Operations | 0    | 0    | 10 (no browser tools)     | 10    |
-| Sidebar         | 0    | 0    | 7 (no browser tools)      | 7     |
-| Topbar          | 0    | 0    | 8 (no browser tools)      | 8     |
-| Settings        | 0    | 0    | 7 (no browser tools)      | 7     |
-| Bottom Panel    | 0    | 0    | 4 (no browser tools)      | 4     |
-| Execution       | 0    | 0    | 5 (no browser tools + CI) | 5     |
-| File Operations | 0    | 0    | 6 (no browser tools + CI) | 6     |
-| Advanced        | 0    | 0    | 5 (no browser tools)      | 5     |
-| Error Handling  | 0    | 0    | 5 (no browser tools)      | 5     |
-| Responsive      | 0    | 0    | 3 (no browser tools)      | 3     |
-| **Total**       | **0** | **0** | **78**                 | **78** |
+| Category        | Pass  | Fail  | Skip                      | Total  |
+| --------------- | ----- | ----- | ------------------------- | ------ |
+| Routes & Load   | 0     | 0     | 4 (no browser tools)      | 4      |
+| Canvas          | 0     | 0     | 14 (no browser tools)     | 14     |
+| Node Operations | 0     | 0     | 10 (no browser tools)     | 10     |
+| Sidebar         | 0     | 0     | 7 (no browser tools)      | 7      |
+| Topbar          | 0     | 0     | 8 (no browser tools)      | 8      |
+| Settings        | 0     | 0     | 7 (no browser tools)      | 7      |
+| Bottom Panel    | 0     | 0     | 4 (no browser tools)      | 4      |
+| Execution       | 0     | 0     | 5 (no browser tools + CI) | 5      |
+| File Operations | 0     | 0     | 6 (no browser tools + CI) | 6      |
+| Advanced        | 0     | 0     | 5 (no browser tools)      | 5      |
+| Error Handling  | 0     | 0     | 5 (no browser tools)      | 5      |
+| Responsive      | 0     | 0     | 3 (no browser tools)      | 3      |
+| **Total**       | **0** | **0** | **78**                    | **78** |
 
 ---
 
