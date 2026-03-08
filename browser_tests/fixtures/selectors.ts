@@ -32,6 +32,7 @@ export const TestIds = {
   },
   topbar: {
     queueButton: 'queue-button',
+    queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button'
   },
   nodeLibrary: {
