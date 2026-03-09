@@ -176,14 +176,31 @@ function getLegacyColorTargets(target: LegacyColorTarget): LegacyColorTarget[] {
 }
 
 function createLegacyColorMenuContent(label: string, color?: string): string {
-  if (!color) {
-    return `<span style='display: block; padding-left: 4px;'>${label}</span>`
+  const escapedLabel = label
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+  const safeColor = getSafeLegacyMenuColor(color)
+
+  if (!safeColor) {
+    return `<span style='display: block; padding-left: 4px;'>${escapedLabel}</span>`
   }
 
   return (
     `<span style='display: block; color: #fff; padding-left: 4px;` +
-    ` border-left: 8px solid ${color}; background-color:${color}'>${label}</span>`
+    ` border-left: 8px solid ${safeColor}; background-color:${safeColor}'>${escapedLabel}</span>`
   )
+}
+
+function getSafeLegacyMenuColor(color?: string): string | undefined {
+  if (!color) return undefined
+
+  const trimmed = color.trim()
+  return /^#(?:[\da-fA-F]{3,4}|[\da-fA-F]{6}|[\da-fA-F]{8})$/.test(trimmed)
+    ? trimmed
+    : undefined
 }
 
 interface HasShowSearchCallback {
@@ -1689,9 +1706,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const values: (IContextMenuValue<string | null> | null)[] = [
       {
         value: null,
-        content: createLegacyColorMenuContent(
-          st('color.noColor', 'No color')
-        )
+        content: createLegacyColorMenuContent(st('color.noColor', 'No color'))
       }
     ]
 
@@ -1703,7 +1718,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         content: createLegacyColorMenuContent(
           st(`color.${presetName}`, presetName),
           node instanceof LGraphGroup
-            ? colorOption.groupcolor ?? colorOption.bgcolor
+            ? (colorOption.groupcolor ?? colorOption.bgcolor)
             : colorOption.bgcolor
         )
       })
@@ -1712,33 +1727,39 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     new LiteGraph.ContextMenu<string | null>(values, {
       event: e,
       callback: (value) => {
-        if (typeof value === 'string') {
-          void innerClicked({ content: value, value })
-          return
+        try {
+          innerClicked(value)
+        } catch (error) {
+          console.error('Failed to apply legacy node color selection.', error)
         }
-        if (value == null) {
-          void innerClicked({ content: '', value: null })
-          return
-        }
-        void innerClicked(value as IContextMenuValue<string | null>)
       },
       parentMenu: menu,
       ...(node instanceof LGraphNode ? { node } : {})
     })
 
-    function innerClicked(v: IContextMenuValue<string | null>) {
+    function innerClicked(
+      value: string | IContextMenuValue<string | null> | null | undefined
+    ) {
       if (!node || !isLegacyColorTarget(node)) return
+      const presetName =
+        value == null ? null : typeof value === 'string' ? value : value.value
 
       const canvas = LGraphCanvas.active_canvas
       const targets = getLegacyColorTargets(node)
       const graphInfo = node instanceof LGraphNode ? node : undefined
 
       node.graph?.beforeChange(graphInfo)
-      const colorOption = v.value ? LGraphCanvas.node_colors[v.value] : null
-      for (const target of targets) {
-        target.setColorOption(colorOption)
+      try {
+        const colorOption = presetName
+          ? LGraphCanvas.node_colors[presetName]
+          : null
+        for (const target of targets) {
+          target.setColorOption(colorOption)
+        }
+      } finally {
+        node.graph?.afterChange(graphInfo)
       }
-      node.graph?.afterChange(graphInfo)
+
       canvas.setDirty(true, true)
     }
 

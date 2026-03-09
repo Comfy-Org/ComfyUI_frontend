@@ -36,7 +36,8 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
         capturedValues = values
       }
     }
-    LiteGraph.ContextMenu = MockContextMenu as unknown as typeof LiteGraph.ContextMenu
+    LiteGraph.ContextMenu =
+      MockContextMenu as unknown as typeof LiteGraph.ContextMenu
 
     try {
       LGraphCanvas.onMenuNodeColors(
@@ -48,7 +49,10 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
       )
 
       const contents = capturedValues
-        ?.filter((value): value is { content?: string } => typeof value === 'object' && value !== null)
+        ?.filter(
+          (value): value is { content?: string } =>
+            typeof value === 'object' && value !== null
+        )
         .map((value) => value.content ?? '')
 
       expect(contents).not.toEqual(
@@ -79,7 +83,8 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
         capturedValues = values
       }
     }
-    LiteGraph.ContextMenu = MockContextMenu as unknown as typeof LiteGraph.ContextMenu
+    LiteGraph.ContextMenu =
+      MockContextMenu as unknown as typeof LiteGraph.ContextMenu
 
     try {
       LGraphCanvas.onMenuNodeColors(
@@ -107,6 +112,65 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
     }
   })
 
+  it('sanitizes legacy menu markup for extension-provided labels and colors', () => {
+    const node = Object.assign(Object.create(LGraphNode.prototype), {
+      color: undefined,
+      bgcolor: undefined
+    }) as LGraphNode
+
+    const canvas = {
+      selectedItems: new Set([node]),
+      setDirty: vi.fn()
+    }
+    LGraphCanvas.active_canvas = canvas as unknown as LGraphCanvas
+
+    let capturedValues:
+      | ReadonlyArray<{ content?: string } | string | null>
+      | undefined
+    const originalContextMenu = LiteGraph.ContextMenu
+    const originalNodeColors = LGraphCanvas.node_colors
+    class MockContextMenu {
+      constructor(values: ReadonlyArray<{ content?: string } | string | null>) {
+        capturedValues = values
+      }
+    }
+    LiteGraph.ContextMenu =
+      MockContextMenu as unknown as typeof LiteGraph.ContextMenu
+    LGraphCanvas.node_colors = {
+      ...originalNodeColors,
+      '<img src=x onerror=1>': {
+        color: '#000',
+        bgcolor: 'not-a-color',
+        groupcolor: '#fff'
+      }
+    }
+
+    try {
+      LGraphCanvas.onMenuNodeColors(
+        { content: 'Colors', value: null },
+        {} as never,
+        new MouseEvent('contextmenu'),
+        {} as ContextMenu<string | null>,
+        node
+      )
+
+      const escapedEntry = capturedValues
+        ?.filter(
+          (value): value is { content?: string } =>
+            typeof value === 'object' && value !== null
+        )
+        .map((value) => value.content ?? '')
+        .find((content) => content.includes('&lt;img src=x onerror=1&gt;'))
+
+      expect(escapedEntry).toBeDefined()
+      expect(escapedEntry).not.toContain('<img src=x onerror=1>')
+      expect(escapedEntry).not.toContain('background-color:not-a-color')
+    } finally {
+      LiteGraph.ContextMenu = originalContextMenu
+      LGraphCanvas.node_colors = originalNodeColors
+    }
+  })
+
   it('applies preset colors to selected nodes and groups in legacy mode', () => {
     const graph = {
       beforeChange: vi.fn(),
@@ -129,9 +193,7 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
     }
     LGraphCanvas.active_canvas = canvas as unknown as LGraphCanvas
 
-    let callback:
-      | ((value: { value?: unknown }) => void)
-      | undefined
+    let callback: ((value: { value?: unknown }) => void) | undefined
     const originalContextMenu = LiteGraph.ContextMenu
     class MockContextMenu {
       constructor(
@@ -141,7 +203,8 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
         callback = options.callback
       }
     }
-    LiteGraph.ContextMenu = MockContextMenu as unknown as typeof LiteGraph.ContextMenu
+    LiteGraph.ContextMenu =
+      MockContextMenu as unknown as typeof LiteGraph.ContextMenu
 
     try {
       LGraphCanvas.onMenuNodeColors(
@@ -189,9 +252,7 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
     }
     LGraphCanvas.active_canvas = canvas as unknown as LGraphCanvas
 
-    let callback:
-      | ((value: { value?: unknown }) => void)
-      | undefined
+    let callback: ((value: { value?: unknown }) => void) | undefined
     const originalContextMenu = LiteGraph.ContextMenu
     class MockContextMenu {
       constructor(
@@ -201,7 +262,8 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
         callback = options.callback
       }
     }
-    LiteGraph.ContextMenu = MockContextMenu as unknown as typeof LiteGraph.ContextMenu
+    LiteGraph.ContextMenu =
+      MockContextMenu as unknown as typeof LiteGraph.ContextMenu
 
     try {
       LGraphCanvas.onMenuNodeColors(
@@ -245,9 +307,7 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
     }
     LGraphCanvas.active_canvas = canvas as unknown as LGraphCanvas
 
-    let callback:
-      | ((value: { value?: unknown }) => void)
-      | undefined
+    let callback: ((value: { value?: unknown }) => void) | undefined
     const originalContextMenu = LiteGraph.ContextMenu
     class MockContextMenu {
       constructor(
@@ -257,7 +317,8 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
         callback = options.callback
       }
     }
-    LiteGraph.ContextMenu = MockContextMenu as unknown as typeof LiteGraph.ContextMenu
+    LiteGraph.ContextMenu =
+      MockContextMenu as unknown as typeof LiteGraph.ContextMenu
 
     try {
       LGraphCanvas.onMenuNodeColors(
@@ -276,6 +337,64 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
       expect(selectedNode.bgcolor).toBeUndefined()
     } finally {
       LiteGraph.ContextMenu = originalContextMenu
+    }
+  })
+
+  it('balances graph change lifecycle if applying a legacy preset throws', () => {
+    const graph = {
+      beforeChange: vi.fn(),
+      afterChange: vi.fn()
+    }
+
+    const node = Object.assign(Object.create(LGraphNode.prototype), {
+      graph,
+      setColorOption: vi.fn(() => {
+        throw new Error('boom')
+      })
+    }) as LGraphNode
+
+    const canvas = {
+      selectedItems: new Set([node]),
+      setDirty: vi.fn()
+    }
+    LGraphCanvas.active_canvas = canvas as unknown as LGraphCanvas
+
+    let callback:
+      | ((value: string | { value?: unknown } | null) => void)
+      | undefined
+    const originalContextMenu = LiteGraph.ContextMenu
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    class MockContextMenu {
+      constructor(
+        _values: ReadonlyArray<{ content?: string } | string | null>,
+        options: {
+          callback?: (value: string | { value?: unknown } | null) => void
+        }
+      ) {
+        callback = options.callback
+      }
+    }
+    LiteGraph.ContextMenu =
+      MockContextMenu as unknown as typeof LiteGraph.ContextMenu
+
+    try {
+      LGraphCanvas.onMenuNodeColors(
+        { content: 'Colors', value: null },
+        {} as never,
+        new MouseEvent('contextmenu'),
+        {} as ContextMenu<string | null>,
+        node
+      )
+
+      expect(() => callback?.('red')).not.toThrow()
+      expect(graph.beforeChange).toHaveBeenCalledOnce()
+      expect(graph.afterChange).toHaveBeenCalledOnce()
+      expect(consoleErrorSpy).toHaveBeenCalled()
+    } finally {
+      LiteGraph.ContextMenu = originalContextMenu
+      consoleErrorSpy.mockRestore()
     }
   })
 })
