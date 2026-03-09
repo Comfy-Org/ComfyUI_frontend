@@ -29,14 +29,6 @@ logger.setLevel('info')
 export class ChangeTracker {
   static MAX_HISTORY = 50
   /**
-   * Guard flag to prevent checkState from running during loadGraphData.
-   * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
-   * contains the NEW workflow's data while activeWorkflow still points to
-   * the OLD workflow. Any checkState call in that window would serialize
-   * the wrong graph into the old workflow's activeState, corrupting it.
-   */
-  static isLoadingGraph = false
-  /**
    * The active state of the workflow.
    */
   activeState: ComfyWorkflowJSON
@@ -139,7 +131,7 @@ export class ChangeTracker {
   }
 
   checkState() {
-    if (!app.graph || this.changeCount || ChangeTracker.isLoadingGraph) return
+    if (!app.graph || this.changeCount) return
     const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
     if (!this.activeState) {
       this.activeState = currentState

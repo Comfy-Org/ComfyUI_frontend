@@ -379,6 +379,13 @@ export const useWorkflowService = () => {
       void workflowThumbnail.storeThumbnail(activeWorkflow)
       domWidgetStore.clear()
     }
+
+    // Deactivate the current workflow before the graph is reconfigured.
+    // This ensures there is never a window where activeWorkflow references
+    // the OLD workflow while rootGraph already contains NEW data — any
+    // checkState or data-sync path that reads activeWorkflow will see null
+    // and naturally skip, without needing a guard flag.
+    workflowStore.activeWorkflow = null
   }
 
   /**
