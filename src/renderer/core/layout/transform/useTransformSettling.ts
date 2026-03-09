@@ -18,10 +18,29 @@ interface TransformSettlingOptions {
 /**
  * Tracks when canvas transforms (zoom or pan) are actively changing vs settled.
  *
- * Applies `will-change: transform` during interactions to prevent costly
- * re-rasterization, then removes it after settling to restore visual quality.
+ * This composable helps optimize rendering quality during transform interactions.
+ * When the user is actively zooming or panning, we can reduce rendering quality
+ * for better performance. Once the transform "settles" (stops changing), we can
+ * trigger high-quality re-rasterization.
  *
- * Detects both wheel events (zoom) and pointer drag (pan).
+ * The settling concept prevents constant quality switching during interactions
+ * by waiting for a period of inactivity before considering the transform complete.
+ *
+ * Uses VueUse's useEventListener for automatic cleanup and useDebounceFn for
+ * efficient settle detection.
+ *
+ * @example
+ * ```ts
+ * const { isTransforming } = useTransformSettling(canvasRef, {
+ *   settleDelay: 200
+ * })
+ *
+ * // Use in CSS classes or rendering logic
+ * const cssClass = computed(() => ({
+ *   'low-quality': isTransforming.value,
+ *   'high-quality': !isTransforming.value
+ * }))
+ * ```
  */
 export function useTransformSettling(
   target: MaybeRefOrGetter<HTMLElement | null | undefined>,
