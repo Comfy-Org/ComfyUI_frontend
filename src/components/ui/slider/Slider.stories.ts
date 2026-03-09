@@ -3,14 +3,16 @@ import type {
   Meta,
   StoryObj
 } from '@storybook/vue3-vite'
-import { ref, toRefs } from 'vue'
+import { computed, ref, toRefs } from 'vue'
 
 import Slider from './Slider.vue'
 
-type StoryArgs = ComponentPropsAndSlots<typeof Slider>
+interface StoryArgs extends ComponentPropsAndSlots<typeof Slider> {
+  disabled: boolean
+}
 
 const meta: Meta<StoryArgs> = {
-  title: 'Components/Slider/Slider',
+  title: 'Components/Slider',
   component: Slider,
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
@@ -29,7 +31,7 @@ const meta: Meta<StoryArgs> = {
   decorators: [
     (story) => ({
       components: { story },
-      template: '<div class="w-64"><story /></div>'
+      template: '<div class="w-72"><story /></div>'
     })
   ]
 }
@@ -43,9 +45,15 @@ export const Default: Story = {
     setup() {
       const { min, max, step, disabled } = toRefs(args)
       const value = ref([36])
-      return { value, min, max, step, disabled }
+      const display = computed(() => value.value[0])
+      return { value, display, min, max, step, disabled }
     },
-    template: '<Slider v-model="value" :min :max :step :disabled />'
+    template: `
+      <div class="flex items-center gap-4 rounded-lg bg-component-node-widget-background hover:bg-component-node-widget-background-hovered px-3 py-2">
+        <Slider v-model="value" :min :max :step :disabled class="flex-1" />
+        <span class="w-14 shrink-0 text-right text-xs text-component-node-foreground">{{ display }}</span>
+      </div>
+    `
   })
 }
 
@@ -54,89 +62,15 @@ export const Disabled: Story = {
   render: (args) => ({
     components: { Slider },
     setup() {
-      const { disabled } = toRefs(args)
-      const value = ref([50])
-      return { value, disabled }
-    },
-    template:
-      '<Slider v-model="value" :min="0" :max="100" :step="1" :disabled />'
-  })
-}
-
-export const AtMinimum: Story = {
-  render: () => ({
-    components: { Slider },
-    setup() {
-      const value = ref([0])
-      return { value }
-    },
-    template: '<Slider v-model="value" :min="0" :max="100" :step="1" />'
-  })
-}
-
-export const AtMaximum: Story = {
-  render: () => ({
-    components: { Slider },
-    setup() {
-      const value = ref([100])
-      return { value }
-    },
-    template: '<Slider v-model="value" :min="0" :max="100" :step="1" />'
-  })
-}
-
-export const Midpoint: Story = {
-  render: () => ({
-    components: { Slider },
-    setup() {
-      const value = ref([50])
-      return { value }
-    },
-    template: '<Slider v-model="value" :min="0" :max="100" :step="1" />'
-  })
-}
-
-export const FloatPrecision: Story = {
-  args: { min: 0, max: 1, step: 0.01 },
-  render: (args) => ({
-    components: { Slider },
-    setup() {
-      const { min, max, step } = toRefs(args)
-      const value = ref([0.75])
-      return { value, min, max, step }
-    },
-    template: '<Slider v-model="value" :min :max :step />'
-  })
-}
-
-export const AllVariants: Story = {
-  render: () => ({
-    components: { Slider },
-    setup() {
-      const defaultVal = ref([36])
-      const disabledVal = ref([36])
-      const minVal = ref([0])
-      const maxVal = ref([100])
-      return { defaultVal, disabledVal, minVal, maxVal }
+      const { min, max, step, disabled } = toRefs(args)
+      const value = ref([36])
+      const display = computed(() => value.value[0])
+      return { value, display, min, max, step, disabled }
     },
     template: `
-      <div class="flex w-64 flex-col gap-6">
-        <div class="flex flex-col gap-1">
-          <span class="text-xs uppercase text-neutral-500">Default</span>
-          <Slider v-model="defaultVal" :min="0" :max="100" :step="1" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs uppercase text-neutral-500">Disabled</span>
-          <Slider v-model="disabledVal" :min="0" :max="100" :step="1" disabled />
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs uppercase text-neutral-500">At Minimum</span>
-          <Slider v-model="minVal" :min="0" :max="100" :step="1" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs uppercase text-neutral-500">At Maximum</span>
-          <Slider v-model="maxVal" :min="0" :max="100" :step="1" />
-        </div>
+      <div class="flex items-center gap-4 rounded-lg bg-component-node-widget-background px-3 py-2">
+        <Slider v-model="value" :min :max :step :disabled class="flex-1" />
+        <span class="w-14 shrink-0 text-right text-xs text-component-node-foreground">{{ display }}</span>
       </div>
     `
   })
