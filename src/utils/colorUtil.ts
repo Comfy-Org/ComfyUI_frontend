@@ -1,7 +1,7 @@
 import { memoize } from 'es-toolkit/compat'
 
-export type RGB = { r: number; g: number; b: number }
-export interface HSB {
+type RGB = { r: number; g: number; b: number }
+interface HSB {
   h: number
   s: number
   b: number
@@ -325,7 +325,7 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
   }
 }
 
-export function rgbToHsv({ r, g, b }: RGB): {
+function rgbToHsv({ r, g, b }: RGB): {
   h: number
   s: number
   v: number
@@ -383,16 +383,6 @@ export function hsvaToHex(hsva: HSVA): string {
     .toString(16)
     .padStart(2, '0')
   return `${hex}${alphaHex}`.toLowerCase()
-}
-
-export function hsvaToRgba(hsva: HSVA): {
-  r: number
-  g: number
-  b: number
-  a: number
-} {
-  const rgb = hsbToRgb({ h: hsva.h, s: hsva.s, b: hsva.v })
-  return { ...rgb, a: Math.round((hsva.a / 100) * 255) }
 }
 
 const applyColorAdjustments = (
