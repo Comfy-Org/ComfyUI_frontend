@@ -5,7 +5,7 @@
     :aria-label="
       asset
         ? $t('assetBrowser.ariaLabel.assetCard', {
-            name: asset.name,
+            name: asset.display_name || asset.name,
             type: fileKind
           })
         : $t('assetBrowser.ariaLabel.loadingAsset')
@@ -234,6 +234,7 @@ const adaptedAsset = computed(() => {
   return {
     id: asset.id,
     name: asset.name,
+    display_name: asset.display_name,
     kind: fileKind.value,
     src: asset.preview_url || '',
     size: asset.size,
