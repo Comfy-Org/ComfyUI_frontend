@@ -28,6 +28,7 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
+import { resolveNodeWidget } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
@@ -101,30 +102,6 @@ function getHovered(
   const widget = node.getWidgetOnPos(e.canvasX, e.canvasY, false)
 
   if (widget || node.constructor.nodeData?.output_node) return [node, widget]
-}
-function resolveNodeWidget(
-  nodeId: NodeId,
-  widgetName?: string
-): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
-  const node = app.graph.getNodeById(nodeId)
-  if (!widgetName) return node ? [node] : []
-  if (node) {
-    const widget = node.widgets?.find((w) => w.name === widgetName)
-    return widget ? [node, widget] : []
-  }
-
-  for (const node of app.graph.nodes) {
-    if (!node.isSubgraphNode()) continue
-    const widget = node.widgets?.find(
-      (w) =>
-        isPromotedWidgetView(w) &&
-        w.sourceWidgetName === widgetName &&
-        w.sourceNodeId === nodeId
-    )
-    if (widget) return [node, widget]
-  }
-
-  return []
 }
 
 function getBounding(nodeId: NodeId, widgetName?: string) {
