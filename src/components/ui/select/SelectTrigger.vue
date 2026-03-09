@@ -33,9 +33,10 @@ const {
         'bg-secondary-background text-base-foreground',
         'transition-all duration-200 ease-in-out',
         'hover:bg-secondary-background-hover',
+        'border-[2.5px] border-solid',
         invalid
-          ? 'border border-solid border-destructive-background'
-          : 'border-[2.5px] border-solid border-transparent focus:border-node-component-border',
+          ? 'border-destructive-background'
+          : 'border-transparent focus:border-node-component-border',
         'focus:outline-none',
         'data-placeholder:text-muted-foreground',
         'disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-secondary-background',

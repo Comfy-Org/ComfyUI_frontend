@@ -22,9 +22,10 @@
           'bg-secondary-background text-base-foreground',
           'transition-all duration-200 ease-in-out',
           'hover:bg-secondary-background-hover',
+          'border-[2.5px] border-solid',
           invalid
-            ? 'border border-solid border-destructive-background'
-            : 'border-[2.5px] border-solid border-transparent focus-within:border-node-component-border',
+            ? 'border-destructive-background'
+            : 'border-transparent focus-within:border-node-component-border',
           props.disabled &&
             'cursor-default opacity-30 hover:bg-secondary-background'
         )
@@ -92,10 +93,6 @@
           cn('flex items-center gap-2', size === 'md' ? 'text-xs' : 'text-sm')
         "
       >
-        <i
-          v-if="loading"
-          class="icon-[lucide--loader-circle] animate-spin text-muted-foreground"
-        />
         <slot name="icon" />
         <span
           v-if="slotProps.value !== null && slotProps.value !== undefined"
@@ -109,9 +106,13 @@
       </div>
     </template>
 
-    <!-- Trigger caret -->
+    <!-- Trigger caret / loading spinner -->
     <template #dropdownicon>
-      <i class="icon-[lucide--chevron-down] text-muted-foreground" />
+      <i
+        v-if="loading"
+        class="icon-[lucide--loader-circle] animate-spin text-muted-foreground"
+      />
+      <i v-else class="icon-[lucide--chevron-down] text-muted-foreground" />
     </template>
 
     <!-- Option row -->
