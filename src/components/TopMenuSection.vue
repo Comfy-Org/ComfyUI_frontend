@@ -34,17 +34,7 @@
             </Button>
           </div>
 
-          <div
-            ref="actionbarContainerRef"
-            :class="
-              cn(
-                'actionbar-container pointer-events-auto relative flex h-12 items-center gap-2 rounded-lg border bg-comfy-menu-bg px-2 shadow-interface',
-                hasAnyError
-                  ? 'border-destructive-background-hover'
-                  : 'border-interface-stroke'
-              )
-            "
-          >
+          <div ref="actionbarContainerRef" :class="actionbarContainerClass">
             <ActionBarButtons />
             <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
             <div
@@ -55,6 +45,7 @@
             <ComfyActionbar
               :top-menu-container="actionbarContainerRef"
               :queue-overlay-expanded="isQueueOverlayExpanded"
+              :has-any-error="hasAnyError"
               @update:progress-target="updateProgressTarget"
             />
             <CurrentUserButton
@@ -182,6 +173,41 @@ const isActionbarEnabled = computed(
 const isActionbarFloating = computed(
   () => isActionbarEnabled.value && !isActionbarDocked.value
 )
+/**
+ * Whether the actionbar container has any visible docked buttons
+ * (excluding ComfyActionbar, which uses position:fixed when floating
+ * and does not contribute to the container's visual layout).
+ */
+const hasDockedButtons = computed(() => {
+  if (isLoggedIn.value && !isIntegratedTabBar.value) return true
+  if (isDesktop && !isIntegratedTabBar.value) return true
+  if (isCloud && flags.workflowSharingEnabled) return true
+  if (!isRightSidePanelOpen.value) return true
+  return false
+})
+const isActionbarContainerEmpty = computed(
+  () => isActionbarFloating.value && !hasDockedButtons.value
+)
+const actionbarContainerClass = computed(() => {
+  const base =
+    'actionbar-container pointer-events-auto relative flex h-12 items-center gap-2 rounded-lg border bg-comfy-menu-bg shadow-interface'
+
+  if (isActionbarContainerEmpty.value) {
+    return cn(
+      base,
+      '-ml-2 w-0 min-w-0 border-transparent shadow-none',
+      'has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto',
+      'has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
+    )
+  }
+
+  const borderClass =
+    !isActionbarFloating.value && hasAnyError.value
+      ? 'border-destructive-background-hover'
+      : 'border-interface-stroke'
+
+  return cn(base, 'px-2', borderClass)
+})
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
