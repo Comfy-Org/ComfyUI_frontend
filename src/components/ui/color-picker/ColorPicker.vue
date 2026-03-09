@@ -86,6 +86,7 @@ const isOpen = ref(false)
   <PopoverRoot v-model:open="isOpen">
     <PopoverTrigger as-child>
       <button
+        type="button"
         :class="
           cn(
             'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-node-component-surface pr-2 outline-none hover:bg-component-node-widget-background-hovered',

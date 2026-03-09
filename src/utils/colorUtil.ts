@@ -196,7 +196,13 @@ export function parseToRgb(color: string): RGB {
 
 const identifyColorFormat = (color: string): ColorFormatInternal | null => {
   if (!color) return null
-  if (color.startsWith('#') && (color.length === 4 || color.length === 7))
+  if (
+    color.startsWith('#') &&
+    (color.length === 4 ||
+      color.length === 5 ||
+      color.length === 7 ||
+      color.length === 9)
+  )
     return 'hex'
   if (/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*/.test(color))
     return color.includes('rgba') ? 'rgba' : 'rgb'
@@ -249,10 +255,12 @@ export function toHexFromFormat(val: unknown, format: ColorFormat): string {
   if (format === 'hex' && typeof val === 'string') {
     const raw = val.trim().toLowerCase()
     if (!raw) return '#000000'
-    if (/^[0-9a-f]{3}$/.test(raw)) return `#${raw}`
-    if (/^#[0-9a-f]{3}$/.test(raw)) return raw
+    if (/^[0-9a-f]{3,4}$/.test(raw)) return `#${raw}`
+    if (/^#[0-9a-f]{3,4}$/.test(raw)) return raw
     if (/^[0-9a-f]{6}$/.test(raw)) return `#${raw}`
     if (/^#[0-9a-f]{6}$/.test(raw)) return raw
+    if (/^[0-9a-f]{8}$/.test(raw)) return `#${raw}`
+    if (/^#[0-9a-f]{8}$/.test(raw)) return raw
     return '#000000'
   }
 
@@ -286,12 +294,22 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
 
   switch (format) {
     case 'hex': {
-      const hsl = rgbToHsl(hexToRgb(color))
+      let a = 1
+      let hexColor = color
+      if (color.length === 9) {
+        a = parseInt(color.slice(7, 9), 16) / 255
+        hexColor = color.slice(0, 7)
+      } else if (color.length === 5) {
+        const aChar = color[4]
+        a = parseInt(aChar + aChar, 16) / 255
+        hexColor = color.slice(0, 4)
+      }
+      const hsl = rgbToHsl(hexToRgb(hexColor))
       return {
         h: Math.round(hsl.h * 360),
         s: +(hsl.s * 100).toFixed(1),
         l: +(hsl.l * 100).toFixed(1),
-        a: 1
+        a
       }
     }
 

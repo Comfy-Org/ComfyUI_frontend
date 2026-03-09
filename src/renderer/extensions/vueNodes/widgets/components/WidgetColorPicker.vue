@@ -19,30 +19,24 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 type WidgetOptions = IWidgetOptions & { format?: ColorFormat }
 
-const { widget, modelValue } = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<string, WidgetOptions>
-  modelValue: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
+const modelValue = defineModel<string>({ required: true })
 
 const format = isColorFormat(widget.options?.format)
   ? widget.options.format
   : 'hex'
 
-const localValue = ref(toHexFromFormat(modelValue || '#000000', format))
+const localValue = ref(toHexFromFormat(modelValue.value || '#000000', format))
 
-watch(
-  () => modelValue,
-  (newVal) => {
-    localValue.value = toHexFromFormat(newVal || '#000000', format)
-  }
-)
+watch(modelValue, (newVal) => {
+  localValue.value = toHexFromFormat(newVal || '#000000', format)
+})
 
 function onUpdate(val: string) {
   localValue.value = val
-  emit('update:modelValue', val)
+  modelValue.value = val
 }
 </script>
