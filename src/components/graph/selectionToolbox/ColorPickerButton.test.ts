@@ -5,6 +5,7 @@ import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import type * as ColorUtilModule from '@/utils/colorUtil'
 
 // Import after mocks
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -63,9 +64,7 @@ vi.mock('@/lib/litegraph/src/litegraph', async () => {
 
 // Mock the colorUtil module
 vi.mock('@/utils/colorUtil', async () => {
-  const actual = await vi.importActual<typeof import('@/utils/colorUtil')>(
-    '@/utils/colorUtil'
-  )
+  const actual = await vi.importActual<typeof ColorUtilModule>('@/utils/colorUtil')
 
   return {
     ...actual,

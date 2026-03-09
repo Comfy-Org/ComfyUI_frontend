@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as VueI18nModule from 'vue-i18n'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type * as NodeColorCustomizationModule from '@/utils/nodeColorCustomization'
 
 const mocks = vi.hoisted(() => ({
   pickHexColor: vi.fn().mockResolvedValue('#fedcba'),
@@ -10,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('vue-i18n')>()
+  const actual = await importOriginal<typeof VueI18nModule>()
 
   return {
     ...actual,
@@ -74,7 +76,7 @@ vi.mock('@/composables/graph/useNodeCustomization', () => ({
 }))
 
 vi.mock('@/utils/nodeColorCustomization', async () => {
-  const actual = await vi.importActual<typeof import('@/utils/nodeColorCustomization')>(
+  const actual = await vi.importActual<typeof NodeColorCustomizationModule>(
     '@/utils/nodeColorCustomization'
   )
 
