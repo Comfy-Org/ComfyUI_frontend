@@ -84,9 +84,12 @@ flowchart TD
    taskkill /PID <PID> /F
    ```
 
-2. **Use a different port:**
-   ```bash
-   pnpm dev --port 3000
+2. **Use a different port** by adding a `port` option to the `server` block in `vite.config.mts`:
+   ```ts
+   server: {
+     port: 3000,
+     // ...existing config
+   }
    ```
 
 ---
@@ -198,17 +201,17 @@ flowchart TD
 
 1. **Run tests in CI mode:**
    ```bash
-   CI=true pnpm test
+   CI=true pnpm test:unit
    ```
 
 2. **Clear test cache:**
    ```bash
-   pnpm test --clearCache
+   pnpm test:unit --no-cache
    ```
 
 3. **Check Node version matches CI:**
    ```bash
-   node --version  # Should be v24.x
+   node --version  # Should be v24
    nvm use 24      # If using nvm
    ```
 
@@ -241,7 +244,7 @@ flowchart TD
 ## Still Having Issues?
 
 1. **Search existing issues:** [GitHub Issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues)
-2. **Ask the community:** [Discord #dev-frontend](https://discord.com/invite/comfyorg)
+2. **Ask the community:** [Discord](https://discord.com/invite/comfyorg) (navigate to the `#dev-frontend` channel)
 3. **Create a new issue:** Include:
    - Your OS and Node version (`node --version`)
    - Steps to reproduce
@@ -257,4 +260,4 @@ Found a solution to a common problem? Please:
 
 ---
 
-**Last Updated:** 2024-12-23
+**Last Updated:** 2026-03-09
