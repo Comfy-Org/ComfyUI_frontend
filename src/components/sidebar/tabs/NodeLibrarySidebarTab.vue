@@ -101,6 +101,7 @@
               variant="textonly"
               size="icon"
               class="filter-button shrink-0"
+              :aria-label="$t('g.filter')"
               @click="(e: Event) => searchFilter?.toggle(e)"
             >
               <i class="pi pi-filter" />

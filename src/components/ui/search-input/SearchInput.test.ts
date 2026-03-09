@@ -53,7 +53,7 @@ describe('SearchInput', () => {
           },
           ComboboxInput: {
             template:
-              '<input :placeholder="placeholder" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+              '<input :placeholder="placeholder" :value="modelValue" :autofocus="autoFocus || undefined" @input="$emit(\'update:modelValue\', $event.target.value)" />',
             props: ['placeholder', 'modelValue', 'autoFocus']
           }
         }
@@ -81,8 +81,7 @@ describe('SearchInput', () => {
       await vi.advanceTimersByTimeAsync(1)
       await nextTick()
 
-      expect(wrapper.emitted('update:modelValue')).toBeTruthy()
-      expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['test'])
+      expect(wrapper.emitted('search')).toEqual([['test']])
     })
 
     it('should reset debounce timer on each keystroke', async () => {
@@ -161,15 +160,36 @@ describe('SearchInput', () => {
     })
   })
 
+  describe('autofocus', () => {
+    it('should pass autofocus prop to ComboboxInput', () => {
+      const wrapper = mountComponent({ autofocus: true })
+      const input = wrapper.find('input')
+      expect(input.attributes('autofocus')).toBeDefined()
+    })
+
+    it('should not autofocus by default', () => {
+      const wrapper = mountComponent()
+      const input = wrapper.find('input')
+      expect(input.attributes('autofocus')).toBeUndefined()
+    })
+  })
+
+  describe('focus method', () => {
+    it('should expose focus method via ref', () => {
+      const wrapper = mountComponent()
+      expect(wrapper.vm.focus).toBeDefined()
+    })
+  })
+
   describe('clear button', () => {
     it('shows search icon when value is empty', () => {
       const wrapper = mountComponent({ modelValue: '' })
-      expect(wrapper.find('i.icon-\\[lucide--search\\]').exists()).toBe(true)
+      expect(wrapper.find('button[aria-label="Clear"]').exists()).toBe(false)
     })
 
     it('shows clear button when value is not empty', () => {
       const wrapper = mountComponent({ modelValue: 'test' })
-      expect(wrapper.find('button').exists()).toBe(true)
+      expect(wrapper.find('button[aria-label="Clear"]').exists()).toBe(true)
     })
 
     it('clears value when clear button is clicked', async () => {
