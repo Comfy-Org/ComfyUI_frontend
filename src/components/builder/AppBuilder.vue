@@ -8,6 +8,7 @@ import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import WidgetItem from '@/components/rightSidePanel/parameters/WidgetItem.vue'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -52,10 +53,8 @@ workflowStore.activeWorkflow?.changeTracker?.reset()
 const arrangeInputs = computed(() =>
   appModeStore.selectedInputs
     .map(([nodeId, widgetName]) => {
-      const node = resolveNode(nodeId)
-      if (!node) return null
-      const widget = node.widgets?.find((w) => w.name === widgetName)
-      return { nodeId, widgetName, node, widget }
+      const [node, widget] = resolveNodeWidget(nodeId, widgetName)
+      return node ? { nodeId, widgetName, node, widget } : null
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
 )
@@ -105,10 +104,34 @@ function getHovered(
 
   if (widget || node.constructor.nodeData?.output_node) return [node, widget]
 }
+function resolveNodeWidget(
+  nodeId: NodeId,
+  widgetName?: string
+): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
+  const node = app.graph.getNodeById(nodeId)
+  if (!widgetName) return node ? [node] : []
+  if (node) {
+    const widget = node.widgets?.find((w) => w.name === widgetName)
+    return widget ? [node, widget] : []
+  }
+
+  for (const node of app.graph.nodes) {
+    if (!node.isSubgraphNode()) continue
+    const widget = node.widgets?.find(
+      (w) =>
+        isPromotedWidgetView(w) &&
+        w.sourceWidgetName === widgetName &&
+        w.sourceNodeId === nodeId
+    )
+    if (widget) return [node, widget]
+  }
+
+  return []
+}
 
 function getBounding(nodeId: NodeId, widgetName?: string) {
   if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
-  const node = app.rootGraph.getNodeById(nodeId)
+  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
   if (!node) return
 
   const titleOffset =
@@ -121,7 +144,6 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
       left: `${node.pos[0]}px`,
       top: `${node.pos[1] - titleOffset}px`
     }
-  const widget = node.widgets?.find((w) => w.name === widgetName)
   if (!widget) return
 
   const margin = widget instanceof DOMWidgetImpl ? widget.margin : undefined
@@ -162,10 +184,11 @@ function handleClick(e: MouseEvent) {
   }
   if (!isSelectInputsMode.value) return
 
+  const widgetId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
   const index = appModeStore.selectedInputs.findIndex(
-    ([nodeId, widgetName]) => node.id == nodeId && widget.name === widgetName
+    ([nodeId, widgetName]) => widgetId == nodeId && widget.name === widgetName
   )
-  if (index === -1) appModeStore.selectedInputs.push([node.id, widget.name])
+  if (index === -1) appModeStore.selectedInputs.push([widgetId, widget.name])
   else appModeStore.selectedInputs.splice(index, 1)
 }
 
