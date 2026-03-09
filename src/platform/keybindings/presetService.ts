@@ -22,6 +22,7 @@ function presetFilePath(name: string): string {
   const trimmed = name.trim()
   if (
     !trimmed ||
+    trimmed === 'default' ||
     trimmed.includes('/') ||
     trimmed.includes('\\') ||
     trimmed.includes('..') ||
@@ -179,8 +180,18 @@ export function useKeybindingPresetService() {
       })
 
       if (result === null) return
-      if (result && keybindingStore.currentPresetName !== 'default') {
-        await savePreset(keybindingStore.currentPresetName)
+      if (result) {
+        if (keybindingStore.currentPresetName !== 'default') {
+          await savePreset(keybindingStore.currentPresetName)
+        } else {
+          const name = await dialogService.prompt({
+            title: t('g.keybindingPresets.saveAsNewPreset'),
+            message: t('g.keybindingPresets.presetNamePrompt'),
+            defaultValue: ''
+          })
+          if (!name) return
+          await savePreset(name.trim())
+        }
       }
     }
 

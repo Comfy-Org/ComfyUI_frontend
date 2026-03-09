@@ -141,6 +141,25 @@ describe('useKeybindingPresetService', () => {
       )
       expect(store.currentPresetName).toBe('my-preset')
     })
+
+    it('does not update store when storeUserData rejects', async () => {
+      mockApi.storeUserData.mockRejectedValue(new Error('Server error'))
+
+      const keybinding = new KeybindingImpl({
+        commandId: 'test.cmd',
+        combo: { key: 'A', ctrl: true }
+      })
+      store.addUserKeybinding(keybinding)
+      store.currentPresetName = 'old-preset'
+
+      const service = await getPresetService()
+      await expect(service.savePreset('my-preset')).rejects.toThrow(
+        'Server error'
+      )
+
+      expect(store.currentPresetName).toBe('old-preset')
+      expect(store.savedPresetData).toBeNull()
+    })
   })
 
   describe('deletePreset', () => {
@@ -240,6 +259,11 @@ describe('useKeybindingPresetService', () => {
     it('rejects names starting with a dot', async () => {
       const service = await getPresetService()
       await expect(service.savePreset('.hidden')).rejects.toThrow()
+    })
+
+    it('rejects the reserved name "default"', async () => {
+      const service = await getPresetService()
+      await expect(service.savePreset('default')).rejects.toThrow()
     })
 
     it('rejects empty names', async () => {

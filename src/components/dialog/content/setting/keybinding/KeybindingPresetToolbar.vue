@@ -61,9 +61,12 @@ import SelectValue from '@/components/ui/select/SelectValue.vue'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 
-const { presetNames, onPresetsChanged } = defineProps<{
+const { presetNames } = defineProps<{
   presetNames: string[]
-  onPresetsChanged: () => void
+}>()
+
+const emit = defineEmits<{
+  'presets-changed': []
 }>()
 
 const { t } = useI18n()
@@ -84,7 +87,7 @@ watch(selectedPreset, async (newValue) => {
   if (newValue !== keybindingStore.currentPresetName) {
     await presetService.switchPreset(newValue)
     selectedPreset.value = keybindingStore.currentPresetName
-    onPresetsChanged()
+    emit('presets-changed')
   }
 })
 
@@ -107,6 +110,6 @@ async function handleSavePreset() {
 
 async function handleImportFromDropdown() {
   await presetService.importPreset()
-  onPresetsChanged()
+  emit('presets-changed')
 }
 </script>

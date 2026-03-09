@@ -20,7 +20,7 @@
 
     <KeybindingPresetToolbar
       :preset-names="presetNames"
-      :on-presets-changed="refreshPresetList"
+      @presets-changed="refreshPresetList"
     />
 
     <DataTable
@@ -201,11 +201,14 @@ async function refreshPresetList() {
 async function initPresets() {
   await refreshPresetList()
   const currentName = settingStore.get('Comfy.Keybinding.CurrentPreset')
-  keybindingStore.currentPresetName = currentName
   if (currentName !== 'default') {
     const preset = await presetService.loadPreset(currentName)
     if (preset) {
       keybindingStore.savedPresetData = preset
+      keybindingStore.currentPresetName = currentName
+    } else {
+      keybindingStore.currentPresetName = 'default'
+      keybindingStore.savedPresetData = null
     }
   }
 }
@@ -220,15 +223,19 @@ async function saveAsNewPreset() {
     defaultValue: ''
   })
   if (!name) return
-  if (presetNames.value.includes(name)) {
+  const trimmedName = name.trim()
+  if (!trimmedName) return
+  if (presetNames.value.includes(trimmedName)) {
     const overwrite = await dialogService.confirm({
       title: t('g.keybindingPresets.overwritePresetTitle'),
-      message: t('g.keybindingPresets.overwritePresetMessage', { name }),
+      message: t('g.keybindingPresets.overwritePresetMessage', {
+        name: trimmedName
+      }),
       type: 'overwrite'
     })
     if (!overwrite) return
   }
-  await presetService.savePreset(name)
+  await presetService.savePreset(trimmedName)
   refreshPresetList()
 }
 
