@@ -45,7 +45,8 @@ export function mapTaskOutputToAssetItem(
       ? new Date(taskItem.executionStartTimestamp).toISOString()
       : new Date().toISOString(),
     tags: ['output'],
-    preview_url: output.previewUrl,
+    thumbnail_url: output.previewUrl,
+    preview_url: output.url,
     user_metadata: metadata
   }
 }
@@ -63,6 +64,7 @@ export function mapInputFileToAssetItem(
   directory: 'input' | 'output' = 'input'
 ): AssetItem {
   const params = new URLSearchParams({ filename, type: directory })
+  const preview_url = api.apiURL(`/view?${params}`)
   appendCloudResParam(params, filename)
 
   return {
@@ -71,6 +73,7 @@ export function mapInputFileToAssetItem(
     size: 0,
     created_at: new Date().toISOString(),
     tags: [directory],
-    preview_url: api.apiURL(`/view?${params}`)
+    thumbnail_url: api.apiURL(`/view?${params}`),
+    preview_url
   }
 }
