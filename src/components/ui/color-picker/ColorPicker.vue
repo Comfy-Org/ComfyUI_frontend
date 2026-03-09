@@ -79,15 +79,18 @@ const displayHex = computed(() =>
     hsbToRgb({ h: hsva.value.h, s: hsva.value.s, b: hsva.value.v })
   ).toLowerCase()
 )
+
+const isOpen = ref(false)
 </script>
 
 <template>
-  <PopoverRoot>
+  <PopoverRoot v-model:open="isOpen">
     <PopoverTrigger as-child>
       <button
         :class="
           cn(
-            'flex h-8 w-full items-center rounded-lg bg-node-component-surface pr-2',
+            'flex h-8 w-full items-center rounded-lg bg-node-component-surface pr-2 outline-none',
+            isOpen && 'border border-node-stroke',
             $props.class
           )
         "
