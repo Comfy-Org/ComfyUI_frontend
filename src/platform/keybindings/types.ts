@@ -14,5 +14,12 @@ export const zKeybinding = z.object({
   targetElementId: z.string().optional()
 })
 
+export const zKeybindingPreset = z.object({
+  name: z.string(),
+  newBindings: z.array(zKeybinding),
+  unsetBindings: z.array(zKeybinding)
+})
+
 export type KeyCombo = z.infer<typeof zKeyCombo>
 export type Keybinding = z.infer<typeof zKeybinding>
+export type KeybindingPreset = z.infer<typeof zKeybindingPreset>

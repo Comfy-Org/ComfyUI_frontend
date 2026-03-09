@@ -5,11 +5,52 @@ import { computed, ref } from 'vue'
 
 import type { KeyComboImpl } from './keyCombo'
 import type { KeybindingImpl } from './keybinding'
+import type { KeybindingPreset } from './types'
 
 export const useKeybindingStore = defineStore('keybinding', () => {
   const defaultKeybindings = ref<Record<string, KeybindingImpl>>({})
   const userKeybindings = ref<Record<string, KeybindingImpl>>({})
   const userUnsetKeybindings = ref<Record<string, KeybindingImpl>>({})
+
+  const currentPresetName = ref('default')
+  const savedPresetData = ref<KeybindingPreset | null>(null)
+
+  const isCurrentPresetModified = computed(() => {
+    const newBindings = Object.values(userKeybindings.value)
+    const unsetBindings = Object.values(userUnsetKeybindings.value)
+
+    if (currentPresetName.value === 'default') {
+      return newBindings.length > 0 || unsetBindings.length > 0
+    }
+
+    if (!savedPresetData.value) return false
+
+    const serializeKeybindingImpl = (b: KeybindingImpl) =>
+      `${b.commandId}:${b.combo.serialize()}`
+
+    const serializeRawBinding = (b: {
+      commandId: string
+      combo: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
+    }) =>
+      `${b.commandId}:${b.combo.key.toUpperCase()}:${b.combo.ctrl ?? false}:${b.combo.alt ?? false}:${b.combo.shift ?? false}`
+
+    const currentNew = newBindings.map(serializeKeybindingImpl).sort().join('|')
+    const savedNew = savedPresetData.value.newBindings
+      .map(serializeRawBinding)
+      .sort()
+      .join('|')
+
+    const currentUnset = unsetBindings
+      .map(serializeKeybindingImpl)
+      .sort()
+      .join('|')
+    const savedUnset = savedPresetData.value.unsetBindings
+      .map(serializeRawBinding)
+      .sort()
+      .join('|')
+
+    return currentNew !== savedNew || currentUnset !== savedUnset
+  })
 
   function getUserKeybindings() {
     return userKeybindings.value
@@ -200,6 +241,9 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     updateKeybindingOnCommand,
     resetAllKeybindings,
     resetKeybindingForCommand,
-    isCommandKeybindingModified
+    isCommandKeybindingModified,
+    currentPresetName,
+    savedPresetData,
+    isCurrentPresetModified
   }
 })
