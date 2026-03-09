@@ -17,3 +17,8 @@ export function appendCloudResParam(
   if (filename && getMediaTypeFromFilename(filename) !== 'image') return
   params.set('res', '512')
 }
+
+export function appendCloudResUrl(url: string): string {
+  if (!isCloud) return url
+  return url + '&res=512'
+}

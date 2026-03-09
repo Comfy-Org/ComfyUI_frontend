@@ -73,7 +73,7 @@ function mapOutputsToAssetItems({
       size: 0,
       created_at: createdAtValue,
       tags: ['output'],
-      preview_url: output.previewUrl,
+      preview_url: output.url,
       user_metadata: {
         jobId,
         nodeId: output.nodeId,
