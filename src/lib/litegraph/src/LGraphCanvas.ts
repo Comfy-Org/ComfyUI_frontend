@@ -9,7 +9,6 @@ import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegra
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -1714,11 +1713,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       event: e,
       callback: (value) => {
         if (typeof value === 'string') {
-          void innerClicked({ value })
+          void innerClicked({ content: value, value })
           return
         }
         if (value == null) {
-          void innerClicked({ value: null })
+          void innerClicked({ content: '', value: null })
           return
         }
         void innerClicked(value as IContextMenuValue<string | null>)

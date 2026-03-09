@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   toggleNodeBypass: vi.fn(),
   runBranch: vi.fn(),
   openCustomColorPicker: vi.fn(),
-  getCurrentAppliedColor: vi.fn(() => null)
+  getCurrentAppliedColor: vi.fn<() => string | null>(() => null)
 }))
 
 vi.mock('vue-i18n', async (importOriginal) => {
