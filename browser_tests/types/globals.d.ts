@@ -4,7 +4,6 @@ import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
-import type { useWorkspaceStore } from '@/stores/workspaceStore'
 
 /**
  * Helper type for accessing nodes by ID in browser tests.
@@ -55,15 +54,3 @@ declare global {
   const LGraphBadge: typeof LGraphBadge | undefined
 }
 
-/**
- * Internal store type for browser test access.
- * Used to access properties not exposed via the public ExtensionManager interface.
- *
- * @example
- * ```ts
- * await page.evaluate(() => {
- *   ;(window.app!.extensionManager as WorkspaceStore).workflow.syncWorkflows()
- * })
- * ```
- */
-export type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
