@@ -10,6 +10,7 @@ import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -29,7 +30,7 @@ import { useQueueSettingsStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { resolveNode } from '@/utils/litegraphUtil'
+import { resolveNodeWidget } from '@/utils/litegraphUtil'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -63,21 +64,45 @@ useEventListener(
 )
 
 const mappedSelections = computed(() => {
-  let unprocessedInputs = [...appModeStore.selectedInputs]
-  //FIXME strict typing here
+  let unprocessedInputs = appModeStore.selectedInputs.flatMap(
+    ([nodeId, widgetName]) => {
+      const [node, widget] = resolveNodeWidget(nodeId, widgetName)
+      return widget ? ([[node, widget]] as const) : []
+    }
+  )
   const processedInputs: ReturnType<typeof nodeToNodeData>[] = []
   while (unprocessedInputs.length) {
-    const nodeId = unprocessedInputs[0][0]
-    const inputGroup = takeWhile(
-      unprocessedInputs,
-      ([id]) => id === nodeId
-    ).map(([, widgetName]) => widgetName)
+    const [node] = unprocessedInputs[0]
+    if (!node) continue
+    const inputGroup = takeWhile(unprocessedInputs, ([n]) => n === node).map(
+      ([, widget]) => widget
+    )
     unprocessedInputs = unprocessedInputs.slice(inputGroup.length)
-    const node = resolveNode(nodeId)
+    //FIXME: hide widget if owning node bypassed
     if (node?.mode !== LGraphEventMode.ALWAYS) continue
 
     const nodeData = nodeToNodeData(node)
-    remove(nodeData.widgets ?? [], (w) => !inputGroup.includes(w.name))
+    remove(nodeData.widgets ?? [], (w) => !!w.slotMetadata?.linked)
+    if (node.isSubgraphNode()) {
+      remove(nodeData.widgets ?? [], (vueWidget) => {
+        const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
+        return !inputGroup.some(
+          (subWidget) =>
+            isPromotedWidgetView(subWidget) &&
+            subWidget.sourceNodeId === storeNodeId &&
+            subWidget.sourceWidgetName === vueWidget.storeName
+        )
+      })
+    } else {
+      remove(
+        nodeData.widgets ?? [],
+        (w) => !inputGroup.some(({ name }) => w.name === name)
+      )
+    }
+    for (const widget of nodeData.widgets ?? []) {
+      widget.slotMetadata = undefined
+      widget.nodeId = String(node.id)
+    }
     processedInputs.push(nodeData)
   }
   return processedInputs
@@ -107,10 +132,6 @@ function getDropIndicator(node: LGraphNode) {
 function nodeToNodeData(node: LGraphNode) {
   const dropIndicator = getDropIndicator(node)
   const nodeData = extractVueNodeData(node)
-  for (const widget of nodeData.widgets ?? []) {
-    widget.slotMetadata = undefined
-    widget.nodeId = String(node.id)
-  }
 
   return {
     ...nodeData,
