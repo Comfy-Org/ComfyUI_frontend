@@ -4,7 +4,7 @@
     :class="
       cn(
         'pointer-events-none absolute inset-0 size-full',
-        isInteracting ? 'transform-pane--interacting' : 'will-change-auto'
+        isInteracting ? 'will-change-transform' : 'will-change-auto'
       )
     "
     :style="transformStyle"
@@ -33,7 +33,7 @@ const { transformStyle, syncWithCanvas } = useTransformState()
 
 const canvasElement = computed(() => props.canvas?.canvas)
 const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
-  settleDelay: 16
+  settleDelay: 256
 })
 
 useRafFn(
@@ -46,9 +46,3 @@ useRafFn(
   { immediate: true }
 )
 </script>
-
-<style scoped>
-.transform-pane--interacting {
-  will-change: transform;
-}
-</style>

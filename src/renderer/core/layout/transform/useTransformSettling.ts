@@ -5,7 +5,7 @@ import type { MaybeRefOrGetter } from 'vue'
 interface TransformSettlingOptions {
   /**
    * Delay in ms before transform is considered "settled" after last interaction
-   * @default 200
+   * @default 256
    */
   settleDelay?: number
   /**
@@ -16,31 +16,12 @@ interface TransformSettlingOptions {
 }
 
 /**
- * Tracks when canvas zoom transforms are actively changing vs settled.
+ * Tracks when canvas transforms (zoom or pan) are actively changing vs settled.
  *
- * This composable helps optimize rendering quality during zoom transformations.
- * When the user is actively zooming, we can reduce rendering quality
- * for better performance. Once the transform "settles" (stops changing), we can
- * trigger high-quality re-rasterization.
+ * Applies `will-change: transform` during interactions to prevent costly
+ * re-rasterization, then removes it after settling to restore visual quality.
  *
- * The settling concept prevents constant quality switching during interactions
- * by waiting for a period of inactivity before considering the transform complete.
- *
- * Uses VueUse's useEventListener for automatic cleanup and useDebounceFn for
- * efficient settle detection.
- *
- * @example
- * ```ts
- * const { isTransforming } = useTransformSettling(canvasRef, {
- *   settleDelay: 200
- * })
- *
- * // Use in CSS classes or rendering logic
- * const cssClass = computed(() => ({
- *   'low-quality': isTransforming.value,
- *   'high-quality': !isTransforming.value
- * }))
- * ```
+ * Detects both wheel events (zoom) and pointer drag (pan).
  */
 export function useTransformSettling(
   target: MaybeRefOrGetter<HTMLElement | null | undefined>,
@@ -50,35 +31,68 @@ export function useTransformSettling(
 
   const isTransforming = ref(false)
 
-  /**
-   * Mark transform as active
-   */
-  const markTransformActive = () => {
-    isTransforming.value = true
-  }
-
-  /**
-   * Mark transform as settled (debounced)
-   */
   const markTransformSettled = useDebounceFn(() => {
     isTransforming.value = false
   }, settleDelay)
 
-  /**
-   * Handle zoom transform event - mark active then queue settle
-   */
-  const handleWheel = () => {
-    markTransformActive()
+  function markInteracting() {
+    isTransforming.value = true
     void markTransformSettled()
   }
 
-  // Register wheel event listener with auto-cleanup
-  useEventListener(target, 'wheel', handleWheel, {
-    capture: true,
-    passive
-  })
+  const eventOptions = { capture: true, passive }
+
+  useEventListener(target, 'wheel', markInteracting, eventOptions)
+  usePointerDrag(target, markInteracting, eventOptions)
 
   return {
     isTransforming
   }
+}
+
+/**
+ * Calls `onDrag` on each pointermove while a pointer is held down.
+ */
+function usePointerDrag(
+  target: MaybeRefOrGetter<HTMLElement | null | undefined>,
+  onDrag: () => void,
+  eventOptions: AddEventListenerOptions
+) {
+  const isPointerDown = ref(false)
+
+  useEventListener(
+    target,
+    'pointerdown',
+    () => {
+      isPointerDown.value = true
+    },
+    eventOptions
+  )
+
+  useEventListener(
+    target,
+    'pointermove',
+    () => {
+      if (isPointerDown.value) onDrag()
+    },
+    eventOptions
+  )
+
+  useEventListener(
+    target,
+    'pointerup',
+    () => {
+      isPointerDown.value = false
+    },
+    eventOptions
+  )
+
+  useEventListener(
+    target,
+    'pointercancel',
+    () => {
+      isPointerDown.value = false
+    },
+    eventOptions
+  )
 }
