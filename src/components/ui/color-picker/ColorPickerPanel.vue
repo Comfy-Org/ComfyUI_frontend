@@ -51,7 +51,7 @@ const { t } = useI18n()
     <div class="flex items-center gap-2.5">
       <Select v-model="displayMode">
         <SelectTrigger
-          class="h-6 w-16 shrink-0 gap-1 rounded-sm border-0 px-2 py-0 text-xs"
+          class="h-6 w-16 shrink-0 gap-1 overflow-clip rounded-sm border-0 px-2 py-0 text-xs [&>span]:overflow-visible"
         >
           <SelectValue />
         </SelectTrigger>
