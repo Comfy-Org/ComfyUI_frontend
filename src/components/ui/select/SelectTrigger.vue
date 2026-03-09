@@ -5,8 +5,19 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const { class: className, ...restProps } = defineProps<
-  SelectTriggerProps & { class?: HTMLAttributes['class'] }
+const {
+  class: className,
+  size = 'lg',
+  invalid = false,
+  ...restProps
+} = defineProps<
+  SelectTriggerProps & {
+    class?: HTMLAttributes['class']
+    /** Trigger size: 'lg' (40px) or 'md' (32px) */
+    size?: 'lg' | 'md'
+    /** Show invalid (destructive) border */
+    invalid?: boolean
+  }
 >()
 </script>
 
@@ -15,14 +26,18 @@ const { class: className, ...restProps } = defineProps<
     v-bind="restProps"
     :class="
       cn(
-        'flex h-10 w-full cursor-pointer items-center justify-between select-none',
-        'rounded-lg px-4 py-2 text-sm',
+        'flex w-full cursor-pointer items-center justify-between select-none',
+        size === 'md' ? 'h-8 px-3 py-1 text-xs' : 'h-10 px-4 py-2 text-sm',
+        'rounded-lg',
         'bg-secondary-background text-base-foreground',
-        'border-[2.5px] border-solid border-transparent',
         'transition-all duration-200 ease-in-out',
-        'focus:border-node-component-border focus:outline-none',
+        'hover:bg-secondary-background-hover',
+        invalid
+          ? 'border border-solid border-destructive-background'
+          : 'border-[2.5px] border-solid border-transparent focus:border-node-component-border',
+        'focus:outline-none',
         'data-placeholder:text-muted-foreground',
-        'disabled:cursor-not-allowed disabled:opacity-60',
+        'disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-secondary-background',
         '[&>span]:truncate',
         className
       )

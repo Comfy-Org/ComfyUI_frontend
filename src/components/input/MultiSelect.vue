@@ -16,20 +16,25 @@
     :pt="{
       root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
         class: cn(
-          'relative inline-flex h-10 cursor-pointer select-none',
+          'relative inline-flex cursor-pointer select-none',
+          size === 'md' ? 'h-8' : 'h-10',
           'rounded-lg bg-secondary-background text-base-foreground',
           'transition-all duration-200 ease-in-out',
+          'hover:bg-secondary-background-hover',
           'border-[2.5px] border-solid',
           selectedCount > 0
             ? 'border-node-component-border'
             : 'border-transparent',
           'focus-within:border-node-component-border',
-          { 'cursor-default opacity-60': props.disabled }
+          props.disabled &&
+            'cursor-default opacity-30 hover:bg-secondary-background'
         )
       }),
       labelContainer: {
-        class:
-          'flex-1 flex items-center overflow-hidden whitespace-nowrap pl-4 py-2 '
+        class: cn(
+          'flex flex-1 items-center overflow-hidden py-2 whitespace-nowrap',
+          size === 'md' ? 'pl-3' : 'pl-4'
+        )
       },
       label: {
         class: 'p-0'
@@ -130,7 +135,7 @@
 
     <!-- Trigger value (keep text scale identical) -->
     <template #value>
-      <span class="text-sm">
+      <span :class="size === 'md' ? 'text-xs' : 'text-sm'">
         {{ label }}
       </span>
       <span
@@ -198,6 +203,8 @@ defineOptions({
 interface Props {
   /** Input label shown on the trigger button */
   label?: string
+  /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
+  size?: 'lg' | 'md'
   /** Show search box in the panel header */
   showSearchBox?: boolean
   /** Show selected count text in the panel header */
@@ -217,6 +224,7 @@ interface Props {
 }
 const {
   label,
+  size = 'lg',
   showSearchBox = false,
   showSelectedCount = false,
   showClearButton = false,

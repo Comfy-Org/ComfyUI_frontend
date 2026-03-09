@@ -15,23 +15,25 @@
     unstyled
     :pt="{
       root: ({ props }: SelectPassThroughMethodOptions<SelectOption>) => ({
-        class: [
-          // container
-          'h-10 relative inline-flex cursor-pointer select-none items-center',
-          // trigger surface
+        class: cn(
+          'relative inline-flex cursor-pointer items-center select-none',
+          size === 'md' ? 'h-8' : 'h-10',
           'rounded-lg',
           'bg-secondary-background text-base-foreground',
-          'border-[2.5px] border-solid border-transparent',
           'transition-all duration-200 ease-in-out',
-          'focus-within:border-node-component-border',
-          // disabled
-          { 'opacity-60 cursor-default': props.disabled }
-        ]
+          'hover:bg-secondary-background-hover',
+          invalid
+            ? 'border border-solid border-destructive-background'
+            : 'border-[2.5px] border-solid border-transparent focus-within:border-node-component-border',
+          props.disabled &&
+            'cursor-default opacity-30 hover:bg-secondary-background'
+        )
       }),
       label: {
-        class:
-          // Align with MultiSelect labelContainer spacing
-          'flex-1 flex items-center whitespace-nowrap pl-4 py-2 outline-hidden'
+        class: cn(
+          'flex flex-1 items-center py-2 whitespace-nowrap outline-hidden',
+          size === 'md' ? 'pl-3' : 'pl-4'
+        )
       },
       dropdown: {
         class:
@@ -84,7 +86,15 @@
   >
     <!-- Trigger value -->
     <template #value="slotProps">
-      <div class="flex items-center gap-2 text-sm">
+      <div
+        :class="
+          cn('flex items-center gap-2', size === 'md' ? 'text-xs' : 'text-sm')
+        "
+      >
+        <i
+          v-if="loading"
+          class="icon-[lucide--loader-circle] animate-spin text-muted-foreground"
+        />
         <slot name="icon" />
         <span
           v-if="slotProps.value !== null && slotProps.value !== undefined"
@@ -133,6 +143,9 @@ defineOptions({
 const {
   label,
   options,
+  size = 'lg',
+  invalid = false,
+  loading = false,
   listMaxHeight = '28rem',
   popoverMinWidth,
   popoverMaxWidth
@@ -144,6 +157,12 @@ const {
    * in getLabel() to map values to their display names.
    */
   options?: SelectOption[]
+  /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
+  size?: 'lg' | 'md'
+  /** Show invalid (destructive) border */
+  invalid?: boolean
+  /** Show loading spinner instead of chevron */
+  loading?: boolean
   /** Maximum height of the dropdown panel (default: 28rem) */
   listMaxHeight?: string
   /** Minimum width of the popover (default: auto) */

@@ -11,19 +11,12 @@ import SelectTrigger from './SelectTrigger.vue'
 import SelectValue from './SelectValue.vue'
 
 const meta = {
-  title: 'Components/Select',
+  title: 'Components/Select/Select',
   component: Select,
   tags: ['autodocs'],
+  parameters: { layout: 'centered' },
   argTypes: {
-    modelValue: {
-      control: 'text',
-      description: 'Selected value'
-    },
-    disabled: {
-      control: 'boolean',
-      description: 'When true, disables the select'
-    },
-    'onUpdate:modelValue': { action: 'update:modelValue' }
+    disabled: { control: 'boolean' }
   }
 } satisfies Meta<typeof Select>
 
@@ -40,7 +33,7 @@ export const Default: Story = {
       SelectValue
     },
     setup() {
-      const value = ref(args.modelValue || '')
+      const value = ref('')
       return { value, args }
     },
     template: `
@@ -56,18 +49,13 @@ export const Default: Story = {
           <SelectItem value="orange">Orange</SelectItem>
         </SelectContent>
       </Select>
-      <div class="mt-4 text-sm text-muted-foreground">
-        Selected: {{ value || 'None' }}
-      </div>
     `
   }),
-  args: {
-    disabled: false
-  }
+  args: { disabled: false }
 }
 
-export const WithPlaceholder: Story = {
-  render: (args) => ({
+export const MediumSize: Story = {
+  render: () => ({
     components: {
       Select,
       SelectContent,
@@ -77,28 +65,25 @@ export const WithPlaceholder: Story = {
     },
     setup() {
       const value = ref('')
-      return { value, args }
+      return { value }
     },
     template: `
-      <Select v-model="value" :disabled="args.disabled">
-        <SelectTrigger class="w-56">
-          <SelectValue placeholder="Choose an option..." />
+      <Select v-model="value">
+        <SelectTrigger class="w-56" size="md">
+          <SelectValue placeholder="Select a fruit" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="option1">Option 1</SelectItem>
-          <SelectItem value="option2">Option 2</SelectItem>
-          <SelectItem value="option3">Option 3</SelectItem>
+          <SelectItem value="apple">Apple</SelectItem>
+          <SelectItem value="banana">Banana</SelectItem>
+          <SelectItem value="cherry">Cherry</SelectItem>
         </SelectContent>
       </Select>
     `
-  }),
-  args: {
-    disabled: false
-  }
+  })
 }
 
 export const Disabled: Story = {
-  render: (args) => ({
+  render: () => ({
     components: {
       Select,
       SelectContent,
@@ -108,7 +93,7 @@ export const Disabled: Story = {
     },
     setup() {
       const value = ref('apple')
-      return { value, args }
+      return { value }
     },
     template: `
       <Select v-model="value" disabled>
@@ -125,8 +110,36 @@ export const Disabled: Story = {
   })
 }
 
+export const Invalid: Story = {
+  render: () => ({
+    components: {
+      Select,
+      SelectContent,
+      SelectItem,
+      SelectTrigger,
+      SelectValue
+    },
+    setup() {
+      const value = ref('')
+      return { value }
+    },
+    template: `
+      <Select v-model="value">
+        <SelectTrigger class="w-56" invalid>
+          <SelectValue placeholder="Select a fruit" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="apple">Apple</SelectItem>
+          <SelectItem value="banana">Banana</SelectItem>
+          <SelectItem value="cherry">Cherry</SelectItem>
+        </SelectContent>
+      </Select>
+    `
+  })
+}
+
 export const WithGroups: Story = {
-  render: (args) => ({
+  render: () => ({
     components: {
       Select,
       SelectContent,
@@ -139,10 +152,10 @@ export const WithGroups: Story = {
     },
     setup() {
       const value = ref('')
-      return { value, args }
+      return { value }
     },
     template: `
-      <Select v-model="value" :disabled="args.disabled">
+      <Select v-model="value">
         <SelectTrigger class="w-56">
           <SelectValue placeholder="Select a model type" />
         </SelectTrigger>
@@ -159,26 +172,14 @@ export const WithGroups: Story = {
             <SelectItem value="lora-style">Style LoRA</SelectItem>
             <SelectItem value="lora-character">Character LoRA</SelectItem>
           </SelectGroup>
-          <SelectSeparator />
-          <SelectGroup>
-            <SelectLabel>Other</SelectLabel>
-            <SelectItem value="vae">VAE</SelectItem>
-            <SelectItem value="embedding">Embedding</SelectItem>
-          </SelectGroup>
         </SelectContent>
       </Select>
-      <div class="mt-4 text-sm text-muted-foreground">
-        Selected: {{ value || 'None' }}
-      </div>
     `
-  }),
-  args: {
-    disabled: false
-  }
+  })
 }
 
-export const Scrollable: Story = {
-  render: (args) => ({
+export const AllStates: Story = {
+  render: () => ({
     components: {
       Select,
       SelectContent,
@@ -187,75 +188,52 @@ export const Scrollable: Story = {
       SelectValue
     },
     setup() {
-      const value = ref('')
-      const items = Array.from({ length: 20 }, (_, i) => ({
-        value: `item-${i + 1}`,
-        label: `Option ${i + 1}`
-      }))
-      return { value, items, args }
+      const a = ref('')
+      const b = ref('apple')
+      const c = ref('')
+      const d = ref('apple')
+      return { a, b, c, d }
     },
     template: `
-      <Select v-model="value" :disabled="args.disabled">
-        <SelectTrigger class="w-56">
-          <SelectValue placeholder="Select an option" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem
-            v-for="item in items"
-            :key="item.value"
-            :value="item.value"
-          >
-            {{ item.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    `
-  }),
-  args: {
-    disabled: false
-  }
-}
-
-export const CustomWidth: Story = {
-  render: (args) => ({
-    components: {
-      Select,
-      SelectContent,
-      SelectItem,
-      SelectTrigger,
-      SelectValue
-    },
-    setup() {
-      const value = ref('')
-      return { value, args }
-    },
-    template: `
-      <div class="space-y-4">
-        <Select v-model="value" :disabled="args.disabled">
-          <SelectTrigger class="w-32">
-            <SelectValue placeholder="Small" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="a">A</SelectItem>
-            <SelectItem value="b">B</SelectItem>
-            <SelectItem value="c">C</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select v-model="value" :disabled="args.disabled">
-          <SelectTrigger class="w-full">
-            <SelectValue placeholder="Full width select" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="option1">Option 1</SelectItem>
-            <SelectItem value="option2">Option 2</SelectItem>
-            <SelectItem value="option3">Option 3</SelectItem>
-          </SelectContent>
-        </Select>
+      <div class="flex flex-col gap-6">
+        <div>
+          <p class="mb-2 text-xs text-muted-foreground">Large (Interface)</p>
+          <div class="flex flex-col gap-3">
+            <Select v-model="a">
+              <SelectTrigger class="w-56"><SelectValue placeholder="Default" /></SelectTrigger>
+              <SelectContent><SelectItem value="apple">Apple</SelectItem></SelectContent>
+            </Select>
+            <Select v-model="b" disabled>
+              <SelectTrigger class="w-56"><SelectValue placeholder="Disabled" /></SelectTrigger>
+              <SelectContent><SelectItem value="apple">Apple</SelectItem></SelectContent>
+            </Select>
+            <Select v-model="c">
+              <SelectTrigger class="w-56" invalid><SelectValue placeholder="Invalid" /></SelectTrigger>
+              <SelectContent><SelectItem value="apple">Apple</SelectItem></SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div>
+          <p class="mb-2 text-xs text-muted-foreground">Medium (Node)</p>
+          <div class="flex flex-col gap-3">
+            <Select v-model="a">
+              <SelectTrigger class="w-56" size="md"><SelectValue placeholder="Default" /></SelectTrigger>
+              <SelectContent><SelectItem value="apple">Apple</SelectItem></SelectContent>
+            </Select>
+            <Select v-model="d" disabled>
+              <SelectTrigger class="w-56" size="md"><SelectValue placeholder="Disabled" /></SelectTrigger>
+              <SelectContent><SelectItem value="apple">Apple</SelectItem></SelectContent>
+            </Select>
+            <Select v-model="c">
+              <SelectTrigger class="w-56" size="md" invalid><SelectValue placeholder="Invalid" /></SelectTrigger>
+              <SelectContent><SelectItem value="apple">Apple</SelectItem></SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
     `
   }),
-  args: {
-    disabled: false
+  parameters: {
+    controls: { disable: true }
   }
 }
