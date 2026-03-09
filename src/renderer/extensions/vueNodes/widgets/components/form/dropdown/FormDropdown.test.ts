@@ -23,8 +23,6 @@ const MockFormDropdownMenu = defineComponent({
   name: 'FormDropdownMenu',
   props: {
     items: { type: Array as () => FormDropdownItem[], default: () => [] },
-    updateKey: { type: null, default: undefined },
-    searcher: { type: Function, default: undefined },
     isSelected: { type: Function, default: undefined },
     filterOptions: { type: Array, default: () => [] },
     sortOptions: { type: Array, default: () => [] },
