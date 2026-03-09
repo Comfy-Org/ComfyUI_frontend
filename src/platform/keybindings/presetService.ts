@@ -131,7 +131,12 @@ export function useKeybindingPresetService() {
   async function importPreset() {
     const file = await uploadFile('application/json')
     const text = await file.text()
-    const data = JSON.parse(text)
+    let data: unknown
+    try {
+      data = JSON.parse(text)
+    } catch {
+      throw new Error(t('g.keybindingPresets.invalidPresetFile'))
+    }
     const result = zKeybindingPreset.safeParse(data)
     if (!result.success) {
       throw new Error(
