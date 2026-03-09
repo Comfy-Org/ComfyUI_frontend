@@ -161,7 +161,7 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
@@ -210,7 +210,7 @@ async function initPresets() {
   }
 }
 
-initPresets()
+onMounted(() => initPresets())
 
 // "..." menu entries (teleported to header)
 async function saveAsNewPreset() {

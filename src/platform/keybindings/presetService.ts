@@ -161,7 +161,7 @@ export function useKeybindingPresetService() {
       })
 
       if (result === null) return
-      if (result) {
+      if (result && keybindingStore.currentPresetName !== 'default') {
         await savePreset(keybindingStore.currentPresetName)
       }
     }
