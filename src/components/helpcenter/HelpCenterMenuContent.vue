@@ -33,7 +33,7 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="icon-[lucide--external-link] text-primary size-4 ml-auto"
+            class="ml-auto icon-[lucide--external-link] size-4 text-primary"
           />
           <i
             v-if="menuItem.key === 'more'"
@@ -579,8 +579,7 @@ const onUpdateComfyUI = async (): Promise<void> => {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: error.value || t('helpCenter.updateComfyUIFailed'),
-        life: 5000
+        detail: error.value || t('helpCenter.updateComfyUIFailed')
       })
       return
     }
@@ -597,8 +596,7 @@ const onUpdateComfyUI = async (): Promise<void> => {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: err instanceof Error ? err.message : t('g.unknownError'),
-      life: 5000
+      detail: err instanceof Error ? err.message : t('g.unknownError')
     })
   }
 }

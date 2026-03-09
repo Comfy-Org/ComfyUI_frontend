@@ -48,7 +48,7 @@
                     </span>
                     <span
                       v-if="getTierLabel(workspace)"
-                      class="text-[10px] font-bold uppercase text-base-background bg-base-foreground px-1 py-0.5 rounded-full"
+                      class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
                     >
                       {{ getTierLabel(workspace) }}
                     </span>
@@ -139,7 +139,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { switchWithConfirmation } = useWorkspaceSwitch()
+const { switchWorkspace } = useWorkspaceSwitch()
 const { subscription } = useBillingContext()
 
 const tierKeyMap: Record<string, string> = {
@@ -226,7 +226,7 @@ function getTierLabel(workspace: AvailableWorkspace): string | null {
 }
 
 async function handleSelectWorkspace(workspace: AvailableWorkspace) {
-  const success = await switchWithConfirmation(workspace.id)
+  const success = await switchWorkspace(workspace.id)
   if (success) {
     emit('select', workspace)
   }

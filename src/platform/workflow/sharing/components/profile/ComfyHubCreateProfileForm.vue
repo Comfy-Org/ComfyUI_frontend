@@ -24,7 +24,7 @@
           {{ $t('comfyHubProfile.chooseProfilePicture') }}
         </label>
         <label
-          class="flex size-13 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-green-600/50 to-green-900"
+          class="flex size-13 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-linear-to-b from-green-600/50 to-green-900"
         >
           <input
             id="profile-picture"
@@ -68,7 +68,7 @@
             <span
               :class="
                 cn(
-                  'pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm',
+                  'pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-sm',
                   username ? 'text-base-foreground' : 'text-muted-foreground'
                 )
               "
@@ -183,8 +183,7 @@ async function handleCreate() {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: error instanceof Error ? error.message : t('g.error'),
-      life: 5000
+      detail: error instanceof Error ? error.message : t('g.error')
     })
   } finally {
     isCreating.value = false

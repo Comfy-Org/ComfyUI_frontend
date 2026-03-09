@@ -74,7 +74,7 @@
         </small>
       </div>
 
-      <span v-if="apiError" class="text-sm text-destructive">
+      <span v-if="apiError" class="text-destructive text-sm">
         {{ apiError }}
       </span>
 

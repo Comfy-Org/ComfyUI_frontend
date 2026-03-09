@@ -10,7 +10,7 @@
         {{ $t('workspacePanel.revokeInviteDialog.title') }}
       </h2>
       <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary-foreground"
+        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -69,8 +69,7 @@ async function onRevoke() {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: error instanceof Error ? error.message : undefined,
-      life: 3000
+      detail: error instanceof Error ? error.message : undefined
     })
   } finally {
     loading.value = false

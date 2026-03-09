@@ -203,8 +203,8 @@ defineExpose({
       :size="showSeeError ? 'lg' : 'default'"
     >
       <template #label>
-        <div class="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-          <span class="flex-1 flex items-center gap-2 min-w-0">
+        <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <span class="flex min-w-0 flex-1 items-center gap-2">
             <i
               v-if="nodeHasError"
               class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive-background-hover"
@@ -223,7 +223,7 @@ defineExpose({
             </span>
             <span
               v-if="parentGroup"
-              class="text-xs text-muted-foreground truncate flex-1 text-right min-w-11"
+              class="min-w-11 flex-1 truncate text-right text-xs text-muted-foreground"
               :title="parentGroup.title"
             >
               {{ parentGroup.title }}
@@ -233,7 +233,7 @@ defineExpose({
             v-if="showSeeError"
             variant="secondary"
             size="sm"
-            class="shrink-0 rounded-lg text-sm h-8"
+            class="h-8 shrink-0 rounded-lg text-sm"
             @click.stop="navigateToErrorTab"
           >
             {{ t('rightSidePanel.seeError') }}
@@ -242,7 +242,7 @@ defineExpose({
             v-if="!isEmpty"
             variant="muted-textonly"
             size="icon-sm"
-            class="subbutton shrink-0 size-8 hover:text-base-foreground"
+            class="subbutton size-8 shrink-0 hover:text-base-foreground"
             :title="t('rightSidePanel.resetAllParameters')"
             :aria-label="t('rightSidePanel.resetAllParameters')"
             @click.stop="handleResetAllWidgets"
@@ -253,7 +253,7 @@ defineExpose({
             v-if="canShowLocateButton"
             variant="muted-textonly"
             size="icon-sm"
-            class="subbutton shrink-0 mr-3 size-8 hover:text-base-foreground"
+            class="subbutton mr-3 size-8 shrink-0 hover:text-base-foreground"
             :title="t('rightSidePanel.locateNode')"
             :aria-label="t('rightSidePanel.locateNode')"
             @click.stop="handleLocateNode"
@@ -267,7 +267,7 @@ defineExpose({
 
       <div
         ref="widgetsContainer"
-        class="space-y-2 rounded-lg px-4 pt-1 relative"
+        class="relative space-y-2 rounded-lg px-4 pt-1"
       >
         <TransitionGroup name="list-scale">
           <WidgetItem

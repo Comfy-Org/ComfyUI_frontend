@@ -66,7 +66,7 @@
       <div class="relative z-1 flex items-center gap-1">
         <div class="relative inline-flex items-center justify-center">
           <div
-            class="absolute left-1/2 top-1/2 size-10 -translate-1/2"
+            class="absolute top-1/2 left-1/2 size-10 -translate-1/2"
             @mouseenter.stop="onIconEnter"
             @mouseleave.stop="onIconLeave"
           />

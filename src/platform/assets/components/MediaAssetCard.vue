@@ -5,7 +5,7 @@
     :aria-label="
       asset
         ? $t('assetBrowser.ariaLabel.assetCard', {
-            name: asset.name,
+            name: asset.display_name || asset.name,
             type: fileKind
           })
         : $t('assetBrowser.ariaLabel.loadingAsset')
@@ -13,10 +13,10 @@
     :tabindex="loading ? -1 : 0"
     :class="
       cn(
-        'flex flex-col overflow-hidden cursor-pointer p-2 transition-colors duration-200 rounded-lg',
-        'gap-2 select-none group',
+        'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
+        'group gap-2 select-none',
         selected
-          ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
+          ? 'ring-3 ring-modal-card-border-highlighted ring-inset'
           : 'hover:bg-modal-card-background-hovered/20'
       )
     "
@@ -84,7 +84,7 @@
     <!-- Bottom Area: Media Info -->
     <div class="flex-1">
       <!-- Loading State -->
-      <div v-if="loading" class="flex justify-between items-start">
+      <div v-if="loading" class="flex items-start justify-between">
         <div class="flex flex-col gap-1">
           <div
             class="h-4 w-24 animate-pulse rounded-sm bg-modal-card-background"
@@ -101,7 +101,7 @@
       <!-- Content -->
       <div
         v-else-if="asset && adaptedAsset"
-        class="flex justify-between items-end gap-1.5"
+        class="flex items-end justify-between gap-1.5"
       >
         <!-- Left side: Media name and metadata -->
         <div class="flex flex-col gap-1">
@@ -225,7 +225,7 @@ const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
 
 // Get filename without extension
 const fileName = computed(() => {
-  return getFilenameDetails(asset?.name || '').filename
+  return getFilenameDetails(asset?.display_name || asset?.name || '').filename
 })
 
 // Adapt AssetItem to legacy AssetMeta format for existing components
@@ -234,6 +234,7 @@ const adaptedAsset = computed(() => {
   return {
     id: asset.id,
     name: asset.name,
+    display_name: asset.display_name,
     kind: fileKind.value,
     src: asset.preview_url || '',
     size: asset.size,

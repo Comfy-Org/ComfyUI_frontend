@@ -168,8 +168,7 @@ export function useManagerState() {
             useToastStore().add({
               severity: 'error',
               summary: t('g.error'),
-              detail: t('manager.legacyMenuNotAvailable'),
-              life: 3000
+              detail: t('manager.legacyMenuNotAvailable')
             })
           }
           // Fallback to extensions panel if not showing toast
@@ -185,8 +184,7 @@ export function useManagerState() {
           useToastStore().add({
             severity: 'error',
             summary: t('g.error'),
-            detail: t('manager.legacyMenuNotAvailable'),
-            life: 3000
+            detail: t('manager.legacyMenuNotAvailable')
           })
         } else {
           managerDialog.show(options?.initialTab, options?.initialPackId)

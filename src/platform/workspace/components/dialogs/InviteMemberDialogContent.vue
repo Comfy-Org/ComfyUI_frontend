@@ -14,7 +14,7 @@
         }}
       </h2>
       <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary-foreground"
+        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -31,7 +31,7 @@
         <input
           v-model="email"
           type="email"
-          class="w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-secondary-foreground"
+          class="focus:ring-secondary-foreground w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:outline-none"
           :placeholder="$t('workspacePanel.inviteMemberDialog.placeholder')"
         />
       </div>
@@ -70,7 +70,7 @@
             @click="onSelectLink"
           />
           <div
-            class="absolute right-3 top-2.5 cursor-pointer"
+            class="absolute top-2.5 right-3 cursor-pointer"
             @click="onCopyLink"
           >
             <i
@@ -138,8 +138,7 @@ async function onCreateLink() {
     toast.add({
       severity: 'error',
       summary: t('workspacePanel.inviteMemberDialog.linkCopyFailed'),
-      detail: error instanceof Error ? error.message : undefined,
-      life: 3000
+      detail: error instanceof Error ? error.message : undefined
     })
   } finally {
     loading.value = false
@@ -161,8 +160,7 @@ async function onCopyLink() {
   } catch {
     toast.add({
       severity: 'error',
-      summary: t('workspacePanel.inviteMemberDialog.linkCopyFailed'),
-      life: 3000
+      summary: t('workspacePanel.inviteMemberDialog.linkCopyFailed')
     })
   }
 }

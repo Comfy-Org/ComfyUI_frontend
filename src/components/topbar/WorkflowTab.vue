@@ -10,8 +10,9 @@
         @mouseup="handleMouseUp"
         @click="handleClick"
       >
+        <i v-if="isBuilderState" class="bg-text-subtle icon-[lucide--hammer]" />
         <i
-          v-if="workflowOption.workflow.initialMode === 'app'"
+          v-else-if="workflowOption.workflow.initialMode === 'app'"
           class="icon-[lucide--panels-top-left] bg-primary-background"
         />
         <span
@@ -39,7 +40,7 @@
     </ContextMenuTrigger>
     <ContextMenuPortal>
       <ContextMenuContent
-        class="z-1000 rounded-lg px-2 py-3 min-w-56 bg-base-background shadow-interface border border-border-subtle"
+        class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
       >
         <WorkflowActionsList
           :items="contextMenuItems"
@@ -147,6 +148,11 @@ const shouldShowStatusIndicator = computed(() => {
   }
   // Default: do not show the status indicator. This should not be reachable.
   return false
+})
+
+const isBuilderState = computed(() => {
+  const currentMode = props.workflowOption.workflow.activeMode
+  return typeof currentMode === 'string' && currentMode.startsWith('builder:')
 })
 
 const isActiveTab = computed(() => {

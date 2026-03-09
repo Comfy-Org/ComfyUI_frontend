@@ -88,7 +88,7 @@
           </p>
           <p
             v-if="isLoadingAssets"
-            class="m-0 text-sm italic text-muted-foreground"
+            class="m-0 text-sm text-muted-foreground italic"
           >
             {{ $t('shareWorkflow.checkingAssets') }}
           </p>
@@ -352,8 +352,7 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
       toast.add({
         severity: 'error',
         summary: t('shareWorkflow.saveFailedTitle'),
-        detail: t('shareWorkflow.saveFailedDescription'),
-        life: 5000
+        detail: t('shareWorkflow.saveFailedDescription')
       })
     }
   }
@@ -391,8 +390,7 @@ const {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: error instanceof Error ? error.message : t('g.error'),
-        life: 5000
+        detail: error instanceof Error ? error.message : t('g.error')
       })
     }
   }

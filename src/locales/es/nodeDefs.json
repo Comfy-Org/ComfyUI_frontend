@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Expresión matemática",
+    "inputs": {
+      "expression": {
+        "name": "expresión"
+      },
+      "values": {
+        "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Interruptor",
     "inputs": {
@@ -3947,6 +3966,10 @@
     "description": "Modifica una imagen existente según una indicación de texto",
     "display_name": "Edición de imagen Grok",
     "inputs": {
+      "aspect_ratio": {
+        "name": "relación de aspecto",
+        "tooltip": "Solo permitido cuando varias imágenes están conectadas a la entrada de imagen."
+      },
       "control_after_generate": {
         "name": "controlar después de generar"
       },
@@ -3998,6 +4021,9 @@
       "prompt": {
         "name": "indicación",
         "tooltip": "La indicación de texto utilizada para generar la imagen"
+      },
+      "resolution": {
+        "name": "resolución"
       },
       "seed": {
         "name": "semilla",
@@ -5853,6 +5879,9 @@
       },
       "mode": {
         "name": "modo"
+      },
+      "model": {
+        "name": "modelo"
       },
       "prompt": {
         "name": "prompt"
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Realiza el desplegado UV en un modelo 3D para generar la textura UV. El modelo de entrada debe tener menos de 30,000 caras.",
+    "display_name": "Hunyuan3D: Modelo a UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D de entrada (GLB, OBJ o FBX)"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Realiza retopología inteligente en un modelo 3D. Soporta formatos GLB/OBJ; máximo 200MB; recomendado para modelos de alta poligonización.",
+    "display_name": "Hunyuan3D: Topología inteligente",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "face_level": {
+        "name": "nivel_de_caras",
+        "tooltip": "Nivel de reducción de polígonos."
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D de entrada (GLB u OBJ)"
+      },
+      "polygon_type": {
+        "name": "tipo_de_polígono",
+        "tooltip": "Tipo de composición de la superficie."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

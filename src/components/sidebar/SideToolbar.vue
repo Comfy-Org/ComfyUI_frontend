@@ -15,7 +15,7 @@
       :class="
         isOverflowing
           ? 'side-tool-bar-container overflow-y-auto'
-          : 'flex flex-col h-full'
+          : 'flex h-full flex-col'
       "
     >
       <div ref="topToolbarRef" :class="groupClasses">
@@ -41,7 +41,7 @@
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"
         />
-        <SidebarHelpCenterIcon v-if="!isIntegratedTabBar" :is-small="isSmall" />
+        <SidebarHelpCenterIcon :is-small="isSmall" />
         <SidebarBottomPanelToggleButton v-if="!isCloud" :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
         <SidebarSettingsButton :is-small="isSmall" />
@@ -95,9 +95,6 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
-const isIntegratedTabBar = computed(
-  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
-)
 const isConnected = computed(
   () =>
     selectedTab.value ||
@@ -154,8 +151,8 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
-    'sidebar-item-group flex flex-col items-center overflow-hidden shrink-0',
-    !isConnected.value && 'rounded-lg shadow-interface pointer-events-auto'
+    'sidebar-item-group flex shrink-0 flex-col items-center overflow-hidden',
+    !isConnected.value && 'pointer-events-auto rounded-lg shadow-interface'
   )
 )
 

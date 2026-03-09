@@ -69,7 +69,7 @@ onClickOutside(rootEl, () => {
       cn(
         'group relative flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-base-foreground',
         !internalDisabled &&
-          'hover:bg-modal-card-background-hovered focus-within:bg-modal-card-background-hovered',
+          'focus-within:bg-modal-card-background-hovered hover:bg-modal-card-background-hovered',
         !disabled && !isEditingEnabled && 'cursor-pointer',
         className
       )
@@ -80,7 +80,7 @@ onClickOutside(rootEl, () => {
     <i
       v-if="!disabled && !isEditingEnabled"
       aria-hidden="true"
-      class="icon-[lucide--square-pen] absolute bottom-2 right-2 size-4 text-muted-foreground transition-opacity opacity-0 group-hover:opacity-100"
+      class="absolute right-2 bottom-2 icon-[lucide--square-pen] size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
     />
   </TagsInputRoot>
 </template>

@@ -4,7 +4,7 @@
       <Loader
         v-if="loading"
         size="sm"
-        class="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-component-node-foreground"
+        class="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-component-node-foreground"
       />
       <InputText
         v-model="modelValue"
@@ -13,7 +13,7 @@
           cn(
             WidgetInputBaseClass,
             'w-full px-4 hover:bg-component-node-widget-background-hovered',
-            size === 'large' ? 'text-sm py-3' : 'text-xs py-2',
+            size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
             loading && 'pl-9'
           )
         "
@@ -30,7 +30,7 @@
 import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {

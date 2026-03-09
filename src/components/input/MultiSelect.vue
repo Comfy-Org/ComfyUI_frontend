@@ -16,7 +16,7 @@
     :pt="{
       root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
         class: cn(
-          'h-10 relative inline-flex cursor-pointer select-none',
+          'relative inline-flex h-10 cursor-pointer select-none',
           'rounded-lg bg-secondary-background text-base-foreground',
           'transition-all duration-200 ease-in-out',
           'border-[2.5px] border-solid',
@@ -24,7 +24,7 @@
             ? 'border-node-component-border'
             : 'border-transparent',
           'focus-within:border-node-component-border',
-          { 'opacity-60 cursor-default': props.disabled }
+          { 'cursor-default opacity-60': props.disabled }
         )
       }),
       labelContainer: {
@@ -62,7 +62,7 @@
       // Option row hover and focus tone
       option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
         class: cn(
-          'flex gap-2 items-center h-10 px-2 rounded-lg cursor-pointer',
+          'flex h-10 cursor-pointer items-center gap-2 rounded-lg px-2',
           'hover:bg-secondary-background-hover',
           // Add focus/highlight state for keyboard navigation
           context?.focused &&
@@ -150,7 +150,7 @@
     <template #option="slotProps">
       <div
         role="button"
-        class="flex items-center gap-2 cursor-pointer"
+        class="flex cursor-pointer items-center gap-2"
         :style="popoverStyle"
       >
         <div

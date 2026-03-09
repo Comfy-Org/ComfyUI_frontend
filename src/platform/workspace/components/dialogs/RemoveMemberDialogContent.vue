@@ -10,7 +10,7 @@
         {{ $t('workspacePanel.removeMemberDialog.title') }}
       </h2>
       <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary-foreground"
+        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -73,8 +73,7 @@ async function onRemove() {
   } catch {
     toast.add({
       severity: 'error',
-      summary: t('workspacePanel.removeMemberDialog.error'),
-      life: 3000
+      summary: t('workspacePanel.removeMemberDialog.error')
     })
   } finally {
     loading.value = false

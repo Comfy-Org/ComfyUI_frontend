@@ -53,7 +53,7 @@
             :class="
               !isSingleSeatPlan &&
               isInviteLimitReached &&
-              'opacity-50 cursor-not-allowed'
+              'cursor-not-allowed opacity-50'
             "
             :aria-label="$t('workspacePanel.inviteMember')"
             @click="handleInviteMember"
@@ -82,7 +82,7 @@
                   :disabled="!!item.disabled"
                   :class="
                     cn(
-                      'flex w-full items-center gap-2 px-3 py-2 bg-transparent border-none cursor-pointer',
+                      'flex w-full cursor-pointer items-center gap-2 border-none bg-transparent px-3 py-2',
                       item.class,
                       item.disabled && 'pointer-events-auto cursor-not-allowed'
                     )

@@ -7,7 +7,7 @@
       :on-close="onGateClose"
       :show-close-button="false"
     />
-    <div v-else class="flex min-h-0 flex-1 flex-col px-6 pb-2 pt-4">
+    <div v-else class="flex min-h-0 flex-1 flex-col px-6 pt-4 pb-2">
       <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <ComfyHubDescribeStep
           v-if="currentStep === 'describe'"

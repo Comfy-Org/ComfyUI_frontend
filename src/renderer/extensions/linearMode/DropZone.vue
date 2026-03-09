@@ -44,8 +44,8 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
     ref="dropZoneRef"
     :class="
       cn(
-        'rounded-lg ring-inset ring-primary-500',
-        canAcceptDrop && isOverDropZone && 'ring-4 bg-primary-500/10'
+        'rounded-lg ring-primary-500 ring-inset',
+        canAcceptDrop && isOverDropZone && 'bg-primary-500/10 ring-4'
       )
     "
   >
@@ -54,7 +54,7 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
       v-if="dropIndicator"
       :class="
         cn(
-          'flex flex-col items-center justify-center gap-2 border-dashed rounded-lg border h-25 border-border-subtle m-3 py-2',
+          'm-3 flex h-25 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-subtle py-2',
           dropIndicator?.onClick && 'cursor-pointer'
         )
       "
