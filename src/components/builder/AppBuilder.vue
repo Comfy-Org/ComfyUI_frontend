@@ -182,11 +182,14 @@ function handleClick(e: MouseEvent) {
   }
   if (!isSelectInputsMode.value) return
 
-  const widgetId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+  const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+  const storeName = isPromotedWidgetView(widget)
+    ? widget.sourceWidgetName
+    : widget.name
   const index = appModeStore.selectedInputs.findIndex(
-    ([nodeId, widgetName]) => widgetId == nodeId && widget.name === widgetName
+    ([nodeId, widgetName]) => storeId == nodeId && storeName === widgetName
   )
-  if (index === -1) appModeStore.selectedInputs.push([widgetId, widget.name])
+  if (index === -1) appModeStore.selectedInputs.push([storeId, storeName])
   else appModeStore.selectedInputs.splice(index, 1)
 }
 
