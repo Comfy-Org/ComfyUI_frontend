@@ -11,13 +11,6 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
-import {
-  deriveCustomNodeHeaderColor,
-  getDefaultCustomNodeColor,
-  NODE_COLOR_DARKER_HEADER_SETTING_ID,
-  normalizeNodeColor,
-  pickHexColor
-} from '@/utils/nodeColorPersistence'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
@@ -167,11 +160,6 @@ interface ICreateDefaultNodeOptions extends ICreateNodeOptions {
 
 type LegacyColorTarget = (LGraphNode | LGraphGroup) & IColorable & Positionable
 
-type LegacyColorMenuAction =
-  | { kind: 'preset'; presetName: string | null }
-  | { kind: 'custom'; color: string }
-  | { kind: 'custom-picker' }
-
 function isLegacyColorTarget(item: unknown): item is LegacyColorTarget {
   return item instanceof LGraphNode || item instanceof LGraphGroup
 }
@@ -188,28 +176,6 @@ function getLegacyColorTargets(target: LegacyColorTarget): LegacyColorTarget[] {
   return selected.length > 1 && selected.includes(target) ? selected : [target]
 }
 
-function getAppliedColorForLegacyTarget(target: LegacyColorTarget): string | null {
-  const presetColor = target.getColorOption()
-  if (presetColor) {
-    return target instanceof LGraphGroup
-      ? presetColor.groupcolor
-      : presetColor.bgcolor
-  }
-
-  return target instanceof LGraphGroup ? target.color ?? null : target.bgcolor ?? null
-}
-
-function getSharedAppliedColorForLegacyTargets(
-  targets: LegacyColorTarget[]
-): string | null {
-  if (!targets.length) return null
-
-  const firstColor = getAppliedColorForLegacyTarget(targets[0])
-  return targets.every((target) => getAppliedColorForLegacyTarget(target) === firstColor)
-    ? firstColor
-    : null
-}
-
 function createLegacyColorMenuContent(label: string, color?: string): string {
   if (!color) {
     return `<span style='display: block; padding-left: 4px;'>${label}</span>`
@@ -219,33 +185,6 @@ function createLegacyColorMenuContent(label: string, color?: string): string {
     `<span style='display: block; color: #fff; padding-left: 4px;` +
     ` border-left: 8px solid ${color}; background-color:${color}'>${label}</span>`
   )
-}
-
-function applyLegacyCustomColor(
-  targets: LegacyColorTarget[],
-  color: string,
-  darkerHeader: boolean
-): string {
-  const normalized = normalizeNodeColor(color)
-
-  for (const target of targets) {
-    if (target instanceof LGraphGroup) {
-      target.color = normalized
-    } else {
-      target.bgcolor = normalized
-      target.color = deriveCustomNodeHeaderColor(normalized, darkerHeader)
-    }
-  }
-
-  return normalized
-}
-
-function getLegacyDarkerHeaderSetting(): boolean {
-  try {
-    return useSettingStore().get(NODE_COLOR_DARKER_HEADER_SETTING_ID) ?? true
-  } catch {
-    return true
-  }
 }
 
 interface HasShowSearchCallback {
@@ -1748,9 +1687,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     node: LGraphNode | LGraphGroup
   ): boolean {
     if (!node || !isLegacyColorTarget(node)) throw 'no node for color'
-    const values: (IContextMenuValue<LegacyColorMenuAction> | null)[] = [
+    const values: (IContextMenuValue<string | null> | null)[] = [
       {
-        value: { kind: 'preset', presetName: null },
+        value: null,
         content: createLegacyColorMenuContent(
           st('color.noColor', 'No color')
         )
@@ -1761,7 +1700,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       LGraphCanvas.node_colors
     )) {
       values.push({
-        value: { kind: 'preset', presetName },
+        value: presetName,
         content: createLegacyColorMenuContent(
           st(`color.${presetName}`, presetName),
           node instanceof LGraphGroup
@@ -1771,64 +1710,37 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       })
     }
 
-    values.push(null)
-    values.push({
-      value: { kind: 'custom-picker' },
-      content: createLegacyColorMenuContent(st('g.custom', 'Custom') + '...')
-    })
-
-    new LiteGraph.ContextMenu<LegacyColorMenuAction>(values, {
+    new LiteGraph.ContextMenu<string | null>(values, {
       event: e,
       callback: (value) => {
-        if (typeof value === 'string' || value == null) return
-        void innerClicked(value as IContextMenuValue<LegacyColorMenuAction>)
+        if (typeof value === 'string') {
+          void innerClicked({ value })
+          return
+        }
+        if (value == null) {
+          void innerClicked({ value: null })
+          return
+        }
+        void innerClicked(value as IContextMenuValue<string | null>)
       },
-      parentMenu: menu as unknown as ContextMenu<LegacyColorMenuAction>,
+      parentMenu: menu,
       ...(node instanceof LGraphNode ? { node } : {})
     })
 
-    async function innerClicked(v: IContextMenuValue<LegacyColorMenuAction>) {
-      if (!node || !isLegacyColorTarget(node) || !v?.value) return
+    function innerClicked(v: IContextMenuValue<string | null>) {
+      if (!node || !isLegacyColorTarget(node)) return
 
       const canvas = LGraphCanvas.active_canvas
       const targets = getLegacyColorTargets(node)
       const graphInfo = node instanceof LGraphNode ? node : undefined
-      const darkerHeader = getLegacyDarkerHeaderSetting()
 
-      switch (v.value.kind) {
-        case 'preset': {
-          node.graph?.beforeChange(graphInfo)
-          const colorOption = v.value.presetName
-            ? LGraphCanvas.node_colors[v.value.presetName]
-            : null
-          for (const target of targets) {
-            target.setColorOption(colorOption)
-          }
-          node.graph?.afterChange(graphInfo)
-          canvas.setDirty(true, true)
-          return
-        }
-        case 'custom': {
-          node.graph?.beforeChange(graphInfo)
-          applyLegacyCustomColor(targets, v.value.color, darkerHeader)
-          node.graph?.afterChange(graphInfo)
-          canvas.setDirty(true, true)
-          return
-        }
-        case 'custom-picker': {
-          const currentColor = getSharedAppliedColorForLegacyTargets(targets)
-          const pickedColor = await pickHexColor(
-            currentColor ?? getDefaultCustomNodeColor()
-          )
-          if (!pickedColor) return
-
-          node.graph?.beforeChange(graphInfo)
-          applyLegacyCustomColor(targets, pickedColor, darkerHeader)
-          node.graph?.afterChange(graphInfo)
-          canvas.setDirty(true, true)
-          return
-        }
+      node.graph?.beforeChange(graphInfo)
+      const colorOption = v.value ? LGraphCanvas.node_colors[v.value] : null
+      for (const target of targets) {
+        target.setColorOption(colorOption)
       }
+      node.graph?.afterChange(graphInfo)
+      canvas.setDirty(true, true)
     }
 
     return false

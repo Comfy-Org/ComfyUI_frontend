@@ -1,28 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as NodeColorPersistenceModule from '@/utils/nodeColorPersistence'
-
-const settingStoreMock = vi.hoisted(() => ({
-  get: vi.fn(() => true)
-}))
 
 vi.mock('@/i18n', () => ({
   st: (_key: string, fallback: string) => fallback
 }))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => settingStoreMock
-}))
-
-vi.mock('@/utils/nodeColorPersistence', async () => {
-  const actual = await vi.importActual<typeof NodeColorPersistenceModule>(
-    '@/utils/nodeColorPersistence'
-  )
-
-  return {
-    ...actual,
-    pickHexColor: vi.fn().mockResolvedValue('#abcdef')
-  }
-})
 
 import type { ContextMenu } from './ContextMenu'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -33,16 +13,10 @@ import { LiteGraph } from './litegraph'
 describe('LGraphCanvas.onMenuNodeColors', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    settingStoreMock.get.mockReturnValue(true)
   })
 
-  it('adds a custom color entry to the legacy submenu', () => {
-    const graph = {
-      beforeChange: vi.fn(),
-      afterChange: vi.fn()
-    }
+  it('does not add a custom color entry to the legacy submenu', () => {
     const node = Object.assign(Object.create(LGraphNode.prototype), {
-      graph,
       color: undefined,
       bgcolor: undefined
     }) as LGraphNode
@@ -77,10 +51,8 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
         ?.filter((value): value is { content?: string } => typeof value === 'object' && value !== null)
         .map((value) => value.content ?? '')
 
-      expect(contents).toEqual(
-        expect.arrayContaining([
-          expect.stringContaining('Custom...')
-        ])
+      expect(contents).not.toEqual(
+        expect.arrayContaining([expect.stringContaining('Custom...')])
       )
     } finally {
       LiteGraph.ContextMenu = originalContextMenu
@@ -135,7 +107,7 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
     }
   })
 
-  it('applies a picked custom color to selected nodes and groups in legacy mode', async () => {
+  it('applies preset colors to selected nodes and groups in legacy mode', () => {
     const graph = {
       beforeChange: vi.fn(),
       afterChange: vi.fn()
@@ -181,16 +153,11 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
       )
 
       callback?.({
-        value: {
-          kind: 'custom-picker'
-        }
+        value: 'red'
       })
-      await Promise.resolve()
-      await Promise.resolve()
 
-      expect(node.bgcolor).toBe('#abcdef')
-      expect(node.color).not.toBe('#abcdef')
-      expect(group.color).toBe('#abcdef')
+      expect(node.bgcolor).toBe(LGraphCanvas.node_colors.red.bgcolor)
+      expect(group.color).toBe(LGraphCanvas.node_colors.red.groupcolor)
       expect(graph.beforeChange).toHaveBeenCalled()
       expect(graph.afterChange).toHaveBeenCalled()
       expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
@@ -199,65 +166,7 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
     }
   })
 
-  it('respects the darker-header setting in legacy custom colors', async () => {
-    settingStoreMock.get.mockReturnValue(false)
-
-    const graph = {
-      beforeChange: vi.fn(),
-      afterChange: vi.fn()
-    }
-
-    const node = Object.assign(Object.create(LGraphNode.prototype), {
-      graph,
-      color: undefined,
-      bgcolor: undefined
-    }) as LGraphNode
-
-    const canvas = {
-      selectedItems: new Set([node]),
-      setDirty: vi.fn()
-    }
-    LGraphCanvas.active_canvas = canvas as unknown as LGraphCanvas
-
-    let callback:
-      | ((value: { value?: unknown }) => void)
-      | undefined
-    const originalContextMenu = LiteGraph.ContextMenu
-    class MockContextMenu {
-      constructor(
-        _values: ReadonlyArray<{ content?: string } | string | null>,
-        options: { callback?: (value: { value?: unknown }) => void }
-      ) {
-        callback = options.callback
-      }
-    }
-    LiteGraph.ContextMenu = MockContextMenu as unknown as typeof LiteGraph.ContextMenu
-
-    try {
-      LGraphCanvas.onMenuNodeColors(
-        { content: 'Colors', value: null },
-        {} as never,
-        new MouseEvent('contextmenu'),
-        {} as ContextMenu<string | null>,
-        node
-      )
-
-      callback?.({
-        value: {
-          kind: 'custom-picker'
-        }
-      })
-      await Promise.resolve()
-      await Promise.resolve()
-
-      expect(node.bgcolor).toBe('#abcdef')
-      expect(node.color).toBe('#abcdef')
-    } finally {
-      LiteGraph.ContextMenu = originalContextMenu
-    }
-  })
-
-  it('does not fan out legacy color actions to an unrelated single selection', async () => {
+  it('does not fan out legacy preset actions to an unrelated single selection', () => {
     const graph = {
       beforeChange: vi.fn(),
       afterChange: vi.fn()
@@ -304,21 +213,17 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
       )
 
       callback?.({
-        value: {
-          kind: 'custom-picker'
-        }
+        value: 'red'
       })
-      await Promise.resolve()
-      await Promise.resolve()
 
-      expect(targetNode.bgcolor).toBe('#abcdef')
+      expect(targetNode.bgcolor).toBe(LGraphCanvas.node_colors.red.bgcolor)
       expect(selectedNode.bgcolor).toBeUndefined()
     } finally {
       LiteGraph.ContextMenu = originalContextMenu
     }
   })
 
-  it('keeps legacy group color actions scoped to the clicked group', async () => {
+  it('keeps legacy group color actions scoped to the clicked group', () => {
     const graph = {
       beforeChange: vi.fn(),
       afterChange: vi.fn()
@@ -364,14 +269,10 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
       )
 
       callback?.({
-        value: {
-          kind: 'custom-picker'
-        }
+        value: 'red'
       })
-      await Promise.resolve()
-      await Promise.resolve()
 
-      expect(targetGroup.color).toBe('#abcdef')
+      expect(targetGroup.color).toBe(LGraphCanvas.node_colors.red.groupcolor)
       expect(selectedNode.bgcolor).toBeUndefined()
     } finally {
       LiteGraph.ContextMenu = originalContextMenu
