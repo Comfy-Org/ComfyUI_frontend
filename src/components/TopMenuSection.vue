@@ -61,7 +61,7 @@
               @click="() => openShareDialog().catch(toastErrorHandler)"
               @pointerenter="prefetchShareDialog"
             >
-              <i class="icon-[lucide--share-2] size-4" />
+              <i class="icon-[comfy--send] size-4" />
               <span class="not-md:hidden">
                 {{ t('actionbar.share') }}
               </span>
