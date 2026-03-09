@@ -4,7 +4,7 @@ const VIEWPORT_PADDING = 8
 
 type AnchorRect = Pick<DOMRect, 'top' | 'left' | 'right'>
 
-export type HoverPopoverPosition = {
+type HoverPopoverPosition = {
   top: number
   left: number
 }
