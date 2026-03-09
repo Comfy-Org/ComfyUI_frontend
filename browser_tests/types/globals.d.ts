@@ -53,4 +53,3 @@ declare global {
   const LiteGraph: LiteGraphGlobal | undefined
   const LGraphBadge: typeof LGraphBadge | undefined
 }
-
