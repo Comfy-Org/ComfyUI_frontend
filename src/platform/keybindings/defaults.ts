@@ -96,7 +96,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       alt: true
     },
     commandId: 'Comfy.Canvas.ZoomIn',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
@@ -105,7 +105,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       shift: true
     },
     commandId: 'Comfy.Canvas.ZoomIn',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
@@ -113,7 +113,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       alt: true
     },
     commandId: 'Comfy.Canvas.ZoomIn',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
@@ -121,7 +121,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       alt: true
     },
     commandId: 'Comfy.Canvas.ZoomOut',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {

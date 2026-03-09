@@ -11,7 +11,10 @@ export class KeybindingImpl implements Keybinding {
   constructor(obj: Keybinding) {
     this.commandId = obj.commandId
     this.combo = new KeyComboImpl(obj.combo)
-    this.targetElementId = obj.targetElementId
+    this.targetElementId =
+      obj.targetElementId === 'graph-canvas'
+        ? 'graph-canvas-container'
+        : obj.targetElementId
   }
 
   equals(other: unknown): boolean {
