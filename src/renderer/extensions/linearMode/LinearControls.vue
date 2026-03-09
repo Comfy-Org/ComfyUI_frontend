@@ -107,8 +107,10 @@ function getDropIndicator(node: LGraphNode) {
 function nodeToNodeData(node: LGraphNode) {
   const dropIndicator = getDropIndicator(node)
   const nodeData = extractVueNodeData(node)
-  remove(nodeData.widgets ?? [], (w) => w.slotMetadata?.linked ?? false)
-  for (const widget of nodeData.widgets ?? []) widget.slotMetadata = undefined
+  for (const widget of nodeData.widgets ?? []) {
+    widget.slotMetadata = undefined
+    widget.nodeId = String(node.id)
+  }
 
   return {
     ...nodeData,
