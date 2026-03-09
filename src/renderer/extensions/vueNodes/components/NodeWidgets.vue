@@ -109,6 +109,7 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -160,7 +161,11 @@ onErrorCaptured((error) => {
 })
 
 const canSelectInputs = computed(
-  () => isSelectInputsMode.value && nodeData?.mode === LGraphEventMode.ALWAYS
+  () =>
+    isSelectInputsMode.value &&
+    nodeData?.mode === LGraphEventMode.ALWAYS &&
+    nodeTypeValidForApp(nodeData.type) &&
+    !nodeData.hasErrors
 )
 const nodeType = computed(() => nodeData?.type || '')
 const settingStore = useSettingStore()

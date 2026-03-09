@@ -20,6 +20,7 @@ type OutputOverrides = Partial<{
   subfolder: string
   nodeId: string
   url: string
+  display_name: string
 }>
 
 function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
@@ -32,7 +33,8 @@ function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
   }
   return {
     ...merged,
-    previewUrl: merged.url
+    previewUrl: merged.url,
+    display_name: merged.display_name
   } as ResultItemImpl
 }
 
@@ -123,6 +125,48 @@ describe('resolveOutputAssetItems', () => {
       'full.png',
       'preview.png'
     ])
+  })
+
+  it('propagates display_name from output to asset item', async () => {
+    const output = createOutput({
+      filename: 'abc123hash.png',
+      nodeId: '1',
+      url: 'https://example.com/abc123hash.png',
+      display_name: 'ComfyUI_00001_.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-dn',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results).toHaveLength(1)
+    expect(results[0].name).toBe('abc123hash.png')
+    expect(results[0].display_name).toBe('ComfyUI_00001_.png')
+  })
+
+  it('omits display_name when not present in output', async () => {
+    const output = createOutput({
+      filename: 'file.png',
+      nodeId: '1',
+      url: 'https://example.com/file.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-nodn',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results).toHaveLength(1)
+    expect(results[0].display_name).toBeUndefined()
   })
 
   it('keeps root outputs with empty subfolders', async () => {

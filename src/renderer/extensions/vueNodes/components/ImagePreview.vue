@@ -233,7 +233,6 @@ const handleDownload = () => {
       severity: 'error',
       summary: 'Error',
       detail: t('g.failedToDownloadImage'),
-      life: 3000,
       group: 'image-preview'
     })
   }

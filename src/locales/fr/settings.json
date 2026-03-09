@@ -400,7 +400,7 @@
     "name": "Disposition de la barre d’onglets",
     "options": {
       "Default": "Par défaut",
-      "Integrated": "Intégrée"
+      "Legacy": "Héritage"
     },
     "tooltip": "Contrôle la disposition de la barre d’onglets. « Intégrée » déplace les contrôles Aide et Utilisateur dans la zone de la barre d’onglets."
   },
