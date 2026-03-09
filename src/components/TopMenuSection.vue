@@ -114,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage } from '@vueuse/core'
+import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -182,6 +182,7 @@ const isActionbarFloating = computed(
  */
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
+  if (hasLegacyContent.value) return true
   if (isLoggedIn.value && !isIntegratedTabBar.value) return true
   if (isDesktop && !isIntegratedTabBar.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
@@ -262,6 +263,25 @@ const rightSidePanelTooltipConfig = computed(() =>
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
+const hasLegacyContent = ref(false)
+
+function checkLegacyContent() {
+  const el = legacyCommandsContainerRef.value
+  if (!el) {
+    hasLegacyContent.value = false
+    return
+  }
+  // Mirror the CSS: [&:not(:has(*>*:not(:empty)))]:hidden
+  hasLegacyContent.value =
+    el.querySelector(':scope > * > *:not(:empty)') !== null
+}
+
+useMutationObserver(legacyCommandsContainerRef, checkLegacyContent, {
+  childList: true,
+  subtree: true,
+  characterData: true
+})
+
 onMounted(() => {
   if (legacyCommandsContainerRef.value) {
     app.menu.element.style.width = 'fit-content'
