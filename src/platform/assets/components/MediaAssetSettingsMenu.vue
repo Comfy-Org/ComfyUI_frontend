@@ -30,7 +30,7 @@
       />
     </Button>
 
-    <div class="border-b w-full border-border-subtle my-1" />
+    <div class="my-1 w-full border-b border-border-subtle" />
 
     <Button
       variant="textonly"
@@ -40,12 +40,12 @@
     >
       <span>{{ $t('sideToolbar.mediaAssets.groupByJob') }}</span>
       <i
-        class="icon-[lucide--check] ml-auto size-4"
+        class="ml-auto icon-[lucide--check] size-4"
         :class="!groupByJob && 'opacity-0'"
       />
     </Button>
 
-    <div class="border-b w-full border-border-subtle my-1" />
+    <div class="my-1 w-full border-b border-border-subtle" />
 
     <Button
       variant="textonly"
@@ -55,7 +55,7 @@
     >
       <span>{{ $t('sideToolbar.mediaAssets.showAssetNames') }}</span>
       <i
-        class="icon-[lucide--check] ml-auto size-4"
+        class="ml-auto icon-[lucide--check] size-4"
         :class="!showAssetNames && 'opacity-0'"
       />
     </Button>
@@ -68,7 +68,7 @@
     >
       <span>{{ $t('sideToolbar.mediaAssets.showAssetDetails') }}</span>
       <i
-        class="icon-[lucide--check] ml-auto size-4"
+        class="ml-auto icon-[lucide--check] size-4"
         :class="!showAssetDetails && 'opacity-0'"
       />
     </Button>
