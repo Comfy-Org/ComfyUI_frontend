@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ColorPicker from 'primevue/colorpicker'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -120,6 +121,9 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
 const currentAppliedColor = computed(
   () => getSharedAppliedColor(nodes) ?? getDefaultCustomNodeColor()
 )
+const currentPickerValue = computed(() =>
+  currentAppliedColor.value.replace('#', '')
+)
 
 async function applySavedCustomColor(color: string) {
   applyCustomColorToItems(nodes, color, {
@@ -137,8 +141,8 @@ const isCurrentColorFavorite = computed(() =>
   isFavoriteColor(currentAppliedColor.value)
 )
 
-async function onCustomColorInput(event: Event) {
-  await applySavedCustomColor((event.target as HTMLInputElement).value)
+async function onCustomColorUpdate(value: string) {
+  await applySavedCustomColor(`#${value}`)
 }
 </script>
 
@@ -180,21 +184,18 @@ async function onCustomColorInput(event: Event) {
         </button>
       </div>
       <div class="flex items-center gap-2">
-        <label
-          class="relative flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
-          :title="t('g.custom')"
-        >
-          <input
-            class="absolute inset-0 cursor-pointer opacity-0"
-            type="color"
-            :value="currentAppliedColor"
-            @input="onCustomColorInput"
-          />
-          <div
-            class="size-4 rounded-full border border-border-default"
-            :style="{ backgroundColor: currentAppliedColor }"
-          />
-        </label>
+        <ColorPicker
+          :model-value="currentPickerValue"
+          format="hex"
+          :aria-label="t('g.custom')"
+          class="h-8 w-8 overflow-hidden rounded-md border border-border-default bg-secondary-background"
+          :pt="{
+            preview: {
+              class: '!h-full !w-full !rounded-md !border-none'
+            }
+          }"
+          @update:model-value="onCustomColorUpdate"
+        />
         <button
           class="flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
           :title="isCurrentColorFavorite ? t('g.remove') : t('g.favorites')"

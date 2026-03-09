@@ -42,22 +42,19 @@
         </template>
       </SelectButton>
       <div class="mt-2 flex items-center gap-2">
-        <label
-          class="relative flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
-          :title="t('g.custom')"
+        <ColorPicker
           data-testid="custom-color-trigger"
-        >
-          <input
-            class="absolute inset-0 cursor-pointer opacity-0"
-            type="color"
-            :value="currentAppliedColor"
-            @input="onCustomColorInput"
-          />
-          <div
-            class="size-4 rounded-full border border-border-default"
-            :style="{ backgroundColor: currentAppliedColor }"
-          />
-        </label>
+          :model-value="currentPickerValue"
+          format="hex"
+          :aria-label="t('g.custom')"
+          class="h-8 w-8 overflow-hidden rounded-md border border-border-default bg-secondary-background"
+          :pt="{
+            preview: {
+              class: '!h-full !w-full !rounded-md !border-none'
+            }
+          }"
+          @update:model-value="onCustomColorUpdate"
+        />
         <button
           class="flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
           :title="isCurrentColorFavorite ? t('g.remove') : t('g.favorites')"
@@ -106,6 +103,7 @@
 </template>
 
 <script setup lang="ts">
+import ColorPicker from 'primevue/colorpicker'
 import SelectButton from 'primevue/selectbutton'
 import type { Raw } from 'vue'
 import { computed, ref, watch } from 'vue'
@@ -202,6 +200,9 @@ const currentColorOption = ref<CanvasColorOption | null>(null)
 const currentAppliedColor = computed(
   () => getCurrentAppliedColor() ?? getDefaultCustomNodeColor()
 )
+const currentPickerValue = computed(() =>
+  currentAppliedColor.value.replace('#', '')
+)
 const currentColor = computed(() =>
   currentColorOption.value
     ? isLightTheme.value
@@ -228,8 +229,7 @@ async function applySavedCustomColor(color: string) {
   showColorPicker.value = false
 }
 
-async function onCustomColorInput(event: Event) {
-  const value = (event.target as HTMLInputElement).value
+async function onCustomColorUpdate(value: string) {
   await applySavedCustomColor(toHexFromFormat(value, 'hex'))
 }
 
