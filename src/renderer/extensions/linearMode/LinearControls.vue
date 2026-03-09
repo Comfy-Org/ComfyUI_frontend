@@ -73,7 +73,6 @@ const mappedSelections = computed(() => {
   const processedInputs: ReturnType<typeof nodeToNodeData>[] = []
   while (unprocessedInputs.length) {
     const [node] = unprocessedInputs[0]
-    if (!node) continue
     const inputGroup = takeWhile(unprocessedInputs, ([n]) => n === node).map(
       ([, widget]) => widget
     )
@@ -92,7 +91,7 @@ const mappedSelections = computed(() => {
       return !inputGroup.some(
         (subWidget) =>
           isPromotedWidgetView(subWidget) &&
-          subWidget.sourceNodeId === storeNodeId &&
+          subWidget.sourceNodeId == storeNodeId &&
           subWidget.sourceWidgetName === vueWidget.storeName
       )
     })
