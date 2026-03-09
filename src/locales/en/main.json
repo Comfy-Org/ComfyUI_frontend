@@ -468,6 +468,11 @@
   "issueReport": {
     "helpFix": "Help Fix This"
   },
+  "colorPicker": {
+    "hue": "Hue",
+    "alpha": "Alpha",
+    "saturationAndBrightness": "Color saturation and brightness"
+  },
   "color": {
     "noColor": "No Color",
     "default": "Default",
