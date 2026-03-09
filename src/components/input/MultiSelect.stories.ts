@@ -61,7 +61,8 @@ export const MediumSize: Story = {
     },
     template:
       '<MultiSelect v-model="selected" :options="sampleOptions" label="Category" size="md" />'
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const WithPreselectedValues: Story = {
@@ -73,7 +74,8 @@ export const WithPreselectedValues: Story = {
     },
     template:
       '<MultiSelect v-model="selected" :options="sampleOptions" label="Category" />'
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const Disabled: Story = {
@@ -85,7 +87,8 @@ export const Disabled: Story = {
     },
     template:
       '<MultiSelect v-model="selected" :options="sampleOptions" label="Category" disabled />'
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const WithSearchBox: Story = {

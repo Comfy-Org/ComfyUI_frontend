@@ -79,6 +79,7 @@
       }
     }"
     :aria-label="label || t('g.singleSelectDropdown')"
+    :aria-invalid="invalid || undefined"
     role="combobox"
     :aria-expanded="false"
     aria-haspopup="listbox"

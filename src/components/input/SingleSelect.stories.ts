@@ -65,7 +65,8 @@ export const MediumSize: Story = {
     },
     template:
       '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" size="md" />'
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const WithIcon: Story = {
@@ -82,7 +83,8 @@ export const WithIcon: Story = {
         </template>
       </SingleSelect>
     `
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const Disabled: Story = {
@@ -94,7 +96,8 @@ export const Disabled: Story = {
     },
     template:
       '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" disabled />'
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const Invalid: Story = {
@@ -106,7 +109,8 @@ export const Invalid: Story = {
     },
     template:
       '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" invalid />'
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const Loading: Story = {
@@ -118,7 +122,8 @@ export const Loading: Story = {
     },
     template:
       '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" loading />'
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const AllStates: Story = {

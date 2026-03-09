@@ -79,7 +79,8 @@ export const MediumSize: Story = {
         </SelectContent>
       </Select>
     `
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const Disabled: Story = {
@@ -107,7 +108,8 @@ export const Disabled: Story = {
         </SelectContent>
       </Select>
     `
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const Invalid: Story = {
@@ -135,7 +137,8 @@ export const Invalid: Story = {
         </SelectContent>
       </Select>
     `
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const WithGroups: Story = {
@@ -175,7 +178,8 @@ export const WithGroups: Story = {
         </SelectContent>
       </Select>
     `
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const AllStates: Story = {

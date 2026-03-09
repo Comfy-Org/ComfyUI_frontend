@@ -24,6 +24,7 @@ const {
 <template>
   <SelectTrigger
     v-bind="restProps"
+    :aria-invalid="invalid || undefined"
     :class="
       cn(
         'flex w-full cursor-pointer items-center justify-between select-none',
