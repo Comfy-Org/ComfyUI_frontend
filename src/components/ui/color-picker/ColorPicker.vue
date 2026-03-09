@@ -19,8 +19,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 import ColorPickerPanel from './ColorPickerPanel.vue'
 
-const { alphaEnabled = true } = defineProps<{
-  alphaEnabled?: boolean
+defineProps<{
   class?: string
 }>()
 
@@ -89,7 +88,7 @@ const isOpen = ref(false)
       <button
         :class="
           cn(
-            'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-node-component-surface pr-2 outline-none',
+            'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-node-component-surface pr-2 outline-none hover:bg-component-node-widget-background-hovered',
             isOpen && 'border-node-stroke',
             $props.class
           )
@@ -124,7 +123,7 @@ const isOpen = ref(false)
               <span>{{ displayRgb.b }}</span>
             </div>
           </template>
-          <span v-if="alphaEnabled">{{ hsva.a }}%</span>
+          <span>{{ hsva.a }}%</span>
         </div>
       </button>
     </PopoverTrigger>
@@ -139,7 +138,6 @@ const isOpen = ref(false)
         <ColorPickerPanel
           v-model:hsva="hsva"
           v-model:display-mode="displayMode"
-          :alpha-enabled="alphaEnabled"
         />
       </PopoverContent>
     </PopoverPortal>

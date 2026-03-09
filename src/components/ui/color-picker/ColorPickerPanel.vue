@@ -18,10 +18,6 @@ const displayMode = defineModel<'hex' | 'rgba'>('displayMode', {
   required: true
 })
 
-const { alphaEnabled = true } = defineProps<{
-  alphaEnabled?: boolean
-}>()
-
 const rgb = computed(() =>
   hsbToRgb({ h: hsva.value.h, s: hsva.value.s, b: hsva.value.v })
 )
@@ -41,7 +37,6 @@ const { t } = useI18n()
     />
     <ColorPickerSlider v-model="hsva.h" type="hue" />
     <ColorPickerSlider
-      v-if="alphaEnabled"
       v-model="hsva.a"
       type="alpha"
       :hue="hsva.h"
@@ -77,9 +72,7 @@ const { t } = useI18n()
           <span class="w-6 shrink-0 text-center">{{ rgb.g }}</span>
           <span class="w-6 shrink-0 text-center">{{ rgb.b }}</span>
         </template>
-        <span
-          v-if="alphaEnabled"
-          class="shrink-0 border-l border-border-subtle pl-1"
+        <span class="shrink-0 border-l border-border-subtle pl-1"
           >{{ hsva.a }}%</span
         >
       </div>

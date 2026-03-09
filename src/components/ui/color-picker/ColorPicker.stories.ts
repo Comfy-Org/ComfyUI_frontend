@@ -12,12 +12,6 @@ const meta: Meta<ComponentPropsAndSlots<typeof ColorPicker>> = {
   component: ColorPicker,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },
-  argTypes: {
-    alphaEnabled: { control: 'boolean' }
-  },
-  args: {
-    alphaEnabled: true
-  },
   decorators: [
     (story) => ({
       components: { story },
@@ -30,68 +24,56 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  render: (args) => ({
+  render: () => ({
     components: { ColorPicker },
     setup() {
       const color = ref('#e06cbd')
-      return { color, args }
+      return { color }
     },
-    template: '<ColorPicker v-model="color" v-bind="args" />'
+    template: '<ColorPicker v-model="color" />'
   })
 }
 
 export const WithAlpha: Story = {
-  render: (args) => ({
+  render: () => ({
     components: { ColorPicker },
     setup() {
       const color = ref('#3498db80')
-      return { color, args }
+      return { color }
     },
-    template: '<ColorPicker v-model="color" v-bind="args" />'
-  })
-}
-
-export const AlphaDisabled: Story = {
-  args: { alphaEnabled: false },
-  render: (args) => ({
-    components: { ColorPicker },
-    setup() {
-      const color = ref('#2ecc71')
-      return { color, args }
-    },
-    template: '<ColorPicker v-model="color" v-bind="args" />'
+    template: '<ColorPicker v-model="color" />'
   })
 }
 
 export const Red: Story = {
-  render: (args) => ({
+  render: () => ({
     components: { ColorPicker },
     setup() {
       const color = ref('#ff0000')
-      return { color, args }
+      return { color }
     },
-    template: '<ColorPicker v-model="color" v-bind="args" />'
+    template: '<ColorPicker v-model="color" />'
   })
 }
 
 export const Black: Story = {
-  render: (args) => ({
+  render: () => ({
     components: { ColorPicker },
     setup() {
       const color = ref('#000000')
-      return { color, args }
+      return { color }
     },
-    template: '<ColorPicker v-model="color" v-bind="args" />'
+    template: '<ColorPicker v-model="color" />'
   })
 }
 
 export const White: Story = {
-  render: (args) => ({
+  render: () => ({
     components: { ColorPicker },
     setup() {
       const color = ref('#ffffff')
-      return { color, args }
+      return { color }
     },
-    template: '<ColorPicker v-model="color" v-bind="args" />'
+    template: '<ColorPicker v-model="color" />'
   })
 }
