@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import {
-  SplitterGroup,
-  SplitterPanel,
-  SplitterResizeHandle
-} from 'reka-ui'
+import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 import { computed, useTemplateRef } from 'vue'
 
 import AppBuilder from '@/components/builder/AppBuilder.vue'
