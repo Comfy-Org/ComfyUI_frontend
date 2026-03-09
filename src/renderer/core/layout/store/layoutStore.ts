@@ -917,8 +917,9 @@ class LayoutStoreImpl implements LayoutStore {
       }
     })
 
-    // Notify listeners (after transaction completes)
-    setTimeout(() => this.notifyChange(change), 0)
+    // Notify listeners synchronously so Layout→LiteGraph sync
+    // (useLayoutSync) pushes positions within the same frame.
+    this.notifyChange(change)
   }
 
   /**
