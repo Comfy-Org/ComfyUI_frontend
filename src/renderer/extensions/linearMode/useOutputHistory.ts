@@ -65,7 +65,7 @@ export function useOutputHistory(): {
 
   function filterByOutputNodes(items: ResultItemImpl[]): ResultItemImpl[] {
     const nodeIds = appModeStore.selectedOutputs
-    if (!nodeIds.length) return items
+    if (!nodeIds.length) return []
     return items.filter((r) =>
       nodeIds.some((id) => String(id) === String(r.nodeId))
     )

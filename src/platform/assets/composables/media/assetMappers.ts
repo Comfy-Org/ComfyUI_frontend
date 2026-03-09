@@ -39,6 +39,7 @@ export function mapTaskOutputToAssetItem(
   return {
     id: taskItem.jobId,
     name: output.filename,
+    display_name: output.display_name,
     size: 0,
     created_at: taskItem.executionStartTimestamp
       ? new Date(taskItem.executionStartTimestamp).toISOString()

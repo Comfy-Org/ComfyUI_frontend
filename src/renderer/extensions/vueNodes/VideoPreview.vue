@@ -203,7 +203,6 @@ const handleDownload = () => {
       severity: 'error',
       summary: 'Error',
       detail: t('g.failedToDownloadVideo'),
-      life: 3000,
       group: 'video-preview'
     })
   }

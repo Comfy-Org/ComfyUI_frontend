@@ -952,6 +952,7 @@
     "collapseAll": "全部折叠",
     "color": "颜色",
     "comfy": "舒适",
+    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 徽标",
     "comingSoon": "即将推出",
     "command": "指令",
@@ -1459,12 +1460,14 @@
       "unknownWidget": "组件不可见"
     },
     "cancelThisRun": "取消本次运行",
+    "deleteAllAssets": "删除本次运行的所有资源",
     "downloadAll": "全部下载",
     "dragAndDropImage": "拖拽图片到此处",
     "emptyWorkflowExplanation": "你的工作流为空。你需要先添加一些节点，才能开始构建应用。",
     "enterNodeGraph": "进入节点图",
     "giveFeedback": "提供反馈",
     "graphMode": "图形模式",
+    "hasCreditCost": "需要额外积分",
     "linearMode": "App 模式",
     "loadTemplate": "加载模板",
     "mobileControls": "编辑与运行",
@@ -3385,6 +3388,7 @@
     "addedToWorkspace": "您已被加入 {workspaceName}",
     "inviteAccepted": "邀请已接受",
     "inviteFailed": "接受邀请失败",
+    "switchFailed": "切换工作区失败。请重试。",
     "viewWorkspace": "查看工作区"
   },
   "workspaceAuth": {

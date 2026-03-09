@@ -952,6 +952,7 @@
     "collapseAll": "Свернуть все",
     "color": "Цвет",
     "comfy": "Comfy",
+    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Логотип ComfyOrg",
     "comingSoon": "Скоро будет",
     "command": "Команда",
@@ -1459,12 +1460,14 @@
       "unknownWidget": "Виджет не отображается"
     },
     "cancelThisRun": "Отменить этот запуск",
+    "deleteAllAssets": "Удалить все ресурсы из этого запуска",
     "downloadAll": "Скачать всё",
     "dragAndDropImage": "Перетащите изображение",
     "emptyWorkflowExplanation": "Ваш рабочий процесс пуст. Сначала добавьте несколько узлов, чтобы начать создавать приложение.",
     "enterNodeGraph": "Войти в граф узлов",
     "giveFeedback": "Оставить отзыв",
     "graphMode": "Графовый режим",
+    "hasCreditCost": "Требуются дополнительные кредиты",
     "linearMode": "Режим приложения",
     "loadTemplate": "Загрузить шаблон",
     "mobileControls": "Редактировать и запустить",
@@ -3373,6 +3376,7 @@
     "addedToWorkspace": "Вы были добавлены в {workspaceName}",
     "inviteAccepted": "Приглашение принято",
     "inviteFailed": "Не удалось принять приглашение",
+    "switchFailed": "Не удалось переключить рабочее пространство. Пожалуйста, попробуйте еще раз.",
     "viewWorkspace": "Просмотреть рабочее пространство"
   },
   "workspaceAuth": {
