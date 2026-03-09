@@ -34,17 +34,6 @@ export const Default: Story = {
   })
 }
 
-export const WithAlpha: Story = {
-  render: () => ({
-    components: { ColorPicker },
-    setup() {
-      const color = ref('#3498db80')
-      return { color }
-    },
-    template: '<ColorPicker v-model="color" />'
-  })
-}
-
 export const Red: Story = {
   render: () => ({
     components: { ColorPicker },
