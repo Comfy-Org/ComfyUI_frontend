@@ -159,4 +159,17 @@ describe('ColorPickerButton', () => {
     await button.trigger('click')
     expect(wrapper.findComponent({ name: 'SelectButton' }).exists()).toBe(false)
   })
+
+  it('disables favoriting when the selection has no shared applied color', async () => {
+    canvasStore.selectedItems = [createMockPositionable()]
+    const wrapper = createWrapper()
+
+    await wrapper.find('[data-testid="color-picker-button"]').trigger('click')
+
+    expect(
+      wrapper.find('[data-testid="toggle-favorite-color"]').attributes(
+        'disabled'
+      )
+    ).toBeDefined()
+  })
 })

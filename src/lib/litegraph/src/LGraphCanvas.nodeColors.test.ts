@@ -140,4 +140,65 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
       LiteGraph.ContextMenu = originalContextMenu
     }
   })
+
+  it('does not fan out legacy color actions to an unrelated single selection', async () => {
+    const graph = {
+      beforeChange: vi.fn(),
+      afterChange: vi.fn()
+    }
+
+    const selectedNode = Object.assign(Object.create(LGraphNode.prototype), {
+      graph,
+      color: undefined,
+      bgcolor: undefined
+    }) as LGraphNode
+    const targetNode = Object.assign(Object.create(LGraphNode.prototype), {
+      graph,
+      color: undefined,
+      bgcolor: undefined
+    }) as LGraphNode
+
+    const canvas = {
+      selectedItems: new Set([selectedNode]),
+      setDirty: vi.fn()
+    }
+    LGraphCanvas.active_canvas = canvas as unknown as LGraphCanvas
+
+    let callback:
+      | ((value: { value?: unknown }) => void)
+      | undefined
+    const originalContextMenu = LiteGraph.ContextMenu
+    class MockContextMenu {
+      constructor(
+        _values: ReadonlyArray<{ content?: string } | string | null>,
+        options: { callback?: (value: { value?: unknown }) => void }
+      ) {
+        callback = options.callback
+      }
+    }
+    LiteGraph.ContextMenu = MockContextMenu as unknown as typeof LiteGraph.ContextMenu
+
+    try {
+      LGraphCanvas.onMenuNodeColors(
+        { content: 'Colors', value: null },
+        {} as never,
+        new MouseEvent('contextmenu'),
+        {} as ContextMenu<string | null>,
+        targetNode
+      )
+
+      callback?.({
+        value: {
+          kind: 'custom-picker'
+        }
+      })
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(targetNode.bgcolor).toBe('#abcdef')
+      expect(selectedNode.bgcolor).toBeUndefined()
+    } finally {
+      LiteGraph.ContextMenu = originalContextMenu
+    }
+  })
 })

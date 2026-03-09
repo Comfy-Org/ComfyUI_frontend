@@ -179,7 +179,7 @@ function getLegacyColorTargets(target: LegacyColorTarget): LegacyColorTarget[] {
     isLegacyColorTarget
   )
 
-  return selected.length ? selected : [target]
+  return selected.length > 1 && selected.includes(target) ? selected : [target]
 }
 
 function getAppliedColorForLegacyTarget(target: LegacyColorTarget): string | null {

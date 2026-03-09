@@ -3,10 +3,13 @@ import ColorPicker from 'primevue/colorpicker'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  ColorOption,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { useCustomNodeColorSettings } from '@/composables/graph/useCustomNodeColorSettings'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ColorOption } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 import {
@@ -118,11 +121,9 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
   }
 })
 
-const currentAppliedColor = computed(
-  () => getSharedAppliedColor(nodes) ?? getDefaultCustomNodeColor()
-)
+const currentAppliedColor = computed(() => getSharedAppliedColor(nodes))
 const currentPickerValue = computed(() =>
-  currentAppliedColor.value.replace('#', '')
+  (currentAppliedColor.value ?? getDefaultCustomNodeColor()).replace('#', '')
 )
 
 async function applySavedCustomColor(color: string) {
@@ -134,6 +135,7 @@ async function applySavedCustomColor(color: string) {
 }
 
 async function toggleCurrentColorFavorite() {
+  if (!currentAppliedColor.value) return
   await toggleFavoriteColor(currentAppliedColor.value)
 }
 
@@ -197,8 +199,9 @@ async function onCustomColorUpdate(value: string) {
           @update:model-value="onCustomColorUpdate"
         />
         <button
-          class="flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
+          class="flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover disabled:cursor-not-allowed disabled:opacity-50"
           :title="isCurrentColorFavorite ? t('g.remove') : t('g.favorites')"
+          :disabled="!currentAppliedColor"
           @click="toggleCurrentColorFavorite"
         >
           <i

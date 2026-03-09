@@ -1,10 +1,17 @@
 import { useI18n } from 'vue-i18n'
 
+import { useCustomNodeColorSettings } from '@/composables/graph/useCustomNodeColorSettings'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  applyCustomColorToItems,
+  getDefaultCustomNodeColor,
+  getSharedAppliedColor,
+  pickHexColor
+} from '@/utils/nodeColorCustomization'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
 import type { MenuOption } from './useMoreOptionsMenu'
@@ -19,16 +26,34 @@ export function useGroupMenuOptions() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const canvasRefresh = useCanvasRefresh()
+  const { darkerHeader, favoriteColors, recentColors, rememberRecentColor } =
+    useCustomNodeColorSettings()
   const {
-    applyCustomColor,
     colorOptions,
-    favoriteColors,
-    recentColors,
-    getCurrentAppliedColor,
     isLightTheme,
-    openCustomColorPicker,
     shapeOptions
   } = useNodeCustomization()
+
+  const applyCustomColorToGroup = async (
+    groupContext: LGraphGroup,
+    color: string
+  ) => {
+    applyCustomColorToItems([groupContext], color, {
+      darkerHeader: darkerHeader.value
+    })
+    canvasRefresh.refreshCanvas()
+    await rememberRecentColor(color)
+  }
+
+  const openGroupCustomColorPicker = async (groupContext: LGraphGroup) => {
+    const currentColor = getSharedAppliedColor([groupContext])
+    const pickedColor = await pickHexColor(
+      currentColor ?? getDefaultCustomNodeColor()
+    )
+    if (!pickedColor) return
+
+    await applyCustomColorToGroup(groupContext, pickedColor)
+  }
 
   const getFitGroupToNodesOption = (groupContext: LGraphGroup): MenuOption => ({
     label: 'Fit Group To Nodes',
@@ -112,7 +137,7 @@ export function useGroupMenuOptions() {
         .map((entry) => ({
           ...entry,
           action: () => {
-            void applyCustomColor(entry.color)
+            void applyCustomColorToGroup(groupContext, entry.color)
             bump()
           }
         }))
@@ -122,9 +147,9 @@ export function useGroupMenuOptions() {
         ...customEntries,
         {
           label: t('g.custom'),
-          color: getCurrentAppliedColor() ?? '#353535',
+          color: getSharedAppliedColor([groupContext]) ?? getDefaultCustomNodeColor(),
           action: () => {
-            void openCustomColorPicker()
+            void openGroupCustomColorPicker(groupContext)
             bump()
           }
         }

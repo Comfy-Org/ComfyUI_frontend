@@ -56,9 +56,10 @@
           @update:model-value="onCustomColorUpdate"
         />
         <button
-          class="flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
+          class="flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover disabled:cursor-not-allowed disabled:opacity-50"
           :title="isCurrentColorFavorite ? t('g.remove') : t('g.favorites')"
           data-testid="toggle-favorite-color"
+          :disabled="!currentAppliedColor"
           @click="toggleCurrentColorFavorite"
         >
           <i
@@ -197,11 +198,9 @@ const applyColor = (colorOption: ColorOption | null) => {
 }
 
 const currentColorOption = ref<CanvasColorOption | null>(null)
-const currentAppliedColor = computed(
-  () => getCurrentAppliedColor() ?? getDefaultCustomNodeColor()
-)
+const currentAppliedColor = computed(() => getCurrentAppliedColor())
 const currentPickerValue = computed(() =>
-  currentAppliedColor.value.replace('#', '')
+  (currentAppliedColor.value ?? getDefaultCustomNodeColor()).replace('#', '')
 )
 const currentColor = computed(() =>
   currentColorOption.value
@@ -212,8 +211,11 @@ const currentColor = computed(() =>
 )
 
 const localizedCurrentColorName = computed(() => {
-  if (!currentColorOption.value?.bgcolor) {
+  if (currentAppliedColor.value) {
     return currentAppliedColor.value.toUpperCase()
+  }
+  if (!currentColorOption.value?.bgcolor) {
+    return null
   }
   const colorOption = colorOptions.find(
     (option) =>
@@ -234,6 +236,7 @@ async function onCustomColorUpdate(value: string) {
 }
 
 async function toggleCurrentColorFavorite() {
+  if (!currentAppliedColor.value) return
   await toggleFavoriteColor(currentAppliedColor.value)
 }
 
