@@ -27,7 +27,7 @@
           </SelectItem>
           <SelectSeparator class="max-w-60" />
           <button
-            class="relative flex w-full max-w-60 cursor-pointer select-none items-center justify-between gap-3 rounded-sm border-none bg-transparent p-2 text-sm outline-none hover:bg-secondary-background-hover focus:bg-secondary-background-hover"
+            class="relative flex w-full max-w-60 cursor-pointer items-center justify-between gap-3 rounded-sm border-none bg-transparent p-2 text-sm outline-none select-none hover:bg-secondary-background-hover focus:bg-secondary-background-hover"
             @click.stop="handleImportFromDropdown"
           >
             <span class="truncate">
