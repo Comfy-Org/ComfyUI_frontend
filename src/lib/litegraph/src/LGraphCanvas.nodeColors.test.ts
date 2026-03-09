@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as NodeColorPersistenceModule from '@/utils/nodeColorPersistence'
 
 const settingStoreMock = vi.hoisted(() => ({
   get: vi.fn(() => true)
@@ -13,7 +14,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 vi.mock('@/utils/nodeColorPersistence', async () => {
-  const actual = await vi.importActual<typeof import('@/utils/nodeColorPersistence')>(
+  const actual = await vi.importActual<typeof NodeColorPersistenceModule>(
     '@/utils/nodeColorPersistence'
   )
 
@@ -311,6 +312,66 @@ describe('LGraphCanvas.onMenuNodeColors', () => {
       await Promise.resolve()
 
       expect(targetNode.bgcolor).toBe('#abcdef')
+      expect(selectedNode.bgcolor).toBeUndefined()
+    } finally {
+      LiteGraph.ContextMenu = originalContextMenu
+    }
+  })
+
+  it('keeps legacy group color actions scoped to the clicked group', async () => {
+    const graph = {
+      beforeChange: vi.fn(),
+      afterChange: vi.fn()
+    }
+
+    const selectedNode = Object.assign(Object.create(LGraphNode.prototype), {
+      graph,
+      color: undefined,
+      bgcolor: undefined
+    }) as LGraphNode
+    const targetGroup = Object.assign(Object.create(LGraphGroup.prototype), {
+      graph,
+      color: undefined
+    }) as LGraphGroup
+
+    const canvas = {
+      selectedItems: new Set([selectedNode, targetGroup]),
+      setDirty: vi.fn()
+    }
+    LGraphCanvas.active_canvas = canvas as unknown as LGraphCanvas
+
+    let callback:
+      | ((value: { value?: unknown }) => void)
+      | undefined
+    const originalContextMenu = LiteGraph.ContextMenu
+    class MockContextMenu {
+      constructor(
+        _values: ReadonlyArray<{ content?: string } | string | null>,
+        options: { callback?: (value: { value?: unknown }) => void }
+      ) {
+        callback = options.callback
+      }
+    }
+    LiteGraph.ContextMenu = MockContextMenu as unknown as typeof LiteGraph.ContextMenu
+
+    try {
+      LGraphCanvas.onMenuNodeColors(
+        { content: 'Colors', value: null },
+        {} as never,
+        new MouseEvent('contextmenu'),
+        {} as ContextMenu<string | null>,
+        targetGroup
+      )
+
+      callback?.({
+        value: {
+          kind: 'custom-picker'
+        }
+      })
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(targetGroup.color).toBe('#abcdef')
       expect(selectedNode.bgcolor).toBeUndefined()
     } finally {
       LiteGraph.ContextMenu = originalContextMenu

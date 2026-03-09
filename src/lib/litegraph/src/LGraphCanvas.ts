@@ -177,6 +177,10 @@ function isLegacyColorTarget(item: unknown): item is LegacyColorTarget {
 }
 
 function getLegacyColorTargets(target: LegacyColorTarget): LegacyColorTarget[] {
+  if (target instanceof LGraphGroup) {
+    return [target]
+  }
+
   const selected = Array.from(LGraphCanvas.active_canvas.selectedItems).filter(
     isLegacyColorTarget
   )
