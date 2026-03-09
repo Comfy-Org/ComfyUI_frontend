@@ -80,7 +80,7 @@ export function useNodeMenuOptions() {
       ...customEntries,
       {
         label: t('g.custom'),
-        color: getCurrentAppliedColor() ?? '#353535',
+        color: getCurrentAppliedColor() ?? undefined,
         action: () => {
           void openCustomColorPicker()
         }
