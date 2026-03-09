@@ -28,7 +28,6 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
-import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
@@ -61,8 +60,7 @@ const arrangeInputs = computed(() =>
 
 const inputsWithState = computed(() =>
   appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
-    const node = resolveNode(nodeId)
-    const widget = node?.widgets?.find((w) => w.name === widgetName)
+    const [node, widget] = resolveNodeWidget(nodeId, widgetName)
     if (!node || !widget) {
       return {
         nodeId,
