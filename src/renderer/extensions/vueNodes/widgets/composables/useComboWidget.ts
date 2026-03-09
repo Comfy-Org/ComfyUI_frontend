@@ -46,7 +46,7 @@ const NODE_PLACEHOLDER_MAP: Record<string, string> = {
 
 const bindDynamicValuesOption = (
   widget: IBaseWidget,
-  getValues: () => unknown[]
+  getValues: () => unknown
 ) => {
   const options = widget.options
   let fallbackValues = Array.isArray(options.values)
@@ -58,7 +58,8 @@ const bindDynamicValuesOption = (
     enumerable: true,
     get: () => {
       const values = getValues()
-      return Array.isArray(values) ? values : fallbackValues
+      if (values === undefined || values === null) return fallbackValues
+      return values
     },
     set: (values: unknown[]) => {
       fallbackValues = Array.isArray(values) ? values : fallbackValues
