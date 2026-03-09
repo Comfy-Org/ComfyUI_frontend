@@ -11,31 +11,17 @@ function isResultItemLike(item: unknown): item is ResultItem {
 
   const candidate = item as Record<string, unknown>
 
-  if (
-    candidate.filename !== undefined &&
-    typeof candidate.filename !== 'string'
-  ) {
+  if (typeof candidate.filename !== 'string') {
     return false
   }
 
-  if (
-    candidate.subfolder !== undefined &&
-    typeof candidate.subfolder !== 'string'
-  ) {
+  if (typeof candidate.subfolder !== 'string') {
     return false
   }
 
   if (
     candidate.type !== undefined &&
     !resultItemType.safeParse(candidate.type).success
-  ) {
-    return false
-  }
-
-  if (
-    candidate.filename === undefined &&
-    candidate.subfolder === undefined &&
-    candidate.type === undefined
   ) {
     return false
   }
