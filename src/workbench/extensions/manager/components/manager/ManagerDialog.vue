@@ -413,9 +413,23 @@ const tabEmptyStateKeys: Partial<Record<ManagerTab, string>> = {
   [ManagerTab.Missing]: 'missing'
 }
 
+const managerApiDependentTabs = new Set<ManagerTab>([
+  ManagerTab.AllInstalled,
+  ManagerTab.UpdateAvailable,
+  ManagerTab.Conflicting
+])
+
+const isManagerErrorRelevant = computed(() => {
+  const tabId = selectedTab.value?.id as ManagerTab | undefined
+  return (
+    !!comfyManagerStore.error &&
+    managerApiDependentTabs.has(tabId as ManagerTab)
+  )
+})
+
 // Empty state messages based on current tab and search state
 const emptyStateTitle = computed(() => {
-  if (comfyManagerStore.error) return t('manager.errorConnecting')
+  if (isManagerErrorRelevant.value) return t('manager.errorConnecting')
   if (searchQuery.value) return t('manager.noResultsFound')
 
   const tabId = selectedTab.value?.id as ManagerTab | undefined
@@ -427,7 +441,7 @@ const emptyStateTitle = computed(() => {
 })
 
 const emptyStateMessage = computed(() => {
-  if (comfyManagerStore.error) return t('manager.tryAgainLater')
+  if (isManagerErrorRelevant.value) return t('manager.tryAgainLater')
   if (searchQuery.value) {
     const baseMessage = t('manager.tryDifferentSearch')
     if (isLegacyManagerSearch.value) {
