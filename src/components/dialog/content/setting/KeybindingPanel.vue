@@ -1,8 +1,26 @@
 <template>
   <div class="keybinding-panel flex flex-col gap-2">
-    <SearchBox
-      v-model="filters['global'].value"
-      :placeholder="$t('g.searchPlaceholder', { subject: $t('g.keybindings') })"
+    <Teleport defer to="#keybinding-panel-header">
+      <SearchBox
+        v-model="filters['global'].value"
+        class="max-w-96"
+        :placeholder="
+          $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
+        "
+      />
+    </Teleport>
+
+    <Teleport defer to="#keybinding-panel-actions">
+      <DropdownMenu
+        :entries="menuEntries"
+        icon="icon-[lucide--ellipsis]"
+        item-class="text-sm gap-2"
+      />
+    </Teleport>
+
+    <KeybindingPresetToolbar
+      :preset-names="presetNames"
+      :on-presets-changed="refreshPresetList"
     />
 
     <DataTable
@@ -131,19 +149,11 @@
         </Button>
       </template>
     </Dialog>
-    <Button
-      v-tooltip="$t('g.resetAllKeybindingsTooltip')"
-      class="mt-4 w-full"
-      variant="destructive-textonly"
-      @click="resetAllKeybindings"
-    >
-      <i class="pi pi-replay" />
-      {{ $t('g.resetAll') }}
-    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { MenuItem } from 'primevue/menuitem'
 import { FilterMatchMode } from '@primevue/core/api'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -151,19 +161,23 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
-import { useToast } from 'primevue/usetoast'
 import { computed, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDialogService } from '@/services/dialogService'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
+import KeybindingPresetToolbar from './keybinding/KeybindingPresetToolbar.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
 
 const filters = ref({
@@ -172,9 +186,95 @@ const filters = ref({
 
 const keybindingStore = useKeybindingStore()
 const keybindingService = useKeybindingService()
+const presetService = useKeybindingPresetService()
+const settingStore = useSettingStore()
 const commandStore = useCommandStore()
+const dialogService = useDialogService()
 const { t } = useI18n()
 
+const presetNames = ref<string[]>([])
+
+async function refreshPresetList() {
+  presetNames.value = (await presetService.listPresets()) ?? []
+}
+
+async function initPresets() {
+  await refreshPresetList()
+  const currentName = settingStore.get('Comfy.Keybinding.CurrentPreset')
+  keybindingStore.currentPresetName = currentName
+  if (currentName !== 'default') {
+    const preset = await presetService.loadPreset(currentName)
+    if (preset) {
+      keybindingStore.savedPresetData = preset
+    }
+  }
+}
+
+initPresets()
+
+// "..." menu entries (teleported to header)
+async function saveAsNewPreset() {
+  const name = await dialogService.prompt({
+    title: t('g.keybindingPresets.saveAsNewPreset'),
+    message: t('g.keybindingPresets.presetNamePrompt'),
+    defaultValue: ''
+  })
+  if (!name) return
+  await presetService.savePreset(name)
+  refreshPresetList()
+}
+
+async function handleDeletePreset() {
+  await presetService.deletePreset(keybindingStore.currentPresetName)
+  refreshPresetList()
+}
+
+async function handleImportPreset() {
+  await presetService.importPreset()
+  refreshPresetList()
+}
+
+const showSaveAsNew = computed(
+  () =>
+    keybindingStore.currentPresetName === 'default' ||
+    keybindingStore.isCurrentPresetModified
+)
+
+const menuEntries = computed<MenuItem[]>(() => [
+  ...(showSaveAsNew.value
+    ? [
+        {
+          label: t('g.keybindingPresets.saveAsNewPreset'),
+          icon: 'icon-[lucide--save]',
+          command: saveAsNewPreset
+        }
+      ]
+    : []),
+  {
+    label: t('g.keybindingPresets.resetToDefault'),
+    icon: 'icon-[lucide--rotate-cw]',
+    command: () =>
+      presetService.switchPreset('default').then(() => refreshPresetList())
+  },
+  {
+    label: t('g.keybindingPresets.deletePreset'),
+    icon: 'icon-[lucide--trash-2]',
+    disabled: keybindingStore.currentPresetName === 'default',
+    command: handleDeletePreset
+  },
+  {
+    label: t('g.keybindingPresets.importPreset'),
+    icon: 'icon-[lucide--file-input]',
+    command: handleImportPreset
+  },
+  {
+    label: t('g.keybindingPresets.exportPreset'),
+    icon: 'icon-[lucide--file-output]',
+    command: () => presetService.exportPreset()
+  }
+])
+
+// Keybinding table logic
 interface ICommandData {
   id: string
   keybinding: KeybindingImpl | null
@@ -205,7 +305,6 @@ const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
     return null
   }
 
-  // If the new keybinding is the same as the current editing command, then don't show the error
   if (
     currentEditingCommand.value.keybinding?.combo?.equals(
       newBindingKeyCombo.value
@@ -231,7 +330,6 @@ function editKeybinding(commandData: ICommandData) {
 
 watchEffect(() => {
   if (editDialogVisible.value) {
-    // nextTick doesn't work here, so we use a timeout instead
     setTimeout(() => {
       // @ts-expect-error - $el is an internal property of the InputText component
       keybindingInput.value?.$el?.focus()
@@ -247,7 +345,6 @@ async function removeKeybinding(commandData: ICommandData) {
 }
 
 async function captureKeybinding(event: KeyboardEvent) {
-  // Allow the use of keyboard shortcuts when adding keyboard shortcuts
   if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
     switch (event.key) {
       case 'Escape':
@@ -288,17 +385,5 @@ async function resetKeybinding(commandData: ICommandData) {
       `No changes made when resetting keybinding for command: ${commandData.id}`
     )
   }
-}
-
-const toast = useToast()
-async function resetAllKeybindings() {
-  keybindingStore.resetAllKeybindings()
-  await keybindingService.persistUserKeybindings()
-  toast.add({
-    severity: 'info',
-    summary: 'Info',
-    detail: 'All keybindings reset',
-    life: 3000
-  })
 }
 </script>
