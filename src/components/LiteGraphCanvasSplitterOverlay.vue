@@ -15,18 +15,18 @@
         <slot name="side-toolbar" />
       </div>
 
-      <Splitter
+      <SplitterGroup
         :key="splitterRefreshKey"
-        class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
-        :state-key="isSelectMode ? 'builder-splitter' : sidebarStateKey"
-        state-storage="local"
-        @resizestart="onResizestart"
+        direction="horizontal"
+        :auto-save-id="isSelectMode ? 'builder-splitter' : sidebarStateKey"
+        class="pointer-events-none flex-1 overflow-hidden"
       >
         <!-- First panel: sidebar when left, properties when right -->
         <SplitterPanel
           v-if="
             !focusMode && (sidebarLocation === 'left' || showOffsideSplitter)
           "
+          :order="1"
           :class="
             sidebarLocation === 'left'
               ? cn(
@@ -38,7 +38,7 @@
           :min-size="
             sidebarLocation === 'left' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
           "
-          :size="SIDE_PANEL_SIZE"
+          :default-size="SIDE_PANEL_SIZE"
           :style="firstPanelStyle"
           :role="sidebarLocation === 'left' ? 'complementary' : undefined"
           :aria-label="
@@ -54,41 +54,69 @@
             name="right-side-panel"
           />
         </SplitterPanel>
+        <SplitterResizeHandle
+          v-if="
+            !focusMode && (sidebarLocation === 'left' || showOffsideSplitter)
+          "
+          :class="
+            cn(
+              'splitter-resize-handle pointer-events-auto',
+              sidebarLocation === 'left' && !sidebarPanelVisible && 'hidden'
+            )
+          "
+        />
 
         <!-- Main panel (always present) -->
-        <SplitterPanel :size="CENTER_PANEL_SIZE" class="flex flex-col">
+        <SplitterPanel
+          :order="2"
+          :default-size="CENTER_PANEL_SIZE"
+          class="flex flex-col"
+        >
           <slot name="topmenu" :sidebar-panel-visible />
 
-          <Splitter
-            class="splitter-overlay-bottom pointer-events-none mx-1 mb-1 flex-1 border-none bg-transparent"
-            layout="vertical"
-            :pt:gutter="
-              cn(
-                'rounded-t-lg',
-                !(bottomPanelVisible && !focusMode) && 'hidden'
-              )
-            "
-            state-key="bottom-panel-splitter"
-            state-storage="local"
-            @resizestart="onResizestart"
+          <SplitterGroup
+            direction="vertical"
+            auto-save-id="bottom-panel-splitter"
+            class="splitter-overlay-bottom pointer-events-none mx-1 mb-1 flex-1"
           >
-            <SplitterPanel class="graph-canvas-panel relative">
+            <SplitterPanel :order="1" class="graph-canvas-panel relative">
               <slot name="graph-canvas-panel" />
             </SplitterPanel>
+            <SplitterResizeHandle
+              :class="
+                cn(
+                  'splitter-resize-handle pointer-events-auto translate-y-[5px] rounded-t-lg',
+                  !(bottomPanelVisible && !focusMode) && 'hidden'
+                )
+              "
+            />
             <SplitterPanel
               v-show="bottomPanelVisible && !focusMode"
+              :order="2"
               class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg"
             >
               <slot name="bottom-panel" />
             </SplitterPanel>
-          </Splitter>
+          </SplitterGroup>
         </SplitterPanel>
 
         <!-- Last panel: properties when left, sidebar when right -->
+        <SplitterResizeHandle
+          v-if="
+            !focusMode && (sidebarLocation === 'right' || showOffsideSplitter)
+          "
+          :class="
+            cn(
+              'splitter-resize-handle pointer-events-auto',
+              sidebarLocation === 'right' && !sidebarPanelVisible && 'hidden'
+            )
+          "
+        />
         <SplitterPanel
           v-if="
             !focusMode && (sidebarLocation === 'right' || showOffsideSplitter)
           "
+          :order="3"
           :class="
             sidebarLocation === 'right'
               ? cn(
@@ -100,7 +128,7 @@
           :min-size="
             sidebarLocation === 'right' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
           "
-          :size="SIDE_PANEL_SIZE"
+          :default-size="SIDE_PANEL_SIZE"
           :style="lastPanelStyle"
           :role="sidebarLocation === 'right' ? 'complementary' : undefined"
           :aria-label="
@@ -113,7 +141,7 @@
             name="side-bar-panel"
           />
         </SplitterPanel>
-      </Splitter>
+      </SplitterGroup>
     </div>
   </div>
 </template>
@@ -121,9 +149,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import Splitter from 'primevue/splitter'
-import type { SplitterResizeStartEvent } from 'primevue/splitter'
-import SplitterPanel from 'primevue/splitterpanel'
+import {
+  SplitterGroup,
+  SplitterPanel,
+  SplitterResizeHandle
+} from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -174,13 +204,6 @@ const sidebarStateKey = computed(() => {
       (activeSidebarTabId.value ?? 'default-sidebar')
 })
 
-/**
- * Avoid triggering default behaviors during drag-and-drop, such as text selection.
- */
-function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
-  event.preventDefault()
-}
-
 /*
  * Force refresh the splitter when right panel visibility or sidebar location changes
  * to recalculate the width and panel order
@@ -205,23 +228,9 @@ const lastPanelStyle = computed(() => {
 </script>
 
 <style scoped>
-:deep(.p-splitter-gutter) {
-  pointer-events: auto;
-}
-
-:deep(.p-splitter-gutter:hover),
-:deep(.p-splitter-gutter[data-p-gutter-resizing='true']) {
+.splitter-resize-handle[data-state='hover'],
+.splitter-resize-handle[data-state='drag'] {
   transition: background-color 0.2s ease 300ms;
   background-color: var(--p-primary-color);
-}
-
-/* Hide sidebar gutter when sidebar is not visible */
-:deep(.side-bar-panel[style*='display: none'] + .p-splitter-gutter),
-:deep(.p-splitter-gutter + .side-bar-panel[style*='display: none']) {
-  display: none;
-}
-
-.splitter-overlay-bottom :deep(.p-splitter-gutter) {
-  transform: translateY(5px);
 }
 </style>
