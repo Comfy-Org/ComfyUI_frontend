@@ -20,6 +20,7 @@ const { setMode } = useAppMode()
 const executionErrorStore = useExecutionErrorStore()
 const { buildDocsUrl, staticUrls } = useExternalLink()
 const { allErrorGroups } = useErrorGroups('', t)
+const { copyToClipboard } = useCopyToClipboard()
 
 const guideUrl = buildDocsUrl('troubleshooting/overview', {
   includeLocale: true
@@ -67,7 +68,7 @@ const allErrors = computed(() =>
 )
 
 function copy(obj: unknown) {
-  useCopyToClipboard().copyToClipboard(JSON.stringify(obj))
+  copyToClipboard(JSON.stringify(obj))
 }
 </script>
 <template>
