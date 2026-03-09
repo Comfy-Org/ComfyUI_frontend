@@ -37,6 +37,7 @@ flowchart TD
 #### Q: `pnpm dev` or `nx serve` gets stuck and won't start
 
 **Symptoms:**
+
 - Command hangs on "nx serve"
 - Dev server doesn't respond
 - Terminal appears frozen
@@ -44,11 +45,13 @@ flowchart TD
 **Solutions (try in order):**
 
 1. **First attempt - Reinstall dependencies:**
+
    ```bash
    pnpm i
    ```
 
 2. **Second attempt - Clean build cache:**
+
    ```bash
    pnpm clean
    ```
@@ -59,6 +62,7 @@ flowchart TD
    ```
 
 **Why this happens:**
+
 - Corrupted dependency cache
 - Outdated lock files after branch switching
 - Incomplete previous installations
@@ -69,12 +73,14 @@ flowchart TD
 #### Q: Port conflicts - "Address already in use"
 
 **Symptoms:**
+
 - Error: `EADDRINUSE` or "port already in use"
 - Dev server fails to start
 
 **Solutions:**
 
 1. **Find and kill the process using the port:**
+
    ```bash
    # On Linux/Mac
    lsof -ti:5173 | xargs kill -9
@@ -99,17 +105,20 @@ flowchart TD
 #### Q: TypeScript errors after pulling latest changes
 
 **Symptoms:**
+
 - Type errors in files you didn't modify
 - "Cannot find module" errors
 
 **Solutions:**
 
 1. **Rebuild TypeScript references:**
+
    ```bash
    pnpm build
    ```
 
 2. **Clean and reinstall:**
+
    ```bash
    pnpm clean && pnpm i
    ```
@@ -122,12 +131,14 @@ flowchart TD
 #### Q: "Workspace not found" or monorepo errors
 
 **Symptoms:**
+
 - pnpm can't find workspace packages
 - Import errors between packages
 
 **Solutions:**
 
 1. **Verify you're in the project root:**
+
    ```bash
    pwd  # Should be in ComfyUI_frontend/
    ```
@@ -145,12 +156,14 @@ flowchart TD
 #### Q: "Package not found" after adding a dependency
 
 **Symptoms:**
+
 - Module not found after `pnpm add`
 - Import errors for newly installed packages
 
 **Solutions:**
 
 1. **Ensure you installed in the correct workspace:**
+
    ```bash
    # For the main app
    pnpm --filter web add <package>
@@ -170,12 +183,14 @@ flowchart TD
 #### Q: Lock file conflicts after merge/rebase
 
 **Symptoms:**
+
 - Git conflicts in `pnpm-lock.yaml`
 - Dependency resolution errors
 
 **Solutions:**
 
 1. **Regenerate lock file:**
+
    ```bash
    rm pnpm-lock.yaml
    pnpm install
@@ -194,17 +209,20 @@ flowchart TD
 #### Q: Tests fail locally but pass in CI
 
 **Symptoms:**
+
 - Flaky tests
 - Different results between local and CI
 
 **Solutions:**
 
 1. **Run tests in CI mode:**
+
    ```bash
    CI=true pnpm test:unit
    ```
 
 2. **Clear test cache:**
+
    ```bash
    pnpm test:unit --no-cache
    ```
@@ -222,12 +240,14 @@ flowchart TD
 #### Q: Changes from another branch appearing in my branch
 
 **Symptoms:**
+
 - Uncommitted changes not related to your work
 - Dirty working directory
 
 **Solutions:**
 
 1. **Stash and reinstall:**
+
    ```bash
    git stash
    pnpm install
@@ -254,6 +274,7 @@ flowchart TD
 ## Contributing to This Guide
 
 Found a solution to a common problem? Please:
+
 1. Open a PR to add it to this guide
 2. Follow the FAQ format above
 3. Include the symptoms, solutions, and why it happens
