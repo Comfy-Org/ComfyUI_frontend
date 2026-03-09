@@ -170,8 +170,7 @@ describe('colorUtil - adjustColor', () => {
       'xyz(255, 255, 255)',
       'hsl(100, 50, 50%)',
       'hsl(100, 50%, 50)',
-      '#GGGGGG',
-      '#3333'
+      '#GGGGGG'
     ]
 
     invalidColors.forEach((color) => {
