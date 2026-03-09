@@ -509,19 +509,22 @@ onMounted(async () => {
     )
   }
 
-  // @ts-expect-error fixme ts strict error
-  await comfyApp.setup(canvasRef.value)
-  canvasStore.canvas = comfyApp.canvas
-  canvasStore.canvas.render_canvas_border = false
-  workspaceStore.spinner = false
-  useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
+  try {
+    // @ts-expect-error fixme ts strict error
+    await comfyApp.setup(canvasRef.value)
+    canvasStore.canvas = comfyApp.canvas
+    canvasStore.canvas.render_canvas_border = false
+    useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
 
-  window.app = comfyApp
-  window.graph = comfyApp.graph
+    window.app = comfyApp
+    window.graph = comfyApp.graph
 
-  comfyAppReady.value = true
+    comfyAppReady.value = true
 
-  vueNodeLifecycle.setupEmptyGraphListener()
+    vueNodeLifecycle.setupEmptyGraphListener()
+  } finally {
+    workspaceStore.spinner = false
+  }
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
