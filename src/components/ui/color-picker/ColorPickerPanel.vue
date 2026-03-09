@@ -65,21 +65,23 @@ const { t } = useI18n()
         </SelectContent>
       </Select>
       <div
-        class="flex h-6 flex-1 items-center gap-2 rounded-sm bg-secondary-background px-1 text-xs text-node-component-slot-text"
+        class="flex h-6 min-w-0 flex-1 items-center gap-1 rounded-sm bg-secondary-background px-1 text-xs text-node-component-slot-text"
       >
-        <div class="flex flex-1 items-center gap-1">
-          <template v-if="displayMode === 'hex'">
-            <span class="flex-1 text-center">{{ hexString }}</span>
-          </template>
-          <template v-else>
-            <span class="w-6 text-center">{{ rgb.r }}</span>
-            <span class="w-6 text-center">{{ rgb.g }}</span>
-            <span class="w-6 text-center">{{ rgb.b }}</span>
-          </template>
-        </div>
-        <template v-if="alphaEnabled">
-          <span class="border-l border-border-subtle pl-1">{{ hsva.a }}%</span>
+        <template v-if="displayMode === 'hex'">
+          <span class="min-w-0 flex-1 truncate text-center">{{
+            hexString
+          }}</span>
         </template>
+        <template v-else>
+          <span class="w-6 shrink-0 text-center">{{ rgb.r }}</span>
+          <span class="w-6 shrink-0 text-center">{{ rgb.g }}</span>
+          <span class="w-6 shrink-0 text-center">{{ rgb.b }}</span>
+        </template>
+        <span
+          v-if="alphaEnabled"
+          class="shrink-0 border-l border-border-subtle pl-1"
+          >{{ hsva.a }}%</span
+        >
       </div>
     </div>
   </div>
