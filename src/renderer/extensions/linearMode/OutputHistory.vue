@@ -4,6 +4,7 @@ import {
   useInfiniteScroll,
   useResizeObserver
 } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import type { ComponentPublicInstance } from 'vue'
 import {
   computed,
@@ -26,11 +27,13 @@ import type {
 import OutputPreviewItem from '@/renderer/extensions/linearMode/OutputPreviewItem.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const { outputs, allOutputs, selectFirstHistory, mayBeActiveWorkflowPending } =
   useOutputHistory()
+const { hasOutputs } = storeToRefs(useAppModeStore())
 const queueStore = useQueueStore()
 const store = useLinearOutputStore()
 const workflowStore = useWorkflowStore()
@@ -156,8 +159,10 @@ watch(
     const inProgress = store.activeWorkflowInProgressItems
     if (inProgress.length > 0) {
       store.selectAsLatest(`slot:${inProgress[0].id}`)
-    } else {
+    } else if (hasOutputs.value) {
       selectFirstHistory()
+    } else {
+      store.selectAsLatest(null)
     }
   },
   { immediate: true }
@@ -180,13 +185,13 @@ watch(
       : undefined
 
     if (!sv || sv.kind !== 'history') {
-      selectFirstHistory()
+      if (hasOutputs.value) selectFirstHistory()
       return
     }
 
     const wasFirst = sv.assetId === oldAssets[0]?.id
     if (wasFirst || !newAssets.some((a) => a.id === sv.assetId)) {
-      selectFirstHistory()
+      if (hasOutputs.value) selectFirstHistory()
     }
   }
 )
