@@ -15,6 +15,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import MobileError from '@/renderer/extensions/linearMode/MobileError.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -194,7 +195,11 @@ const menuEntries = computed<MenuItem[]>(() => [
         <div
           class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
         >
-          <LinearPreview mobile @navigate-controls="activeIndex = 0" />
+          <MobileError
+            v-if="executionErrorStore.isErrorOverlayOpen"
+            @navigate-controls="activeIndex = 0"
+          />
+          <LinearPreview v-else mobile @navigate-controls="activeIndex = 0" />
         </div>
         <AssetsSidebarTab
           class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"

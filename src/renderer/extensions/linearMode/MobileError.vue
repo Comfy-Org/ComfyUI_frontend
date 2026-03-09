@@ -57,7 +57,11 @@ const allErrors = computed(() =>
     if (group.type !== 'execution') return [group.title]
 
     return group.cards.flatMap((c) =>
-      c.errors.map((e) => `${c.title} (${e.details}): ${e.message}`)
+      c.errors.map((e) =>
+        e.details
+          ? `${c.title} (${e.details}): ${e.message}`
+          : `${c.title}: ${e.message}`
+      )
     )
   })
 )
@@ -156,7 +160,11 @@ function copy(obj: unknown) {
       <Button variant="textonly" size="lg" @click="setMode('graph')">
         {{ t('linearMode.viewGraph') }}
       </Button>
-      <Button size="lg" @click="copy(accessibleErrors)">
+      <Button
+        v-if="accessibleErrors.length"
+        size="lg"
+        @click="copy(accessibleErrors)"
+      >
         {{ t('importFailed.copyError') }}
         <i class="icon-[lucide--copy]" />
       </Button>
