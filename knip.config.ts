@@ -46,6 +46,9 @@ const config: KnipConfig = {
     '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
+    // Pending integration - accessible color picker components
+    'src/components/ui/color-picker/ColorPickerSaturationValue.vue',
+    'src/components/ui/color-picker/ColorPickerSlider.vue',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js'
   ],
