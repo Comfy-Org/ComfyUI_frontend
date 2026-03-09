@@ -13,7 +13,7 @@ import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOu
 const SCALE_FACTOR = 1.2
 
 export function ensureCorrectLayoutScale(
-  renderer: RendererType = 'LG',
+  renderer?: RendererType,
   targetGraph?: LGraph
 ) {
   const autoScaleLayoutSetting = useSettingStore().get(
@@ -29,14 +29,13 @@ export function ensureCorrectLayoutScale(
 
   const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-  const needsUpscale = renderer === 'LG' && shouldRenderVueNodes.value
-  const needsDownscale = renderer === 'Vue' && !shouldRenderVueNodes.value
+  const savedRenderer = graph.extra.workflowRendererVersion ?? renderer
+  if (!savedRenderer) return
 
-  if (!needsUpscale && !needsDownscale) {
-    // Don't scale, but ensure workflowRendererVersion is set for future checks
-    graph.extra.workflowRendererVersion ??= renderer
-    return
-  }
+  const needsUpscale = savedRenderer === 'LG' && shouldRenderVueNodes.value
+  const needsDownscale = savedRenderer === 'Vue' && !shouldRenderVueNodes.value
+
+  if (!needsUpscale && !needsDownscale) return
 
   const lgBounds = createBounds(graph.nodes)
 
