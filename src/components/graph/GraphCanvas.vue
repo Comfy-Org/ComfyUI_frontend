@@ -81,7 +81,6 @@
           ? 'Execution error'
           : null
       "
-      :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
     />
   </TransformPane>
