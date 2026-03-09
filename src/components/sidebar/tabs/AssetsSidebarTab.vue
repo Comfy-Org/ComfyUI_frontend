@@ -467,7 +467,7 @@ const galleryItems = computed(() => {
 
     Object.defineProperty(resultItem, 'url', {
       get() {
-        return asset.preview_url || ''
+        return asset.url || asset.preview_url || ''
       },
       configurable: true
     })

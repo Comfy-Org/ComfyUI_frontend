@@ -1,6 +1,7 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
@@ -44,8 +45,9 @@ export function mapTaskOutputToAssetItem(
       ? new Date(taskItem.executionStartTimestamp).toISOString()
       : new Date().toISOString(),
     tags: ['output'],
-    preview_url: output.url,
-    user_metadata: metadata
+    preview_url: output.previewUrl,
+    user_metadata: metadata,
+    url: output.url
   }
 }
 
@@ -62,6 +64,8 @@ export function mapInputFileToAssetItem(
   directory: 'input' | 'output' = 'input'
 ): AssetItem {
   const params = new URLSearchParams({ filename, type: directory })
+  const url = api.apiURL(`/view?${params}`)
+  appendCloudResParam(params, filename)
 
   return {
     id: `${directory}-${index}-${filename}`,
@@ -69,6 +73,7 @@ export function mapInputFileToAssetItem(
     size: 0,
     created_at: new Date().toISOString(),
     tags: [directory],
-    preview_url: api.apiURL(`/view?${params}`)
+    preview_url: api.apiURL(`/view?${params}`),
+    url
   }
 }

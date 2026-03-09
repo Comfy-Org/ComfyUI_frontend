@@ -499,7 +499,8 @@ export const zAssetInfo = z.object({
   storage_url: z.string(),
   model: z.boolean(),
   public: z.boolean(),
-  in_library: z.boolean()
+  in_library: z.boolean(),
+  url: z.string().optional()
 })
 
 export type AssetInfo = z.infer<typeof zAssetInfo>

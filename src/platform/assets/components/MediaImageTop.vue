@@ -21,7 +21,6 @@
 <script setup lang="ts">
 import { useImage, whenever } from '@vueuse/core'
 
-import { appendCloudResUrl } from '@/platform/distribution/cloudPreviewUtil'
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 const { asset } = defineProps<{
@@ -34,7 +33,7 @@ const emit = defineEmits<{
 }>()
 
 const { state, error, isReady } = useImage({
-  src: asset.src ? appendCloudResUrl(asset.src) : '',
+  src: asset.src ?? '',
   alt: asset.display_name || asset.name
 })
 
