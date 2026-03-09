@@ -82,23 +82,20 @@ const mappedSelections = computed(() => {
     if (node?.mode !== LGraphEventMode.ALWAYS) continue
 
     const nodeData = nodeToNodeData(node)
-    remove(nodeData.widgets ?? [], (w) => !!w.slotMetadata?.linked)
-    if (node.isSubgraphNode()) {
-      remove(nodeData.widgets ?? [], (vueWidget) => {
-        const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
-        return !inputGroup.some(
-          (subWidget) =>
-            isPromotedWidgetView(subWidget) &&
-            subWidget.sourceNodeId === storeNodeId &&
-            subWidget.sourceWidgetName === vueWidget.storeName
-        )
-      })
-    } else {
-      remove(
-        nodeData.widgets ?? [],
-        (w) => !inputGroup.some(({ name }) => w.name === name)
+    remove(nodeData.widgets ?? [], (vueWidget) => {
+      if (vueWidget.slotMetadata?.linked) return true
+
+      if (!node.isSubgraphNode())
+        return !inputGroup.some((w) => w.name === vueWidget.name)
+
+      const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
+      return !inputGroup.some(
+        (subWidget) =>
+          isPromotedWidgetView(subWidget) &&
+          subWidget.sourceNodeId === storeNodeId &&
+          subWidget.sourceWidgetName === vueWidget.storeName
       )
-    }
+    })
     for (const widget of nodeData.widgets ?? []) {
       widget.slotMetadata = undefined
       widget.nodeId = String(node.id)
