@@ -5,7 +5,7 @@
     :aria-label="
       asset
         ? $t('assetBrowser.ariaLabel.assetCard', {
-            name: asset.display_name || asset.name,
+            name: getAssetDisplayName(asset),
             type: fileKind
           })
         : $t('assetBrowser.ariaLabel.loadingAsset')
@@ -152,6 +152,7 @@ import { cn } from '@/utils/tailwindUtil'
 import { getAssetType } from '../composables/media/assetMappers'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
+import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
