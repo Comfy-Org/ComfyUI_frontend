@@ -136,6 +136,7 @@ import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -159,6 +160,7 @@ const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const executionErrorStore = useExecutionErrorStore()
+const actionBarButtonStore = useActionBarButtonStore()
 const queueUIStore = useQueueUIStore()
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
@@ -179,6 +181,7 @@ const isActionbarFloating = computed(
  * and does not contribute to the container's visual layout).
  */
 const hasDockedButtons = computed(() => {
+  if (actionBarButtonStore.buttons.length > 0) return true
   if (isLoggedIn.value && !isIntegratedTabBar.value) return true
   if (isDesktop && !isIntegratedTabBar.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
