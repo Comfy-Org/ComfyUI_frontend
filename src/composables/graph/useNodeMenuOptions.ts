@@ -11,8 +11,18 @@ import type { NodeSelectionState } from './useSelectionState'
  */
 export function useNodeMenuOptions() {
   const { t } = useI18n()
-  const { shapeOptions, applyShape, applyColor, colorOptions, isLightTheme } =
-    useNodeCustomization()
+  const {
+    shapeOptions,
+    applyShape,
+    applyColor,
+    applyCustomColor,
+    colorOptions,
+    favoriteColors,
+    recentColors,
+    getCurrentAppliedColor,
+    isLightTheme,
+    openCustomColorPicker
+  } = useNodeCustomization()
   const {
     adjustNodeSize,
     toggleNodeCollapse,
@@ -29,7 +39,7 @@ export function useNodeMenuOptions() {
   )
 
   const colorSubmenu = computed(() => {
-    return colorOptions.map((colorOption) => ({
+    const presetEntries = colorOptions.map((colorOption) => ({
       label: colorOption.localizedName,
       color: isLightTheme.value
         ? colorOption.value.light
@@ -37,6 +47,45 @@ export function useNodeMenuOptions() {
       action: () =>
         applyColor(colorOption.name === 'noColor' ? null : colorOption)
     }))
+
+    const presetColors = new Set(
+      colorOptions.map((colorOption) => colorOption.value.dark.toLowerCase())
+    )
+    const customEntries = [
+      ...favoriteColors.value.map((color) => ({
+        label: `${t('g.favorites')}: ${color.toUpperCase()}`,
+        color
+      })),
+      ...recentColors.value.map((color) => ({
+        label: `${t('modelLibrary.sortRecent')}: ${color.toUpperCase()}`,
+        color
+      }))
+    ]
+      .filter((entry, index, entries) => {
+        return (
+          entries.findIndex((candidate) => candidate.color === entry.color) ===
+          index
+        )
+      })
+      .filter((entry) => !presetColors.has(entry.color.toLowerCase()))
+      .map((entry) => ({
+        ...entry,
+        action: () => {
+          void applyCustomColor(entry.color)
+        }
+      }))
+
+    return [
+      ...presetEntries,
+      ...customEntries,
+      {
+        label: t('g.custom'),
+        color: getCurrentAppliedColor() ?? '#353535',
+        action: () => {
+          void openCustomColorPicker()
+        }
+      }
+    ]
   })
 
   const getAdjustSizeOption = (): MenuOption => ({

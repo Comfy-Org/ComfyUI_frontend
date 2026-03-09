@@ -2,11 +2,17 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCustomNodeColorSettings } from '@/composables/graph/useCustomNodeColorSettings'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ColorOption } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
+import {
+  applyCustomColorToItems,
+  getDefaultCustomNodeColor,
+  getSharedAppliedColor
+} from '@/utils/nodeColorCustomization'
 import { cn } from '@/utils/tailwindUtil'
 
 import LayoutField from './LayoutField.vue'
@@ -16,7 +22,7 @@ import LayoutField from './LayoutField.vue'
  * Here, we only care about the getColorOption and setColorOption methods,
  * and do not concern ourselves with other methods.
  */
-type PickedNode = Pick<LGraphNode, 'getColorOption' | 'setColorOption'>
+type PickedNode = LGraphNode | LGraphGroup
 
 const { nodes } = defineProps<{ nodes: PickedNode[] }>()
 const emit = defineEmits<{ (e: 'changed'): void }>()
@@ -24,6 +30,14 @@ const emit = defineEmits<{ (e: 'changed'): void }>()
 const { t } = useI18n()
 
 const colorPaletteStore = useColorPaletteStore()
+const {
+  darkerHeader,
+  favoriteColors,
+  isFavoriteColor,
+  recentColors,
+  rememberRecentColor,
+  toggleFavoriteColor
+} = useCustomNodeColorSettings()
 
 type NodeColorOption = {
   name: string
@@ -102,43 +116,127 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
     emit('changed')
   }
 })
+
+const currentAppliedColor = computed(
+  () => getSharedAppliedColor(nodes) ?? getDefaultCustomNodeColor()
+)
+
+async function applySavedCustomColor(color: string) {
+  applyCustomColorToItems(nodes, color, {
+    darkerHeader: darkerHeader.value
+  })
+  await rememberRecentColor(color)
+  emit('changed')
+}
+
+async function toggleCurrentColorFavorite() {
+  await toggleFavoriteColor(currentAppliedColor.value)
+}
+
+const isCurrentColorFavorite = computed(() =>
+  isFavoriteColor(currentAppliedColor.value)
+)
+
+async function onCustomColorInput(event: Event) {
+  await applySavedCustomColor((event.target as HTMLInputElement).value)
+}
 </script>
 
 <template>
   <LayoutField :label="t('rightSidePanel.color')">
-    <div
-      class="grid grid-cols-5 justify-items-center gap-1 rounded-lg border-none bg-secondary-background p-1"
-    >
-      <button
-        v-for="option of colorOptions"
-        :key="option.name"
-        :class="
-          cn(
-            'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-left ring-0 outline-0',
-            option.name === nodeColor
-              ? 'bg-interface-menu-component-surface-selected'
-              : 'hover:bg-interface-menu-component-surface-selected'
-          )
-        "
-        @click="nodeColor = option.name"
+    <div class="space-y-2">
+      <div
+        class="grid grid-cols-5 justify-items-center gap-1 rounded-lg border-none bg-secondary-background p-1"
       >
-        <div
-          v-tooltip.top="option.localizedName()"
-          :class="cn('size-4 rounded-full ring-2 ring-gray-500/10')"
-          :style="{
-            backgroundColor: isLightTheme
-              ? option.value.light
-              : option.value.dark,
-            '--tw-ring-color':
+        <button
+          v-for="option of colorOptions"
+          :key="option.name"
+          :class="
+            cn(
+              'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-left ring-0 outline-0',
               option.name === nodeColor
-                ? isLightTheme
-                  ? option.value.ringLight
-                  : option.value.ringDark
-                : undefined
-          }"
-          :data-testid="option.name"
-        />
-      </button>
+                ? 'bg-interface-menu-component-surface-selected'
+                : 'hover:bg-interface-menu-component-surface-selected'
+            )
+          "
+          @click="nodeColor = option.name"
+        >
+          <div
+            v-tooltip.top="option.localizedName()"
+            :class="cn('size-4 rounded-full ring-2 ring-gray-500/10')"
+            :style="{
+              backgroundColor: isLightTheme
+                ? option.value.light
+                : option.value.dark,
+              '--tw-ring-color':
+                option.name === nodeColor
+                  ? isLightTheme
+                    ? option.value.ringLight
+                    : option.value.ringDark
+                  : undefined
+            }"
+            :data-testid="option.name"
+          />
+        </button>
+      </div>
+      <div class="flex items-center gap-2">
+        <label
+          class="relative flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
+          :title="t('g.custom')"
+        >
+          <input
+            class="absolute inset-0 cursor-pointer opacity-0"
+            type="color"
+            :value="currentAppliedColor"
+            @input="onCustomColorInput"
+          />
+          <div
+            class="size-4 rounded-full border border-border-default"
+            :style="{ backgroundColor: currentAppliedColor }"
+          />
+        </label>
+        <button
+          class="flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
+          :title="isCurrentColorFavorite ? t('g.remove') : t('g.favorites')"
+          @click="toggleCurrentColorFavorite"
+        >
+          <i
+            :class="
+              isCurrentColorFavorite
+                ? 'icon-[lucide--star] text-yellow-500'
+                : 'icon-[lucide--star-off]'
+            "
+          />
+        </button>
+      </div>
+      <div v-if="favoriteColors.length" class="flex flex-wrap gap-1">
+        <button
+          v-for="color in favoriteColors"
+          :key="`favorite-${color}`"
+          class="flex size-7 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
+          :title="`${t('g.favorites')}: ${color.toUpperCase()}`"
+          @click="applySavedCustomColor(color)"
+        >
+          <div
+            class="size-4 rounded-full border border-border-default"
+            :style="{ backgroundColor: color }"
+          />
+        </button>
+      </div>
+      <div v-if="recentColors.length" class="flex flex-wrap gap-1">
+        <button
+          v-for="color in recentColors"
+          :key="`recent-${color}`"
+          class="flex size-7 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
+          :title="`${t('modelLibrary.sortRecent')}: ${color.toUpperCase()}`"
+          @click="applySavedCustomColor(color)"
+        >
+          <div
+            class="size-4 rounded-full border border-border-default"
+            :style="{ backgroundColor: color }"
+          />
+        </button>
+      </div>
     </div>
   </LayoutField>
 </template>

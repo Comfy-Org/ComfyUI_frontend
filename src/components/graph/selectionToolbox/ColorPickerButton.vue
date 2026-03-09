@@ -21,7 +21,7 @@
     </Button>
     <div
       v-if="showColorPicker"
-      class="absolute -top-10 left-1/2 -translate-x-1/2"
+      class="absolute -top-10 left-1/2 z-10 min-w-44 -translate-x-1/2 rounded-lg border border-border-default bg-interface-panel-surface p-2 shadow-lg"
     >
       <SelectButton
         :model-value="selectedColorOption"
@@ -41,6 +41,66 @@
           />
         </template>
       </SelectButton>
+      <div class="mt-2 flex items-center gap-2">
+        <label
+          class="relative flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
+          :title="t('g.custom')"
+          data-testid="custom-color-trigger"
+        >
+          <input
+            class="absolute inset-0 cursor-pointer opacity-0"
+            type="color"
+            :value="currentAppliedColor"
+            @input="onCustomColorInput"
+          />
+          <div
+            class="size-4 rounded-full border border-border-default"
+            :style="{ backgroundColor: currentAppliedColor }"
+          />
+        </label>
+        <button
+          class="flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
+          :title="isCurrentColorFavorite ? t('g.remove') : t('g.favorites')"
+          data-testid="toggle-favorite-color"
+          @click="toggleCurrentColorFavorite"
+        >
+          <i
+            :class="
+              isCurrentColorFavorite
+                ? 'icon-[lucide--star] text-yellow-500'
+                : 'icon-[lucide--star-off]'
+            "
+          />
+        </button>
+      </div>
+      <div v-if="favoriteColors.length" class="mt-2 flex flex-wrap gap-1">
+        <button
+          v-for="color in favoriteColors"
+          :key="`favorite-${color}`"
+          class="flex size-7 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
+          :title="`${t('g.favorites')}: ${color.toUpperCase()}`"
+          @click="applySavedCustomColor(color)"
+        >
+          <div
+            class="size-4 rounded-full border border-border-default"
+            :style="{ backgroundColor: color }"
+          />
+        </button>
+      </div>
+      <div v-if="recentColors.length" class="mt-2 flex flex-wrap gap-1">
+        <button
+          v-for="color in recentColors"
+          :key="`recent-${color}`"
+          class="flex size-7 cursor-pointer items-center justify-center rounded-md border border-border-default bg-secondary-background hover:bg-secondary-background-hover"
+          :title="`${t('modelLibrary.sortRecent')}: ${color.toUpperCase()}`"
+          @click="applySavedCustomColor(color)"
+        >
+          <div
+            class="size-4 rounded-full border border-border-default"
+            :style="{ backgroundColor: color }"
+          />
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -61,16 +121,26 @@ import {
   LiteGraph,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
+import { useCustomNodeColorSettings } from '@/composables/graph/useCustomNodeColorSettings'
+import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
+import { adjustColor, toHexFromFormat } from '@/utils/colorUtil'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
+import { getDefaultCustomNodeColor } from '@/utils/nodeColorCustomization'
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const colorPaletteStore = useColorPaletteStore()
 const workflowStore = useWorkflowStore()
+const { applyCustomColor, getCurrentAppliedColor } = useNodeCustomization()
+const {
+  favoriteColors,
+  recentColors,
+  isFavoriteColor,
+  toggleFavoriteColor
+} = useCustomNodeColorSettings()
 const isLightTheme = computed(
   () => colorPaletteStore.completedActivePalette.light_theme
 )
@@ -129,16 +199,21 @@ const applyColor = (colorOption: ColorOption | null) => {
 }
 
 const currentColorOption = ref<CanvasColorOption | null>(null)
+const currentAppliedColor = computed(
+  () => getCurrentAppliedColor() ?? getDefaultCustomNodeColor()
+)
 const currentColor = computed(() =>
   currentColorOption.value
     ? isLightTheme.value
       ? toLightThemeColor(currentColorOption.value?.bgcolor)
       : currentColorOption.value?.bgcolor
-    : null
+    : currentAppliedColor.value
 )
 
 const localizedCurrentColorName = computed(() => {
-  if (!currentColorOption.value?.bgcolor) return null
+  if (!currentColorOption.value?.bgcolor) {
+    return currentAppliedColor.value.toUpperCase()
+  }
   const colorOption = colorOptions.find(
     (option) =>
       option.value.dark === currentColorOption.value?.bgcolor ||
@@ -146,6 +221,26 @@ const localizedCurrentColorName = computed(() => {
   )
   return colorOption?.localizedName ?? NO_COLOR_OPTION.localizedName
 })
+
+async function applySavedCustomColor(color: string) {
+  currentColorOption.value = null
+  await applyCustomColor(color)
+  showColorPicker.value = false
+}
+
+async function onCustomColorInput(event: Event) {
+  const value = (event.target as HTMLInputElement).value
+  await applySavedCustomColor(toHexFromFormat(value, 'hex'))
+}
+
+async function toggleCurrentColorFavorite() {
+  await toggleFavoriteColor(currentAppliedColor.value)
+}
+
+const isCurrentColorFavorite = computed(() =>
+  isFavoriteColor(currentAppliedColor.value)
+)
+
 const updateColorSelectionFromNode = (
   newSelectedItems: Raw<Positionable[]>
 ) => {

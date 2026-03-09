@@ -62,9 +62,16 @@ vi.mock('@/lib/litegraph/src/litegraph', async () => {
 })
 
 // Mock the colorUtil module
-vi.mock('@/utils/colorUtil', () => ({
-  adjustColor: vi.fn((color: string) => color + '_light')
-}))
+vi.mock('@/utils/colorUtil', async () => {
+  const actual = await vi.importActual<typeof import('@/utils/colorUtil')>(
+    '@/utils/colorUtil'
+  )
+
+  return {
+    ...actual,
+    adjustColor: vi.fn((color: string) => color + '_light')
+  }
+})
 
 // Mock the litegraphUtil module
 vi.mock('@/utils/litegraphUtil', () => ({
@@ -83,11 +90,25 @@ describe('ColorPickerButton', () => {
     locale: 'en',
     messages: {
       en: {
+        g: {
+          color: 'Color',
+          custom: 'Custom',
+          favorites: 'Favorites',
+          remove: 'Remove'
+        },
         color: {
           noColor: 'No Color',
           red: 'Red',
           green: 'Green',
           blue: 'Blue'
+        },
+        shape: {
+          default: 'Default',
+          box: 'Box',
+          CARD: 'Card'
+        },
+        modelLibrary: {
+          sortRecent: 'Recent'
         }
       }
     }

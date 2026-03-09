@@ -19,7 +19,16 @@ export function useGroupMenuOptions() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const canvasRefresh = useCanvasRefresh()
-  const { shapeOptions, colorOptions, isLightTheme } = useNodeCustomization()
+  const {
+    applyCustomColor,
+    colorOptions,
+    favoriteColors,
+    recentColors,
+    getCurrentAppliedColor,
+    isLightTheme,
+    openCustomColorPicker,
+    shapeOptions
+  } = useNodeCustomization()
 
   const getFitGroupToNodesOption = (groupContext: LGraphGroup): MenuOption => ({
     label: 'Fit Group To Nodes',
@@ -65,19 +74,62 @@ export function useGroupMenuOptions() {
     label: t('contextMenu.Color'),
     icon: 'icon-[lucide--palette]',
     hasSubmenu: true,
-    submenu: colorOptions.map((colorOption) => ({
-      label: colorOption.localizedName,
-      color: isLightTheme.value
-        ? colorOption.value.light
-        : colorOption.value.dark,
-      action: () => {
-        groupContext.color = isLightTheme.value
+    submenu: (() => {
+      const presetEntries = colorOptions.map((colorOption) => ({
+        label: colorOption.localizedName,
+        color: isLightTheme.value
           ? colorOption.value.light
-          : colorOption.value.dark
-        canvasRefresh.refreshCanvas()
-        bump()
-      }
-    }))
+          : colorOption.value.dark,
+        action: () => {
+          groupContext.color = isLightTheme.value
+            ? colorOption.value.light
+            : colorOption.value.dark
+          canvasRefresh.refreshCanvas()
+          bump()
+        }
+      }))
+
+      const presetColors = new Set(
+        colorOptions.map((colorOption) => colorOption.value.dark.toLowerCase())
+      )
+      const customEntries = [
+        ...favoriteColors.value.map((color) => ({
+          label: `${t('g.favorites')}: ${color.toUpperCase()}`,
+          color
+        })),
+        ...recentColors.value.map((color) => ({
+          label: `${t('modelLibrary.sortRecent')}: ${color.toUpperCase()}`,
+          color
+        }))
+      ]
+        .filter((entry, index, entries) => {
+          return (
+            entries.findIndex((candidate) => candidate.color === entry.color) ===
+            index
+          )
+        })
+        .filter((entry) => !presetColors.has(entry.color.toLowerCase()))
+        .map((entry) => ({
+          ...entry,
+          action: () => {
+            void applyCustomColor(entry.color)
+            bump()
+          }
+        }))
+
+      return [
+        ...presetEntries,
+        ...customEntries,
+        {
+          label: t('g.custom'),
+          color: getCurrentAppliedColor() ?? '#353535',
+          action: () => {
+            void openCustomColorPicker()
+            bump()
+          }
+        }
+      ]
+    })()
   })
 
   const getGroupModeOptions = (
