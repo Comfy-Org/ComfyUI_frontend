@@ -89,8 +89,8 @@ const isOpen = ref(false)
       <button
         :class="
           cn(
-            'flex h-8 w-full items-center rounded-lg bg-node-component-surface pr-2 outline-none',
-            isOpen && 'border border-node-stroke',
+            'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-node-component-surface pr-2 outline-none',
+            isOpen && 'border-node-stroke',
             $props.class
           )
         "
