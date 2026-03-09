@@ -136,8 +136,8 @@ export function useGroupMenuOptions() {
         .filter((entry) => !presetColors.has(entry.color.toLowerCase()))
         .map((entry) => ({
           ...entry,
-          action: () => {
-            void applyCustomColorToGroup(groupContext, entry.color)
+          action: async () => {
+            await applyCustomColorToGroup(groupContext, entry.color)
             bump()
           }
         }))
@@ -148,8 +148,8 @@ export function useGroupMenuOptions() {
         {
           label: t('g.custom'),
           color: getSharedAppliedColor([groupContext]) ?? getDefaultCustomNodeColor(),
-          action: () => {
-            void openGroupCustomColorPicker(groupContext)
+          action: async () => {
+            await openGroupCustomColorPicker(groupContext)
             bump()
           }
         }

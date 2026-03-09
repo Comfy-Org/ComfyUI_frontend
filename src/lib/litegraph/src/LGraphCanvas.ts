@@ -9,10 +9,12 @@ import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegra
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 import {
   deriveCustomNodeHeaderColor,
   getDefaultCustomNodeColor,
+  NODE_COLOR_DARKER_HEADER_SETTING_ID,
   normalizeNodeColor,
   pickHexColor
 } from '@/utils/nodeColorPersistence'
@@ -218,7 +220,7 @@ function createLegacyColorMenuContent(label: string, color?: string): string {
 function applyLegacyCustomColor(
   targets: LegacyColorTarget[],
   color: string,
-  darkerHeader: boolean = true
+  darkerHeader: boolean
 ): string {
   const normalized = normalizeNodeColor(color)
 
@@ -232,6 +234,14 @@ function applyLegacyCustomColor(
   }
 
   return normalized
+}
+
+function getLegacyDarkerHeaderSetting(): boolean {
+  try {
+    return useSettingStore().get(NODE_COLOR_DARKER_HEADER_SETTING_ID) ?? true
+  } catch {
+    return true
+  }
 }
 
 interface HasShowSearchCallback {
@@ -1750,7 +1760,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value: { kind: 'preset', presetName },
         content: createLegacyColorMenuContent(
           st(`color.${presetName}`, presetName),
-          colorOption.bgcolor
+          node instanceof LGraphGroup
+            ? colorOption.groupcolor ?? colorOption.bgcolor
+            : colorOption.bgcolor
         )
       })
     }
@@ -1777,6 +1789,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const canvas = LGraphCanvas.active_canvas
       const targets = getLegacyColorTargets(node)
       const graphInfo = node instanceof LGraphNode ? node : undefined
+      const darkerHeader = getLegacyDarkerHeaderSetting()
 
       switch (v.value.kind) {
         case 'preset': {
@@ -1793,7 +1806,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
         case 'custom': {
           node.graph?.beforeChange(graphInfo)
-          applyLegacyCustomColor(targets, v.value.color)
+          applyLegacyCustomColor(targets, v.value.color, darkerHeader)
           node.graph?.afterChange(graphInfo)
           canvas.setDirty(true, true)
           return
@@ -1806,7 +1819,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           if (!pickedColor) return
 
           node.graph?.beforeChange(graphInfo)
-          applyLegacyCustomColor(targets, pickedColor)
+          applyLegacyCustomColor(targets, pickedColor, darkerHeader)
           node.graph?.afterChange(graphInfo)
           canvas.setDirty(true, true)
           return

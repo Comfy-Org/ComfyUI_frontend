@@ -128,6 +128,9 @@ describe('useGroupMenuOptions', () => {
     expect(mocks.refreshCanvas).toHaveBeenCalledOnce()
     expect(mocks.rememberRecentColor).toHaveBeenCalledWith('#abcdef')
     expect(bump).toHaveBeenCalledOnce()
+    expect(mocks.rememberRecentColor.mock.invocationCallOrder[0]).toBeLessThan(
+      bump.mock.invocationCallOrder[0]
+    )
   })
 
   it('seeds the custom picker from the clicked group color', async () => {
@@ -138,8 +141,8 @@ describe('useGroupMenuOptions', () => {
 
     const { useGroupMenuOptions } = await import('./useGroupMenuOptions')
     const { getGroupColorOptions } = useGroupMenuOptions()
-
-    const colorMenu = getGroupColorOptions(groupContext, vi.fn())
+    const bump = vi.fn()
+    const colorMenu = getGroupColorOptions(groupContext, bump)
     const customEntry = colorMenu.submenu?.find(
       (entry) => entry.label === 'g.custom'
     )
@@ -151,5 +154,9 @@ describe('useGroupMenuOptions', () => {
     expect(mocks.pickHexColor).toHaveBeenCalledWith('#112233')
     expect(groupContext.color).toBe('#fedcba')
     expect(selectedNode.bgcolor).toBe('#445566')
+    expect(mocks.rememberRecentColor).toHaveBeenCalledWith('#fedcba')
+    expect(mocks.rememberRecentColor.mock.invocationCallOrder[0]).toBeLessThan(
+      bump.mock.invocationCallOrder[0]
+    )
   })
 })
