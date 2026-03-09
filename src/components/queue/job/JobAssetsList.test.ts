@@ -92,8 +92,33 @@ const mountJobAssetsList = (jobs: JobListItem[]) => {
   })
 }
 
+function createDomRect({
+  top,
+  left,
+  width,
+  height
+}: {
+  top: number
+  left: number
+  width: number
+  height: number
+}): DOMRect {
+  return {
+    x: left,
+    y: top,
+    top,
+    left,
+    width,
+    height,
+    right: left + width,
+    bottom: top + height,
+    toJSON: () => ''
+  } as DOMRect
+}
+
 afterEach(() => {
   vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 
 describe('JobAssetsList', () => {
@@ -246,6 +271,54 @@ describe('JobAssetsList', () => {
     await vi.advanceTimersByTimeAsync(1)
     await nextTick()
     expect(wrapper.findComponent(JobDetailsPopoverStub).exists()).toBe(false)
+  })
+
+  it('positions the popover to the right of rows near the left viewport edge', async () => {
+    vi.useFakeTimers()
+    const job = buildJob()
+    const wrapper = mountJobAssetsList([job])
+    const jobRow = wrapper.find(`[data-job-id="${job.id}"]`)
+
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1280)
+    vi.spyOn(jobRow.element, 'getBoundingClientRect').mockReturnValue(
+      createDomRect({
+        top: 100,
+        left: 40,
+        width: 200,
+        height: 48
+      })
+    )
+
+    await jobRow.trigger('mouseenter')
+    await vi.advanceTimersByTimeAsync(200)
+    await nextTick()
+
+    const popover = wrapper.find('.job-details-popover')
+    expect(popover.attributes('style')).toContain('left: 248px;')
+  })
+
+  it('positions the popover to the left of rows near the right viewport edge', async () => {
+    vi.useFakeTimers()
+    const job = buildJob()
+    const wrapper = mountJobAssetsList([job])
+    const jobRow = wrapper.find(`[data-job-id="${job.id}"]`)
+
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1280)
+    vi.spyOn(jobRow.element, 'getBoundingClientRect').mockReturnValue(
+      createDomRect({
+        top: 100,
+        left: 980,
+        width: 200,
+        height: 48
+      })
+    )
+
+    await jobRow.trigger('mouseenter')
+    await vi.advanceTimersByTimeAsync(200)
+    await nextTick()
+
+    const popover = wrapper.find('.job-details-popover')
+    expect(popover.attributes('style')).toContain('left: 672px;')
   })
 
   it('clears the previous popover when hovering a new row briefly and leaving the list', async () => {
