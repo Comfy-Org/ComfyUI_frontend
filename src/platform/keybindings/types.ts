@@ -15,7 +15,7 @@ export const zKeybinding = z.object({
 })
 
 export const zKeybindingPreset = z.object({
-  name: z.string(),
+  name: z.string().trim().min(1, 'Preset name cannot be empty'),
   newBindings: z.array(zKeybinding),
   unsetBindings: z.array(zKeybinding)
 })

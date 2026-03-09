@@ -26,13 +26,14 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     if (!savedPresetData.value) return false
 
     const serializeKeybindingImpl = (b: KeybindingImpl) =>
-      `${b.commandId}:${b.combo.serialize()}`
+      `${b.commandId}:${b.combo.serialize()}:${b.targetElementId ?? ''}`
 
     const serializeRawBinding = (b: {
       commandId: string
       combo: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
+      targetElementId?: string
     }) =>
-      `${b.commandId}:${b.combo.key.toUpperCase()}:${b.combo.ctrl ?? false}:${b.combo.alt ?? false}:${b.combo.shift ?? false}`
+      `${b.commandId}:${b.combo.key.toUpperCase()}:${b.combo.ctrl ?? false}:${b.combo.alt ?? false}:${b.combo.shift ?? false}:${b.targetElementId ?? ''}`
 
     const currentNew = newBindings.map(serializeKeybindingImpl).sort().join('|')
     const savedNew = savedPresetData.value.newBindings

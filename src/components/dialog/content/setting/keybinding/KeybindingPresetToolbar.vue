@@ -80,8 +80,8 @@ const displayLabel = computed(() => {
   return keybindingStore.isCurrentPresetModified ? `${name} *` : name
 })
 
-watch(selectedPreset, async (newValue, oldValue) => {
-  if (newValue !== oldValue) {
+watch(selectedPreset, async (newValue) => {
+  if (newValue !== keybindingStore.currentPresetName) {
     await presetService.switchPreset(newValue)
     selectedPreset.value = keybindingStore.currentPresetName
     onPresetsChanged()

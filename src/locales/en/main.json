@@ -276,7 +276,10 @@
       "presetSaved": "Preset \"{name}\" saved",
       "presetDeleted": "Preset \"{name}\" deleted",
       "presetImported": "Keybinding preset imported",
-      "invalidPresetFile": "Invalid preset file",
+      "invalidPresetFile": "Preset file must be valid JSON exported from ComfyUI",
+      "invalidPresetName": "Preset name must not be empty or contain path separators",
+      "overwritePresetTitle": "Overwrite Preset",
+      "overwritePresetMessage": "A preset named \"{name}\" already exists. Overwrite it?",
       "presetNamePrompt": "Enter a name for the preset",
       "default": "Default"
     },

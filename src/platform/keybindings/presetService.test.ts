@@ -145,7 +145,9 @@ describe('useKeybindingPresetService', () => {
 
   describe('deletePreset', () => {
     it('calls deleteUserData and resets to default if active', async () => {
-      mockApi.deleteUserData.mockResolvedValue(new Response())
+      mockApi.deleteUserData.mockResolvedValue(
+        new Response(null, { status: 200 })
+      )
 
       store.currentPresetName = 'vim'
       store.addUserKeybinding(
@@ -163,6 +165,19 @@ describe('useKeybindingPresetService', () => {
       )
       expect(store.currentPresetName).toBe('default')
       expect(Object.keys(store.getUserKeybindings())).toHaveLength(0)
+    })
+
+    it('throws when deleteUserData response is not ok', async () => {
+      mockApi.deleteUserData.mockResolvedValue(
+        new Response(null, { status: 500 })
+      )
+
+      store.currentPresetName = 'vim'
+
+      const service = await getPresetService()
+      await expect(service.deletePreset('vim')).rejects.toThrow(
+        'Failed to delete preset "vim"'
+      )
     })
   })
 
@@ -211,6 +226,44 @@ describe('useKeybindingPresetService', () => {
 
       expect(store.currentPresetName).toBe('default')
       expect(Object.keys(store.getUserKeybindings())).toHaveLength(1)
+    })
+  })
+
+  describe('presetFilePath sanitization', () => {
+    it('rejects names with path separators', async () => {
+      const service = await getPresetService()
+      await expect(service.savePreset('../evil')).rejects.toThrow()
+      await expect(service.savePreset('foo/bar')).rejects.toThrow()
+      await expect(service.savePreset('foo\\bar')).rejects.toThrow()
+    })
+
+    it('rejects names starting with a dot', async () => {
+      const service = await getPresetService()
+      await expect(service.savePreset('.hidden')).rejects.toThrow()
+    })
+
+    it('rejects empty names', async () => {
+      const service = await getPresetService()
+      await expect(service.savePreset('')).rejects.toThrow()
+      await expect(service.savePreset('   ')).rejects.toThrow()
+    })
+  })
+
+  describe('loadPreset name override', () => {
+    it('overrides embedded name with the requested name', async () => {
+      const presetData = {
+        name: 'wrong-name',
+        newBindings: [],
+        unsetBindings: []
+      }
+      mockApi.getUserData.mockResolvedValue(
+        new Response(JSON.stringify(presetData), { status: 200 })
+      )
+
+      const service = await getPresetService()
+      const loaded = await service.loadPreset('correct-name')
+
+      expect(loaded?.name).toBe('correct-name')
     })
   })
 

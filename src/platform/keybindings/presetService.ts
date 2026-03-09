@@ -19,7 +19,17 @@ import { zKeybindingPreset } from './types'
 const PRESETS_DIR = 'keybindings'
 
 function presetFilePath(name: string): string {
-  return `${PRESETS_DIR}/${name}.json`
+  const trimmed = name.trim()
+  if (
+    !trimmed ||
+    trimmed.includes('/') ||
+    trimmed.includes('\\') ||
+    trimmed.includes('..') ||
+    trimmed.startsWith('.')
+  ) {
+    throw new Error(t('g.keybindingPresets.invalidPresetName'))
+  }
+  return `${PRESETS_DIR}/${trimmed}.json`
 }
 
 function buildPresetFromStore(
@@ -60,7 +70,7 @@ export function useKeybindingPresetService() {
         `Invalid preset file: ${fromZodError(result.error).message}`
       )
     }
-    return result.data
+    return { ...result.data, name }
   }
 
   function applyPreset(preset: KeybindingPreset) {
@@ -99,7 +109,10 @@ export function useKeybindingPresetService() {
     })
     if (!confirmed) return
 
-    await api.deleteUserData(presetFilePath(name))
+    const resp = await api.deleteUserData(presetFilePath(name))
+    if (!resp.ok) {
+      throw new Error(`Failed to delete preset "${name}"`)
+    }
 
     if (keybindingStore.currentPresetName === name) {
       keybindingStore.resetAllKeybindings()

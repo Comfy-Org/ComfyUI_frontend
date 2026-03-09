@@ -220,6 +220,14 @@ async function saveAsNewPreset() {
     defaultValue: ''
   })
   if (!name) return
+  if (presetNames.value.includes(name)) {
+    const overwrite = await dialogService.confirm({
+      title: t('g.keybindingPresets.overwritePresetTitle'),
+      message: t('g.keybindingPresets.overwritePresetMessage', { name }),
+      type: 'overwrite'
+    })
+    if (!overwrite) return
+  }
   await presetService.savePreset(name)
   refreshPresetList()
 }
