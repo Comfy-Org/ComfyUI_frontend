@@ -25,7 +25,7 @@ const mockEmptyWorkflowDialog = vi.hoisted(() => {
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    rootGraph: { extra: {}, nodes: [{ id: 1 }] }
+    rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() }
   }
 }))
 
@@ -242,50 +242,30 @@ describe('appModeStore', () => {
       expect(store.selectedOutputs).toEqual([1])
     })
 
-    it('preserves inputs during graph loading when nodes are not yet available', async () => {
-      // Simulate the race condition: graph is loading, nodes don't exist yet
+    it('reloads selections on configured event', async () => {
+      const node1 = mockNode(1)
+
+      // Initially nodes are not resolvable — pruning removes them
       mockResolveNode.mockReturnValue(undefined)
-
-      const { ChangeTracker } = await import('@/scripts/changeTracker')
-      ChangeTracker.isLoadingGraph = true
-      try {
-        workflowStore.activeWorkflow = workflowWithLinearData(
-          [
-            [1, 'seed'],
-            [2, 'prompt']
-          ],
-          [3]
-        )
-        await nextTick()
-
-        // Inputs and outputs should NOT be pruned during loading
-        expect(store.selectedInputs).toEqual([
-          [1, 'seed'],
-          [2, 'prompt']
-        ])
-        expect(store.selectedOutputs).toEqual([3])
-      } finally {
-        ChangeTracker.isLoadingGraph = false
-      }
-    })
-
-    it('prunes inputs when graph is not loading and nodes are missing', async () => {
-      const { ChangeTracker } = await import('@/scripts/changeTracker')
-      expect(ChangeTracker.isLoadingGraph).toBe(false)
-
-      mockResolveNode.mockReturnValue(undefined)
-
       workflowStore.activeWorkflow = workflowWithLinearData(
-        [
-          [1, 'seed'],
-          [2, 'prompt']
-        ],
-        [3]
+        [[1, 'seed']],
+        [1]
+      )
+      await nextTick()
+      expect(store.selectedInputs).toEqual([])
+      expect(store.selectedOutputs).toEqual([])
+
+      // After graph configures, nodes become resolvable
+      mockResolveNode.mockImplementation((id) =>
+        id == 1 ? (node1 as unknown as LGraphNode) : undefined
+      )
+      ;(app.rootGraph.events as EventTarget).dispatchEvent(
+        new Event('configured')
       )
       await nextTick()
 
-      expect(store.selectedInputs).toEqual([])
-      expect(store.selectedOutputs).toEqual([])
+      expect(store.selectedInputs).toEqual([[1, 'seed']])
+      expect(store.selectedOutputs).toEqual([1])
     })
 
     it('hasOutputs is false when all output nodes are deleted', async () => {

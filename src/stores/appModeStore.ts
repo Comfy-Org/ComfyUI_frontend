@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { reactive, computed, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
@@ -39,13 +40,11 @@ export const useAppModeStore = defineStore('appMode', () => {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
 
-    const canPrune = app.rootGraph && !ChangeTracker.isLoadingGraph
-
     return {
-      inputs: canPrune
+      inputs: app.rootGraph
         ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
         : rawInputs,
-      outputs: canPrune
+      outputs: app.rootGraph
         ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
         : rawOutputs
     }
@@ -76,6 +75,12 @@ export const useAppModeStore = defineStore('appMode', () => {
       }
     },
     { immediate: true }
+  )
+
+  useEventListener(
+    () => app.rootGraph?.events,
+    'configured',
+    resetSelectedToWorkflow
   )
 
   watch(
