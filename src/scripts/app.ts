@@ -1318,7 +1318,7 @@ export class ComfyApp {
           this.rootGraph.extra.workflowRendererVersion
 
         // Scale main graph
-        ensureCorrectLayoutScale(originalMainGraphRenderer)
+        ensureCorrectLayoutScale(originalMainGraphRenderer, this.rootGraph)
 
         // Scale all subgraphs that were loaded with the workflow
         // Use original main graph renderer as fallback (not the modified one)

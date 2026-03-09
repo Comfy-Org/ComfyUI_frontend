@@ -1,57 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  LGraph,
-  LGraphExtra,
-  RendererType
-} from '@/lib/litegraph/src/LGraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
-
-const mockState = vi.hoisted(() => ({
-  autoScaleEnabled: true,
-  shouldRenderVueNodes: true,
-  app: {
-    canvas: undefined as Partial<LGraphCanvas> | undefined
-  }
-}))
-
-const mockLayoutStore = vi.hoisted(() => ({
-  setSource: vi.fn(),
-  batchUpdateNodeBounds: vi.fn()
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      key === 'Comfy.VueNodes.AutoScaleLayout'
-        ? mockState.autoScaleEnabled
-        : undefined
-  })
-}))
-
-vi.mock('@/composables/useVueFeatureFlags', () => ({
-  useVueFeatureFlags: () => ({
-    shouldRenderVueNodes: {
-      get value() {
-        return mockState.shouldRenderVueNodes
-      }
-    }
-  })
-}))
-
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: mockLayoutStore
-}))
-
-vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
-  useLayoutMutations: () => ({
-    moveReroute: vi.fn()
-  })
-}))
+import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 vi.mock('@/scripts/app', () => ({
-  app: mockState.app
+  app: { canvas: undefined }
 }))
 
 import { ensureCorrectLayoutScale } from './ensureCorrectLayoutScale'
@@ -90,30 +44,6 @@ function createMockGraph(
   return graph
 }
 
-function createMockCanvas(graph: Partial<LGraph>): Partial<LGraphCanvas> {
-  let scale = 1
-  return {
-    graph: graph as LGraph,
-    ds: {
-      get scale() {
-        return scale
-      },
-      set scale(v: number) {
-        scale = v
-      },
-      convertOffsetToCanvas: (point: Point) => point,
-      changeScale: (v: number) => {
-        scale = v
-      }
-    } as unknown as LGraphCanvas['ds']
-  }
-}
-
-function distanceBetweenNodes(nodes: MockNode[]): number {
-  const [a, b] = nodes
-  return Math.hypot(b.pos[0] - a.pos[0], b.pos[1] - a.pos[1])
-}
-
 function twoNodeLayout(): MockNode[] {
   return [
     createNode('1', 100, 100, 120, 80),
@@ -121,113 +51,156 @@ function twoNodeLayout(): MockNode[] {
   ]
 }
 
-describe('ensureCorrectLayoutScale', () => {
+function distanceBetweenNodes(nodes: MockNode[]): number {
+  const [a, b] = nodes
+  return Math.hypot(b.pos[0] - a.pos[0], b.pos[1] - a.pos[1])
+}
+
+function snapshotGeometry(nodes: MockNode[]) {
+  return nodes.map((n) => ({
+    pos: [...n.pos] as [number, number],
+    size: [...n.size] as [number, number]
+  }))
+}
+
+describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
   beforeEach(() => {
-    mockState.autoScaleEnabled = true
-    mockState.shouldRenderVueNodes = true
-    mockState.app.canvas = undefined
     vi.clearAllMocks()
   })
 
-  it('is idempotent — calling multiple times does not compound spacing', () => {
+  it('normalizes legacy Vue-scaled graph once', () => {
     const nodes = twoNodeLayout()
-    const graph = createMockGraph(nodes, { workflowRendererVersion: 'LG' })
-    mockState.app.canvas = createMockCanvas(graph)
+    const graph = createMockGraph(nodes, {
+      workflowRendererVersion: 'Vue'
+    })
 
     const beforeDistance = distanceBetweenNodes(nodes)
+    const result = ensureCorrectLayoutScale(undefined, graph as LGraph)
 
-    ensureCorrectLayoutScale('LG', graph as LGraph)
-    const firstDistance = distanceBetweenNodes(nodes)
+    expect(result).toBe(true)
+    expect(graph.extra?.workflowRendererVersion).toBe('Vue-corrected')
 
-    ensureCorrectLayoutScale('LG', graph as LGraph)
-    const secondDistance = distanceBetweenNodes(nodes)
-
-    expect(firstDistance / beforeDistance).toBeCloseTo(1.2, 5)
-    expect(secondDistance / firstDistance).toBeCloseTo(1, 5)
+    // Distance should shrink by 1/RENDER_SCALE_FACTOR
+    const afterDistance = distanceBetweenNodes(nodes)
+    expect(afterDistance / beforeDistance).toBeCloseTo(
+      1 / RENDER_SCALE_FACTOR,
+      5
+    )
   })
 
-  it('stays stable across reloads even when renderer metadata is lost', () => {
-    const distances: number[] = []
-    let savedNodes = twoNodeLayout()
-    let savedExtra: LGraphExtra = {}
-
-    for (let i = 0; i < 3; i++) {
-      const nodes = twoNodeLayout().map((n, j) => {
-        n.pos = [...savedNodes[j].pos] as Point
-        n.size = [...savedNodes[j].size] as Point
-        return n
-      })
-      const graph = createMockGraph(nodes, { ...savedExtra })
-      mockState.app.canvas = createMockCanvas(graph)
-
-      ensureCorrectLayoutScale(undefined, graph as LGraph)
-
-      distances.push(distanceBetweenNodes(nodes))
-
-      // Persist positions but drop renderer metadata
-      savedNodes = nodes
-      savedExtra = {}
-    }
-
-    // First load scales up, subsequent loads should not compound
-    expect(distances[1] / distances[0]).toBeCloseTo(1, 5)
-    expect(distances[2] / distances[1]).toBeCloseTo(1, 5)
-  })
-
-  it('stays stable across reloads when renderer metadata is preserved', () => {
-    const distances: number[] = []
-    let savedNodes = twoNodeLayout()
-    let savedRenderer: RendererType | undefined = 'Vue'
-
-    for (let i = 0; i < 3; i++) {
-      const nodes = twoNodeLayout().map((n, j) => {
-        n.pos = [...savedNodes[j].pos] as Point
-        n.size = [...savedNodes[j].size] as Point
-        return n
-      })
-      const extra: LGraphExtra = savedRenderer
-        ? { workflowRendererVersion: savedRenderer }
-        : {}
-      const graph = createMockGraph(nodes, extra)
-      mockState.app.canvas = createMockCanvas(graph)
-
-      ensureCorrectLayoutScale(savedRenderer, graph as LGraph)
-
-      distances.push(distanceBetweenNodes(nodes))
-
-      savedNodes = nodes
-      savedRenderer = graph.extra?.workflowRendererVersion
-    }
-
-    expect(distances[1] / distances[0]).toBeCloseTo(1, 5)
-    expect(distances[2] / distances[1]).toBeCloseTo(1, 5)
-  })
-
-  it('scales up then down to return to original positions', () => {
+  it('is idempotent — second call is a no-op', () => {
     const nodes = twoNodeLayout()
-    const graph = createMockGraph(nodes, { workflowRendererVersion: 'LG' })
-    mockState.app.canvas = createMockCanvas(graph)
+    const graph = createMockGraph(nodes, {
+      workflowRendererVersion: 'Vue'
+    })
 
-    const beforeDistance = distanceBetweenNodes(nodes)
+    ensureCorrectLayoutScale(undefined, graph as LGraph)
+    const afterFirst = snapshotGeometry(nodes)
 
-    ensureCorrectLayoutScale('LG', graph as LGraph)
+    const result = ensureCorrectLayoutScale(undefined, graph as LGraph)
+    expect(result).toBe(false)
 
-    mockState.shouldRenderVueNodes = false
-    ensureCorrectLayoutScale('Vue', graph as LGraph)
-
-    const finalDistance = distanceBetweenNodes(nodes)
-    expect(finalDistance / beforeDistance).toBeCloseTo(1, 5)
+    const afterSecond = snapshotGeometry(nodes)
+    expect(afterSecond).toEqual(afterFirst)
   })
 
-  it('does nothing when renderer is unknown and graph has no metadata', () => {
+  it('is a no-op for already-corrected graphs', () => {
+    const nodes = twoNodeLayout()
+    const graph = createMockGraph(nodes, {
+      workflowRendererVersion: 'Vue-corrected'
+    })
+
+    const before = snapshotGeometry(nodes)
+    const result = ensureCorrectLayoutScale(undefined, graph as LGraph)
+
+    expect(result).toBe(false)
+    expect(snapshotGeometry(nodes)).toEqual(before)
+  })
+
+  it('is a no-op for LG metadata', () => {
+    const nodes = twoNodeLayout()
+    const graph = createMockGraph(nodes, {
+      workflowRendererVersion: 'LG'
+    })
+
+    const before = snapshotGeometry(nodes)
+    const result = ensureCorrectLayoutScale(undefined, graph as LGraph)
+
+    expect(result).toBe(false)
+    expect(snapshotGeometry(nodes)).toEqual(before)
+  })
+
+  it('is a no-op for missing metadata', () => {
     const nodes = twoNodeLayout()
     const graph = createMockGraph(nodes)
-    mockState.app.canvas = createMockCanvas(graph)
 
-    const beforeDistance = distanceBetweenNodes(nodes)
+    const before = snapshotGeometry(nodes)
+    const result = ensureCorrectLayoutScale(undefined, graph as LGraph)
+
+    expect(result).toBe(false)
+    expect(snapshotGeometry(nodes)).toEqual(before)
+  })
+
+  it('normalizes reroutes', () => {
+    const nodes = twoNodeLayout()
+    const graph = createMockGraph(nodes, {
+      workflowRendererVersion: 'Vue'
+    })
+
+    const reroute = { id: 1, pos: [200, 200] as Point, linkIds: new Set([1]) }
+    ;(graph.reroutes as Map<number, typeof reroute>).set(1, reroute)
 
     ensureCorrectLayoutScale(undefined, graph as LGraph)
 
-    expect(distanceBetweenNodes(nodes)).toBe(beforeDistance)
+    // createBounds adds 10px padding, so anchor is (90, 90)
+    // Reroute at (200, 200). Relative: (110, 110). Downscaled: 110/1.2 ≈ 91.67
+    // Final: 90 + 91.67 ≈ 181.67
+    const anchor = 90 // min node pos (100) - createBounds padding (10)
+    const relative = 200 - anchor
+    expect(reroute.pos[0]).toBeCloseTo(
+      anchor + relative / RENDER_SCALE_FACTOR,
+      5
+    )
+    expect(reroute.pos[1]).toBeCloseTo(
+      anchor + relative / RENDER_SCALE_FACTOR,
+      5
+    )
+  })
+
+  it('normalizes groups', () => {
+    const nodes = twoNodeLayout()
+    const graph = createMockGraph(nodes, {
+      workflowRendererVersion: 'Vue'
+    })
+
+    const group = {
+      pos: [150, 150] as Point,
+      size: [300, 200] as Point
+    }
+    ;(graph.groups as (typeof group)[]).push(group)
+
+    ensureCorrectLayoutScale(undefined, graph as LGraph)
+
+    expect(group.size[0]).toBeCloseTo(300 / RENDER_SCALE_FACTOR, 5)
+    expect(group.size[1]).toBeCloseTo(200 / RENDER_SCALE_FACTOR, 5)
+  })
+
+  it('repeated normalization does not compound spacing', () => {
+    const distances: number[] = []
+
+    for (let i = 0; i < 5; i++) {
+      const nodes = twoNodeLayout()
+      const graph = createMockGraph(nodes, {
+        workflowRendererVersion: 'Vue'
+      })
+
+      ensureCorrectLayoutScale(undefined, graph as LGraph)
+      distances.push(distanceBetweenNodes(nodes))
+    }
+
+    // All runs should produce the same distance
+    for (let i = 1; i < distances.length; i++) {
+      expect(distances[i] / distances[0]).toBeCloseTo(1, 5)
+    }
   })
 })
