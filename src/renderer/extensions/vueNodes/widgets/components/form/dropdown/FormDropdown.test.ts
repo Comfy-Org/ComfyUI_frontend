@@ -1,8 +1,8 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h } from 'vue'
 
 import FormDropdown from './FormDropdown.vue'
 import type { FormDropdownItem } from './types'
@@ -67,8 +67,7 @@ describe('FormDropdown', () => {
         createItem('input-0', 'video1.mp4'),
         createItem('input-1', 'video2.mp4')
       ])
-      await nextTick()
-      await nextTick()
+      await flushPromises()
 
       expect(getMenuItems(wrapper)).toHaveLength(2)
 
@@ -78,8 +77,7 @@ describe('FormDropdown', () => {
           createItem('output-1', 'rendered2.mp4')
         ]
       })
-      await nextTick()
-      await nextTick()
+      await flushPromises()
 
       const menuItems = getMenuItems(wrapper)
       expect(menuItems).toHaveLength(2)
@@ -88,33 +86,28 @@ describe('FormDropdown', () => {
 
     it('updates when items change but IDs stay the same', async () => {
       const wrapper = mountDropdown([createItem('1', 'alpha')])
-      await nextTick()
-      await nextTick()
+      await flushPromises()
 
       await wrapper.setProps({ items: [createItem('1', 'beta')] })
-      await nextTick()
-      await nextTick()
+      await flushPromises()
 
       expect(getMenuItems(wrapper)[0].name).toBe('beta')
     })
 
     it('updates when switching between empty and non-empty items', async () => {
       const wrapper = mountDropdown([])
-      await nextTick()
-      await nextTick()
+      await flushPromises()
 
       expect(getMenuItems(wrapper)).toHaveLength(0)
 
       await wrapper.setProps({ items: [createItem('1', 'video.mp4')] })
-      await nextTick()
-      await nextTick()
+      await flushPromises()
 
       expect(getMenuItems(wrapper)).toHaveLength(1)
       expect(getMenuItems(wrapper)[0].name).toBe('video.mp4')
 
       await wrapper.setProps({ items: [] })
-      await nextTick()
-      await nextTick()
+      await flushPromises()
 
       expect(getMenuItems(wrapper)).toHaveLength(0)
     })
