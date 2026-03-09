@@ -48,10 +48,10 @@ const { t } = useI18n()
       :saturation="hsva.s"
       :brightness="hsva.v"
     />
-    <div class="flex items-center gap-2.5">
+    <div class="flex items-center gap-1">
       <Select v-model="displayMode">
         <SelectTrigger
-          class="h-6 w-16 shrink-0 gap-1 overflow-clip rounded-sm border-0 px-2 py-0 text-xs [&>span]:overflow-visible"
+          class="h-6 w-[58px] shrink-0 gap-0.5 overflow-clip rounded-sm border-0 px-1.5 py-0 text-xs [&>span]:overflow-visible"
         >
           <SelectValue />
         </SelectTrigger>
