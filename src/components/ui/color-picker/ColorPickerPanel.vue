@@ -31,7 +31,7 @@ function toggleDisplayMode() {
 
 <template>
   <div
-    class="flex w-[209px] flex-col gap-2 rounded-lg border border-border-subtle bg-base-background p-2 shadow-md"
+    class="flex flex-col gap-2 rounded-lg border border-border-subtle bg-base-background p-2 shadow-md"
   >
     <ColorPickerSaturationValue
       v-model:saturation="hsva.s"
@@ -47,25 +47,27 @@ function toggleDisplayMode() {
       :saturation="hsva.s"
       :brightness="hsva.v"
     />
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2.5">
       <button
-        class="flex h-6 shrink-0 items-center gap-1 rounded-sm bg-secondary-background px-2 text-xs text-base-foreground"
+        class="flex h-6 w-16 shrink-0 items-center gap-1 rounded-sm bg-secondary-background px-2 text-xs text-base-foreground"
         @click="toggleDisplayMode"
       >
         {{ displayMode === 'hex' ? t('color.hex') : t('color.rgba') }}
-        <i class="icon-[lucide--chevron-down] size-3" />
+        <i class="icon-[lucide--chevron-down] size-4" />
       </button>
       <div
-        class="flex flex-1 items-center justify-center rounded-sm bg-secondary-background px-1 text-xs text-node-component-slot-text"
+        class="flex h-6 flex-1 items-center gap-2 rounded-sm bg-secondary-background px-1 text-xs text-node-component-slot-text"
       >
-        <template v-if="displayMode === 'hex'">
-          <span class="flex-1 text-center">{{ hexString }}</span>
-        </template>
-        <template v-else>
-          <span class="w-6 text-center">{{ rgb.r }}</span>
-          <span class="w-6 text-center">{{ rgb.g }}</span>
-          <span class="w-6 text-center">{{ rgb.b }}</span>
-        </template>
+        <div class="flex flex-1 items-center gap-1">
+          <template v-if="displayMode === 'hex'">
+            <span class="flex-1 text-center">{{ hexString }}</span>
+          </template>
+          <template v-else>
+            <span class="w-6 text-center">{{ rgb.r }}</span>
+            <span class="w-6 text-center">{{ rgb.g }}</span>
+            <span class="w-6 text-center">{{ rgb.b }}</span>
+          </template>
+        </div>
         <template v-if="alphaEnabled">
           <span class="border-l border-border-subtle pl-1">{{ hsva.a }}%</span>
         </template>

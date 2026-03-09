@@ -41,7 +41,7 @@ function handlePointerMove(e: PointerEvent) {
 <template>
   <div
     ref="containerRef"
-    class="relative aspect-square w-full cursor-crosshair rounded-sm"
+    class="relative aspect-square w-[193px] cursor-crosshair rounded-sm"
     :style="{ backgroundColor: hueBackground, touchAction: 'none' }"
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"

@@ -11,7 +11,7 @@ const meta: Meta<ComponentPropsAndSlots<typeof ColorPicker>> = {
   title: 'Components/ColorPicker',
   component: ColorPicker,
   tags: ['autodocs'],
-  parameters: { layout: 'centered' },
+  parameters: { layout: 'padded' },
   argTypes: {
     alphaEnabled: { control: 'boolean' }
   },

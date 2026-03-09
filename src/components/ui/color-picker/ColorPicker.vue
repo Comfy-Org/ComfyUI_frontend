@@ -126,6 +126,7 @@ const displayHex = computed(() =>
     <PopoverPortal>
       <PopoverContent
         side="bottom"
+        align="start"
         :side-offset="7"
         :collision-padding="10"
         class="z-1700"
