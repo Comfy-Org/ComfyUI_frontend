@@ -32,7 +32,7 @@ const { t } = useI18n()
 
 <template>
   <div
-    class="flex flex-col gap-2 rounded-lg border border-border-subtle bg-base-background p-2 shadow-md"
+    class="flex w-[211px] flex-col gap-2 rounded-lg border border-border-subtle bg-base-background p-2 shadow-md"
   >
     <ColorPickerSaturationValue
       v-model:saturation="hsva.s"
