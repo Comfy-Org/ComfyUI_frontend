@@ -93,7 +93,11 @@
           cn('flex items-center gap-2', size === 'md' ? 'text-xs' : 'text-sm')
         "
       >
-        <slot name="icon" />
+        <i
+          v-if="loading"
+          class="icon-[lucide--loader-circle] animate-spin text-muted-foreground"
+        />
+        <slot v-else name="icon" />
         <span
           v-if="slotProps.value !== null && slotProps.value !== undefined"
           class="text-base-foreground"
@@ -106,13 +110,12 @@
       </div>
     </template>
 
-    <!-- Trigger caret / loading spinner -->
+    <!-- Trigger caret (hidden when loading) -->
     <template #dropdownicon>
       <i
-        v-if="loading"
-        class="icon-[lucide--loader-circle] animate-spin text-muted-foreground"
+        v-if="!loading"
+        class="icon-[lucide--chevron-down] text-muted-foreground"
       />
-      <i v-else class="icon-[lucide--chevron-down] text-muted-foreground" />
     </template>
 
     <!-- Option row -->
