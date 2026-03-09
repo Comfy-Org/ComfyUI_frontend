@@ -44,6 +44,29 @@ const NODE_PLACEHOLDER_MAP: Record<string, string> = {
   LoadAudio: 'widgets.uploadSelect.placeholderAudio'
 }
 
+const bindDynamicValuesOption = (
+  widget: IBaseWidget,
+  getValues: () => unknown
+) => {
+  const options = widget.options
+  let fallbackValues = Array.isArray(options.values)
+    ? options.values
+    : ([] as unknown[])
+
+  Object.defineProperty(options, 'values', {
+    configurable: true,
+    enumerable: true,
+    get: () => {
+      const values = getValues()
+      if (values === undefined || values === null) return fallbackValues
+      return values
+    },
+    set: (values: unknown[]) => {
+      fallbackValues = Array.isArray(values) ? values : fallbackValues
+    }
+  })
+}
+
 const addMultiSelectWidget = (
   node: LGraphNode,
   inputSpec: ComboInputSpec
@@ -133,22 +156,16 @@ const createInputMappingWidget = (
     })
   }
 
-  const origOptions = widget.options
-  widget.options = new Proxy(origOptions, {
-    get(target, prop) {
-      if (prop !== 'values') {
-        return target[prop as keyof typeof target]
-      }
-      return assetsStore.inputAssets
-        .filter(
-          (asset) =>
-            getMediaTypeFromFilename(asset.name) ===
-            NODE_MEDIA_TYPE_MAP[node.comfyClass ?? '']
-        )
-        .map((asset) => asset.asset_hash)
-        .filter((hash): hash is string => !!hash)
-    }
-  })
+  bindDynamicValuesOption(widget, () =>
+    assetsStore.inputAssets
+      .filter(
+        (asset) =>
+          getMediaTypeFromFilename(asset.name) ===
+          NODE_MEDIA_TYPE_MAP[node.comfyClass ?? '']
+      )
+      .map((asset) => asset.asset_hash)
+      .filter((hash): hash is string => !!hash)
+  )
 
   if (inputSpec.control_after_generate) {
     if (!isComboWidget(widget)) {
@@ -210,15 +227,7 @@ const addComboWidget = (
     })
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
-    const origOptions = widget.options
-    widget.options = new Proxy(origOptions, {
-      get(target, prop) {
-        // Assertion: Proxy handler passthrough
-        return prop !== 'values'
-          ? target[prop as keyof typeof target]
-          : remoteWidget.getValue()
-      }
-    })
+    bindDynamicValuesOption(widget, () => remoteWidget.getValue())
   }
 
   if (inputSpec.control_after_generate) {
