@@ -10,7 +10,6 @@ const mocks = vi.hoisted(() => ({
   toggleNodePin: vi.fn(),
   toggleNodeBypass: vi.fn(),
   runBranch: vi.fn(),
-  openCustomColorPicker: vi.fn(),
   getCurrentAppliedColor: vi.fn<() => string | null>(() => null)
 }))
 
@@ -44,8 +43,7 @@ vi.mock('./useNodeCustomization', () => ({
     favoriteColors: { value: [] },
     recentColors: { value: [] },
     getCurrentAppliedColor: mocks.getCurrentAppliedColor,
-    isLightTheme: { value: false },
-    openCustomColorPicker: mocks.openCustomColorPicker
+    isLightTheme: { value: false }
   })
 }))
 
@@ -75,6 +73,7 @@ describe('useNodeMenuOptions', () => {
 
     expect(customEntry).toBeDefined()
     expect(customEntry?.color).toBeUndefined()
+    expect(customEntry?.pickerValue).toBe('353535')
   })
 
   it('preserves the shared applied color for the custom node color entry', async () => {
@@ -89,5 +88,6 @@ describe('useNodeMenuOptions', () => {
 
     expect(customEntry).toBeDefined()
     expect(customEntry?.color).toBe('#abcdef')
+    expect(customEntry?.pickerValue).toBe('abcdef')
   })
 })

@@ -108,7 +108,6 @@ export {
   NODE_COLOR_SWATCH_LIMIT,
   deriveCustomNodeHeaderColor,
   normalizeNodeColor,
-  pickHexColor,
   toggleFavoriteNodeColor,
   upsertRecentNodeColor
 } from '@/utils/nodeColorPersistence'

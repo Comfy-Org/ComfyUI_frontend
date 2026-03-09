@@ -9,8 +9,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   applyCustomColorToItems,
   getDefaultCustomNodeColor,
-  getSharedAppliedColor,
-  pickHexColor
+  getSharedAppliedColor
 } from '@/utils/nodeColorCustomization'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
@@ -43,16 +42,6 @@ export function useGroupMenuOptions() {
     })
     canvasRefresh.refreshCanvas()
     await rememberRecentColor(color)
-  }
-
-  const openGroupCustomColorPicker = async (groupContext: LGraphGroup) => {
-    const currentColor = getSharedAppliedColor([groupContext])
-    const pickedColor = await pickHexColor(
-      currentColor ?? getDefaultCustomNodeColor()
-    )
-    if (!pickedColor) return
-
-    await applyCustomColorToGroup(groupContext, pickedColor)
   }
 
   const getFitGroupToNodesOption = (groupContext: LGraphGroup): MenuOption => ({
@@ -100,6 +89,7 @@ export function useGroupMenuOptions() {
     icon: 'icon-[lucide--palette]',
     hasSubmenu: true,
     submenu: (() => {
+      const currentAppliedColor = getSharedAppliedColor([groupContext])
       const presetEntries = colorOptions.map((colorOption) => ({
         label: colorOption.localizedName,
         color: isLightTheme.value
@@ -147,11 +137,16 @@ export function useGroupMenuOptions() {
         ...customEntries,
         {
           label: t('g.custom'),
-          color: getSharedAppliedColor([groupContext]) ?? getDefaultCustomNodeColor(),
-          action: async () => {
-            await openGroupCustomColorPicker(groupContext)
+          color: currentAppliedColor ?? undefined,
+          pickerValue: (currentAppliedColor ?? getDefaultCustomNodeColor()).replace(
+            '#',
+            ''
+          ),
+          onColorPick: async (color: string) => {
+            await applyCustomColorToGroup(groupContext, color)
             bump()
-          }
+          },
+          action: () => {}
         }
       ]
     })()

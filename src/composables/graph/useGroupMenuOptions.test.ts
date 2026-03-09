@@ -5,7 +5,6 @@ import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type * as NodeColorCustomizationModule from '@/utils/nodeColorCustomization'
 
 const mocks = vi.hoisted(() => ({
-  pickHexColor: vi.fn().mockResolvedValue('#fedcba'),
   refreshCanvas: vi.fn(),
   rememberRecentColor: vi.fn().mockResolvedValue(undefined),
   selectedItems: [] as unknown[]
@@ -75,16 +74,11 @@ vi.mock('@/composables/graph/useNodeCustomization', () => ({
   })
 }))
 
-vi.mock('@/utils/nodeColorCustomization', async () => {
-  const actual = await vi.importActual<typeof NodeColorCustomizationModule>(
+vi.mock('@/utils/nodeColorCustomization', async () =>
+  vi.importActual<typeof NodeColorCustomizationModule>(
     '@/utils/nodeColorCustomization'
   )
-
-  return {
-    ...actual,
-    pickHexColor: mocks.pickHexColor
-  }
-})
+)
 
 function createNode() {
   return Object.assign(Object.create(LGraphNode.prototype), {
@@ -135,7 +129,7 @@ describe('useGroupMenuOptions', () => {
     )
   })
 
-  it('seeds the custom picker from the clicked group color', async () => {
+  it('seeds the PrimeVue custom picker from the clicked group color', async () => {
     const selectedNode = createNode()
     selectedNode.bgcolor = '#445566'
     const groupContext = createGroup('#112233')
@@ -150,10 +144,11 @@ describe('useGroupMenuOptions', () => {
     )
 
     expect(customEntry).toBeDefined()
+    expect(customEntry?.color).toBe('#112233')
+    expect(customEntry?.pickerValue).toBe('112233')
 
-    await customEntry?.action()
+    await customEntry?.onColorPick?.('#fedcba')
 
-    expect(mocks.pickHexColor).toHaveBeenCalledWith('#112233')
     expect(groupContext.color).toBe('#fedcba')
     expect(selectedNode.bgcolor).toBe('#445566')
     expect(mocks.rememberRecentColor).toHaveBeenCalledWith('#fedcba')

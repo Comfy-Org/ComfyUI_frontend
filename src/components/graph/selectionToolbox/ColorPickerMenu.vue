@@ -26,43 +26,63 @@
           : 'flex min-w-40 flex-col p-2'
       "
     >
-      <div
-        v-for="subOption in option.submenu"
-        :key="subOption.label"
-        :class="
-          cn(
-            'cursor-pointer rounded-sm hover:bg-secondary-background-hover',
-            isColorSubmenu
-              ? 'flex size-7 items-center justify-center'
-              : 'flex items-center gap-2 px-3 py-1.5 text-sm',
-            subOption.disabled
-              ? 'pointer-events-none cursor-not-allowed text-node-icon-disabled'
-              : 'hover:bg-secondary-background-hover'
-          )
-        "
-        :title="subOption.label"
-        @click="handleSubmenuClick(subOption)"
-      >
+      <template v-for="subOption in option.submenu" :key="subOption.label">
         <div
-          v-if="subOption.color"
-          class="size-5 rounded-full border border-border-default"
-          :style="{ backgroundColor: subOption.color }"
-        />
-        <template v-else-if="!subOption.color">
-          <i
-            v-if="isShapeSelected(subOption)"
-            class="icon-[lucide--check] size-4 shrink-0"
+          v-if="isPickerOption(subOption)"
+          class="flex items-center gap-2 rounded-sm px-3 py-1.5 text-sm"
+        >
+          <span class="flex-1">{{ subOption.label }}</span>
+          <ColorPicker
+            :model-value="subOption.pickerValue"
+            format="hex"
+            :aria-label="subOption.label"
+            class="h-8 w-8 overflow-hidden rounded-md border border-border-default bg-secondary-background"
+            :pt="{
+              preview: {
+                class: '!h-full !w-full !rounded-md !border-none'
+              }
+            }"
+            @update:model-value="handleColorPickerUpdate(subOption, $event)"
           />
-          <div v-else class="w-4 shrink-0" />
-          <span>{{ subOption.label }}</span>
-        </template>
-      </div>
+        </div>
+        <div
+          v-else
+          :class="
+            cn(
+              'cursor-pointer rounded-sm hover:bg-secondary-background-hover',
+              isColorSubmenu
+                ? 'flex size-7 items-center justify-center'
+                : 'flex items-center gap-2 px-3 py-1.5 text-sm',
+              subOption.disabled
+                ? 'pointer-events-none cursor-not-allowed text-node-icon-disabled'
+                : 'hover:bg-secondary-background-hover'
+            )
+          "
+          :title="subOption.label"
+          @click="handleSubmenuClick(subOption)"
+        >
+          <div
+            v-if="subOption.color"
+            class="size-5 rounded-full border border-border-default"
+            :style="{ backgroundColor: subOption.color }"
+          />
+          <template v-else-if="!subOption.color">
+            <i
+              v-if="isShapeSelected(subOption)"
+              class="icon-[lucide--check] size-4 shrink-0"
+            />
+            <div v-else class="w-4 shrink-0" />
+            <span>{{ subOption.label }}</span>
+          </template>
+        </div>
+      </template>
     </div>
   </Popover>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import ColorPicker from 'primevue/colorpicker'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
@@ -100,6 +120,22 @@ const handleSubmenuClick = (subOption: SubMenuOption) => {
   }
   emit('submenu-click', subOption)
   popoverRef.value?.hide()
+}
+
+const isPickerOption = (subOption: SubMenuOption): boolean =>
+  typeof subOption.pickerValue === 'string' &&
+  typeof subOption.onColorPick === 'function'
+
+async function handleColorPickerUpdate(
+  subOption: SubMenuOption,
+  value: string
+) {
+  if (!isPickerOption(subOption) || !value) return
+
+  await subOption.onColorPick?.(`#${value}`)
+  if (typeof popoverRef.value?.hide === 'function') {
+    popoverRef.value.hide()
+  }
 }
 
 const isShapeSelected = (subOption: SubMenuOption): boolean => {

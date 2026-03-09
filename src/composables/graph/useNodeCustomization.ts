@@ -13,9 +13,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 import {
   applyCustomColorToItems,
-  getDefaultCustomNodeColor,
-  getSharedAppliedColor,
-  pickHexColor
+  getSharedAppliedColor
 } from '@/utils/nodeColorCustomization'
 
 import { useCustomNodeColorSettings } from './useCustomNodeColorSettings'
@@ -127,15 +125,6 @@ export function useNodeCustomization() {
     await rememberRecentColor(normalized)
   }
 
-  const openCustomColorPicker = async () => {
-    const color = await pickHexColor(
-      getCurrentAppliedColor() ?? getDefaultCustomNodeColor()
-    )
-    if (!color) return
-
-    await applyCustomColor(color)
-  }
-
   const applyShape = (shapeOption: ShapeOption) => {
     const selectedNodes = Array.from(canvasStore.selectedItems).filter(
       (item): item is LGraphNode => item instanceof LGraphNode
@@ -202,7 +191,6 @@ export function useNodeCustomization() {
     getCurrentColor,
     getCurrentAppliedColor,
     getCurrentShape,
-    openCustomColorPicker,
     favoriteColors,
     recentColors,
     isLightTheme

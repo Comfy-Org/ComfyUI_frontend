@@ -1,6 +1,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { getDefaultCustomNodeColor } from '@/utils/nodeColorCustomization'
+
 import type { MenuOption } from './useMoreOptionsMenu'
 import { useNodeCustomization } from './useNodeCustomization'
 import { useSelectedNodeActions } from './useSelectedNodeActions'
@@ -20,8 +22,7 @@ export function useNodeMenuOptions() {
     favoriteColors,
     recentColors,
     getCurrentAppliedColor,
-    isLightTheme,
-    openCustomColorPicker
+    isLightTheme
   } = useNodeCustomization()
   const {
     adjustNodeSize,
@@ -39,6 +40,7 @@ export function useNodeMenuOptions() {
   )
 
   const colorSubmenu = computed(() => {
+    const currentAppliedColor = getCurrentAppliedColor()
     const presetEntries = colorOptions.map((colorOption) => ({
       label: colorOption.localizedName,
       color: isLightTheme.value
@@ -80,10 +82,13 @@ export function useNodeMenuOptions() {
       ...customEntries,
       {
         label: t('g.custom'),
-        color: getCurrentAppliedColor() ?? undefined,
-        action: () => {
-          void openCustomColorPicker()
-        }
+        color: currentAppliedColor ?? undefined,
+        pickerValue: (currentAppliedColor ?? getDefaultCustomNodeColor()).replace(
+          '#',
+          ''
+        ),
+        onColorPick: applyCustomColor,
+        action: () => {}
       }
     ]
   })
