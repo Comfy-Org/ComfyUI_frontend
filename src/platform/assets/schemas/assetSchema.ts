@@ -9,6 +9,7 @@ const zAsset = z.object({
   mime_type: z.string().nullish(),
   tags: z.array(z.string()).optional().default([]),
   preview_id: z.string().nullable().optional(),
+  display_name: z.string().optional(),
   preview_url: z.string().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
