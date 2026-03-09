@@ -4,9 +4,7 @@ import type { INodeSlot } from '@/lib/litegraph/src/interfaces'
 
 import InputSlot from './InputSlot.vue'
 
-function createSlotData(
-  overrides: Partial<INodeSlot> = {}
-): INodeSlot {
+function createSlotData(overrides: Partial<INodeSlot> = {}): INodeSlot {
   return {
     name: 'image',
     type: 'IMAGE',
@@ -23,7 +21,8 @@ const meta: Meta<typeof InputSlot> = {
   decorators: [
     (story) => ({
       components: { story },
-      template: '<div class="w-48 bg-node-component-surface p-2"><story /></div>'
+      template:
+        '<div class="w-48 bg-node-component-surface p-2"><story /></div>'
     })
   ]
 }
