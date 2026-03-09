@@ -95,19 +95,21 @@ const isOpen = ref(false)
           )
         "
       >
-        <div class="relative size-8 shrink-0 overflow-hidden rounded-l-lg">
-          <div
-            class="absolute inset-0"
-            :style="{
-              backgroundImage:
-                'repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%)',
-              backgroundSize: '8px 8px'
-            }"
-          />
-          <div
-            class="absolute inset-0"
-            :style="{ backgroundColor: previewColor }"
-          />
+        <div class="flex size-8 shrink-0 items-center justify-center">
+          <div class="relative size-4 overflow-hidden rounded-sm">
+            <div
+              class="absolute inset-0"
+              :style="{
+                backgroundImage:
+                  'repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%)',
+                backgroundSize: '4px 4px'
+              }"
+            />
+            <div
+              class="absolute inset-0"
+              :style="{ backgroundColor: previewColor }"
+            />
+          </div>
         </div>
         <div
           class="flex flex-1 items-center justify-between pl-1 text-xs text-node-component-slot-text"
