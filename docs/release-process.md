@@ -4,15 +4,15 @@
 
 All releases use `release-version-bump.yaml`. Effects differ by bump type:
 
-| Bump | Target | Creates branches? | GitHub release |
-|---|---|---|---|
-| Minor | `main` | `core/` + `cloud/` for previous minor | Published, "latest" |
-| Patch | `main` | No | Published, "latest" |
-| Patch | `core/X.Y` | No | **Draft** (uncheck "latest") |
-| Prerelease | any | No | Draft + prerelease |
+| Bump       | Target     | Creates branches?                     | GitHub release               |
+| ---------- | ---------- | ------------------------------------- | ---------------------------- |
+| Minor      | `main`     | `core/` + `cloud/` for previous minor | Published, "latest"          |
+| Patch      | `main`     | No                                    | Published, "latest"          |
+| Patch      | `core/X.Y` | No                                    | **Draft** (uncheck "latest") |
+| Prerelease | any        | No                                    | Draft + prerelease           |
 
 **Minor bump** (e.g. 1.41→1.42): freezes the previous minor into `core/1.41`
-and `cloud/1.41`, branched from the commit *before* the bump. Nightly patch
+and `cloud/1.41`, branched from the commit _before_ the bump. Nightly patch
 bumps on `main` are convenience snapshots — no branches created.
 
 **Patch on `core/X.Y`**: publishes a hotfix draft release. Must not be marked
@@ -52,11 +52,11 @@ branch has unreleased commits, it triggers a patch bump and drafts a PR to
 
 ## Workflows
 
-| Workflow | Purpose |
-|---|---|
-| `release-version-bump.yaml` | Bump version, create Release PR |
-| `release-draft-create.yaml` | Build + publish to GitHub/PyPI/npm |
-| `release-branch-create.yaml` | Create `core/` + `cloud/` branches (minor/major) |
-| `release-biweekly-comfyui.yaml` | Auto-patch + ComfyUI requirements PR |
-| `pr-backport.yaml` | Cherry-pick fixes to stable branches |
-| `cloud-backport-tag.yaml` | Tag cloud branch merges |
+| Workflow                        | Purpose                                          |
+| ------------------------------- | ------------------------------------------------ |
+| `release-version-bump.yaml`     | Bump version, create Release PR                  |
+| `release-draft-create.yaml`     | Build + publish to GitHub/PyPI/npm               |
+| `release-branch-create.yaml`    | Create `core/` + `cloud/` branches (minor/major) |
+| `release-biweekly-comfyui.yaml` | Auto-patch + ComfyUI requirements PR             |
+| `pr-backport.yaml`              | Cherry-pick fixes to stable branches             |
+| `cloud-backport-tag.yaml`       | Tag cloud branch merges                          |
