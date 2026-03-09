@@ -15,7 +15,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import MobileError from '@/renderer/extensions/linearMode/MobileError.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -31,6 +33,7 @@ const canvasStore = useCanvasStore()
 const colorPaletteService = useColorPaletteService()
 const colorPaletteStore = useColorPaletteStore()
 const { isLoggedIn } = useCurrentUser()
+const executionErrorStore = useExecutionErrorStore()
 const { t } = useI18n()
 const { commandIdToMenuItem } = useMenuItemStore()
 const queueStore = useQueueStore()
@@ -40,7 +43,7 @@ const { toggle: toggleFullscreen } = useFullscreen(undefined, {
   autoExit: true
 })
 
-const activeIndex = ref(2)
+const activeIndex = ref(1)
 const sliderPaneRef = useTemplateRef('sliderPaneRef')
 const sliderWidth = computed(() => sliderPaneRef.value?.offsetWidth)
 
@@ -192,7 +195,11 @@ const menuEntries = computed<MenuItem[]>(() => [
         <div
           class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
         >
-          <LinearPreview mobile />
+          <MobileError
+            v-if="executionErrorStore.isErrorOverlayOpen"
+            @navigate-controls="activeIndex = 0"
+          />
+          <LinearPreview v-else mobile @navigate-controls="activeIndex = 0" />
         </div>
         <AssetsSidebarTab
           class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"
@@ -213,7 +220,11 @@ const menuEntries = computed<MenuItem[]>(() => [
         <div class="relative size-4">
           <i :class="cn('size-4', icon)" />
           <div
-            v-if="
+            v-if="index === 1 && executionErrorStore.isErrorOverlayOpen"
+            class="absolute -top-1 -right-1 size-2 rounded-full bg-error"
+          />
+          <div
+            v-else-if="
               index === 1 &&
               (queueStore.runningTasks.length > 0 ||
                 queueStore.pendingTasks.length > 0)

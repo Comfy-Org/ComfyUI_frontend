@@ -14,7 +14,7 @@ on:
       - 'cloud/*'
       - 'main'
   pull_request:
-    types: [labeled]
+    types: [labeled, synchronize]
   workflow_dispatch:
 
 permissions: {}
@@ -26,11 +26,18 @@ concurrency:
 jobs:
   dispatch:
     # Fork guard: prevent forks from dispatching to the cloud repo.
-    # For pull_request events, only dispatch when the 'preview' label is added.
+    # For pull_request events, only dispatch for preview labels.
+    # - labeled: fires when a label is added; check the added label name.
+    # - synchronize: fires on push; check existing labels on the PR.
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
       (github.event_name != 'pull_request' ||
-       github.event.label.name == 'preview')
+       (github.event.action == 'labeled' &&
+        contains(fromJSON('["preview","preview-cpu","preview-gpu"]'), github.event.label.name)) ||
+       (github.event.action == 'synchronize' &&
+        (contains(github.event.pull_request.labels.*.name, 'preview') ||
+         contains(github.event.pull_request.labels.*.name, 'preview-cpu') ||
+         contains(github.event.pull_request.labels.*.name, 'preview-gpu'))))
     runs-on: ubuntu-latest
     steps:
       - name: Build client payload
