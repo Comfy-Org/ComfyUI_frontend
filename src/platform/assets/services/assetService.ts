@@ -31,6 +31,9 @@ export interface PaginationOptions {
 interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
   includePublic?: boolean
+  jobIds?: string[]
+  sort?: string
+  order?: 'asc' | 'desc'
 }
 
 interface AssetExportOptions {
@@ -202,7 +205,10 @@ function createAssetService() {
       includeTags,
       limit = DEFAULT_LIMIT,
       offset,
-      includePublic
+      includePublic,
+      jobIds,
+      sort,
+      order
     } = options
     const queryParams = new URLSearchParams({
       include_tags: includeTags.join(','),
@@ -213,6 +219,15 @@ function createAssetService() {
     }
     if (includePublic !== undefined) {
       queryParams.set('include_public', includePublic ? 'true' : 'false')
+    }
+    if (jobIds?.length) {
+      queryParams.set('job_ids', jobIds.join(','))
+    }
+    if (sort) {
+      queryParams.set('sort', sort)
+    }
+    if (order) {
+      queryParams.set('order', order)
     }
 
     const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`
@@ -754,6 +769,25 @@ function createAssetService() {
     return await res.json()
   }
 
+  async function getOutputAssets(
+    options?: PaginationOptions & { sort?: string; order?: 'asc' | 'desc' }
+  ): Promise<AssetResponse> {
+    return handleAssetRequest(
+      { includeTags: ['output'], ...options },
+      'output assets'
+    )
+  }
+
+  async function getAssetsByJobIds(
+    jobIds: string[],
+    options?: PaginationOptions
+  ): Promise<AssetResponse> {
+    return handleAssetRequest(
+      { includeTags: ['output'], jobIds, ...options },
+      'job assets'
+    )
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
@@ -772,7 +806,9 @@ function createAssetService() {
     uploadAssetFromBase64,
     uploadAssetAsync,
     createAssetExport,
-    getExportDownloadUrl
+    getExportDownloadUrl,
+    getOutputAssets,
+    getAssetsByJobIds
   }
 }
 
