@@ -2,6 +2,11 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Select from '@/components/ui/select/Select.vue'
+import SelectContent from '@/components/ui/select/SelectContent.vue'
+import SelectItem from '@/components/ui/select/SelectItem.vue'
+import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
+import SelectValue from '@/components/ui/select/SelectValue.vue'
 import type { HSVA } from '@/utils/colorUtil'
 import { hsbToRgb, rgbToHex } from '@/utils/colorUtil'
 
@@ -23,10 +28,6 @@ const rgb = computed(() =>
 const hexString = computed(() => rgbToHex(rgb.value).toLowerCase())
 
 const { t } = useI18n()
-
-function toggleDisplayMode() {
-  displayMode.value = displayMode.value === 'hex' ? 'rgba' : 'hex'
-}
 </script>
 
 <template>
@@ -48,13 +49,21 @@ function toggleDisplayMode() {
       :brightness="hsva.v"
     />
     <div class="flex items-center gap-2.5">
-      <button
-        class="flex h-6 w-16 shrink-0 items-center gap-1 rounded-sm bg-secondary-background px-2 text-xs text-base-foreground"
-        @click="toggleDisplayMode"
-      >
-        {{ displayMode === 'hex' ? t('color.hex') : t('color.rgba') }}
-        <i class="icon-[lucide--chevron-down] size-4" />
-      </button>
+      <Select v-model="displayMode">
+        <SelectTrigger
+          class="h-6 w-16 shrink-0 gap-1 rounded-sm border-0 px-2 py-0 text-xs"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent class="min-w-16 p-1">
+          <SelectItem value="hex" class="px-2 py-1 text-xs">
+            {{ t('color.hex') }}
+          </SelectItem>
+          <SelectItem value="rgba" class="px-2 py-1 text-xs">
+            {{ t('color.rgba') }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
       <div
         class="flex h-6 flex-1 items-center gap-2 rounded-sm bg-secondary-background px-1 text-xs text-node-component-slot-text"
       >
