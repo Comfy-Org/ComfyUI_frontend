@@ -24,7 +24,7 @@ function handleWheel(e: WheelEvent) {
 
 let dragging = false
 function handleDown(e: PointerEvent) {
-  if (e.button !== 0) return
+  if (e.button !== 0 && e.button !== 1) return
 
   const zoomPaneEl = zoomPane.value
   if (!zoomPaneEl) return
