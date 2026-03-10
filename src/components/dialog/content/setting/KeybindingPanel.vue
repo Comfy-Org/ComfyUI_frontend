@@ -4,6 +4,7 @@
       <SearchBox
         v-model="filters['global'].value"
         class="max-w-96"
+        size="lg"
         :placeholder="
           $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
         "
@@ -15,6 +16,8 @@
         :entries="menuEntries"
         icon="icon-[lucide--ellipsis]"
         item-class="text-sm gap-2"
+        button-size="unset"
+        button-class="size-10"
       />
     </Teleport>
 

@@ -12,6 +12,7 @@ import { computed, toValue } from 'vue'
 import DropdownItem from '@/components/common/DropdownItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
+import type { ButtonVariants } from '../ui/button/button.variants'
 
 defineOptions({
   inheritAttrs: false
@@ -23,6 +24,8 @@ const { itemClass: itemProp, contentClass: contentProp } = defineProps<{
   to?: string | HTMLElement
   itemClass?: string
   contentClass?: string
+  buttonSize?: ButtonVariants['size']
+  buttonClass?: string
 }>()
 
 const itemClass = computed(() =>
@@ -44,7 +47,7 @@ const contentClass = computed(() =>
   <DropdownMenuRoot>
     <DropdownMenuTrigger as-child>
       <slot name="button">
-        <Button size="icon">
+        <Button :size="buttonSize ?? 'icon'" :class="buttonClass">
           <i :class="icon ?? 'icon-[lucide--menu]'" />
         </Button>
       </slot>
