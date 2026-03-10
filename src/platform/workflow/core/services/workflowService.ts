@@ -370,8 +370,7 @@ export const useWorkflowService = () => {
             toastStore.add({
               severity: 'error',
               summary: t('g.error'),
-              detail: t('toastMessages.failedToSaveDraft'),
-              life: 3000
+              detail: t('toastMessages.failedToSaveDraft')
             })
           }
         }

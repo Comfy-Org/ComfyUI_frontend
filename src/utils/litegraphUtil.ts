@@ -1,5 +1,6 @@
 import _ from 'es-toolkit/compat'
 
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
@@ -318,6 +319,31 @@ export function resolveNode(
     if (node) return node
   }
   return undefined
+}
+export function resolveNodeWidget(
+  nodeId: NodeId,
+  widgetName?: string,
+  graph: LGraph = app.rootGraph
+): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
+  const node = graph.getNodeById(nodeId)
+  if (!widgetName) return node ? [node] : []
+  if (node) {
+    const widget = node.widgets?.find((w) => w.name === widgetName)
+    return widget ? [node, widget] : []
+  }
+
+  for (const node of graph.nodes) {
+    if (!node.isSubgraphNode()) continue
+    const widget = node.widgets?.find(
+      (w) =>
+        isPromotedWidgetView(w) &&
+        w.sourceWidgetName === widgetName &&
+        w.sourceNodeId === nodeId
+    )
+    if (widget) return [node, widget]
+  }
+
+  return []
 }
 
 export function isLoad3dNode(node: LGraphNode) {

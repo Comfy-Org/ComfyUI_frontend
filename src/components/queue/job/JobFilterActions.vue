@@ -1,6 +1,6 @@
 <template>
   <div class="flex min-w-0 items-center gap-2">
-    <SearchBox
+    <SearchInput
       v-if="showSearch"
       :model-value="searchQuery"
       class="min-w-0 flex-1"
@@ -27,7 +27,7 @@
           </Button>
         </template>
         <template #default="{ close }">
-          <div class="flex min-w-[12rem] flex-col items-stretch">
+          <div class="flex min-w-48 flex-col items-stretch">
             <Button
               class="w-full justify-between"
               variant="textonly"
@@ -76,7 +76,7 @@
           </Button>
         </template>
         <template #default="{ close }">
-          <div class="flex min-w-[12rem] flex-col items-stretch">
+          <div class="flex min-w-48 flex-col items-stretch">
             <template v-for="(mode, index) in jobSortModes" :key="mode">
               <Button
                 class="w-full justify-between"
@@ -116,7 +116,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { jobSortModes } from '@/composables/queue/useJobList'

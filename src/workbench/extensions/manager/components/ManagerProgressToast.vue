@@ -187,7 +187,7 @@ onBeforeUnmount(() => {
           >
             <template #header>
               <div class="flex w-full items-center justify-between py-2">
-                <div class="flex flex-col text-sm leading-normal font-medium">
+                <div class="flex flex-col text-sm/normal font-medium">
                   <span>{{ log.taskName }}</span>
                   <span class="text-muted">
                     {{
@@ -233,7 +233,7 @@ onBeforeUnmount(() => {
                   :key="logIndex"
                   class="text-muted"
                 >
-                  <pre class="break-words whitespace-pre-wrap">{{
+                  <pre class="wrap-break-word whitespace-pre-wrap">{{
                     logLine
                   }}</pre>
                 </div>
@@ -245,8 +245,10 @@ onBeforeUnmount(() => {
     </template>
 
     <template #footer="{ toggle }">
-      <div class="flex w-full items-center justify-between px-6 py-2 shadow-lg">
-        <div class="flex items-center text-base leading-none">
+      <div
+        class="flex w-full items-center justify-between gap-4 px-6 py-2 shadow-lg"
+      >
+        <div class="flex min-w-0 items-center text-base leading-none">
           <div class="flex items-center">
             <template v-if="isInProgress">
               <DotSpinner duration="1s" class="mr-2" />
@@ -262,7 +264,7 @@ onBeforeUnmount(() => {
             </template>
           </div>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex shrink-0 items-center gap-4">
           <span v-if="isInProgress" class="text-sm text-muted-foreground">
             {{ completedTasksCount }} {{ t('g.progressCountOf') }}
             {{ totalTasksCount }}

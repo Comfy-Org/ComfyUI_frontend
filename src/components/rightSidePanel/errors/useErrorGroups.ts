@@ -1,5 +1,5 @@
-import { computed, reactive, ref, watch } from 'vue'
-import type { Ref } from 'vue'
+import { computed, reactive, ref, toValue, watch } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
@@ -227,7 +227,7 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
 }
 
 export function useErrorGroups(
-  searchQuery: Ref<string>,
+  searchQuery: MaybeRefOrGetter<string>,
   t: (key: string) => string
 ) {
   const executionErrorStore = useExecutionErrorStore()
@@ -584,7 +584,7 @@ export function useErrorGroups(
   })
 
   const filteredGroups = computed<ErrorGroup[]>(() => {
-    const query = searchQuery.value.trim()
+    const query = toValue(searchQuery).trim()
     return searchErrorGroups(tabErrorGroups.value, query)
   })
 

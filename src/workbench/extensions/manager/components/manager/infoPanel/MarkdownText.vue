@@ -1,7 +1,7 @@
 <template>
   <div>
-    <div v-if="!hasMarkdown" class="break-words" v-text="text" />
-    <div v-else class="break-words">
+    <div v-if="!hasMarkdown" class="wrap-break-word" v-text="text" />
+    <div v-else class="wrap-break-word">
       <template v-for="(segment, index) in parsedSegments" :key="index">
         <a
           v-if="segment.type === 'link' && 'url' in segment"
@@ -16,7 +16,7 @@
         <em v-else-if="segment.type === 'italic'">{{ segment.text }}</em>
         <code
           v-else-if="segment.type === 'code'"
-          class="rounded px-1 py-0.5 text-xs"
+          class="rounded-sm px-1 py-0.5 text-xs"
           >{{ segment.text }}</code
         >
         <span v-else>{{ segment.text }}</span>

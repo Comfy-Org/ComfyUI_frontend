@@ -3,7 +3,7 @@
     role="status"
     tabindex="0"
     :aria-label="t('sideToolbar.activeJobStatus', { status: statusText })"
-    class="flex flex-col gap-2 p-2 rounded-lg"
+    class="flex flex-col gap-2 rounded-lg p-2"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
     @focusin="hovered = true"
@@ -24,20 +24,14 @@
         class="absolute inset-0 flex items-center justify-center bg-modal-card-placeholder-background"
       >
         <!-- Spinner for queued/initialization states -->
-        <i
-          v-if="isQueued"
-          class="icon-[lucide--loader-circle] size-8 animate-spin text-muted-foreground"
-        />
+        <Loader v-if="isQueued" size="md" class="text-muted-foreground" />
         <!-- Error icon for failed state -->
         <i
           v-else-if="isFailed"
           class="icon-[lucide--circle-alert] size-8 text-red-500"
         />
         <!-- Spinner for running without preview -->
-        <i
-          v-else
-          class="icon-[lucide--loader-circle] size-8 animate-spin text-muted-foreground"
-        />
+        <Loader v-else size="md" class="text-muted-foreground" />
       </div>
       <!-- Cancel/Delete button overlay -->
       <Button
@@ -53,13 +47,13 @@
     </div>
 
     <!-- Footer: Progress bar or status text -->
-    <div class="flex gap-1.5 items-center h-5">
+    <div class="flex h-5 items-center gap-1.5">
       <!-- Running state: percentage + progress bar -->
       <template v-if="isRunning && hasProgressPercent(progressPercent)">
         <span class="shrink-0 text-sm text-muted-foreground">
           {{ Math.round(progressPercent ?? 0) }}%
         </span>
-        <div class="flex-1 relative h-1 rounded-sm bg-secondary-background">
+        <div class="relative h-1 flex-1 rounded-sm bg-secondary-background">
           <div
             :class="progressBarPrimaryClass"
             :style="progressPercentStyle(progressPercent)"
@@ -80,6 +74,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Loader from '@/components/loader/Loader.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'

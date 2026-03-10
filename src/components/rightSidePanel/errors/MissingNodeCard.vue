@@ -1,13 +1,37 @@
 <template>
   <div class="px-4 pb-2">
     <!-- Sub-label: cloud or OSS message shown above all pack groups -->
-    <p class="m-0 pb-5 text-sm text-muted-foreground leading-relaxed">
+    <p
+      class="m-0 text-sm/relaxed text-muted-foreground"
+      :class="showManagerHint ? 'pb-3' : 'pb-5'"
+    >
       {{
         isCloud
           ? t('rightSidePanel.missingNodePacks.cloudMessage')
           : t('rightSidePanel.missingNodePacks.ossMessage')
       }}
     </p>
+
+    <!-- Manager disabled hint: shown on OSS when manager is not active -->
+    <i18n-t
+      v-if="showManagerHint"
+      keypath="rightSidePanel.missingNodePacks.ossManagerDisabledHint"
+      tag="p"
+      class="m-0 pb-5 text-sm/relaxed text-muted-foreground"
+    >
+      <template #pipCmd>
+        <code
+          class="rounded-sm bg-comfy-menu-bg px-1 py-0.5 font-mono text-xs text-comfy-input-foreground"
+          >pip install -U --pre comfyui-manager</code
+        >
+      </template>
+      <template #flag>
+        <code
+          class="rounded-sm bg-comfy-menu-bg px-1 py-0.5 font-mono text-xs text-comfy-input-foreground"
+          >--enable-manager</code
+        >
+      </template>
+    </i18n-t>
     <MissingPackGroupRow
       v-for="group in missingPackGroups"
       :key="group.packId ?? '__unknown__'"
@@ -25,12 +49,12 @@
       v-if="hasInstalledPacksPendingRestart"
       variant="primary"
       :disabled="isRestarting"
-      class="w-full h-9 justify-center gap-2 text-sm font-semibold mt-2"
+      class="mt-2 h-9 w-full justify-center gap-2 text-sm font-semibold"
       @click="applyChanges()"
     >
       <DotSpinner v-if="isRestarting" duration="1s" :size="14" />
       <i v-else class="icon-[lucide--refresh-cw] size-4 shrink-0" />
-      <span class="truncate min-w-0">{{
+      <span class="min-w-0 truncate">{{
         t('rightSidePanel.missingNodePacks.applyChanges')
       }}</span>
     </Button>
@@ -65,6 +89,13 @@ const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
 const { isRestarting, applyChanges } = useApplyChanges()
 const { shouldShowManagerButtons } = useManagerState()
+
+/**
+ * Show the --enable-manager hint when:
+ * - Not on Cloud (OSS/local only)
+ * - Manager is disabled (showInfoButton is false)
+ */
+const showManagerHint = computed(() => !isCloud && !props.showInfoButton)
 
 /**
  * Show Apply Changes when any pack from the error group is already installed

@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { useEventListener, useTimeout } from '@vueuse/core'
-import { partition, remove, takeWhile } from 'es-toolkit'
+import { remove, takeWhile } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
@@ -17,6 +20,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
+import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -26,7 +30,7 @@ import { useQueueSettingsStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { resolveNode } from '@/utils/litegraphUtil'
+import { resolveNodeWidget } from '@/utils/litegraphUtil'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -43,7 +47,7 @@ const props = defineProps<{
   mobile?: boolean
 }>()
 
-defineEmits<{ navigateAssets: [] }>()
+defineEmits<{ navigateOutputs: [] }>()
 
 //NOTE: due to batching, will never be greater than 2
 const pendingJobQueues = ref(0)
@@ -60,21 +64,41 @@ useEventListener(
 )
 
 const mappedSelections = computed(() => {
-  let unprocessedInputs = [...appModeStore.selectedInputs]
-  //FIXME strict typing here
+  let unprocessedInputs = appModeStore.selectedInputs.flatMap(
+    ([nodeId, widgetName]) => {
+      const [node, widget] = resolveNodeWidget(nodeId, widgetName)
+      return widget ? ([[node, widget]] as const) : []
+    }
+  )
   const processedInputs: ReturnType<typeof nodeToNodeData>[] = []
   while (unprocessedInputs.length) {
-    const nodeId = unprocessedInputs[0][0]
-    const inputGroup = takeWhile(
-      unprocessedInputs,
-      ([id]) => id === nodeId
-    ).map(([, widgetName]) => widgetName)
+    const [node] = unprocessedInputs[0]
+    const inputGroup = takeWhile(unprocessedInputs, ([n]) => n === node).map(
+      ([, widget]) => widget
+    )
     unprocessedInputs = unprocessedInputs.slice(inputGroup.length)
-    const node = resolveNode(nodeId)
-    if (!node) continue
+    //FIXME: hide widget if owning node bypassed
+    if (node?.mode !== LGraphEventMode.ALWAYS) continue
 
     const nodeData = nodeToNodeData(node)
-    remove(nodeData.widgets ?? [], (w) => !inputGroup.includes(w.name))
+    remove(nodeData.widgets ?? [], (vueWidget) => {
+      if (vueWidget.slotMetadata?.linked) return true
+
+      if (!node.isSubgraphNode())
+        return !inputGroup.some((w) => w.name === vueWidget.name)
+
+      const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
+      return !inputGroup.some(
+        (subWidget) =>
+          isPromotedWidgetView(subWidget) &&
+          subWidget.sourceNodeId == storeNodeId &&
+          subWidget.sourceWidgetName === vueWidget.storeName
+      )
+    })
+    for (const widget of nodeData.widgets ?? []) {
+      widget.slotMetadata = undefined
+      widget.nodeId = String(node.id)
+    }
     processedInputs.push(nodeData)
   }
   return processedInputs
@@ -89,14 +113,14 @@ function getDropIndicator(node: LGraphNode) {
   const buildImageUrl = () => {
     if (!filename) return undefined
     const params = new URLSearchParams(resultItem)
-    appendCloudResParam(params, String(filename))
+    appendCloudResParam(params, resultItem.filename)
     return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
   }
 
   return {
     iconClass: 'icon-[lucide--image]',
     imageUrl: buildImageUrl(),
-    label: t('linearMode.dragAndDropImage'),
+    label: props.mobile ? undefined : t('linearMode.dragAndDropImage'),
     onClick: () => node.widgets?.[1]?.callback?.(undefined)
   }
 }
@@ -104,7 +128,6 @@ function getDropIndicator(node: LGraphNode) {
 function nodeToNodeData(node: LGraphNode) {
   const dropIndicator = getDropIndicator(node)
   const nodeData = extractVueNodeData(node)
-  for (const widget of nodeData.widgets ?? []) widget.slotMetadata = undefined
 
   return {
     ...nodeData,
@@ -116,20 +139,6 @@ function nodeToNodeData(node: LGraphNode) {
     onDragOver: node.onDragOver
   }
 }
-const partitionedNodes = computed(() => {
-  const parts = partition(
-    graphNodes.value
-      .filter((node) => node.mode === 0 && node.widgets?.length)
-      .map(nodeToNodeData)
-      .reverse(),
-    (node) => ['MarkdownNote', 'Note'].includes(node.type)
-  )
-  for (const noteNode of parts[0]) {
-    for (const widget of noteNode.widgets ?? [])
-      widget.options = { ...widget.options, read_only: true }
-  }
-  return parts
-})
 
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
@@ -164,79 +173,49 @@ defineExpose({ runButtonClick })
 <template>
   <div
     v-if="!isBuilderMode && hasOutputs"
-    class="flex flex-col min-w-80 h-full"
+    class="flex h-full min-w-80 flex-col"
     v-bind="$attrs"
   >
     <section
       v-if="!mobile"
       data-testid="linear-workflow-info"
-      class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center contain-size"
+      class="flex h-12 items-center gap-2 border-x border-border-subtle bg-comfy-menu-bg px-4 py-2 contain-size"
     >
       <span
-        class="font-bold truncate"
+        class="truncate font-bold"
         v-text="workflowStore.activeWorkflow?.filename"
       />
       <div class="flex-1" />
-      <Popover
-        v-if="partitionedNodes[0].length"
-        align="end"
-        class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height) z-100"
-        side="bottom"
-        :side-offset="-8"
-      >
-        <template #button>
-          <Button variant="muted-textonly">
-            <i class="icon-[lucide--info]" />
-          </Button>
-        </template>
-        <div>
-          <template
-            v-for="(nodeData, index) in partitionedNodes[0]"
-            :key="nodeData.id"
-          >
-            <div
-              v-if="index !== 0"
-              class="w-full border-t border-border-subtle"
-            />
-            <NodeWidgets
-              :node-data
-              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg max-w-100"
-            />
-          </template>
-        </div>
-      </Popover>
       <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
     </section>
     <div
-      class="border-x md:border-y gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
+      class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"
     >
       <section
         data-testid="linear-widgets"
-        class="grow-1 overflow-y-auto contain-size"
+        class="grow overflow-y-auto contain-size"
       >
         <template
-          v-for="(nodeData, index) of appModeStore.selectedInputs.length
-            ? mappedSelections
-            : partitionedNodes[0]"
+          v-for="(nodeData, index) of mappedSelections"
           :key="nodeData.id"
         >
           <div
             v-if="index !== 0 && !appModeStore.selectedInputs.length"
-            class="w-full border-t-1 border-node-component-border"
+            class="w-full border-t border-node-component-border"
           />
           <DropZone
             :on-drag-over="nodeData.onDragOver"
             :on-drag-drop="nodeData.onDragDrop"
-            :drop-indicator="mobile ? undefined : nodeData.dropIndicator"
+            :drop-indicator="nodeData.dropIndicator"
             class="text-muted-foreground"
           >
             <NodeWidgets
               :node-data
               :class="
                 cn(
-                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg **:[.h-7]:h-10',
+                  'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
                   nodeData.hasErrors &&
-                    'ring-2 ring-inset ring-node-stroke-error'
+                    'ring-2 ring-node-stroke-error ring-inset'
                 )
               "
             />
@@ -250,7 +229,7 @@ defineExpose({ runButtonClick })
         :to="toastTo"
       >
         <div
-          class="bg-base-foreground md:bg-secondary-background text-base-background md:text-base-foreground rounded-lg flex h-10 md:h-8 p-1 pr-2 gap-2 items-center"
+          class="flex h-10 items-center gap-2 rounded-lg bg-base-foreground p-1 pr-2 text-base-background md:h-8 md:bg-secondary-background md:text-base-foreground"
         >
           <template v-if="pendingJobQueues === 0">
             <i
@@ -260,27 +239,29 @@ defineExpose({ runButtonClick })
             <Button
               v-if="mobile"
               variant="inverted"
-              @click="$emit('navigateAssets')"
+              @click="$emit('navigateOutputs')"
             >
               {{ t('linearMode.viewJob') }}
             </Button>
           </template>
           <template v-else>
-            <i class="icon-[lucide--loader-circle] size-4 animate-spin" />
+            <Loader size="sm" />
             <span v-text="t('queue.jobQueueing')" />
           </template>
         </div>
       </Teleport>
+      <PartnerNodesList v-if="!mobile" />
       <section
         v-if="mobile"
         data-testid="linear-run-button"
-        class="p-4 pb-6 border-t border-node-component-border"
+        class="border-t border-node-component-border p-4 pb-6"
       >
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
-          class="w-full mt-4"
+          class="mt-4 w-full"
         />
-        <div v-else class="flex mt-4">
+        <div v-else class="mt-4 flex">
+          <PartnerNodesList mobile />
           <Popover side="top" @open-auto-focus.prevent>
             <template #button>
               <Button size="lg" class="-mr-3 pr-7">
@@ -289,7 +270,7 @@ defineExpose({ runButtonClick })
               </Button>
             </template>
             <div
-              class="mb-2 m-1 text-node-component-slot-text"
+              class="m-1 mb-2 text-node-component-slot-text"
               v-text="t('linearMode.runCount')"
             />
             <ScrubableNumberInput
@@ -302,7 +283,7 @@ defineExpose({ runButtonClick })
           </Popover>
           <Button
             variant="primary"
-            class="grow-1"
+            class="grow"
             size="lg"
             @click="runButtonClick"
           >
@@ -314,10 +295,10 @@ defineExpose({ runButtonClick })
       <section
         v-else
         data-testid="linear-run-button"
-        class="p-4 pb-6 border-t border-node-component-border"
+        class="border-t border-node-component-border p-4 pb-6"
       >
         <div
-          class="mb-2 m-1 text-node-component-slot-text"
+          class="m-1 mb-2 text-node-component-slot-text"
           v-text="t('linearMode.runCount')"
         />
         <ScrubableNumberInput
@@ -329,12 +310,12 @@ defineExpose({ runButtonClick })
         />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
-          class="w-full mt-4"
+          class="mt-4 w-full"
         />
         <Button
           v-else
           variant="primary"
-          class="w-full mt-4 text-sm"
+          class="mt-4 w-full text-sm"
           size="lg"
           @click="runButtonClick"
         >
@@ -344,4 +325,9 @@ defineExpose({ runButtonClick })
       </section>
     </div>
   </div>
+  <div
+    v-else-if="mobile"
+    class="flex size-full items-center bg-base-background p-4 text-center"
+    v-text="t('linearMode.mobileNoWorkflow')"
+  />
 </template>

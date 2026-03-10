@@ -2,14 +2,14 @@
   <div
     :class="
       cn(
-        'comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col w-full',
+        'comfy-vue-side-bar-container group/sidebar-tab flex size-full flex-col',
         props.class
       )
     "
   >
     <div class="comfy-vue-side-bar-header flex flex-col gap-2">
       <Toolbar
-        class="min-h-16 bg-transparent rounded-none border-x-0 border-t-0 px-2 2xl:px-4"
+        class="min-h-16 rounded-none border-x-0 border-t-0 bg-transparent px-2 2xl:px-4"
         :pt="sidebarPt"
       >
         <template #start>
@@ -20,7 +20,7 @@
         </template>
         <template #end>
           <div
-            class="touch:w-auto touch:opacity-100 [&_.p-button]:py-1 2xl:[&_.p-button]:py-2 flex flex-row overflow-hidden transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100"
+            class="flex flex-row overflow-hidden transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100 touch:w-auto touch:opacity-100 [&_.p-button]:py-1 2xl:[&_.p-button]:py-2"
           >
             <slot name="tool-buttons" />
           </div>

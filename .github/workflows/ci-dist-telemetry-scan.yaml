@@ -26,7 +26,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
-          node-version: 'lts/*'
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -79,3 +79,22 @@ jobs:
             exit 1
           fi
           echo '✅ No Mixpanel references found'
+
+      - name: Scan dist for PostHog telemetry references
+        run: |
+          set -euo pipefail
+          echo '🔍 Scanning for PostHog references...'
+          if rg --no-ignore -n \
+            -g '*.html' \
+            -g '*.js' \
+            -e '(?i)posthog\.init' \
+            -e '(?i)posthog\.capture' \
+            -e 'PostHogTelemetryProvider' \
+            -e 'ph\.comfy\.org' \
+            -e 'posthog-js' \
+            dist; then
+            echo '❌ ERROR: PostHog references found in dist assets!'
+            echo 'PostHog must be properly tree-shaken from OSS builds.'
+            exit 1
+          fi
+          echo '✅ No PostHog references found'

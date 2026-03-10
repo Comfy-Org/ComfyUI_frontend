@@ -1,10 +1,10 @@
 <!-- A popover that shows current user information and actions -->
 <template>
   <div
-    class="current-user-popover w-80 -m-3 p-2 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    class="current-user-popover -m-3 w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- User Info Section -->
-    <div class="flex flex-col items-center px-0 py-3 mb-4">
+    <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
         class="mb-1"
         :photo-url="userPhotoUrl"
@@ -70,7 +70,7 @@
       }}</span>
       <i
         v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        class="icon-[lucide--circle-help] mr-auto cursor-help text-base text-muted-foreground"
+        class="mr-auto icon-[lucide--circle-help] cursor-help text-base text-muted-foreground"
       />
       <!-- Upgrade to add credits (free tier) -->
       <Button

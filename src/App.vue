@@ -1,19 +1,21 @@
 <template>
   <router-view />
-  <ProgressSpinner
-    v-if="isLoading"
-    class="absolute inset-0 flex h-[unset] items-center justify-center"
-  />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
+  <div
+    v-if="isLoading"
+    class="pointer-events-none fixed inset-0 z-1200 flex items-center justify-center"
+  >
+    <LogoComfyWaveLoader size="xl" color="yellow" />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted } from 'vue'
 
+import LogoComfyWaveLoader from '@/components/loader/LogoComfyWaveLoader.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

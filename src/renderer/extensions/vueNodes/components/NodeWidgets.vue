@@ -33,7 +33,7 @@
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
+              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
               widget.slotMetadata?.linked && 'opacity-100'
             )
           "
@@ -53,7 +53,11 @@
           />
         </div>
         <!-- Widget Component -->
-        <AppInput :id="widget.id" :name="widget.name" :is-select-inputs-mode>
+        <AppInput
+          :id="widget.id"
+          :name="widget.name"
+          :enable="canSelectInputs && !widget.simplified.options?.disabled"
+        >
           <component
             :is="widget.vueComponent"
             v-model="widget.value"
@@ -64,7 +68,7 @@
             :class="
               cn(
                 'col-span-2',
-                widget.hasError && 'text-node-stroke-error font-bold'
+                widget.hasError && 'font-bold text-node-stroke-error'
               )
             "
             @update:model-value="widget.updateHandler"
@@ -89,6 +93,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -104,6 +109,7 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -154,6 +160,13 @@ onErrorCaptured((error) => {
   return false
 })
 
+const canSelectInputs = computed(
+  () =>
+    isSelectInputsMode.value &&
+    nodeData?.mode === LGraphEventMode.ALWAYS &&
+    nodeTypeValidForApp(nodeData.type) &&
+    !nodeData.hasErrors
+)
 const nodeType = computed(() => nodeData?.type || '')
 const settingStore = useSettingStore()
 const showAdvanced = computed(

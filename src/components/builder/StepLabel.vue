@@ -4,7 +4,7 @@
       {{ step.title }}
     </span>
     <span
-      class="hidden whitespace-nowrap text-xs text-muted-foreground sm:inline"
+      class="hidden text-xs whitespace-nowrap text-muted-foreground sm:inline"
     >
       {{ step.subtitle }}
     </span>
