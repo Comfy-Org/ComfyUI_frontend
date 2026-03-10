@@ -12,8 +12,7 @@
           'border-[2.5px] border-solid',
           selectedCount > 0 ? 'border-base-foreground' : 'border-transparent',
           'focus:border-base-foreground',
-          disabled &&
-            'cursor-default opacity-30 hover:bg-secondary-background'
+          disabled && 'cursor-default opacity-30 hover:bg-secondary-background'
         )
       "
       :aria-label="label || t('g.multiSelectDropdown')"
@@ -39,7 +38,9 @@
           {{ selectedCount }}
         </span>
       </div>
-      <span class="flex shrink-0 cursor-pointer items-center justify-center px-3">
+      <span
+        class="flex shrink-0 cursor-pointer items-center justify-center px-3"
+      >
         <i class="icon-[lucide--chevron-down] text-muted-foreground" />
       </span>
     </PopoverTrigger>
