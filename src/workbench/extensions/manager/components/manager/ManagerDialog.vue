@@ -15,50 +15,22 @@
 
     <template #header>
       <div class="flex w-full items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
+        <div class="flex w-full items-center gap-2">
           <SingleSelect
             v-model="searchMode"
             class="min-w-34"
             :options="filterOptions"
           />
-          <AutoCompletePlus
-            v-model.lazy="searchQuery"
+          <SearchAutocomplete
+            v-model="searchQuery"
             :suggestions="suggestions"
             :placeholder="$t('manager.searchPlaceholder')"
-            :complete-on-focus="false"
-            :delay="8"
             option-label="query"
-            class="w-full max-w-lg min-w-md"
-            :pt="{
-              root: { class: 'relative' },
-              pcInputText: {
-                root: {
-                  autofocus: true,
-                  class:
-                    'w-full h-10 rounded-lg bg-comfy-input text-comfy-input-foreground border-none outline-none text-sm'
-                }
-              },
-              overlay: {
-                class:
-                  'bg-comfy-input rounded-lg mt-1 shadow-lg border border-border-default'
-              },
-              list: { class: 'p-1' },
-              option: {
-                class:
-                  'px-3 py-2 rounded hover:bg-button-hover-surface cursor-pointer text-sm'
-              },
-              loader: { style: 'display: none' }
-            }"
-            :show-empty-message="false"
-            @complete="stubTrue"
-            @option-select="onOptionSelect"
-          >
-            <template #dropdownicon>
-              <i
-                class="pi pi-search absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
-              />
-            </template>
-          </AutoCompletePlus>
+            autofocus
+            size="lg"
+            class="max-w-96 flex-1"
+            @select="onOptionSelect"
+          />
         </div>
         <PackInstallButton
           v-if="isMissingTab && missingNodePacks.length > 0"
@@ -170,8 +142,7 @@
 
 <script setup lang="ts">
 import { until, whenever } from '@vueuse/core'
-import { merge, stubTrue } from 'es-toolkit/compat'
-import type { AutoCompleteOptionSelectEvent } from 'primevue/autocomplete'
+import { merge } from 'es-toolkit/compat'
 import {
   computed,
   onBeforeUnmount,
@@ -187,7 +158,7 @@ import { useI18n } from 'vue-i18n'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
-import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
+import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
@@ -196,6 +167,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
+import type { QuerySuggestion } from '@/types/searchServiceTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue'
@@ -399,8 +371,8 @@ const availableSortOptions = computed(() => {
   }))
 })
 
-const onOptionSelect = (event: AutoCompleteOptionSelectEvent) => {
-  searchQuery.value = event.value.query
+const onOptionSelect = (suggestion: QuerySuggestion) => {
+  searchQuery.value = suggestion.query
 }
 
 const onApproachEnd = () => {
