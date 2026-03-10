@@ -89,6 +89,10 @@ function createGalleriaWrapper(
   return mountComponent(widget, images)
 }
 
+function findThumbnailButtons(wrapper: ReturnType<typeof mount>) {
+  return wrapper.findAll('button').filter((btn) => btn.find('img').exists())
+}
+
 describe('WidgetGalleria Image Display', () => {
   describe('Component Rendering', () => {
     it('renders main image', () => {
@@ -153,14 +157,14 @@ describe('WidgetGalleria Image Display', () => {
     it('shows thumbnails when multiple images present', () => {
       const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-      const thumbnailButtons = wrapper.findAll('button.cursor-pointer')
+      const thumbnailButtons = findThumbnailButtons(wrapper)
       expect(thumbnailButtons).toHaveLength(3)
     })
 
     it('hides thumbnails for single image', () => {
       const wrapper = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
 
-      const thumbnailButtons = wrapper.findAll('button.cursor-pointer')
+      const thumbnailButtons = findThumbnailButtons(wrapper)
       expect(thumbnailButtons).toHaveLength(0)
     })
 
@@ -169,14 +173,14 @@ describe('WidgetGalleria Image Display', () => {
         showThumbnails: false
       })
 
-      const thumbnailButtons = wrapper.findAll('button.cursor-pointer')
+      const thumbnailButtons = findThumbnailButtons(wrapper)
       expect(thumbnailButtons).toHaveLength(0)
     })
 
     it('clicking thumbnail changes active image', async () => {
       const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-      const thumbnailButtons = wrapper.findAll('button.cursor-pointer')
+      const thumbnailButtons = findThumbnailButtons(wrapper)
       await thumbnailButtons[2].trigger('click')
       await nextTick()
 
@@ -265,7 +269,7 @@ describe('WidgetGalleria Image Display', () => {
       const wrapper = createGalleriaWrapper([])
 
       expect(wrapper.find('img').exists()).toBe(false)
-      expect(wrapper.findAll('button.cursor-pointer')).toHaveLength(0)
+      expect(findThumbnailButtons(wrapper)).toHaveLength(0)
     })
 
     it('handles malformed image objects', () => {
@@ -280,7 +284,7 @@ describe('WidgetGalleria Image Display', () => {
       const largeImageArray = createImageStrings(100)
       const wrapper = createGalleriaWrapper(largeImageArray)
 
-      const thumbnailButtons = wrapper.findAll('button.cursor-pointer')
+      const thumbnailButtons = findThumbnailButtons(wrapper)
       expect(thumbnailButtons).toHaveLength(100)
     })
 

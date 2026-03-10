@@ -20,7 +20,7 @@
       <!-- Previous Button -->
       <button
         v-if="showNavButtons"
-        class="text-node-component-foreground-secondary shrink-0"
+        class="text-node-component-foreground-secondary cursor-pointer"
         :aria-label="t('g.previousImage')"
         @click="goToPrevious"
       >
@@ -28,18 +28,23 @@
       </button>
 
       <!-- Thumbnails -->
-      <div class="flex items-center gap-2 overflow-hidden">
+      <div class="flex items-center gap-2 overflow-x-hidden scroll-smooth">
         <button
           v-for="(item, index) in galleryImages"
           :key="index"
+          :ref="(el) => setThumbnailRef(el as HTMLElement | null, index)"
           :class="
             cn(
-              'h-[54px] w-[85px] shrink-0 cursor-pointer overflow-hidden rounded-lg border-2 border-transparent transition-colors',
+              'h-[54px] w-[85px] shrink-0 cursor-pointer overflow-hidden rounded-lg border border-transparent transition-colors',
               index === activeIndex &&
                 'border-node-component-border-highlighted'
             )
           "
-          @click="activeIndex = index"
+          :aria-label="
+            item.alt ||
+            `${t('g.galleryThumbnail')} ${index + 1} of ${galleryImages.length}`
+          "
+          @click="setActiveIndex(index)"
         >
           <img
             :src="item.thumbnailImageSrc || item.src || ''"
@@ -55,7 +60,7 @@
       <!-- Next Button -->
       <button
         v-if="showNavButtons"
-        class="text-node-component-foreground-secondary shrink-0"
+        class="text-node-component-foreground-secondary cursor-pointer"
         :aria-label="t('g.nextImage')"
         @click="goToNext"
       >
@@ -66,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -93,6 +98,7 @@ const { widget } = defineProps<{
 }>()
 
 const activeIndex = ref(0)
+const thumbnailRefs = ref<(HTMLElement | null)[]>([])
 
 const { t } = useI18n()
 
@@ -126,12 +132,35 @@ const showNavButtons = computed(
     options.value.showItemNavigators !== false && galleryImages.value.length > 1
 )
 
+function setThumbnailRef(el: HTMLElement | null, index: number) {
+  thumbnailRefs.value[index] = el
+}
+
+function scrollToActive() {
+  void nextTick(() => {
+    const el = thumbnailRefs.value[activeIndex.value]
+    if (el) {
+      el.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      })
+    }
+  })
+}
+
+function setActiveIndex(index: number) {
+  activeIndex.value = index
+  scrollToActive()
+}
+
 function goToPrevious() {
   if (activeIndex.value > 0) {
     activeIndex.value--
   } else {
     activeIndex.value = galleryImages.value.length - 1
   }
+  scrollToActive()
 }
 
 function goToNext() {
@@ -140,5 +169,6 @@ function goToNext() {
   } else {
     activeIndex.value = 0
   }
+  scrollToActive()
 }
 </script>
