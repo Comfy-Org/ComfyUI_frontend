@@ -101,7 +101,7 @@ export const useColorPaletteService = () => {
     linkColorPalette: Colors['node_slot']
   ) {
     if (!linkColorPalette) return
-    const rootStyle = document.body?.style
+    const rootStyle = document.documentElement?.style
     if (!rootStyle) return
 
     for (const dataType of nodeDefStore.nodeDataTypes) {
@@ -121,7 +121,7 @@ export const useColorPaletteService = () => {
     colorPaletteId: string
   ) {
     if (!palette) return
-    const rootStyle = document.body?.style
+    const rootStyle = document.documentElement?.style
     if (!rootStyle) return
 
     for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
