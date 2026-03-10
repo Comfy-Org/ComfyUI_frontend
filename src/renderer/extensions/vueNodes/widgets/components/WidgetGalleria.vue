@@ -1,63 +1,76 @@
 <template>
-  <div class="flex flex-col gap-1">
-    <Galleria
-      v-model:active-index="activeIndex"
-      :value="galleryImages"
-      v-bind="filteredProps"
-      :show-thumbnails="showThumbnails"
-      :show-item-navigators="showNavButtons"
-      class="max-w-full"
-      :pt="{
-        thumbnails: {
-          class: 'overflow-hidden'
-        },
-        thumbnailContent: {
-          class: 'py-4 px-2'
-        },
-        thumbnailPrevButton: {
-          class: 'm-0'
-        },
-        thumbnailNextButton: {
-          class: 'm-0'
-        }
-      }"
-    >
-      <template #item="{ item }">
-        <img
-          :src="item?.itemImageSrc || item?.src || ''"
-          :alt="
-            item?.alt ||
-            `${t('g.galleryImage')} ${activeIndex + 1} of ${galleryImages.length}`
+  <div
+    class="flex max-w-full flex-col gap-4 rounded-lg bg-node-component-surface p-4"
+  >
+    <!-- Main Image -->
+    <div class="relative flex items-center justify-center">
+      <img
+        v-if="activeItem"
+        :src="activeItem.itemImageSrc || activeItem.src || ''"
+        :alt="
+          activeItem.alt ||
+          `${t('g.galleryImage')} ${activeIndex + 1} of ${galleryImages.length}`
+        "
+        class="h-auto w-full object-contain"
+      />
+    </div>
+
+    <!-- Thumbnail Strip with Navigation -->
+    <div v-if="showThumbnails" class="flex items-center justify-center gap-2">
+      <!-- Previous Button -->
+      <button
+        v-if="showNavButtons"
+        class="text-node-component-foreground-secondary shrink-0"
+        :aria-label="t('g.previousImage')"
+        @click="goToPrevious"
+      >
+        <i class="icon-[lucide--chevron-left] size-3.5" />
+      </button>
+
+      <!-- Thumbnails -->
+      <div class="flex items-center gap-2 overflow-hidden">
+        <button
+          v-for="(item, index) in galleryImages"
+          :key="index"
+          :class="
+            cn(
+              'h-[54px] w-[85px] shrink-0 cursor-pointer overflow-hidden rounded-lg border-2 border-transparent transition-colors',
+              index === activeIndex &&
+                'border-node-component-border-highlighted'
+            )
           "
-          class="h-auto max-h-64 w-full object-contain"
-        />
-      </template>
-      <template #thumbnail="{ item }">
-        <div class="size-full p-1">
+          @click="activeIndex = index"
+        >
           <img
-            :src="item?.thumbnailImageSrc || item?.src || ''"
+            :src="item.thumbnailImageSrc || item.src || ''"
             :alt="
-              item?.alt ||
-              `${t('g.galleryThumbnail')} ${galleryImages.findIndex((img) => img === item) + 1} of ${galleryImages.length}`
+              item.alt ||
+              `${t('g.galleryThumbnail')} ${index + 1} of ${galleryImages.length}`
             "
-            class="size-full rounded-lg object-cover"
+            class="size-full rounded-md object-cover"
           />
-        </div>
-      </template>
-    </Galleria>
+        </button>
+      </div>
+
+      <!-- Next Button -->
+      <button
+        v-if="showNavButtons"
+        class="text-node-component-foreground-secondary shrink-0"
+        :aria-label="t('g.nextImage')"
+        @click="goToNext"
+      >
+        <i class="icon-[lucide--chevron-right] size-3.5" />
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Galleria from 'primevue/galleria'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import {
-  GALLERIA_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+import { cn } from '@/utils/tailwindUtil'
 
 export interface GalleryImage {
   itemImageSrc?: string
@@ -68,9 +81,14 @@ export interface GalleryImage {
 
 export type GalleryValue = string[] | GalleryImage[]
 
+interface GalleryOptions {
+  showThumbnails?: boolean
+  showItemNavigators?: boolean
+}
+
 const value = defineModel<GalleryValue>({ required: true })
 
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<GalleryValue>
 }>()
 
@@ -78,15 +96,13 @@ const activeIndex = ref(0)
 
 const { t } = useI18n()
 
-const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, GALLERIA_EXCLUDED_PROPS)
-)
+const options = computed<GalleryOptions>(() => widget.options ?? {})
 
-const galleryImages = computed(() => {
+const galleryImages = computed<GalleryImage[]>(() => {
   if (!value.value || !Array.isArray(value.value)) return []
 
   return value.value
-    .filter((item) => item !== null && item !== undefined) // Filter out null/undefined
+    .filter((item) => item !== null && item !== undefined)
     .map((item, index) => {
       if (typeof item === 'string') {
         return {
@@ -95,38 +111,34 @@ const galleryImages = computed(() => {
           alt: `Image ${index}`
         }
       }
-      return item ?? {} // Ensure we have at least an empty object
+      return item ?? {}
     })
 })
 
-const showThumbnails = computed(() => {
-  return (
-    props.widget.options?.showThumbnails !== false &&
-    galleryImages.value.length > 1
-  )
-})
+const activeItem = computed(() => galleryImages.value[activeIndex.value])
 
-const showNavButtons = computed(() => {
-  return (
-    props.widget.options?.showItemNavigators !== false &&
-    galleryImages.value.length > 1
-  )
-})
+const showThumbnails = computed(
+  () => options.value.showThumbnails !== false && galleryImages.value.length > 1
+)
+
+const showNavButtons = computed(
+  () =>
+    options.value.showItemNavigators !== false && galleryImages.value.length > 1
+)
+
+function goToPrevious() {
+  if (activeIndex.value > 0) {
+    activeIndex.value--
+  } else {
+    activeIndex.value = galleryImages.value.length - 1
+  }
+}
+
+function goToNext() {
+  if (activeIndex.value < galleryImages.value.length - 1) {
+    activeIndex.value++
+  } else {
+    activeIndex.value = 0
+  }
+}
 </script>
-
-<style scoped>
-/* Ensure thumbnail container doesn't overflow */
-:deep(.p-galleria-thumbnails) {
-  overflow: hidden;
-}
-
-/* Constrain thumbnail items to prevent overlap */
-:deep(.p-galleria-thumbnail-item) {
-  flex-shrink: 0;
-}
-
-/* Ensure thumbnail wrapper maintains aspect ratio */
-:deep(.p-galleria-thumbnail) {
-  overflow: hidden;
-}
-</style>
