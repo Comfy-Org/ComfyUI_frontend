@@ -139,7 +139,7 @@ export function useSharedWorkflowUrlLoader() {
 
     try {
       await app.loadGraphData(payload.workflowJson, true, true, workflowName, {
-        openSource: 'shared'
+        openSource: 'shared_url'
       })
     } catch (error) {
       console.error(

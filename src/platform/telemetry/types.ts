@@ -137,7 +137,12 @@ export interface WorkflowImportMetadata {
   /**
    * The source of the workflow open/import action
    */
-  open_source?: 'file_button' | 'file_drop' | 'template' | 'shared' | 'unknown'
+  open_source?:
+    | 'file_button'
+    | 'file_drop'
+    | 'template'
+    | 'shared_url'
+    | 'unknown'
 }
 
 export interface EnterLinearMetadata {
