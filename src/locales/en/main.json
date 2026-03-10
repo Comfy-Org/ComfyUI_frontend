@@ -3186,6 +3186,7 @@
     "deleteAllAssets": "Delete all assets from this run",
     "hasCreditCost": "Requires additional credits",
     "viewGraph": "View node graph",
+    "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
