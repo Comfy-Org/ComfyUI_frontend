@@ -8,7 +8,6 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -76,13 +75,16 @@ function onClick(index: number) {
 }
 
 const workflowsEntries = computed(() => {
-  return workflowStore.openWorkflows.map((w) => ({
-    label: w.filename,
-    icon: w.activeState?.extra?.linearMode
-      ? 'icon-[lucide--panels-top-left] bg-primary-background'
-      : undefined,
-    command: () => workflowService.openWorkflow(w)
-  }))
+  return [
+    ...workflowStore.openWorkflows.map((w) => ({
+      label: w.filename,
+      icon: w.activeState?.extra?.linearMode
+        ? 'icon-[lucide--panels-top-left] bg-primary-background'
+        : undefined,
+      command: () => workflowService.openWorkflow(w),
+      checked: workflowStore.activeWorkflow === w
+    }))
+  ]
 })
 
 const menuEntries = computed<MenuItem[]>(() => [
@@ -157,9 +159,9 @@ const menuEntries = computed<MenuItem[]>(() => [
       class="flex h-16 w-full items-center gap-3 border-b border-border-subtle bg-base-background px-4 py-3"
     >
       <DropdownMenu :entries="menuEntries" />
-      <Popover
+      <DropdownMenu
         :entries="workflowsEntries"
-        class="w-(--reka-popover-content-available-width)"
+        class="max-h-[40vh] w-(--reka-dropdown-menu-content-available-width)"
         :collision-padding="20"
       >
         <template #button>
@@ -179,7 +181,7 @@ const menuEntries = computed<MenuItem[]>(() => [
             />
           </div>
         </template>
-      </Popover>
+      </DropdownMenu>
       <CurrentUserButton v-if="isLoggedIn" :show-arrow="false" />
     </header>
     <div class="size-full rounded-b-4xl contain-content">
