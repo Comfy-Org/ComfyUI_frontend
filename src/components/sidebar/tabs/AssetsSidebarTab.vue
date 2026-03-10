@@ -569,7 +569,7 @@ const handleZoomClick = (asset: AssetItem) => {
     const dialogStore = useDialogStore()
     dialogStore.showDialog({
       key: 'asset-3d-viewer',
-      title: asset.name,
+      title: asset.display_name || asset.name,
       component: Load3dViewerContent,
       props: {
         modelUrl: asset.preview_url || ''
@@ -615,8 +615,7 @@ const enterFolderView = async (asset: AssetItem) => {
     toast.add({
       severity: 'error',
       summary: t('sideToolbar.folderView.errorSummary'),
-      detail: t('sideToolbar.folderView.errorDetail'),
-      life: 5000
+      detail: t('sideToolbar.folderView.errorDetail')
     })
     exitFolderView()
   }
@@ -662,8 +661,7 @@ const copyJobId = async () => {
       toast.add({
         severity: 'error',
         summary: t('mediaAsset.jobIdToast.error'),
-        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed'),
-        life: 3000
+        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed')
       })
     }
   }

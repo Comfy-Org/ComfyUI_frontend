@@ -70,7 +70,7 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
     assetItem.user_metadata = {
       ...assetItem.user_metadata,
-      outputCount: job.outputs_count,
+      outputCount: task.outputsCount ?? task.previewableOutputs.length,
       allOutputs: task.previewableOutputs
     }
 

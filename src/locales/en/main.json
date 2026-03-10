@@ -302,6 +302,7 @@
     "1x": "1x",
     "2x": "2x",
     "beta": "BETA",
+    "comfyCloud": "Comfy Cloud",
     "nightly": "NIGHTLY",
     "profile": "Profile",
     "noItems": "No items",
@@ -969,7 +970,6 @@
     "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
-    "helpAndFeedback": "Help & Feedback",
     "queue": "Queue Panel",
     "fullscreen": "Fullscreen"
   },
@@ -1263,6 +1263,7 @@
     "Move Selected Nodes Right": "Move Selected Nodes Right",
     "Move Selected Nodes Up": "Move Selected Nodes Up",
     "Paste": "Paste",
+    "Paste with Connect": "Paste with Connect",
     "Reset View": "Reset View",
     "Resize Selected Nodes": "Resize Selected Nodes",
     "Select All": "Select All",
@@ -1596,6 +1597,7 @@
     "kandinsky5": "kandinsky5",
     "hooks": "hooks",
     "combine": "combine",
+    "math": "math",
     "logic": "logic",
     "cond single": "cond single",
     "context": "context",
@@ -2598,13 +2600,18 @@
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",
-    "enterBuilderMode": "App builder",
+    "enterBuilderMode": "Build app",
+    "editBuilderMode": "Edit app",
     "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
     "enterNewName": "Enter new name",
-    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red)."
+    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red).",
+    "graph": "Graph",
+    "app": "App",
+    "enterNodeGraph": "Enter node graph",
+    "share": "Share"
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",
@@ -3003,6 +3010,11 @@
     "share": "Share",
     "shareTooltip": "Share workflow"
   },
+  "shareNoOutputs": {
+    "title": "App has no outputs",
+    "message": "You're about to share an app without outputs. It can't be used until an output is connected.\n\nShare anyway?",
+    "shareAnyway": "Share anyway"
+  },
   "shareWorkflow": {
     "shareLinkTab": "Share",
     "publishToHubTab": "Publish",
@@ -3152,6 +3164,7 @@
   "linearMode": {
     "linearMode": "App Mode",
     "beta": "App mode in beta",
+    "buildAnApp": "Build an app",
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
@@ -3159,25 +3172,31 @@
     "runCount": "Number of runs",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
-    "downloadAll": "Download All",
+    "downloadAll": "Download {count} assets from this run",
     "viewJob": "View Job",
     "enterNodeGraph": "Enter node graph",
     "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
     "backToWorkflow": "Back to workflow",
     "loadTemplate": "Load a template",
+    "cancelThisRun": "Cancel this run",
+    "deleteAllAssets": "Delete all assets from this run",
+    "hasCreditCost": "Requires additional credits",
+    "viewGraph": "View node graph",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
       "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
       "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
       "getStarted": "Click {runButton} to get started.",
-      "buildApp": "Build app"
+      "buildApp": "Build app",
+      "noOutputs": "An app needs at least {count} to be usable.",
+      "oneOutput": "1 output"
     },
     "appModeToolbar": {
       "appBuilder": "App builder",
       "apps": "Apps",
-      "appsEmptyMessage": "Saved apps will show up here.\nClick below to build your first app.",
-      "enterAppMode": "Enter app mode"
+      "appsEmptyMessage": "Saved apps will show up here.",
+      "appsEmptyMessageAction": "Click below to build your first app."
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
@@ -3202,7 +3221,23 @@
       "noOutputs": "No output nodes added yet",
       "outputsDesc": "Connect at least one output node so users can see results after running.",
       "outputsExample": "Examples: “Save Image” or “Save Video”",
-      "unknownWidget": "Widget not visible"
+      "unknownWidget": "Widget not visible",
+      "inputPlaceholder": "Inputs will show up here",
+      "outputPlaceholder": "Output nodes will show up here",
+      "outputRequiredPlaceholder": "At least one node is required"
+    },
+    "error": {
+      "header": "This app encountered an error",
+      "log": "Error Logs",
+      "mobileFixable": "Check {0} for errors",
+      "requiresGraph": "Something went wrong during generation. This could be due to invalid hidden inputs, missing resources, or workflow configuration issues.",
+      "promptVisitGraph": "View the node graph to see the full error.",
+      "getHelp": "For help, view our {0}, {1}, or {2} with the copied error.",
+      "goto": "Show errors in graph",
+      "github": "submit a GitHub issue",
+      "guide": "troubleshooting guide",
+      "support": "contact our support",
+      "promptShow": "Show error report"
     },
     "queue": {
       "clickToClear": "Click to clear queue",
@@ -3386,14 +3421,11 @@
     "retryDownload": "Retry download"
   },
   "workspace": {
-    "unsavedChanges": {
-      "title": "Unsaved Changes",
-      "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
-    },
     "inviteAccepted": "Invite Accepted",
     "addedToWorkspace": "You have been added to:",
     "inviteFailed": "Failed to Accept Invite",
-    "viewWorkspace": "View workspace"
+    "viewWorkspace": "View workspace",
+    "switchFailed": "Failed to switch workspace. Please try again."
   },
   "workspaceAuth": {
     "errors": {
@@ -3514,10 +3546,12 @@
     "defaultModeAppliedGraphBody": "This workflow will open as a node graph by default from now on.",
     "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
     "viewApp": "View app",
+    "exitToWorkflow": "Exit to workflow",
     "emptyWorkflowTitle": "This workflow has no nodes",
     "emptyWorkflowPrompt": "Do you want to start with a template?"
   },
   "builderMenu": {
+    "enterAppMode": "Enter app mode",
     "exitAppBuilder": "Exit app builder"
   }
 }
