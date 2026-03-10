@@ -120,7 +120,7 @@ function getDropIndicator(node: LGraphNode) {
   return {
     iconClass: 'icon-[lucide--image]',
     imageUrl: buildImageUrl(),
-    label: t('linearMode.dragAndDropImage'),
+    label: props.mobile ? undefined : t('linearMode.dragAndDropImage'),
     onClick: () => node.widgets?.[1]?.callback?.(undefined)
   }
 }
@@ -206,7 +206,7 @@ defineExpose({ runButtonClick })
           <DropZone
             :on-drag-over="nodeData.onDragOver"
             :on-drag-drop="nodeData.onDragDrop"
-            :drop-indicator="mobile ? undefined : nodeData.dropIndicator"
+            :drop-indicator="nodeData.dropIndicator"
             class="text-muted-foreground"
           >
             <NodeWidgets
