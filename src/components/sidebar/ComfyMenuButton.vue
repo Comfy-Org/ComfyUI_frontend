@@ -5,22 +5,20 @@
       showDelay: 300,
       hideDelay: 300
     }"
-    class="comfy-menu-button-wrapper flex shrink-0 cursor-pointer flex-col items-center justify-center p-2 transition-colors"
+    class="comfy-menu-button-wrapper relative flex shrink-0 cursor-pointer items-center justify-center p-2 transition-colors"
     :class="{
       'comfy-menu-button-active': menuRef?.visible
     }"
     @click="onLogoMenuClick($event)"
   >
-    <div class="flex items-center gap-0.5">
-      <ComfyLogo
-        alt="ComfyUI Logo"
-        class="comfyui-logo h-[18px] w-[18px]"
-        mode="fill"
-      />
-      <i
-        class="-mr-4 icon-[lucide--chevron-down] size-3 text-muted-foreground"
-      />
-    </div>
+    <ComfyLogo
+      alt="ComfyUI Logo"
+      class="comfyui-logo h-[18px] w-[18px]"
+      mode="fill"
+    />
+    <i
+      class="absolute right-0.5 bottom-2 icon-[lucide--chevron-down] size-3 text-muted-foreground"
+    />
   </div>
 
   <TieredMenu
