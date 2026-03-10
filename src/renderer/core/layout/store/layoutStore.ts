@@ -119,6 +119,10 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Change listeners
   private changeListeners = new Set<(change: LayoutChange) => void>()
+  private nodeChangeListeners = new Map<
+    NodeId,
+    Set<(change: LayoutChange) => void>
+  >()
 
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
@@ -919,6 +923,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Notify listeners synchronously so Layout→LiteGraph sync
     // (useLayoutSync) pushes positions within the same frame.
+    this.notifyNodeChange(change)
     this.notifyChange(change)
   }
 
@@ -928,6 +933,25 @@ class LayoutStoreImpl implements LayoutStore {
   onChange(callback: (change: LayoutChange) => void): () => void {
     this.changeListeners.add(callback)
     return () => this.changeListeners.delete(callback)
+  }
+
+  onNodeChange(
+    nodeId: NodeId,
+    callback: (change: LayoutChange) => void
+  ): () => void {
+    const listenersForNode = this.nodeChangeListeners.get(nodeId) ?? new Set()
+    listenersForNode.add(callback)
+    this.nodeChangeListeners.set(nodeId, listenersForNode)
+
+    return () => {
+      const existingListeners = this.nodeChangeListeners.get(nodeId)
+      if (!existingListeners) return
+
+      existingListeners.delete(callback)
+      if (existingListeners.size === 0) {
+        this.nodeChangeListeners.delete(nodeId)
+      }
+    }
   }
 
   /**
@@ -1383,6 +1407,21 @@ class LayoutStoreImpl implements LayoutStore {
         console.error('Error in layout change listener:', error)
       }
     })
+  }
+
+  private notifyNodeChange(change: LayoutChange): void {
+    for (const nodeId of new Set(change.nodeIds)) {
+      const listeners = this.nodeChangeListeners.get(nodeId)
+      if (!listeners) continue
+
+      listeners.forEach((listener) => {
+        try {
+          listener(change)
+        } catch (error) {
+          console.error('Error in node-scoped layout change listener:', error)
+        }
+      })
+    }
   }
 
   // CRDT-specific methods

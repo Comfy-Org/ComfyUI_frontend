@@ -16,7 +16,7 @@ function useVueNodeLifecycleIndividual() {
   const layoutMutations = useLayoutMutations()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
-  const { startSync } = useLayoutSync()
+  const { startSync, stopSync } = useLayoutSync()
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -54,11 +54,13 @@ function useVueNodeLifecycleIndividual() {
       )
     }
 
-    // Initialize layout sync (one-way: Layout Store → LiteGraph)
+    // Start sync AFTER seeding so bootstrap operations don't trigger
+    // the Layout→LiteGraph writeback loop redundantly.
     startSync(canvasStore.canvas)
   }
 
   const disposeNodeManagerAndSyncs = () => {
+    stopSync()
     if (!nodeManager.value) return
 
     try {

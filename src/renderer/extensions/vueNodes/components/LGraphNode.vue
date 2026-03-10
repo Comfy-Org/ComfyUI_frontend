@@ -275,6 +275,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutChange } from '@/renderer/core/layout/types'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -449,18 +450,13 @@ function initSizeStyles() {
  * Handle external size changes (e.g., from extensions calling node.setSize()).
  * Updates CSS variables when layoutStore changes from Canvas/External source.
  */
-function handleLayoutChange(change: {
-  source: LayoutSource
-  nodeIds: string[]
-}) {
+function handleLayoutChange(change: LayoutChange) {
   // Only handle Canvas or External source (extensions calling setSize)
   if (
     change.source !== LayoutSource.Canvas &&
     change.source !== LayoutSource.External
   )
     return
-
-  if (!change.nodeIds.includes(nodeData.id)) return
   if (layoutStore.isResizingVueNodes.value) return
   if (isCollapsed.value) return
 
@@ -477,7 +473,10 @@ let unsubscribeLayoutChange: (() => void) | null = null
 
 onMounted(() => {
   initSizeStyles()
-  unsubscribeLayoutChange = layoutStore.onChange(handleLayoutChange)
+  unsubscribeLayoutChange = layoutStore.onNodeChange(
+    nodeData.id,
+    handleLayoutChange
+  )
 })
 
 onUnmounted(() => {

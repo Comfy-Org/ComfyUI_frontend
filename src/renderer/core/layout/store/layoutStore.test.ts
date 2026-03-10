@@ -180,6 +180,71 @@ describe('layoutStore CRDT operations', () => {
     unsubscribe()
   })
 
+  it('should only notify node-scoped listeners for their node', async () => {
+    const nodeA = 'scoped-node-a'
+    const nodeB = 'scoped-node-b'
+    const layoutA = createTestNode(nodeA)
+    const layoutB = createTestNode(nodeB)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId: nodeA,
+      layout: layoutA,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId: nodeB,
+      layout: layoutB,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    const scopedChanges: LayoutChange[] = []
+    const unsubscribeScoped = layoutStore.onNodeChange(nodeA, (change) => {
+      scopedChanges.push(change)
+    })
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId: nodeB,
+      position: { x: 400, y: 400 },
+      previousPosition: layoutB.position,
+      timestamp: Date.now(),
+      source: LayoutSource.Vue,
+      actor: 'test'
+    })
+
+    await vi.waitFor(() => {
+      expect(scopedChanges.length).toBe(0)
+    })
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId: nodeA,
+      position: { x: 200, y: 250 },
+      previousPosition: layoutA.position,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    await vi.waitFor(() => {
+      expect(scopedChanges.length).toBe(1)
+    })
+
+    expect(scopedChanges[0].nodeIds).toContain(nodeA)
+    unsubscribeScoped()
+  })
+
   it('should emit change when batch updating node bounds', async () => {
     const nodeId = 'test-node-6'
     const layout = createTestNode(nodeId)
