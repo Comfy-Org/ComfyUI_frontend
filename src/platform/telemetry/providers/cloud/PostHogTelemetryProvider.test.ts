@@ -85,7 +85,8 @@ describe('PostHogTelemetryProvider', () => {
         autocapture: false,
         capture_pageview: false,
         capture_pageleave: false,
-        persistence: 'localStorage+cookie'
+        persistence: 'localStorage+cookie',
+        debug: true
       })
     })
 

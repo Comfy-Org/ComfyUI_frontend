@@ -164,7 +164,8 @@ describe('useSharedWorkflowUrlLoader', () => {
       { nodes: [] },
       true,
       true,
-      'Test Workflow'
+      'Test Workflow',
+      { openSource: 'shared' }
     )
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -360,7 +361,8 @@ describe('useSharedWorkflowUrlLoader', () => {
       expect.anything(),
       true,
       true,
-      'Open shared workflow'
+      'Open shared workflow',
+      { openSource: 'shared' }
     )
   })
 })
