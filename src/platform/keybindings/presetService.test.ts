@@ -195,7 +195,7 @@ describe('useKeybindingPresetService', () => {
 
       const service = await getPresetService()
       await expect(service.deletePreset('vim')).rejects.toThrow(
-        'Failed to delete preset "vim"'
+        'g.keybindingPresets.deletePresetFailed'
       )
     })
   })
@@ -264,6 +264,12 @@ describe('useKeybindingPresetService', () => {
     it('rejects the reserved name "default"', async () => {
       const service = await getPresetService()
       await expect(service.savePreset('default')).rejects.toThrow()
+    })
+
+    it('rejects names ending with .json extension', async () => {
+      const service = await getPresetService()
+      await expect(service.savePreset('vim.json')).rejects.toThrow()
+      await expect(service.savePreset('preset.JSON')).rejects.toThrow()
     })
 
     it('rejects empty names', async () => {

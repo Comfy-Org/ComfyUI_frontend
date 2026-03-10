@@ -23,6 +23,7 @@ function presetFilePath(name: string): string {
   if (
     !trimmed ||
     trimmed === 'default' ||
+    trimmed.toLowerCase().endsWith('.json') ||
     trimmed.includes('/') ||
     trimmed.includes('\\') ||
     trimmed.includes('..') ||
@@ -62,13 +63,15 @@ export function useKeybindingPresetService() {
   async function loadPreset(name: string): Promise<KeybindingPreset> {
     const resp = await api.getUserData(presetFilePath(name))
     if (!resp.ok) {
-      throw new Error(`Failed to load preset "${name}"`)
+      throw new Error(t('g.keybindingPresets.loadPresetFailed', { name }))
     }
     const data = await resp.json()
     const result = zKeybindingPreset.safeParse(data)
     if (!result.success) {
       throw new Error(
-        `Invalid preset file: ${fromZodError(result.error).message}`
+        t('g.keybindingPresets.invalidPresetFile') +
+          ': ' +
+          fromZodError(result.error).message
       )
     }
     return { ...result.data, name }
@@ -112,7 +115,7 @@ export function useKeybindingPresetService() {
 
     const resp = await api.deleteUserData(presetFilePath(name))
     if (!resp.ok) {
-      throw new Error(`Failed to delete preset "${name}"`)
+      throw new Error(t('g.keybindingPresets.deletePresetFailed', { name }))
     }
 
     if (keybindingStore.currentPresetName === name) {
@@ -190,7 +193,20 @@ export function useKeybindingPresetService() {
             defaultValue: ''
           })
           if (!name) return
-          await savePreset(name.trim())
+          const trimmedName = name.trim()
+          if (!trimmedName) return
+          const existingPresets = await listPresets()
+          if (existingPresets.includes(trimmedName)) {
+            const overwrite = await dialogService.confirm({
+              title: t('g.keybindingPresets.overwritePresetTitle'),
+              message: t('g.keybindingPresets.overwritePresetMessage', {
+                name: trimmedName
+              }),
+              type: 'overwrite'
+            })
+            if (!overwrite) return
+          }
+          await savePreset(trimmedName)
         }
       }
     }

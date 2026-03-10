@@ -209,6 +209,7 @@ async function initPresets() {
     } else {
       keybindingStore.currentPresetName = 'default'
       keybindingStore.savedPresetData = null
+      await settingStore.set('Comfy.Keybinding.CurrentPreset', 'default')
     }
   }
 }
