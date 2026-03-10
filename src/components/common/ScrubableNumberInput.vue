@@ -137,11 +137,11 @@ function handlePointerUp() {
 }
 
 const { distanceX, isSwiping } = usePointerSwipe(swipeElement, {
-  disableTextSelect: true,
   onSwipeEnd: () => (dragDelta = 0)
 })
 
 whenever(distanceX, () => {
+  if (disabled) return
   const delta = ((distanceX.value - dragDelta) / 10) | 0
   dragDelta += delta * 10
   modelValue.value = clamp(modelValue.value - delta * step)
