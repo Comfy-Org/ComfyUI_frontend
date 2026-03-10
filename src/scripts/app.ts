@@ -1825,7 +1825,6 @@ export class ComfyApp {
     )
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
-      return
     }
 
     const ids = Object.keys(apiData)
