@@ -7,7 +7,7 @@
 
     <template #leftPanel>
       <div class="px-3">
-        <SearchBox
+        <SearchInput
           v-model:model-value="searchQuery"
           size="md"
           :placeholder="$t('g.searchSettings') + '...'"
@@ -84,7 +84,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'

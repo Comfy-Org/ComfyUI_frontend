@@ -1,6 +1,6 @@
 <template>
   <div class="flex min-w-0 items-center gap-2">
-    <SearchBox
+    <SearchInput
       v-if="showSearch"
       :model-value="searchQuery"
       class="min-w-0 flex-1"
@@ -116,7 +116,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { jobSortModes } from '@/composables/queue/useJobList'

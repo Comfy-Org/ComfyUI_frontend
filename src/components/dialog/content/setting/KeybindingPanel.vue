@@ -1,7 +1,7 @@
 <template>
   <div class="keybinding-panel flex flex-col gap-2">
     <Teleport defer to="#keybinding-panel-header">
-      <SearchBox
+      <SearchInput
         v-model="filters['global'].value"
         class="max-w-96"
         size="lg"
@@ -168,7 +168,7 @@ import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
