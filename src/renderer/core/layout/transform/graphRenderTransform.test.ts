@@ -3,8 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   RENDER_SCALE_FACTOR,
   getGraphRenderAnchor,
-  projectBounds,
-  projectPoint,
   unprojectBounds,
   unprojectPoint
 } from './graphRenderTransform'
@@ -12,50 +10,33 @@ import {
 const anchor = { x: 100, y: 100 }
 
 describe('graphRenderTransform', () => {
-  describe('projectPoint / unprojectPoint', () => {
-    it('round-trips correctly', () => {
-      const point = { x: 320, y: 140 }
-      const projected = projectPoint(point, anchor, RENDER_SCALE_FACTOR)
-      const restored = unprojectPoint(projected, anchor, RENDER_SCALE_FACTOR)
-      expect(restored.x).toBeCloseTo(point.x, 10)
-      expect(restored.y).toBeCloseTo(point.y, 10)
+  describe('unprojectPoint', () => {
+    it('divides offset from anchor by scale', () => {
+      const point = { x: 220, y: 220 }
+      const result = unprojectPoint(point, anchor, RENDER_SCALE_FACTOR)
+      expect(result.x).toBeCloseTo(100 + 120 / RENDER_SCALE_FACTOR)
+      expect(result.y).toBeCloseTo(100 + 120 / RENDER_SCALE_FACTOR)
     })
 
     it('is identity when scale is 1', () => {
       const point = { x: 250, y: 300 }
-      expect(projectPoint(point, anchor, 1)).toEqual(point)
       expect(unprojectPoint(point, anchor, 1)).toEqual(point)
     })
 
-    it('scales relative to anchor', () => {
-      const point = { x: 200, y: 200 }
-      const projected = projectPoint(point, anchor, RENDER_SCALE_FACTOR)
-      expect(projected.x).toBeCloseTo(100 + 100 * RENDER_SCALE_FACTOR)
-      expect(projected.y).toBeCloseTo(100 + 100 * RENDER_SCALE_FACTOR)
-    })
-
     it('leaves anchor point unchanged', () => {
-      const projected = projectPoint(anchor, anchor, RENDER_SCALE_FACTOR)
-      expect(projected).toEqual(anchor)
+      const result = unprojectPoint(anchor, anchor, RENDER_SCALE_FACTOR)
+      expect(result).toEqual(anchor)
     })
   })
 
-  describe('projectBounds / unprojectBounds', () => {
-    it('round-trips correctly', () => {
-      const bounds = { x: 200, y: 150, width: 120, height: 80 }
-      const projected = projectBounds(bounds, anchor, RENDER_SCALE_FACTOR)
-      const restored = unprojectBounds(projected, anchor, RENDER_SCALE_FACTOR)
-      expect(restored.x).toBeCloseTo(bounds.x, 10)
-      expect(restored.y).toBeCloseTo(bounds.y, 10)
-      expect(restored.width).toBeCloseTo(bounds.width, 10)
-      expect(restored.height).toBeCloseTo(bounds.height, 10)
-    })
-
-    it('scales width and height by scale factor', () => {
-      const bounds = { x: 100, y: 100, width: 100, height: 50 }
-      const projected = projectBounds(bounds, anchor, RENDER_SCALE_FACTOR)
-      expect(projected.width).toBeCloseTo(100 * RENDER_SCALE_FACTOR)
-      expect(projected.height).toBeCloseTo(50 * RENDER_SCALE_FACTOR)
+  describe('unprojectBounds', () => {
+    it('unprojects position and shrinks dimensions', () => {
+      const bounds = { x: 220, y: 220, width: 120, height: 60 }
+      const result = unprojectBounds(bounds, anchor, RENDER_SCALE_FACTOR)
+      expect(result.x).toBeCloseTo(100 + 120 / RENDER_SCALE_FACTOR)
+      expect(result.y).toBeCloseTo(100 + 120 / RENDER_SCALE_FACTOR)
+      expect(result.width).toBeCloseTo(120 / RENDER_SCALE_FACTOR)
+      expect(result.height).toBeCloseTo(60 / RENDER_SCALE_FACTOR)
     })
   })
 

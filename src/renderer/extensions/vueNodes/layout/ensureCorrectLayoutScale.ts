@@ -1,4 +1,6 @@
 import type { LGraph, RendererType } from '@/lib/litegraph/src/LGraph'
+import type { Point as LGPoint } from '@/lib/litegraph/src/interfaces'
+import type { Point } from '@/renderer/core/layout/types'
 import {
   RENDER_SCALE_FACTOR,
   getGraphRenderAnchor,
@@ -7,6 +9,26 @@ import {
 } from '@/renderer/core/layout/transform/graphRenderTransform'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+
+interface Positioned {
+  pos: LGPoint
+  size: LGPoint
+}
+
+function unprojectPosSize(item: Positioned, anchor: Point) {
+  const c = unprojectBounds(
+    {
+      x: item.pos[0],
+      y: item.pos[1],
+      width: item.size[0],
+      height: item.size[1]
+    },
+    anchor,
+    RENDER_SCALE_FACTOR
+  )
+  item.pos = [c.x, c.y]
+  item.size = [c.width, c.height]
+}
 
 /**
  * One-time legacy normalizer for workflows saved with Vue-scaled coordinates.
@@ -36,7 +58,7 @@ export function ensureCorrectLayoutScale(
   const anchor = getGraphRenderAnchor(graph)
 
   for (const node of graph.nodes) {
-    const canonical = unprojectBounds(
+    const c = unprojectBounds(
       {
         x: node.pos[0],
         y: node.pos[1],
@@ -46,10 +68,10 @@ export function ensureCorrectLayoutScale(
       anchor,
       RENDER_SCALE_FACTOR
     )
-    node.pos[0] = canonical.x
-    node.pos[1] = canonical.y
-    node.size[0] = canonical.width
-    node.size[1] = canonical.height
+    node.pos[0] = c.x
+    node.pos[1] = c.y
+    node.size[0] = c.width
+    node.size[1] = c.height
   }
 
   for (const reroute of graph.reroutes.values()) {
@@ -62,18 +84,7 @@ export function ensureCorrectLayoutScale(
   }
 
   for (const group of graph.groups) {
-    const canonical = unprojectBounds(
-      {
-        x: group.pos[0],
-        y: group.pos[1],
-        width: group.size[0],
-        height: group.size[1]
-      },
-      anchor,
-      RENDER_SCALE_FACTOR
-    )
-    group.pos = [canonical.x, canonical.y]
-    group.size = [canonical.width, canonical.height]
+    unprojectPosSize(group, anchor)
   }
 
   if ('inputNode' in graph && 'outputNode' in graph) {
@@ -81,18 +92,7 @@ export function ensureCorrectLayoutScale(
       graph.inputNode as SubgraphInputNode,
       graph.outputNode as SubgraphOutputNode
     ]) {
-      const canonical = unprojectBounds(
-        {
-          x: ioNode.pos[0],
-          y: ioNode.pos[1],
-          width: ioNode.size[0],
-          height: ioNode.size[1]
-        },
-        anchor,
-        RENDER_SCALE_FACTOR
-      )
-      ioNode.pos = [canonical.x, canonical.y]
-      ioNode.size = [canonical.width, canonical.height]
+      unprojectPosSize(ioNode, anchor)
     }
   }
 

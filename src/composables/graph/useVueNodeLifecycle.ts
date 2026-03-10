@@ -88,18 +88,12 @@ function useVueNodeLifecycleIndividual() {
     }
   )
 
-  // Consolidated watch for slot layout sync management
+  // Clear stale slot layouts when switching modes
   watch(
     () => shouldRenderVueNodes.value,
-    (vueMode, oldVueMode) => {
-      const modeChanged = vueMode !== oldVueMode
-
-      // Clear stale slot layouts when switching modes
-      if (modeChanged) {
-        layoutStore.clearAllSlotLayouts()
-      }
-    },
-    { immediate: true, flush: 'sync' }
+    () => {
+      layoutStore.clearAllSlotLayouts()
+    }
   )
 
   // Handle case where Vue nodes are enabled but graph starts empty

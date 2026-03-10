@@ -16,18 +16,6 @@ export function getGraphRenderAnchor(graph: LGraph): Point {
   return anchor
 }
 
-export function projectPoint(
-  point: Point,
-  anchor: Point,
-  scale: number
-): Point {
-  if (scale === 1) return point
-  return {
-    x: anchor.x + (point.x - anchor.x) * scale,
-    y: anchor.y + (point.y - anchor.y) * scale
-  }
-}
-
 export function unprojectPoint(
   point: Point,
   anchor: Point,
@@ -37,20 +25,6 @@ export function unprojectPoint(
   return {
     x: anchor.x + (point.x - anchor.x) / scale,
     y: anchor.y + (point.y - anchor.y) / scale
-  }
-}
-
-export function projectBounds(
-  bounds: Bounds,
-  anchor: Point,
-  scale: number
-): Bounds {
-  const topLeft = projectPoint({ x: bounds.x, y: bounds.y }, anchor, scale)
-  return {
-    x: topLeft.x,
-    y: topLeft.y,
-    width: bounds.width * scale,
-    height: bounds.height * scale
   }
 }
 
