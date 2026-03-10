@@ -144,6 +144,17 @@ export interface EnterLinearMetadata {
   source?: string
 }
 
+export type ShareFlowStep =
+  | 'dialog_opened'
+  | 'save_prompted'
+  | 'link_created'
+  | 'link_copied'
+
+export interface ShareFlowMetadata {
+  step: ShareFlowStep
+  source?: 'app_mode' | 'graph_mode'
+}
+
 /**
  * Workflow open metadata
  */
@@ -362,6 +373,7 @@ export interface TelemetryProvider {
   trackWorkflowImported?(metadata: WorkflowImportMetadata): void
   trackWorkflowOpened?(metadata: WorkflowImportMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
+  trackShareFlow?(metadata: ShareFlowMetadata): void
 
   // Page visibility events
   trackPageVisibilityChanged?(metadata: PageVisibilityMetadata): void
@@ -448,6 +460,7 @@ export const TelemetryEvents = {
   WORKFLOW_IMPORTED: 'app:workflow_imported',
   WORKFLOW_OPENED: 'app:workflow_opened',
   ENTER_LINEAR_MODE: 'app:app_mode_opened',
+  SHARE_FLOW: 'app:share_flow',
 
   // Page Visibility
   PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
@@ -521,4 +534,5 @@ export type TelemetryEventProperties =
   | HelpCenterClosedMetadata
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
+  | ShareFlowMetadata
   | SubscriptionMetadata

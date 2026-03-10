@@ -8,6 +8,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   AuthMetadata,
   EnterLinearMetadata,
+  ShareFlowMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
@@ -344,6 +345,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackEnterLinear(metadata: EnterLinearMetadata): void {
     this.trackEvent(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
+  }
+
+  trackShareFlow(metadata: ShareFlowMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {

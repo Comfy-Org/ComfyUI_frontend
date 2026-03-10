@@ -15,6 +15,7 @@ import type {
   AuthMetadata,
   CreditTopupMetadata,
   EnterLinearMetadata,
+  ShareFlowMetadata,
   ExecutionContext,
   ExecutionTriggerSource,
   ExecutionErrorMetadata,
@@ -360,6 +361,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackEnterLinear(metadata: EnterLinearMetadata): void {
     this.trackEvent(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
+  }
+
+  trackShareFlow(metadata: ShareFlowMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {

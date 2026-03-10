@@ -26,17 +26,24 @@ import { refAutoReset } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useTelemetry } from '@/platform/telemetry'
 
 const { url } = defineProps<{
   url: string
 }>()
 
 const { copyToClipboard } = useCopyToClipboard()
+const { isAppMode } = useAppMode()
 const copied = refAutoReset(false, 2000)
 
 async function handleCopy() {
   await copyToClipboard(url)
   copied.value = true
+  useTelemetry()?.trackShareFlow({
+    step: 'link_copied',
+    source: isAppMode.value ? 'app_mode' : 'graph_mode'
+  })
 }
 </script>
