@@ -210,8 +210,10 @@ async function initPresets() {
       keybindingStore.savedPresetData = preset
       keybindingStore.currentPresetName = currentName
     } else {
+      keybindingStore.resetAllKeybindings()
       keybindingStore.currentPresetName = 'default'
       keybindingStore.savedPresetData = null
+      await keybindingService.persistUserKeybindings()
       await settingStore.set('Comfy.Keybinding.CurrentPreset', 'default')
     }
   }
