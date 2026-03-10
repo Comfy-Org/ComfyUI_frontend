@@ -137,7 +137,7 @@ export interface WorkflowImportMetadata {
   /**
    * The source of the workflow open/import action
    */
-  open_source?: 'file_button' | 'file_drop' | 'template' | 'unknown'
+  open_source?: 'file_button' | 'file_drop' | 'template' | 'shared' | 'unknown'
 }
 
 export interface EnterLinearMetadata {
@@ -447,7 +447,7 @@ export const TelemetryEvents = {
   // Workflow Management
   WORKFLOW_IMPORTED: 'app:workflow_imported',
   WORKFLOW_OPENED: 'app:workflow_opened',
-  ENTER_LINEAR_MODE: 'app:toggle_linear_mode',
+  ENTER_LINEAR_MODE: 'app:app_mode_opened',
 
   // Page Visibility
   PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
