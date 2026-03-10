@@ -27,11 +27,11 @@ const isLoading = computed<boolean>(() => workspaceStore.spinner)
 watch(
   isLoading,
   (loading, prevLoading) => {
-    if (!loading && (prevLoading || prevLoading === undefined)) {
+    if (prevLoading && !loading) {
       document.getElementById('splash-loader')?.remove()
     }
   },
-  { flush: 'post', immediate: true }
+  { flush: 'post' }
 )
 
 const showContextMenu = (event: MouseEvent) => {
