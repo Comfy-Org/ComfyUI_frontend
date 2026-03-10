@@ -483,14 +483,17 @@ const {
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
 
+const usesTwoThumbnails = (template: TemplateInfo) =>
+  template.thumbnailVariant === 'compareSlider' || template.thumbnailVariant === 'hoverDissolve'
+
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)
-  return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
+  return getTemplateThumbnailUrl(template, sm, sm === 'default' || usesTwoThumbnails(template) ? '1' : null)
 }
 
 const getOverlayThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)
-  return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
+  return getTemplateThumbnailUrl(template, sm, sm === 'default' || usesTwoThumbnails(template) ? '2' : null)
 }
 
 // Open tutorial in new tab

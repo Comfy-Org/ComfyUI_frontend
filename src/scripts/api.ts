@@ -768,6 +768,40 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
+   * Gets the index of custom nodes workflow templates supporting it.
+   * supported in the index: description, templates
+   * templates supported keys: name, title, description, mediaSubType, thumbnailVariant.
+   */
+  async getCustomIndexWorkflowTemplates(
+    customNodeName: string,
+    locale?: string,
+  ): Promise<WorkflowTemplates> {
+    const fallback: WorkflowTemplates = {
+      moduleName: customNodeName,
+      title: customNodeName,
+      templates: [],
+    };
+    const fileName =
+      locale && locale !== "en" ? `index.${locale}.json` : "index.json";
+    try {
+      const res = await axios.get(
+        this.fileURL(
+          `/api/workflow_templates/${encodeURIComponent(customNodeName)}/${fileName}`,
+        ),
+      );
+      const contentType = res.headers["content-type"];
+      return contentType?.includes("application/json") ? res.data : fallback;
+    } catch (error) {
+      console.warn(
+        "Failed to load custom workflow template index:",
+        customNodeName,
+        error,
+      );
+      return fallback;
+    }
+  }
+
+  /**
    * Gets the index of core workflow templates.
    * @param locale Optional locale code (e.g., 'en', 'fr', 'zh') to load localized templates
    */
