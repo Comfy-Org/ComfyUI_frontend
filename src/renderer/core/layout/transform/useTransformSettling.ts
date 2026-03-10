@@ -97,8 +97,10 @@ function usePointerDrag(
     eventOptions
   )
 
+  // Listen on window so the release is caught even if the pointer
+  // leaves the canvas before the button is released.
   useEventListener(
-    target,
+    window,
     'pointerup',
     () => {
       isPointerDown.value = false
@@ -107,7 +109,7 @@ function usePointerDrag(
   )
 
   useEventListener(
-    target,
+    window,
     'pointercancel',
     () => {
       isPointerDown.value = false
