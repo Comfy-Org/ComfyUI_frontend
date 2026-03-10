@@ -2,8 +2,8 @@
   <ComboboxRoot
     v-model="modelValue"
     v-model:open="isOpen"
-    :ignore-filter="true"
-    :disabled="disabled"
+    ignore-filter
+    :disabled
     :class="className"
   >
     <ComboboxAnchor
@@ -100,7 +100,6 @@
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
-import { watchDebounced } from '@vueuse/core'
 import {
   ComboboxAnchor,
   ComboboxContent,
@@ -123,7 +122,6 @@ const { t } = useI18n()
 const {
   placeholder,
   icon = 'icon-[lucide--search]',
-  debounceTime = 300,
   autofocus = false,
   loading = false,
   disabled = false,
@@ -135,7 +133,6 @@ const {
 } = defineProps<{
   placeholder?: string
   icon?: string
-  debounceTime?: number
   autofocus?: boolean
   loading?: boolean
   disabled?: boolean
@@ -147,7 +144,6 @@ const {
 }>()
 
 const emit = defineEmits<{
-  search: [value: string]
   select: [item: T]
 }>()
 
@@ -174,17 +170,20 @@ function clearSearch() {
   focus()
 }
 
-function suggestionLabel(item: T): string {
-  if (optionLabel && typeof item === 'object' && item !== null) {
-    return String((item as Record<string, unknown>)[optionLabel])
+function getItemProperty(item: T, key: keyof T & string): string {
+  if (typeof item === 'object' && item !== null) {
+    return String(item[key])
   }
   return String(item)
 }
 
+function suggestionLabel(item: T): string {
+  if (optionLabel) return getItemProperty(item, optionLabel)
+  return String(item)
+}
+
 function suggestionKey(item: T, index: number): string {
-  if (optionKey && typeof item === 'object' && item !== null) {
-    return String((item as Record<string, unknown>)[optionKey])
-  }
+  if (optionKey) return getItemProperty(item, optionKey)
   return `${suggestionLabel(item)}-${index}`
 }
 
@@ -210,13 +209,5 @@ watch(
   (items) => {
     isOpen.value = items.length > 0 && !!modelValue.value
   }
-)
-
-watchDebounced(
-  modelValue,
-  (value: string) => {
-    emit('search', value)
-  },
-  { debounce: debounceTime }
 )
 </script>
