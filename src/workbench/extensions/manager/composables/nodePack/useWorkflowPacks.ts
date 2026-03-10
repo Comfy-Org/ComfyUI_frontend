@@ -122,30 +122,26 @@ const _useWorkflowPacks = () => {
       return
     }
 
-    const nodes = mapAllNodes(app.rootGraph, (node) => node)
-    const packPromises = nodes.map((node) => workflowNodeToPack(node))
-    const packs = await Promise.all(packPromises)
-
     const resolvedPacks: WorkflowPack[] = []
     const unresolved: string[] = []
 
-    for (let i = 0; i < packs.length; i++) {
-      const pack = packs[i]
-      if (pack) {
-        resolvedPacks.push(pack)
-      } else {
-        const node = nodes[i]
-        const nodeName = node.type
-        const packId = getWorkflowNodePackId(node)
-        if (
-          nodeName &&
-          packId === undefined &&
-          !nodeDefStore.nodeDefsByName[nodeName]
-        ) {
-          unresolved.push(nodeName)
+    await Promise.all(
+      mapAllNodes(app.rootGraph, async (node) => {
+        const pack = await workflowNodeToPack(node)
+        if (pack) {
+          resolvedPacks.push(pack)
+        } else {
+          const nodeName = node.type
+          if (
+            nodeName &&
+            getWorkflowNodePackId(node) === undefined &&
+            !nodeDefStore.nodeDefsByName[nodeName]
+          ) {
+            unresolved.push(nodeName)
+          }
         }
-      }
-    }
+      })
+    )
 
     workflowPacks.value = resolvedPacks
     unresolvedNodeNames.value = [...new Set(unresolved)]
