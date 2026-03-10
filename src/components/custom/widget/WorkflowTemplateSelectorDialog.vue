@@ -14,10 +14,10 @@
     </template>
 
     <template #header>
-      <SearchBox
+      <SearchInput
         v-model="searchQuery"
         size="lg"
-        class="max-w-[384px]"
+        class="max-w-96 flex-1"
         autofocus
       />
     </template>
@@ -389,7 +389,7 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'

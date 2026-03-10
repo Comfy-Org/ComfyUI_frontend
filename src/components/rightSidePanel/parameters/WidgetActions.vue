@@ -15,10 +15,9 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useDialogService } from '@/services/dialogService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import { getWidgetDefaultValue } from '@/utils/widgetUtil'
+import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
 const {
@@ -42,7 +41,6 @@ const label = defineModel<string>('label', { required: true })
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const nodeDefStore = useNodeDefStore()
-const dialogService = useDialogService()
 const { t } = useI18n()
 
 const hasParents = computed(() => parents?.length > 0)
@@ -67,15 +65,8 @@ const isCurrentValueDefault = computed(() => {
 })
 
 async function handleRename() {
-  const newLabel = await dialogService.prompt({
-    title: t('g.rename'),
-    message: t('g.enterNewNamePrompt'),
-    defaultValue: widget.label,
-    placeholder: widget.name
-  })
-
-  if (newLabel === null) return
-  label.value = newLabel
+  const newLabel = await promptWidgetLabel(widget, t)
+  if (newLabel !== null) label.value = newLabel
 }
 
 function handleHideInput() {

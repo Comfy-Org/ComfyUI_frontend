@@ -6,7 +6,7 @@
     <img
       v-if="!error"
       :src="asset.src"
-      :alt="asset.name"
+      :alt="asset.display_name || asset.name"
       class="size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
     />
     <div
@@ -34,7 +34,7 @@ const emit = defineEmits<{
 
 const { state, error, isReady } = useImage({
   src: asset.src ?? '',
-  alt: asset.name
+  alt: asset.display_name || asset.name
 })
 
 whenever(

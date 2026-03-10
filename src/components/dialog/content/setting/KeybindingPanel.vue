@@ -1,6 +1,6 @@
 <template>
   <div class="keybinding-panel flex flex-col gap-2">
-    <SearchBox
+    <SearchInput
       v-model="filters['global'].value"
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.keybindings') })"
     />
@@ -121,7 +121,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'

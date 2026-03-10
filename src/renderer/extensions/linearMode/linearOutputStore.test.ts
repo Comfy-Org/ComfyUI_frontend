@@ -124,6 +124,7 @@ describe('linearOutputStore', () => {
 
   it('auto-selects skeleton on first job start when no selection', () => {
     const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     store.onJobStart('job-1')
 
     expect(store.selectedId).toBe(`slot:${store.inProgressItems[0].id}`)
@@ -132,6 +133,7 @@ describe('linearOutputStore', () => {
   it('transitions to latent on preview', () => {
     vi.useFakeTimers()
     const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     store.onJobStart('job-1')
 
     const itemId = store.inProgressItems[0].id
@@ -265,6 +267,7 @@ describe('linearOutputStore', () => {
     // selectAsLatest simulates "following the latest output"
     store.selectAsLatest('history:asset-1:0')
 
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     store.onJobStart('job-1')
 
     // Following latest → auto-select new skeleton
@@ -286,6 +289,7 @@ describe('linearOutputStore', () => {
 
   it('falls back selection when selected item is removed', () => {
     const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     store.onJobStart('job-1')
     const firstId = `slot:${store.inProgressItems[0].id}`
     expect(store.selectedId).toBe(firstId)
@@ -400,6 +404,8 @@ describe('linearOutputStore', () => {
 
   it('two sequential runs: selection clears after each resolve', () => {
     const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
 
     // Run 1: 3 outputs
     store.onJobStart('job-1')
@@ -736,6 +742,34 @@ describe('linearOutputStore', () => {
     const imageItems = store.inProgressItems.filter((i) => i.state === 'image')
     expect(imageItems).toHaveLength(1)
     expect(imageItems[0].output?.nodeId).toBe('2')
+  })
+
+  it('does not auto-select for jobs belonging to another workflow', () => {
+    const store = useLinearOutputStore()
+
+    // User is on workflow-b, following latest
+    activeWorkflowPathRef.value = 'workflows/app-b.json'
+    store.selectAsLatest('history:asset-b:0')
+
+    // Job from workflow-a starts
+    setJobWorkflowPath('job-1', 'workflows/app-a.json')
+    store.onJobStart('job-1')
+
+    // Should NOT yank selection to the other workflow's slot
+    expect(store.selectedId).toBe('history:asset-b:0')
+  })
+
+  it('auto-selects for jobs belonging to the active workflow', () => {
+    const store = useLinearOutputStore()
+
+    activeWorkflowPathRef.value = 'workflows/app-a.json'
+    store.selectAsLatest('history:asset-a:0')
+
+    setJobWorkflowPath('job-1', 'workflows/app-a.json')
+    store.onJobStart('job-1')
+
+    // Should auto-select since job matches active workflow
+    expect(store.selectedId?.startsWith('slot:')).toBe(true)
   })
 
   it('ignores execution events when not in app mode', async () => {
