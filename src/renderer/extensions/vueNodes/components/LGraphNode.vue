@@ -10,7 +10,7 @@
     :class="
       cn(
         'group/node lg-node absolute text-sm',
-        'flex min-w-[225px] flex-col contain-layout contain-style',
+        'flex min-w-(--min-node-width) flex-col contain-layout contain-style',
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
@@ -19,13 +19,12 @@
           : 'pointer-events-none'
       )
     "
-    :style="[
-      {
-        transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex,
-        opacity: nodeOpacity
-      }
-    ]"
+    :style="{
+      '--min-node-width': `${MIN_NODE_WIDTH}px`,
+      transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+      zIndex: zIndex,
+      opacity: nodeOpacity
+    }"
     v-bind="remainingPointerHandlers"
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
@@ -75,7 +74,7 @@
       :class="
         cn(
           'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
-          'min-h-(--node-height) w-(--node-width)',
+          'min-h-(--node-height) w-(--node-width) min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
           {
@@ -302,6 +301,7 @@ import { isTransparent } from '@/utils/colorUtil'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 import { RESIZE_HANDLES } from '../interactions/resize/resizeHandleConfig'
 import { useNodeResize } from '../interactions/resize/useNodeResize'
@@ -486,7 +486,6 @@ onUnmounted(() => {
 const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
-const MIN_NODE_WIDTH = 225
 const mutations = useLayoutMutations()
 
 const { startResize } = useNodeResize((result, element) => {

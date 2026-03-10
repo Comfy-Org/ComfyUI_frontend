@@ -4,6 +4,8 @@ import type { Bounds, Point } from '@/renderer/core/layout/types'
 
 export const RENDER_SCALE_FACTOR = 1.2
 
+export const MIN_NODE_WIDTH = 225
+
 const anchorCache = new WeakMap<LGraph, Point>()
 
 export function getGraphRenderAnchor(graph: LGraph): Point {
