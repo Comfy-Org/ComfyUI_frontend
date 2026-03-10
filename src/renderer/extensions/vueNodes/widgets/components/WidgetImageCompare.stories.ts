@@ -6,8 +6,18 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { ImageCompareValue } from './WidgetImageCompare.vue'
 import WidgetImageCompare from './WidgetImageCompare.vue'
 
-const SAMPLE_BEFORE = 'https://picsum.photos/seed/before/512/512'
-const SAMPLE_AFTER = 'https://picsum.photos/seed/after/512/512'
+function createSampleImage(label: string, fill: string): string {
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">` +
+    `<rect width="512" height="512" fill="${fill}" />` +
+    `<text x="50%" y="50%" fill="white" font-size="40"` +
+    ` text-anchor="middle" dominant-baseline="middle">` +
+    `${label}</text></svg>`
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+}
+
+const SAMPLE_BEFORE = createSampleImage('Before', '#475569')
+const SAMPLE_AFTER = createSampleImage('After', '#0f766e')
 
 const meta: Meta<typeof WidgetImageCompare> = {
   title: 'Components/Display/ImageCompare',
