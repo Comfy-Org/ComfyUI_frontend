@@ -44,8 +44,7 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingDialog'
-
-const DIALOG_KEY = 'edit-keybinding'
+import { DIALOG_KEY } from '@/composables/useEditKeybindingDialog'
 
 const { dialogState } = defineProps<{
   dialogState: Reactive<EditKeybindingDialogState>

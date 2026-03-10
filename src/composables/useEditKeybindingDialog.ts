@@ -6,7 +6,7 @@ import EditKeybindingHeader from '@/components/dialog/content/setting/keybinding
 import type { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useDialogService } from '@/services/dialogService'
 
-const DIALOG_KEY = 'edit-keybinding'
+export const DIALOG_KEY = 'edit-keybinding'
 
 export interface EditKeybindingDialogState {
   commandId: string

@@ -62,14 +62,14 @@ export class KeyComboImpl implements KeyCombo {
   }
 
   get isBrowserReserved(): boolean {
-    return RESERVED_BY_BROWSER.has(this.toString())
+    return RESERVED_BY_BROWSER.has(toNormalizedString(this))
   }
 
   get isReservedByTextInput(): boolean {
     return (
       !this.hasModifier ||
       this.isShiftOnly ||
-      RESERVED_BY_TEXT_INPUT.has(this.toString())
+      RESERVED_BY_TEXT_INPUT.has(toNormalizedString(this))
     )
   }
 
@@ -87,4 +87,13 @@ export class KeyComboImpl implements KeyCombo {
     sequences.push(this.key)
     return sequences
   }
+}
+
+function toNormalizedString(combo: KeyComboImpl): string {
+  const sequences: string[] = []
+  if (combo.ctrl) sequences.push('Ctrl')
+  if (combo.alt) sequences.push('Alt')
+  if (combo.shift) sequences.push('Shift')
+  sequences.push(combo.key.length === 1 ? combo.key.toLowerCase() : combo.key)
+  return sequences.join(' + ')
 }

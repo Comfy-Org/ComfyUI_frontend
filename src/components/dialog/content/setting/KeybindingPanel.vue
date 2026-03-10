@@ -66,7 +66,7 @@
             <i
               v-if="slotProps.data.keybinding?.combo.isBrowserReserved"
               v-tooltip="$t('g.browserReservedKeybindingTooltip')"
-              class="pi pi-exclamation-triangle shrink-0 text-amber-400"
+              class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
             />
             {{ slotProps.data.label }}
           </div>
