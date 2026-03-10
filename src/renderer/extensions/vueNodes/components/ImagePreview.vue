@@ -238,7 +238,7 @@ const handleDownload = () => {
   } catch (error) {
     toastStore.add({
       severity: 'error',
-      summary: 'Error',
+      summary: t('g.error'),
       detail: t('g.failedToDownloadImage')
     })
   }

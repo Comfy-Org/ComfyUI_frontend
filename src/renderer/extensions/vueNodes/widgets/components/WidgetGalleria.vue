@@ -16,7 +16,10 @@
     </div>
 
     <!-- Thumbnail Strip with Navigation -->
-    <div v-if="showThumbnails" class="flex items-center justify-center gap-2">
+    <div
+      v-if="showThumbnails || showNavButtons"
+      class="flex items-center justify-center gap-2"
+    >
       <!-- Previous Button -->
       <button
         v-if="showNavButtons"
@@ -28,7 +31,10 @@
       </button>
 
       <!-- Thumbnails -->
-      <div class="flex items-center gap-2 overflow-x-hidden scroll-smooth">
+      <div
+        v-if="showThumbnails"
+        class="flex items-center gap-2 overflow-x-hidden scroll-smooth"
+      >
         <button
           v-for="(item, index) in galleryImages"
           :key="index"
@@ -70,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -121,6 +127,17 @@ const galleryImages = computed<GalleryImage[]>(() => {
 })
 
 const activeItem = computed(() => galleryImages.value[activeIndex.value])
+
+watch(galleryImages, (images) => {
+  thumbnailRefs.value = thumbnailRefs.value.slice(0, images.length)
+  if (images.length === 0) {
+    activeIndex.value = 0
+    return
+  }
+  if (activeIndex.value >= images.length) {
+    activeIndex.value = images.length - 1
+  }
+})
 
 const showThumbnails = computed(
   () => options.value.showThumbnails !== false && galleryImages.value.length > 1
