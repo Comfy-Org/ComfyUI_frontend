@@ -83,17 +83,22 @@ function createResizeEntry(options?: {
   height?: number
   left?: number
   top?: number
+  collapsed?: boolean
 }) {
   const {
     nodeId = 'test-node',
     width = 240,
     height = 180,
     left = 100,
-    top = 200
+    top = 200,
+    collapsed = false
   } = options ?? {}
 
   const element = document.createElement('div')
   element.dataset.nodeId = nodeId
+  if (collapsed) {
+    element.dataset.collapsed = ''
+  }
   const rectSpy = vi.fn(() => new DOMRect(left, top, width, height))
   element.getBoundingClientRect = rectSpy
   const boxSizes = [{ inlineSize: width, blockSize: height }]
@@ -265,6 +270,21 @@ describe('useVueNodeResizeTracking', () => {
         }
       }
     ])
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+  })
+
+  it('resyncs slot anchors for collapsed nodes without writing bounds', () => {
+    const nodeId = 'test-node'
+    const { entry, rectSpy } = createResizeEntry({
+      nodeId,
+      collapsed: true
+    })
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(rectSpy).not.toHaveBeenCalled()
+    expect(testState.setSource).not.toHaveBeenCalled()
+    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 })

@@ -104,6 +104,35 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     expect(afterSecond).toEqual(afterFirst)
   })
 
+  it('does not re-normalize when graph is already marked Vue-corrected even with Vue override', () => {
+    const nodes = twoNodeLayout()
+    const graph = createMockGraph(nodes, {
+      workflowRendererVersion: 'Vue-corrected'
+    })
+
+    const before = snapshotGeometry(nodes)
+    const result = ensureCorrectLayoutScale('Vue', graph as LGraph)
+
+    expect(result).toBe(false)
+    expect(snapshotGeometry(nodes)).toEqual(before)
+  })
+
+  it('uses renderer override when workflow metadata is missing', () => {
+    const nodes = twoNodeLayout()
+    const graph = createMockGraph(nodes)
+
+    const beforeDistance = distanceBetweenNodes(nodes)
+    const result = ensureCorrectLayoutScale('Vue', graph as LGraph)
+
+    expect(result).toBe(true)
+    expect(graph.extra?.workflowRendererVersion).toBe('Vue-corrected')
+    const afterDistance = distanceBetweenNodes(nodes)
+    expect(afterDistance / beforeDistance).toBeCloseTo(
+      1 / RENDER_SCALE_FACTOR,
+      5
+    )
+  })
+
   it('is a no-op for already-corrected graphs', () => {
     const nodes = twoNodeLayout()
     const graph = createMockGraph(nodes, {
@@ -183,6 +212,26 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
 
     expect(group.size[0]).toBeCloseTo(300 / RENDER_SCALE_FACTOR, 5)
     expect(group.size[1]).toBeCloseTo(200 / RENDER_SCALE_FACTOR, 5)
+  })
+
+  it('updates group geometry in place without replacing arrays', () => {
+    const nodes = twoNodeLayout()
+    const graph = createMockGraph(nodes, {
+      workflowRendererVersion: 'Vue'
+    })
+
+    const groupPos = [150, 150] as Point
+    const groupSize = [300, 200] as Point
+    const group = {
+      pos: groupPos,
+      size: groupSize
+    }
+    ;(graph.groups as (typeof group)[]).push(group)
+
+    ensureCorrectLayoutScale(undefined, graph as LGraph)
+
+    expect(group.pos).toBe(groupPos)
+    expect(group.size).toBe(groupSize)
   })
 
   it('repeated normalization does not compound spacing', () => {

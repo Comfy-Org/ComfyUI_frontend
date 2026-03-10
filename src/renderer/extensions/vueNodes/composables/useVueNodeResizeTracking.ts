@@ -136,10 +136,17 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
 
     if (!elementType || !elementId) continue
+    const nodeId: NodeId | undefined =
+      elementType === 'node' ? elementId : undefined
 
     // Skip collapsed nodes — their DOM height is just the header, and writing
     // that back to the layout store would overwrite the stored expanded size.
-    if (elementType === 'node' && element.dataset.collapsed != null) continue
+    if (elementType === 'node' && element.dataset.collapsed != null) {
+      if (nodeId) {
+        nodesNeedingSlotResync.add(nodeId)
+      }
+      continue
+    }
 
     // Use borderBoxSize when available; fall back to contentRect for older engines/tests
     // Border box is the border included FULL wxh DOM value.
@@ -151,8 +158,6 @@ const resizeObserver = new ResizeObserver((entries) => {
         }
     const width = Math.max(0, borderBox.inlineSize)
     const height = Math.max(0, borderBox.blockSize)
-    const nodeId: NodeId | undefined =
-      elementType === 'node' ? elementId : undefined
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value
       : null
@@ -221,14 +226,16 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
   }
 
-  if (updatesByType.size === 0) return
+  if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return
 
-  layoutStore.setSource(LayoutSource.DOM)
+  if (updatesByType.size > 0) {
+    layoutStore.setSource(LayoutSource.DOM)
 
-  // Flush per-type
-  for (const [type, updates] of updatesByType) {
-    const config = trackingConfigs.get(type)
-    if (config && updates.length) config.updateHandler(updates)
+    // Flush per-type
+    for (const [type, updates] of updatesByType) {
+      const config = trackingConfigs.get(type)
+      if (config && updates.length) config.updateHandler(updates)
+    }
   }
 
   // After node bounds are updated, refresh slot cached offsets and layouts

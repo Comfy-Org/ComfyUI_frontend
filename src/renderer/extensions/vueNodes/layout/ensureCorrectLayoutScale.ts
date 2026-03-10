@@ -26,8 +26,10 @@ function unprojectPosSize(item: Positioned, anchor: Point) {
     anchor,
     RENDER_SCALE_FACTOR
   )
-  item.pos = [c.x, c.y]
-  item.size = [c.width, c.height]
+  item.pos[0] = c.x
+  item.pos[1] = c.y
+  item.size[0] = c.width
+  item.size[1] = c.height
 }
 
 /**
@@ -41,9 +43,7 @@ function unprojectPosSize(item: Positioned, anchor: Point) {
  * transforms rather than mutating persisted geometry.
  *
  * @param rendererVersion - Override for the renderer version check. When
- *   provided, this value is used instead of the graph's own
- *   `workflowRendererVersion` (useful when the graph's metadata has already
- *   been cleared or when using a parent graph's version as fallback).
+ *   graph metadata is missing, this value is used as a fallback.
  * @param targetGraph - The graph to normalize.
  */
 export function ensureCorrectLayoutScale(
@@ -52,7 +52,10 @@ export function ensureCorrectLayoutScale(
 ): boolean {
   if (!graph.nodes) return false
 
-  const renderer = rendererVersion ?? graph.extra.workflowRendererVersion
+  const currentRenderer = graph.extra?.workflowRendererVersion
+  if (currentRenderer === 'Vue-corrected') return false
+
+  const renderer = currentRenderer ?? rendererVersion
   if (renderer !== 'Vue') return false
 
   const anchor = getGraphRenderAnchor(graph)
