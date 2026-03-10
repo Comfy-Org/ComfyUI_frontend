@@ -45,16 +45,9 @@
         :style="{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }"
       />
 
-      <!-- Slider line -->
-      <div
-        class="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-white shadow-md"
-        :style="{ left: `${sliderPosition}%` }"
-        role="presentation"
-      />
-
       <!-- Circular drag handle -->
       <div
-        class="pointer-events-none absolute top-1/2 z-10 size-6 -translate-1/2 rounded-full bg-white shadow-md"
+        class="pointer-events-none absolute top-1/2 z-10 size-6 -translate-1/2 rounded-full border-2 border-white bg-white/30 shadow-lg backdrop-blur-sm"
         :style="{ left: `${sliderPosition}%` }"
         role="presentation"
       />
