@@ -40,7 +40,8 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: vi.fn(() => ({
     workspaceName: { value: '' },
-    initState: { value: 'idle' }
+    initState: { value: 'idle' },
+    isInPersonalWorkspace: { value: false }
   }))
 }))
 
