@@ -69,7 +69,7 @@ vi.mock('./nodeLibrary/NodeDragPreview.vue', () => ({
   }
 }))
 
-vi.mock('@/components/common/SearchBoxV2.vue', () => ({
+vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
   default: {
     name: 'SearchBox',
     template: '<input data-testid="search-box" />',

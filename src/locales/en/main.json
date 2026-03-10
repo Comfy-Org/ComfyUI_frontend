@@ -3183,6 +3183,7 @@
     "cancelThisRun": "Cancel this run",
     "deleteAllAssets": "Delete all assets from this run",
     "hasCreditCost": "Requires additional credits",
+    "viewGraph": "View node graph",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
@@ -3226,6 +3227,19 @@
       "inputPlaceholder": "Inputs will show up here",
       "outputPlaceholder": "Output nodes will show up here",
       "outputRequiredPlaceholder": "At least one node is required"
+    },
+    "error": {
+      "header": "This app encountered an error",
+      "log": "Error Logs",
+      "mobileFixable": "Check {0} for errors",
+      "requiresGraph": "Something went wrong during generation. This could be due to invalid hidden inputs, missing resources, or workflow configuration issues.",
+      "promptVisitGraph": "View the node graph to see the full error.",
+      "getHelp": "For help, view our {0}, {1}, or {2} with the copied error.",
+      "goto": "Show errors in graph",
+      "github": "submit a GitHub issue",
+      "guide": "troubleshooting guide",
+      "support": "contact our support",
+      "promptShow": "Show error report"
     },
     "queue": {
       "clickToClear": "Click to clear queue",
