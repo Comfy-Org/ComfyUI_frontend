@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -54,6 +55,7 @@ export function useAppSetDefaultView() {
         appliedAsApp,
         onViewApp: () => {
           closeAppliedDialog()
+          useTelemetry()?.trackEnterLinear({ source: 'app_builder' })
           setMode('app')
         },
         onExitToWorkflow: () => {
