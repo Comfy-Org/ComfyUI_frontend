@@ -19,6 +19,11 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import {
+  isBoundsEqual,
+  isSizeEqual
+} from '@/renderer/core/layout/utils/geometry'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
 
@@ -130,8 +135,25 @@ const resizeObserver = new ResizeObserver((entries) => {
           inlineSize: entry.contentRect.width,
           blockSize: entry.contentRect.height
         }
-    const width = borderBox.inlineSize
-    const height = borderBox.blockSize
+    const width = Math.max(0, borderBox.inlineSize)
+    const height = Math.max(0, borderBox.blockSize)
+    const isNodeEntry = elementType === 'node'
+    const nodeId = isNodeEntry ? (elementId as NodeId) : null
+    const nodeLayout = nodeId
+      ? layoutStore.getNodeLayoutRef(nodeId).value
+      : null
+
+    // ResizeObserver emits entries where nothing changed (e.g. initial observe).
+    // Skip expensive DOM reads and slot sync if the stored node size is unchanged.
+    if (
+      nodeLayout &&
+      isSizeEqual(nodeLayout.size, {
+        width,
+        height: removeNodeTitleHeight(height)
+      })
+    ) {
+      continue
+    }
 
     // Screen-space rect
     const rect = element.getBoundingClientRect()
@@ -140,8 +162,18 @@ const resizeObserver = new ResizeObserver((entries) => {
     const bounds: Bounds = {
       x: topLeftCanvas.x,
       y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
-      width: Math.max(0, width),
-      height: Math.max(0, height)
+      width,
+      height
+    }
+
+    if (
+      nodeLayout &&
+      isBoundsEqual(nodeLayout.bounds, {
+        ...bounds,
+        height: removeNodeTitleHeight(bounds.height)
+      })
+    ) {
+      continue
     }
 
     let updates = updatesByType.get(elementType)
@@ -152,10 +184,12 @@ const resizeObserver = new ResizeObserver((entries) => {
     updates.push({ id: elementId, bounds })
 
     // If this entry is a node, mark it for slot layout resync
-    if (elementType === 'node' && elementId) {
+    if (isNodeEntry && elementId) {
       nodesNeedingSlotResync.add(elementId)
     }
   }
+
+  if (updatesByType.size === 0) return
 
   layoutStore.setSource(LayoutSource.DOM)
 

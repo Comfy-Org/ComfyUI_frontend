@@ -88,6 +88,14 @@ export function syncNodeSlotLayoutsFromDOM(
       y: centerCanvas.y - nodeLayout.position.y
     }
 
+    const existingSlotLayout = layoutStore.getSlotLayout(slotKey)
+    if (
+      existingSlotLayout &&
+      isPointEqual(existingSlotLayout.position, centerCanvas)
+    ) {
+      continue
+    }
+
     // Persist layout in canvas coordinates
     const size = LiteGraph.NODE_SLOT_HEIGHT
     const half = size / 2

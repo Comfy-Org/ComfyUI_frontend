@@ -11,6 +11,7 @@ import type { SlotLayout } from '@/renderer/core/layout/types'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
+  syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
   useSlotElementTracking
 } from './useSlotElementTracking'
@@ -130,5 +131,50 @@ describe('useSlotElementTracking', () => {
 
     // Should remain pending — waiting for Vue components to mount
     expect(layoutStore.pendingSlotSync).toBe(true)
+  })
+
+  it('skips slot layout writeback when measured geometry is unchanged', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const slotEl = document.createElement('div')
+    slotEl.getBoundingClientRect = vi.fn(
+      () =>
+        ({
+          x: 100,
+          y: 200,
+          left: 100,
+          top: 200,
+          right: 116,
+          bottom: 216,
+          width: 16,
+          height: 16,
+          toJSON: () => ({})
+        }) as DOMRect
+    )
+
+    const registryStore = useNodeSlotRegistryStore()
+    const node = registryStore.ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: slotEl,
+      index: SLOT_INDEX,
+      type: 'input',
+      cachedOffset: { x: 108, y: 208 }
+    })
+
+    const initialLayout: SlotLayout = {
+      nodeId: NODE_ID,
+      index: SLOT_INDEX,
+      type: 'input',
+      position: { x: 108, y: 208 },
+      bounds: { x: 104, y: 204, width: 8, height: 8 }
+    }
+    layoutStore.batchUpdateSlotLayouts([
+      { key: slotKey, layout: initialLayout }
+    ])
+
+    const batchUpdateSpy = vi.spyOn(layoutStore, 'batchUpdateSlotLayouts')
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(batchUpdateSpy).not.toHaveBeenCalled()
   })
 })
