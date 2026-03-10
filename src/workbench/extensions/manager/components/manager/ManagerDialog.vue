@@ -353,6 +353,12 @@ const selectedTab = computed(() =>
   findNavItemById(navItems.value, selectedNavId.value)
 )
 
+watch(navItems, (items) => {
+  if (selectedNavId.value && !findNavItemById(items, selectedNavId.value)) {
+    selectedNavId.value = ManagerTab.Missing
+  }
+})
+
 const {
   searchQuery,
   pageNumber,

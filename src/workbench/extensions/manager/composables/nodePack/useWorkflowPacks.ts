@@ -116,7 +116,11 @@ const _useWorkflowPacks = () => {
    * as unresolved so downstream consumers can surface them to the user.
    */
   const getWorkflowPacks = async () => {
-    if (!app.rootGraph) return []
+    if (!app.rootGraph) {
+      workflowPacks.value = []
+      unresolvedNodeNames.value = []
+      return
+    }
 
     const nodes = mapAllNodes(app.rootGraph, (node) => node)
     const packPromises = nodes.map((node) => workflowNodeToPack(node))
@@ -132,7 +136,12 @@ const _useWorkflowPacks = () => {
       } else {
         const node = nodes[i]
         const nodeName = node.type
-        if (nodeName && !nodeDefStore.nodeDefsByName[nodeName]) {
+        const packId = getWorkflowNodePackId(node)
+        if (
+          nodeName &&
+          packId === undefined &&
+          !nodeDefStore.nodeDefsByName[nodeName]
+        ) {
           unresolved.push(nodeName)
         }
       }
