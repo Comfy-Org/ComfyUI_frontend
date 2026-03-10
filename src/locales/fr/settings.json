@@ -454,9 +454,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Afficher l'avertissement des modèles manquants"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Afficher l'avertissement des nœuds manquants"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Trier les ID de nœuds lors de l'enregistrement du flux de travail"
   },

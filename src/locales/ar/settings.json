@@ -454,9 +454,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "عرض تحذير النماذج المفقودة"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "عرض تحذير العقد المفقودة"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "ترتيب معرفات العقد عند حفظ سير العمل"
   },

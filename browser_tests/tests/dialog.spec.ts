@@ -4,69 +4,9 @@ import { expect } from '@playwright/test'
 import type { Keybinding } from '../../src/platform/keybindings/types'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
-import { TestIds } from '../fixtures/selectors'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
-test.describe('Load workflow warning', { tag: '@ui' }, () => {
-  test('Should display a warning when loading a workflow with missing nodes', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
-
-    const missingNodesWarning = comfyPage.page.getByTestId(
-      TestIds.dialogs.missingNodes
-    )
-    await expect(missingNodesWarning).toBeVisible()
-  })
-
-  test('Should display a warning when loading a workflow with missing nodes in subgraphs', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('missing/missing_nodes_in_subgraph')
-
-    const missingNodesWarning = comfyPage.page.getByTestId(
-      TestIds.dialogs.missingNodes
-    )
-    await expect(missingNodesWarning).toBeVisible()
-
-    // Verify the missing node text includes subgraph context
-    const warningText = await missingNodesWarning.textContent()
-    expect(warningText).toContain('MISSING_NODE_TYPE_IN_SUBGRAPH')
-    expect(warningText).toContain('in subgraph')
-  })
-})
-
-test('Does not report warning on undo/redo', async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
-  const missingNodesWarning = comfyPage.page.getByTestId(
-    TestIds.dialogs.missingNodes
-  )
-
-  await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
-  await expect(missingNodesWarning).toBeVisible()
-  await comfyPage.page.keyboard.press('Escape')
-  await expect(missingNodesWarning).not.toBeVisible()
-
-  // Wait for any async operations to complete after dialog closes
-  await comfyPage.nextFrame()
-
-  // Make a change to the graph
-  await comfyPage.canvasOps.doubleClick()
-  await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
-
-  // Undo and redo the change
-  await comfyPage.keyboard.undo()
-  await expect(async () => {
-    await expect(missingNodesWarning).not.toBeVisible()
-  }).toPass({ timeout: 5000 })
-
-  await comfyPage.keyboard.redo()
-  await expect(async () => {
-    await expect(missingNodesWarning).not.toBeVisible()
-  }).toPass({ timeout: 5000 })
 })
 
 test.describe('Execution error', () => {

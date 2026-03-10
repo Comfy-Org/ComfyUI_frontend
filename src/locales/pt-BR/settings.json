@@ -454,9 +454,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Mostrar aviso de modelos ausentes"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Mostrar aviso de nós ausentes"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Ordenar IDs dos nós ao salvar fluxo de trabalho"
   },

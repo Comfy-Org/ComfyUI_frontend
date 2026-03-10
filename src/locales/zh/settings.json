@@ -454,9 +454,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "显示缺失模型警告"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "显示缺失节点警告"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "保存节点ID到工作流"
   },

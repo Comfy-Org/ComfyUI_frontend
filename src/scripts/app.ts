@@ -55,7 +55,6 @@ import {
   DOMWidgetImpl
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
-import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
@@ -1093,11 +1092,6 @@ export class ComfyApp {
   }
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
-    // Remove modal once Node Replacement is implemented in TabErrors.
-    if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
-      useMissingNodesDialog().show({ missingNodeTypes })
-    }
-
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.surfaceMissingNodes(missingNodeTypes)
   }

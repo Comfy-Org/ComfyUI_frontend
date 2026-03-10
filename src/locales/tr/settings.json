@@ -454,9 +454,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Eksik model uyarısını göster"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Eksik düğüm uyarısını göster"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "İş akışını kaydederken düğüm kimliklerini sırala"
   },

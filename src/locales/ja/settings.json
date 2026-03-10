@@ -454,9 +454,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "欠落しているモデルの警告を表示"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "欠落しているノードの警告を表示"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "ワークフローを保存する際にノードIDをソート"
   },

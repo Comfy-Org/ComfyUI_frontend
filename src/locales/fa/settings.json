@@ -454,9 +454,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "نمایش هشدار مدل‌های مفقود"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "نمایش هشدار نودهای مفقود"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "مرتب‌سازی شناسه نودها هنگام ذخیره ورک‌فلو"
   },
