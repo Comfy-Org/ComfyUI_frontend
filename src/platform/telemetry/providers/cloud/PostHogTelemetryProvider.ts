@@ -105,7 +105,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               autocapture: false,
               capture_pageview: false,
               capture_pageleave: false,
-              persistence: 'localStorage+cookie'
+              persistence: 'localStorage+cookie',
+              debug: import.meta.env.DEV
             })
             this.isInitialized = true
             this.flushEventQueue()
