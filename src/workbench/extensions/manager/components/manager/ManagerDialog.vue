@@ -128,6 +128,10 @@
       <div v-if="isLoading" class="size-full scrollbar-hide overflow-auto">
         <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
       </div>
+      <UnresolvedNodesMessage
+        v-else-if="isUnresolvedTab"
+        :node-names="unresolvedNodeNames"
+      />
       <NoResultsPlaceholder
         v-else-if="displayPacks.length === 0"
         :title="emptyStateTitle"
@@ -199,6 +203,7 @@ import InfoPanel from '@/workbench/extensions/manager/components/manager/infoPan
 import InfoPanelMultiItem from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelMultiItem.vue'
 import PackCard from '@/workbench/extensions/manager/components/manager/packCard/PackCard.vue'
 import GridSkeleton from '@/workbench/extensions/manager/components/manager/skeleton/GridSkeleton.vue'
+import UnresolvedNodesMessage from '@/workbench/extensions/manager/components/manager/UnresolvedNodesMessage.vue'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useUpdateAvailableNodes } from '@/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
@@ -246,6 +251,7 @@ const {
 // Missing nodes composable
 const {
   missingNodePacks,
+  unresolvedNodeNames,
   isLoading: isMissingLoading,
   error: missingError
 } = useMissingNodes()
@@ -309,7 +315,17 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => [
         id: ManagerTab.Missing,
         label: t('manager.nav.missingNodes'),
         icon: 'icon-[lucide--triangle-alert]'
-      }
+      },
+      ...(unresolvedNodeNames.value.length > 0
+        ? [
+            {
+              id: ManagerTab.Unresolved,
+              label: t('manager.nav.unresolvedNodes'),
+              icon: 'icon-[lucide--help-circle]',
+              badge: unresolvedNodeNames.value.length
+            }
+          ]
+        : [])
     ]
   }
 ])
@@ -336,6 +352,12 @@ const findNavItemById = (
 const selectedTab = computed(() =>
   findNavItemById(navItems.value, selectedNavId.value)
 )
+
+watch(navItems, (items) => {
+  if (selectedNavId.value && !findNavItemById(items, selectedNavId.value)) {
+    selectedNavId.value = ManagerTab.Missing
+  }
+})
 
 const {
   searchQuery,
@@ -402,6 +424,9 @@ const isUpdateAvailableTab = computed(
 )
 const isMissingTab = computed(
   () => selectedTab.value?.id === ManagerTab.Missing
+)
+const isUnresolvedTab = computed(
+  () => selectedTab.value?.id === ManagerTab.Unresolved
 )
 
 // Map of tab IDs to their empty state i18n key suffixes
