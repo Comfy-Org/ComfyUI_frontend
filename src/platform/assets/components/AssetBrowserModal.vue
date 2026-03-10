@@ -31,7 +31,7 @@
           :autofocus="true"
           size="lg"
           :placeholder="$t('g.searchPlaceholder', { subject: '' })"
-          class="max-w-96 flex-1"
+          class="max-w-lg flex-1"
         />
         <Button
           v-if="isUploadButtonEnabled"
