@@ -3,7 +3,7 @@
     <template #header>
       <TabsRoot v-model="selectedTab" class="flex flex-col">
         <div class="flex items-center justify-between gap-2 px-2 pb-2 2xl:px-4">
-          <SearchBox
+          <SearchInput
             ref="searchBoxRef"
             v-model="searchQuery"
             :placeholder="$t('g.search') + '...'"
@@ -180,7 +180,7 @@ import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
-import SearchBox from '@/components/common/SearchBoxV2.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
@@ -253,7 +253,7 @@ const filterOptions = ref<Record<NodeCategoryId, boolean>>({
 
 const { t } = useI18n()
 
-const searchBoxRef = ref<InstanceType<typeof SearchBox> | null>(null)
+const searchBoxRef = ref<InstanceType<typeof SearchInput> | null>(null)
 const searchQuery = ref('')
 const expandedKeysByTab = ref<Record<TabId, string[]>>({
   essentials: [],
