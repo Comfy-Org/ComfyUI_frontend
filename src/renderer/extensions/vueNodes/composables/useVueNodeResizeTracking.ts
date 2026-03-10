@@ -118,6 +118,10 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
 
+    // Skip collapsed nodes — their DOM height is just the header, and writing
+    // that back to the layout store would overwrite the stored expanded size.
+    if (elementType === 'node' && element.dataset.collapsed != null) continue
+
     // Use borderBoxSize when available; fall back to contentRect for older engines/tests
     // Border box is the border included FULL wxh DOM value.
     const borderBox = Array.isArray(entry.borderBoxSize)

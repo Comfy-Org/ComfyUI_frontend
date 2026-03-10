@@ -7,6 +7,7 @@
     ref="nodeContainerRef"
     tabindex="0"
     :data-node-id="nodeData.id"
+    :data-collapsed="isCollapsed || undefined"
     :class="
       cn(
         'group/node lg-node absolute text-sm',
