@@ -325,4 +325,9 @@ defineExpose({ runButtonClick })
       </section>
     </div>
   </div>
+  <div
+    v-else-if="mobile"
+    class="flex size-full items-center bg-base-background p-4 text-center"
+    v-text="t('linearMode.mobileNoWorkflow')"
+  />
 </template>
