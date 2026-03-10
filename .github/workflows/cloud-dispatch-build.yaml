@@ -55,13 +55,13 @@ jobs:
             REF="${PR_HEAD_SHA}"
             BRANCH="${PR_HEAD_REF}"
 
-            # Derive variant from labels
-            VARIANT="gpu"
+            # Derive variant from labels (default to cpu for frontend-only previews)
+            VARIANT="cpu"
             if [ "${ACTION}" = "labeled" ]; then
-              [ "${LABEL_NAME}" = "preview-cpu" ] && VARIANT="cpu"
+              [ "${LABEL_NAME}" = "preview-gpu" ] && VARIANT="gpu"
             else
               # synchronize — check existing labels on the PR
-              echo "${PR_LABELS}" | grep -q '"preview-cpu"' && VARIANT="cpu"
+              echo "${PR_LABELS}" | grep -q '"preview-gpu"' && VARIANT="gpu"
             fi
           else
             REF="${GITHUB_SHA}"
