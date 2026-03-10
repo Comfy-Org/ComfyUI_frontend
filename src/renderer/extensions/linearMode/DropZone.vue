@@ -47,9 +47,7 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
 const isHovered = computed(
   () => forceHovered || (canAcceptDrop.value && isOverDropZone.value)
 )
-const indicatorTag = computed(() =>
-  dropIndicator?.onClick ? 'button' : 'div'
-)
+const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
 </script>
 <template>
   <div
