@@ -60,6 +60,7 @@ const litegraphBaseSchema = z.object({
 export const comfyBaseSchema = z.object({
   ['fg-color']: z.string(),
   ['bg-color']: z.string(),
+  ['splash-bg-color']: z.string().optional(),
   ['bg-img']: z.string().optional(),
   ['comfy-menu-bg']: z.string(),
   ['comfy-menu-secondary-bg']: z.string(),

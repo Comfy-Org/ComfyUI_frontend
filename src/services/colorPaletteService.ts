@@ -230,7 +230,10 @@ export const useColorPaletteService = () => {
     }
 
     try {
-      localStorage.setItem('comfy-splash-bg', comfyColorPalette['bg-color'])
+      localStorage.setItem(
+        'comfy-splash-bg',
+        comfyColorPalette['splash-bg-color'] ?? comfyColorPalette['bg-color']
+      )
       localStorage.setItem('comfy-splash-fg', comfyColorPalette['fg-color'])
     } catch (_) {
       /* empty */

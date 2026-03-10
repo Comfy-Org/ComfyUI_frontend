@@ -53,6 +53,7 @@
     "comfy_base": {
       "fg-color": "#222",
       "bg-color": "#DDD",
+      "splash-bg-color": "#FFFFFF",
       "comfy-menu-bg": "#FFFFFF",
       "comfy-menu-hover-bg": "#ccc",
       "comfy-menu-secondary-bg": "#EEE",
