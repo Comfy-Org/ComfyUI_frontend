@@ -9,8 +9,15 @@ flowchart TD
     A[Having Issues?] --> B{What's the problem?}
     B -->|Dev server stuck| C[nx serve hangs]
     B -->|Build errors| D[Check build issues]
+    B -->|Lint errors| Q[Check linting issues]
     B -->|Dependency issues| E[Package problems]
     B -->|Other| F[See FAQ below]
+
+    Q --> R{oxlint or ESLint?}
+    R -->|oxlint| S[Check .oxlintrc.json<br/>and run pnpm lint:fix]
+    R -->|ESLint| T[Check eslint.config.ts<br/>and run pnpm lint:fix]
+    S --> L
+    T --> L
 
     C --> G{Tried quick fixes?}
     G -->|No| H[Run: pnpm i]
@@ -151,6 +158,86 @@ flowchart TD
 
 ---
 
+### Linting Issues (oxlint)
+
+#### Q: `eslint-disable` comment isn't suppressing an oxlint rule
+
+**Symptoms:**
+
+- `// eslint-disable-next-line rule-name` has no effect
+- Lint error persists despite the disable comment
+
+**Solution:**
+
+oxlint has its own disable syntax. Use `oxlint-disable` instead:
+
+```ts
+// oxlint-disable-next-line no-console
+console.log('debug')
+```
+
+Check whether the rule is enforced by oxlint (in `.oxlintrc.json`) or ESLint (in `eslint.config.ts`) to pick the right disable comment.
+
+---
+
+#### Q: New lint errors after pulling/upgrading oxlint
+
+**Symptoms:**
+
+- Lint errors in files you didn't change
+- Rules you haven't seen before (e.g. `no-immediate-mutation`, `prefer-optional-chain`)
+
+**Solutions:**
+
+1. **Run the auto-fixer first:**
+
+   ```bash
+   pnpm lint:fix
+   ```
+
+2. **Review changes carefully** — some oxlint auto-fixes can produce incorrect code. Check the diff before committing.
+
+3. **If a rule seems wrong**, check `.oxlintrc.json` to see if it should be disabled or configured differently.
+
+**Why this happens:** oxlint version bumps often enable new rules by default.
+
+---
+
+#### Q: oxlint fails with TypeScript errors
+
+**Symptoms:**
+
+- `pnpm oxlint` or `pnpm lint` fails with type-related errors
+- Errors mention type resolution or missing type information
+
+**Solution:**
+
+oxlint runs with `--type-aware` in this project, which requires valid TypeScript compilation. Fix the TS errors first:
+
+```bash
+pnpm typecheck   # Identify TS errors
+pnpm build       # Or do a full build
+pnpm lint        # Then re-run lint
+```
+
+---
+
+#### Q: Duplicate lint errors from both oxlint and ESLint
+
+**Symptoms:**
+
+- Same violation reported twice
+- Conflicting auto-fix suggestions
+
+**Solution:**
+
+The project uses `eslint-plugin-oxlint` to automatically disable ESLint rules that oxlint already covers (see `eslint.config.ts`). If you see duplicates:
+
+1. Ensure `.oxlintrc.json` is up to date after adding new oxlint rules
+2. Run `pnpm lint` (which runs oxlint then ESLint in sequence) rather than running them individually
+
+---
+
 ### Dependency and Package Issues
 
 #### Q: "Package not found" after adding a dependency
@@ -162,14 +249,11 @@ flowchart TD
 
 **Solutions:**
 
-1. **Ensure you installed in the correct workspace:**
+1. **Ensure you installed in the correct workspace** (see `pnpm-workspace.yaml` for available workspaces):
 
    ```bash
-   # For the main app
-   pnpm --filter web add <package>
-
-   # For the API client
-   pnpm --filter @comfyorg/api-client add <package>
+   # Example: install in a specific workspace
+   pnpm --filter <workspace-name> add <package>
    ```
 
 2. **Clear pnpm cache:**
@@ -227,10 +311,10 @@ flowchart TD
    pnpm test:unit --no-cache
    ```
 
-3. **Check Node version matches CI:**
+3. **Check Node version matches CI** (see `.nvmrc` for the required version):
    ```bash
-   node --version  # Should be v24
-   nvm use 24      # If using nvm
+   node --version
+   nvm use          # If using nvm — reads .nvmrc automatically
    ```
 
 ---
@@ -281,4 +365,4 @@ Found a solution to a common problem? Please:
 
 ---
 
-**Last Updated:** 2026-03-09
+**Last Updated:** 2026-03-10

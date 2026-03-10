@@ -27,7 +27,7 @@ cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 
 ### Node.js & Playwright Prerequisites
 
-Ensure you have the Node.js version from `.nvmrc` installed (currently v24).
+Ensure you have the Node.js version specified in `.nvmrc` installed.
 Then, set up the Chromium test driver:
 
 ```bash
