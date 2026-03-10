@@ -61,7 +61,8 @@ const meta: Meta<StoryArgs> = {
   decorators: [
     (story) => ({
       components: { story },
-      template: '<div class="w-96"><story /></div>'
+      template:
+        '<div class="w-96 rounded-xl bg-component-node-background p-4"><story /></div>'
     })
   ]
 }

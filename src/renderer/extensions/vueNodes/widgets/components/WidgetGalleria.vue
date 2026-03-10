@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex max-w-full flex-col gap-4 rounded-lg bg-node-component-surface p-4"
+    class="flex max-w-full flex-col gap-4 rounded-lg bg-component-node-widget-background p-4"
   >
     <!-- Main Image -->
     <div class="relative flex items-center justify-center">
@@ -36,8 +36,7 @@
           :class="
             cn(
               'h-[54px] w-[85px] shrink-0 cursor-pointer overflow-hidden rounded-lg border border-transparent transition-colors',
-              index === activeIndex &&
-                'border-node-component-border-highlighted'
+              index === activeIndex && 'border-base-foreground'
             )
           "
           :aria-label="
