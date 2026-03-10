@@ -324,11 +324,11 @@
                     >
                       <template v-if="isAppTemplate(template)">
                         <i class="icon-[lucide--panels-top-left]" />
-                        {{ $t('g.app', 'App') }}
+                        {{ $t('builderToolbar.app', 'App') }}
                       </template>
                       <template v-else>
                         <i class="icon-[lucide--workflow]" />
-                        {{ $t('g.nodeGraph', 'Node Graph') }}
+                        {{ $t('builderToolbar.nodeGraph', 'Node Graph') }}
                       </template>
                     </span>
                   </div>
