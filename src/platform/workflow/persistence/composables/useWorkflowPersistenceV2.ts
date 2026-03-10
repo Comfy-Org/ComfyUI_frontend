@@ -154,8 +154,15 @@ export function useWorkflowPersistenceV2() {
     // 2. No draft — try loading saved workflow by path
     const savedWorkflow = workflowStore.getWorkflowByPath(sessionPath)
     if (savedWorkflow) {
-      await useWorkflowService().openWorkflow(savedWorkflow)
-      return true
+      try {
+        await useWorkflowService().openWorkflow(savedWorkflow)
+        return true
+      } catch (err) {
+        console.warn(
+          'Failed to restore saved workflow, falling back to latest draft',
+          err
+        )
+      }
     }
 
     // 3. Last resort: most recent draft
