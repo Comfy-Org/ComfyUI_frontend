@@ -40,6 +40,8 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
 
     // Selection toolbox should be visible with multiple nodes selected
     await expect(comfyPage.selectionToolbox).toBeVisible()
+    // Wait for the canvas render queue to settle before taking the screenshot
+    await comfyPage.nextFrame()
     // Border is now drawn on canvas, check via screenshot
     await expect(comfyPage.canvas).toHaveScreenshot(
       'selection-toolbox-multiple-nodes-border.png'
