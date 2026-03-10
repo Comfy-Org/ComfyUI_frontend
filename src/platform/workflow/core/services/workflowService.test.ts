@@ -57,12 +57,10 @@ function makeWorkflowData(
   }
 }
 
-const { mockShowMissingModels, mockConfirm } = vi.hoisted(
-  () => ({
-    mockShowMissingModels: vi.fn(),
-    mockConfirm: vi.fn()
-  })
-)
+const { mockShowMissingModels, mockConfirm } = vi.hoisted(() => ({
+  mockShowMissingModels: vi.fn(),
+  mockConfirm: vi.fn()
+}))
 
 vi.mock('@/composables/useMissingModelsDialog', () => ({
   useMissingModelsDialog: () => ({ show: mockShowMissingModels, hide: vi.fn() })

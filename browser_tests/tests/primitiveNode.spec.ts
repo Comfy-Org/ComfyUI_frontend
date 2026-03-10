@@ -57,5 +57,4 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
       'static_primitive_connected.png'
     )
   })
-
 })
