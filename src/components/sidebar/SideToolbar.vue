@@ -152,7 +152,8 @@ const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
     'sidebar-item-group flex shrink-0 flex-col items-center overflow-hidden',
-    !isConnected.value && 'pointer-events-auto rounded-lg shadow-interface'
+    !isConnected.value &&
+      'pointer-events-auto rounded-lg p-0.5 shadow-interface'
   )
 )
 

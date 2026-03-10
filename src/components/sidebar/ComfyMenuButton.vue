@@ -17,7 +17,9 @@
         class="comfyui-logo h-[18px] w-[18px]"
         mode="fill"
       />
-      <i class="icon-[lucide--chevron-down] size-3 text-muted-foreground" />
+      <i
+        class="-mr-4 icon-[lucide--chevron-down] size-3 text-muted-foreground"
+      />
     </div>
   </div>
 
