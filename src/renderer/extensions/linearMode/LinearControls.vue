@@ -213,7 +213,7 @@ defineExpose({ runButtonClick })
               :node-data
               :class="
                 cn(
-                  'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 **:[.h-7]:h-10',
+                  'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
                   nodeData.hasErrors &&
                     'ring-2 ring-node-stroke-error ring-inset'
                 )
