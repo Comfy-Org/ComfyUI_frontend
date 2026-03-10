@@ -82,22 +82,25 @@
     </div>
     <script>
       ;(function () {
-        var hint
+        var bg, fg
         try {
-          hint = localStorage.getItem('comfy-theme-hint')
-        } catch (_) {
-          hint = null
+          bg = localStorage.getItem('comfy-splash-bg')
+          fg = localStorage.getItem('comfy-splash-fg')
+        } catch (_) {}
+        if (!bg || !fg) {
+          var isDark =
+            window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches
+          bg = isDark ? '#202020' : '#f5f5f5'
+          fg = isDark ? '#ffffff' : '#000000'
         }
-        var isDark = hint !== 'light'
-        var bg = isDark ? '#202020' : '#f5f5f5'
-        var fg = isDark ? '#ffffff' : '#000000'
+        document.body.style.setProperty('--bg-color', bg)
+        document.body.style.setProperty('--fg-color', fg)
         var el = document.getElementById('splash-loader')
         if (el) {
           el.style.background = bg
           el.style.color = fg
         }
-        document.body.style.setProperty('--bg-color', bg)
-        document.body.style.setProperty('--fg-color', fg)
       })()
     </script>
     <div id="vue-app"></div>

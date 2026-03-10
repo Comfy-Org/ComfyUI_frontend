@@ -228,6 +228,13 @@ export const useColorPaletteService = () => {
     } else {
       rootStyle.removeProperty('--bg-img')
     }
+
+    try {
+      localStorage.setItem('comfy-splash-bg', comfyColorPalette['bg-color'])
+      localStorage.setItem('comfy-splash-fg', comfyColorPalette['fg-color'])
+    } catch (_) {
+      /* empty */
+    }
   }
 
   /**
