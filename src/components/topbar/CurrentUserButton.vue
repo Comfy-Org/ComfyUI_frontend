@@ -30,7 +30,7 @@
         <UserAvatar
           v-else
           :photo-url="photoURL"
-          :class="compact && 'h-full w-auto'"
+          :class="compact && 'size-full'"
         />
 
         <i v-if="showArrow" class="icon-[lucide--chevron-down] size-4 px-1" />
