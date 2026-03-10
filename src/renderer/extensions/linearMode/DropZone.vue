@@ -4,22 +4,22 @@ import { computed, ref } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const props = withDefaults(
-  defineProps<{
-    onDragOver?: (e: DragEvent) => boolean
-    onDragDrop?: (e: DragEvent) => Promise<boolean> | boolean
-    dropIndicator?: {
-      iconClass?: string
-      imageUrl?: string
-      label?: string
-      onClick?: (e: MouseEvent) => void
-    }
-    forceHovered?: boolean
-  }>(),
-  {
-    forceHovered: false
+const {
+  onDragOver,
+  onDragDrop,
+  dropIndicator,
+  forceHovered = false
+} = defineProps<{
+  onDragOver?: (e: DragEvent) => boolean
+  onDragDrop?: (e: DragEvent) => Promise<boolean> | boolean
+  dropIndicator?: {
+    iconClass?: string
+    imageUrl?: string
+    label?: string
+    onClick?: (e: MouseEvent) => void
   }
-)
+  forceHovered?: boolean
+}>()
 
 const dropZoneRef = ref<HTMLElement | null>(null)
 const canAcceptDrop = ref(false)
@@ -29,14 +29,14 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
     // Stop propagation to prevent global handlers from creating a new node
     event?.stopPropagation()
 
-    if (props.onDragDrop && event) {
-      props.onDragDrop(event)
+    if (onDragDrop && event) {
+      onDragDrop(event)
     }
     canAcceptDrop.value = false
   },
   onOver: (_, event) => {
-    if (props.onDragOver && event) {
-      canAcceptDrop.value = props.onDragOver(event)
+    if (onDragOver && event) {
+      canAcceptDrop.value = onDragOver(event)
     }
   },
   onLeave: () => {
@@ -45,10 +45,10 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
 })
 
 const isHovered = computed(
-  () => props.forceHovered || (canAcceptDrop.value && isOverDropZone.value)
+  () => forceHovered || (canAcceptDrop.value && isOverDropZone.value)
 )
 const indicatorTag = computed(() =>
-  props.dropIndicator?.onClick ? 'button' : 'div'
+  dropIndicator?.onClick ? 'button' : 'div'
 )
 </script>
 <template>
@@ -68,6 +68,7 @@ const indicatorTag = computed(() =>
       :is="indicatorTag"
       v-if="dropIndicator"
       :type="dropIndicator?.onClick ? 'button' : undefined"
+      :aria-label="dropIndicator?.onClick ? dropIndicator.label : undefined"
       data-slot="drop-zone-indicator"
       :class="
         cn(
@@ -90,6 +91,7 @@ const indicatorTag = computed(() =>
         <img
           v-if="dropIndicator?.imageUrl"
           class="max-h-23 rounded-md object-contain"
+          :alt="dropIndicator?.label ?? ''"
           :src="dropIndicator?.imageUrl"
         />
         <template v-else>
