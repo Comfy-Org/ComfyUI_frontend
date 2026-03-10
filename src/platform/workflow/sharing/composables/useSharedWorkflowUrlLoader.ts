@@ -138,7 +138,9 @@ export function useSharedWorkflowUrlLoader() {
     const nonOwnedAssets = payload.assets.filter((a) => !a.in_library)
 
     try {
-      await app.loadGraphData(payload.workflowJson, true, true, workflowName)
+      await app.loadGraphData(payload.workflowJson, true, true, workflowName, {
+        openSource: 'shared_url'
+      })
     } catch (error) {
       console.error(
         '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',
