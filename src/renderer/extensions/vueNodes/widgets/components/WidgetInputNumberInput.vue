@@ -121,12 +121,6 @@ const buttonsDisabled = computed(() => {
   )
 })
 
-function updateValueBy(delta: number) {
-  const max = filteredProps.value.max ?? Number.MAX_VALUE
-  const min = filteredProps.value.min ?? -Number.MAX_VALUE
-  modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))
-}
-
 const buttonTooltip = computed(() => {
   if (buttonsDisabled.value) {
     return 'Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)'
@@ -171,10 +165,6 @@ const inputAriaAttrs = computed(() => ({
       :parse-value="parseWidgetValue"
       :input-attrs="inputAriaAttrs"
       :class="cn(WidgetInputBaseClass, 'relative flex h-7 grow text-xs')"
-      @keydown.up.prevent="updateValueBy(stepValue)"
-      @keydown.down.prevent="updateValueBy(-stepValue)"
-      @keydown.page-up.prevent="updateValueBy(10 * stepValue)"
-      @keydown.page-down.prevent="updateValueBy(-10 * stepValue)"
     >
       <template #background>
         <div

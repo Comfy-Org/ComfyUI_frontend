@@ -178,7 +178,7 @@
             v-show="isTemplateVisibleOnDistribution(template)"
             :key="template.name"
             ref="cardRefs"
-            size="compact"
+            size="tall"
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
@@ -317,6 +317,20 @@
                         <i class="icon-[lucide--info] size-4" />
                       </Button>
                     </div>
+                  </div>
+                  <div class="flex">
+                    <span
+                      class="text-neutral flex items-center gap-1.5 text-xs font-bold"
+                    >
+                      <template v-if="isAppTemplate(template)">
+                        <i class="icon-[lucide--panels-top-left]" />
+                        {{ $t('builderToolbar.app', 'App') }}
+                      </template>
+                      <template v-else>
+                        <i class="icon-[lucide--workflow]" />
+                        {{ $t('builderToolbar.nodeGraph', 'Node Graph') }}
+                      </template>
+                    </span>
                   </div>
                 </div>
               </CardBottom>
@@ -482,6 +496,8 @@ const {
 
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
+
+const isAppTemplate = (template: TemplateInfo) => template.name.endsWith('.app')
 
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)
