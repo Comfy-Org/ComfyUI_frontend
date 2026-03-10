@@ -31,6 +31,7 @@ const _useWorkflowPacks = () => {
   const { inferPackFromNodeName } = useComfyRegistryStore()
 
   const workflowPacks = ref<WorkflowPack[]>([])
+  const unresolvedNodeNames = ref<string[]>([])
 
   const getWorkflowNodePackId = (node: LGraphNode): string | undefined => {
     if (typeof node.properties?.cnr_id === 'string') {
@@ -111,12 +112,34 @@ const _useWorkflowPacks = () => {
 
   /**
    * Get the node packs for all nodes in the workflow (including subgraphs).
+   * Nodes that have no local definition and no registry match are tracked
+   * as unresolved so downstream consumers can surface them to the user.
    */
   const getWorkflowPacks = async () => {
     if (!app.rootGraph) return []
-    const packPromises = mapAllNodes(app.rootGraph, workflowNodeToPack)
+
+    const nodes = mapAllNodes(app.rootGraph, (node) => node)
+    const packPromises = nodes.map((node) => workflowNodeToPack(node))
     const packs = await Promise.all(packPromises)
-    workflowPacks.value = packs.filter((pack) => pack !== undefined)
+
+    const resolvedPacks: WorkflowPack[] = []
+    const unresolved: string[] = []
+
+    for (let i = 0; i < packs.length; i++) {
+      const pack = packs[i]
+      if (pack) {
+        resolvedPacks.push(pack)
+      } else {
+        const node = nodes[i]
+        const nodeName = node.type
+        if (nodeName && !nodeDefStore.nodeDefsByName[nodeName]) {
+          unresolved.push(nodeName)
+        }
+      }
+    }
+
+    workflowPacks.value = resolvedPacks
+    unresolvedNodeNames.value = [...new Set(unresolved)]
   }
 
   const packsToUniqueIds = (packs: WorkflowPack[]) =>
@@ -147,6 +170,7 @@ const _useWorkflowPacks = () => {
     isLoading,
     isReady,
     workflowPacks: nodePacks,
+    unresolvedNodeNames,
     startFetchWorkflowPacks: async () => {
       await getWorkflowPacks() // Parse the packs from the workflow nodes
       await startFetch() // Fetch the packs infos from the registry
