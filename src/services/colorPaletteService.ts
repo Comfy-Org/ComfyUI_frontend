@@ -206,7 +206,10 @@ export const useColorPaletteService = () => {
    *
    * @param comfyColorPalette - The palette to set.
    */
-  const loadComfyColorPalette = (comfyColorPalette: Colors['comfy_base']) => {
+  const loadComfyColorPalette = (
+    comfyColorPalette: Colors['comfy_base'],
+    isLightTheme: boolean
+  ) => {
     if (!comfyColorPalette) return
     const rootStyle = document.documentElement.style
     for (const [key, value] of Object.entries(comfyColorPalette)) {
@@ -230,10 +233,8 @@ export const useColorPaletteService = () => {
     }
 
     try {
-      localStorage.setItem(
-        'comfy-splash-bg',
-        comfyColorPalette['splash-bg-color'] ?? comfyColorPalette['bg-color']
-      )
+      const splashBg = isLightTheme ? '#FFFFFF' : comfyColorPalette['bg-color']
+      localStorage.setItem('comfy-splash-bg', splashBg)
       localStorage.setItem('comfy-splash-fg', comfyColorPalette['fg-color'])
     } catch (_) {
       /* empty */
@@ -259,7 +260,10 @@ export const useColorPaletteService = () => {
       colorPaletteId
     )
     loadLinkColorPaletteForVueNodes(completedPalette.colors.node_slot)
-    loadComfyColorPalette(completedPalette.colors.comfy_base)
+    loadComfyColorPalette(
+      completedPalette.colors.comfy_base,
+      completedPalette.light_theme === true
+    )
     app.canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId
