@@ -55,7 +55,7 @@ export function useAppSetDefaultView() {
         appliedAsApp,
         onViewApp: () => {
           closeAppliedDialog()
-          useTelemetry()?.trackEnterLinear({ source: 'default_view_dialog' })
+          useTelemetry()?.trackEnterLinear({ source: 'app_builder' })
           setMode('app')
         },
         onExitToWorkflow: () => {
