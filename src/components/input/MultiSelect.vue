@@ -22,10 +22,8 @@
           'transition-all duration-200 ease-in-out',
           'hover:bg-secondary-background-hover',
           'border-[2.5px] border-solid',
-          selectedCount > 0
-            ? 'border-node-component-border'
-            : 'border-transparent',
-          'focus-within:border-node-component-border',
+          selectedCount > 0 ? 'border-base-foreground' : 'border-transparent',
+          'focus-within:border-base-foreground',
           props.disabled &&
             'cursor-default opacity-30 hover:bg-secondary-background'
         )
@@ -140,7 +138,7 @@
       </span>
       <span
         v-if="selectedCount > 0"
-        class="pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 items-center justify-center rounded-full bg-primary-background text-xs font-semibold text-base-foreground"
+        class="pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 items-center justify-center rounded-full bg-base-foreground text-xs font-semibold text-base-background"
       >
         {{ selectedCount }}
       </span>

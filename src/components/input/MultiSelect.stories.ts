@@ -8,7 +8,12 @@ const meta: Meta<typeof MultiSelect> = {
   title: 'Components/Select/MultiSelect',
   component: MultiSelect,
   tags: ['autodocs'],
-  parameters: { layout: 'centered' },
+  parameters: { layout: 'padded' },
+  decorators: [
+    () => ({
+      template: '<div class="pt-4"><story /></div>'
+    })
+  ],
   argTypes: {
     label: { control: 'text' },
     size: {

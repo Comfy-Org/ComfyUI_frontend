@@ -7,7 +7,12 @@ const meta: Meta<typeof SingleSelect> = {
   title: 'Components/Select/SingleSelect',
   component: SingleSelect,
   tags: ['autodocs'],
-  parameters: { layout: 'centered' },
+  parameters: { layout: 'padded' },
+  decorators: [
+    () => ({
+      template: '<div class="pt-4"><story /></div>'
+    })
+  ],
   argTypes: {
     label: { control: 'text' },
     options: { control: 'object' },
