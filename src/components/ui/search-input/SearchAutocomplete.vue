@@ -77,8 +77,8 @@
       "
     >
       <ComboboxItem
-        v-for="suggestion in suggestions"
-        :key="suggestionKey(suggestion)"
+        v-for="(suggestion, index) in suggestions"
+        :key="suggestionKey(suggestion, index)"
         :value="suggestionValue(suggestion)"
         :class="
           cn(
@@ -130,6 +130,7 @@ const {
   size = 'md',
   suggestions = [],
   optionLabel,
+  optionKey,
   class: className
 } = defineProps<{
   placeholder?: string
@@ -141,6 +142,7 @@ const {
   size?: SearchInputVariants['size']
   suggestions?: T[]
   optionLabel?: keyof T & string
+  optionKey?: keyof T & string
   class?: HTMLAttributes['class']
 }>()
 
@@ -179,8 +181,11 @@ function suggestionLabel(item: T): string {
   return String(item)
 }
 
-function suggestionKey(item: T): string {
-  return suggestionLabel(item)
+function suggestionKey(item: T, index: number): string {
+  if (optionKey && typeof item === 'object' && item !== null) {
+    return String((item as Record<string, unknown>)[optionKey])
+  }
+  return `${suggestionLabel(item)}-${index}`
 }
 
 function suggestionValue(item: T): string {
