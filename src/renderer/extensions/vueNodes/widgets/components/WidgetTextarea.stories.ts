@@ -16,7 +16,7 @@ interface StoryArgs extends ComponentPropsAndSlots<typeof WidgetTextarea> {
 }
 
 const meta: Meta<StoryArgs> = {
-  title: 'Widgets/WidgetTextarea',
+  title: 'Components/Input/TextArea',
   component: WidgetTextarea,
   tags: ['autodocs'],
   parameters: {
