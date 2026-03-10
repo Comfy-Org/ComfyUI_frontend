@@ -54,6 +54,7 @@
             v-for="option in filteredOptions"
             :key="option"
             :value="option"
+            data-testid="filter-option"
             class="text-foreground flex cursor-pointer items-center gap-2 rounded-sm px-1 py-2 text-sm outline-none data-highlighted:bg-secondary-background-hover"
           >
             <span
