@@ -312,7 +312,11 @@ export function useWorkflowPersistenceV2() {
     const workflow = workflowStore.getWorkflowByPath(activePath)
     if (!workflow) return
 
-    await useWorkflowService().openWorkflow(workflow)
+    try {
+      await useWorkflowService().openWorkflow(workflow)
+    } catch (err) {
+      console.warn('Failed to activate restored workflow tab', err)
+    }
   }
 
   return {
