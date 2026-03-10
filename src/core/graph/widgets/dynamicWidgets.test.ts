@@ -106,7 +106,7 @@ describe('Dynamic Combos', () => {
     expect(node.inputs[1].name).toBe('0.0.0.0')
     expect(node.inputs[3].name).toBe('2.2.0.0')
   })
-  test('Dynamically added widets have tooltips', () => {
+  test('Dynamically added widgets have tooltips', () => {
     const node = testNode()
     addDynamicCombo(node, [['INT'], ['STRING']])
     expect.soft(node.widgets[1].tooltip).toBe('0')
