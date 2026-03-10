@@ -2,6 +2,10 @@ import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
+import DeletePresetContent from '@/components/dialog/content/setting/keybinding/DeletePresetContent.vue'
+import DeletePresetHeader from '@/components/dialog/content/setting/keybinding/DeletePresetHeader.vue'
+import UnsavedChangesContent from '@/components/dialog/content/setting/keybinding/UnsavedChangesContent.vue'
+import UnsavedChangesHeader from '@/components/dialog/content/setting/keybinding/UnsavedChangesHeader.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -9,6 +13,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { uploadFile } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingService } from './keybindingService'
@@ -50,8 +55,53 @@ export function useKeybindingPresetService() {
   const keybindingService = useKeybindingService()
   const settingStore = useSettingStore()
   const dialogService = useDialogService()
+  const dialogStore = useDialogStore()
   const toast = useToastStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
+
+  const DELETE_DIALOG_KEY = 'delete-keybinding-preset'
+  const UNSAVED_DIALOG_KEY = 'unsaved-keybinding-changes'
+
+  function showDeletePresetDialog(): Promise<boolean> {
+    return new Promise((resolve) => {
+      dialogService.showSmallLayoutDialog({
+        key: DELETE_DIALOG_KEY,
+        headerComponent: DeletePresetHeader,
+        component: DeletePresetContent,
+        props: {
+          onResult: (result: boolean) => {
+            resolve(result)
+            dialogStore.closeDialog({ key: DELETE_DIALOG_KEY })
+          }
+        },
+        dialogComponentProps: {
+          onClose: () => resolve(false)
+        }
+      })
+    })
+  }
+
+  function showUnsavedChangesDialog(
+    presetName: string
+  ): Promise<boolean | null> {
+    return new Promise((resolve) => {
+      dialogService.showSmallLayoutDialog({
+        key: UNSAVED_DIALOG_KEY,
+        headerComponent: UnsavedChangesHeader,
+        headerProps: { presetName },
+        component: UnsavedChangesContent,
+        props: {
+          onResult: (result: boolean | null) => {
+            resolve(result)
+            dialogStore.closeDialog({ key: UNSAVED_DIALOG_KEY })
+          }
+        },
+        dialogComponentProps: {
+          onClose: () => resolve(null)
+        }
+      })
+    })
+  }
 
   async function listPresets(): Promise<string[]> {
     const files = await api.listUserDataFullInfo(PRESETS_DIR)
@@ -106,11 +156,7 @@ export function useKeybindingPresetService() {
   }
 
   async function deletePreset(name: string) {
-    const confirmed = await dialogService.confirm({
-      title: t('g.keybindingPresets.deletePresetTitle'),
-      message: t('g.keybindingPresets.deletePresetMessage', { name }),
-      type: 'delete'
-    })
+    const confirmed = await showDeletePresetDialog()
     if (!confirmed) return
 
     const resp = await api.deleteUserData(presetFilePath(name))
@@ -176,11 +222,11 @@ export function useKeybindingPresetService() {
 
   async function switchPreset(targetName: string) {
     if (keybindingStore.isCurrentPresetModified) {
-      const result = await dialogService.confirm({
-        title: t('g.keybindingPresets.unsavedChangesTitle'),
-        message: t('g.keybindingPresets.unsavedChangesMessage'),
-        type: 'dirtyClose'
-      })
+      const displayName =
+        keybindingStore.currentPresetName === 'default'
+          ? t('g.keybindingPresets.default')
+          : keybindingStore.currentPresetName
+      const result = await showUnsavedChangesDialog(displayName)
 
       if (result === null) return
       if (result) {

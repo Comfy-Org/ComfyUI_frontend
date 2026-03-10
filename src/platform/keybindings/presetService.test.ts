@@ -16,6 +16,13 @@ const mockApi = vi.hoisted(() => ({
 const mockDownloadBlob = vi.hoisted(() => vi.fn())
 const mockUploadFile = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn().mockResolvedValue(true))
+const mockShowSmallLayoutDialog = vi.hoisted(() =>
+  vi.fn().mockImplementation((options: Record<string, unknown>) => {
+    const props = options.props as Record<string, unknown> | undefined
+    const onResult = props?.onResult as ((v: boolean) => void) | undefined
+    onResult?.(true)
+  })
+)
 const mockSettingSet = vi.hoisted(() => vi.fn())
 const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockPersistUserKeybindings = vi.hoisted(() =>
@@ -37,7 +44,8 @@ vi.mock('@/scripts/utils', () => ({
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     confirm: mockConfirm,
-    prompt: vi.fn().mockResolvedValue('test-preset')
+    prompt: vi.fn().mockResolvedValue('test-preset'),
+    showSmallLayoutDialog: mockShowSmallLayoutDialog
   })
 }))
 
