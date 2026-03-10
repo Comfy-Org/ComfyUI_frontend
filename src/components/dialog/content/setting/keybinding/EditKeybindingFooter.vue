@@ -1,16 +1,24 @@
 <template>
   <div class="flex w-full justify-end gap-2 px-4 py-2">
-    <Button variant="secondary" size="md" @click="handleCancel">
+    <Button
+      variant="textonly"
+      size="md"
+      class="text-muted-foreground"
+      @click="handleCancel"
+    >
       {{ $t('g.cancel') }}
     </Button>
     <Button
       :variant="
-        hasConflict || dialogState.newCombo?.isBrowserReserved
+        hasConflict
           ? 'destructive'
-          : 'primary'
+          : dialogState.newCombo?.isBrowserReserved
+            ? 'secondary'
+            : 'primary'
       "
       size="md"
       :disabled="!dialogState.newCombo"
+      class="px-4 py-2"
       @click="handleSave"
     >
       {{

@@ -1,7 +1,14 @@
 <template>
-  <div class="flex w-96 flex-col border-t border-border-default p-4">
+  <div class="flex w-96 flex-col border-t border-border-default px-4">
+    <p class="mb-4 text-sm text-muted-foreground">
+      {{ $t('g.setAKeybindingForTheFollowing') }}
+    </p>
+    <div class="mb-4 text-sm text-base-foreground">
+      {{ commandLabel }}
+    </div>
+
     <input
-      class="text-foreground mb-2 w-full rounded-sm border border-border-default bg-secondary-background px-3 py-2 text-center shadow-none focus:outline-none"
+      class="text-foreground mb-4 w-full rounded-sm border border-border-default bg-secondary-background px-3 py-2 text-center shadow-none focus:outline-none"
       :value="dialogState.newCombo?.toString() ?? ''"
       :placeholder="$t('g.enterYourKeybind')"
       :aria-label="$t('g.enterYourKeybind')"
@@ -38,6 +45,7 @@ import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingD
 
 const { dialogState, onUpdateCombo } = defineProps<{
   dialogState: EditKeybindingDialogState
+  commandLabel: string
   onUpdateCombo: (combo: KeyComboImpl) => void
 }>()
 

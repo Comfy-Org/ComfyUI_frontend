@@ -37,8 +37,8 @@ export function useEditKeybindingDialog() {
       headerComponent: EditKeybindingHeader,
       footerComponent: EditKeybindingFooter,
       component: EditKeybindingContent,
-      props: { dialogState, onUpdateCombo },
-      headerProps: { commandLabel: options.commandLabel, dialogState },
+      props: { dialogState, onUpdateCombo, commandLabel: options.commandLabel },
+      headerProps: {},
       footerProps: { dialogState }
     })
   }

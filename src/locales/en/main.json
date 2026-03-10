@@ -260,6 +260,8 @@
     "multiSelectDropdown": "Multi-select dropdown",
     "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
+    "modifyKeybinding": "Modify keybinding",
+    "setAKeybindingForTheFollowing": "Set a keybinding for the following:",
     "enterYourKeybind": "Enter your keybind",
     "browserReservedKeybinding": "This shortcut is reserved by some browsers and may have unexpected results.",
     "browserReservedKeybindingTooltip": "This shortcut conflicts with browser-reserved shortcuts",
