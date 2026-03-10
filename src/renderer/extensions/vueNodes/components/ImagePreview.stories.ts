@@ -25,7 +25,7 @@ const meta: Meta<typeof ImagePreview> = {
     (story) => ({
       components: { story },
       template:
-        '<div class="h-80 w-96 bg-node-component-surface rounded-lg"><story /></div>'
+        '<div class="h-80 w-96 rounded-lg bg-component-node-background"><story /></div>'
     })
   ]
 }
