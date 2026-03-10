@@ -94,7 +94,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 </script>
 <template>
   <MobileDisplay v-if="mobileDisplay" />
-  <div v-else class="absolute size-full">
+  <div v-else class="absolute size-full" @dragover.prevent>
     <div
       class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
     >
