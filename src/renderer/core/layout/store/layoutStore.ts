@@ -123,6 +123,8 @@ class LayoutStoreImpl implements LayoutStore {
     NodeId,
     Set<(change: LayoutChange) => void>
   >()
+  private pendingGlobalChanges: LayoutChange[] = []
+  private isGlobalDispatchQueued = false
 
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
@@ -921,10 +923,10 @@ class LayoutStoreImpl implements LayoutStore {
       }
     })
 
-    // Notify listeners synchronously so Layout→LiteGraph sync
-    // (useLayoutSync) pushes positions within the same frame.
+    // Keep node-scoped listeners synchronous for immediate local feedback,
+    // but queue global listener fan-out to avoid blocking hot paths.
     this.notifyNodeChange(change)
-    this.notifyChange(change)
+    this.queueGlobalChange(change)
   }
 
   /**
@@ -1011,6 +1013,8 @@ class LayoutStoreImpl implements LayoutStore {
       this.linkSegmentLayouts.clear()
       this.slotLayouts.clear()
       this.rerouteLayouts.clear()
+      this.pendingGlobalChanges = []
+      this.isGlobalDispatchQueued = false
 
       nodes.forEach((node, index) => {
         const layout: NodeLayout = {
@@ -1398,6 +1402,30 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   // Helper methods
+
+  private queueGlobalChange(change: LayoutChange): void {
+    if (this.changeListeners.size === 0) return
+
+    this.pendingGlobalChanges.push(change)
+    if (this.isGlobalDispatchQueued) return
+
+    this.isGlobalDispatchQueued = true
+    queueMicrotask(() => {
+      this.flushQueuedGlobalChanges()
+    })
+  }
+
+  private flushQueuedGlobalChanges(): void {
+    this.isGlobalDispatchQueued = false
+    if (this.pendingGlobalChanges.length === 0) return
+
+    const queuedChanges = this.pendingGlobalChanges
+    this.pendingGlobalChanges = []
+
+    queuedChanges.forEach((queuedChange) => {
+      this.notifyChange(queuedChange)
+    })
+  }
 
   private notifyChange(change: LayoutChange): void {
     this.changeListeners.forEach((listener) => {

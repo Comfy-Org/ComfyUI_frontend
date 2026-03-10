@@ -8,6 +8,7 @@ import { onUnmounted, ref } from 'vue'
 
 import type { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 /**
  * Composable for syncing LiteGraph with the Layout system
@@ -17,11 +18,13 @@ export function useLayoutSync() {
   const unsubscribe = ref<() => void>()
   const pendingNodeIds = new Set<string>()
   let rafId: number | null = null
+  let isMicrotaskQueued = false
 
   const flushPendingChanges = (
     canvas: ReturnType<typeof useCanvasStore>['canvas']
   ) => {
     rafId = null
+    isMicrotaskQueued = false
     if (!canvas?.graph || pendingNodeIds.size === 0) return
 
     for (const nodeId of pendingNodeIds) {
@@ -59,6 +62,34 @@ export function useLayoutSync() {
     canvas.setDirty(true, true)
   }
 
+  const scheduleFlush = (
+    source: LayoutSource,
+    canvas: ReturnType<typeof useCanvasStore>['canvas']
+  ) => {
+    const shouldFlushInMicrotask =
+      source === LayoutSource.Vue || source === LayoutSource.DOM
+
+    if (shouldFlushInMicrotask) {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+        rafId = null
+      }
+      if (isMicrotaskQueued) return
+
+      isMicrotaskQueued = true
+      queueMicrotask(() => {
+        flushPendingChanges(canvas)
+      })
+      return
+    }
+
+    if (rafId !== null || isMicrotaskQueued) return
+
+    rafId = requestAnimationFrame(() => {
+      flushPendingChanges(canvas)
+    })
+  }
+
   /**
    * Start syncing from Layout → LiteGraph
    */
@@ -74,11 +105,7 @@ export function useLayoutSync() {
       if (change.nodeIds.length === 0) return
 
       change.nodeIds.forEach((nodeId) => pendingNodeIds.add(nodeId))
-      if (rafId !== null) return
-
-      rafId = requestAnimationFrame(() => {
-        flushPendingChanges(canvas)
-      })
+      scheduleFlush(change.source, canvas)
     })
   }
 
@@ -87,6 +114,7 @@ export function useLayoutSync() {
       cancelAnimationFrame(rafId)
       rafId = null
     }
+    isMicrotaskQueued = false
     pendingNodeIds.clear()
     unsubscribe.value?.()
     unsubscribe.value = undefined

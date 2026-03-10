@@ -168,7 +168,7 @@ describe('layoutStore CRDT operations', () => {
       actor: layoutStore.getCurrentActor()
     })
 
-    // Wait for onChange callback to be called (uses setTimeout internally)
+    // onChange notifications are deferred to a microtask.
     await vi.waitFor(() => {
       expect(changes.length).toBeGreaterThanOrEqual(1)
     })
@@ -245,6 +245,102 @@ describe('layoutStore CRDT operations', () => {
     unsubscribeScoped()
   })
 
+  it('keeps node-scoped listeners synchronous while deferring global listeners', async () => {
+    const nodeId = 'dispatch-order-node'
+    const layout = createTestNode(nodeId)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    const callOrder: string[] = []
+    const unsubscribeNode = layoutStore.onNodeChange(nodeId, () => {
+      callOrder.push('node')
+    })
+    const unsubscribeGlobal = layoutStore.onChange(() => {
+      callOrder.push('global')
+    })
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId,
+      position: { x: 320, y: 180 },
+      previousPosition: layout.position,
+      timestamp: Date.now(),
+      source: LayoutSource.Vue,
+      actor: 'test'
+    })
+
+    expect(callOrder).toEqual(['node'])
+
+    await Promise.resolve()
+
+    expect(callOrder).toEqual(['node', 'global'])
+
+    unsubscribeNode()
+    unsubscribeGlobal()
+  })
+
+  it('defers global listener fan-out until the microtask boundary', async () => {
+    const nodeId = 'global-fanout-node'
+    const layout = createTestNode(nodeId)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    const globalChanges: LayoutChange[] = []
+    const unsubscribe = layoutStore.onChange((change) => {
+      globalChanges.push(change)
+    })
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId,
+      position: { x: 120, y: 110 },
+      previousPosition: layout.position,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId,
+      position: { x: 150, y: 140 },
+      previousPosition: { x: 120, y: 110 },
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    expect(globalChanges).toHaveLength(0)
+
+    await Promise.resolve()
+
+    expect(globalChanges).toHaveLength(2)
+    expect(globalChanges.map((change) => change.operation.type)).toEqual([
+      'moveNode',
+      'moveNode'
+    ])
+
+    unsubscribe()
+  })
+
   it('should emit change when batch updating node bounds', async () => {
     const nodeId = 'test-node-6'
     const layout = createTestNode(nodeId)
@@ -267,7 +363,7 @@ describe('layoutStore CRDT operations', () => {
     const newBounds = { x: 40, y: 60, width: 220, height: 120 }
     layoutStore.batchUpdateNodeBounds([{ nodeId, bounds: newBounds }])
 
-    // Wait for onChange callback to be called (uses setTimeout internally)
+    // onChange notifications are deferred to a microtask.
     await vi.waitFor(() => {
       expect(changes.length).toBeGreaterThan(0)
       const lastChange = changes[changes.length - 1]
