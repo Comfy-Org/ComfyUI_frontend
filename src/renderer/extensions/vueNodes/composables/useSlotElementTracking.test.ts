@@ -4,6 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -133,23 +134,10 @@ describe('useSlotElementTracking', () => {
     expect(layoutStore.pendingSlotSync).toBe(true)
   })
 
-  it('skips slot layout writeback when measured geometry is unchanged', () => {
+  it('skips slot layout writeback when measured slot geometry is unchanged', () => {
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     const slotEl = document.createElement('div')
-    slotEl.getBoundingClientRect = vi.fn(
-      () =>
-        ({
-          x: 100,
-          y: 200,
-          left: 100,
-          top: 200,
-          right: 116,
-          bottom: 216,
-          width: 16,
-          height: 16,
-          toJSON: () => ({})
-        }) as DOMRect
-    )
+    slotEl.getBoundingClientRect = vi.fn(() => new DOMRect(100, 200, 16, 16))
 
     const registryStore = useNodeSlotRegistryStore()
     const node = registryStore.ensureNode(NODE_ID)
@@ -160,12 +148,19 @@ describe('useSlotElementTracking', () => {
       cachedOffset: { x: 108, y: 208 }
     })
 
+    const slotSize = LiteGraph.NODE_SLOT_HEIGHT
+    const halfSlotSize = slotSize / 2
     const initialLayout: SlotLayout = {
       nodeId: NODE_ID,
       index: SLOT_INDEX,
       type: 'input',
       position: { x: 108, y: 208 },
-      bounds: { x: 104, y: 204, width: 8, height: 8 }
+      bounds: {
+        x: 108 - halfSlotSize,
+        y: 208 - halfSlotSize,
+        width: slotSize,
+        height: slotSize
+      }
     }
     layoutStore.batchUpdateSlotLayouts([
       { key: slotKey, layout: initialLayout }

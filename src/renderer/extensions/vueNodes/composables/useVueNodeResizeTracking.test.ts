@@ -1,18 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { NodeId, NodeLayout } from '@/renderer/core/layout/types'
+
+type ResizeEntryLike = Pick<
+  ResizeObserverEntry,
+  | 'target'
+  | 'borderBoxSize'
+  | 'contentBoxSize'
+  | 'devicePixelContentBoxSize'
+  | 'contentRect'
+>
 
 const resizeObserverState = vi.hoisted(() => {
   const state = {
     callback: null as ResizeObserverCallback | null,
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn()
+    observe: vi.fn<(element: Element) => void>(),
+    unobserve: vi.fn<(element: Element) => void>(),
+    disconnect: vi.fn<() => void>()
   }
 
-  class MockResizeObserver {
+  const MockResizeObserver: typeof ResizeObserver = class MockResizeObserver implements ResizeObserver {
     observe = state.observe
     unobserve = state.unobserve
     disconnect = state.disconnect
@@ -22,25 +33,14 @@ const resizeObserverState = vi.hoisted(() => {
     }
   }
 
-  globalThis.ResizeObserver =
-    MockResizeObserver as unknown as typeof ResizeObserver
+  globalThis.ResizeObserver = MockResizeObserver
 
   return state
 })
 
 const testState = vi.hoisted(() => ({
   linearMode: false,
-  nodeLayouts: new Map<
-    string,
-    {
-      id: string
-      position: { x: number; y: number }
-      size: { width: number; height: number }
-      zIndex: number
-      visible: boolean
-      bounds: { x: number; y: number; width: number; height: number }
-    }
-  >(),
+  nodeLayouts: new Map<NodeId, NodeLayout>(),
   batchUpdateNodeBounds: vi.fn(),
   setSource: vi.fn(),
   syncNodeSlotLayoutsFromDOM: vi.fn()
@@ -66,7 +66,8 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     batchUpdateNodeBounds: testState.batchUpdateNodeBounds,
     setSource: testState.setSource,
-    getNodeLayoutRef: (nodeId: string) => ref(testState.nodeLayouts.get(nodeId))
+    getNodeLayoutRef: (nodeId: NodeId): Ref<NodeLayout | null> =>
+      ref<NodeLayout | null>(testState.nodeLayouts.get(nodeId) ?? null)
   }
 }))
 
@@ -77,7 +78,7 @@ vi.mock('./useSlotElementTracking', () => ({
 import './useVueNodeResizeTracking'
 
 function createResizeEntry(options?: {
-  nodeId?: string
+  nodeId?: NodeId
   width?: number
   height?: number
   left?: number
@@ -93,34 +94,56 @@ function createResizeEntry(options?: {
 
   const element = document.createElement('div')
   element.dataset.nodeId = nodeId
-  element.getBoundingClientRect = vi.fn(
-    () =>
-      ({
-        x: left,
-        y: top,
-        left,
-        top,
-        right: left + width,
-        bottom: top + height,
-        width,
-        height,
-        toJSON: () => ({})
-      }) as DOMRect
-  )
+  const rectSpy = vi.fn(() => new DOMRect(left, top, width, height))
+  element.getBoundingClientRect = rectSpy
+  const boxSizes = [{ inlineSize: width, blockSize: height }]
+
+  const entry = {
+    target: element,
+    borderBoxSize: boxSizes,
+    contentBoxSize: boxSizes,
+    devicePixelContentBoxSize: boxSizes,
+    contentRect: new DOMRect(left, top, width, height)
+  } satisfies ResizeEntryLike
 
   return {
-    target: element,
-    borderBoxSize: [
-      {
-        inlineSize: width,
-        blockSize: height
-      }
-    ],
-    contentRect: {
+    entry,
+    rectSpy
+  }
+}
+
+function createObserverMock(): ResizeObserver {
+  return {
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn()
+  }
+}
+
+function seedNodeLayout(options: {
+  nodeId: NodeId
+  left: number
+  top: number
+  width: number
+  height: number
+}) {
+  const { nodeId, left, top, width, height } = options
+  const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+  const contentHeight = height - titleHeight
+
+  testState.nodeLayouts.set(nodeId, {
+    id: nodeId,
+    position: { x: left, y: top + titleHeight },
+    size: { width, height: contentHeight },
+    zIndex: 0,
+    visible: true,
+    bounds: {
+      x: left,
+      y: top + titleHeight,
       width,
-      height
+      height: contentHeight
     }
-  } as unknown as ResizeObserverEntry
+  })
 }
 
 describe('useVueNodeResizeTracking', () => {
@@ -130,70 +153,105 @@ describe('useVueNodeResizeTracking', () => {
     testState.batchUpdateNodeBounds.mockReset()
     testState.setSource.mockReset()
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
+    resizeObserverState.observe.mockReset()
+    resizeObserverState.unobserve.mockReset()
+    resizeObserverState.disconnect.mockReset()
   })
 
-  it('skips node bounds + slot resync for no-op resize entries', () => {
+  it('skips repeated no-op resize entries after first measurement', () => {
     const nodeId = 'test-node'
     const width = 240
     const height = 180
     const left = 100
     const top = 200
-    const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
-
-    testState.nodeLayouts.set(nodeId, {
-      id: nodeId,
-      position: { x: left, y: top + titleHeight },
-      size: { width, height: height - titleHeight },
-      zIndex: 0,
-      visible: true,
-      bounds: {
-        x: left,
-        y: top + titleHeight,
-        width,
-        height: height - titleHeight
-      }
+    const { entry, rectSpy } = createResizeEntry({
+      nodeId,
+      width,
+      height,
+      left,
+      top
     })
 
-    resizeObserverState.callback?.(
-      [createResizeEntry({ nodeId })],
-      {} as ResizeObserver
-    )
+    seedNodeLayout({ nodeId, left, top, width, height })
 
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(rectSpy).toHaveBeenCalledTimes(1)
+    expect(testState.setSource).not.toHaveBeenCalled()
+    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+
+    testState.setSource.mockReset()
+    testState.batchUpdateNodeBounds.mockReset()
+    testState.syncNodeSlotLayoutsFromDOM.mockReset()
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(rectSpy).toHaveBeenCalledTimes(1)
     expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 
-  it('updates node bounds + slot layouts when geometry changes', () => {
+  it('updates bounds on first observation when size matches but position differs', () => {
     const nodeId = 'test-node'
+    const width = 240
+    const height = 180
+    const { entry, rectSpy } = createResizeEntry({
+      nodeId,
+      width,
+      height,
+      left: 100,
+      top: 200
+    })
     const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
 
-    testState.nodeLayouts.set(nodeId, {
-      id: nodeId,
-      position: { x: 100, y: 200 + titleHeight },
-      size: { width: 220, height: 140 - titleHeight },
-      zIndex: 0,
-      visible: true,
-      bounds: {
-        x: 100,
-        y: 200 + titleHeight,
-        width: 220,
-        height: 140 - titleHeight
-      }
+    seedNodeLayout({
+      nodeId,
+      left: 90,
+      top: 190,
+      width,
+      height
     })
 
-    resizeObserverState.callback?.(
-      [
-        createResizeEntry({
-          nodeId,
-          width: 240,
-          height: 180,
-          left: 100,
-          top: 200
-        })
-      ],
-      {} as ResizeObserver
-    )
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(rectSpy).toHaveBeenCalledTimes(1)
+    expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
+      {
+        nodeId,
+        bounds: {
+          x: 100,
+          y: 200 + titleHeight,
+          width,
+          height
+        }
+      }
+    ])
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+  })
+
+  it('updates node bounds + slot layouts when size changes', () => {
+    const nodeId = 'test-node'
+    const { entry } = createResizeEntry({
+      nodeId,
+      width: 240,
+      height: 180,
+      left: 100,
+      top: 200
+    })
+    const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+
+    seedNodeLayout({
+      nodeId,
+      left: 100,
+      top: 200,
+      width: 220,
+      height: 140
+    })
+
+    resizeObserverState.callback?.([entry], createObserverMock())
 
     expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
