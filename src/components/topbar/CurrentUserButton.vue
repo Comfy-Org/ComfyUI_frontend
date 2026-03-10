@@ -98,15 +98,21 @@ const photoURL = computed<string | undefined>(
   () => userPhotoUrl.value ?? undefined
 )
 
-const { workspaceName: teamWorkspaceName, initState } = storeToRefs(
-  useTeamWorkspaceStore()
-)
+const {
+  workspaceName: teamWorkspaceName,
+  initState,
+  isInPersonalWorkspace
+} = storeToRefs(useTeamWorkspaceStore())
 
 const showWorkspaceSkeleton = computed(
   () => isCloud && teamWorkspacesEnabled.value && initState.value === 'loading'
 )
 const showWorkspaceIcon = computed(
-  () => isCloud && teamWorkspacesEnabled.value && initState.value === 'ready'
+  () =>
+    isCloud &&
+    teamWorkspacesEnabled.value &&
+    initState.value === 'ready' &&
+    !isInPersonalWorkspace.value
 )
 
 const workspaceName = computed(() => {
