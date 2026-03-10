@@ -93,13 +93,12 @@
       #header
     >
       <div class="flex flex-col px-2 pt-2 pb-0">
-        <SearchBox
+        <SearchInput
           v-if="showSearchBox"
           v-model="searchQuery"
           :class="showSelectedCount || showClearButton ? 'mb-2' : ''"
-          :show-order="true"
-          :show-border="true"
-          :place-holder="searchPlaceholder"
+          :placeholder="searchPlaceholder"
+          size="sm"
         />
         <div
           v-if="showSelectedCount || showClearButton"
@@ -182,7 +181,7 @@ import MultiSelect from 'primevue/multiselect'
 import { computed, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'

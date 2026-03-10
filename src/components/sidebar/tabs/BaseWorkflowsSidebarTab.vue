@@ -21,7 +21,7 @@
     </template>
     <template #header>
       <div class="px-2 2xl:px-4">
-        <SearchBox
+        <SearchInput
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
           class="workflows-search-box"
@@ -146,7 +146,7 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import TextDivider from '@/components/common/TextDivider.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
