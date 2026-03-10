@@ -8,11 +8,16 @@ import {
   setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => undefined),
+    get: vi.fn((key: string) => {
+      if (key === 'Comfy.NodeLibrary.Bookmarks.V2') return []
+      if (key === 'Comfy.NodeLibrary.BookmarksCustomization') return {}
+      return undefined
+    }),
     set: vi.fn()
   }))
 }))
@@ -46,26 +51,27 @@ describe('NodeSearchCategorySidebar', () => {
   }
 
   describe('preset categories', () => {
-    it('should render all preset categories', async () => {
-      useNodeDefStore().updateNodeDefs([
-        createMockNodeDef({
-          name: 'EssentialNode',
-          essentials_category: 'basic',
-          python_module: 'comfy_essentials'
-        })
-      ])
-      await nextTick()
-
+    it('should always show Most relevant', async () => {
       const wrapper = await createWrapper()
-
       expect(wrapper.text()).toContain('Most relevant')
-      expect(wrapper.text()).toContain('Recents')
+    })
+
+    it('should show Favorites only when bookmarks exist', async () => {
+      const wrapper = await createWrapper()
+      expect(wrapper.text()).not.toContain('Favorites')
+    })
+
+    it('should show Favorites when bookmarks are present', async () => {
+      vi.spyOn(useNodeBookmarkStore(), 'bookmarks', 'get').mockReturnValue([
+        'some-bookmark'
+      ])
+      const wrapper = await createWrapper()
       expect(wrapper.text()).toContain('Favorites')
-      expect(wrapper.text()).toContain('Essentials')
-      expect(wrapper.text()).toContain('Blueprints')
-      expect(wrapper.text()).toContain('Partner')
-      expect(wrapper.text()).toContain('Comfy')
-      expect(wrapper.text()).toContain('Extensions')
+    })
+
+    it('should show Custom source category', async () => {
+      const wrapper = await createWrapper()
+      expect(wrapper.text()).toContain('Custom')
     })
 
     it('should mark the selected preset category as selected', async () => {
@@ -79,6 +85,9 @@ describe('NodeSearchCategorySidebar', () => {
     })
 
     it('should emit update:selectedCategory when preset is clicked', async () => {
+      vi.spyOn(useNodeBookmarkStore(), 'bookmarks', 'get').mockReturnValue([
+        'some-bookmark'
+      ])
       const wrapper = await createWrapper({ selectedCategory: 'most-relevant' })
 
       await clickCategory(wrapper, 'Favorites')
@@ -127,7 +136,8 @@ describe('NodeSearchCategorySidebar', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),
         createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
-        createMockNodeDef({ name: 'Node3', category: 'sampling/basic' })
+        createMockNodeDef({ name: 'Node3', category: 'sampling/basic' }),
+        createMockNodeDef({ name: 'Node4', category: 'loaders' })
       ])
       await nextTick()
 
@@ -166,7 +176,8 @@ describe('NodeSearchCategorySidebar', () => {
     it('should emit update:selectedCategory when subcategory is clicked', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),
-        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' })
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
+        createMockNodeDef({ name: 'Node3', category: 'loaders' })
       ])
       await nextTick()
 
@@ -202,7 +213,8 @@ describe('NodeSearchCategorySidebar', () => {
     it('should emit selected subcategory when expanded', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),
-        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' })
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
+        createMockNodeDef({ name: 'Node3', category: 'loaders' })
       ])
       await nextTick()
 
@@ -217,7 +229,16 @@ describe('NodeSearchCategorySidebar', () => {
     })
   })
 
-  it('should support deeply nested categories (3+ levels)', async () => {
+  describe('hidePresets prop', () => {
+    it('should hide preset categories when hidePresets is true', async () => {
+      const wrapper = await createWrapper({ hidePresets: true })
+
+      expect(wrapper.text()).not.toContain('Most relevant')
+      expect(wrapper.text()).not.toContain('Custom')
+    })
+  })
+
+  it('should emit autoExpand for single root and support deeply nested categories', async () => {
     useNodeDefStore().updateNodeDefs([
       createMockNodeDef({ name: 'Node1', category: 'api' }),
       createMockNodeDef({ name: 'Node2', category: 'api/image' }),
@@ -227,14 +248,14 @@ describe('NodeSearchCategorySidebar', () => {
 
     const wrapper = await createWrapper()
 
-    // Only top-level visible initially
+    // Single root emits autoExpand
+    expect(wrapper.emitted('autoExpand')?.[0]).toEqual(['api'])
+
+    // Simulate parent handling autoExpand
+    await wrapper.setProps({ selectedCategory: 'api' })
+    await nextTick()
+
     expect(wrapper.text()).toContain('api')
-    expect(wrapper.text()).not.toContain('image')
-    expect(wrapper.text()).not.toContain('BFL')
-
-    // Expand api
-    await clickCategory(wrapper, 'api', true)
-
     expect(wrapper.text()).toContain('image')
     expect(wrapper.text()).not.toContain('BFL')
 

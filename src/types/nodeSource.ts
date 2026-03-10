@@ -1,3 +1,5 @@
+export const BLUEPRINT_CATEGORY = 'Subgraph Blueprints'
+
 export enum NodeSourceType {
   Core = 'core',
   CustomNodes = 'custom_nodes',
@@ -74,6 +76,18 @@ export function getNodeSource(
   } else {
     return UNKNOWN_NODE_SOURCE
   }
+}
+
+interface NodeDefLike {
+  nodeSource: NodeSource
+}
+
+export function isEssentialNode(node: NodeDefLike): boolean {
+  return node.nodeSource.type === NodeSourceType.Essentials
+}
+
+export function isCustomNode(node: NodeDefLike): boolean {
+  return node.nodeSource.type === NodeSourceType.CustomNodes
 }
 
 export enum NodeBadgeMode {

@@ -18,14 +18,14 @@
       <!-- Category Path -->
       <p
         v-if="showCategoryPath && nodeDef.category"
-        class="-mt-1 text-xs text-muted-foreground"
+        class="-mt-1 truncate text-xs text-muted-foreground"
       >
-        {{ nodeDef.category.replaceAll('/', ' > ') }}
+        {{ nodeDef.category.replaceAll('/', ' / ') }}
       </p>
 
       <!-- Badges -->
-      <div class="flex flex-wrap gap-2 empty:hidden">
-        <NodePricingBadge :node-def="nodeDef" />
+      <div class="flex flex-wrap gap-2 overflow-hidden empty:hidden">
+        <NodePricingBadge class="max-w-full truncate" :node-def="nodeDef" />
         <NodeProviderBadge :node-def="nodeDef" />
       </div>
 

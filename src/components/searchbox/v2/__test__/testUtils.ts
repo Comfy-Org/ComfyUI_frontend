@@ -49,15 +49,12 @@ export const testI18n = createI18n({
         input: 'Input',
         output: 'Output',
         source: 'Source',
-        search: 'Search'
-      },
-      sideToolbar: {
-        nodeLibraryTab: {
-          filterOptions: {
-            blueprints: 'Blueprints',
-            partnerNodes: 'Partner Nodes'
-          }
-        }
+        search: 'Search',
+        blueprints: 'Blueprints',
+        partnerNodes: 'Partner Nodes',
+        remove: 'Remove',
+        itemsSelected: '{selectedCount} items selected',
+        clearAll: 'Clear all'
       }
     }
   }

@@ -14,7 +14,7 @@
     <div class="flex items-center gap-0.5">
       <ComfyLogo
         alt="ComfyUI Logo"
-        class="comfyui-logo h-[18px] w-[18px]"
+        class="comfyui-logo size-[18px]"
         mode="fill"
       />
       <i class="icon-[lucide--chevron-down] size-3 text-muted-foreground" />
