@@ -252,7 +252,7 @@ async function handleImportPreset() {
 
 const showSaveAsNew = computed(
   () =>
-    keybindingStore.currentPresetName === 'default' ||
+    keybindingStore.currentPresetName !== 'default' ||
     keybindingStore.isCurrentPresetModified
 )
 
