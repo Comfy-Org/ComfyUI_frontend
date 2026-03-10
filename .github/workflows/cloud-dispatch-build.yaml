@@ -43,6 +43,10 @@ jobs:
           if [ "${EVENT_NAME}" = "pull_request" ]; then
             REF="${PR_HEAD_SHA}"
             BRANCH="${PR_HEAD_REF}"
+
+            # Derive variant from all PR labels (default to cpu for frontend-only previews)
+            VARIANT="cpu"
+            echo "${PR_LABELS}" | grep -q '"preview-gpu"' && VARIANT="gpu"
           else
             REF="${GITHUB_SHA}"
             BRANCH="${GITHUB_REF_NAME}"
