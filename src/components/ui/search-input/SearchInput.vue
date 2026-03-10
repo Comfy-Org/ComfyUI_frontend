@@ -1,5 +1,5 @@
 <template>
-  <ComboboxRoot :open="false" ignore-filter disabled :class="className">
+  <ComboboxRoot :open="false" ignore-filter :disabled :class="className">
     <ComboboxAnchor
       :class="
         cn(
