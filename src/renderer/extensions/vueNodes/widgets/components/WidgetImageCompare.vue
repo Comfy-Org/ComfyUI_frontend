@@ -26,14 +26,14 @@
     <div
       v-if="beforeImage || afterImage"
       ref="containerRef"
-      class="relative min-h-0 flex-1"
+      class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-node-component-surface py-4"
     >
       <img
         v-if="afterImage"
         :src="afterImage"
         :alt="afterAlt"
         draggable="false"
-        class="size-full object-contain"
+        class="size-full object-cover"
       />
 
       <img
@@ -41,7 +41,7 @@
         :src="beforeImage"
         :alt="beforeAlt"
         draggable="false"
-        class="absolute inset-0 size-full object-contain"
+        class="absolute inset-0 size-full object-cover"
         :style="{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }"
       />
 

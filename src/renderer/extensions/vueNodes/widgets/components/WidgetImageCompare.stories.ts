@@ -10,15 +10,14 @@ const SAMPLE_BEFORE = 'https://picsum.photos/seed/before/512/512'
 const SAMPLE_AFTER = 'https://picsum.photos/seed/after/512/512'
 
 const meta: Meta<typeof WidgetImageCompare> = {
-  title: 'Widgets/WidgetImageCompare',
+  title: 'Components/Display/ImageCompare',
   component: WidgetImageCompare,
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
   decorators: [
     (story) => ({
       components: { story },
-      template:
-        '<div class="w-88 h-80 bg-node-component-surface rounded-lg"><story /></div>'
+      template: '<div class="w-88 h-80"><story /></div>'
     })
   ]
 }
