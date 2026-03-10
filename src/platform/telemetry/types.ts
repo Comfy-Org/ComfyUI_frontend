@@ -144,7 +144,7 @@ export interface EnterLinearMetadata {
   source?: string
 }
 
-export type ShareFlowStep =
+type ShareFlowStep =
   | 'dialog_opened'
   | 'save_prompted'
   | 'link_created'
