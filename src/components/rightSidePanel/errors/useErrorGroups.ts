@@ -617,7 +617,7 @@ export function useErrorGroups(
     return [
       {
         type: 'missing_model' as const,
-        title: `${t('rightSidePanel.missingModels.missingModelsTitle')} (${missingModelStore.missingModelCandidates?.length ?? 0})`,
+        title: `${t('rightSidePanel.missingModels.missingModelsTitle')} (${missingModelGroups.value.reduce((count, group) => count + group.models.length, 0)})`,
         priority: 2
       }
     ]

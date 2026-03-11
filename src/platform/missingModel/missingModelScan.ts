@@ -159,11 +159,17 @@ export async function enrichWithEmbeddedMetadata(
   const embeddedModels = collectEmbeddedModelsWithSource(allNodes, graphData)
 
   const enriched = candidates.map((c) => ({ ...c }))
-  const candidatesByName = new Map<string, MissingModelCandidate[]>()
+  const candidatesByKey = new Map<string, MissingModelCandidate[]>()
   for (const c of enriched) {
-    const list = candidatesByName.get(c.name)
-    if (list) list.push(c)
-    else candidatesByName.set(c.name, [c])
+    const dirKey = `${c.name}::${c.directory ?? ''}`
+    const dirList = candidatesByKey.get(dirKey)
+    if (dirList) dirList.push(c)
+    else candidatesByKey.set(dirKey, [c])
+
+    const nameKey = c.name
+    const nameList = candidatesByKey.get(nameKey)
+    if (nameList) nameList.push(c)
+    else candidatesByKey.set(nameKey, [c])
   }
 
   const deduped: EmbeddedModelWithSource[] = []
@@ -177,9 +183,13 @@ export async function enrichWithEmbeddedMetadata(
 
   const unmatched: EmbeddedModelWithSource[] = []
   for (const model of deduped) {
-    const existing = candidatesByName.get(model.name)
+    const dirKey = `${model.name}::${model.directory}`
+    const exact = candidatesByKey.get(dirKey)
+    const fallback = candidatesByKey.get(model.name)
+    const existing = exact?.length ? exact : fallback
     if (existing) {
       for (const c of existing) {
+        if (c.directory && c.directory !== model.directory) continue
         c.directory ??= model.directory
         c.url ??= model.url
         c.hash ??= model.hash
@@ -288,6 +298,8 @@ export async function verifyAssetSupportedCandidates(
   signal?: AbortSignal,
   assetsStore?: AssetVerifier
 ): Promise<void> {
+  if (signal?.aborted) return
+
   const pendingNodeTypes = new Set<string>()
   for (const c of candidates) {
     if (c.isAssetSupported && c.isMissing === undefined) {
@@ -302,6 +314,7 @@ export async function verifyAssetSupportedCandidates(
 
   await Promise.allSettled(
     [...pendingNodeTypes].map(async (nodeType) => {
+      if (signal?.aborted) return
       try {
         await store.updateModelsForNodeType(nodeType)
       } catch (err) {

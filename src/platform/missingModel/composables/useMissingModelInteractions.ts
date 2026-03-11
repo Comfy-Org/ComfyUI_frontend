@@ -92,6 +92,8 @@ export function useMissingModelInteractions() {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
 
+  const _requestTokens: Record<string, symbol> = {}
+
   function toggleModelExpand(key: string) {
     store.modelExpandState[key] = !isModelExpanded(key)
   }
@@ -180,7 +182,9 @@ export function useMissingModelInteractions() {
         const widget = node.widgets?.find((w) => w.name === ref.widgetName)
         if (widget) {
           widget.value = value
+          widget.callback?.(value)
         }
+        node.graph?.setDirtyCanvas(true, true)
       }
     }
 
@@ -194,6 +198,7 @@ export function useMissingModelInteractions() {
 
     delete store.urlMetadata[key]
     delete store.urlErrors[key]
+    delete store.importCategoryMismatch[key]
     store.urlFetching[key] = false
 
     store.clearDebounceTimer(key)
@@ -217,11 +222,16 @@ export function useMissingModelInteractions() {
       return
     }
 
+    const token = Symbol()
+    _requestTokens[key] = token
+
     store.urlFetching[key] = true
     delete store.urlErrors[key]
 
     try {
       const metadata = await assetService.getAssetMetadata(url)
+
+      if (_requestTokens[key] !== token) return
 
       if (metadata.filename) {
         try {
@@ -237,12 +247,16 @@ export function useMissingModelInteractions() {
 
       store.urlMetadata[key] = metadata
     } catch (error) {
+      if (_requestTokens[key] !== token) return
+
       store.urlErrors[key] =
         error instanceof Error
           ? error.message
           : t('rightSidePanel.missingModels.metadataFetchFailed')
     } finally {
-      store.urlFetching[key] = false
+      if (_requestTokens[key] === token) {
+        store.urlFetching[key] = false
+      }
     }
   }
 
@@ -316,8 +330,12 @@ export function useMissingModelInteractions() {
     const source = importSources.find((s) => validateSourceUrl(url, s))
     if (!source) return
 
+    const token = Symbol()
+    _requestTokens[key] = token
+
     store.urlImporting[key] = true
     delete store.urlErrors[key]
+    delete store.importCategoryMismatch[key]
 
     try {
       const modelType = groupDirectory || undefined
@@ -334,6 +352,8 @@ export function useMissingModelInteractions() {
         }
       })
 
+      if (_requestTokens[key] !== token) return
+
       if (result.type === 'async' && result.task.status !== 'completed') {
         handleAsyncPending(key, result.task.task_id, modelType, filename)
       } else if (result.type === 'async') {
@@ -344,12 +364,16 @@ export function useMissingModelInteractions() {
 
       store.selectedLibraryModel[key] = filename
     } catch (error) {
+      if (_requestTokens[key] !== token) return
+
       store.urlErrors[key] =
         error instanceof Error
           ? error.message
           : t('rightSidePanel.missingModels.importFailed')
     } finally {
-      store.urlImporting[key] = false
+      if (_requestTokens[key] === token) {
+        store.urlImporting[key] = false
+      }
     }
   }
 

@@ -28,7 +28,8 @@ const i18n = createI18n({
         missingModels: {
           importNotSupported: 'Import Not Supported',
           customNodeDownloadDisabled:
-            'Cloud environment does not support model imports for custom nodes.'
+            'Cloud environment does not support model imports for custom nodes.',
+          unknownCategory: 'Unknown Category'
         }
       }
     }
@@ -101,7 +102,7 @@ describe('MissingModelCard', () => {
       const wrapper = mountCard({
         missingModelGroups: [makeGroup({ directory: null })]
       })
-      expect(wrapper.text()).toContain('unknownCategory')
+      expect(wrapper.text()).toContain('Unknown Category')
     })
 
     it('renders model count in category header', () => {

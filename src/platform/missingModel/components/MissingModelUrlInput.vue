@@ -130,6 +130,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@/utils/tailwindUtil'
@@ -149,7 +150,7 @@ const { modelKey, directory, typeMismatch } = defineProps<{
 
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
-const canImportModels = flags.privateModelsEnabled
+const canImportModels = computed(() => flags.privateModelsEnabled)
 const { showUploadDialog } = useModelUpload()
 
 const store = useMissingModelStore()

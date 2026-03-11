@@ -594,6 +594,29 @@ export function buildSubgraphExecutionPaths(
 }
 
 /**
+ * Recursively collect all subgraph definitions from root and nested levels.
+ */
+function collectAllSubgraphDefs(rootDefs: unknown[]): SubgraphDefinition[] {
+  const result: SubgraphDefinition[] = []
+  const seen = new Set<string>()
+
+  function collect(defs: unknown[]) {
+    for (const def of defs) {
+      if (!isSubgraphDefinition(def)) continue
+      if (seen.has(def.id)) continue
+      seen.add(def.id)
+      result.push(def)
+      if (def.definitions?.subgraphs?.length) {
+        collect(def.definitions.subgraphs)
+      }
+    }
+  }
+
+  collect(rootDefs)
+  return result
+}
+
+/**
  * Flatten all workflow nodes (root + subgraphs) into a single array.
  * Each node's `id` is prefixed with its execution path (e.g. node "3" inside container "11" → "11:3").
  */
@@ -601,14 +624,12 @@ export function flattenWorkflowNodes(
   graphData: ComfyWorkflowJSON
 ): Readonly<ComfyNode>[] {
   const rootNodes = graphData.nodes ?? []
-  const subgraphDefs = graphData.definitions?.subgraphs ?? []
-  const pathMap = buildSubgraphExecutionPaths(rootNodes, subgraphDefs)
+  const allDefs = collectAllSubgraphDefs(graphData.definitions?.subgraphs ?? [])
+  const pathMap = buildSubgraphExecutionPaths(rootNodes, allDefs)
 
   const allNodes: ComfyNode[] = [...rootNodes]
 
-  const subgraphDefMap = new Map(
-    subgraphDefs.filter(isSubgraphDefinition).map((s) => [s.id, s])
-  )
+  const subgraphDefMap = new Map(allDefs.map((s) => [s.id, s]))
   for (const [defId, paths] of pathMap.entries()) {
     const def = subgraphDefMap.get(defId)
     if (!def?.nodes) continue

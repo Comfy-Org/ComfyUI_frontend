@@ -131,7 +131,12 @@ function makeCandidate(
 describe('useMissingModelInteractions', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
+    vi.resetAllMocks()
+    mockGetAssetDisplayName.mockImplementation((a: { name: string }) => a.name)
+    mockGetAssetFilename.mockImplementation((a: { name: string }) => a.name)
+    mockDownloadList.mockImplementation(
+      (): Array<{ taskId: string; status: string }> => []
+    )
     ;(app as { rootGraph: unknown }).rootGraph = null
   })
 
