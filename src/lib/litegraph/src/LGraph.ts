@@ -2542,7 +2542,13 @@ export class LGraph
 
         // configure nodes afterwards so they can reach each other
         for (const [id, nodeData] of nodeDataMap) {
-          this.getNodeById(id)?.configure(nodeData)
+          const node = this.getNodeById(id)
+          node?.configure(nodeData)
+
+          if (LiteGraph.alwaysSnapToGrid) {
+            const snapTo = this.getSnapToGridSize()
+            if (snapTo) node?.snapToGrid(snapTo)
+          }
         }
       }
 
