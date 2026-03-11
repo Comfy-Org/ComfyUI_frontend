@@ -109,14 +109,14 @@
     </template>
     <template #body>
       <NodeDragPreview />
-      <TabsRoot v-model="selectedTab" class="flex h-full flex-col">
+      <div class="flex h-full flex-col">
         <!-- Tab list in header (fixed) -->
         <div class="border-b border-comfy-input p-2 2xl:px-4">
-          <TabsList class="flex w-full items-center gap-2">
+          <TabList v-model="selectedTab">
             <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
               {{ tab.label }}
             </Tab>
-          </TabsList>
+          </TabList>
         </div>
         <!-- Tab content (scrollable) -->
         <div class="min-h-0 flex-1 overflow-y-auto py-2">
@@ -144,7 +144,7 @@
             @node-click="handleNodeClick"
           />
         </div>
-      </TabsRoot>
+      </div>
     </template>
   </SidebarTabTemplate>
 </template>
@@ -159,15 +159,14 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuRoot,
-  DropdownMenuTrigger,
-  TabsList,
-  TabsRoot
+  DropdownMenuTrigger
 } from 'reka-ui'
 import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
 import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
