@@ -23,6 +23,21 @@ const {
 
 const dropZoneRef = ref<HTMLElement | null>(null)
 const canAcceptDrop = ref(false)
+const pointerStart = ref<{ x: number; y: number } | null>(null)
+
+function onPointerDown(e: PointerEvent) {
+  pointerStart.value = { x: e.clientX, y: e.clientY }
+}
+
+function onIndicatorClick(e: MouseEvent) {
+  const start = pointerStart.value
+  if (start) {
+    const dx = e.clientX - start.x
+    const dy = e.clientY - start.y
+    if (dx * dx + dy * dy > 25) return
+  }
+  dropIndicator?.onClick?.(e)
+}
 
 const { isOverDropZone } = useDropZone(dropZoneRef, {
   onDrop: (_files, event) => {
@@ -70,11 +85,12 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
       data-slot="drop-zone-indicator"
       :class="
         cn(
-          'm-3 block w-[calc(100%-1.5rem)] appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
+          'm-3 block w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
           dropIndicator?.onClick && 'cursor-pointer'
         )
       "
-      @click.prevent="dropIndicator?.onClick?.($event)"
+      @pointerdown="onPointerDown"
+      @click.prevent="onIndicatorClick"
     >
       <div
         :class="
