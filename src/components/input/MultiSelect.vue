@@ -89,7 +89,7 @@
             />
             <ComboboxInput
               v-model="searchQuery"
-              :placeholder="searchPlaceholder"
+              :placeholder="searchPlaceholder ?? t('g.search')"
               class="w-full border-none bg-transparent text-sm outline-none"
             />
           </div>
@@ -101,11 +101,7 @@
               v-if="showSelectedCount"
               class="px-1 text-sm text-base-foreground"
             >
-              {{
-                selectedCount > 0
-                  ? $t('g.itemsSelected', { selectedCount })
-                  : $t('g.itemSelected', { selectedCount })
-              }}
+              {{ $t('g.itemsSelected', { count: selectedCount }) }}
             </span>
             <Button
               v-if="showClearButton"
@@ -147,7 +143,7 @@
             >
               <ComboboxItemIndicator>
                 <i
-                  class="text-bold icon-[lucide--check] text-xs text-base-foreground"
+                  class="icon-[lucide--check] text-xs font-bold text-base-foreground"
                 />
               </ComboboxItemIndicator>
             </div>
@@ -198,7 +194,7 @@ const {
   showSearchBox = false,
   showSelectedCount = false,
   showClearButton = false,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder,
   listMaxHeight = '28rem',
   popoverMinWidth,
   popoverMaxWidth
