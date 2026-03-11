@@ -16,6 +16,7 @@
           variant="textonly"
           size="icon-sm"
           class="size-8 shrink-0 hover:bg-transparent"
+          :aria-label="t('rightSidePanel.missingModels.copyModelName')"
           :title="t('rightSidePanel.missingModels.copyModelName')"
           @click="copyToClipboard(model.name)"
         >
@@ -24,35 +25,46 @@
       </div>
 
       <!-- Check button -->
-      <div
+      <Button
+        variant="textonly"
+        size="icon-sm"
+        :aria-label="t('rightSidePanel.missingModels.confirmSelection')"
+        :disabled="!checkReady"
         :class="
           cn(
-            'flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors',
-            isCheckReady(modelKey)
-              ? 'cursor-pointer bg-[#1e2d3d] hover:bg-[#1e2d3d]'
-              : 'cursor-default opacity-20'
+            'size-8 shrink-0 rounded-lg transition-colors',
+            checkReady ? 'bg-primary/10 hover:bg-primary/15' : 'opacity-20'
           )
         "
         @click="
-          isCheckReady(modelKey) &&
-          confirmLibrarySelect(modelKey, model.referencingNodes, directory)
+          confirmLibrarySelect(
+            modelKey,
+            model.name,
+            model.referencingNodes,
+            directory
+          )
         "
       >
         <i
           class="icon-[lucide--check] size-4"
-          :class="isCheckReady(modelKey) ? 'text-[#3b82f6]' : 'text-foreground'"
+          :class="checkReady ? 'text-primary' : 'text-foreground'"
         />
-      </div>
+      </Button>
 
       <!-- Expand/Collapse chevron (show referencing nodes) -->
       <Button
         v-if="model.referencingNodes.length > 0"
         variant="textonly"
         size="icon-sm"
+        :aria-label="
+          expanded
+            ? t('rightSidePanel.missingModels.collapseNodes')
+            : t('rightSidePanel.missingModels.expandNodes')
+        "
         :class="
           cn(
             'size-8 shrink-0 transition-transform duration-200 hover:bg-transparent',
-            { 'rotate-180': isModelExpanded(modelKey) }
+            expanded && 'rotate-180'
           )
         "
         @click="toggleModelExpand(modelKey)"
@@ -66,12 +78,12 @@
     <!-- Referencing nodes -->
     <TransitionCollapse>
       <div
-        v-if="isModelExpanded(modelKey)"
+        v-if="expanded"
         class="mb-1 flex flex-col gap-0.5 overflow-hidden pl-6"
       >
         <div
           v-for="ref in model.referencingNodes"
-          :key="String(ref.nodeId)"
+          :key="`${String(ref.nodeId)}::${ref.widgetName}`"
           class="flex h-7 items-center"
         >
           <span
@@ -86,6 +98,7 @@
           <Button
             variant="textonly"
             size="icon-sm"
+            :aria-label="t('rightSidePanel.missingModels.locateNode')"
             class="mr-1 size-6 shrink-0 text-muted-foreground hover:text-base-foreground"
             @click="emit('locateModel', String(ref.nodeId))"
           >
@@ -99,17 +112,14 @@
     <TransitionCollapse>
       <div
         v-if="selectedLibraryModel[modelKey]"
-        class="relative mt-1 overflow-hidden rounded-lg border border-interface-stroke bg-white/5 p-2"
+        class="bg-foreground/5 relative mt-1 overflow-hidden rounded-lg border border-interface-stroke p-2"
       >
         <!-- Progress bar fill -->
         <div
-          v-if="
-            getDownloadStatus(modelKey)?.status === 'running' ||
-            getDownloadStatus(modelKey)?.status === 'created'
-          "
-          class="absolute inset-y-0 left-0 bg-[#3b82f6]/10 transition-all duration-200 ease-linear"
+          v-if="isDownloadActive"
+          class="absolute inset-y-0 left-0 bg-primary/10 transition-all duration-200 ease-linear"
           :style="{
-            width: (getDownloadStatus(modelKey)?.progress ?? 0) * 100 + '%'
+            width: (downloadStatus?.progress ?? 0) * 100 + '%'
           }"
         />
 
@@ -120,18 +130,15 @@
               class="mt-0.5 icon-[lucide--triangle-alert] size-5 text-warning-background"
             />
             <i
-              v-else-if="getDownloadStatus(modelKey)?.status === 'failed'"
+              v-else-if="downloadStatus?.status === 'failed'"
               class="icon-[lucide--circle-alert] size-5 text-destructive-background"
             />
             <i
-              v-else-if="getDownloadStatus(modelKey)?.status === 'completed'"
-              class="icon-[lucide--check-circle] size-5 text-jade-600"
+              v-else-if="downloadStatus?.status === 'completed'"
+              class="icon-[lucide--check-circle] size-5 text-success-background"
             />
             <i
-              v-else-if="
-                getDownloadStatus(modelKey)?.status === 'running' ||
-                getDownloadStatus(modelKey)?.status === 'created'
-              "
+              v-else-if="isDownloadActive"
               class="icon-[lucide--loader-circle] size-5 animate-spin text-muted-foreground"
             />
             <i
@@ -151,29 +158,16 @@
                   })
                 }}
               </template>
-              <template
-                v-else-if="
-                  getDownloadStatus(modelKey)?.status === 'running' ||
-                  getDownloadStatus(modelKey)?.status === 'created'
-                "
-              >
+              <template v-else-if="isDownloadActive">
                 {{ t('rightSidePanel.missingModels.importing') }}
-                {{
-                  Math.round(
-                    (getDownloadStatus(modelKey)?.progress ?? 0) * 100
-                  )
-                }}%
+                {{ Math.round((downloadStatus?.progress ?? 0) * 100) }}%
               </template>
-              <template
-                v-else-if="getDownloadStatus(modelKey)?.status === 'completed'"
-              >
+              <template v-else-if="downloadStatus?.status === 'completed'">
                 {{ t('rightSidePanel.missingModels.imported') }}
               </template>
-              <template
-                v-else-if="getDownloadStatus(modelKey)?.status === 'failed'"
-              >
+              <template v-else-if="downloadStatus?.status === 'failed'">
                 {{
-                  getDownloadStatus(modelKey)?.error ||
+                  downloadStatus?.error ||
                   t('rightSidePanel.missingModels.importFailed')
                 }}
               </template>
@@ -185,6 +179,7 @@
           <Button
             variant="textonly"
             size="icon-sm"
+            :aria-label="t('rightSidePanel.missingModels.cancelSelection')"
             class="relative z-10 size-6 shrink-0 text-muted-foreground hover:text-base-foreground"
             @click="cancelLibrarySelect(modelKey)"
           >
@@ -200,23 +195,32 @@
         v-if="!selectedLibraryModel[modelKey]"
         class="mt-1 flex flex-col gap-2"
       >
-        <template v-if="!isAssetSupported"> </template>
-        <template v-else>
+        <template v-if="isAssetSupported">
           <!-- URL paste input -->
           <div
-            class="flex h-8 items-center rounded-lg border border-transparent bg-secondary-background px-3 transition-colors focus-within:border-interface-stroke"
-            :class="{ 'cursor-pointer': !canImportModels }"
-            @click="!canImportModels && showUpgradeModal()"
+            :class="
+              cn(
+                'flex h-8 items-center rounded-lg border border-transparent bg-secondary-background px-3 transition-colors focus-within:border-interface-stroke',
+                !canImportModels && 'cursor-pointer'
+              )
+            "
+            @click="!canImportModels && showUploadDialog()"
           >
+            <label :for="`url-input-${modelKey}`" class="sr-only">
+              {{ t('rightSidePanel.missingModels.urlPlaceholder') }}
+            </label>
             <input
+              :id="`url-input-${modelKey}`"
               type="text"
               :value="urlInputs[modelKey] ?? ''"
               :readonly="!canImportModels"
               :placeholder="t('rightSidePanel.missingModels.urlPlaceholder')"
-              :class="[
-                'text-foreground w-full border-none bg-transparent text-xs outline-none placeholder:text-muted-foreground',
-                !canImportModels ? 'pointer-events-none opacity-60' : ''
-              ]"
+              :class="
+                cn(
+                  'text-foreground w-full border-none bg-transparent text-xs outline-none placeholder:text-muted-foreground',
+                  !canImportModels && 'pointer-events-none opacity-60'
+                )
+              "
               @input="
                 handleUrlInput(
                   modelKey,
@@ -228,6 +232,7 @@
               v-if="urlInputs[modelKey]"
               variant="textonly"
               size="icon-sm"
+              :aria-label="t('rightSidePanel.missingModels.clearUrl')"
               class="ml-1 shrink-0"
               @click.stop="handleUrlInput(modelKey, '')"
             >
@@ -253,17 +258,14 @@
               </div>
 
               <!-- Type mismatch warning -->
-              <div
-                v-if="getTypeMismatch(modelKey, directory)"
-                class="flex items-start gap-1.5 px-0.5"
-              >
+              <div v-if="typeMismatch" class="flex items-start gap-1.5 px-0.5">
                 <i
                   class="mt-0.5 icon-[lucide--triangle-alert] size-3 shrink-0 text-warning-background"
                 />
                 <span class="text-[11px] leading-tight text-warning-background">
                   {{
                     t('rightSidePanel.missingModels.typeMismatch', {
-                      detectedType: getTypeMismatch(modelKey, directory)
+                      detectedType: typeMismatch
                     })
                   }}
                 </span>
@@ -284,7 +286,7 @@
                     "
                   />
                   {{
-                    getTypeMismatch(modelKey, directory)
+                    typeMismatch
                       ? t('rightSidePanel.missingModels.importAnyway')
                       : t('rightSidePanel.missingModels.import')
                   }}
@@ -330,11 +332,11 @@
             <!-- Use from Library -->
             <SelectPlus
               :model-value="getComboValue(model.representative)"
-              :options="getComboOptions(model.representative)"
+              :options="comboOptions"
               option-label="name"
               option-value="value"
-              :disabled="getComboOptions(model.representative).length === 0"
-              :filter="getComboOptions(model.representative).length > 4"
+              :disabled="comboOptions.length === 0"
+              :filter="comboOptions.length > 4"
               auto-filter-focus
               :placeholder="t('rightSidePanel.missingModels.useFromLibrary')"
               class="h-8 w-full rounded-lg border border-transparent bg-secondary-background text-xs transition-colors hover:border-interface-stroke"
@@ -362,25 +364,25 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@/utils/tailwindUtil'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import UploadModelUpgradeModal from '@/platform/assets/components/UploadModelUpgradeModal.vue'
-import UploadModelUpgradeModalHeader from '@/platform/assets/components/UploadModelUpgradeModalHeader.vue'
-import { useDialogStore } from '@/stores/dialogStore'
-import type { MissingModelViewModel } from '@/components/rightSidePanel/errors/useErrorGroups'
+import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
+import type { MissingModelViewModel } from '@/platform/missingModel/types'
 import { formatSize } from '@/utils/formatUtil'
 
 import {
   useMissingModelInteractions,
   getModelStateKey
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
-const props = defineProps<{
+const { model, directory, showNodeIdBadge, isAssetSupported } = defineProps<{
   model: MissingModelViewModel
   directory: string | null
   showNodeIdBadge: boolean
@@ -393,31 +395,28 @@ const emit = defineEmits<{
 
 const { flags } = useFeatureFlags()
 const canImportModels = computed(() => flags.privateModelsEnabled)
+const { showUploadDialog } = useModelUpload()
 
-const dialogStore = useDialogStore()
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 
 /** Unique key isolating state by support type + directory + model name. */
 const modelKey = computed(() =>
-  getModelStateKey(props.model.name, props.directory, !props.isAssetSupported)
+  getModelStateKey(model.name, directory, isAssetSupported)
 )
 
-/** Show the subscription upgrade modal when user tries to import without a subscription. */
-function showUpgradeModal() {
-  dialogStore.showDialog({
-    key: 'upload-model-upgrade',
-    headerComponent: UploadModelUpgradeModalHeader,
-    component: UploadModelUpgradeModal,
-    dialogComponentProps: {
-      pt: {
-        header: 'py-0! pl-0!',
-        content: 'p-0! overflow-y-hidden!'
-      }
-    }
-  })
-}
+const downloadStatus = computed(() => getDownloadStatus(modelKey.value))
+const comboOptions = computed(() => getComboOptions(model.representative))
+const checkReady = computed(() => isCheckReady(modelKey.value))
+const expanded = computed(() => isModelExpanded(modelKey.value))
+const typeMismatch = computed(() => getTypeMismatch(modelKey.value, directory))
+const isDownloadActive = computed(
+  () =>
+    downloadStatus.value?.status === 'running' ||
+    downloadStatus.value?.status === 'created'
+)
 
+const store = useMissingModelStore()
 const {
   selectedLibraryModel,
   importCategoryMismatch,
@@ -425,7 +424,10 @@ const {
   urlMetadata,
   urlFetching,
   urlErrors,
-  urlImporting,
+  urlImporting
+} = storeToRefs(store)
+
+const {
   toggleModelExpand,
   isModelExpanded,
   getNodeDisplayLabel,

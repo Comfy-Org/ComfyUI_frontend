@@ -12,7 +12,7 @@
     </div>
 
     <!-- Scrollable content -->
-    <div class="min-w-0 flex-1 overflow-y-auto">
+    <div class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
       <TransitionGroup tag="div" name="list-scale" class="relative">
         <div
           v-if="filteredGroups.length === 0"

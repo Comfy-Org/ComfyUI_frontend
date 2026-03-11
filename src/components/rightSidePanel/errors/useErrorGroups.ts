@@ -3,6 +3,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -23,7 +24,11 @@ import { st } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type {
+  MissingModelCandidate,
+  MissingModelGroup
+} from '@/platform/missingModel/types'
+import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
 import {
   isNodeExecutionId,
   compareExecutionId
@@ -40,25 +45,13 @@ const KNOWN_PROMPT_ERROR_TYPES = new Set([
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */
 const RESOLVING = '__RESOLVING__'
 
+/** Sentinel key for grouping non-asset-supported missing models. */
+const UNSUPPORTED = Symbol('unsupported')
+
 export interface MissingPackGroup {
   packId: string | null
   nodeTypes: MissingNodeType[]
   isResolving: boolean
-}
-
-export interface MissingModelViewModel {
-  name: string
-  representative: MissingModelCandidate
-  referencingNodes: Array<{
-    nodeId: MissingModelCandidate['nodeId']
-    widgetName: string
-  }>
-}
-
-export interface MissingModelGroup {
-  directory: string | null
-  models: MissingModelViewModel[]
-  isAssetSupported: boolean
 }
 
 export interface SwapNodeGroup {
@@ -71,32 +64,6 @@ interface GroupEntry {
   type: 'execution'
   priority: number
   cards: Map<string, ErrorCardData>
-}
-
-function groupCandidatesByName(
-  candidates: MissingModelCandidate[]
-): MissingModelViewModel[] {
-  const map = new Map<string, MissingModelViewModel>()
-  for (const c of candidates) {
-    const existing = map.get(c.name)
-    if (existing) {
-      if (c.nodeId) {
-        existing.referencingNodes.push({
-          nodeId: c.nodeId,
-          widgetName: c.widgetName
-        })
-      }
-    } else {
-      map.set(c.name, {
-        name: c.name,
-        representative: c,
-        referencingNodes: c.nodeId
-          ? [{ nodeId: c.nodeId, widgetName: c.widgetName }]
-          : []
-      })
-    }
-  }
-  return Array.from(map.values())
 }
 
 interface ErrorSearchItem {
@@ -273,6 +240,7 @@ export function useErrorGroups(
   t: (key: string) => string
 ) {
   const executionErrorStore = useExecutionErrorStore()
+  const missingModelStore = useMissingModelStore()
   const canvasStore = useCanvasStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
   const collapseState = reactive<Record<string, boolean>>({})
@@ -604,10 +572,9 @@ export function useErrorGroups(
   /** Groups missing models. Asset-supported models group by directory; others go into a separate group.
    *  Within each group, candidates with the same model name are merged into a single view model. */
   const missingModelGroups = computed<MissingModelGroup[]>(() => {
-    const candidates = executionErrorStore.missingModelsError
+    const candidates = missingModelStore.missingModelsError
     if (!candidates?.length) return []
 
-    const UNSUPPORTED = Symbol('unsupported')
     type GroupKey = string | null | typeof UNSUPPORTED
     const map = new Map<
       GroupKey,
@@ -650,7 +617,7 @@ export function useErrorGroups(
     return [
       {
         type: 'missing_model' as const,
-        title: `Missing Models (${executionErrorStore.missingModelsError?.length ?? 0})`,
+        title: `${t('rightSidePanel.missingModels.missingModelsTitle')} (${missingModelStore.missingModelsError?.length ?? 0})`,
         priority: 2
       }
     ]

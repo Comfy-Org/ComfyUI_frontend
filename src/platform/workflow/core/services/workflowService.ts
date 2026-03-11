@@ -547,6 +547,9 @@ export const useWorkflowService = () => {
       executionErrorStore.surfaceMissingNodes(missingNodeTypes)
     }
 
+    // Missing models are NOT surfaced to the Errors tab here.
+    // On Cloud, the dedicated pipeline in app.ts handles detection and
+    // surfacing via surfaceMissingModels(). OSS uses only this dialog.
     if (missingModels) {
       if (settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')) {
         missingModelsDialog.show(missingModels)

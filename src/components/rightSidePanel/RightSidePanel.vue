@@ -13,6 +13,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
@@ -36,16 +37,15 @@ import TabErrors from './errors/TabErrors.vue'
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
+const missingModelStore = useMissingModelStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
-const {
-  hasAnyError,
-  allErrorExecutionIds,
-  activeMissingNodeGraphIds,
-  activeMissingModelGraphIds
-} = storeToRefs(executionErrorStore)
+const { hasAnyError, allErrorExecutionIds, activeMissingNodeGraphIds } =
+  storeToRefs(executionErrorStore)
+
+const { activeMissingModelGraphIds } = storeToRefs(missingModelStore)
 
 const { findParentGroup } = useGraphHierarchy()
 

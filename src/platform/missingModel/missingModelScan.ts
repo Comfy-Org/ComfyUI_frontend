@@ -1,15 +1,36 @@
 import type {
-  ComfyNode,
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { flattenWorkflowNodes } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { MissingModelCandidate, EmbeddedModelWithSource } from './types'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type {
+  MissingModelCandidate,
+  MissingModelViewModel,
+  EmbeddedModelWithSource
+} from './types'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { st } from '@/i18n'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type {
+  IAssetWidget,
+  IBaseWidget,
+  IComboWidget
+} from '@/lib/litegraph/src/types/widgets'
+import {
+  collectAllNodes,
+  getExecutionIdByNode
+} from '@/utils/graphTraversalUtil'
+
+function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
+  return widget.type === 'combo'
+}
+
+function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
+  return widget.type === 'asset'
+}
 
 export const MODEL_FILE_EXTENSIONS = new Set([
   '.safetensors',
@@ -30,127 +51,112 @@ export function isModelFileName(name: string): boolean {
   return false
 }
 
-interface ComboInputInfo {
-  inputName: string
-  options: (string | number)[]
-}
-
-function getComboInputsFromNodeDef(
-  nodeDef: ComfyNodeDefImpl
-): ComboInputInfo[] {
-  const result: ComboInputInfo[] = []
-  for (const [inputName, inputSpec] of Object.entries(nodeDef.inputs)) {
-    if (isComboInputSpec(inputSpec)) {
-      result.push({ inputName, options: inputSpec.options ?? [] })
-    }
-  }
-  return result
+/**
+ * Resolve the current options list from a combo widget.
+ * Handles array, dictionary, and dynamic function forms.
+ */
+function resolveComboOptions(widget: IComboWidget): string[] {
+  const values = widget.options.values
+  if (!values) return []
+  if (typeof values === 'function') return values(widget)
+  if (Array.isArray(values)) return values
+  return Object.keys(values)
 }
 
 /**
- * Scan all COMBO widgets for model-like values.
+ * Scan all COMBO and asset widgets on configured graph nodes for model-like values.
  *
- * For non-asset-supported nodes, `isMissing` is resolved immediately.
- * For asset-supported nodes, `isMissing` is left `undefined` for later async verification.
+ * Must be called after `graph.configure()` so that widget name/value
+ * mappings are accurate (avoids the array-index guessing of raw JSON).
+ *
+ * In Cloud environments, asset-supported combo widgets are created as
+ * `type: 'asset'` during configure, so both widget types must be scanned.
+ *
+ * For non-asset-supported nodes, `isMissing` is resolved immediately
+ * by checking the widget's dropdown options.
+ * For asset-supported nodes (including asset widgets), `isMissing` is left
+ * `undefined` for later async verification via the asset store.
  */
 export function scanAllModelCandidates(
-  graphData: ComfyWorkflowJSON,
-  getNodeDef: (nodeType: string) => ComfyNodeDefImpl | undefined,
+  rootGraph: LGraph,
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
   getDirectory?: (nodeType: string) => string | undefined
-): { candidates: MissingModelCandidate[]; allNodes: ComfyNode[] } {
-  const allNodes = flattenWorkflowNodes(graphData)
+): MissingModelCandidate[] {
+  const allNodes = collectAllNodes(rootGraph)
   const candidates: MissingModelCandidate[] = []
 
   for (const node of allNodes) {
-    const nodeDef = getNodeDef(node.type)
-    if (!nodeDef) continue
+    if (!node.widgets?.length) continue
 
-    const comboInputs = getComboInputsFromNodeDef(nodeDef)
-    if (!comboInputs.length || !node.widgets_values) continue
+    const executionId = getExecutionIdByNode(rootGraph, node)
+    if (!executionId) continue
 
-    if (Array.isArray(node.widgets_values)) {
-      scanArrayWidgets(
-        node,
-        comboInputs,
-        isAssetSupported,
-        candidates,
-        getDirectory
-      )
-    } else {
-      scanObjectWidgets(
-        node,
-        comboInputs,
-        isAssetSupported,
-        candidates,
-        getDirectory
-      )
+    for (const widget of node.widgets) {
+      let candidate: MissingModelCandidate | null = null
+
+      if (isAssetWidget(widget)) {
+        candidate = scanAssetWidget(node, widget, executionId, getDirectory)
+      } else if (isComboWidget(widget)) {
+        candidate = scanComboWidget(
+          node,
+          widget,
+          executionId,
+          isAssetSupported,
+          getDirectory
+        )
+      }
+
+      if (candidate) candidates.push(candidate)
     }
   }
 
-  return { candidates, allNodes }
+  return candidates
 }
 
-function scanArrayWidgets(
-  node: ComfyNode,
-  comboInputs: ComboInputInfo[],
-  isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-  candidates: MissingModelCandidate[],
-  getDirectory?: (nodeType: string) => string | undefined
-): void {
-  const widgetValues = node.widgets_values as unknown[]
-  const allOptions = new Set<string>()
-  for (const { options } of comboInputs) {
-    for (const opt of options) {
-      if (typeof opt === 'string') allOptions.add(opt)
-    }
-  }
-  const fallbackName = comboInputs[0]?.inputName ?? 'unknown'
+function scanAssetWidget(
+  node: { type: string },
+  widget: IAssetWidget,
+  executionId: string,
+  getDirectory: ((nodeType: string) => string | undefined) | undefined
+): MissingModelCandidate | null {
+  const value = widget.value
+  if (!value.trim()) return null
+  if (!isModelFileName(value)) return null
 
-  for (const val of widgetValues) {
-    if (typeof val !== 'string' || !val.trim()) continue
-    if (!isModelFileName(val)) continue
-
-    const assetFlag = isAssetSupported(node.type, fallbackName)
-    const inOptions = allOptions.has(val)
-
-    candidates.push({
-      nodeId: node.id,
-      nodeType: node.type,
-      widgetName: fallbackName,
-      isAssetSupported: assetFlag,
-      name: val,
-      directory: getDirectory?.(node.type),
-      isMissing: assetFlag ? undefined : !inOptions
-    })
+  return {
+    nodeId: executionId as NodeId,
+    nodeType: node.type,
+    widgetName: widget.name,
+    isAssetSupported: true,
+    name: value,
+    directory: getDirectory?.(node.type),
+    isMissing: undefined
   }
 }
 
-function scanObjectWidgets(
-  node: ComfyNode,
-  comboInputs: ComboInputInfo[],
+function scanComboWidget(
+  node: { type: string },
+  widget: IComboWidget,
+  executionId: string,
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-  candidates: MissingModelCandidate[],
-  getDirectory?: (nodeType: string) => string | undefined
-): void {
-  const widgetValues = node.widgets_values as Record<string, unknown>
-  for (const { inputName, options } of comboInputs) {
-    const value = widgetValues[inputName]
-    if (typeof value !== 'string' || !value.trim()) continue
-    if (!isModelFileName(value)) continue
+  getDirectory: ((nodeType: string) => string | undefined) | undefined
+): MissingModelCandidate | null {
+  const value = widget.value
+  if (typeof value !== 'string' || !value.trim()) return null
+  if (!isModelFileName(value)) return null
 
-    const assetFlag = isAssetSupported(node.type, inputName)
-    const inOptions = options.includes(value)
+  const nodeIsAssetSupported = isAssetSupported(node.type, widget.name)
+  const options = resolveComboOptions(widget)
+  const inOptions = options.includes(value)
 
-    candidates.push({
-      nodeId: node.id,
-      nodeType: node.type,
-      widgetName: inputName,
-      isAssetSupported: assetFlag,
-      name: value,
-      directory: getDirectory?.(node.type),
-      isMissing: assetFlag ? undefined : !inOptions
-    })
+  return {
+    nodeId: executionId as NodeId,
+    nodeType: node.type,
+    widgetName: widget.name,
+    isAssetSupported: nodeIsAssetSupported,
+    name: value,
+    directory: getDirectory?.(node.type),
+    isMissing: nodeIsAssetSupported ? undefined : !inOptions
   }
 }
 
@@ -161,11 +167,11 @@ function scanObjectWidgets(
  */
 export async function enrichWithEmbeddedMetadata(
   candidates: MissingModelCandidate[],
-  allNodes: ComfyNode[],
   graphData: ComfyWorkflowJSON,
   checkModelInstalled: (name: string, directory: string) => Promise<boolean>,
   isAssetSupported?: (nodeType: string, widgetName: string) => boolean
 ): Promise<void> {
+  const allNodes = flattenWorkflowNodes(graphData)
   const embeddedModels = collectEmbeddedModelsWithSource(allNodes, graphData)
 
   const candidatesByName = new Map<string, MissingModelCandidate[]>()
@@ -175,63 +181,64 @@ export async function enrichWithEmbeddedMetadata(
     else candidatesByName.set(c.name, [c])
   }
 
-  const enrichedNames = new Set<string>()
-
+  // Deduplicate embedded models by name + directory
+  const deduped: EmbeddedModelWithSource[] = []
+  const enrichedKeys = new Set<string>()
   for (const model of embeddedModels) {
-    if (enrichedNames.has(model.name)) continue
-    enrichedNames.add(model.name)
-
-    await enrichOrAddCandidate(
-      model,
-      candidatesByName.get(model.name),
-      candidates,
-      checkModelInstalled,
-      isAssetSupported
-    )
+    const dedupeKey = `${model.name}::${model.directory}`
+    if (enrichedKeys.has(dedupeKey)) continue
+    enrichedKeys.add(dedupeKey)
+    deduped.push(model)
   }
-}
 
-async function enrichOrAddCandidate(
-  model: EmbeddedModelWithSource,
-  existing: MissingModelCandidate[] | undefined,
-  candidates: MissingModelCandidate[],
-  checkModelInstalled: (name: string, directory: string) => Promise<boolean>,
-  isAssetSupported?: (nodeType: string, widgetName: string) => boolean
-): Promise<void> {
-  if (existing) {
-    for (const c of existing) {
-      c.directory ??= model.directory
-      c.url ??= model.url
-      c.hash ??= model.hash
-      c.hashType ??= model.hash_type
+  // Phase 1 (sync): enrich existing candidates with embedded metadata
+  const unmatched: EmbeddedModelWithSource[] = []
+  for (const model of deduped) {
+    const existing = candidatesByName.get(model.name)
+    if (existing) {
+      for (const c of existing) {
+        c.directory ??= model.directory
+        c.url ??= model.url
+        c.hash ??= model.hash
+        c.hashType ??= model.hash_type
+      }
+    } else {
+      unmatched.push(model)
     }
-    return
   }
 
-  // Model from embedded metadata not found by COMBO scan
-  const installed = await checkModelInstalled(model.name, model.directory)
-  if (installed) return
+  // Phase 2 (async, parallel): check installation for unmatched models
+  const results = await Promise.all(
+    unmatched.map(async (model) => {
+      const installed = await checkModelInstalled(model.name, model.directory)
+      if (installed) return null
 
-  const assetFlag = isAssetSupported
-    ? isAssetSupported(model.sourceNodeType, model.sourceWidgetName)
-    : false
+      const nodeIsAssetSupported = isAssetSupported
+        ? isAssetSupported(model.sourceNodeType, model.sourceWidgetName)
+        : false
 
-  candidates.push({
-    nodeId: model.sourceNodeId,
-    nodeType: model.sourceNodeType,
-    widgetName: model.sourceWidgetName,
-    isAssetSupported: assetFlag,
-    name: model.name,
-    directory: model.directory,
-    url: model.url,
-    hash: model.hash,
-    hashType: model.hash_type,
-    isMissing: assetFlag ? undefined : true
-  })
+      return {
+        nodeId: model.sourceNodeId,
+        nodeType: model.sourceNodeType,
+        widgetName: model.sourceWidgetName,
+        isAssetSupported: nodeIsAssetSupported,
+        name: model.name,
+        directory: model.directory,
+        url: model.url,
+        hash: model.hash,
+        hashType: model.hash_type,
+        isMissing: nodeIsAssetSupported ? undefined : true
+      } satisfies MissingModelCandidate
+    })
+  )
+
+  for (const result of results) {
+    if (result) candidates.push(result)
+  }
 }
 
 function collectEmbeddedModelsWithSource(
-  allNodes: ComfyNode[],
+  allNodes: ReturnType<typeof flattenWorkflowNodes>,
   graphData: ComfyWorkflowJSON
 ): EmbeddedModelWithSource[] {
   const result: EmbeddedModelWithSource[] = []
@@ -256,7 +263,6 @@ function collectEmbeddedModelsWithSource(
     for (const model of graphData.models) {
       result.push({
         ...model,
-        sourceNodeId: '' as NodeId,
         sourceNodeType: '',
         sourceWidgetName: ''
       })
@@ -266,7 +272,10 @@ function collectEmbeddedModelsWithSource(
   return result
 }
 
-function findWidgetNameForModel(node: ComfyNode, modelName: string): string {
+function findWidgetNameForModel(
+  node: ReturnType<typeof flattenWorkflowNodes>[number],
+  modelName: string
+): string {
   if (Array.isArray(node.widgets_values) || !node.widgets_values) return ''
   const wv = node.widgets_values as Record<string, unknown>
   for (const [key, val] of Object.entries(wv)) {
@@ -275,11 +284,16 @@ function findWidgetNameForModel(node: ComfyNode, modelName: string): string {
   return ''
 }
 
+const MAX_POLL_ATTEMPTS = 300
+const POLL_INTERVAL_MS = 100
+
 /**
  * Resolve `isMissing` for asset-supported candidates by checking the asset store.
+ * Pass an `AbortSignal` to cancel the polling when the workflow changes.
  */
 export async function verifyAssetSupportedCandidates(
-  candidates: MissingModelCandidate[]
+  candidates: MissingModelCandidate[],
+  signal?: AbortSignal
 ): Promise<void> {
   const pendingNodeTypes = new Set<string>()
   for (const c of candidates) {
@@ -297,18 +311,43 @@ export async function verifyAssetSupportedCandidates(
   // must poll isModelLoading + hasMore to wait for all progressive batches.
   await Promise.allSettled(
     [...pendingNodeTypes].map(async (nodeType) => {
-      assetsStore.updateModelsForNodeType(nodeType).catch(() => {})
+      // Fire-and-forget: the poll below monitors completion
+      assetsStore.updateModelsForNodeType(nodeType).catch((err) => {
+        console.warn(
+          `[Missing Model Pipeline] Failed to load assets for ${nodeType}:`,
+          err
+        )
+      })
+
       let attempts = 0
       while (
+        !signal?.aborted &&
         (assetsStore.isModelLoading(nodeType) ||
           assetsStore.hasMore(nodeType)) &&
-        attempts < 300
+        attempts < MAX_POLL_ATTEMPTS
       ) {
-        await new Promise((res) => setTimeout(res, 100))
+        await new Promise((res) => setTimeout(res, POLL_INTERVAL_MS))
         attempts++
+      }
+      if (signal?.aborted) return
+      if (attempts >= MAX_POLL_ATTEMPTS) {
+        console.warn(
+          `[Missing Model Pipeline] Timed out waiting for assets: ${nodeType}`
+        )
+        useToastStore().add({
+          severity: 'warn',
+          summary: st(
+            'rightSidePanel.missingModels.assetLoadTimeout',
+            'Model detection timed out'
+          ),
+          detail: nodeType,
+          life: 5000
+        })
       }
     })
   )
+
+  if (signal?.aborted) return
 
   for (const c of candidates) {
     if (!c.isAssetSupported || c.isMissing !== undefined) continue
@@ -318,7 +357,12 @@ export async function verifyAssetSupportedCandidates(
   }
 }
 
-/** Hash match first, then fuzzy filename match. */
+/** Normalize path separators to forward slash for consistent matching. */
+function normalizePath(path: string): string {
+  return path.replace(/\\/g, '/')
+}
+
+/** Hash match first, then normalized filename match. */
 function isAssetInstalled(
   candidate: MissingModelCandidate,
   assets: AssetItem[]
@@ -328,13 +372,40 @@ function isAssetInstalled(
     if (assets.some((a) => a.asset_hash === candidateHash)) return true
   }
 
-  const filenames = assets.map((a) => getAssetFilename(a))
-  return filenames.some(
-    (f) =>
-      f === candidate.name ||
-      f.endsWith('/' + candidate.name) ||
-      candidate.name.endsWith('/' + f) ||
-      f.endsWith('\\' + candidate.name) ||
-      candidate.name.endsWith('\\' + f)
-  )
+  const normalizedName = normalizePath(candidate.name)
+  return assets.some((a) => {
+    const f = normalizePath(getAssetFilename(a))
+    return (
+      f === normalizedName ||
+      f.endsWith('/' + normalizedName) ||
+      normalizedName.endsWith('/' + f)
+    )
+  })
+}
+
+/** Groups missing model candidates by name, merging referencing nodes. */
+export function groupCandidatesByName(
+  candidates: MissingModelCandidate[]
+): MissingModelViewModel[] {
+  const map = new Map<string, MissingModelViewModel>()
+  for (const c of candidates) {
+    const existing = map.get(c.name)
+    if (existing) {
+      if (c.nodeId) {
+        existing.referencingNodes.push({
+          nodeId: c.nodeId,
+          widgetName: c.widgetName
+        })
+      }
+    } else {
+      map.set(c.name, {
+        name: c.name,
+        representative: c,
+        referencingNodes: c.nodeId
+          ? [{ nodeId: c.nodeId, widgetName: c.widgetName }]
+          : []
+      })
+    }
+  }
+  return Array.from(map.values())
 }

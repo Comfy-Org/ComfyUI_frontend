@@ -47,6 +47,13 @@ vi.mock('@/utils/executableGroupNodeDto', () => ({
   isGroupNode: vi.fn(() => false)
 }))
 
+vi.mock(
+  '@/platform/missingModel/composables/useMissingModelInteractions',
+  () => ({
+    clearMissingModelState: vi.fn()
+  })
+)
+
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorGroups } from './useErrorGroups'
 

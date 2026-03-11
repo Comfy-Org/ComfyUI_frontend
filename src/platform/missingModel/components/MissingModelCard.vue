@@ -11,11 +11,9 @@
         <p
           class="min-w-0 flex-1 truncate text-sm font-medium"
           :class="
-            !group.isAssetSupported
+            !group.isAssetSupported || group.directory === null
               ? 'text-warning-background'
-              : group.directory === null
-                ? 'text-warning-background'
-                : 'text-destructive-background-hover'
+              : 'text-destructive-background-hover'
           "
         >
           <span v-if="!group.isAssetSupported" class="text-warning-background">
@@ -23,7 +21,10 @@
             ({{ group.models.length }})
           </span>
           <span v-else>
-            {{ group.directory ?? 'Unknown' }}
+            {{
+              group.directory ??
+              t('rightSidePanel.missingModels.unknownCategory')
+            }}
             ({{ group.models.length }})
           </span>
         </p>
@@ -35,6 +36,7 @@
         class="flex items-start gap-1.5 px-0.5 py-1 pl-2"
       >
         <i
+          aria-hidden="true"
           class="mt-0.5 icon-[lucide--info] size-3.5 shrink-0 text-muted-foreground"
         />
         <span class="text-[11px] leading-tight text-muted-foreground">
@@ -60,10 +62,10 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { MissingModelGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 
-defineProps<{
+const { missingModelGroups, showNodeIdBadge } = defineProps<{
   missingModelGroups: MissingModelGroup[]
   showNodeIdBadge: boolean
 }>()

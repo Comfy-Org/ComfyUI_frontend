@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 import type {
   MissingModelGroup,
   MissingModelViewModel
-} from '@/components/rightSidePanel/errors/useErrorGroups'
+} from '@/platform/missingModel/types'
 
 vi.mock('./MissingModelRow.vue', () => ({
   default: {
@@ -97,11 +97,11 @@ describe('MissingModelCard', () => {
       expect(wrapper.text()).toContain('loras')
     })
 
-    it('renders "Unknown" when directory is null', () => {
+    it('renders translated unknown category when directory is null', () => {
       const wrapper = mountCard({
         missingModelGroups: [makeGroup({ directory: null })]
       })
-      expect(wrapper.text()).toContain('Unknown')
+      expect(wrapper.text()).toContain('unknownCategory')
     })
 
     it('renders model count in category header', () => {

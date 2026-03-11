@@ -1,4 +1,3 @@
-import { reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -11,9 +10,7 @@ import {
 import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
 import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
 import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
-import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
-import type { SelectOption } from '@/components/input/types'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -34,33 +31,16 @@ const MODEL_TYPE_TAGS = [
   'diffusion_models'
 ] as const
 
-// Module-level shared state (survives component re-mounts)
-// Expand state per model (default collapsed, like MissingPackGroupRow)
-const modelExpandState = reactive<Record<string, boolean>>({})
+const URL_DEBOUNCE_MS = 800
 
 export function getModelStateKey(
   modelName: string,
   directory: string | null,
-  isUnsupported: boolean
+  isAssetSupported: boolean
 ): string {
-  const prefix = isUnsupported ? 'unsup' : 'sup'
+  const prefix = isAssetSupported ? 'supported' : 'unsupported'
   return `${prefix}::${directory ?? ''}::${modelName}`
 }
-
-const selectedLibraryModel = reactive<Record<string, string>>({})
-
-const importTaskIds = reactive<Record<string, string>>({})
-
-const importCategoryMismatch = reactive<Record<string, string>>({})
-
-const urlInputs = reactive<Record<string, string>>({})
-const urlMetadata = reactive<Record<string, AssetMetadata | null>>({})
-const urlFetching = reactive<Record<string, boolean>>({})
-const urlErrors = reactive<Record<string, string>>({})
-const urlImporting = reactive<Record<string, boolean>>({})
-const urlDebounceTimers = reactive<
-  Record<string, ReturnType<typeof setTimeout>>
->({})
 
 function getNodeDisplayLabel(
   nodeId: string | number,
@@ -79,7 +59,7 @@ function getNodeDisplayLabel(
 function getModelComboWidget(
   model: MissingModelCandidate
 ): { node: LGraphNode; widget: IBaseWidget } | null {
-  if (!model.nodeId) return null
+  if (model.nodeId == null) return null
 
   const graph = app.rootGraph
   if (!graph) return null
@@ -103,21 +83,23 @@ function getComboValue(model: MissingModelCandidate): string | undefined {
 
 export function useMissingModelInteractions() {
   const { t } = useI18n()
-  const executionErrorStore = useExecutionErrorStore()
+  const store = useMissingModelStore()
   const assetsStore = useAssetsStore()
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
 
   function toggleModelExpand(key: string) {
-    modelExpandState[key] = !isModelExpanded(key)
+    store.modelExpandState[key] = !isModelExpanded(key)
   }
 
   function isModelExpanded(key: string): boolean {
-    return modelExpandState[key] ?? false
+    return store.modelExpandState[key] ?? false
   }
 
   /** Load options from asset store for asset-supported nodes, or from widget values. */
-  function getComboOptions(model: MissingModelCandidate): SelectOption[] {
+  function getComboOptions(
+    model: MissingModelCandidate
+  ): { name: string; value: string }[] {
     if (model.isAssetSupported && model.nodeType) {
       const assets = assetsStore.getAssets(model.nodeType) ?? []
       return assets.map((asset) => ({
@@ -135,13 +117,13 @@ export function useMissingModelInteractions() {
 
   function handleComboSelect(key: string, value: string | undefined) {
     if (value) {
-      selectedLibraryModel[key] = value
+      store.selectedLibraryModel[key] = value
     }
   }
 
   function isCheckReady(key: string): boolean {
-    if (!selectedLibraryModel[key]) return false
-    if (importCategoryMismatch[key]) return false
+    if (!store.selectedLibraryModel[key]) return false
+    if (store.importCategoryMismatch[key]) return false
 
     const status = getDownloadStatus(key)
     if (
@@ -154,19 +136,22 @@ export function useMissingModelInteractions() {
   }
 
   function cancelLibrarySelect(key: string) {
-    delete selectedLibraryModel[key]
-    delete importCategoryMismatch[key]
+    delete store.selectedLibraryModel[key]
+    delete store.importCategoryMismatch[key]
   }
 
   /**
    * Apply the selected library model to all referencing nodes and clear errors.
+   * Only removes the specific model name from the error list, preserving
+   * other missing models on the same nodes.
    */
   function confirmLibrarySelect(
     key: string,
+    modelName: string,
     referencingNodes: Array<{ nodeId: string | number; widgetName: string }>,
     directory: string | null
   ) {
-    const value = selectedLibraryModel[key]
+    const value = store.selectedLibraryModel[key]
     if (!value) return
 
     const graph = app.rootGraph
@@ -175,12 +160,19 @@ export function useMissingModelInteractions() {
     // Refresh model caches so the widget dropdown shows the new model
     if (directory) {
       const providers = modelToNodeStore.getAllNodeProviders(directory)
-      Promise.allSettled(
+      void Promise.allSettled(
         providers.map((provider) =>
           assetsStore.updateModelsForNodeType(provider.nodeDef.name)
         )
-      ).catch(() => {
-        // Silently ignore refresh failures
+      ).then((results) => {
+        for (const r of results) {
+          if (r.status === 'rejected') {
+            console.warn(
+              '[Missing Model] Failed to refresh model cache:',
+              r.reason
+            )
+          }
+        }
       })
     }
 
@@ -196,65 +188,70 @@ export function useMissingModelInteractions() {
     }
 
     // Clean up
-    delete selectedLibraryModel[key]
+    delete store.selectedLibraryModel[key]
 
-    // Remove only the specific candidates that belong to this group
+    // Remove only the resolved model from error list, preserving
+    // other missing models on the same nodes
     const nodeIdSet = new Set(referencingNodes.map((ref) => String(ref.nodeId)))
-    executionErrorStore.removeMissingModelsByNodeIds(nodeIdSet)
+    store.removeMissingModelByNameOnNodes(modelName, nodeIdSet)
   }
 
   function handleUrlInput(key: string, value: string) {
-    urlInputs[key] = value
+    store.urlInputs[key] = value
 
     // Clear previous state
-    delete urlMetadata[key]
-    delete urlErrors[key]
-    urlFetching[key] = false
+    delete store.urlMetadata[key]
+    delete store.urlErrors[key]
+    store.urlFetching[key] = false
 
     // Clear previous debounce timer
-    if (urlDebounceTimers[key]) {
-      clearTimeout(urlDebounceTimers[key])
-      delete urlDebounceTimers[key]
-    }
+    store.clearDebounceTimer(key)
 
     const trimmed = value.trim()
     if (!trimmed) return
 
-    // Debounce: wait 800ms after last keystroke
-    urlDebounceTimers[key] = setTimeout(() => {
-      void fetchUrlMetadata(key, trimmed)
-    }, 800)
+    store.setDebounceTimer(
+      key,
+      () => {
+        void fetchUrlMetadata(key, trimmed)
+      },
+      URL_DEBOUNCE_MS
+    )
   }
 
   async function fetchUrlMetadata(key: string, url: string) {
     const source = importSources.find((s) => validateSourceUrl(url, s))
     if (!source) {
-      urlErrors[key] = t('rightSidePanel.missingModels.unsupportedUrl')
+      store.urlErrors[key] = t('rightSidePanel.missingModels.unsupportedUrl')
       return
     }
 
-    urlFetching[key] = true
-    delete urlErrors[key]
+    store.urlFetching[key] = true
+    delete store.urlErrors[key]
 
     try {
       const metadata = await assetService.getAssetMetadata(url)
 
       if (metadata.filename) {
         try {
-          metadata.filename = decodeURIComponent(metadata.filename)
+          const decoded = decodeURIComponent(metadata.filename)
+          // Reject path traversal patterns
+          if (!decoded.includes('..') && !decoded.includes('/')) {
+            metadata.filename = decoded
+          }
         } catch {
           /* keep original */
         }
       }
 
-      urlMetadata[key] = metadata
+      store.urlMetadata[key] = metadata
     } catch (error) {
-      urlErrors[key] =
+      store.urlErrors[key] =
         error instanceof Error
           ? error.message
           : t('rightSidePanel.missingModels.metadataFetchFailed')
     } finally {
-      urlFetching[key] = false
+      store.urlFetching[key] = false
     }
   }
 
@@ -264,7 +261,7 @@ export function useMissingModelInteractions() {
   ): string | null {
     if (!groupDirectory) return null
 
-    const metadata = urlMetadata[key]
+    const metadata = store.urlMetadata[key]
     if (!metadata?.tags?.length) return null
 
     const detectedType = metadata.tags.find((tag) =>
@@ -279,25 +276,59 @@ export function useMissingModelInteractions() {
   }
 
   function getDownloadStatus(key: string) {
-    const taskId = importTaskIds[key]
+    const taskId = store.importTaskIds[key]
     if (!taskId) return null
     return (
       assetDownloadStore.downloadList.find((d) => d.taskId === taskId) ?? null
     )
   }
 
+  function handleAsyncPending(
+    key: string,
+    taskId: string,
+    modelType: string | undefined,
+    filename: string
+  ) {
+    store.importTaskIds[key] = taskId
+    if (modelType) {
+      assetDownloadStore.trackDownload(taskId, modelType, filename)
+    }
+  }
+
+  function handleAsyncCompleted(modelType: string | undefined) {
+    // Task completed immediately — no WebSocket event will fire,
+    // so refresh the asset cache here.
+    if (modelType) {
+      assetsStore.invalidateModelsForCategory(modelType)
+      void assetsStore.updateModelsForTag(modelType)
+    }
+  }
+
+  function handleSyncResult(
+    key: string,
+    tags: string[],
+    modelType: string | undefined
+  ) {
+    const existingCategory = tags.find((tag) =>
+      MODEL_TYPE_TAGS.includes(tag as (typeof MODEL_TYPE_TAGS)[number])
+    )
+    if (existingCategory && modelType && existingCategory !== modelType) {
+      store.importCategoryMismatch[key] = existingCategory
+    }
+  }
+
   async function handleImport(key: string, groupDirectory: string | null) {
-    const metadata = urlMetadata[key]
+    const metadata = store.urlMetadata[key]
     if (!metadata) return
 
-    const url = urlInputs[key]?.trim()
+    const url = store.urlInputs[key]?.trim()
     if (!url) return
 
     const source = importSources.find((s) => validateSourceUrl(url, s))
     if (!source) return
 
-    urlImporting[key] = true
-    delete urlErrors[key]
+    store.urlImporting[key] = true
+    delete store.urlErrors[key]
 
     try {
       const modelType = groupDirectory || undefined
@@ -315,53 +346,25 @@ export function useMissingModelInteractions() {
       })
 
       if (result.type === 'async' && result.task.status !== 'completed') {
-        const taskId = result.task.task_id
-        importTaskIds[key] = taskId
-
-        if (modelType) {
-          assetDownloadStore.trackDownload(taskId, modelType, filename)
-        }
-      } else if (
-        result.type === 'async' &&
-        result.task.status === 'completed'
-      ) {
-        // Task completed immediately — no WebSocket event will fire,
-        // so refresh the asset cache here.
-        if (modelType) {
-          assetsStore.invalidateModelsForCategory(modelType)
-          void assetsStore.updateModelsForTag(modelType)
-        }
+        handleAsyncPending(key, result.task.task_id, modelType, filename)
+      } else if (result.type === 'async') {
+        handleAsyncCompleted(modelType)
       } else if (result.type === 'sync') {
-        const existingTags = result.asset.tags ?? []
-        const existingCategory = existingTags.find((tag) =>
-          MODEL_TYPE_TAGS.includes(tag as (typeof MODEL_TYPE_TAGS)[number])
-        )
-        if (existingCategory && modelType && existingCategory !== modelType) {
-          importCategoryMismatch[key] = existingCategory
-        }
+        handleSyncResult(key, result.asset.tags ?? [], modelType)
       }
 
-      selectedLibraryModel[key] = filename
+      store.selectedLibraryModel[key] = filename
     } catch (error) {
-      urlErrors[key] =
+      store.urlErrors[key] =
         error instanceof Error
           ? error.message
-          : t('rightSidePanel.missingModels.metadataFetchFailed')
+          : t('rightSidePanel.missingModels.importFailed')
     } finally {
-      urlImporting[key] = false
+      store.urlImporting[key] = false
     }
   }
 
   return {
-    modelExpandState,
-    selectedLibraryModel,
-    importCategoryMismatch,
-    urlInputs,
-    urlMetadata,
-    urlFetching,
-    urlErrors,
-    urlImporting,
-
     toggleModelExpand,
     isModelExpanded,
     getNodeDisplayLabel,

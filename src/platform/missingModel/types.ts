@@ -8,7 +8,8 @@ import type {
  * The same model name may appear multiple times across different nodes.
  */
 export interface MissingModelCandidate {
-  nodeId: NodeId
+  /** Undefined for workflow-level models not tied to a specific node. */
+  nodeId?: NodeId
   nodeType: string
   widgetName: string
   isAssetSupported: boolean
@@ -28,7 +29,25 @@ export interface MissingModelCandidate {
 }
 
 export interface EmbeddedModelWithSource extends ModelFile {
-  sourceNodeId: NodeId
+  /** Undefined for workflow-level models not tied to a specific node. */
+  sourceNodeId?: NodeId
   sourceNodeType: string
   sourceWidgetName: string
+}
+
+/** View model grouping multiple candidate references under a single model name. */
+export interface MissingModelViewModel {
+  name: string
+  representative: MissingModelCandidate
+  referencingNodes: Array<{
+    nodeId: NodeId
+    widgetName: string
+  }>
+}
+
+/** A category group of missing models sharing the same directory. */
+export interface MissingModelGroup {
+  directory: string | null
+  models: MissingModelViewModel[]
+  isAssetSupported: boolean
 }

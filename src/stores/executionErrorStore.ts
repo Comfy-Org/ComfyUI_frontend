@@ -13,6 +13,7 @@ import type {
   PromptError
 } from '@/schemas/apiSchema'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -76,11 +77,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
 
+  const missingModelStore = useMissingModelStore()
+
   const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
   const lastPromptError = ref<PromptError | null>(null)
   const missingNodesError = ref<MissingNodesError | null>(null)
-  const missingModelsError = ref<MissingModelCandidate[] | null>(null)
 
   const isErrorOverlayOpen = ref(false)
 
@@ -92,14 +94,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear all error state. Called at execution start. */
+  /** Clear all error state. Called at execution start and workflow changes. */
   function clearAllErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
     lastNodeErrors.value = null
     missingNodesError.value = null
-    missingModelsError.value = null
     isErrorOverlayOpen.value = false
+    missingModelStore.clearMissingModels()
   }
 
   /** Clear only prompt-level errors. Called during resetExecutionState. */
@@ -117,31 +119,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** Set missing models and open the error overlay if the Errors tab is enabled. */
   function surfaceMissingModels(models: MissingModelCandidate[]) {
-    missingModelsError.value = models.length ? models : null
+    missingModelStore.setMissingModels(models)
     if (
       models.length &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
     ) {
       showErrorOverlay()
     }
-  }
-
-  /** Remove a single missing model by filename (e.g. after download completes). */
-  function removeMissingModelByName(name: string) {
-    if (!missingModelsError.value) return
-    missingModelsError.value = missingModelsError.value.filter(
-      (m) => m.name !== name
-    )
-    if (!missingModelsError.value.length) missingModelsError.value = null
-  }
-
-  /** Remove missing model entries whose nodeId is in the given set. */
-  function removeMissingModelsByNodeIds(nodeIds: Set<string>) {
-    if (!missingModelsError.value) return
-    missingModelsError.value = missingModelsError.value.filter(
-      (m) => !m.nodeId || !nodeIds.has(String(m.nodeId))
-    )
-    if (!missingModelsError.value.length) missingModelsError.value = null
   }
 
   /** Remove specific node types from the missing nodes list (e.g. after replacement). */
@@ -212,15 +196,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   const hasMissingNodes = computed(() => !!missingNodesError.value)
 
-  const hasMissingModels = computed(() => !!missingModelsError.value?.length)
-
   const hasAnyError = computed(
     () =>
       hasExecutionError.value ||
       hasPromptError.value ||
       hasNodeError.value ||
       hasMissingNodes.value ||
-      hasMissingModels.value
+      missingModelStore.hasMissingModels
   )
 
   const allErrorExecutionIds = computed<string[]>(() => {
@@ -252,44 +234,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   const missingNodeCount = computed(() => (missingNodesError.value ? 1 : 0))
 
-  const missingModelCount = computed(
-    () => missingModelsError.value?.length ?? 0
-  )
-
   const totalErrorCount = computed(
     () =>
       promptErrorCount.value +
       nodeErrorCount.value +
       executionErrorCount.value +
       missingNodeCount.value +
-      missingModelCount.value
-  )
-
-  const missingModelNodeIds = computed<Set<string>>(() => {
-    const ids = new Set<string>()
-    if (!missingModelsError.value) return ids
-    for (const m of missingModelsError.value) {
-      if (m.nodeId) ids.add(String(m.nodeId))
-    }
-    return ids
-  })
-
-  /**
-   * Set of all execution ID prefixes derived from missing model node IDs,
-   * including the missing model nodes themselves.
-   *
-   * Example: missing model on node "65:70:63" → Set { "65", "65:70", "65:70:63" }
-   */
-  const missingModelAncestorExecutionIds = computed<Set<NodeExecutionId>>(
-    () => {
-      const ids = new Set<NodeExecutionId>()
-      for (const nodeId of missingModelNodeIds.value) {
-        for (const id of getAncestorExecutionIds(nodeId)) {
-          ids.add(id)
-        }
-      }
-      return ids
-    }
+      missingModelStore.missingModelCount
   )
 
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
@@ -349,22 +300,6 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const activeGraph = canvasStore.currentGraph ?? app.rootGraph
 
     for (const executionId of missingAncestorExecutionIds.value) {
-      const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
-      if (graphNode?.graph === activeGraph) {
-        ids.add(String(graphNode.id))
-      }
-    }
-
-    return ids
-  })
-
-  const activeMissingModelGraphIds = computed<Set<string>>(() => {
-    const ids = new Set<string>()
-    if (!app.rootGraph) return ids
-
-    const activeGraph = canvasStore.currentGraph ?? app.rootGraph
-
-    for (const executionId of missingModelAncestorExecutionIds.value) {
       const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
       if (graphNode?.graph === activeGraph) {
         ids.add(String(graphNode.id))
@@ -444,25 +379,6 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return missingAncestorExecutionIds.value.has(execId)
   }
 
-  /** True if the node has a missing model inside it at any nesting depth. */
-  function isContainerWithMissingModel(node: LGraphNode): boolean {
-    if (!app.rootGraph) return false
-    const execId = getExecutionIdByNode(app.rootGraph, node)
-    if (!execId) return false
-    return missingModelAncestorExecutionIds.value.has(execId)
-  }
-
-  function hasMissingModelOnNode(nodeLocatorId: string): boolean {
-    return missingModelNodeIds.value.has(nodeLocatorId)
-  }
-
-  function isWidgetMissingModel(nodeId: string, widgetName: string): boolean {
-    if (!missingModelsError.value) return false
-    return missingModelsError.value.some(
-      (m) => String(m.nodeId) === nodeId && m.widgetName === widgetName
-    )
-  }
-
   watch(lastNodeErrors, () => {
     if (!app.isGraphReady) return
     const rootGraph = app.rootGraph
@@ -484,7 +400,6 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     lastExecutionError,
     lastPromptError,
     missingNodesError,
-    missingModelsError,
 
     // Clearing
     clearAllErrors,
@@ -500,32 +415,25 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     hasPromptError,
     hasNodeError,
     hasMissingNodes,
-    hasMissingModels,
     hasAnyError,
     allErrorExecutionIds,
     totalErrorCount,
     lastExecutionErrorNodeId,
     activeGraphErrorNodeIds,
     activeMissingNodeGraphIds,
-    activeMissingModelGraphIds,
 
     // Missing node actions
     setMissingNodeTypes,
     surfaceMissingNodes,
     removeMissingNodesByType,
 
-    // Missing model actions
+    // Missing model coordination (delegates to missingModelStore)
     surfaceMissingModels,
-    removeMissingModelByName,
-    removeMissingModelsByNodeIds,
 
     // Lookup helpers
     getNodeErrors,
     slotHasError,
     isContainerWithInternalError,
-    isContainerWithMissingNode,
-    isContainerWithMissingModel,
-    hasMissingModelOnNode,
-    isWidgetMissingModel
+    isContainerWithMissingNode
   }
 })
