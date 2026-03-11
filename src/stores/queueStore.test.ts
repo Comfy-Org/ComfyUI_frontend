@@ -191,6 +191,23 @@ describe('TaskItemImpl', () => {
     })
   })
 
+  it('should produce no previewable outputs for text-only preview_output', () => {
+    const job: JobListItem = {
+      ...createHistoryJob(0, 'text-job'),
+      preview_output: {
+        nodeId: '5',
+        mediaType: 'text'
+      } satisfies JobListItem['preview_output']
+    }
+
+    const task = new TaskItemImpl(job)
+
+    expect(task.flatOutputs).toHaveLength(1)
+    expect(task.flatOutputs[0].filename).toBe('')
+    expect(task.previewableOutputs).toHaveLength(0)
+    expect(task.previewOutput).toBeUndefined()
+  })
+
   describe('error extraction getters', () => {
     it('errorMessage returns undefined when no execution_error', () => {
       const job = createHistoryJob(0, 'job-id')
