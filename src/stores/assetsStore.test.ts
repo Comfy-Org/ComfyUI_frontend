@@ -72,6 +72,8 @@ vi.mock('@/stores/modelToNodeStore', () => ({
 }))
 
 // Mock TaskItemImpl
+const PREVIEWABLE_MEDIA_TYPES = new Set(['images', 'video', 'audio'])
+
 vi.mock('@/stores/queueStore', () => ({
   TaskItemImpl: class {
     public flatOutputs: Array<{
@@ -91,19 +93,28 @@ vi.mock('@/stores/queueStore', () => ({
         }
       | undefined
     public jobId: string
+    public outputsCount: number | null
 
     constructor(public job: JobListItem) {
       this.jobId = job.id
-      this.flatOutputs = [
-        {
+      this.outputsCount = job.outputs_count ?? null
+      const preview = job.preview_output
+      const isPreviewable =
+        !!preview?.filename && PREVIEWABLE_MEDIA_TYPES.has(preview.mediaType)
+      if (preview && isPreviewable) {
+        const item = {
           supportsPreview: true,
-          filename: 'test.png',
-          subfolder: '',
-          type: 'output',
-          url: 'http://test.com/test.png'
+          filename: preview.filename!,
+          subfolder: preview.subfolder ?? '',
+          type: preview.type ?? 'output',
+          url: `http://test.com/${preview.filename}`
         }
-      ]
-      this.previewOutput = this.flatOutputs[0]
+        this.flatOutputs = [item]
+        this.previewOutput = item
+      } else {
+        this.flatOutputs = []
+        this.previewOutput = undefined
+      }
     }
 
     get previewableOutputs() {
@@ -199,6 +210,33 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(store.historyAssets).toHaveLength(0)
       expect(store.historyError).toBe(error)
       expect(store.historyLoading).toBe(false)
+    })
+
+    it('should skip text-only jobs without breaking sibling image jobs', async () => {
+      const mockHistory: JobListItem[] = [
+        createMockJobItem(0),
+        {
+          id: 'text-only-job',
+          status: 'completed',
+          create_time: 2000,
+          priority: 2000,
+          preview_output: {
+            content: 'some generated text',
+            nodeId: '5',
+            mediaType: 'text'
+          } satisfies JobListItem['preview_output']
+        },
+        createMockJobItem(2)
+      ]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(2)
+      expect(store.historyAssets.map((a) => a.id)).toEqual([
+        'prompt_0',
+        'prompt_2'
+      ])
     })
   })
 
