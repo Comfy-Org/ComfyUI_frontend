@@ -1051,6 +1051,8 @@
     "logoProviderSeparator": " & "
   },
   "graphCanvasMenu": {
+    "canvasMode": "Canvas Mode",
+    "canvasToolbar": "Canvas Toolbar",
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",
     "resetView": "Reset View",
