@@ -149,18 +149,18 @@ function scanComboWidget(
   }
 }
 
-/** Enrich candidates with embedded workflow metadata and add unmatched embedded models. */
 export async function enrichWithEmbeddedMetadata(
-  candidates: MissingModelCandidate[],
+  candidates: readonly MissingModelCandidate[],
   graphData: ComfyWorkflowJSON,
   checkModelInstalled: (name: string, directory: string) => Promise<boolean>,
   isAssetSupported?: (nodeType: string, widgetName: string) => boolean
-): Promise<void> {
+): Promise<MissingModelCandidate[]> {
   const allNodes = flattenWorkflowNodes(graphData)
   const embeddedModels = collectEmbeddedModelsWithSource(allNodes, graphData)
 
+  const enriched = candidates.map((c) => ({ ...c }))
   const candidatesByName = new Map<string, MissingModelCandidate[]>()
-  for (const c of candidates) {
+  for (const c of enriched) {
     const list = candidatesByName.get(c.name)
     if (list) list.push(c)
     else candidatesByName.set(c.name, [c])
@@ -214,20 +214,18 @@ export async function enrichWithEmbeddedMetadata(
     })
   )
 
-  const results = settled.map((r) => {
+  for (const r of settled) {
     if (r.status === 'rejected') {
       console.warn(
         '[Missing Model Pipeline] checkModelInstalled failed:',
         r.reason
       )
-      return null
+      continue
     }
-    return r.value
-  })
-
-  for (const result of results) {
-    if (result) candidates.push(result)
+    if (r.value) enriched.push(r.value)
   }
+
+  return enriched
 }
 
 function collectEmbeddedModelsWithSource(
@@ -280,10 +278,15 @@ function findWidgetNameForModel(
   return ''
 }
 
-/** Resolve `isMissing` for asset-supported candidates by awaiting asset store loads. */
+interface AssetVerifier {
+  updateModelsForNodeType: (nodeType: string) => Promise<void>
+  getAssets: (nodeType: string) => AssetItem[] | undefined
+}
+
 export async function verifyAssetSupportedCandidates(
   candidates: MissingModelCandidate[],
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  assetsStore?: AssetVerifier
 ): Promise<void> {
   const pendingNodeTypes = new Set<string>()
   for (const c of candidates) {
@@ -294,14 +297,13 @@ export async function verifyAssetSupportedCandidates(
 
   if (pendingNodeTypes.size === 0) return
 
-  // Dynamic import to avoid circular dependency
-  const { useAssetsStore } = await import('@/stores/assetsStore')
-  const assetsStore = useAssetsStore()
+  const store =
+    assetsStore ?? (await import('@/stores/assetsStore')).useAssetsStore()
 
   await Promise.allSettled(
     [...pendingNodeTypes].map(async (nodeType) => {
       try {
-        await assetsStore.updateModelsForNodeType(nodeType)
+        await store.updateModelsForNodeType(nodeType)
       } catch (err) {
         console.warn(
           `[Missing Model Pipeline] Failed to load assets for ${nodeType}:`,
@@ -316,7 +318,7 @@ export async function verifyAssetSupportedCandidates(
   for (const c of candidates) {
     if (!c.isAssetSupported || c.isMissing !== undefined) continue
 
-    const assets = assetsStore.getAssets(c.nodeType) ?? []
+    const assets = store.getAssets(c.nodeType) ?? []
     c.isMissing = !isAssetInstalled(c, assets)
   }
 }
@@ -337,11 +339,7 @@ function isAssetInstalled(
   const normalizedName = normalizePath(candidate.name)
   return assets.some((a) => {
     const f = normalizePath(getAssetFilename(a))
-    return (
-      f === normalizedName ||
-      f.endsWith('/' + normalizedName) ||
-      normalizedName.endsWith('/' + f)
-    )
+    return f === normalizedName || f.endsWith('/' + normalizedName)
   })
 }
 

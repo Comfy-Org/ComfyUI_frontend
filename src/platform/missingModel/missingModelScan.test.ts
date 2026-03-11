@@ -443,11 +443,15 @@ describe('enrichWithEmbeddedMetadata', () => {
       ]
     } as unknown as ComfyWorkflowJSON
 
-    await enrichWithEmbeddedMetadata(candidates, graphData, alwaysMissing)
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
 
-    expect(candidates[0].url).toBe('https://example.com/model_a')
-    expect(candidates[0].directory).toBe('checkpoints')
-    expect(candidates[0].hash).toBe('abc123')
+    expect(result[0].url).toBe('https://example.com/model_a')
+    expect(result[0].directory).toBe('checkpoints')
+    expect(result[0].hash).toBe('abc123')
   })
 
   it('does not overwrite existing fields on candidate', async () => {
@@ -487,11 +491,53 @@ describe('enrichWithEmbeddedMetadata', () => {
       ]
     } as unknown as ComfyWorkflowJSON
 
-    await enrichWithEmbeddedMetadata(candidates, graphData, alwaysMissing)
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
 
     // ??= should not overwrite existing values
-    expect(candidates[0].url).toBe('https://existing.com')
-    expect(candidates[0].directory).toBe('existing_dir')
+    expect(result[0].url).toBe('https://existing.com')
+    expect(result[0].directory).toBe('existing_dir')
+  })
+
+  it('does not mutate the original candidates array', async () => {
+    const candidates = [makeCandidate('model_a.safetensors')]
+    const graphData = {
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {},
+          widgets_values: { ckpt_name: 'model_a.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'model_a.safetensors',
+          url: 'https://example.com/model_a',
+          directory: 'checkpoints'
+        }
+      ]
+    } as unknown as ComfyWorkflowJSON
+
+    const originalUrl = candidates[0].url
+    await enrichWithEmbeddedMetadata(candidates, graphData, alwaysMissing)
+
+    expect(candidates[0].url).toBe(originalUrl)
   })
 
   it('adds new candidate for embedded model not found by COMBO scan', async () => {
@@ -526,11 +572,15 @@ describe('enrichWithEmbeddedMetadata', () => {
       ]
     } as unknown as ComfyWorkflowJSON
 
-    await enrichWithEmbeddedMetadata(candidates, graphData, alwaysMissing)
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
 
-    expect(candidates).toHaveLength(1)
-    expect(candidates[0].name).toBe('model_a.safetensors')
-    expect(candidates[0].isMissing).toBe(true)
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('model_a.safetensors')
+    expect(result[0].isMissing).toBe(true)
   })
 
   it('does not add candidate when model is already installed', async () => {
@@ -553,9 +603,13 @@ describe('enrichWithEmbeddedMetadata', () => {
       ]
     } as unknown as ComfyWorkflowJSON
 
-    await enrichWithEmbeddedMetadata(candidates, graphData, alwaysInstalled)
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysInstalled
+    )
 
-    expect(candidates).toHaveLength(0)
+    expect(result).toHaveLength(0)
   })
 })
 
@@ -628,11 +682,15 @@ describe('OSS missing model detection (non-Cloud path)', () => {
       ]
     } as unknown as ComfyWorkflowJSON
 
-    await enrichWithEmbeddedMetadata(candidates, graphData, alwaysMissing)
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
 
-    expect(candidates).toHaveLength(2)
-    expect(candidates.every((c) => c.isMissing === true)).toBe(true)
-    expect(candidates.map((c) => c.name)).toEqual([
+    expect(result).toHaveLength(2)
+    expect(result.every((c) => c.isMissing === true)).toBe(true)
+    expect(result.map((c) => c.name)).toEqual([
       'sd_xl_base_1.0.safetensors',
       'detail_enhancer.safetensors'
     ])
@@ -672,16 +730,18 @@ describe('OSS missing model detection (non-Cloud path)', () => {
       ]
     } as unknown as ComfyWorkflowJSON
 
-    await enrichWithEmbeddedMetadata(candidates, graphData, alwaysMissing)
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
 
-    expect(candidates).toHaveLength(1)
-    expect(candidates[0].isMissing).toBe(true)
-    expect(candidates[0].isAssetSupported).toBe(false)
+    expect(result).toHaveLength(1)
+    expect(result[0].isMissing).toBe(true)
+    expect(result[0].isAssetSupported).toBe(false)
   })
 
   it('enrichWithEmbeddedMetadata correctly filters for dialog: only isMissing=true with url', async () => {
-    // Verifies the downstream filter used in app.ts:
-    // candidates.filter(c => c.isMissing === true && c.url)
     const candidates: MissingModelCandidate[] = []
     const graphData = {
       last_node_id: 1,
@@ -721,21 +781,19 @@ describe('OSS missing model detection (non-Cloud path)', () => {
     const selectiveInstallCheck = async (name: string) =>
       name === 'installed_model.safetensors'
 
-    await enrichWithEmbeddedMetadata(
+    const result = await enrichWithEmbeddedMetadata(
       candidates,
       graphData,
       selectiveInstallCheck
     )
 
-    const dialogModels = candidates.filter((c) => c.isMissing === true && c.url)
+    const dialogModels = result.filter((c) => c.isMissing === true && c.url)
     expect(dialogModels).toHaveLength(1)
     expect(dialogModels[0].name).toBe('missing_model.safetensors')
     expect(dialogModels[0].url).toBe('https://example.com/model')
   })
 
   it('enrichWithEmbeddedMetadata with isAssetSupported leaves isMissing undefined for asset-supported models (Cloud path)', async () => {
-    // Contrast with OSS: when isAssetSupported returns true, isMissing
-    // is left undefined for later async verification (Cloud-only).
     const candidates: MissingModelCandidate[] = []
     const graphData = {
       last_node_id: 1,
@@ -767,16 +825,16 @@ describe('OSS missing model detection (non-Cloud path)', () => {
       ]
     } as unknown as ComfyWorkflowJSON
 
-    await enrichWithEmbeddedMetadata(
+    const result = await enrichWithEmbeddedMetadata(
       candidates,
       graphData,
       alwaysMissing,
-      () => true // isAssetSupported always returns true (Cloud)
+      () => true
     )
 
-    expect(candidates).toHaveLength(1)
-    expect(candidates[0].isMissing).toBeUndefined()
-    expect(candidates[0].isAssetSupported).toBe(true)
+    expect(result).toHaveLength(1)
+    expect(result[0].isMissing).toBeUndefined()
+    expect(result[0].isAssetSupported).toBe(true)
   })
 })
 

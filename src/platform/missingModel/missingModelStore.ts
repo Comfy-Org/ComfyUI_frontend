@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -85,10 +85,11 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const urlErrors = ref<Record<string, string>>({})
   const urlImporting = ref<Record<string, boolean>>({})
 
-  // Debounce timer handles — not serializable, kept separately for cleanup.
   const _urlDebounceTimers: Record<string, ReturnType<typeof setTimeout>> = {}
 
   let _verificationAbortController: AbortController | null = null
+
+  onScopeDispose(cancelDebounceTimers)
 
   function createVerificationAbortController(): AbortController {
     _verificationAbortController?.abort()

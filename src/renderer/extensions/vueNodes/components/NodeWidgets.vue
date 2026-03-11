@@ -204,6 +204,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const graphId = canvasStore.canvas?.graph?.rootGraph.id
 
   const nodeId = nodeData.id
+  const nodeIdStr = String(nodeId)
   const { widgets } = nodeData
   const result: ProcessedWidget[] = []
 
@@ -290,7 +291,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
           (error) => error.extra_info?.input_name === widget.name
         ) ??
           false) ||
-        missingModelStore.isWidgetMissingModel(String(nodeId), widget.name),
+        missingModelStore.isWidgetMissingModel(nodeIdStr, widget.name),
       hidden: widget.options?.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,

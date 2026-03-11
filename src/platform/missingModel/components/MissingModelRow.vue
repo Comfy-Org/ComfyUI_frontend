@@ -30,7 +30,6 @@
         </Button>
       </div>
 
-      <!-- Check button -->
       <Button
         variant="textonly"
         size="icon-sm"
@@ -58,7 +57,6 @@
         />
       </Button>
 
-      <!-- Expand/Collapse chevron (show referencing nodes) -->
       <Button
         v-if="model.referencingNodes.length > 0"
         variant="textonly"
@@ -116,7 +114,7 @@
       </div>
     </TransitionCollapse>
 
-    <!-- Status card: Using from Library / Importing with Progress -->
+    <!-- Status card -->
     <TransitionCollapse>
       <MissingModelStatusCard
         v-if="selectedLibraryModel[modelKey]"
@@ -135,186 +133,21 @@
         class="mt-1 flex flex-col gap-2"
       >
         <template v-if="isAssetSupported">
-          <!-- URL paste input -->
-          <div
-            :class="
-              cn(
-                'flex h-8 items-center rounded-lg border border-transparent bg-secondary-background px-3 transition-colors focus-within:border-interface-stroke',
-                !canImportModels && 'cursor-pointer'
-              )
-            "
-            v-bind="
-              !canImportModels
-                ? {
-                    role: 'button',
-                    tabindex: 0,
-                    onKeydown: (e: KeyboardEvent) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        showUploadDialog()
-                      }
-                    }
-                  }
-                : {}
-            "
-            @click="!canImportModels && showUploadDialog()"
-          >
-            <label :for="`url-input-${modelKey}`" class="sr-only">
-              {{ t('rightSidePanel.missingModels.urlPlaceholder') }}
-            </label>
-            <input
-              :id="`url-input-${modelKey}`"
-              type="text"
-              :value="urlInputs[modelKey] ?? ''"
-              :readonly="!canImportModels"
-              :placeholder="t('rightSidePanel.missingModels.urlPlaceholder')"
-              :class="
-                cn(
-                  'text-foreground w-full border-none bg-transparent text-xs outline-none placeholder:text-muted-foreground',
-                  !canImportModels && 'pointer-events-none opacity-60'
-                )
-              "
-              @input="
-                handleUrlInput(
-                  modelKey,
-                  ($event.target as HTMLInputElement).value
-                )
-              "
-            />
-            <Button
-              v-if="urlInputs[modelKey]"
-              variant="textonly"
-              size="icon-sm"
-              :aria-label="t('rightSidePanel.missingModels.clearUrl')"
-              class="ml-1 shrink-0"
-              @click.stop="handleUrlInput(modelKey, '')"
-            >
-              <i aria-hidden="true" class="icon-[lucide--x] size-3.5" />
-            </Button>
-          </div>
-
-          <!-- Metadata reveal area (shown after URL is validated) -->
-          <TransitionCollapse>
-            <div v-if="urlMetadata[modelKey]" class="flex flex-col gap-2">
-              <div class="flex items-center gap-2 px-0.5 pt-0.5">
-                <span
-                  class="text-foreground min-w-0 truncate text-xs font-bold"
-                >
-                  {{ urlMetadata[modelKey]?.filename }}
-                </span>
-                <span
-                  v-if="(urlMetadata[modelKey]?.content_length ?? 0) > 0"
-                  class="shrink-0 rounded-sm bg-secondary-background-selected px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-                >
-                  {{ formatSize(urlMetadata[modelKey]?.content_length ?? 0) }}
-                </span>
-              </div>
-
-              <!-- Type mismatch warning -->
-              <div v-if="typeMismatch" class="flex items-start gap-1.5 px-0.5">
-                <i
-                  aria-hidden="true"
-                  class="mt-0.5 icon-[lucide--triangle-alert] size-3 shrink-0 text-warning-background"
-                />
-                <span class="text-[11px] leading-tight text-warning-background">
-                  {{
-                    t('rightSidePanel.missingModels.typeMismatch', {
-                      detectedType: typeMismatch
-                    })
-                  }}
-                </span>
-              </div>
-
-              <div class="pt-0.5">
-                <Button
-                  variant="primary"
-                  class="h-9 w-full justify-center gap-2 text-sm font-semibold"
-                  :disabled="urlImporting[modelKey]"
-                  @click="handleImport(modelKey, directory)"
-                >
-                  <i
-                    aria-hidden="true"
-                    :class="
-                      urlImporting[modelKey]
-                        ? 'icon-[lucide--loader-circle] size-4 animate-spin'
-                        : 'icon-[lucide--download] size-4'
-                    "
-                  />
-                  {{
-                    typeMismatch
-                      ? t('rightSidePanel.missingModels.importAnyway')
-                      : t('rightSidePanel.missingModels.import')
-                  }}
-                </Button>
-              </div>
-            </div>
-          </TransitionCollapse>
-
-          <!-- Fetching metadata spinner -->
-          <TransitionCollapse>
-            <div
-              v-if="urlFetching[modelKey]"
-              aria-live="polite"
-              class="flex items-center justify-center py-2"
-            >
-              <i
-                aria-hidden="true"
-                class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
-              />
-              <span class="sr-only">{{ t('g.loading') }}</span>
-            </div>
-          </TransitionCollapse>
-
-          <!-- URL error message -->
-          <TransitionCollapse>
-            <div v-if="urlErrors[modelKey]" class="px-0.5" role="alert">
-              <span class="text-xs text-destructive-background-hover">
-                {{ urlErrors[modelKey] }}
-              </span>
-            </div>
-          </TransitionCollapse>
+          <MissingModelUrlInput
+            :model-key="modelKey"
+            :directory="directory"
+            :type-mismatch="typeMismatch"
+          />
         </template>
 
         <TransitionCollapse>
-          <div v-if="!urlInputs[modelKey]" class="flex flex-col gap-2">
-            <!-- OR divider -->
-            <div
-              v-if="model.representative.isAssetSupported"
-              class="flex items-center justify-center py-0.5"
-            >
-              <span class="text-[10px] font-bold text-muted-foreground">
-                {{ t('rightSidePanel.missingModels.or') }}
-              </span>
-            </div>
-
-            <!-- Use from Library -->
-            <SelectPlus
-              :model-value="getComboValue(model.representative)"
-              :options="comboOptions"
-              option-label="name"
-              option-value="value"
-              :disabled="comboOptions.length === 0"
-              :filter="comboOptions.length > 4"
-              auto-filter-focus
-              :aria-label="t('rightSidePanel.missingModels.useFromLibrary')"
-              :placeholder="t('rightSidePanel.missingModels.useFromLibrary')"
-              class="h-8 w-full rounded-lg border border-transparent bg-secondary-background text-xs transition-colors hover:border-interface-stroke"
-              size="small"
-              :pt="{
-                option: 'text-xs',
-                dropdown: 'w-8',
-                label: 'min-w-[4ch] truncate text-xs',
-                overlay: 'w-fit min-w-full'
-              }"
-              @update:model-value="handleComboSelect(modelKey, $event)"
-            >
-              <template #dropdownicon>
-                <i
-                  class="icon-[lucide--chevron-down] size-3.5 text-muted-foreground"
-                />
-              </template>
-            </SelectPlus>
-          </div>
+          <MissingModelLibrarySelect
+            v-if="!urlInputs[modelKey]"
+            :model-value="getComboValue(model.representative)"
+            :options="comboOptions"
+            :show-divider="model.representative.isAssetSupported"
+            @select="handleComboSelect(modelKey, $event)"
+          />
         </TransitionCollapse>
       </div>
     </TransitionCollapse>
@@ -328,12 +161,10 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@/utils/tailwindUtil'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
-import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
 import MissingModelStatusCard from '@/platform/missingModel/components/MissingModelStatusCard.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
+import MissingModelUrlInput from '@/platform/missingModel/components/MissingModelUrlInput.vue'
+import MissingModelLibrarySelect from '@/platform/missingModel/components/MissingModelLibrarySelect.vue'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
-import { formatSize } from '@/utils/formatUtil'
 
 import {
   useMissingModelInteractions,
@@ -344,7 +175,7 @@ import {
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
-const { model, directory, showNodeIdBadge, isAssetSupported } = defineProps<{
+const { model, directory, isAssetSupported } = defineProps<{
   model: MissingModelViewModel
   directory: string | null
   showNodeIdBadge: boolean
@@ -355,14 +186,9 @@ const emit = defineEmits<{
   locateModel: [nodeId: string]
 }>()
 
-const { flags } = useFeatureFlags()
-const canImportModels = computed(() => flags.privateModelsEnabled)
-const { showUploadDialog } = useModelUpload()
-
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 
-/** Unique key isolating state by support type + directory + model name. */
 const modelKey = computed(() =>
   getModelStateKey(model.name, directory, isAssetSupported)
 )
@@ -379,15 +205,8 @@ const isDownloadActive = computed(
 )
 
 const store = useMissingModelStore()
-const {
-  selectedLibraryModel,
-  importCategoryMismatch,
-  urlInputs,
-  urlMetadata,
-  urlFetching,
-  urlErrors,
-  urlImporting
-} = storeToRefs(store)
+const { selectedLibraryModel, importCategoryMismatch, urlInputs } =
+  storeToRefs(store)
 
 const {
   toggleModelExpand,
@@ -397,9 +216,7 @@ const {
   isSelectionConfirmable,
   cancelLibrarySelect,
   confirmLibrarySelect,
-  handleUrlInput,
   getTypeMismatch,
-  getDownloadStatus,
-  handleImport
+  getDownloadStatus
 } = useMissingModelInteractions()
 </script>

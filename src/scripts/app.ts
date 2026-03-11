@@ -1427,7 +1427,7 @@ export class ComfyApp {
 
     const modelStore = useModelStore()
     await modelStore.loadModelFolders()
-    await enrichWithEmbeddedMetadata(
+    const enrichedCandidates = await enrichWithEmbeddedMetadata(
       candidates,
       graphData,
       async (name, directory) => {
@@ -1443,7 +1443,7 @@ export class ComfyApp {
         : undefined
     )
 
-    const missingModels: ModelFile[] = candidates
+    const missingModels: ModelFile[] = enrichedCandidates
       .filter((c) => c.isMissing === true && c.url)
       .map((c) => ({
         name: c.name,
@@ -1468,21 +1468,32 @@ export class ComfyApp {
       }
     }
 
-    if (isCloud && candidates.length) {
+    if (isCloud && enrichedCandidates.length) {
       const controller = missingModelStore.createVerificationAbortController()
-      verifyAssetSupportedCandidates(candidates, controller.signal)
+      verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
         .then(() => {
-          const confirmed = candidates.filter((c) => c.isMissing === true)
+          if (controller.signal.aborted) return
+          const confirmed = enrichedCandidates.filter(
+            (c) => c.isMissing === true
+          )
           if (confirmed.length) {
             useExecutionErrorStore().surfaceMissingModels(confirmed)
           }
         })
-        .catch((err) =>
+        .catch((err) => {
           console.warn(
             '[Missing Model Pipeline] Asset verification failed:',
             err
           )
-        )
+          useToastStore().add({
+            severity: 'warn',
+            summary: st(
+              'toastMessages.missingModelVerificationFailed',
+              'Failed to verify missing models. Some models may not be shown in the Errors tab.'
+            ),
+            life: 5000
+          })
+        })
     }
 
     return { missingModels }

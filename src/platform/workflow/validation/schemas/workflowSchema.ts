@@ -599,7 +599,7 @@ export function buildSubgraphExecutionPaths(
  */
 export function flattenWorkflowNodes(
   graphData: ComfyWorkflowJSON
-): ComfyNode[] {
+): Readonly<ComfyNode>[] {
   const rootNodes = graphData.nodes ?? []
   const subgraphDefs = graphData.definitions?.subgraphs ?? []
   const pathMap = buildSubgraphExecutionPaths(rootNodes, subgraphDefs)

@@ -65,7 +65,7 @@ import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 
-const { missingModelGroups, showNodeIdBadge } = defineProps<{
+defineProps<{
   missingModelGroups: MissingModelGroup[]
   showNodeIdBadge: boolean
 }>()
