@@ -111,7 +111,7 @@
       <NodeDragPreview />
       <TabsRoot v-model="selectedTab" class="flex h-full flex-col">
         <!-- Tab list in header (fixed) -->
-        <div class="border-b border-comfy-input px-2 pt-2 pb-1 2xl:px-4">
+        <div class="border-b border-comfy-input p-2 2xl:px-4">
           <TabsList class="flex w-full items-center gap-2">
             <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
               {{ tab.label }}

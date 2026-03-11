@@ -45,7 +45,7 @@
       <!-- Tab list -->
       <div
         v-if="!isInFolderView"
-        class="border-b border-comfy-input px-2 pt-2 pb-1 2xl:px-4"
+        class="border-b border-comfy-input p-2 2xl:px-4"
       >
         <TabList v-model="activeTab">
           <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
