@@ -41,7 +41,13 @@ const textMap: Record<SeedControlMode, string | null> = {
   >
     <i
       v-if="iconMap[mode]"
-      :class="cn(iconMap[mode]!, 'text-xs text-primary-background')"
+      :class="
+        cn(
+          iconMap[mode]!,
+          'text-xs',
+          mode === 'fixed' ? 'text-muted-foreground' : 'text-primary-background'
+        )
+      "
     />
     <span
       v-else-if="textMap[mode]"
