@@ -43,6 +43,8 @@ export interface SubMenuOption {
   disabled?: boolean
 }
 
+type NodeOptionsTriggerSource = 'contextmenu' | 'toolbar'
+
 export enum BadgeVariant {
   NEW = 'new',
   DEPRECATED = 'deprecated'
@@ -50,6 +52,7 @@ export enum BadgeVariant {
 
 // Global singleton for NodeOptions component reference
 let nodeOptionsInstance: null | NodeOptionsInstance = null
+const nodeOptionsTriggerSource = ref<NodeOptionsTriggerSource>('toolbar')
 
 const hoveredWidget = ref<[string, NodeId | undefined]>()
 
@@ -57,7 +60,11 @@ const hoveredWidget = ref<[string, NodeId | undefined]>()
  * Toggle the node options popover
  * @param event - The trigger event
  */
-export function toggleNodeOptions(event: Event) {
+export function toggleNodeOptions(
+  event: Event,
+  triggerSource: NodeOptionsTriggerSource = 'toolbar'
+) {
+  nodeOptionsTriggerSource.value = triggerSource
   if (nodeOptionsInstance?.toggle) {
     nodeOptionsInstance.toggle(event)
   }
@@ -71,8 +78,10 @@ export function toggleNodeOptions(event: Event) {
 export function showNodeOptions(
   event: MouseEvent,
   widgetName?: string,
-  nodeId?: NodeId
+  nodeId?: NodeId,
+  triggerSource: NodeOptionsTriggerSource = 'contextmenu'
 ) {
+  nodeOptionsTriggerSource.value = triggerSource
   hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
   if (nodeOptionsInstance?.show) {
     nodeOptionsInstance.show(event)
@@ -147,7 +156,8 @@ export function useMoreOptionsMenu() {
   const {
     getBasicSelectionOptions,
     getMultipleNodesOptions,
-    getSubgraphOptions
+    getSubgraphOptions,
+    getAlignmentOptions
   } = useSelectionMenuOptions()
 
   const hasSubgraphs = hasSubgraphsComputed
@@ -227,6 +237,9 @@ export function useMoreOptionsMenu() {
     )
     if (hasMultipleNodes.value) {
       options.push(...getMultipleNodesOptions())
+      if (nodeOptionsTriggerSource.value === 'contextmenu') {
+        options.push(...getAlignmentOptions(selectedNodes.value.length))
+      }
     }
     if (groupContext) {
       options.push(getFitGroupToNodesOption(groupContext))

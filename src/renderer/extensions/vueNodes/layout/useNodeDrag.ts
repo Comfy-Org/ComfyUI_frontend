@@ -1,12 +1,15 @@
 import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
+  Bounds,
   NodeBoundsUpdate,
   NodeId,
   Point
@@ -17,11 +20,16 @@ import { useTransformState } from '@/renderer/core/layout/transform/useTransform
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 import { createSharedComposable } from '@vueuse/core'
 
+import type { NodeAlignmentSnapResult } from './nodeAlignmentSnap'
+import { resolveNodeAlignmentSnap } from './nodeAlignmentSnap'
+
 export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
 
 function useNodeDragIndividual() {
+  const canvasStore = useCanvasStore()
   const mutations = useLayoutMutations()
-  const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
+  const { selectedNodeIds, selectedItems } = storeToRefs(canvasStore)
+  const settingStore = useSettingStore()
 
   // Get transform utilities from TransformPane if available
   const transformState = useTransformState()
@@ -42,6 +50,8 @@ function useNodeDragIndividual() {
   // For groups: track the last applied canvas delta to compute frame delta
   let lastCanvasDelta: Point | null = null
   let selectedGroups: LGraphGroup[] | null = null
+  let draggedSelectionBounds: Bounds | null = null
+  let alignmentCandidateBounds: Bounds[] = []
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
     const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
@@ -54,11 +64,15 @@ function useNodeDragIndividual() {
     dragStartPos = { ...position }
     dragStartMouse = { x: event.clientX, y: event.clientY }
 
-    const selectedNodes = toValue(selectedNodeIds)
+    const selectedNodes = new Set(toValue(selectedNodeIds))
+    selectedNodes.add(nodeId)
+    draggedSelectionBounds = getDraggedSelectionBounds(selectedNodes)
+    alignmentCandidateBounds = getAlignmentCandidateBounds(selectedNodes)
+    updateDragSnapGuides([])
 
     // capture the starting positions of all other selected nodes
     // Only move other selected items if the dragged node is part of the selection
-    const isDraggedNodeInSelection = selectedNodes?.has(nodeId)
+    const isDraggedNodeInSelection = selectedNodes.has(nodeId)
 
     if (isDraggedNodeInSelection && selectedNodes.size > 1) {
       otherSelectedNodesStartPositions = new Map()
@@ -120,11 +134,12 @@ function useNodeDragIndividual() {
         x: canvasWithDelta.x - canvasOrigin.x,
         y: canvasWithDelta.y - canvasOrigin.y
       }
+      const snappedCanvasDelta = maybeResolveAlignmentSnap(event, canvasDelta)
 
       // Calculate new position for the current node
       const newPosition = {
-        x: dragStartPos.x + canvasDelta.x,
-        y: dragStartPos.y + canvasDelta.y
+        x: dragStartPos.x + snappedCanvasDelta.x,
+        y: dragStartPos.y + snappedCanvasDelta.y
       }
 
       // Apply mutation through the layout system (Vue batches DOM updates automatically)
@@ -140,8 +155,8 @@ function useNodeDragIndividual() {
           startPos
         ] of otherSelectedNodesStartPositions) {
           const newOtherPosition = {
-            x: startPos.x + canvasDelta.x,
-            y: startPos.y + canvasDelta.y
+            x: startPos.x + snappedCanvasDelta.x,
+            y: startPos.y + snappedCanvasDelta.y
           }
           mutations.moveNode(otherNodeId, newOtherPosition)
         }
@@ -151,8 +166,8 @@ function useNodeDragIndividual() {
       // This matches LiteGraph's behavior which uses delta-based movement
       if (selectedGroups && selectedGroups.length > 0 && lastCanvasDelta) {
         const frameDelta = {
-          x: canvasDelta.x - lastCanvasDelta.x,
-          y: canvasDelta.y - lastCanvasDelta.y
+          x: snappedCanvasDelta.x - lastCanvasDelta.x,
+          y: snappedCanvasDelta.y - lastCanvasDelta.y
         }
 
         for (const group of selectedGroups) {
@@ -160,7 +175,7 @@ function useNodeDragIndividual() {
         }
       }
 
-      lastCanvasDelta = canvasDelta
+      lastCanvasDelta = snappedCanvasDelta
     })
   }
 
@@ -231,6 +246,9 @@ function useNodeDragIndividual() {
     otherSelectedNodesStartPositions = null
     selectedGroups = null
     lastCanvasDelta = null
+    draggedSelectionBounds = null
+    alignmentCandidateBounds = []
+    updateDragSnapGuides([])
 
     // Stop tracking shift key state
     stopShiftSync?.()
@@ -247,5 +265,100 @@ function useNodeDragIndividual() {
     startDrag,
     handleDrag,
     endDrag
+  }
+
+  function maybeResolveAlignmentSnap(
+    event: PointerEvent,
+    canvasDelta: Point
+  ): Point {
+    if (!settingStore.get('Comfy.Canvas.AlignNodesWhileDragging')) {
+      updateDragSnapGuides([])
+      return canvasDelta
+    }
+
+    if (shouldSnap(event) || !draggedSelectionBounds) {
+      updateDragSnapGuides([])
+      return canvasDelta
+    }
+
+    const snapResult: NodeAlignmentSnapResult = resolveNodeAlignmentSnap({
+      selectionBounds: draggedSelectionBounds,
+      candidateBounds: alignmentCandidateBounds,
+      delta: canvasDelta,
+      zoomScale: transformState.camera.z
+    })
+
+    updateDragSnapGuides(snapResult.guides)
+    return snapResult.delta
+  }
+
+  function getDraggedSelectionBounds(nodeIds: Set<NodeId>): Bounds | null {
+    const bounds = Array.from(nodeIds)
+      .map((id) => layoutStore.getNodeLayoutRef(id).value)
+      .filter((layout): layout is NonNullable<typeof layout> => layout !== null)
+      .map(getRenderedNodeBounds)
+
+    return mergeBounds(bounds)
+  }
+
+  function getAlignmentCandidateBounds(selectedNodeSet: Set<NodeId>): Bounds[] {
+    const allNodes = layoutStore.getAllNodes().value
+    const candidates: Bounds[] = []
+
+    for (const [nodeId, layout] of allNodes) {
+      if (selectedNodeSet.has(nodeId)) {
+        continue
+      }
+      candidates.push(getRenderedNodeBounds(layout))
+    }
+
+    return candidates
+  }
+
+  function updateDragSnapGuides(
+    guides: typeof layoutStore.vueDragSnapGuides.value
+  ) {
+    layoutStore.vueDragSnapGuides.value = guides
+    canvasStore.canvas?.setDirty(true, true)
+  }
+}
+
+function getRenderedNodeBounds(layout: {
+  position: Point
+  size: { width: number; height: number }
+}): Bounds {
+  const titleHeight = LiteGraph.NODE_TITLE_HEIGHT || 0
+
+  return {
+    x: layout.position.x,
+    y: layout.position.y - titleHeight,
+    width: layout.size.width,
+    height: layout.size.height + titleHeight
+  }
+}
+
+function mergeBounds(boundsList: Bounds[]): Bounds | null {
+  const [firstBounds, ...remainingBounds] = boundsList
+  if (!firstBounds) {
+    return null
+  }
+
+  let left = firstBounds.x
+  let top = firstBounds.y
+  let right = firstBounds.x + firstBounds.width
+  let bottom = firstBounds.y + firstBounds.height
+
+  for (const bounds of remainingBounds) {
+    left = Math.min(left, bounds.x)
+    top = Math.min(top, bounds.y)
+    right = Math.max(right, bounds.x + bounds.width)
+    bottom = Math.max(bottom, bounds.y + bounds.height)
+  }
+
+  return {
+    x: left,
+    y: top,
+    width: right - left,
+    height: bottom - top
   }
 }

@@ -81,6 +81,27 @@ describe('useSelectionMenuOptions - multiple nodes options', () => {
     )
     expect(groupNodeOption).toBeDefined()
   })
+
+  it('returns align options for two selected nodes', () => {
+    const { getAlignmentOptions } = useSelectionMenuOptions()
+
+    const options = getAlignmentOptions(2)
+
+    expect(options.map((option) => option.label)).toEqual([
+      'contextMenu.Align Selected To'
+    ])
+  })
+
+  it('returns align and distribute options for three selected nodes', () => {
+    const { getAlignmentOptions } = useSelectionMenuOptions()
+
+    const options = getAlignmentOptions(3)
+
+    expect(options.map((option) => option.label)).toEqual([
+      'contextMenu.Align Selected To',
+      'contextMenu.Distribute Nodes'
+    ])
+  })
 })
 
 describe('useSelectionMenuOptions - subgraph options', () => {

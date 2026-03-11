@@ -1,6 +1,6 @@
 import { useI18n } from 'vue-i18n'
 
-import type { Direction } from '@/lib/litegraph/src/interfaces'
+import type { ArrangementDirection } from '@/lib/litegraph/src/interfaces'
 import { alignNodes, distributeNodes } from '@/lib/litegraph/src/utils/arrange'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -10,7 +10,7 @@ import { useCanvasRefresh } from './useCanvasRefresh'
 interface AlignOption {
   name: string
   localizedName: string
-  value: Direction
+  value: ArrangementDirection
   icon: string
 }
 
@@ -52,6 +52,18 @@ export function useNodeArrangement() {
       localizedName: t('contextMenu.Right'),
       value: 'right',
       icon: 'icon-[lucide--align-end-horizontal]'
+    },
+    {
+      name: 'horizontal-center',
+      localizedName: t('contextMenu.Horizontal Center'),
+      value: 'horizontal-center',
+      icon: 'icon-[lucide--align-center-horizontal]'
+    },
+    {
+      name: 'vertical-center',
+      localizedName: t('contextMenu.Vertical Center'),
+      value: 'vertical-center',
+      icon: 'icon-[lucide--align-center-vertical]'
     }
   ]
 
@@ -75,7 +87,7 @@ export function useNodeArrangement() {
       isLGraphNode(item)
     )
 
-    if (selectedNodes.length === 0) {
+    if (selectedNodes.length < 2) {
       return
     }
 
@@ -90,7 +102,7 @@ export function useNodeArrangement() {
       isLGraphNode(item)
     )
 
-    if (selectedNodes.length < 2) {
+    if (selectedNodes.length < 3) {
       return
     }
 

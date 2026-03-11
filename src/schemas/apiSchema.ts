@@ -464,7 +464,8 @@ const zSettings = z.object({
   'Comfy.VersionCompatibility.DisableWarnings': z.boolean(),
   'Comfy.RightSidePanel.IsOpen': z.boolean(),
   'Comfy.RightSidePanel.ShowErrorsTab': z.boolean(),
-  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean()
+  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean(),
+  'Comfy.Canvas.AlignNodesWhileDragging': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>

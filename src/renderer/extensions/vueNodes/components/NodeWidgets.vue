@@ -275,7 +275,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
         widget.name,
         widget.nodeId !== undefined
           ? String(stripGraphPrefix(widget.nodeId))
-          : undefined
+          : undefined,
+        'contextmenu'
       )
     }
 

@@ -125,22 +125,31 @@ export function useSelectionMenuOptions() {
     ]
   }
 
-  const getAlignmentOptions = (): MenuOption[] => [
-    {
-      label: t('contextMenu.Align Selected To'),
-      icon: 'icon-[lucide--align-start-horizontal]',
-      hasSubmenu: true,
-      submenu: alignSubmenu.value,
-      action: () => {}
-    },
-    {
-      label: t('contextMenu.Distribute Nodes'),
-      icon: 'icon-[lucide--align-center-horizontal]',
-      hasSubmenu: true,
-      submenu: distributeSubmenu.value,
-      action: () => {}
+  const getAlignmentOptions = (selectedNodeCount: number): MenuOption[] => {
+    const options: MenuOption[] = []
+
+    if (selectedNodeCount >= 2) {
+      options.push({
+        label: t('contextMenu.Align Selected To'),
+        icon: 'icon-[lucide--align-start-horizontal]',
+        hasSubmenu: true,
+        submenu: alignSubmenu.value,
+        action: () => {}
+      })
     }
-  ]
+
+    if (selectedNodeCount >= 3) {
+      options.push({
+        label: t('contextMenu.Distribute Nodes'),
+        icon: 'icon-[lucide--align-center-horizontal]',
+        hasSubmenu: true,
+        submenu: distributeSubmenu.value,
+        action: () => {}
+      })
+    }
+
+    return options
+  }
 
   const getDeleteOption = (): MenuOption => ({
     label: t('contextMenu.Delete'),

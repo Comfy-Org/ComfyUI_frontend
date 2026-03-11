@@ -546,6 +546,8 @@
     "Bottom": "Bottom",
     "Left": "Left",
     "Right": "Right",
+    "Horizontal Center": "Horizontal Center",
+    "Vertical Center": "Vertical Center",
     "Horizontal": "Horizontal",
     "Vertical": "Vertical",
     "new": "new",
@@ -3335,6 +3337,7 @@
       "nodes2": "Nodes 2.0",
       "gridSpacing": "Grid spacing",
       "snapNodesToGrid": "Snap nodes to grid",
+      "alignNodesWhileDragging": "Align nodes while dragging",
       "linkShape": "Link shape",
       "showConnectedLinks": "Show connected links",
       "viewAllSettings": "View all settings"

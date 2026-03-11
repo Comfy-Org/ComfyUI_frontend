@@ -281,7 +281,13 @@ export interface IBoundaryNodes {
   left: LGraphNode
 }
 
-export type Direction = 'top' | 'bottom' | 'left' | 'right'
+export type ArrangementDirection =
+  | 'top'
+  | 'bottom'
+  | 'left'
+  | 'right'
+  | 'horizontal-center'
+  | 'vertical-center'
 
 /** Resize handle positions (compass points) */
 export type CompassCorners = 'NE' | 'SE' | 'SW' | 'NW'
