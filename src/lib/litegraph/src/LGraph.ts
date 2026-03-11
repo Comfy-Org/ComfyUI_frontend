@@ -2545,9 +2545,11 @@ export class LGraph
           const node = this.getNodeById(id)
           node?.configure(nodeData)
 
-          if (LiteGraph.alwaysSnapToGrid) {
+          if (LiteGraph.alwaysSnapToGrid && node) {
             const snapTo = this.getSnapToGridSize()
-            if (snapTo) node?.snapToGrid(snapTo)
+            if (node.snapToGrid(snapTo)) {
+              node.pos = [node.pos[0], node.pos[1]]
+            }
           }
         }
       }
