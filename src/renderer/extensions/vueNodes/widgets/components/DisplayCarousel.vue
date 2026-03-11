@@ -1,8 +1,11 @@
 <template>
   <div
+    ref="rootEl"
     class="flex max-w-full flex-col rounded-lg bg-component-node-widget-background"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
+    @focusin="isFocused = true"
+    @focusout="handleFocusOut"
   >
     <!-- Single Mode -->
     <template v-if="displayMode === 'single'">
@@ -16,7 +19,7 @@
             :class="
               cn(
                 'h-auto w-full rounded-sm object-contain transition-opacity',
-                isHovered && 'opacity-50'
+                showControls && 'opacity-50'
               )
             "
             @load="handleImageLoad"
@@ -24,7 +27,7 @@
 
           <!-- Toggle to Grid (hover, top-left) -->
           <button
-            v-if="isHovered && galleryImages.length > 1"
+            v-if="showControls && galleryImages.length > 1"
             :class="toggleButtonClass"
             class="absolute top-2 left-2"
             :aria-label="t('g.switchToGridView')"
@@ -35,7 +38,7 @@
 
           <!-- Action Buttons (hover, top-right) -->
           <div
-            v-if="isHovered && activeItem"
+            v-if="showControls && activeItem"
             class="absolute top-2 right-2 flex gap-1"
           >
             <button
@@ -96,7 +99,7 @@
           >
             <button
               v-for="(item, index) in galleryImages"
-              :key="index"
+              :key="getItemSrc(item)"
               :ref="(el) => setThumbnailRef(el as HTMLElement | null, index)"
               :class="
                 cn(
@@ -137,7 +140,7 @@
         >
           <!-- Toggle to Single (hover, top-left) -->
           <button
-            v-if="isHovered"
+            v-if="showControls"
             :class="toggleButtonClass"
             class="absolute top-2 left-2 z-10"
             :aria-label="t('g.switchToSingleView')"
@@ -149,7 +152,7 @@
           <div class="flex flex-wrap content-start gap-1">
             <button
               v-for="(item, index) in galleryImages"
-              :key="index"
+              :key="getItemSrc(item)"
               :style="gridImageStyle"
               class="shrink-0 cursor-pointer overflow-hidden border-0 p-0"
               :aria-label="getItemAlt(item, index)"
@@ -219,10 +222,14 @@ const toastStore = useToastStore()
 const activeIndex = ref(0)
 const displayMode = ref<DisplayMode>('single')
 const isHovered = ref(false)
+const isFocused = ref(false)
 const hoveredGridIndex = ref(-1)
 const imageDimensions = ref<string | null>(null)
 const thumbnailRefs = ref<(HTMLElement | null)[]>([])
+const rootEl = ref<HTMLDivElement>()
 const gridContainerEl = ref<HTMLDivElement>()
+
+const showControls = computed(() => isHovered.value || isFocused.value)
 
 const { width: gridContainerWidth } = useElementSize(gridContainerEl)
 
@@ -233,16 +240,16 @@ const galleryImages = computed<GalleryImage[]>(() => {
 
   return value.value
     .filter((item) => item !== null && item !== undefined)
-    .map((item, index) => {
+    .map((item) => {
       if (typeof item === 'string') {
         return {
           itemImageSrc: item,
-          thumbnailImageSrc: item,
-          alt: `Image ${index}`
+          thumbnailImageSrc: item
         }
       }
-      return item ?? {}
+      return item
     })
+    .filter((item) => item.itemImageSrc || item.src)
 })
 
 const activeItem = computed(() => galleryImages.value[activeIndex.value])
@@ -310,8 +317,17 @@ function getItemThumbnail(item: GalleryImage): string {
 function getItemAlt(item: GalleryImage, index: number): string {
   return (
     item.alt ||
-    `${t('g.galleryImage')} ${index + 1} of ${galleryImages.value.length}`
+    t('g.viewImageOfTotal', {
+      index: index + 1,
+      total: galleryImages.value.length
+    })
   )
+}
+
+function handleFocusOut(event: FocusEvent) {
+  if (!rootEl.value?.contains(event.relatedTarget as Node)) {
+    isFocused.value = false
+  }
 }
 
 function handleImageLoad(event: Event) {

@@ -21,7 +21,11 @@ const i18n = createI18n({
         previousImage: 'Previous image',
         nextImage: 'Next image',
         switchToGridView: 'Switch to grid view',
-        switchToSingleView: 'Switch to single view'
+        switchToSingleView: 'Switch to single view',
+        viewImageOfTotal: 'View image {index} of {total}',
+        editOrMaskImage: 'Edit or mask image',
+        downloadImage: 'Download image',
+        removeImage: 'Remove image'
       }
     }
   }
@@ -268,6 +272,37 @@ describe('DisplayCarousel Single Mode', () => {
   })
 })
 
+describe('DisplayCarousel Accessibility', () => {
+  it('shows controls on focusin for keyboard users', async () => {
+    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+
+    await wrapper.find('div').trigger('focusin')
+    await nextTick()
+
+    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
+      true
+    )
+    expect(wrapper.find('[aria-label="Edit or mask image"]').exists()).toBe(
+      true
+    )
+  })
+
+  it('hides controls on focusout when focus leaves component', async () => {
+    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+
+    await wrapper.find('div').trigger('focusin')
+    await nextTick()
+
+    // Focus leaves the component entirely
+    await wrapper.find('div').trigger('focusout', { relatedTarget: null })
+    await nextTick()
+
+    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
+      false
+    )
+  })
+})
+
 describe('DisplayCarousel Grid Mode', () => {
   it('switches to grid mode via toggle button on hover', async () => {
     const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
@@ -372,12 +407,12 @@ describe('DisplayCarousel Edge Cases', () => {
     expect(findThumbnailButtons(wrapper)).toHaveLength(0)
   })
 
-  it('handles malformed image objects', () => {
+  it('filters out malformed image objects without valid src', () => {
     const malformedImages = [{}, { randomProp: 'value' }, null, undefined]
     const wrapper = createGalleriaWrapper(malformedImages as string[])
 
-    // Null/undefined filtered, 2 objects remain but render with empty src
-    expect(wrapper.find('img').exists()).toBe(true)
+    // All filtered out: null/undefined removed, then objects without src filtered
+    expect(wrapper.find('img').exists()).toBe(false)
   })
 
   it('handles very large image arrays', () => {
@@ -397,11 +432,15 @@ describe('DisplayCarousel Edge Cases', () => {
     expect(() => createGalleriaWrapper(mixedArray as string[])).not.toThrow()
   })
 
-  it('handles invalid URL strings', () => {
-    const invalidUrls = ['not-a-url', '', ' ', 'http://', 'ftp://invalid']
+  it('handles invalid URL strings without crashing', () => {
+    const invalidUrls = ['not-a-url', 'http://', 'ftp://invalid']
     const wrapper = createGalleriaWrapper(invalidUrls)
 
-    // Should still render without crashing
     expect(wrapper.find('img').exists()).toBe(true)
+  })
+
+  it('filters out empty string URLs', () => {
+    const wrapper = createGalleriaWrapper([''])
+    expect(wrapper.find('img').exists()).toBe(false)
   })
 })
