@@ -89,6 +89,17 @@ test.describe('Execution error', () => {
 })
 
 test.describe('Missing models warning', () => {
+  test('Should be disabled by default in browser tests', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('missing/missing_models')
+
+    const dialogTitle = comfyPage.page.getByText(
+      'This workflow is missing models'
+    )
+    await expect(dialogTitle).not.toBeVisible()
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.ShowMissingModelsWarning',

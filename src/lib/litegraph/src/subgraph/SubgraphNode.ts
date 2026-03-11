@@ -649,47 +649,50 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
 
       this._addSubgraphInputListeners(subgraphInput, input)
-
-      // Find the first widget that this slot is connected to
-      for (const linkId of subgraphInput.linkIds) {
-        const link = this.subgraph.getLink(linkId)
-        if (!link) {
-          console.warn(
-            `[SubgraphNode.configure] No link found for link ID ${linkId}`,
-            this
-          )
-          continue
-        }
-
-        const { inputNode } = link.resolve(this.subgraph)
-        if (!inputNode) {
-          console.warn('Failed to resolve inputNode', link, this)
-          continue
-        }
-
-        //Manually find input since target_slot can't be trusted
-        const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
-        if (!targetInput) {
-          console.warn('Failed to find corresponding input', link, inputNode)
-          continue
-        }
-
-        // No widget - ignore this link
-        const widget = inputNode.getWidgetFromSlot(targetInput)
-        if (!widget) continue
-
-        this._setWidget(
-          subgraphInput,
-          input,
-          widget,
-          targetInput.widget,
-          inputNode
-        )
-        break
-      }
+      this._resolveInputWidget(subgraphInput, input)
     }
 
     this._syncPromotions()
+  }
+
+  private _resolveInputWidget(
+    subgraphInput: SubgraphInput,
+    input: INodeInputSlot
+  ) {
+    for (const linkId of subgraphInput.linkIds) {
+      const link = this.subgraph.getLink(linkId)
+      if (!link) {
+        console.warn(
+          `[SubgraphNode.configure] No link found for link ID ${linkId}`,
+          this
+        )
+        continue
+      }
+
+      const { inputNode } = link.resolve(this.subgraph)
+      if (!inputNode) {
+        console.warn('Failed to resolve inputNode', link, this)
+        continue
+      }
+
+      const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
+      if (!targetInput) {
+        console.warn('Failed to find corresponding input', link, inputNode)
+        continue
+      }
+
+      const widget = inputNode.getWidgetFromSlot(targetInput)
+      if (!widget) continue
+
+      this._setWidget(
+        subgraphInput,
+        input,
+        widget,
+        targetInput.widget,
+        inputNode
+      )
+      break
+    }
   }
 
   private _setWidget(

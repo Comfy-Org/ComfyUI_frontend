@@ -4,6 +4,7 @@ import {
   useInfiniteScroll,
   useResizeObserver
 } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import type { ComponentPublicInstance } from 'vue'
 import {
   computed,
@@ -25,12 +26,17 @@ import type {
 } from '@/renderer/extensions/linearMode/linearModeTypes'
 import OutputPreviewItem from '@/renderer/extensions/linearMode/OutputPreviewItem.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const { outputs, allOutputs, selectFirstHistory } = useOutputHistory()
+const { outputs, allOutputs, selectFirstHistory, mayBeActiveWorkflowPending } =
+  useOutputHistory()
+const { hasOutputs } = storeToRefs(useAppModeStore())
 const queueStore = useQueueStore()
 const store = useLinearOutputStore()
+const workflowStore = useWorkflowStore()
 
 const emit = defineEmits<{
   updateSelection: [selection: OutputSelection]
@@ -42,7 +48,7 @@ const queueCount = computed(
 
 const itemClass = cn(
   'shrink-0 cursor-pointer rounded-lg border-2 border-transparent p-1 outline-none',
-  'data-[state=checked]:border-interface-panel-job-progress-border'
+  'relative data-[state=checked]:border-interface-panel-job-progress-border'
 )
 
 const hasActiveContent = computed(
@@ -55,10 +61,7 @@ const visibleHistory = computed(() =>
 
 const selectableItems = computed(() => {
   const items: SelectionValue[] = []
-  if (
-    queueCount.value > 0 &&
-    store.activeWorkflowInProgressItems.length === 0
-  ) {
+  if (mayBeActiveWorkflowPending.value) {
     items.push({ id: 'slot:pending', kind: 'inProgress', itemId: 'pending' })
   }
   for (const item of store.activeWorkflowInProgressItems) {
@@ -120,7 +123,7 @@ function doEmit() {
       (i) => i.id === sel.itemId
     )
     if (!item || item.state === 'skeleton') {
-      emit('updateSelection', { canShowPreview: true })
+      emit('updateSelection', { canShowPreview: true, showSkeleton: true })
     } else if (item.state === 'latent') {
       emit('updateSelection', {
         canShowPreview: true,
@@ -146,6 +149,25 @@ function doEmit() {
 
 watchEffect(doEmit)
 
+// On load or workflow tab switch, select the most recent item.
+// Prefer in-progress items for this workflow, then history, skipping
+// the global pending slot which may belong to another workflow.
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  (path) => {
+    if (!path) return
+    const inProgress = store.activeWorkflowInProgressItems
+    if (inProgress.length > 0) {
+      store.selectAsLatest(`slot:${inProgress[0].id}`)
+    } else if (hasOutputs.value) {
+      selectFirstHistory()
+    } else {
+      store.selectAsLatest(null)
+    }
+  },
+  { immediate: true }
+)
+
 // Keep history selection stable on media changes
 watch(
   () => outputs.media.value,
@@ -163,13 +185,13 @@ watch(
       : undefined
 
     if (!sv || sv.kind !== 'history') {
-      selectFirstHistory()
+      if (hasOutputs.value) selectFirstHistory()
       return
     }
 
     const wasFirst = sv.assetId === oldAssets[0]?.id
     if (wasFirst || !newAssets.some((a) => a.id === sv.assetId)) {
-      selectFirstHistory()
+      if (hasOutputs.value) selectFirstHistory()
     }
   }
 )
@@ -303,9 +325,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
           />
 
           <div
-            v-if="
-              queueCount > 0 && store.activeWorkflowInProgressItems.length === 0
-            "
+            v-if="mayBeActiveWorkflowPending"
             :ref="selectedRef('slot:pending')"
             v-bind="itemAttrs('slot:pending')"
             :class="itemClass"

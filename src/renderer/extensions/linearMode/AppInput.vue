@@ -8,7 +8,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 const { id, name } = defineProps<{
   id: string
-  isSelectInputsMode: boolean
+  enable: boolean
   name: string
 }>()
 
@@ -25,7 +25,7 @@ function togglePromotion() {
 </script>
 <template>
   <div
-    v-if="isSelectInputsMode"
+    v-if="enable"
     class="pointer-events-auto relative col-span-2 flex cursor-pointer flex-row gap-1"
     @pointerdown.capture.stop.prevent="togglePromotion"
     @click.capture.stop.prevent

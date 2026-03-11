@@ -81,11 +81,12 @@ describe('PostHogTelemetryProvider', () => {
       await vi.dynamicImportSettled()
 
       expect(hoisted.mockInit).toHaveBeenCalledWith('phc_test_token', {
-        api_host: 'https://ph.comfy.org',
+        api_host: 'https://t.comfy.org',
         autocapture: false,
         capture_pageview: false,
         capture_pageleave: false,
-        persistence: 'localStorage+cookie'
+        persistence: 'localStorage+cookie',
+        debug: false
       })
     })
 

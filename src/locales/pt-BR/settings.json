@@ -400,7 +400,7 @@
     "name": "Layout da Barra de Abas",
     "options": {
       "Default": "Padrão",
-      "Integrated": "Integrado"
+      "Legacy": "Legado"
     },
     "tooltip": "Controla o layout da barra de abas. \"Integrado\" move os controles de Ajuda e Usuário para a área da barra de abas."
   },
