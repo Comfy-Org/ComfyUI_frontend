@@ -1,7 +1,10 @@
 <template>
-  <div class="flex items-center justify-between">
+  <div class="flex items-center gap-2">
+    <Button v-if="showSaveButton" size="lg" @click="handleSavePreset">
+      {{ $t('g.keybindingPresets.saveChanges') }}
+    </Button>
     <Select v-model="selectedPreset">
-      <SelectTrigger class="w-64">
+      <SelectTrigger class="w-48">
         <SelectValue :placeholder="$t('g.keybindingPresets.default')">
           {{ displayLabel }}
         </SelectValue>
@@ -41,9 +44,6 @@
         </div>
       </SelectContent>
     </Select>
-    <Button v-if="showSaveButton" size="lg" @click="handleSavePreset">
-      {{ $t('g.keybindingPresets.saveChanges') }}
-    </Button>
   </div>
 </template>
 

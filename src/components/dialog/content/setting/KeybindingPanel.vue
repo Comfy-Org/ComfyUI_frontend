@@ -12,19 +12,20 @@
     </Teleport>
 
     <Teleport defer to="#keybinding-panel-actions">
-      <DropdownMenu
-        :entries="menuEntries"
-        icon="icon-[lucide--ellipsis]"
-        item-class="text-sm gap-2"
-        button-size="unset"
-        button-class="size-10"
-      />
+      <div class="flex items-center gap-2">
+        <KeybindingPresetToolbar
+          :preset-names="presetNames"
+          @presets-changed="refreshPresetList"
+        />
+        <DropdownMenu
+          :entries="menuEntries"
+          icon="icon-[lucide--ellipsis]"
+          item-class="text-sm gap-2"
+          button-size="unset"
+          button-class="size-10"
+        />
+      </div>
     </Teleport>
-
-    <KeybindingPresetToolbar
-      :preset-names="presetNames"
-      @presets-changed="refreshPresetList"
-    />
 
     <DataTable
       v-model:selection="selectedCommandData"
