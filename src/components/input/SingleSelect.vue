@@ -37,9 +37,8 @@
         <slot v-else name="icon" />
         <SelectValue :placeholder="label" class="truncate" />
       </div>
-      <SelectIcon as-child>
+      <SelectIcon v-if="!loading" as-child>
         <i
-          v-if="!loading"
           class="icon-[lucide--chevron-down] shrink-0 px-3 py-2 text-muted-foreground"
         />
       </SelectIcon>
