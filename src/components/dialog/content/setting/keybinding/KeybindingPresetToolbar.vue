@@ -28,7 +28,7 @@
           >
             {{ name }}
           </SelectItem>
-          <SelectSeparator class="max-w-60" />
+          <hr class="h-px max-w-60 border-0 bg-border-default" />
           <button
             class="relative flex w-full max-w-60 cursor-pointer items-center justify-between gap-3 rounded-sm border-none bg-transparent p-2 text-sm outline-none select-none hover:bg-secondary-background-hover focus:bg-secondary-background-hover"
             @click.stop="handleImportFromDropdown"
@@ -55,7 +55,6 @@ import Button from '@/components/ui/button/Button.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectSeparator from '@/components/ui/select/SelectSeparator.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
