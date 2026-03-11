@@ -49,6 +49,7 @@
       <SelectContent
         position="popper"
         :side-offset="8"
+        :style="optionStyle"
         :class="
           cn(
             'z-3000 overflow-hidden',
@@ -81,7 +82,6 @@
                 'data-[state=checked]:hover:bg-secondary-background-selected'
               )
             "
-            :style="optionStyle"
           >
             <SelectItemText class="truncate">
               {{ opt.name }}
@@ -114,9 +114,9 @@ import {
   SelectValue,
   SelectViewport
 } from 'reka-ui'
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
 import type { SelectOption } from './types'
@@ -158,13 +158,8 @@ const selectedItem = defineModel<string | undefined>({ required: true })
 
 const { t } = useI18n()
 
-const optionStyle = computed(() => {
-  if (!popoverMinWidth && !popoverMaxWidth) return undefined
-
-  const styles: string[] = []
-  if (popoverMinWidth) styles.push(`min-width: ${popoverMinWidth}`)
-  if (popoverMaxWidth) styles.push(`max-width: ${popoverMaxWidth}`)
-
-  return styles.join('; ')
+const optionStyle = usePopoverSizing({
+  minWidth: popoverMinWidth,
+  maxWidth: popoverMaxWidth
 })
 </script>

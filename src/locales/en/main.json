@@ -256,7 +256,7 @@
     "clearAll": "Clear all",
     "copyURL": "Copy URL",
     "releaseTitle": "{package} {version} Release",
-    "itemsSelected": "{count} items selected",
+    "itemsSelected": "{count} item selected | {count} items selected",
     "multiSelectDropdown": "Multi-select dropdown",
     "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",

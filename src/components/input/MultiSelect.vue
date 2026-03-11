@@ -57,6 +57,7 @@
         position="popper"
         :side-offset="8"
         align="start"
+        :style="popoverStyle"
         :class="
           cn(
             'z-3000 overflow-hidden',
@@ -101,7 +102,9 @@
               v-if="showSelectedCount"
               class="px-1 text-sm text-base-foreground"
             >
-              {{ $t('g.itemsSelected', { count: selectedCount }) }}
+              {{
+                $t('g.itemsSelected', { count: selectedCount }, selectedCount)
+              }}
             </span>
             <Button
               v-if="showClearButton"
@@ -136,7 +139,6 @@
                 'data-highlighted:bg-secondary-background-selected data-highlighted:hover:bg-secondary-background-selected'
               )
             "
-            :style="popoverStyle"
           >
             <div
               class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background"
