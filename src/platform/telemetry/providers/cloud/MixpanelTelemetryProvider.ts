@@ -14,6 +14,7 @@ import { getExecutionContext } from '../../utils/getExecutionContext'
 import type {
   AuthMetadata,
   CreditTopupMetadata,
+  DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
   ExecutionContext,
@@ -40,7 +41,8 @@ import type {
   TemplateMetadata,
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
-  WorkflowImportMetadata
+  WorkflowImportMetadata,
+  WorkflowSavedMetadata
 } from '../../types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -357,6 +359,14 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
+  }
+
+  trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_SAVED, metadata)
+  }
+
+  trackDefaultViewSet(metadata: DefaultViewSetMetadata): void {
+    this.trackEvent(TelemetryEvents.DEFAULT_VIEW_SET, metadata)
   }
 
   trackEnterLinear(metadata: EnterLinearMetadata): void {
