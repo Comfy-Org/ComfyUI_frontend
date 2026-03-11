@@ -178,7 +178,6 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useDialogService } from '@/services/dialogService'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import KeybindingPresetToolbar from './keybinding/KeybindingPresetToolbar.vue'
@@ -193,7 +192,6 @@ const keybindingService = useKeybindingService()
 const presetService = useKeybindingPresetService()
 const settingStore = useSettingStore()
 const commandStore = useCommandStore()
-const dialogService = useDialogService()
 const { t } = useI18n()
 
 const presetNames = ref<string[]>([])
@@ -211,11 +209,7 @@ async function initPresets() {
       keybindingStore.savedPresetData = preset
       keybindingStore.currentPresetName = currentName
     } else {
-      keybindingStore.resetAllKeybindings()
-      keybindingStore.currentPresetName = 'default'
-      keybindingStore.savedPresetData = null
-      await keybindingService.persistUserKeybindings()
-      await settingStore.set('Comfy.Keybinding.CurrentPreset', 'default')
+      await presetService.switchToDefaultPreset()
     }
   }
 }
@@ -224,25 +218,7 @@ onMounted(() => initPresets())
 
 // "..." menu entries (teleported to header)
 async function saveAsNewPreset() {
-  const name = await dialogService.prompt({
-    title: t('g.keybindingPresets.saveAsNewPreset'),
-    message: t('g.keybindingPresets.presetNamePrompt'),
-    defaultValue: ''
-  })
-  if (!name) return
-  const trimmedName = name.trim()
-  if (!trimmedName) return
-  if (presetNames.value.includes(trimmedName)) {
-    const overwrite = await dialogService.confirm({
-      title: t('g.keybindingPresets.overwritePresetTitle'),
-      message: t('g.keybindingPresets.overwritePresetMessage', {
-        name: trimmedName
-      }),
-      type: 'overwrite'
-    })
-    if (!overwrite) return
-  }
-  await presetService.savePreset(trimmedName)
+  await presetService.promptAndSaveNewPreset()
   refreshPresetList()
 }
 

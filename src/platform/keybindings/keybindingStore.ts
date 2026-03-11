@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
 
 import type { KeyComboImpl } from './keyCombo'
-import type { KeybindingImpl } from './keybinding'
+import { KeybindingImpl } from './keybinding'
 import type { KeybindingPreset } from './types'
 
 export const useKeybindingStore = defineStore('keybinding', () => {
@@ -25,28 +25,18 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
     if (!savedPresetData.value) return false
 
-    const serializeKeybindingImpl = (b: KeybindingImpl) =>
+    const serialize = (b: KeybindingImpl) =>
       `${b.commandId}:${b.combo.serialize()}:${b.targetElementId ?? ''}`
 
-    const serializeRawBinding = (b: {
-      commandId: string
-      combo: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
-      targetElementId?: string
-    }) =>
-      `${b.commandId}:${b.combo.key.toUpperCase()}:${b.combo.ctrl ?? false}:${b.combo.alt ?? false}:${b.combo.shift ?? false}:${b.targetElementId ?? ''}`
-
-    const currentNew = newBindings.map(serializeKeybindingImpl).sort().join('|')
+    const currentNew = newBindings.map(serialize).sort().join('|')
     const savedNew = savedPresetData.value.newBindings
-      .map(serializeRawBinding)
+      .map((b) => serialize(new KeybindingImpl(b)))
       .sort()
       .join('|')
 
-    const currentUnset = unsetBindings
-      .map(serializeKeybindingImpl)
-      .sort()
-      .join('|')
+    const currentUnset = unsetBindings.map(serialize).sort().join('|')
     const savedUnset = savedPresetData.value.unsetBindings
-      .map(serializeRawBinding)
+      .map((b) => serialize(new KeybindingImpl(b)))
       .sort()
       .join('|')
 

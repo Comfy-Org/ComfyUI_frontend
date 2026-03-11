@@ -59,6 +59,14 @@ export function useKeybindingPresetService() {
   const toast = useToastStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
+  async function switchToDefaultPreset({ resetBindings = true } = {}) {
+    if (resetBindings) keybindingStore.resetAllKeybindings()
+    keybindingStore.currentPresetName = 'default'
+    keybindingStore.savedPresetData = null
+    await keybindingService.persistUserKeybindings()
+    await settingStore.set('Comfy.Keybinding.CurrentPreset', 'default')
+  }
+
   const DELETE_DIALOG_KEY = 'delete-keybinding-preset'
   const UNSAVED_DIALOG_KEY = 'unsaved-keybinding-changes'
 
@@ -165,11 +173,7 @@ export function useKeybindingPresetService() {
     }
 
     if (keybindingStore.currentPresetName === name) {
-      keybindingStore.resetAllKeybindings()
-      keybindingStore.currentPresetName = 'default'
-      keybindingStore.savedPresetData = null
-      await keybindingService.persistUserKeybindings()
-      await settingStore.set('Comfy.Keybinding.CurrentPreset', 'default')
+      await switchToDefaultPreset()
     }
 
     toast.add({
@@ -210,14 +214,35 @@ export function useKeybindingPresetService() {
     }
     const preset = result.data
     applyPreset(preset)
-    keybindingStore.currentPresetName = 'default'
-    keybindingStore.savedPresetData = null
-    await keybindingService.persistUserKeybindings()
-    await settingStore.set('Comfy.Keybinding.CurrentPreset', 'default')
+    await switchToDefaultPreset({ resetBindings: false })
     toast.add({
       severity: 'success',
       summary: t('g.keybindingPresets.presetImported')
     })
+  }
+
+  async function promptAndSaveNewPreset(): Promise<boolean> {
+    const name = await dialogService.prompt({
+      title: t('g.keybindingPresets.saveAsNewPreset'),
+      message: t('g.keybindingPresets.presetNamePrompt'),
+      defaultValue: ''
+    })
+    if (!name) return false
+    const trimmedName = name.trim()
+    if (!trimmedName) return false
+    const existingPresets = await listPresets()
+    if (existingPresets.includes(trimmedName)) {
+      const overwrite = await dialogService.confirm({
+        title: t('g.keybindingPresets.overwritePresetTitle'),
+        message: t('g.keybindingPresets.overwritePresetMessage', {
+          name: trimmedName
+        }),
+        type: 'overwrite'
+      })
+      if (!overwrite) return false
+    }
+    await savePreset(trimmedName)
+    return true
   }
 
   async function switchPreset(targetName: string) {
@@ -233,36 +258,14 @@ export function useKeybindingPresetService() {
         if (keybindingStore.currentPresetName !== 'default') {
           await savePreset(keybindingStore.currentPresetName)
         } else {
-          const name = await dialogService.prompt({
-            title: t('g.keybindingPresets.saveAsNewPreset'),
-            message: t('g.keybindingPresets.presetNamePrompt'),
-            defaultValue: ''
-          })
-          if (!name) return
-          const trimmedName = name.trim()
-          if (!trimmedName) return
-          const existingPresets = await listPresets()
-          if (existingPresets.includes(trimmedName)) {
-            const overwrite = await dialogService.confirm({
-              title: t('g.keybindingPresets.overwritePresetTitle'),
-              message: t('g.keybindingPresets.overwritePresetMessage', {
-                name: trimmedName
-              }),
-              type: 'overwrite'
-            })
-            if (!overwrite) return
-          }
-          await savePreset(trimmedName)
+          const saved = await promptAndSaveNewPreset()
+          if (!saved) return
         }
       }
     }
 
     if (targetName === 'default') {
-      keybindingStore.resetAllKeybindings()
-      keybindingStore.currentPresetName = 'default'
-      keybindingStore.savedPresetData = null
-      await keybindingService.persistUserKeybindings()
-      await settingStore.set('Comfy.Keybinding.CurrentPreset', 'default')
+      await switchToDefaultPreset()
       return
     }
 
@@ -280,6 +283,8 @@ export function useKeybindingPresetService() {
     exportPreset,
     importPreset: wrapWithErrorHandlingAsync(importPreset),
     switchPreset: wrapWithErrorHandlingAsync(switchPreset),
+    switchToDefaultPreset: wrapWithErrorHandlingAsync(switchToDefaultPreset),
+    promptAndSaveNewPreset: wrapWithErrorHandlingAsync(promptAndSaveNewPreset),
     applyPreset
   }
 }
