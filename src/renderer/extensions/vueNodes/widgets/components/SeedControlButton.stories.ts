@@ -4,13 +4,15 @@ import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 import SeedControlButton from './SeedControlButton.vue'
 
+const SEED_CONTROL_MODES = [...CONTROL_OPTIONS, 'linked'] as const
+
 const meta: Meta<typeof SeedControlButton> = {
   title: 'Components/InputHelpers/SeedControlButton',
   component: SeedControlButton,
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
   argTypes: {
-    mode: { control: 'select', options: [...CONTROL_OPTIONS] },
+    mode: { control: 'select', options: [...SEED_CONTROL_MODES] },
     variant: { control: 'select', options: ['badge', 'button'] }
   },
   decorators: [
@@ -41,6 +43,10 @@ export const Decrement: Story = {
   args: { mode: 'decrement', variant: 'badge' }
 }
 
+export const Linked: Story = {
+  args: { mode: 'linked', variant: 'badge' }
+}
+
 export const AllModes: Story = {
   render: () => ({
     components: { SeedControlButton },
@@ -51,6 +57,7 @@ export const AllModes: Story = {
           <div class="flex items-center gap-3">
             <SeedControlButton mode="randomize" variant="badge" />
             <SeedControlButton mode="fixed" variant="badge" />
+            <SeedControlButton mode="linked" variant="badge" />
             <SeedControlButton mode="increment" variant="badge" />
             <SeedControlButton mode="decrement" variant="badge" />
           </div>
@@ -60,6 +67,7 @@ export const AllModes: Story = {
           <div class="flex items-center gap-3">
             <SeedControlButton mode="randomize" variant="button" />
             <SeedControlButton mode="fixed" variant="button" />
+            <SeedControlButton mode="linked" variant="button" />
             <SeedControlButton mode="increment" variant="button" />
             <SeedControlButton mode="decrement" variant="button" />
           </div>

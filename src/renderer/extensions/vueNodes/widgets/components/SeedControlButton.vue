@@ -2,23 +2,27 @@
 import type { ControlOptions } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
+type SeedControlMode = ControlOptions | 'linked'
+
 const { mode, variant = 'badge' } = defineProps<{
-  mode: ControlOptions
+  mode: SeedControlMode
   variant?: 'badge' | 'button'
 }>()
 
-const iconMap: Record<ControlOptions, string | null> = {
-  fixed: 'icon-[lucide--pencil-off]',
+const iconMap: Record<SeedControlMode, string | null> = {
+  fixed: 'icon-[lucide--settings-2]',
   randomize: 'icon-[lucide--shuffle]',
+  linked: 'icon-[lucide--link]',
   increment: null,
   decrement: null
 }
 
-const textMap: Record<ControlOptions, string | null> = {
+const textMap: Record<SeedControlMode, string | null> = {
   increment: '+1',
   decrement: '-1',
   fixed: null,
-  randomize: null
+  randomize: null,
+  linked: null
 }
 </script>
 
