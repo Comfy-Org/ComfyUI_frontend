@@ -34,10 +34,7 @@
             :class="toggleButtonClass"
             class="absolute top-2 left-2"
             :aria-label="t('g.switchToGridView')"
-            @click="
-              isHovered = false
-              displayMode = 'grid'
-            "
+            @click="switchToGrid"
           >
             <i class="icon-[lucide--layout-grid] size-4" />
           </button>
@@ -164,10 +161,7 @@
             :class="toggleButtonClass"
             class="absolute top-2 left-2 z-10"
             :aria-label="t('g.switchToSingleView')"
-            @click="
-              isHovered = false
-              displayMode = 'single'
-            "
+            @click="switchToSingle"
           >
             <i class="icon-[lucide--square] size-4" />
           </button>
@@ -404,6 +398,16 @@ function goToNext() {
       : 0
   imageDimensions.value = null
   scrollToActive()
+}
+
+function switchToGrid() {
+  isHovered.value = false
+  displayMode.value = 'grid'
+}
+
+function switchToSingle() {
+  isHovered.value = false
+  displayMode.value = 'single'
 }
 
 function selectFromGrid(index: number) {
