@@ -1,5 +1,6 @@
+import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -67,7 +68,7 @@ function mountComponent(
 ) {
   return mount(DisplayCarousel, {
     global: {
-      plugins: [i18n]
+      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n]
     },
     props: {
       widget,
@@ -342,7 +343,7 @@ describe('DisplayCarousel Grid Mode', () => {
     const images = ref<GalleryValue>([...TEST_IMAGES_SMALL])
     const widget = createGalleriaWidget([...TEST_IMAGES_SMALL])
     const wrapper = mount(DisplayCarousel, {
-      global: { plugins: [i18n] },
+      global: { plugins: [createTestingPinia({ createSpy: vi.fn }), i18n] },
       props: { widget, modelValue: images.value }
     })
 

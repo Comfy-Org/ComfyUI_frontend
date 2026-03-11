@@ -32,6 +32,34 @@
           >
             <i class="icon-[lucide--layout-grid] size-4" />
           </button>
+
+          <!-- Action Buttons (hover, top-right) -->
+          <div
+            v-if="isHovered && activeItem"
+            class="absolute top-2 right-2 flex gap-1"
+          >
+            <button
+              :class="actionButtonClass"
+              :aria-label="t('g.editOrMaskImage')"
+              @click="handleEditMask"
+            >
+              <i-comfy:mask class="size-4" />
+            </button>
+            <button
+              :class="actionButtonClass"
+              :aria-label="t('g.downloadImage')"
+              @click="handleDownload"
+            >
+              <i class="icon-[lucide--arrow-down-to-line] size-4" />
+            </button>
+            <button
+              :class="actionButtonClass"
+              :aria-label="t('g.removeImage')"
+              @click="handleRemove"
+            >
+              <i class="icon-[lucide--x] size-4" />
+            </button>
+          </div>
         </div>
 
         <!-- Image Dimensions -->
@@ -152,6 +180,11 @@ import { useElementSize } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { downloadFile } from '@/base/common/downloadUtil'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -173,11 +206,15 @@ interface GalleryOptions {
 
 const value = defineModel<GalleryValue>({ required: true })
 
-const { widget } = defineProps<{
+const { widget, nodeId } = defineProps<{
   widget: SimplifiedWidget<GalleryValue>
+  nodeId?: string
 }>()
 
 const { t } = useI18n()
+const maskEditor = useMaskEditor()
+const nodeOutputStore = useNodeOutputStore()
+const toastStore = useToastStore()
 
 const activeIndex = ref(0)
 const displayMode = ref<DisplayMode>('single')
@@ -240,8 +277,10 @@ const gridImageStyle = computed(() => ({
   height: `${gridImageSize.value}px`
 }))
 
-const toggleButtonClass =
+const actionButtonClass =
   'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground text-base-background shadow-[1px_1px_8px_0px_rgba(0,0,0,0.4)] transition-colors hover:bg-base-foreground/90'
+
+const toggleButtonClass = actionButtonClass
 
 const navButtonClass =
   'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-secondary-background text-component-node-foreground-secondary transition-colors'
@@ -328,5 +367,39 @@ function selectFromGrid(index: number) {
   activeIndex.value = index
   imageDimensions.value = null
   displayMode.value = 'single'
+}
+
+function handleEditMask() {
+  if (!nodeId) return
+  const node = app.rootGraph?.getNodeById(Number(nodeId))
+  if (!node) return
+  maskEditor.openMaskEditor(node)
+}
+
+function handleDownload() {
+  const src = activeItem.value ? getItemSrc(activeItem.value) : ''
+  if (!src) return
+  try {
+    downloadFile(src)
+  } catch {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadImage')
+    })
+  }
+}
+
+function handleRemove() {
+  if (!nodeId) return
+  const node = app.rootGraph?.getNodeById(Number(nodeId))
+  nodeOutputStore.removeNodeOutputs(nodeId)
+  if (node) {
+    node.imgs = undefined
+    const imageWidget = node.widgets?.find((w) => w.name === 'image')
+    if (imageWidget) {
+      imageWidget.value = ''
+    }
+  }
 }
 </script>
