@@ -224,7 +224,7 @@ describe('assetsStore - Refactored (Option A)', () => {
             content: 'some generated text',
             nodeId: '5',
             mediaType: 'text'
-          } as JobListItem['preview_output']
+          } satisfies JobListItem['preview_output']
         },
         createMockJobItem(2)
       ]

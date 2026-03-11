@@ -197,7 +197,7 @@ describe('TaskItemImpl', () => {
       preview_output: {
         nodeId: '5',
         mediaType: 'text'
-      } as JobListItem['preview_output']
+      } satisfies JobListItem['preview_output']
     }
 
     const task = new TaskItemImpl(job)
