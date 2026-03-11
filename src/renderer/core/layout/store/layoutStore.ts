@@ -377,6 +377,32 @@ class LayoutStoreImpl implements LayoutStore {
     return computed(() => this.version)
   }
 
+  getMaxZIndex(): number {
+    let max = 0
+    for (const [, ynode] of this.ynodes) {
+      if (ynode) {
+        const layout = yNodeToLayout(ynode)
+        if (layout && layout.zIndex > max) {
+          max = layout.zIndex
+        }
+      }
+    }
+    return max
+  }
+
+  getMinZIndex(): number {
+    let min = 0
+    for (const [, ynode] of this.ynodes) {
+      if (ynode) {
+        const layout = yNodeToLayout(ynode)
+        if (layout) {
+          min = Math.min(min, layout.zIndex)
+        }
+      }
+    }
+    return min
+  }
+
   /**
    * Query node at point (non-reactive for performance)
    */

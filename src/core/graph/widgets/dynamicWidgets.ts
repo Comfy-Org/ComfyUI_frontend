@@ -175,7 +175,8 @@ function dynamicComboWidget(
       }
     }
 
-    node.size[1] = node.computeSize([...node.size])[1]
+    const computed = node.computeSize([...node.size])
+    node.size = [node.size[0], computed[1]]
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
@@ -523,7 +524,8 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     for (const widget of remove(node.widgets, (w) => w.name === widgetName))
       widget.onRemove?.()
   }
-  node.size[1] = node.computeSize([...node.size])[1]
+  const computed = node.computeSize([...node.size])
+  node.size = [node.size[0], computed[1]]
 }
 
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {

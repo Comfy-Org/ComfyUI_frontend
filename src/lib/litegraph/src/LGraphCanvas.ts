@@ -6,6 +6,7 @@ import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -3620,13 +3621,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.deselect(node)
       this.graph?.remove(node)
     } else {
-      delete node.flags.ghost
-      this.graph?.trigger('node:property:changed', {
-        nodeId: node.id,
-        property: 'flags.ghost',
-        oldValue: true,
-        newValue: false
-      })
+      node.flags.ghost = undefined
 
       this.state.selectionChanged = true
       this.onSelectionChange?.(this.selected_nodes)
@@ -3968,7 +3963,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): ClipboardPasteResult | undefined {
     const data = localStorage.getItem('litegrapheditor_clipboard')
     if (!data) return
-    return this._deserializeItems(JSON.parse(data), options)
+    let parsed: ClipboardItems
+    try {
+      parsed = JSON.parse(data)
+    } catch {
+      console.warn('Failed to parse clipboard data')
+      return
+    }
+    return this._deserializeItems(parsed, options)
   }
 
   _deserializeItems(
@@ -4133,7 +4135,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // Adjust positions - use move/setPos to ensure layout store is updated
     const dx = position[0] - offsetX
     const dy = position[1] - offsetY
     for (const item of created) {
@@ -4722,6 +4723,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     graph._nodes.splice(i, 1)
     graph._nodes.push(node)
+
+    const { bringNodeToFront } = useLayoutMutations()
+    bringNodeToFront(String(node.id))
   }
 
   /**
@@ -4736,6 +4740,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     graph._nodes.splice(i, 1)
     graph._nodes.unshift(node)
+
+    const { sendNodeToBack } = useLayoutMutations()
+    sendNodeToBack(String(node.id))
   }
 
   /**
@@ -7674,8 +7681,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value = Number(value)
       }
       if (type == 'array' || type == 'object') {
-        // @ts-expect-error JSON.parse doesn't care.
-        value = JSON.parse(value)
+        try {
+          // @ts-expect-error JSON.parse doesn't care.
+          value = JSON.parse(value)
+        } catch {
+          console.warn(`Failed to parse property "${property}" as ${type}`)
+          return
+        }
       }
       node.properties[property] = value
       if (node.graph) {
@@ -8130,7 +8142,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.onShowCustomPanelInfo?.(panel)
 
       // clear
-      panel.footer.innerHTML = ''
+      panel.footer.replaceChildren()
       panel
         .addButton('Delete', function () {
           if (node.block_delete) return
@@ -8146,9 +8158,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       panel.classList.remove('settings')
       panel.classList.add('centered')
 
-      panel.alt_content.innerHTML = "<textarea class='code'></textarea>"
-      const textarea: HTMLTextAreaElement =
-        panel.alt_content.querySelector('textarea')!
+      const textarea = document.createElement('textarea')
+      textarea.className = 'code'
+      panel.alt_content.replaceChildren(textarea)
       const fDoneWith = function () {
         panel.toggleAltContent(false)
         panel.toggleFooterVisibility(true)

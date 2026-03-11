@@ -69,8 +69,9 @@ export function ensureCorrectLayoutScale(
 
     const scaledHeight = lgNode.size[1] * scaleFactor
 
-    // Directly update LiteGraph node to ensure immediate consistency
-    // Dont need to reference vue directly because the pos and dims are already in yjs
+    // Direct array element writes here are intentional: the layout store
+    // is batch-updated below (batchUpdateNodeBounds), so using setters
+    // would cause redundant individual store mutations.
     lgNode.pos[0] = scaledX
     lgNode.pos[1] = scaledY
     lgNode.size[0] = scaledWidth

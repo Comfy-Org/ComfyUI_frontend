@@ -11,6 +11,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { useNodeDisplayStore } from '@/stores/nodeDisplayStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -314,5 +315,59 @@ describe('Nested promoted widget mapping', () => {
     expect(mappedWidget?.storeNodeId).toBe(
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
     )
+  })
+})
+
+describe('Display store integration', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('registers node in display store on node add', () => {
+    const graph = new LGraph()
+    useGraphNodeManager(graph)
+
+    const node = new LGraphNode('test')
+    node.title = 'My Node'
+    graph.add(node)
+
+    const displayStore = useNodeDisplayStore()
+    const state = displayStore.getNode(graph.rootGraph.id, String(node.id))
+    expect(state).toMatchObject({
+      id: String(node.id),
+      title: 'My Node'
+    })
+  })
+
+  it('removes from display store on node removal', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    useGraphNodeManager(graph)
+
+    const displayStore = useNodeDisplayStore()
+    expect(
+      displayStore.getNode(graph.rootGraph.id, String(node.id))
+    ).toBeDefined()
+
+    graph.remove(node)
+
+    expect(
+      displayStore.getNode(graph.rootGraph.id, String(node.id))
+    ).toBeUndefined()
+  })
+
+  it('updates vue node data when display store is updated', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    const displayStore = useNodeDisplayStore()
+    displayStore.updateNode(graph.rootGraph.id, String(node.id), {
+      title: 'Updated Title'
+    })
+
+    expect(vueNodeData.get(String(node.id))?.title).toBe('Updated Title')
   })
 })

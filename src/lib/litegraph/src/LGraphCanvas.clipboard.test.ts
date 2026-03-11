@@ -7,6 +7,10 @@ import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import {
+  extractLayoutFromSerialized,
+  extractPresentationFromSerialized
+} from '@/renderer/core/layout/persistence/layoutPersistenceAdapter'
 
 function createSerialisedNode(
   id: number,
@@ -98,5 +102,82 @@ describe('remapClipboardSubgraphNodeIds', () => {
     expect(remappedNode?.properties?.proxyWidgets).toStrictEqual([
       [String(remappedInteriorId), 'seed']
     ])
+  })
+})
+
+describe('Serialization layout field preservation', () => {
+  it('serialized node preserves pos and size arrays', () => {
+    const node = new LGraphNode('test')
+    node.pos = [100, 200]
+    node.size = [300, 400]
+
+    const serialized = node.serialize()
+
+    expect(serialized.pos).toEqual([100, 200])
+    expect(serialized.size).toEqual([300, 400])
+  })
+
+  it('serialized node preserves presentation fields', () => {
+    const node = new LGraphNode('test')
+    node.title = 'Custom Title'
+    node.mode = 2
+    node.color = '#ff0000'
+    node.bgcolor = '#00ff00'
+
+    const serialized = node.serialize()
+
+    expect(serialized.title).toBe('Custom Title')
+    expect(serialized.mode).toBe(2)
+    expect(serialized.color).toBe('#ff0000')
+    expect(serialized.bgcolor).toBe('#00ff00')
+  })
+
+  it('serialized node preserves flags', () => {
+    const node = new LGraphNode('test')
+    node.flags.collapsed = true
+    node.flags.pinned = true
+
+    const serialized = node.serialize()
+
+    expect(serialized.flags?.collapsed).toBe(true)
+    expect(serialized.flags?.pinned).toBe(true)
+  })
+})
+
+describe('Layout persistence adapter round-trip', () => {
+  it('extractLayoutFromSerialized uses provided zIndex', () => {
+    const serializedNode: ISerialisedNode = {
+      id: 42,
+      type: 'test',
+      pos: [10, 20],
+      size: [100, 50],
+      flags: {},
+      order: 0,
+      mode: 0
+    }
+
+    const layout = extractLayoutFromSerialized(serializedNode, 7)
+    expect(layout.zIndex).toBe(7)
+    expect(layout.id).toBe('42')
+  })
+
+  it('extractPresentationFromSerialized handles missing optional fields', () => {
+    const serializedNode: ISerialisedNode = {
+      id: 1,
+      type: 'test',
+      pos: [0, 0],
+      size: [100, 100],
+      flags: {},
+      order: 0,
+      mode: 0
+    }
+
+    const presentation = extractPresentationFromSerialized(serializedNode)
+    expect(presentation.title).toBe('')
+    expect(presentation.mode).toBe(0)
+    expect(presentation.color).toBeUndefined()
+    expect(presentation.bgcolor).toBeUndefined()
+    expect(presentation.flags.collapsed).toBeUndefined()
+    expect(presentation.flags.pinned).toBeUndefined()
   })
 })

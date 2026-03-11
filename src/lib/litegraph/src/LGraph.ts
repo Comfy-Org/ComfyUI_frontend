@@ -79,11 +79,6 @@ import type {
 import { getAllNestedItems } from './utils/collections'
 import { deduplicateSubgraphNodeIds } from './utils/subgraphDeduplication'
 
-export type {
-  LGraphTriggerAction,
-  LGraphTriggerParam
-} from './types/graphTriggers'
-
 export type RendererType = 'LG' | 'Vue'
 
 export interface LGraphState {
@@ -1330,8 +1325,7 @@ export class LGraph
     // Convert to discriminated union format for typed handlers
     const validEventTypes = new Set([
       'node:slot-links:changed',
-      'node:slot-errors:changed',
-      'node:property:changed'
+      'node:slot-errors:changed'
     ])
 
     if (validEventTypes.has(action) && param && typeof param === 'object') {

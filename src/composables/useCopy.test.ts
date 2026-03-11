@@ -102,4 +102,32 @@ describe('Clipboard UTF-8 base64 encoding/decoding', () => {
     // This demonstrates why we need TextEncoder - plain btoa fails
     expect(() => btoa(original)).toThrow()
   })
+
+  it('should round-trip node data with layout and presentation fields', () => {
+    const nodeData = {
+      nodes: [
+        {
+          id: 1,
+          type: 'LoadImage',
+          pos: [100, 200],
+          size: [300, 150],
+          title: 'My Image Loader',
+          mode: 0,
+          flags: { collapsed: false },
+          color: '#ff0000'
+        }
+      ],
+      links: []
+    }
+    const original = JSON.stringify(nodeData)
+    const encoded = encodeClipboardData(original)
+    const decoded = decodeClipboardData(encoded)
+    const parsed = JSON.parse(decoded)
+
+    expect(parsed.nodes[0].pos).toEqual([100, 200])
+    expect(parsed.nodes[0].size).toEqual([300, 150])
+    expect(parsed.nodes[0].title).toBe('My Image Loader')
+    expect(parsed.nodes[0].color).toBe('#ff0000')
+    expect(parsed.nodes[0].flags).toEqual({ collapsed: false })
+  })
 })

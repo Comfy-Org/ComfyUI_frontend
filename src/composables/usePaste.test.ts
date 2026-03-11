@@ -595,6 +595,50 @@ describe('usePaste', () => {
       )
     })
   })
+
+  it('should pass layout-bearing clipboard data to _deserializeItems', async () => {
+    const clipboardData = {
+      nodes: [
+        {
+          id: 1,
+          type: 'LoadImage',
+          pos: [100, 200],
+          size: [300, 150],
+          title: 'Copied Node',
+          mode: 0,
+          flags: {}
+        }
+      ],
+      links: [],
+      groups: [],
+      reroutes: []
+    }
+    const encoded = btoa(JSON.stringify(clipboardData))
+    const html = `<div data-metadata="${encoded}"></div>`
+
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(mockCanvas._deserializeItems).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nodes: expect.arrayContaining([
+            expect.objectContaining({
+              pos: [100, 200],
+              size: [300, 150],
+              title: 'Copied Node'
+            })
+          ])
+        }),
+        expect.any(Object)
+      )
+    })
+  })
 })
 
 describe('cloneDataTransfer', () => {

@@ -3,7 +3,7 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { reactive, shallowReactive } from 'vue'
+import { computed, reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
@@ -19,6 +19,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
+import { useNodeDisplayStore } from '@/stores/nodeDisplayStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -29,9 +30,7 @@ import type {
   LGraph,
   LGraphBadge,
   LGraphNode,
-  LGraphTriggerAction,
-  LGraphTriggerEvent,
-  LGraphTriggerParam
+  LGraphTriggerEvent
 } from '@/lib/litegraph/src/litegraph'
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -414,15 +413,25 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
 
   const apiNode = node.constructor?.nodeData?.api_node ?? false
   const badges = node.badges
+  const nodeId = String(node.id)
+  const nodeDisplayStore = useNodeDisplayStore()
+  const presentationRef = computed(() => {
+    const graphId = node.graph?.rootGraph?.id
+    return graphId ? nodeDisplayStore.getNode(graphId, nodeId) : undefined
+  })
 
-  return {
-    id: String(node.id),
-    title: typeof node.title === 'string' ? node.title : '',
+  const data: VueNodeData = {
+    id: nodeId,
+    get title() {
+      return presentationRef.value?.title ?? ''
+    },
     type: nodeType,
-    mode: node.mode || 0,
+    get mode() {
+      return presentationRef.value?.mode ?? 0
+    },
     titleMode: node.title_mode,
     selected: node.selected || false,
-    executing: false, // Will be updated separately based on execution state
+    executing: false,
     subgraphId,
     apiNode,
     badges,
@@ -430,18 +439,33 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     widgets: safeWidgets,
     inputs: reactiveInputs,
     outputs: node.outputs ? [...node.outputs] : undefined,
-    flags: node.flags ? { ...node.flags } : undefined,
-    color: node.color || undefined,
-    bgcolor: node.bgcolor || undefined,
+    get flags() {
+      const f = presentationRef.value?.flags
+      return f ? { ...f } : undefined
+    },
+    get color() {
+      return presentationRef.value?.color
+    },
+    get bgcolor() {
+      return presentationRef.value?.bgcolor
+    },
     resizable: node.resizable,
-    shape: node.shape,
-    showAdvanced: node.showAdvanced
+    get shape() {
+      return presentationRef.value?.shape
+    },
+    get showAdvanced() {
+      return presentationRef.value?.showAdvanced
+    }
   }
+
+  return data
 }
 
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get layout mutations composable
   const { createNode, deleteNode, setSource } = useLayoutMutations()
+  const nodeDisplayStore = useNodeDisplayStore()
+  const graphId = graph.rootGraph.id
   // Safe reactive data extracted from LiteGraph nodes
   const vueNodeData = reactive(new Map<string, VueNodeData>())
 
@@ -486,6 +510,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Remove deleted nodes
     for (const id of Array.from(vueNodeData.keys())) {
       if (!currentNodes.has(id)) {
+        nodeDisplayStore.removeNode(graphId, id)
         nodeRefs.delete(id)
         vueNodeData.delete(id)
       }
@@ -526,6 +551,21 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Extract actual positions after configure() has potentially updated them
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
+
+      nodeDisplayStore.registerNode(graphId, id, {
+        id,
+        title: typeof node.title === 'string' ? node.title : '',
+        mode: node.mode || 0,
+        shape: node.shape,
+        showAdvanced: node.showAdvanced,
+        color: node.color || undefined,
+        bgcolor: node.bgcolor || undefined,
+        flags: {
+          collapsed: node.flags?.collapsed,
+          pinned: node.flags?.pinned,
+          ghost: node.flags?.ghost
+        }
+      })
 
       // Skip layout creation if it already exists
       // (e.g. in-place node replacement where the old node's layout is reused for the new node with the same ID).
@@ -579,6 +619,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
 
+    nodeDisplayStore.removeNode(graphId, id)
+
     // Clean up all tracking references
     nodeRefs.delete(id)
     vueNodeData.delete(id)
@@ -627,97 +669,16 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       handleNodeRemoved(node, originalOnNodeRemoved)
     }
 
-    const triggerHandlers: {
-      [K in LGraphTriggerAction]: (event: LGraphTriggerParam<K>) => void
-    } = {
-      'node:property:changed': (propertyEvent) => {
-        const nodeId = String(propertyEvent.nodeId)
-        const currentData = vueNodeData.get(nodeId)
-
-        if (currentData) {
-          switch (propertyEvent.property) {
-            case 'title':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                title: String(propertyEvent.newValue)
-              })
-              break
-            case 'flags.collapsed':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                flags: {
-                  ...currentData.flags,
-                  collapsed: Boolean(propertyEvent.newValue)
-                }
-              })
-              break
-            case 'flags.ghost':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                flags: {
-                  ...currentData.flags,
-                  ghost: Boolean(propertyEvent.newValue)
-                }
-              })
-              break
-            case 'flags.pinned':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                flags: {
-                  ...currentData.flags,
-                  pinned: Boolean(propertyEvent.newValue)
-                }
-              })
-              break
-            case 'mode':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                mode:
-                  typeof propertyEvent.newValue === 'number'
-                    ? propertyEvent.newValue
-                    : 0
-              })
-              break
-            case 'color':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                color:
-                  typeof propertyEvent.newValue === 'string'
-                    ? propertyEvent.newValue
-                    : undefined
-              })
-              break
-            case 'bgcolor':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                bgcolor:
-                  typeof propertyEvent.newValue === 'string'
-                    ? propertyEvent.newValue
-                    : undefined
-              })
-              break
-            case 'shape':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                shape:
-                  typeof propertyEvent.newValue === 'number'
-                    ? propertyEvent.newValue
-                    : undefined
-              })
-              break
-            case 'showAdvanced':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                showAdvanced: Boolean(propertyEvent.newValue)
-              })
-              break
-          }
-        }
-      },
-      'node:slot-errors:changed': (slotErrorsEvent) => {
+    const triggerHandlers = {
+      'node:slot-errors:changed': (slotErrorsEvent: {
+        nodeId: string | number
+      }) => {
         refreshNodeSlots(String(slotErrorsEvent.nodeId))
       },
-      'node:slot-links:changed': (slotLinksEvent) => {
+      'node:slot-links:changed': (slotLinksEvent: {
+        nodeId: string | number
+        slotType: NodeSlotType
+      }) => {
         if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
           refreshNodeSlots(String(slotLinksEvent.nodeId))
         }
@@ -726,9 +687,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     graph.onTrigger = (event: LGraphTriggerEvent) => {
       switch (event.type) {
-        case 'node:property:changed':
-          triggerHandlers['node:property:changed'](event)
-          break
         case 'node:slot-errors:changed':
           triggerHandlers['node:slot-errors:changed'](event)
           break

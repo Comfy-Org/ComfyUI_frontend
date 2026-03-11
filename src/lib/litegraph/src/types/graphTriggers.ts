@@ -1,14 +1,6 @@
 import type { NodeId } from '../LGraphNode'
 import type { NodeSlotType } from './globalEnums'
 
-interface NodePropertyChangedEvent {
-  type: 'node:property:changed'
-  nodeId: NodeId
-  property: string
-  oldValue: unknown
-  newValue: unknown
-}
-
 interface NodeSlotErrorsChangedEvent {
   type: 'node:slot-errors:changed'
   nodeId: NodeId
@@ -24,7 +16,6 @@ interface NodeSlotLinksChangedEvent {
 }
 
 export type LGraphTriggerEvent =
-  | NodePropertyChangedEvent
   | NodeSlotErrorsChangedEvent
   | NodeSlotLinksChangedEvent
 

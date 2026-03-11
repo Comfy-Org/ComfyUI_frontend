@@ -1,13 +1,19 @@
 import { toValue } from 'vue'
 
-import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
   calculateInputSlotPosFromSlot,
   getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import {
+  extractLayoutFromSerialized,
+  extractPresentationFromSerialized
+} from '@/renderer/core/layout/persistence/layoutPersistenceAdapter'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useNodeDisplayStore } from '@/stores/nodeDisplayStore'
+import type { NodeDisplayUpdate } from '@/stores/nodeDisplayStore'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
@@ -255,7 +261,84 @@ export class LGraphNode
   static keepAllLinksOnBypass: boolean = false
 
   /** The title text of the node. */
-  title: string
+  private _title: string = ''
+
+  private _mode: LGraphEventMode = LGraphEventMode.ALWAYS
+  private _color?: string
+  private _bgcolor?: string
+  private _showAdvanced?: boolean
+  private _flags: INodeFlags = {}
+
+  private applyPresentationChange(
+    oldValue: unknown,
+    newValue: unknown,
+    update: NodeDisplayUpdate
+  ): void {
+    if (oldValue === newValue) return
+
+    const graphId = this.graph?.rootGraph?.id
+    if (!graphId) return
+    useNodeDisplayStore().updateNode(graphId, String(this.id), update)
+  }
+
+  private setTrackedFlagEnumerable(
+    flag: keyof Pick<INodeFlags, 'collapsed' | 'pinned' | 'ghost'>,
+    value: boolean | undefined
+  ): void {
+    const descriptor = Object.getOwnPropertyDescriptor(this._flags, flag)
+    const shouldBeEnumerable = value !== undefined
+
+    if (!descriptor || descriptor.enumerable === shouldBeEnumerable) return
+
+    Object.defineProperty(this._flags, flag, {
+      ...descriptor,
+      enumerable: shouldBeEnumerable
+    })
+  }
+
+  private ensureTrackedFlagProperty(
+    flag: keyof Pick<INodeFlags, 'collapsed' | 'pinned' | 'ghost'>
+  ): void {
+    const current = this._flags[flag]
+    let value =
+      typeof current === 'boolean' || current === undefined
+        ? current
+        : undefined
+
+    Object.defineProperty(this._flags, flag, {
+      get: () => value,
+      set: (newValue: boolean | undefined) => {
+        const oldValue = value
+        if (oldValue === newValue) return
+
+        value = newValue
+        this.setTrackedFlagEnumerable(flag, newValue)
+
+        const flagsUpdate: NonNullable<NodeDisplayUpdate['flags']> = {}
+        flagsUpdate[flag] = newValue
+
+        this.applyPresentationChange(oldValue, newValue, { flags: flagsUpdate })
+      },
+      enumerable: value !== undefined,
+      configurable: true
+    })
+  }
+
+  private initializeTrackedFlags(): void {
+    this.ensureTrackedFlagProperty('collapsed')
+    this.ensureTrackedFlagProperty('pinned')
+    this.ensureTrackedFlagProperty('ghost')
+  }
+
+  get title(): string {
+    return this._title
+  }
+
+  set title(value: string) {
+    const oldValue = this._title
+    this._title = value
+    this.applyPresentationChange(oldValue, value, { title: value })
+  }
   /**
    * The font style used to render the node's title text.
    */
@@ -282,11 +365,17 @@ export class LGraphNode
 
   properties: Dictionary<NodeProperty | undefined> = {}
   properties_info: INodePropertyInfo[] = []
-  flags: INodeFlags = {}
-  widgets?: IBaseWidget[]
 
-  /** Property manager for this node */
-  changeTracker: LGraphNodeProperties
+  get flags(): INodeFlags {
+    return this._flags
+  }
+
+  set flags(value: INodeFlags) {
+    this._flags = value || {}
+    this.initializeTrackedFlags()
+  }
+
+  widgets?: IBaseWidget[]
 
   /**
    * The amount of space available for widgets to grow into.
@@ -298,19 +387,46 @@ export class LGraphNode
 
   /** Execution order, automatically computed during run @see {@link LGraph.computeExecutionOrder} */
   order: number = 0
-  mode: LGraphEventMode = LGraphEventMode.ALWAYS
+
+  get mode(): LGraphEventMode {
+    return this._mode
+  }
+
+  set mode(value: LGraphEventMode) {
+    const oldValue = this._mode
+    this._mode = value
+    this.applyPresentationChange(oldValue, value, { mode: value })
+  }
   last_serialization?: ISerialisedNode
   serialize_widgets?: boolean
   /**
    * The overridden fg color used to render the node.
    * @see {@link renderingColor}
    */
-  color?: string
+  get color(): string | undefined {
+    return this._color
+  }
+
+  set color(value: string | undefined) {
+    const oldValue = this._color
+    this._color = value
+    this.applyPresentationChange(oldValue, value, { color: value })
+  }
+
   /**
    * The overridden bg color used to render the node.
    * @see {@link renderingBgColor}
    */
-  bgcolor?: string
+  get bgcolor(): string | undefined {
+    return this._bgcolor
+  }
+
+  set bgcolor(value: string | undefined) {
+    const oldValue = this._bgcolor
+    this._bgcolor = value
+    this.applyPresentationChange(oldValue, value, { bgcolor: value })
+  }
+
   /**
    * The overridden box color used to render the node.
    * @see {@link renderingBoxColor}
@@ -425,7 +541,15 @@ export class LGraphNode
   _shape?: RenderShape
   mouseOver?: IMouseOverData
   redraw_on_mouse?: boolean
-  resizable?: boolean
+  private _resizable?: boolean
+
+  get resizable(): boolean {
+    return !this.pinned && this._resizable !== false
+  }
+
+  set resizable(value: boolean | undefined) {
+    this._resizable = value
+  }
   clonable?: boolean
   _relative_id?: number
   clip_area?: boolean
@@ -434,7 +558,18 @@ export class LGraphNode
   removable?: boolean
   block_delete?: boolean
   selected?: boolean
-  showAdvanced?: boolean
+
+  get showAdvanced(): boolean | undefined {
+    return this._showAdvanced
+  }
+
+  set showAdvanced(value: boolean | undefined) {
+    const oldValue = this._showAdvanced
+    this._showAdvanced = value
+    this.applyPresentationChange(oldValue, value, {
+      showAdvanced: value
+    })
+  }
 
   declare comfyDynamic?: Record<string, object>
   declare comfyClass?: string
@@ -503,6 +638,33 @@ export class LGraphNode
     this.pos = [x, y]
   }
 
+  /**
+   * Apply position and size from the layout store without triggering
+   * store mutations. Used exclusively by store→LiteGraph projection
+   * (e.g. useLayoutSync) to avoid feedback loops.
+   */
+  applyStoreProjection(
+    pos: { x: number; y: number },
+    size: { width: number; height: number }
+  ): boolean {
+    let changed = false
+
+    if (this._pos[0] !== pos.x || this._pos[1] !== pos.y) {
+      this._pos[0] = pos.x
+      this._pos[1] = pos.y
+      changed = true
+    }
+
+    if (this._size[0] !== size.width || this._size[1] !== size.height) {
+      this._size[0] = size.width
+      this._size[1] = size.height
+      this.onResize?.(this._size)
+      changed = true
+    }
+
+    return changed
+  }
+
   public get size() {
     return this._size
   }
@@ -553,14 +715,9 @@ export class LGraphNode
       default:
         this._shape = v
     }
-    if (oldValue !== this._shape) {
-      this.graph?.trigger('node:property:changed', {
-        nodeId: this.id,
-        property: 'shape',
-        oldValue,
-        newValue: this._shape
-      })
-    }
+    this.applyPresentationChange(oldValue, this._shape, {
+      shape: this._shape
+    })
   }
 
   /**
@@ -807,12 +964,11 @@ export class LGraphNode
     this.type = type ?? ''
     this.size = [LiteGraph.NODE_WIDTH, 60]
     this.pos = [10, 10]
+    this.initializeTrackedFlags()
     this.strokeStyles = {
       error: this._getErrorStrokeStyle,
       selected: this._getSelectedStrokeStyle
     }
-    // Initialize property manager with tracked properties
-    this.changeTracker = new LGraphNodeProperties(this)
   }
 
   /** Internal callback for subgraph nodes. Do not implement externally. */
@@ -916,9 +1072,6 @@ export class LGraphNode
       }
     }
 
-    // Sync the state of this.resizable.
-    if (this.pinned) this.resizable = false
-
     if (this.widgets_up) {
       console.warn(
         `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
@@ -928,6 +1081,40 @@ export class LGraphNode
     }
 
     this.onConfigure?.(info)
+  }
+
+  /**
+   * Project serialized node data into layout and presentation stores.
+   *
+   * Store initialization is primarily handled by the node lifecycle bridge
+   * (useGraphNodeManager.handleNodeAdded → initializeVueNodeLayout), which
+   * fires on graph.add(). Property setters (title, mode, flags, etc.)
+   * incrementally sync presentation state during configure() via
+   * useNodeDisplayStore().updateNode(). This method provides an explicit
+   * bulk-sync alternative for scenarios needing deterministic projection.
+   *
+   * @param info The serialized node data
+   * @param nodeIndex Optional z-order index (array position during graph load)
+   */
+  notifyStoresAfterConfigure(info: ISerialisedNode, nodeIndex?: number): void {
+    const nodeId = String(this.id)
+    const layout = extractLayoutFromSerialized(info, nodeIndex)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+
+    const presentation = extractPresentationFromSerialized(info)
+    const graphId = this.graph?.rootGraph?.id
+    if (graphId) {
+      useNodeDisplayStore().registerNode(graphId, nodeId, presentation)
+    }
   }
 
   /**
@@ -1860,7 +2047,7 @@ export class LGraphNode
     canvasX: number,
     canvasY: number
   ): CompassCorners | undefined {
-    if (this.resizable === false) return
+    if (!this.resizable) return
 
     const { boundingRect } = this
     if (!boundingRect.containsXy(canvasX, canvasY)) return
@@ -3553,7 +3740,6 @@ export class LGraphNode
 
     this.graph._version++
     this.flags.pinned = v ?? !this.flags.pinned
-    this.resizable = !this.pinned
     if (!this.pinned) this.flags.pinned = undefined
   }
 
@@ -3800,7 +3986,7 @@ export class LGraphNode
 
       if (this.collapsed) {
         // For collapsed nodes, limit to 20 chars as before
-        displayTitle = title.substr(0, 20)
+        displayTitle = title.slice(0, 20)
       } else if (availableWidth > 0) {
         // For regular nodes, truncate based on available width
         displayTitle = truncateText(ctx, title, availableWidth)

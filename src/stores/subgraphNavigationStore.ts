@@ -10,11 +10,6 @@ import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
-/**
- * Stores the current subgraph navigation state; a stack representing subgraph
- * navigation history from the root graph to the subgraph that is currently
- * open.
- */
 export const useSubgraphNavigationStore = defineStore(
   'subgraphNavigation',
   () => {

@@ -9,6 +9,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -25,6 +26,27 @@ function clone<T>(obj: T): T {
 const logger = log.getLogger('ChangeTracker')
 // Change to debug for more verbose logging
 logger.setLevel('info')
+
+function verifyStoreConsistency(): void {
+  if (!app.graph) return
+
+  for (const node of app.graph._nodes) {
+    const storeLayout = layoutStore.getNodeLayoutRef(String(node.id)).value
+    if (!storeLayout) continue
+
+    const posMatch =
+      Math.abs(storeLayout.position.x - node.pos[0]) < 0.01 &&
+      Math.abs(storeLayout.position.y - node.pos[1]) < 0.01
+
+    if (!posMatch) {
+      logger.warn(
+        'Store/graph position mismatch after restore for node',
+        node.id
+      )
+      return
+    }
+  }
+}
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
@@ -171,6 +193,9 @@ export class ChangeTracker {
         })
         this.activeState = prevState
         this.updateModified()
+        if (import.meta.env.DEV) {
+          verifyStoreConsistency()
+        }
       } finally {
         this._restoringState = false
       }

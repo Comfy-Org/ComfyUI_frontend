@@ -564,7 +564,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  vueNodeLifecycle.cleanup()
+  vueNodeLifecycle.disposeNodeManagerAndSyncs()
 })
 function forwardPanEvent(e: PointerEvent) {
   if (

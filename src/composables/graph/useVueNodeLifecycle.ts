@@ -6,6 +6,7 @@ import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeDisplayStore } from '@/stores/nodeDisplayStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
@@ -61,6 +62,11 @@ function useVueNodeLifecycleIndividual() {
 
   const disposeNodeManagerAndSyncs = () => {
     if (!nodeManager.value) return
+
+    const graphId = comfyApp.canvas?.graph?.rootGraph.id
+    if (graphId) {
+      useNodeDisplayStore().clearGraph(graphId)
+    }
 
     try {
       nodeManager.value.cleanup()
@@ -136,22 +142,13 @@ function useVueNodeLifecycleIndividual() {
     }
   }
 
-  // Cleanup function for component unmounting
-  const cleanup = () => {
-    if (nodeManager.value) {
-      nodeManager.value.cleanup()
-      nodeManager.value = null
-    }
-  }
-
   return {
     nodeManager,
 
     // Lifecycle methods
     initializeNodeManager,
     disposeNodeManagerAndSyncs,
-    setupEmptyGraphListener,
-    cleanup
+    setupEmptyGraphListener
   }
 }
 
