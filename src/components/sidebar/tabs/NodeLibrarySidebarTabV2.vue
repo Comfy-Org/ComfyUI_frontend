@@ -118,7 +118,7 @@
     <template #body>
       <NodeDragPreview />
       <!-- Tab content (scrollable) -->
-      <TabsRoot v-model="selectedTab" class="h-full">
+      <TabsRoot v-model="selectedTab" class="h-full py-2">
         <EssentialNodesPanel
           v-if="
             flags.nodeLibraryEssentialsEnabled && selectedTab === 'essentials'

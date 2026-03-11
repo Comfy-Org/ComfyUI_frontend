@@ -56,7 +56,7 @@
     <template #body>
       <div
         v-if="showLoadingState"
-        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 px-2"
+        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 p-2"
       >
         <div
           v-for="n in skeletonCount"
@@ -83,7 +83,11 @@
           :message="$t('sideToolbar.noFilesFoundMessage')"
         />
       </div>
-      <div v-else class="relative size-full" @click="handleEmptySpaceClick">
+      <div
+        v-else
+        class="relative size-full py-2"
+        @click="handleEmptySpaceClick"
+      >
         <AssetsSidebarListView
           v-if="isListView"
           :asset-items="listViewAssetItems"
