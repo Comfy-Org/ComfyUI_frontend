@@ -1,6 +1,6 @@
 import type { InjectionKey, Ref } from 'vue'
 
-export interface TabListContext {
+interface TabListContext {
   modelValue: Ref<string>
   select: (value: string) => void
 }
