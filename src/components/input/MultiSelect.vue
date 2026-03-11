@@ -1,16 +1,16 @@
 <template>
-  <PopoverRoot v-model:open="isOpen">
-    <PopoverTrigger as-child>
-      <button
-        ref="triggerRef"
+  <ComboboxRoot
+    v-model="selectedItems"
+    multiple
+    by="value"
+    :disabled
+    ignore-filter
+    :reset-search-term-on-select="false"
+  >
+    <ComboboxAnchor as-child>
+      <ComboboxTrigger
         v-bind="$attrs"
-        type="button"
-        :disabled
         :aria-label="label || t('g.multiSelectDropdown')"
-        role="combobox"
-        :aria-expanded="isOpen"
-        aria-haspopup="listbox"
-        :tabindex="0"
         :class="
           cn(
             'relative inline-flex cursor-pointer items-center select-none',
@@ -49,14 +49,14 @@
         >
           <i class="icon-[lucide--chevron-down] text-muted-foreground" />
         </div>
-      </button>
-    </PopoverTrigger>
+      </ComboboxTrigger>
+    </ComboboxAnchor>
 
-    <PopoverPortal>
-      <PopoverContent
+    <ComboboxPortal>
+      <ComboboxContent
+        position="popper"
         :side-offset="8"
         align="start"
-        :style="{ minWidth: contentMinWidth }"
         :class="
           cn(
             'z-3000 overflow-hidden',
@@ -70,19 +70,29 @@
             'data-[side=bottom]:slide-in-from-top-2'
           )
         "
-        @open-auto-focus.prevent
       >
         <div
           v-if="showSearchBox || showSelectedCount || showClearButton"
           class="flex flex-col px-2 pt-2 pb-0"
         >
-          <SearchInput
+          <div
             v-if="showSearchBox"
-            v-model="searchQuery"
-            :class="showSelectedCount || showClearButton ? 'mb-2' : ''"
-            :placeholder="searchPlaceholder"
-            size="sm"
-          />
+            :class="
+              cn(
+                'flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5',
+                showSelectedCount || showClearButton ? 'mb-2' : ''
+              )
+            "
+          >
+            <i
+              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+            />
+            <ComboboxInput
+              v-model="searchQuery"
+              :placeholder="searchPlaceholder"
+              class="w-full border-none bg-transparent text-sm outline-none"
+            />
+          </div>
           <div
             v-if="showSelectedCount || showClearButton"
             class="mt-2 flex items-center justify-between"
@@ -109,79 +119,68 @@
           <div class="my-4 h-px bg-border-default" />
         </div>
 
-        <ListboxRoot
-          v-model="selectedItems"
-          multiple
-          by="value"
+        <ComboboxViewport
           :class="
             cn(
-              'flex flex-col gap-0 p-0 text-sm outline-none',
-              'scrollbar-custom overflow-y-auto'
+              'flex flex-col gap-0 p-0 text-sm',
+              'scrollbar-custom overflow-y-auto',
+              'min-w-(--reka-combobox-trigger-width)'
             )
           "
           :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
         >
-          <ListboxContent>
-            <ListboxItem
-              v-for="opt in filteredOptions"
-              :key="opt.value"
-              :value="opt"
-              :class="
-                cn(
-                  'flex h-10 cursor-pointer items-center gap-2 rounded-lg px-2 outline-none',
-                  'hover:bg-secondary-background-hover',
-                  'focus:bg-secondary-background-selected focus:hover:bg-secondary-background-selected'
-                )
-              "
-              :style="popoverStyle"
+          <ComboboxItem
+            v-for="opt in filteredOptions"
+            :key="opt.value"
+            :value="opt"
+            :class="
+              cn(
+                'group flex h-10 cursor-pointer items-center gap-2 rounded-lg px-2 outline-none',
+                'hover:bg-secondary-background-hover',
+                'data-highlighted:bg-secondary-background-selected data-highlighted:hover:bg-secondary-background-selected'
+              )
+            "
+            :style="popoverStyle"
+          >
+            <div
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background"
             >
-              <div
-                class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
-                :class="
-                  isSelected(opt)
-                    ? 'bg-primary-background'
-                    : 'bg-secondary-background'
-                "
-              >
+              <ComboboxItemIndicator>
                 <i
-                  v-if="isSelected(opt)"
                   class="text-bold icon-[lucide--check] text-xs text-base-foreground"
                 />
-              </div>
-              <span>{{ opt.name }}</span>
-            </ListboxItem>
-            <div
-              v-if="filteredOptions.length === 0"
-              class="px-3 pb-4 text-sm text-muted-foreground"
-            >
-              {{ $t('g.noResultsFound') }}
+              </ComboboxItemIndicator>
             </div>
-          </ListboxContent>
-        </ListboxRoot>
-      </PopoverContent>
-    </PopoverPortal>
-  </PopoverRoot>
+            <span>{{ opt.name }}</span>
+          </ComboboxItem>
+          <ComboboxEmpty class="px-3 pb-4 text-sm text-muted-foreground">
+            {{ $t('g.noResultsFound') }}
+          </ComboboxEmpty>
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
 </template>
 
 <script setup lang="ts">
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
-import { useElementSize } from '@vueuse/core'
 import {
-  ListboxContent,
-  ListboxItem,
-  ListboxRoot,
-  PopoverContent,
-  PopoverPortal,
-  PopoverRoot,
-  PopoverTrigger
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxItemIndicator,
+  ComboboxPortal,
+  ComboboxRoot,
+  ComboboxTrigger,
+  ComboboxViewport
 } from 'reka-ui'
-import type { ComponentPublicInstance } from 'vue'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -234,22 +233,12 @@ const selectedItems = defineModel<SelectOption[]>({
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
 const { t } = useI18n()
-const isOpen = ref(false)
-const triggerRef = ref<ComponentPublicInstance | null>(null)
-const { width: triggerWidth } = useElementSize(triggerRef)
-const contentMinWidth = computed(() =>
-  triggerWidth.value > 0 ? `${triggerWidth.value}px` : undefined
-)
 const selectedCount = computed(() => selectedItems.value.length)
 
 const popoverStyle = usePopoverSizing({
   minWidth: popoverMinWidth,
   maxWidth: popoverMaxWidth
 })
-
-function isSelected(opt: SelectOption): boolean {
-  return selectedItems.value.some((item) => item.value === opt.value)
-}
 
 const fuseOptions: UseFuseOptions<SelectOption> = {
   fuseOptions: {
