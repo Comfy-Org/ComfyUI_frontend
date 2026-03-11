@@ -1,17 +1,20 @@
 <template>
   <div
-    ref="rootEl"
     class="flex max-w-full flex-col rounded-lg bg-component-node-widget-background"
-    @mouseenter="isHovered = true"
-    @mouseleave="isHovered = false"
-    @focusin="isFocused = true"
-    @focusout="handleFocusOut"
   >
     <!-- Single Mode -->
     <template v-if="displayMode === 'single'">
       <div class="flex flex-col gap-2 p-4">
         <!-- Main Image Container -->
-        <div class="relative flex items-center justify-center">
+        <div
+          ref="imageContainerEl"
+          class="relative flex cursor-pointer items-center justify-center"
+          tabindex="0"
+          @mouseenter="isHovered = true"
+          @mouseleave="isHovered = false"
+          @focusin="isFocused = true"
+          @focusout="handleFocusOut"
+        >
           <img
             v-if="activeItem"
             :src="getItemSrc(activeItem)"
@@ -31,7 +34,10 @@
             :class="toggleButtonClass"
             class="absolute top-2 left-2"
             :aria-label="t('g.switchToGridView')"
-            @click="displayMode = 'grid'"
+            @click="
+              isHovered = false
+              displayMode = 'grid'
+            "
           >
             <i class="icon-[lucide--layout-grid] size-4" />
           </button>
@@ -95,7 +101,16 @@
           <!-- Thumbnails -->
           <div
             v-if="showThumbnails"
-            class="flex items-center gap-2 overflow-x-hidden scroll-smooth"
+            class="flex items-center gap-1 overflow-x-hidden scroll-smooth"
+            style="
+              mask-image: linear-gradient(
+                to right,
+                transparent,
+                black 20px,
+                black calc(100% - 20px),
+                transparent
+              );
+            "
           >
             <button
               v-for="(item, index) in galleryImages"
@@ -103,7 +118,7 @@
               :ref="(el) => setThumbnailRef(el as HTMLElement | null, index)"
               :class="
                 cn(
-                  'size-10 shrink-0 cursor-pointer overflow-hidden rounded-sm border-2 border-transparent transition-colors',
+                  'shrink-0 cursor-pointer overflow-hidden rounded-lg border-2 border-transparent p-1 transition-colors',
                   index === activeIndex && 'border-base-foreground'
                 )
               "
@@ -113,7 +128,7 @@
               <img
                 :src="getItemThumbnail(item)"
                 :alt="getItemAlt(item, index)"
-                class="size-full object-cover"
+                class="size-10 rounded-sm object-cover"
               />
             </button>
           </div>
@@ -137,6 +152,11 @@
         <div
           ref="gridContainerEl"
           class="relative h-[296px] overflow-clip rounded-sm bg-component-node-background"
+          tabindex="0"
+          @mouseenter="isHovered = true"
+          @mouseleave="isHovered = false"
+          @focusin="isFocused = true"
+          @focusout="handleFocusOut"
         >
           <!-- Toggle to Single (hover, top-left) -->
           <button
@@ -144,7 +164,10 @@
             :class="toggleButtonClass"
             class="absolute top-2 left-2 z-10"
             :aria-label="t('g.switchToSingleView')"
-            @click="displayMode = 'single'"
+            @click="
+              isHovered = false
+              displayMode = 'single'
+            "
           >
             <i class="icon-[lucide--square] size-4" />
           </button>
@@ -226,7 +249,7 @@ const isFocused = ref(false)
 const hoveredGridIndex = ref(-1)
 const imageDimensions = ref<string | null>(null)
 const thumbnailRefs = ref<(HTMLElement | null)[]>([])
-const rootEl = ref<HTMLDivElement>()
+const imageContainerEl = ref<HTMLDivElement>()
 const gridContainerEl = ref<HTMLDivElement>()
 
 const showControls = computed(() => isHovered.value || isFocused.value)
@@ -325,7 +348,11 @@ function getItemAlt(item: GalleryImage, index: number): string {
 }
 
 function handleFocusOut(event: FocusEvent) {
-  if (!rootEl.value?.contains(event.relatedTarget as Node)) {
+  const container =
+    displayMode.value === 'single'
+      ? imageContainerEl.value
+      : gridContainerEl.value
+  if (!container?.contains(event.relatedTarget as Node)) {
     isFocused.value = false
   }
 }
@@ -382,6 +409,7 @@ function goToNext() {
 function selectFromGrid(index: number) {
   activeIndex.value = index
   imageDimensions.value = null
+  isHovered.value = false
   displayMode.value = 'single'
 }
 

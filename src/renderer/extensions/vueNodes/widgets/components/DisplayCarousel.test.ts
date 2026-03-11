@@ -100,6 +100,10 @@ function findThumbnailButtons(wrapper: ReturnType<typeof mount>) {
   return wrapper.findAll('button').filter((btn) => btn.find('img').exists())
 }
 
+function findImageContainer(wrapper: ReturnType<typeof mount>) {
+  return wrapper.find('[tabindex="0"]')
+}
+
 describe('DisplayCarousel Single Mode', () => {
   describe('Component Rendering', () => {
     it('renders main image', () => {
@@ -276,7 +280,7 @@ describe('DisplayCarousel Accessibility', () => {
   it('shows controls on focusin for keyboard users', async () => {
     const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-    await wrapper.find('div').trigger('focusin')
+    await findImageContainer(wrapper).trigger('focusin')
     await nextTick()
 
     expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
@@ -290,11 +294,13 @@ describe('DisplayCarousel Accessibility', () => {
   it('hides controls on focusout when focus leaves component', async () => {
     const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-    await wrapper.find('div').trigger('focusin')
+    await findImageContainer(wrapper).trigger('focusin')
     await nextTick()
 
-    // Focus leaves the component entirely
-    await wrapper.find('div').trigger('focusout', { relatedTarget: null })
+    // Focus leaves the image container entirely
+    await findImageContainer(wrapper).trigger('focusout', {
+      relatedTarget: null
+    })
     await nextTick()
 
     expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
@@ -307,8 +313,8 @@ describe('DisplayCarousel Grid Mode', () => {
   it('switches to grid mode via toggle button on hover', async () => {
     const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-    // Trigger hover to reveal toggle button
-    await wrapper.find('div').trigger('mouseenter')
+    // Trigger focus on image container to reveal toggle button
+    await findImageContainer(wrapper).trigger('focusin')
     await nextTick()
 
     const toggleBtn = wrapper.find('[aria-label="Switch to grid view"]')
@@ -325,7 +331,7 @@ describe('DisplayCarousel Grid Mode', () => {
   it('does not show grid toggle for single image', async () => {
     const wrapper = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
 
-    await wrapper.find('div').trigger('mouseenter')
+    await findImageContainer(wrapper).trigger('focusin')
     await nextTick()
 
     expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
@@ -336,10 +342,14 @@ describe('DisplayCarousel Grid Mode', () => {
   it('switches back to single mode via toggle button', async () => {
     const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-    // Switch to grid
-    await wrapper.find('div').trigger('mouseenter')
+    // Switch to grid via focus on image container
+    await findImageContainer(wrapper).trigger('focusin')
     await nextTick()
     await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
+    await nextTick()
+
+    // Focus the grid container to reveal toggle
+    await findImageContainer(wrapper).trigger('focusin')
     await nextTick()
 
     // Switch back to single
@@ -356,8 +366,8 @@ describe('DisplayCarousel Grid Mode', () => {
   it('clicking grid image switches to single mode focused on that image', async () => {
     const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-    // Switch to grid
-    await wrapper.find('div').trigger('mouseenter')
+    // Switch to grid via focus on image container
+    await findImageContainer(wrapper).trigger('focusin')
     await nextTick()
     await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
     await nextTick()
@@ -382,8 +392,8 @@ describe('DisplayCarousel Grid Mode', () => {
       props: { widget, modelValue: images.value }
     })
 
-    // Switch to grid
-    await wrapper.find('div').trigger('mouseenter')
+    // Switch to grid via focus on image container
+    await findImageContainer(wrapper).trigger('focusin')
     await nextTick()
     await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
     await nextTick()

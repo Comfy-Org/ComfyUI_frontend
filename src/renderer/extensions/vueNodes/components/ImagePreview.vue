@@ -7,7 +7,7 @@
     <!-- Image Wrapper -->
     <div
       ref="imageWrapperEl"
-      class="relative flex min-h-0 w-full flex-1 overflow-hidden rounded-[5px] bg-transparent"
+      class="relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-[5px] bg-transparent"
       tabindex="0"
       role="img"
       :aria-label="$t('g.imagePreview')"
