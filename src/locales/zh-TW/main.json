@@ -952,6 +952,7 @@
     "collapseAll": "全部摺疊",
     "color": "顏色",
     "comfy": "Comfy",
+    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 標誌",
     "comingSoon": "即將推出",
     "command": "指令",
@@ -1459,12 +1460,14 @@
       "unknownWidget": "元件不可見"
     },
     "cancelThisRun": "取消本次執行",
+    "deleteAllAssets": "刪除本次運行的所有資產",
     "downloadAll": "全部下載",
     "dragAndDropImage": "拖曳圖片到此",
     "emptyWorkflowExplanation": "您的工作流程目前是空的。您需要先新增一些節點，才能開始建立應用程式。",
     "enterNodeGraph": "進入節點圖",
     "giveFeedback": "提供回饋",
     "graphMode": "圖形模式",
+    "hasCreditCost": "需要額外點數",
     "linearMode": "App 模式",
     "loadTemplate": "載入範本",
     "mobileControls": "編輯與執行",
@@ -1855,7 +1858,6 @@
     "execute": "執行",
     "fullscreen": "全螢幕",
     "help": "說明",
-    "helpAndFeedback": "說明與回饋",
     "hideMenu": "隱藏選單",
     "instant": "立即",
     "instantTooltip": "每次產生完成後，工作流程會立即排入佇列",
@@ -3374,10 +3376,7 @@
     "addedToWorkspace": "你已被加入 {workspaceName}",
     "inviteAccepted": "已接受邀請",
     "inviteFailed": "接受邀請失敗",
-    "unsavedChanges": {
-      "message": "您有未儲存的變更。是否要捨棄這些變更並切換工作區？",
-      "title": "未儲存的變更"
-    },
+    "switchFailed": "切換工作區失敗。請再試一次。",
     "viewWorkspace": "檢視工作區"
   },
   "workspaceAuth": {

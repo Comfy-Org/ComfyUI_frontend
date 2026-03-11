@@ -23,7 +23,8 @@ const zPreviewOutput = z.object({
   subfolder: z.string(),
   type: resultItemType,
   nodeId: z.string(),
-  mediaType: z.string()
+  mediaType: z.string(),
+  display_name: z.string().optional()
 })
 
 /**

@@ -68,7 +68,7 @@ export function useMediaAssetActions() {
     if (!targetAsset) return
 
     try {
-      const filename = targetAsset.name
+      const filename = targetAsset.display_name || targetAsset.name
       // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
       const downloadUrl = targetAsset.preview_url || getAssetUrl(targetAsset)
 
@@ -84,8 +84,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('g.failedToDownloadImage'),
-        life: 3000
+        detail: t('g.failedToDownloadImage')
       })
     }
   }
@@ -110,7 +109,7 @@ export function useMediaAssetActions() {
 
     try {
       assets.forEach((asset) => {
-        const filename = asset.name
+        const filename = asset.display_name || asset.name
         const downloadUrl = asset.preview_url || getAssetUrl(asset)
         downloadFile(downloadUrl, filename)
       })
@@ -126,8 +125,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('g.failedToDownloadImage'),
-        life: 3000
+        detail: t('g.failedToDownloadImage')
       })
     }
   }
@@ -182,8 +180,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('exportToast.exportFailedSingle'),
-        life: 3000
+        detail: t('exportToast.exportFailedSingle')
       })
     }
   }
@@ -238,8 +235,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('mediaAsset.nodeTypeNotFound', { nodeType }),
-        life: 3000
+        detail: t('mediaAsset.nodeTypeNotFound', { nodeType })
       })
       return
     }
@@ -252,8 +248,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('mediaAsset.failedToCreateNode'),
-        life: 3000
+        detail: t('mediaAsset.failedToCreateNode')
       })
       return
     }
@@ -443,8 +438,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('mediaAsset.selection.failedToAddNodes'),
-        life: 3000
+        detail: t('mediaAsset.selection.failedToAddNodes')
       })
     } else {
       toast.add({
@@ -676,8 +670,7 @@ export function useMediaAssetActions() {
                   summary: t('g.error'),
                   detail: isSingle
                     ? t('mediaAsset.failedToDeleteAsset')
-                    : t('mediaAsset.selection.failedToDeleteAssets'),
-                  life: 3000
+                    : t('mediaAsset.selection.failedToDeleteAssets')
                 })
               } else {
                 // Partial success (only possible with multiple assets)
@@ -698,8 +691,7 @@ export function useMediaAssetActions() {
                 summary: t('g.error'),
                 detail: isSingle
                   ? t('mediaAsset.failedToDeleteAsset')
-                  : t('mediaAsset.selection.failedToDeleteAssets'),
-                life: 3000
+                  : t('mediaAsset.selection.failedToDeleteAssets')
               })
             } finally {
               // Hide loading overlay for all assets

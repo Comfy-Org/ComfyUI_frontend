@@ -952,6 +952,7 @@
     "collapseAll": "すべて折りたたむ",
     "color": "色",
     "comfy": "Comfy",
+    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrgロゴ",
     "comingSoon": "近日公開",
     "command": "コマンド",
@@ -1459,12 +1460,14 @@
       "unknownWidget": "ウィジェットが表示されていません"
     },
     "cancelThisRun": "この実行をキャンセル",
+    "deleteAllAssets": "この実行からすべてのアセットを削除",
     "downloadAll": "すべてダウンロード",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
     "emptyWorkflowExplanation": "ワークフローが空です。アプリを作成するには、まずノードを追加してください。",
     "enterNodeGraph": "ノードグラフに入る",
     "giveFeedback": "フィードバックを送る",
     "graphMode": "グラフモード",
+    "hasCreditCost": "追加クレジットが必要です",
     "linearMode": "アプリモード",
     "loadTemplate": "テンプレートを読み込む",
     "mobileControls": "編集と実行",
@@ -1855,7 +1858,6 @@
     "execute": "実行",
     "fullscreen": "全画面表示",
     "help": "ヘルプ",
-    "helpAndFeedback": "ヘルプとフィードバック",
     "hideMenu": "メニューを隠す",
     "instant": "即時",
     "instantTooltip": "生成完了後すぐにキューに追加",
@@ -3374,10 +3376,7 @@
     "addedToWorkspace": "{workspaceName}に追加されました",
     "inviteAccepted": "招待を承諾しました",
     "inviteFailed": "招待の承諾に失敗しました",
-    "unsavedChanges": {
-      "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
-      "title": "未保存の変更"
-    },
+    "switchFailed": "ワークスペースの切り替えに失敗しました。もう一度お試しください。",
     "viewWorkspace": "ワークスペースを見る"
   },
   "workspaceAuth": {

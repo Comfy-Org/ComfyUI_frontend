@@ -570,10 +570,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Appearance', 'General'],
     name: 'Tab Bar Layout',
     type: 'combo',
-    options: ['Default', 'Integrated'],
-    tooltip:
-      'Controls the layout of the tab bar. "Integrated" moves Help and User controls into the tab bar area.',
-    defaultValue: 'Default'
+    options: ['Default', 'Legacy'],
+    tooltip: 'Controls the elements contained in the integrated tab bar.',
+    defaultValue: 'Default',
+    migrateDeprecatedValue: (value: unknown) =>
+      value === 'Integrated' ? 'Default' : value
   },
   {
     id: 'Comfy.UseNewMenu',
