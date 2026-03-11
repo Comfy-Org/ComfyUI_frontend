@@ -100,7 +100,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             this.posthog = posthogModule.default
             this.posthog!.init(apiKey, {
               api_host:
-                window.__CONFIG__?.posthog_api_host || 'https://ph.comfy.org',
+                window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               autocapture: false,
               capture_pageview: false,
               capture_pageleave: false,
