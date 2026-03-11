@@ -111,31 +111,22 @@ vi.mock('@/stores/queueStore', () => ({
     constructor(public job: JobListItem) {
       this.jobId = job.id
       this.outputsCount = job.outputs_count ?? null
-      if (mockOutputOverrides.value) {
-        this.flatOutputs = mockOutputOverrides.value
-        const previewable = mockOutputOverrides.value.filter(
-          (o) => o.supportsPreview
-        )
-        this.previewOutput =
-          previewable.findLast((o) => o.type === 'output') ?? previewable.at(-1)
-      } else {
-        const preview = job.preview_output
-        const isPreviewable =
-          !!preview?.filename && PREVIEWABLE_MEDIA_TYPES.has(preview.mediaType)
-        if (preview && isPreviewable) {
-          const item = {
-            supportsPreview: true,
-            filename: preview.filename!,
-            subfolder: preview.subfolder ?? '',
-            type: preview.type ?? 'output',
-            url: `http://test.com/${preview.filename}`
-          }
-          this.flatOutputs = [item]
-          this.previewOutput = item
-        } else {
-          this.flatOutputs = []
-          this.previewOutput = undefined
+      const preview = job.preview_output
+      const isPreviewable =
+        !!preview?.filename && PREVIEWABLE_MEDIA_TYPES.has(preview.mediaType)
+      if (preview && isPreviewable) {
+        const item = {
+          supportsPreview: true,
+          filename: preview.filename!,
+          subfolder: preview.subfolder ?? '',
+          type: preview.type ?? 'output',
+          url: `http://test.com/${preview.filename}`
         }
+        this.flatOutputs = [item]
+        this.previewOutput = item
+      } else {
+        this.flatOutputs = []
+        this.previewOutput = undefined
       }
     }
 
