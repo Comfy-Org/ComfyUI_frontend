@@ -14,10 +14,8 @@
           'transition-all duration-200 ease-in-out',
           'hover:bg-secondary-background-hover',
           'border-[2.5px] border-solid',
-          invalid
-            ? 'border-destructive-background'
-            : 'border-transparent focus:border-node-component-border',
-          'focus:outline-none',
+          invalid ? 'border-destructive-background' : 'border-transparent',
+          'focus:border-node-component-border focus:outline-none',
           'disabled:cursor-default disabled:opacity-30 disabled:hover:bg-secondary-background'
         )
       "
