@@ -149,6 +149,8 @@ export const useWorkflowService = () => {
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
     }
+
+    useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
     return true
   }
 
@@ -189,6 +191,7 @@ export const useWorkflowService = () => {
       }
 
       await workflowStore.saveWorkflow(workflow)
+      useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
     }
   }
 
