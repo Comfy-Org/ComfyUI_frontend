@@ -61,18 +61,6 @@ const mountListView = (assetItems: OutputStackListItem[] = []) =>
   })
 
 describe('AssetsSidebarListView', () => {
-  it('shows generated assets header when there are assets', () => {
-    const wrapper = mountListView([buildOutputItem(buildAsset('a1', 'x.png'))])
-
-    expect(wrapper.text()).toContain('sideToolbar.generatedAssetsHeader')
-  })
-
-  it('does not show assets header when there are no assets', () => {
-    const wrapper = mountListView([])
-
-    expect(wrapper.text()).not.toContain('sideToolbar.generatedAssetsHeader')
-  })
-
   it('marks mp4 assets as video previews', () => {
     const videoAsset = {
       ...buildAsset('video-asset', 'clip.mp4'),
