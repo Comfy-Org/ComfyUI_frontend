@@ -1,22 +1,23 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.nodes')">
     <template #header>
-      <TabsRoot v-model="selectedTab" class="flex flex-col">
-        <div class="flex items-center justify-between gap-2 px-2 pb-2 2xl:px-4">
-          <SearchInput
-            ref="searchBoxRef"
-            v-model="searchQuery"
-            :placeholder="$t('g.search') + '...'"
-            @search="handleSearch"
-          />
+      <SidebarTopArea bottom-divider>
+        <SearchInput
+          ref="searchBoxRef"
+          v-model="searchQuery"
+          :placeholder="$t('g.search') + '...'"
+          @search="handleSearch"
+        />
+        <template #actions>
           <DropdownMenuRoot>
             <DropdownMenuTrigger as-child>
-              <button
+              <Button
+                variant="secondary"
+                size="icon"
                 :aria-label="$t('g.sort')"
-                class="hover:bg-comfy-input-hover flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-comfy-input"
               >
                 <i class="icon-[lucide--arrow-up-down] size-4" />
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
@@ -42,12 +43,13 @@
           </DropdownMenuRoot>
           <DropdownMenuRoot v-if="selectedTab === 'all'">
             <DropdownMenuTrigger as-child>
-              <button
+              <Button
+                variant="secondary"
+                size="icon"
                 :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
-                class="hover:bg-comfy-input-hover flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-comfy-input"
               >
                 <i class="icon-[lucide--list-filter] size-4" />
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
@@ -102,30 +104,16 @@
               </DropdownMenuContent>
             </DropdownMenuPortal>
           </DropdownMenuRoot>
-        </div>
-        <Separator decorative class="border border-dashed border-comfy-input" />
-        <!-- Tab list in header (fixed) -->
-        <TabsList
-          class="bg-background flex gap-4 border-b border-comfy-input p-4"
-        >
-          <TabsTrigger
-            v-for="tab in tabs"
-            :key="tab.value"
-            :value="tab.value"
-            :class="
-              cn(
-                'cursor-pointer rounded-lg border-none px-3 py-2 outline-none select-none',
-                'text-foreground text-sm transition-colors',
-                selectedTab === tab.value
-                  ? 'bg-comfy-input font-bold'
-                  : 'bg-transparent font-normal'
-              )
-            "
-          >
+        </template>
+      </SidebarTopArea>
+      <!-- Tab list in header (fixed) -->
+      <div class="border-b border-comfy-input px-2 pt-2 pb-1 2xl:px-4">
+        <TabList v-model="selectedTab">
+          <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
             {{ tab.label }}
-          </TabsTrigger>
-        </TabsList>
-      </TabsRoot>
+          </Tab>
+        </TabList>
+      </div>
     </template>
     <template #body>
       <NodeDragPreview />
@@ -160,7 +148,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@/utils/tailwindUtil'
 import { useLocalStorage } from '@vueuse/core'
 import {
   DropdownMenuCheckboxItem,
@@ -171,16 +158,17 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuRoot,
   DropdownMenuTrigger,
-  Separator,
-  TabsList,
-  TabsRoot,
-  TabsTrigger
+  TabsRoot
 } from 'reka-ui'
 import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import Button from '@/components/ui/button/Button.vue'
+import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
