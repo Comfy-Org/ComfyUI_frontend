@@ -132,7 +132,6 @@ watch(
     } else {
       document.body.classList.add(DARK_THEME_CLASS)
     }
-
     if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
