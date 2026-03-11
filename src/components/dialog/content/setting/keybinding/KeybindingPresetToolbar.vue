@@ -28,7 +28,7 @@
           >
             {{ name }}
           </SelectItem>
-          <hr class="h-px max-w-60 border-0 bg-border-default" />
+          <hr class="h-px max-w-60 border border-border-default" />
           <button
             class="relative flex w-full max-w-60 cursor-pointer items-center justify-between gap-3 rounded-sm border-none bg-transparent p-2 text-sm outline-none select-none hover:bg-secondary-background-hover focus:bg-secondary-background-hover"
             @click.stop="handleImportFromDropdown"
