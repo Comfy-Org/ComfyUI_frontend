@@ -58,9 +58,12 @@ export function ensureCorrectLayoutScale(
 
   const onActiveGraph = !targetGraph || targetGraph === canvas?.graph
 
-  const applySnap = (pos: [number, number]) => {
+  const applySnap = (
+    pos: [number, number],
+    method: 'round' | 'ceil' | 'floor' = 'round'
+  ) => {
     if (alwaysSnapToGrid) {
-      snapPoint(pos, snapSize)
+      snapPoint(pos, snapSize, method)
     }
   }
 
@@ -87,7 +90,7 @@ export function ensureCorrectLayoutScale(
       lgNode.size[0] * scaleFactor,
       lgNode.size[1] * scaleFactor
     ]
-    applySnap(sizeTarget)
+    applySnap(sizeTarget, 'ceil')
 
     const scaledWidth = sizeTarget[0]
     const scaledHeight = sizeTarget[1]
@@ -170,7 +173,7 @@ export function ensureCorrectLayoutScale(
         oldWidth * scaleFactor,
         oldHeight * scaleFactor
       ]
-      applySnap(sizeTarget)
+      applySnap(sizeTarget, 'ceil')
 
       const scaledWidth = sizeTarget[0]
       const scaledHeight = sizeTarget[1]
@@ -200,7 +203,7 @@ export function ensureCorrectLayoutScale(
       oldWidth * scaleFactor,
       oldHeight * scaleFactor
     ]
-    applySnap(sizeTarget)
+    applySnap(sizeTarget, 'ceil')
 
     const scaledWidth = sizeTarget[0]
     const scaledHeight = sizeTarget[1]
