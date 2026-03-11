@@ -312,12 +312,14 @@ export async function verifyAssetSupportedCandidates(
   const store =
     assetsStore ?? (await import('@/stores/assetsStore')).useAssetsStore()
 
+  const failedNodeTypes = new Set<string>()
   await Promise.allSettled(
     [...pendingNodeTypes].map(async (nodeType) => {
       if (signal?.aborted) return
       try {
         await store.updateModelsForNodeType(nodeType)
       } catch (err) {
+        failedNodeTypes.add(nodeType)
         console.warn(
           `[Missing Model Pipeline] Failed to load assets for ${nodeType}:`,
           err
@@ -330,6 +332,7 @@ export async function verifyAssetSupportedCandidates(
 
   for (const c of candidates) {
     if (!c.isAssetSupported || c.isMissing !== undefined) continue
+    if (failedNodeTypes.has(c.nodeType)) continue
 
     const assets = store.getAssets(c.nodeType) ?? []
     c.isMissing = !isAssetInstalled(c, assets)
