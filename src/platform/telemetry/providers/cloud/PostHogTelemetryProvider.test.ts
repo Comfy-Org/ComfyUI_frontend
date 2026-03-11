@@ -82,6 +82,7 @@ describe('PostHogTelemetryProvider', () => {
 
       expect(hoisted.mockInit).toHaveBeenCalledWith('phc_test_token', {
         api_host: 'https://t.comfy.org',
+        ui_host: 'https://us.posthog.com',
         autocapture: false,
         capture_pageview: false,
         capture_pageleave: false,
