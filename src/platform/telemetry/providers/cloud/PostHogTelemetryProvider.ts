@@ -8,6 +8,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   AuthMetadata,
   EnterLinearMetadata,
+  ShareFlowMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
@@ -100,11 +101,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             this.posthog = posthogModule.default
             this.posthog!.init(apiKey, {
               api_host:
-                window.__CONFIG__?.posthog_api_host || 'https://ph.comfy.org',
+                window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               autocapture: false,
               capture_pageview: false,
               capture_pageleave: false,
-              persistence: 'localStorage+cookie'
+              persistence: 'localStorage+cookie',
+              debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true'
             })
             this.isInitialized = true
             this.flushEventQueue()
@@ -344,6 +346,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackEnterLinear(metadata: EnterLinearMetadata): void {
     this.trackEvent(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
+  }
+
+  trackShareFlow(metadata: ShareFlowMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {

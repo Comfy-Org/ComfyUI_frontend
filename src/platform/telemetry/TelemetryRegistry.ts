@@ -4,6 +4,7 @@ import type {
   AuthMetadata,
   BeginCheckoutMetadata,
   EnterLinearMetadata,
+  ShareFlowMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   ExecutionTriggerSource,
@@ -158,6 +159,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackEnterLinear(metadata: EnterLinearMetadata): void {
     this.dispatch((provider) => provider.trackEnterLinear?.(metadata))
+  }
+
+  trackShareFlow(metadata: ShareFlowMetadata): void {
+    this.dispatch((provider) => provider.trackShareFlow?.(metadata))
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
