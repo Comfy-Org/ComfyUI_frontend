@@ -5,295 +5,257 @@
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.keybindings') })"
     />
 
-    <DataTable
-      v-model:selection="selectedCommandData"
-      v-model:context-menu-selection="contextMenuSelection"
-      v-model:expanded-rows="expandedRows"
-      :value="commandsData"
-      data-key="id"
-      :global-filter-fields="['id', 'label']"
-      :filters="filters"
-      selection-mode="single"
-      context-menu
-      striped-rows
-      :pt="{
-        header: 'px-0'
-      }"
-      @row-click="handleRowClick($event)"
-      @row-dblclick="handleRowDblClick($event.data)"
-      @row-contextmenu="handleRowContextMenu($event)"
-    >
-      <Column
-        field="id"
-        :header="$t('g.command')"
-        sortable
-        class="max-w-64 2xl:max-w-full"
-        :pt="{ bodyCell: 'p-1 min-h-8' }"
-      >
-        <template #body="slotProps">
-          <div
-            class="flex items-center gap-1 truncate"
-            :class="slotProps.data.keybindings.length < 2 && 'pl-5'"
-            :title="slotProps.data.id"
+    <ContextMenuRoot>
+      <ContextMenuTrigger as-child>
+        <div @contextmenu="clearContextMenuTarget">
+          <DataTable
+            v-model:selection="selectedCommandData"
+            v-model:expanded-rows="expandedRows"
+            :value="commandsData"
+            data-key="id"
+            :global-filter-fields="['id', 'label']"
+            :filters="filters"
+            selection-mode="single"
+            context-menu
+            striped-rows
+            :pt="{
+              header: 'px-0'
+            }"
+            @row-click="handleRowClick($event)"
+            @row-dblclick="handleRowDblClick($event.data)"
+            @row-contextmenu="handleRowContextMenu($event)"
           >
-            <i
-              v-if="slotProps.data.keybindings.length >= 2"
-              class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform"
-              :class="expandedCommandIds.has(slotProps.data.id) && 'rotate-90'"
-            />
-            {{ slotProps.data.label }}
-          </div>
-        </template>
-      </Column>
-      <Column
-        field="keybindings"
-        :header="$t('g.keybinding')"
-        :pt="{ bodyCell: 'p-1 min-h-8' }"
-      >
-        <template #body="slotProps">
-          <div
-            v-if="slotProps.data.keybindings.length > 0"
-            class="flex items-center gap-1"
-          >
-            <template
-              v-for="(binding, idx) in (
-                slotProps.data as ICommandData
-              ).keybindings.slice(0, 2)"
-              :key="binding.combo.serialize()"
+            <Column
+              field="id"
+              :header="$t('g.command')"
+              sortable
+              class="max-w-64 2xl:max-w-full"
+              :pt="{ bodyCell: 'p-1 min-h-8' }"
             >
-              <span v-if="idx > 0" class="text-muted-foreground">,</span>
-              <KeyComboDisplay
-                :key-combo="binding.combo"
-                :is-modified="
-                  keybindingStore.isCommandKeybindingModified(slotProps.data.id)
-                "
-              />
-            </template>
-            <span
-              v-if="slotProps.data.keybindings.length > 2"
-              class="rounded-sm px-1.5 py-0.5 text-xs text-muted-foreground"
+              <template #body="slotProps">
+                <div
+                  class="flex items-center gap-1 truncate"
+                  :class="slotProps.data.keybindings.length < 2 && 'pl-5'"
+                  :title="slotProps.data.id"
+                >
+                  <i
+                    v-if="slotProps.data.keybindings.length >= 2"
+                    class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform"
+                    :class="
+                      expandedCommandIds.has(slotProps.data.id) && 'rotate-90'
+                    "
+                  />
+                  {{ slotProps.data.label }}
+                </div>
+              </template>
+            </Column>
+            <Column
+              field="keybindings"
+              :header="$t('g.keybinding')"
+              :pt="{ bodyCell: 'p-1 min-h-8' }"
             >
-              {{
-                $t('g.nMoreKeybindings', {
-                  count: slotProps.data.keybindings.length - 2
-                })
-              }}
-            </span>
-          </div>
-          <span v-else>-</span>
-        </template>
-      </Column>
-      <Column
-        field="source"
-        :header="$t('g.source')"
-        :pt="{ bodyCell: 'p-1 min-h-8' }"
-      >
-        <template #body="slotProps">
-          <span class="overflow-hidden text-ellipsis">{{
-            slotProps.data.source || '-'
-          }}</span>
-        </template>
-      </Column>
-      <Column field="actions" header="" :pt="{ bodyCell: 'p-1 min-h-8' }">
-        <template #body="slotProps">
-          <div class="actions flex flex-row justify-end">
-            <template v-if="slotProps.data.keybindings.length >= 2">
-              <Button
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.addNewKeybinding')"
-                @click="addKeybinding(slotProps.data)"
-              >
-                <i class="icon-[lucide--plus]" />
-              </Button>
-              <Button
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.delete')"
-                @click="handleRemoveAllKeybindings(slotProps.data)"
-              >
-                <i class="pi pi-trash" />
-              </Button>
+              <template #body="slotProps">
+                <div
+                  v-if="slotProps.data.keybindings.length > 0"
+                  class="flex items-center gap-1"
+                >
+                  <template
+                    v-for="(binding, idx) in (
+                      slotProps.data as ICommandData
+                    ).keybindings.slice(0, 2)"
+                    :key="binding.combo.serialize()"
+                  >
+                    <span v-if="idx > 0" class="text-muted-foreground">,</span>
+                    <KeyComboDisplay
+                      :key-combo="binding.combo"
+                      :is-modified="
+                        keybindingStore.isCommandKeybindingModified(
+                          slotProps.data.id
+                        )
+                      "
+                    />
+                  </template>
+                  <span
+                    v-if="slotProps.data.keybindings.length > 2"
+                    class="rounded-sm px-1.5 py-0.5 text-xs text-muted-foreground"
+                  >
+                    {{
+                      $t('g.nMoreKeybindings', {
+                        count: slotProps.data.keybindings.length - 2
+                      })
+                    }}
+                  </span>
+                </div>
+                <span v-else>-</span>
+              </template>
+            </Column>
+            <Column
+              field="source"
+              :header="$t('g.source')"
+              :pt="{ bodyCell: 'p-1 min-h-8' }"
+            >
+              <template #body="slotProps">
+                <span class="overflow-hidden text-ellipsis">{{
+                  slotProps.data.source || '-'
+                }}</span>
+              </template>
+            </Column>
+            <Column field="actions" header="" :pt="{ bodyCell: 'p-1 min-h-8' }">
+              <template #body="slotProps">
+                <div class="actions flex flex-row justify-end">
+                  <Button
+                    v-if="slotProps.data.keybindings.length === 1"
+                    variant="textonly"
+                    size="icon"
+                    :aria-label="$t('g.edit')"
+                    @click="
+                      editKeybinding(
+                        slotProps.data,
+                        slotProps.data.keybindings[0]
+                      )
+                    "
+                  >
+                    <i class="icon-[lucide--pencil]" />
+                  </Button>
+                  <Button
+                    variant="textonly"
+                    size="icon"
+                    :aria-label="$t('g.addNewKeybinding')"
+                    @click="addKeybinding(slotProps.data)"
+                  >
+                    <i class="icon-[lucide--plus]" />
+                  </Button>
+                  <Button
+                    v-if="slotProps.data.keybindings.length <= 1"
+                    variant="textonly"
+                    size="icon"
+                    :aria-label="$t('g.reset')"
+                    :disabled="
+                      !keybindingStore.isCommandKeybindingModified(
+                        slotProps.data.id
+                      )
+                    "
+                    @click="resetKeybinding(slotProps.data)"
+                  >
+                    <i class="icon-[lucide--rotate-ccw]" />
+                  </Button>
+                  <Button
+                    variant="textonly"
+                    size="icon"
+                    :aria-label="$t('g.delete')"
+                    :disabled="slotProps.data.keybindings.length === 0"
+                    @click="handleRemoveKeybindingFromMenu(slotProps.data)"
+                  >
+                    <i class="icon-[lucide--trash-2]" />
+                  </Button>
+                </div>
+              </template>
+            </Column>
+            <template #expansion="slotProps">
+              <div class="pl-4">
+                <div
+                  v-for="(binding, idx) in (slotProps.data as ICommandData)
+                    .keybindings"
+                  :key="binding.combo.serialize()"
+                  class="flex items-center justify-between border-b border-border-subtle py-1.5 last:border-b-0"
+                >
+                  <div class="flex items-center gap-4">
+                    <span class="text-muted-foreground">{{
+                      slotProps.data.label
+                    }}</span>
+                    <KeyComboDisplay
+                      :key-combo="binding.combo"
+                      :is-modified="
+                        keybindingStore.isCommandKeybindingModified(
+                          slotProps.data.id
+                        )
+                      "
+                    />
+                  </div>
+                  <div class="flex flex-row">
+                    <Button
+                      variant="textonly"
+                      size="icon"
+                      :aria-label="$t('g.edit')"
+                      @click="editKeybinding(slotProps.data, binding)"
+                    >
+                      <i class="icon-[lucide--pencil]" />
+                    </Button>
+                    <Button
+                      v-if="idx === 0"
+                      variant="textonly"
+                      size="icon"
+                      :aria-label="$t('g.reset')"
+                      :disabled="
+                        !keybindingStore.isCommandKeybindingModified(
+                          slotProps.data.id
+                        )
+                      "
+                      @click="resetKeybinding(slotProps.data)"
+                    >
+                      <i class="icon-[lucide--rotate-ccw]" />
+                    </Button>
+                    <Button
+                      variant="textonly"
+                      size="icon"
+                      :aria-label="$t('g.removeKeybinding')"
+                      @click="removeSingleKeybinding(slotProps.data, idx)"
+                    >
+                      <i class="icon-[lucide--trash-2]" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </template>
-            <template v-else-if="slotProps.data.keybindings.length === 1">
-              <Button
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.edit')"
-                @click="
-                  editKeybinding(slotProps.data, slotProps.data.keybindings[0])
-                "
-              >
-                <i class="pi pi-pencil" />
-              </Button>
-              <Button
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.addNewKeybinding')"
-                @click="addKeybinding(slotProps.data)"
-              >
-                <i class="icon-[lucide--plus]" />
-              </Button>
-              <Button
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.reset')"
-                :disabled="
-                  !keybindingStore.isCommandKeybindingModified(
-                    slotProps.data.id
-                  )
-                "
-                @click="resetKeybinding(slotProps.data)"
-              >
-                <i class="pi pi-replay" />
-              </Button>
-              <Button
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.delete')"
-                @click="removeSingleKeybinding(slotProps.data, 0)"
-              >
-                <i class="pi pi-trash" />
-              </Button>
-            </template>
-            <template v-else>
-              <Button
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.addNewKeybinding')"
-                @click="addKeybinding(slotProps.data)"
-              >
-                <i class="icon-[lucide--plus]" />
-              </Button>
-              <Button
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.reset')"
-                :disabled="
-                  !keybindingStore.isCommandKeybindingModified(
-                    slotProps.data.id
-                  )
-                "
-                @click="resetKeybinding(slotProps.data)"
-              >
-                <i class="pi pi-replay" />
-              </Button>
-              <Button
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.delete')"
-                disabled
-              >
-                <i class="pi pi-trash" />
-              </Button>
-            </template>
-          </div>
-        </template>
-      </Column>
-      <template #expansion="slotProps">
-        <div class="pl-4">
-          <div
-            v-for="(binding, idx) in (slotProps.data as ICommandData)
-              .keybindings"
-            :key="binding.combo.serialize()"
-            class="flex items-center justify-between border-b border-border-subtle py-1.5 last:border-b-0"
-          >
-            <div class="flex items-center gap-4">
-              <span class="text-muted-foreground">{{
-                slotProps.data.label
-              }}</span>
-              <KeyComboDisplay
-                :key-combo="binding.combo"
-                :is-modified="
-                  keybindingStore.isCommandKeybindingModified(slotProps.data.id)
-                "
-              />
-            </div>
-            <div class="flex flex-row">
-              <Button
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.edit')"
-                @click="editKeybinding(slotProps.data, binding)"
-              >
-                <i class="pi pi-pencil" />
-              </Button>
-              <Button
-                v-if="idx === 0"
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.reset')"
-                :disabled="
-                  !keybindingStore.isCommandKeybindingModified(
-                    slotProps.data.id
-                  )
-                "
-                @click="resetKeybinding(slotProps.data)"
-              >
-                <i class="pi pi-replay" />
-              </Button>
-              <Button
-                variant="textonly"
-                size="icon"
-                :aria-label="$t('g.removeKeybinding')"
-                @click="removeSingleKeybinding(slotProps.data, idx)"
-              >
-                <i class="pi pi-trash" />
-              </Button>
-            </div>
-          </div>
+          </DataTable>
         </div>
-      </template>
-    </DataTable>
-
-    <Teleport to="body">
-      <div
-        v-if="contextMenuOpen"
-        ref="contextMenuRef"
-        class="fixed z-1200 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
-        :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
-      >
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm border-none bg-transparent px-3 py-2 text-sm text-text-primary outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered disabled:cursor-default disabled:opacity-50"
-          :disabled="
-            !contextMenuTarget || contextMenuTarget.keybindings.length === 0
-          "
-          @click="ctxChangeKeybinding"
+      </ContextMenuTrigger>
+      <ContextMenuPortal>
+        <ContextMenuContent
+          class="z-1200 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
         >
-          <i class="icon-[lucide--pencil] size-4" />
-          {{ $t('g.changeKeybinding') }}
-        </button>
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm border-none bg-transparent px-3 py-2 text-sm text-text-primary outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered"
-          @click="ctxAddKeybinding"
-        >
-          <i class="icon-[lucide--plus] size-4" />
-          {{ $t('g.addNewKeybinding') }}
-        </button>
-        <hr class="my-1 border-border-subtle" />
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm border-none bg-transparent px-3 py-2 text-sm text-text-primary outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered disabled:cursor-default disabled:opacity-50"
-          :disabled="
-            !contextMenuTarget ||
-            !keybindingStore.isCommandKeybindingModified(contextMenuTarget.id)
-          "
-          @click="ctxResetToDefault"
-        >
-          <i class="icon-[lucide--rotate-ccw] size-4" />
-          {{ $t('g.resetToDefault') }}
-        </button>
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm border-none bg-transparent px-3 py-2 text-sm text-text-primary outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered disabled:cursor-default disabled:opacity-50"
-          :disabled="
-            !contextMenuTarget || contextMenuTarget.keybindings.length === 0
-          "
-          @click="ctxRemoveKeybinding"
-        >
-          <i class="icon-[lucide--trash-2] size-4" />
-          {{ $t('g.removeKeybinding') }}
-        </button>
-      </div>
-    </Teleport>
+          <ContextMenuItem
+            class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered data-disabled:cursor-default data-disabled:opacity-50"
+            :disabled="
+              !contextMenuTarget || contextMenuTarget.keybindings.length === 0
+            "
+            @select="ctxChangeKeybinding"
+          >
+            <i class="icon-[lucide--pencil] size-4" />
+            {{ $t('g.changeKeybinding') }}
+          </ContextMenuItem>
+          <ContextMenuItem
+            class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered"
+            @select="ctxAddKeybinding"
+          >
+            <i class="icon-[lucide--plus] size-4" />
+            {{ $t('g.addNewKeybinding') }}
+          </ContextMenuItem>
+          <ContextMenuSeparator class="my-1 h-px bg-border-subtle" />
+          <ContextMenuItem
+            class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered data-disabled:cursor-default data-disabled:opacity-50"
+            :disabled="
+              !contextMenuTarget ||
+              !keybindingStore.isCommandKeybindingModified(contextMenuTarget.id)
+            "
+            @select="ctxResetToDefault"
+          >
+            <i class="icon-[lucide--rotate-ccw] size-4" />
+            {{ $t('g.resetToDefault') }}
+          </ContextMenuItem>
+          <ContextMenuItem
+            class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered data-disabled:cursor-default data-disabled:opacity-50"
+            :disabled="
+              !contextMenuTarget || contextMenuTarget.keybindings.length === 0
+            "
+            @select="ctxRemoveKeybinding"
+          >
+            <i class="icon-[lucide--trash-2] size-4" />
+            {{ $t('g.removeKeybinding') }}
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenuPortal>
+    </ContextMenuRoot>
 
     <Dialog
       v-model:visible="editDialogVisible"
@@ -327,7 +289,11 @@
           @click="saveKeybinding"
         >
           <i
-            :class="existingKeybindingOnCombo ? 'pi pi-pencil' : 'pi pi-check'"
+            :class="
+              existingKeybindingOnCombo
+                ? 'icon-[lucide--pencil]'
+                : 'icon-[lucide--check]'
+            "
           />
           {{ existingKeybindingOnCombo ? $t('g.overwrite') : $t('g.save') }}
         </Button>
@@ -339,14 +305,13 @@
       variant="destructive-textonly"
       @click="resetAllKeybindings"
     >
-      <i class="pi pi-replay" />
+      <i class="icon-[lucide--rotate-ccw]" />
       {{ $t('g.resetAll') }}
     </Button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onClickOutside } from '@vueuse/core'
 import { FilterMatchMode } from '@primevue/core/api'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -355,19 +320,24 @@ import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
+import {
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuPortal,
+  ContextMenuRoot,
+  ContextMenuSeparator,
+  ContextMenuTrigger
+} from 'reka-ui'
 import { computed, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import RemoveAllKeybindingsContent from '@/components/dialog/content/setting/keybinding/RemoveAllKeybindingsContent.vue'
-import RemoveAllKeybindingsHeader from '@/components/dialog/content/setting/keybinding/RemoveAllKeybindingsHeader.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -381,7 +351,6 @@ const filters = ref({
 const keybindingStore = useKeybindingStore()
 const keybindingService = useKeybindingService()
 const commandStore = useCommandStore()
-const dialogService = useDialogService()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
 
@@ -438,16 +407,6 @@ const editMode = ref<'edit' | 'add'>('edit')
 const keybindingInput = ref<InstanceType<typeof InputText> | null>(null)
 
 const contextMenuTarget = ref<ICommandData | null>(null)
-const contextMenuSelection = ref<ICommandData | null>(null)
-const contextMenuOpen = ref(false)
-const contextMenuPos = ref({ x: 0, y: 0 })
-const contextMenuRef = ref<HTMLElement | null>(null)
-
-onClickOutside(contextMenuRef, () => closeContextMenu())
-
-function closeContextMenu() {
-  contextMenuOpen.value = false
-}
 
 const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
   if (!currentEditingCommand.value) return null
@@ -501,11 +460,11 @@ function handleRowContextMenu(event: {
   originalEvent: Event
   data: ICommandData
 }) {
-  event.originalEvent.preventDefault()
   contextMenuTarget.value = event.data
-  const mouseEvent = event.originalEvent as MouseEvent
-  contextMenuPos.value = { x: mouseEvent.clientX, y: mouseEvent.clientY }
-  contextMenuOpen.value = true
+}
+
+function clearContextMenuTarget() {
+  contextMenuTarget.value = null
 }
 
 watchEffect(() => {
@@ -528,32 +487,21 @@ async function removeSingleKeybinding(
   }
 }
 
-const REMOVE_ALL_DIALOG_KEY = 'remove-all-keybindings'
-
-function showRemoveAllDialog(): Promise<boolean> {
-  return new Promise((resolve) => {
-    dialogService.showSmallLayoutDialog({
-      key: REMOVE_ALL_DIALOG_KEY,
-      headerComponent: RemoveAllKeybindingsHeader,
-      component: RemoveAllKeybindingsContent,
-      props: {
-        onResult: (result: boolean) => {
-          resolve(result)
-          dialogStore.closeDialog({ key: REMOVE_ALL_DIALOG_KEY })
-        }
-      },
-      dialogComponentProps: {
-        onClose: () => resolve(false)
+function handleRemoveAllKeybindings(commandData: ICommandData) {
+  const dialog = showConfirmDialog({
+    headerProps: { title: t('g.removeAllKeybindingsTitle') },
+    props: { promptText: t('g.removeAllKeybindingsMessage') },
+    footerProps: {
+      confirmText: t('g.removeAll'),
+      confirmVariant: 'destructive',
+      onCancel: () => dialogStore.closeDialog(dialog),
+      onConfirm: async () => {
+        keybindingStore.removeAllKeybindingsForCommand(commandData.id)
+        await keybindingService.persistUserKeybindings()
+        dialogStore.closeDialog(dialog)
       }
-    })
+    }
   })
-}
-
-async function handleRemoveAllKeybindings(commandData: ICommandData) {
-  const confirmed = await showRemoveAllDialog()
-  if (!confirmed) return
-  keybindingStore.removeAllKeybindingsForCommand(commandData.id)
-  await keybindingService.persistUserKeybindings()
 }
 
 function handleRemoveKeybindingFromMenu(commandData: ICommandData) {
@@ -565,10 +513,7 @@ function handleRemoveKeybindingFromMenu(commandData: ICommandData) {
 }
 
 function ctxChangeKeybinding() {
-  if (!contextMenuTarget.value) {
-    closeContextMenu()
-    return
-  }
+  if (!contextMenuTarget.value) return
   const target = contextMenuTarget.value
   if (target.keybindings.length === 1) {
     editKeybinding(target, target.keybindings[0])
@@ -577,21 +522,18 @@ function ctxChangeKeybinding() {
       toggleExpanded(target.id)
     }
   }
-  closeContextMenu()
 }
 
 function ctxAddKeybinding() {
   if (contextMenuTarget.value) {
     addKeybinding(contextMenuTarget.value)
   }
-  closeContextMenu()
 }
 
 function ctxResetToDefault() {
   if (contextMenuTarget.value) {
     resetKeybinding(contextMenuTarget.value)
   }
-  closeContextMenu()
 }
 
 function ctxRemoveKeybinding() {
@@ -601,7 +543,6 @@ function ctxRemoveKeybinding() {
   ) {
     handleRemoveKeybindingFromMenu(contextMenuTarget.value)
   }
-  closeContextMenu()
 }
 
 async function captureKeybinding(event: KeyboardEvent) {
