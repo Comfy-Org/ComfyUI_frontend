@@ -149,6 +149,15 @@ export interface EnterLinearMetadata {
   source?: string
 }
 
+export interface WorkflowSavedMetadata {
+  is_app: boolean
+  is_new: boolean
+}
+
+export interface DefaultViewSetMetadata {
+  default_view: 'app' | 'graph'
+}
+
 type ShareFlowStep =
   | 'dialog_opened'
   | 'save_prompted'
@@ -377,6 +386,8 @@ export interface TelemetryProvider {
   // Workflow management events
   trackWorkflowImported?(metadata: WorkflowImportMetadata): void
   trackWorkflowOpened?(metadata: WorkflowImportMetadata): void
+  trackWorkflowSaved?(metadata: WorkflowSavedMetadata): void
+  trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
   trackShareFlow?(metadata: ShareFlowMetadata): void
 
@@ -490,6 +501,8 @@ export const TelemetryEvents = {
 
   // Workflow Creation
   WORKFLOW_CREATED: 'app:workflow_created',
+  WORKFLOW_SAVED: 'app:workflow_saved',
+  DEFAULT_VIEW_SET: 'app:default_view_set',
 
   // Execution Lifecycle
   EXECUTION_START: 'execution_start',
@@ -540,4 +553,6 @@ export type TelemetryEventProperties =
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
   | ShareFlowMetadata
+  | WorkflowSavedMetadata
+  | DefaultViewSetMetadata
   | SubscriptionMetadata
