@@ -952,6 +952,7 @@
     "collapseAll": "طي الكل",
     "color": "اللون",
     "comfy": "Comfy",
+    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "شعار ComfyOrg",
     "comingSoon": "قريباً",
     "command": "أمر",
@@ -1459,12 +1460,14 @@
       "unknownWidget": "عنصر الواجهة غير مرئي"
     },
     "cancelThisRun": "إلغاء هذا التشغيل",
+    "deleteAllAssets": "حذف جميع الأصول من هذه الجلسة",
     "downloadAll": "تنزيل الكل",
     "dragAndDropImage": "اسحب وأسقط صورة",
     "emptyWorkflowExplanation": "سير العمل الخاص بك فارغ. تحتاج إلى بعض العقد أولاً لبدء بناء التطبيق.",
     "enterNodeGraph": "دخول مخطط العقد",
     "giveFeedback": "إعطاء ملاحظات",
     "graphMode": "وضع الرسم البياني",
+    "hasCreditCost": "يتطلب أرصدة إضافية",
     "linearMode": "وضع التطبيق",
     "loadTemplate": "تحميل قالب",
     "mobileControls": "تعديل وتشغيل",
@@ -1855,7 +1858,6 @@
     "execute": "تنفيذ",
     "fullscreen": "ملء الشاشة",
     "help": "مساعدة",
-    "helpAndFeedback": "المساعدة والتعليقات",
     "hideMenu": "إخفاء القائمة",
     "instant": "فوري",
     "instantTooltip": "سيتم وضع سير العمل في قائمة الانتظار فور انتهاء التوليد",
@@ -3374,10 +3376,7 @@
     "addedToWorkspace": "تمت إضافتك إلى {workspaceName}",
     "inviteAccepted": "تم قبول الدعوة",
     "inviteFailed": "فشل في قبول الدعوة",
-    "unsavedChanges": {
-      "message": "لديك تغييرات غير محفوظة. هل تريد تجاهلها والانتقال إلى مساحة عمل أخرى؟",
-      "title": "تغييرات غير محفوظة"
-    },
+    "switchFailed": "فشل في تبديل مساحة العمل. يرجى المحاولة مرة أخرى.",
     "viewWorkspace": "عرض مساحة العمل"
   },
   "workspaceAuth": {

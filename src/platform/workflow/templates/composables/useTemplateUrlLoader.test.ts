@@ -145,8 +145,7 @@ describe('useTemplateUrlLoader', () => {
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'Error',
-      detail: 'Template "invalid-template" not found',
-      life: 3000
+      detail: 'Template "invalid-template" not found'
     })
   })
 
@@ -239,8 +238,7 @@ describe('useTemplateUrlLoader', () => {
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to load template',
-      life: 3000
+      detail: 'Failed to load template'
     })
   })
 

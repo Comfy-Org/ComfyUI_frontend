@@ -2,20 +2,13 @@
   <router-view />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
-  <div
-    v-if="isLoading"
-    class="pointer-events-none fixed inset-0 z-1200 flex items-center justify-center"
-  >
-    <LogoComfyWaveLoader size="xl" color="yellow" />
-  </div>
 </template>
 
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
-import LogoComfyWaveLoader from '@/components/loader/LogoComfyWaveLoader.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -30,6 +23,16 @@ app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
+
+watch(
+  isLoading,
+  (loading, prevLoading) => {
+    if (prevLoading && !loading) {
+      document.getElementById('splash-loader')?.remove()
+    }
+  },
+  { flush: 'post' }
+)
 
 const showContextMenu = (event: MouseEvent) => {
   const { target } = event

@@ -952,6 +952,7 @@
     "collapseAll": "Hepsini daralt",
     "color": "Renk",
     "comfy": "Comfy",
+    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg Logosu",
     "comingSoon": "Çok Yakında",
     "command": "Komut",
@@ -1459,12 +1460,14 @@
       "unknownWidget": "Widget görünür değil"
     },
     "cancelThisRun": "Bu çalıştırmayı iptal et",
+    "deleteAllAssets": "Bu çalışmadaki tüm varlıkları sil",
     "downloadAll": "Tümünü İndir",
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
     "emptyWorkflowExplanation": "Çalışma akışınız boş. Bir uygulama oluşturmaya başlamak için önce bazı düğümler eklemelisiniz.",
     "enterNodeGraph": "Düğüm grafiğine gir",
     "giveFeedback": "Geri bildirim ver",
     "graphMode": "Grafik Modu",
+    "hasCreditCost": "Ekstra kredi gerektirir",
     "linearMode": "Uygulama Modu",
     "loadTemplate": "Şablon yükle",
     "mobileControls": "Düzenle ve Çalıştır",
@@ -1855,7 +1858,6 @@
     "execute": "Yürüt",
     "fullscreen": "Tam ekran",
     "help": "Yardım",
-    "helpAndFeedback": "Yardım ve Geri Bildirim",
     "hideMenu": "Menüyü Gizle",
     "instant": "Anında",
     "instantTooltip": "İş akışı, bir oluşturma işlemi bittikten sonra anında kuyruğa alınacak",
@@ -3374,10 +3376,7 @@
     "addedToWorkspace": "{workspaceName} çalışma alanına eklendiniz",
     "inviteAccepted": "Davet kabul edildi",
     "inviteFailed": "Davet kabul edilemedi",
-    "unsavedChanges": {
-      "message": "Kaydedilmemiş değişiklikleriniz var. Bunları iptal edip çalışma alanlarını değiştirmek istiyor musunuz?",
-      "title": "Kaydedilmemiş Değişiklikler"
-    },
+    "switchFailed": "Çalışma alanı değiştirilemedi. Lütfen tekrar deneyin.",
     "viewWorkspace": "Çalışma alanını görüntüle"
   },
   "workspaceAuth": {

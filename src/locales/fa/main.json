@@ -952,6 +952,7 @@
     "collapseAll": "بستن همه",
     "color": "رنگ",
     "comfy": "Comfy",
+    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "لوگوی ComfyOrg",
     "comingSoon": "به‌زودی",
     "command": "دستور",
@@ -1459,12 +1460,14 @@
       "unknownWidget": "ویجت قابل مشاهده نیست"
     },
     "cancelThisRun": "لغو این اجرا",
+    "deleteAllAssets": "حذف همه دارایی‌ها از این اجرا",
     "downloadAll": "دانلود همه",
     "dragAndDropImage": "تصویر را بکشید و رها کنید",
     "emptyWorkflowExplanation": "جریان کاری شما خالی است. ابتدا باید چند node اضافه کنید تا بتوانید یک برنامه بسازید.",
     "enterNodeGraph": "ورود به گراف node",
     "giveFeedback": "ارسال بازخورد",
     "graphMode": "حالت گراف",
+    "hasCreditCost": "نیازمند اعتبار اضافی",
     "linearMode": "حالت برنامه",
     "loadTemplate": "بارگذاری قالب",
     "mobileControls": "ویرایش و اجرا",
@@ -1855,7 +1858,6 @@
     "execute": "اجرا",
     "fullscreen": "تمام‌صفحه",
     "help": "راهنما",
-    "helpAndFeedback": "راهنما و بازخورد",
     "hideMenu": "مخفی کردن منو",
     "instant": "فوری",
     "instantTooltip": "workflow بلافاصله پس از پایان تولید در صف قرار می‌گیرد",
@@ -3386,10 +3388,7 @@
     "addedToWorkspace": "شما به {workspaceName} اضافه شدید",
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteFailed": "پذیرش دعوت ناموفق بود",
-    "unsavedChanges": {
-      "message": "شما تغییرات ذخیره‌نشده دارید. آیا می‌خواهید آن‌ها را رها کرده و فضای کاری را تغییر دهید؟",
-      "title": "تغییرات ذخیره‌نشده"
-    },
+    "switchFailed": "تغییر ورک‌اسپیس ناموفق بود. لطفاً دوباره تلاش کنید.",
     "viewWorkspace": "مشاهده workspace"
   },
   "workspaceAuth": {
