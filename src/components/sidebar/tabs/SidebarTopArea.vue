@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="flex items-center gap-2 p-2 2xl:px-4">
+    <div class="flex items-center gap-2 p-2">
       <div class="min-w-0 flex-1">
         <slot />
       </div>
@@ -8,10 +8,7 @@
         <slot name="actions" />
       </div>
     </div>
-    <div
-      v-if="bottomDivider"
-      class="mx-2 border border-dashed border-comfy-input 2xl:mx-4"
-    />
+    <div v-if="bottomDivider" class="border border-dashed border-comfy-input" />
   </div>
 </template>
 
