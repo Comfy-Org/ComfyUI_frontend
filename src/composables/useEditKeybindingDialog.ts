@@ -1,9 +1,10 @@
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 
 import EditKeybindingContent from '@/components/dialog/content/setting/keybinding/EditKeybindingContent.vue'
 import EditKeybindingFooter from '@/components/dialog/content/setting/keybinding/EditKeybindingFooter.vue'
 import EditKeybindingHeader from '@/components/dialog/content/setting/keybinding/EditKeybindingHeader.vue'
 import type { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useDialogService } from '@/services/dialogService'
 
 export const DIALOG_KEY = 'edit-keybinding'
@@ -16,6 +17,7 @@ export interface EditKeybindingDialogState {
 
 export function useEditKeybindingDialog() {
   const { showSmallLayoutDialog } = useDialogService()
+  const keybindingStore = useKeybindingStore()
 
   function show(options: {
     commandId: string
@@ -28,6 +30,12 @@ export function useEditKeybindingDialog() {
       currentCombo: options.currentCombo
     })
 
+    const existingKeybindingOnCombo = computed(() => {
+      if (!dialogState.newCombo) return null
+      if (dialogState.currentCombo?.equals(dialogState.newCombo)) return null
+      return keybindingStore.getKeybinding(dialogState.newCombo)
+    })
+
     function onUpdateCombo(combo: KeyComboImpl) {
       dialogState.newCombo = combo
     }
@@ -37,9 +45,14 @@ export function useEditKeybindingDialog() {
       headerComponent: EditKeybindingHeader,
       footerComponent: EditKeybindingFooter,
       component: EditKeybindingContent,
-      props: { dialogState, onUpdateCombo, commandLabel: options.commandLabel },
+      props: {
+        dialogState,
+        onUpdateCombo,
+        commandLabel: options.commandLabel,
+        existingKeybindingOnCombo
+      },
       headerProps: {},
-      footerProps: { dialogState }
+      footerProps: { dialogState, existingKeybindingOnCombo }
     })
   }
 
