@@ -592,3 +592,35 @@ export function buildSubgraphExecutionPaths(
   build(rootNodes, '')
   return pathMap
 }
+
+/**
+ * Flatten all workflow nodes (root + subgraphs) into a single array.
+ * Each node's `id` is prefixed with its execution path (e.g. node "3" inside container "11" → "11:3").
+ */
+export function flattenWorkflowNodes(
+  graphData: ComfyWorkflowJSON
+): ComfyNode[] {
+  const rootNodes = graphData.nodes ?? []
+  const subgraphDefs = graphData.definitions?.subgraphs ?? []
+  const pathMap = buildSubgraphExecutionPaths(rootNodes, subgraphDefs)
+
+  const allNodes: ComfyNode[] = [...rootNodes]
+
+  const subgraphDefMap = new Map(
+    subgraphDefs.filter(isSubgraphDefinition).map((s) => [s.id, s])
+  )
+  for (const [defId, paths] of pathMap.entries()) {
+    const def = subgraphDefMap.get(defId)
+    if (!def?.nodes) continue
+    for (const prefix of paths) {
+      for (const node of def.nodes) {
+        allNodes.push({
+          ...node,
+          id: `${prefix}:${node.id}`
+        })
+      }
+    }
+  }
+
+  return allNodes
+}

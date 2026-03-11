@@ -33,7 +33,9 @@
           :collapse="isSectionCollapsed(group.title) && !isSearching"
           class="border-b border-interface-stroke"
           :size="
-            group.type === 'missing_node' || group.type === 'swap_nodes'
+            group.type === 'missing_node' ||
+            group.type === 'swap_nodes' ||
+            group.type === 'missing_model'
               ? 'lg'
               : 'default'
           "
@@ -51,7 +53,9 @@
                       ? `${group.title} (${missingPackGroups.length})`
                       : group.type === 'swap_nodes'
                         ? `${group.title} (${swapNodeGroups.length})`
-                        : group.title
+                        : group.type === 'missing_model'
+                          ? group.title
+                          : group.title
                   }}
                 </span>
                 <span
@@ -130,6 +134,14 @@
               @copy-to-clipboard="copyToClipboard"
             />
           </div>
+
+          <!-- Missing Models -->
+          <MissingModelCard
+            v-else-if="group.type === 'missing_model'"
+            :missing-model-groups="missingModelGroups"
+            :show-node-id-badge="showNodeIdBadge"
+            @locate-model="handleLocateModel"
+          />
         </PropertiesAccordionItem>
       </TransitionGroup>
     </div>
@@ -187,6 +199,7 @@ import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/f
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
+import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
@@ -226,6 +239,7 @@ const {
   errorNodeCache,
   missingNodeCache,
   missingPackGroups,
+  missingModelGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
 
@@ -281,6 +295,10 @@ function handleLocateNode(nodeId: string) {
 
 function handleLocateMissingNode(nodeId: string) {
   focusNode(nodeId, missingNodeCache.value)
+}
+
+function handleLocateModel(nodeId: string) {
+  focusNode(nodeId)
 }
 
 function handleOpenManagerInfo(packId: string) {

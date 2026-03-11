@@ -284,9 +284,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError:
-        nodeErrors?.errors?.some(
+        (nodeErrors?.errors?.some(
           (error) => error.extra_info?.input_name === widget.name
-        ) ?? false,
+        ) ??
+          false) ||
+        executionErrorStore.isWidgetMissingModel(String(nodeId), widget.name),
       hidden: widget.options?.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,

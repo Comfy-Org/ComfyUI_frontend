@@ -3388,6 +3388,24 @@
       "viewInManager": "View in Manager",
       "collapse": "Collapse",
       "expand": "Expand"
+    },
+    "missingModels": {
+      "urlPlaceholder": "Paste Model URL (Civitai or Hugging Face)",
+      "or": "OR",
+      "useFromLibrary": "Use from Library",
+      "usingFromLibrary": "Using from Library",
+      "unsupportedUrl": "Only Civitai and Hugging Face URLs are supported.",
+      "metadataFetchFailed": "Failed to retrieve metadata. Please check the link and try again.",
+      "import": "Import",
+      "importing": "Importing...",
+      "imported": "Imported",
+      "importFailed": "Import failed",
+      "typeMismatch": "This model seems to be a \"{detectedType}\". Are you sure?",
+      "importAnyway": "Import Anyway",
+      "alreadyExistsInCategory": "This model already exists in \"{category}\"",
+      "customNodeDownloadDisabled": "Cloud environment does not support model imports for custom nodes in this section. Please use standard loader nodes or substitute with a model from the library below.",
+      "importNotSupported": "Import Not Supported",
+      "copyModelName": "Copy model name"
     }
   },
   "errorOverlay": {

@@ -23,6 +23,7 @@ import { st } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import {
   isNodeExecutionId,
   compareExecutionId
@@ -45,6 +46,21 @@ export interface MissingPackGroup {
   isResolving: boolean
 }
 
+export interface MissingModelViewModel {
+  name: string
+  representative: MissingModelCandidate
+  referencingNodes: Array<{
+    nodeId: MissingModelCandidate['nodeId']
+    widgetName: string
+  }>
+}
+
+export interface MissingModelGroup {
+  directory: string | null
+  models: MissingModelViewModel[]
+  isAssetSupported: boolean
+}
+
 export interface SwapNodeGroup {
   type: string
   newNodeId: string | undefined
@@ -55,6 +71,32 @@ interface GroupEntry {
   type: 'execution'
   priority: number
   cards: Map<string, ErrorCardData>
+}
+
+function groupCandidatesByName(
+  candidates: MissingModelCandidate[]
+): MissingModelViewModel[] {
+  const map = new Map<string, MissingModelViewModel>()
+  for (const c of candidates) {
+    const existing = map.get(c.name)
+    if (existing) {
+      if (c.nodeId) {
+        existing.referencingNodes.push({
+          nodeId: c.nodeId,
+          widgetName: c.widgetName
+        })
+      }
+    } else {
+      map.set(c.name, {
+        name: c.name,
+        representative: c,
+        referencingNodes: c.nodeId
+          ? [{ nodeId: c.nodeId, widgetName: c.widgetName }]
+          : []
+      })
+    }
+  }
+  return Array.from(map.values())
 }
 
 interface ErrorSearchItem {
@@ -559,6 +601,61 @@ export function useErrorGroups(
     return groups.sort((a, b) => a.priority - b.priority)
   }
 
+  /** Groups missing models. Asset-supported models group by directory; others go into a separate group.
+   *  Within each group, candidates with the same model name are merged into a single view model. */
+  const missingModelGroups = computed<MissingModelGroup[]>(() => {
+    const candidates = executionErrorStore.missingModelsError
+    if (!candidates?.length) return []
+
+    const UNSUPPORTED = Symbol('unsupported')
+    type GroupKey = string | null | typeof UNSUPPORTED
+    const map = new Map<
+      GroupKey,
+      { candidates: MissingModelCandidate[]; isAssetSupported: boolean }
+    >()
+
+    for (const c of candidates) {
+      const groupKey: GroupKey = c.isAssetSupported
+        ? c.directory || null
+        : UNSUPPORTED
+
+      const existing = map.get(groupKey)
+      if (existing) {
+        existing.candidates.push(c)
+      } else {
+        map.set(groupKey, {
+          candidates: [c],
+          isAssetSupported: c.isAssetSupported
+        })
+      }
+    }
+
+    return Array.from(map.entries())
+      .sort(([dirA], [dirB]) => {
+        if (dirA === UNSUPPORTED) return 1
+        if (dirB === UNSUPPORTED) return -1
+        if (dirA === null) return 1
+        if (dirB === null) return -1
+        return dirA.localeCompare(dirB)
+      })
+      .map(([key, { candidates: groupCandidates, isAssetSupported }]) => ({
+        directory: typeof key === 'string' ? key : null,
+        models: groupCandidatesByName(groupCandidates),
+        isAssetSupported
+      }))
+  })
+
+  function buildMissingModelGroups(): ErrorGroup[] {
+    if (!missingModelGroups.value.length) return []
+    return [
+      {
+        type: 'missing_model' as const,
+        title: `Missing Models (${executionErrorStore.missingModelsError?.length ?? 0})`,
+        priority: 2
+      }
+    ]
+  }
+
   const allErrorGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
@@ -566,7 +663,11 @@ export function useErrorGroups(
     processNodeErrors(groupsMap)
     processExecutionError(groupsMap)
 
-    return [...buildMissingNodeGroups(), ...toSortedGroups(groupsMap)]
+    return [
+      ...buildMissingNodeGroups(),
+      ...buildMissingModelGroups(),
+      ...toSortedGroups(groupsMap)
+    ]
   })
 
   const tabErrorGroups = computed<ErrorGroup[]>(() => {
@@ -580,7 +681,11 @@ export function useErrorGroups(
       ? toSortedGroups(regroupByErrorMessage(groupsMap))
       : toSortedGroups(groupsMap)
 
-    return [...buildMissingNodeGroups(), ...executionGroups]
+    return [
+      ...buildMissingNodeGroups(),
+      ...buildMissingModelGroups(),
+      ...executionGroups
+    ]
   })
 
   const filteredGroups = computed<ErrorGroup[]>(() => {
@@ -615,6 +720,7 @@ export function useErrorGroups(
     missingNodeCache,
     groupedErrorMessages,
     missingPackGroups,
+    missingModelGroups,
     swapNodeGroups
   }
 }

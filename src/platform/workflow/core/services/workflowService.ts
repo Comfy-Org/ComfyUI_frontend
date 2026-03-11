@@ -544,15 +544,13 @@ export const useWorkflowService = () => {
       if (settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')) {
         missingNodesDialog.show({ missingNodeTypes })
       }
-
       executionErrorStore.surfaceMissingNodes(missingNodeTypes)
     }
 
-    if (
-      missingModels &&
-      settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')
-    ) {
-      missingModelsDialog.show(missingModels)
+    if (missingModels) {
+      if (settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')) {
+        missingModelsDialog.show(missingModels)
+      }
     }
   }
 

@@ -349,9 +349,11 @@ const hasAnyError = computed((): boolean => {
     nodeData.hasErrors ||
     error ||
     executionErrorStore.getNodeErrors(nodeLocatorId.value) ||
+    executionErrorStore.hasMissingModelOnNode(nodeLocatorId.value) ||
     (lgraphNode.value &&
       (executionErrorStore.isContainerWithInternalError(lgraphNode.value) ||
-        executionErrorStore.isContainerWithMissingNode(lgraphNode.value)))
+        executionErrorStore.isContainerWithMissingNode(lgraphNode.value) ||
+        executionErrorStore.isContainerWithMissingModel(lgraphNode.value)))
   )
 })
 
