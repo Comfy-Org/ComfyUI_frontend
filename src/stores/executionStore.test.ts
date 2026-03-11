@@ -1,6 +1,11 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { app } from '@/scripts/app'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
@@ -343,6 +348,100 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
       const result = store.slotHasError('123', 'width')
       expect(result).toBe(false)
     })
+  })
+})
+
+describe('useExecutionStore - executingNode with subgraphs', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should find executing node in root graph', () => {
+    const mockNode = createMockLGraphNode({
+      id: '123',
+      title: 'Test Node',
+      type: 'TestNode'
+    })
+
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
+
+    store.nodeProgressStates = {
+      '123': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '123',
+        prompt_id: 'test-prompt',
+        node_id: '123'
+      }
+    }
+
+    expect(store.executingNode).toBe(mockNode)
+  })
+
+  it('should find executing node in subgraph using execution ID', () => {
+    const mockNodeInSubgraph = createMockLGraphNode({
+      id: '789',
+      title: 'Nested Node',
+      type: 'NestedNode'
+    })
+
+    const testSubgraph = createTestSubgraph({
+      id: 'sub-uuid'
+    })
+    testSubgraph.add(mockNodeInSubgraph)
+
+    const mockSubgraphNode = createTestSubgraphNode(testSubgraph, {
+      id: '456'
+    })
+
+    vi.spyOn(testSubgraph, 'getNodeById').mockImplementation(
+      (id: string | number | null | undefined) =>
+        id === '789' ? mockNodeInSubgraph : null
+    )
+
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockSubgraphNode)
+
+    // Simulate node execution in subgraph with hierarchical execution ID "456:789"
+    store.nodeProgressStates = {
+      '456:789': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '456:789',
+        prompt_id: 'test-prompt',
+        node_id: '456:789'
+      }
+    }
+
+    expect(store.executingNode).toBe(mockNodeInSubgraph)
+  })
+
+  it('should return null when no node is executing', () => {
+    store.nodeProgressStates = {}
+
+    expect(store.executingNode).toBeNull()
+  })
+
+  it('should return null when executing node cannot be found', () => {
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(null)
+
+    store.nodeProgressStates = {
+      '999': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '999',
+        prompt_id: 'test-prompt',
+        node_id: '999'
+      }
+    }
+
+    expect(store.executingNode).toBeNull()
   })
 })
 

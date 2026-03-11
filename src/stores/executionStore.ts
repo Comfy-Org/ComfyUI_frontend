@@ -6,11 +6,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type {
-  ComfyNode,
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
@@ -32,7 +28,10 @@ import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import {
+  executionIdToNodeLocatorId,
+  getNodeByExecutionId
+} from '@/utils/graphTraversalUtil'
 
 interface QueuedJob {
   /**
@@ -142,20 +141,10 @@ export const useExecutionStore = defineStore('execution', () => {
   )
 
   // For backward compatibility - returns the primary executing node
-  const executingNode = computed<ComfyNode | null>(() => {
+  const executingNode = computed(() => {
     if (!executingNodeId.value) return null
 
-    const workflow: ComfyWorkflow | undefined = activeJob.value?.workflow
-    if (!workflow) return null
-
-    const canvasState: ComfyWorkflowJSON | null =
-      workflow.changeTracker?.activeState ?? null
-    if (!canvasState) return null
-
-    return (
-      canvasState.nodes.find((n) => String(n.id) === executingNodeId.value) ??
-      null
-    )
+    return getNodeByExecutionId(app.rootGraph, String(executingNodeId.value))
   })
 
   // This is the progress of the currently executing node (for backward compatibility)
