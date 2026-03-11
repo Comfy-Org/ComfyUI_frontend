@@ -101,17 +101,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         void import('posthog-js')
           .then((posthogModule) => {
             this.posthog = posthogModule.default
+            const serverConfig = remoteConfig.value?.posthog_config ?? {}
             this.posthog!.init(apiKey, {
-              api_host:
-                window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
+              api_host: 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
               autocapture: false,
               capture_pageview: false,
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
-              debug:
-                window.__CONFIG__?.posthog_debug ??
-                import.meta.env.VITE_POSTHOG_DEBUG === 'true'
+              debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
+              ...serverConfig
             })
             this.isInitialized = true
             this.flushEventQueue()

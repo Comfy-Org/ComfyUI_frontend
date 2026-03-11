@@ -40,8 +40,12 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
+const mockRemoteConfig = vi.hoisted(
+  () => ({ value: null }) as { value: Record<string, unknown> | null }
+)
+
 vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: { value: null }
+  remoteConfig: mockRemoteConfig
 }))
 
 vi.mock('posthog-js', () => hoisted.mockPosthog)
@@ -61,6 +65,7 @@ function createProvider(
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRemoteConfig.value = null
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     } as typeof window.__CONFIG__
@@ -93,17 +98,22 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('enables debug mode when posthog_debug is true in config', async () => {
-      window.__CONFIG__ = {
-        posthog_project_token: 'phc_test_token',
-        posthog_debug: true
-      } as typeof window.__CONFIG__
-      new PostHogTelemetryProvider()
+    it('applies posthog_config overrides from remote config', async () => {
+      mockRemoteConfig.value = {
+        posthog_config: {
+          debug: true,
+          api_host: 'https://custom.host.com'
+        }
+      }
+      createProvider()
       await vi.dynamicImportSettled()
 
       expect(hoisted.mockInit).toHaveBeenCalledWith(
         'phc_test_token',
-        expect.objectContaining({ debug: true })
+        expect.objectContaining({
+          debug: true,
+          api_host: 'https://custom.host.com'
+        })
       )
     })
 
