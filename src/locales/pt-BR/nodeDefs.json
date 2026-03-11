@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Expressão Matemática",
+    "inputs": {
+      "expression": {
+        "name": "expressão"
+      },
+      "values": {
+        "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Alternar",
     "inputs": {
@@ -3947,6 +3966,10 @@
     "description": "Modifique uma imagem existente com base em um prompt de texto",
     "display_name": "Grok Image Edit",
     "inputs": {
+      "aspect_ratio": {
+        "name": "proporção",
+        "tooltip": "Só é permitido quando várias imagens estão conectadas à entrada de imagem."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -3998,6 +4021,9 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "O prompt de texto usado para gerar a imagem"
+      },
+      "resolution": {
+        "name": "resolução"
       },
       "seed": {
         "name": "seed",
@@ -5853,6 +5879,9 @@
       },
       "mode": {
         "name": "modo"
+      },
+      "model": {
+        "name": "modelo"
       },
       "prompt": {
         "name": "prompt"
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Realiza o desdobramento UV em um modelo 3D para gerar textura UV. O modelo de entrada deve ter menos de 30.000 faces.",
+    "display_name": "Hunyuan3D: Modelo para UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D de entrada (GLB, OBJ ou FBX)"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Realiza retopologia inteligente em um modelo 3D. Suporta formatos GLB/OBJ; máximo de 200MB; recomendado para modelos de alta poligonagem.",
+    "display_name": "Hunyuan3D: Topologia Inteligente",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "face_level": {
+        "name": "nível_de_faces",
+        "tooltip": "Nível de redução de polígonos."
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D de entrada (GLB ou OBJ)"
+      },
+      "polygon_type": {
+        "name": "tipo_de_polígono",
+        "tooltip": "Tipo de composição da superfície."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

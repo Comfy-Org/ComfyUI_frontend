@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const buttonVariants = cva({
-  base: 'relative inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap appearance-none border-none rounded-md text-sm font-medium font-inter transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  base: 'relative inline-flex items-center justify-center gap-2 cursor-pointer touch-manipulation whitespace-nowrap appearance-none border-none rounded-md text-sm font-medium font-inter transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([width]):not([height])]:size-4 [&_svg]:shrink-0',
   variants: {
     variant: {
       secondary:
@@ -20,6 +20,7 @@ export const buttonVariants = cva({
       'destructive-textonly':
         'bg-transparent text-destructive-background hover:bg-destructive-background/10',
       'overlay-white': 'bg-white text-gray-600 hover:bg-white/90',
+      base: 'bg-base-background text-base-foreground hover:bg-secondary-background-hover',
       gradient:
         'border-transparent bg-(image:--subscription-button-gradient) text-white hover:opacity-90'
     },
@@ -49,6 +50,7 @@ const variants = [
   'textonly',
   'muted-textonly',
   'destructive-textonly',
+  'base',
   'overlay-white',
   'gradient'
 ] as const satisfies Array<ButtonVariants['variant']>

@@ -166,13 +166,22 @@ describe('TopMenuSection', () => {
   })
 
   describe('authentication state', () => {
+    function createLegacyTabBarWrapper() {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      const settingStore = useSettingStore(pinia)
+      vi.mocked(settingStore.get).mockImplementation((key) =>
+        key === 'Comfy.UI.TabBarLayout' ? 'Legacy' : undefined
+      )
+      return createWrapper({ pinia })
+    }
+
     describe('when user is logged in', () => {
       beforeEach(() => {
         mockData.isLoggedIn = true
       })
 
       it('should display CurrentUserButton and not display LoginButton', () => {
-        const wrapper = createWrapper()
+        const wrapper = createLegacyTabBarWrapper()
         expect(wrapper.findComponent(CurrentUserButton).exists()).toBe(true)
         expect(wrapper.findComponent(LoginButton).exists()).toBe(false)
       })
@@ -186,7 +195,7 @@ describe('TopMenuSection', () => {
       describe('on desktop platform', () => {
         it('should display LoginButton and not display CurrentUserButton', () => {
           mockData.isDesktop = true
-          const wrapper = createWrapper()
+          const wrapper = createLegacyTabBarWrapper()
           expect(wrapper.findComponent(LoginButton).exists()).toBe(true)
           expect(wrapper.findComponent(CurrentUserButton).exists()).toBe(false)
         })
@@ -194,7 +203,7 @@ describe('TopMenuSection', () => {
 
       describe('on web platform', () => {
         it('should not display CurrentUserButton and not display LoginButton', () => {
-          const wrapper = createWrapper()
+          const wrapper = createLegacyTabBarWrapper()
           expect(wrapper.findComponent(CurrentUserButton).exists()).toBe(false)
           expect(wrapper.findComponent(LoginButton).exists()).toBe(false)
         })

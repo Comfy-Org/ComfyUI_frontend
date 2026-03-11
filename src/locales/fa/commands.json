@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "چسباندن"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "چسباندن با اتصال"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "بازنشانی نما"
   },

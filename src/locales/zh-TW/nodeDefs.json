@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "數學運算式",
+    "inputs": {
+      "expression": {
+        "name": "運算式"
+      },
+      "values": {
+        "name": "數值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "切換",
     "inputs": {
@@ -3947,6 +3966,10 @@
     "description": "根據文字提示修改現有圖像",
     "display_name": "Grok 圖像編輯",
     "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "僅當多張圖片連接到圖片輸入時才允許。"
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -3998,6 +4021,9 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "用於生成圖像的文字提示"
+      },
+      "resolution": {
+        "name": "解析度"
       },
       "seed": {
         "name": "seed",
@@ -5853,6 +5879,9 @@
       },
       "mode": {
         "name": "模式"
+      },
+      "model": {
+        "name": "模型"
       },
       "prompt": {
         "name": "提示詞"
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "對 3D 模型進行 UV 展開，產生 UV 貼圖。輸入模型必須少於 30000 個面。",
+    "display_name": "Hunyuan3D：模型展UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model_3d": {
+        "name": "3D 模型",
+        "tooltip": "輸入 3D 模型（GLB、OBJ 或 FBX）"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "對 3D 模型進行智慧重拓撲。支援 GLB/OBJ 格式；最大 200MB；建議用於高面數模型。",
+    "display_name": "Hunyuan3D：智慧拓撲",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "face_level": {
+        "name": "面數等級",
+        "tooltip": "多邊形減少等級。"
+      },
+      "model_3d": {
+        "name": "3D 模型",
+        "tooltip": "輸入 3D 模型（GLB 或 OBJ）"
+      },
+      "polygon_type": {
+        "name": "面組成類型",
+        "tooltip": "表面組成類型。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

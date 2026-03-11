@@ -7,7 +7,7 @@
     <!-- Image Wrapper -->
     <div
       ref="imageWrapperEl"
-      class="relative flex min-h-0 w-full flex-1 overflow-hidden rounded-[5px] bg-muted-background"
+      class="relative flex min-h-0 w-full flex-1 overflow-hidden rounded-[5px] bg-transparent"
       tabindex="0"
       role="img"
       :aria-label="$t('g.imagePreview')"
@@ -21,7 +21,7 @@
       <div
         v-if="imageError"
         role="alert"
-        class="flex size-full flex-1 flex-col items-center justify-around self-center bg-muted-background py-8 text-center text-base-foreground"
+        class="flex size-full flex-1 flex-col items-center justify-around self-center py-8 text-center text-base-foreground"
       >
         <i class="mb-2 icon-[lucide--image-off] size-12 text-base-foreground" />
         <p class="text-sm text-base-foreground">
@@ -233,7 +233,6 @@ const handleDownload = () => {
       severity: 'error',
       summary: 'Error',
       detail: t('g.failedToDownloadImage'),
-      life: 3000,
       group: 'image-preview'
     })
   }

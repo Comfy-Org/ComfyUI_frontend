@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "عبارت ریاضی",
+    "inputs": {
+      "expression": {
+        "name": "عبارت"
+      },
+      "values": {
+        "name": "مقادیر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "سوئیچ",
     "inputs": {
@@ -3947,6 +3966,10 @@
     "description": "ویرایش یک تصویر موجود بر اساس یک متن راهنما",
     "display_name": "ویرایش تصویر Grok",
     "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "فقط زمانی مجاز است که چندین تصویر به ورودی تصویر متصل باشند."
+      },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
@@ -3998,6 +4021,9 @@
       "prompt": {
         "name": "راهنما",
         "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "resolution": {
+        "name": "وضوح"
       },
       "seed": {
         "name": "بذر",
@@ -5853,6 +5879,9 @@
       },
       "mode": {
         "name": "حالت"
+      },
+      "model": {
+        "name": "مدل"
       },
       "prompt": {
         "name": "پرامپت"
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "بازکردن UV روی یک مدل سه‌بعدی برای تولید بافت UV. مدل ورودی باید کمتر از ۳۰۰۰۰ وجه داشته باشد.",
+    "display_name": "Hunyuan3D: مدل به UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model_3d": {
+        "name": "مدل سه‌بعدی",
+        "tooltip": "مدل سه‌بعدی ورودی (GLB، OBJ یا FBX)"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "اجرای رتپولوژی هوشمند روی یک مدل سه‌بعدی. پشتیبانی از فرمت‌های GLB/OBJ؛ حداکثر ۲۰۰ مگابایت؛ توصیه‌شده برای مدل‌های با چندضلعی بالا.",
+    "display_name": "Hunyuan3D: توپولوژی هوشمند",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "face_level": {
+        "name": "سطح وجه",
+        "tooltip": "سطح کاهش چندضلعی."
+      },
+      "model_3d": {
+        "name": "مدل سه‌بعدی",
+        "tooltip": "مدل سه‌بعدی ورودی (GLB یا OBJ)"
+      },
+      "polygon_type": {
+        "name": "نوع چندضلعی",
+        "tooltip": "نوع ترکیب سطح."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

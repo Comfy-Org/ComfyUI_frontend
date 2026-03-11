@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Math Expression",
+    "inputs": {
+      "expression": {
+        "name": "expression"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Switch",
     "inputs": {
@@ -3968,6 +3987,10 @@
         "name": "seed",
         "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
       },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Only allowed when multiple images are connected to the image input."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -3999,6 +4022,9 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "resolution": {
+        "name": "resolution"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -5749,6 +5775,9 @@
       },
       "mode": {
         "name": "mode"
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "display_name": "Hunyuan3D: Model to UV",
+    "description": "Perform UV unfolding on a 3D model to generate UV texture. Input model must have less than 30000 faces.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Input 3D model (GLB, OBJ, or FBX)"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "display_name": "Hunyuan3D: Smart Topology",
+    "description": "Perform smart retopology on a 3D model. Supports GLB/OBJ formats; max 200MB; recommended for high-poly models.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Input 3D model (GLB or OBJ)"
+      },
+      "polygon_type": {
+        "name": "polygon_type",
+        "tooltip": "Surface composition type."
+      },
+      "face_level": {
+        "name": "face_level",
+        "tooltip": "Polygon reduction level."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

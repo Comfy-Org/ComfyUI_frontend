@@ -17,6 +17,7 @@
             :variant="buttonVariant ?? 'textonly'"
             @click="$emit('action')"
           >
+            <i v-if="buttonIcon" :class="buttonIcon" />
             {{ buttonLabel }}
           </Button>
         </div>
@@ -37,6 +38,7 @@ const props = defineProps<{
   title?: string
   message: string
   textClass?: string
+  buttonIcon?: string
   buttonLabel?: string
   buttonVariant?: ButtonVariants['variant']
 }>()

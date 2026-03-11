@@ -22,6 +22,10 @@ const mockApp = vi.hoisted(() => ({
 
 const mockSetMode = vi.hoisted(() => vi.fn())
 
+const mockAppModeStore = vi.hoisted(() => ({
+  exitBuilder: vi.fn()
+}))
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => mockDialogService
 }))
@@ -40,6 +44,10 @@ vi.mock('@/scripts/app', () => ({
 
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({ setMode: mockSetMode })
+}))
+
+vi.mock('@/stores/appModeStore', () => ({
+  useAppModeStore: () => mockAppModeStore
 }))
 
 vi.mock('./DefaultViewDialogContent.vue', () => ({
@@ -206,6 +214,16 @@ describe('useAppSetDefaultView', () => {
         key: 'builder-default-view-applied'
       })
       expect(mockSetMode).toHaveBeenCalledWith('app')
+    })
+
+    it('onExitToWorkflow exits builder and closes dialog', () => {
+      const confirmCall = applyAndGetConfirmDialog(true)
+      confirmCall.props.onExitToWorkflow()
+
+      expect(mockDialogStore.closeDialog).toHaveBeenCalledWith({
+        key: 'builder-default-view-applied'
+      })
+      expect(mockAppModeStore.exitBuilder).toHaveBeenCalledOnce()
     })
 
     it('onClose closes confirmation dialog', () => {
