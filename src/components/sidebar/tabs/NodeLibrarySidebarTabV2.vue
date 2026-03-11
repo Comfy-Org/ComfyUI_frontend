@@ -106,42 +106,44 @@
           </DropdownMenuRoot>
         </template>
       </SidebarTopArea>
-      <!-- Tab list in header (fixed) -->
-      <div class="border-b border-comfy-input px-2 pt-2 pb-1 2xl:px-4">
-        <TabList v-model="selectedTab">
-          <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
-            {{ tab.label }}
-          </Tab>
-        </TabList>
-      </div>
     </template>
     <template #body>
       <NodeDragPreview />
-      <!-- Tab content (scrollable) -->
-      <TabsRoot v-model="selectedTab" class="h-full py-2">
-        <EssentialNodesPanel
-          v-if="
-            flags.nodeLibraryEssentialsEnabled && selectedTab === 'essentials'
-          "
-          v-model:expanded-keys="expandedKeys"
-          :root="renderedEssentialRoot"
-          :flat-nodes="essentialFlatNodes"
-          @node-click="handleNodeClick"
-        />
-        <AllNodesPanel
-          v-if="selectedTab === 'all'"
-          v-model:expanded-keys="expandedKeys"
-          :sections="renderedSections"
-          :fill-node-info="fillNodeInfo"
-          :sort-order="sortOrder"
-          @node-click="handleNodeClick"
-        />
-        <BlueprintsPanel
-          v-if="selectedTab === 'blueprints'"
-          v-model:expanded-keys="expandedKeys"
-          :sections="renderedBlueprintsSections"
-          @node-click="handleNodeClick"
-        />
+      <TabsRoot v-model="selectedTab" class="flex h-full flex-col">
+        <!-- Tab list in header (fixed) -->
+        <div class="border-b border-comfy-input px-2 pt-2 pb-1 2xl:px-4">
+          <TabsList class="flex w-full items-center gap-2">
+            <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
+              {{ tab.label }}
+            </Tab>
+          </TabsList>
+        </div>
+        <!-- Tab content (scrollable) -->
+        <div class="min-h-0 flex-1 overflow-y-auto py-2">
+          <EssentialNodesPanel
+            v-if="
+              flags.nodeLibraryEssentialsEnabled && selectedTab === 'essentials'
+            "
+            v-model:expanded-keys="expandedKeys"
+            :root="renderedEssentialRoot"
+            :flat-nodes="essentialFlatNodes"
+            @node-click="handleNodeClick"
+          />
+          <AllNodesPanel
+            v-if="selectedTab === 'all'"
+            v-model:expanded-keys="expandedKeys"
+            :sections="renderedSections"
+            :fill-node-info="fillNodeInfo"
+            :sort-order="sortOrder"
+            @node-click="handleNodeClick"
+          />
+          <BlueprintsPanel
+            v-if="selectedTab === 'blueprints'"
+            v-model:expanded-keys="expandedKeys"
+            :sections="renderedBlueprintsSections"
+            @node-click="handleNodeClick"
+          />
+        </div>
       </TabsRoot>
     </template>
   </SidebarTabTemplate>
@@ -158,6 +160,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuRoot,
   DropdownMenuTrigger,
+  TabsList,
   TabsRoot
 } from 'reka-ui'
 import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
@@ -165,7 +168,6 @@ import { useI18n } from 'vue-i18n'
 
 import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
 import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'

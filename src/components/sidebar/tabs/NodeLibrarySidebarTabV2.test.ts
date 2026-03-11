@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { TabsTrigger } from 'reka-ui'
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -105,8 +106,8 @@ describe('NodeLibrarySidebarTabV2', () => {
   it('should render with tabs', () => {
     const wrapper = mountComponent()
 
-    const tabs = wrapper.findAll('[role="tab"]')
-    expect(tabs).toHaveLength(3)
+    const triggers = wrapper.findAllComponents(TabsTrigger)
+    expect(triggers).toHaveLength(3)
   })
 
   it('should render search box', () => {
