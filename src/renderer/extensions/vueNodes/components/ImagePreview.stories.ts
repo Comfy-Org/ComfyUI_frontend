@@ -9,7 +9,7 @@ const SAMPLE_URLS = [
 ]
 
 const meta: Meta<typeof ImagePreview> = {
-  title: 'Widgets/ImagePreview',
+  title: 'Components/Display/ImagePreview',
   component: ImagePreview,
   tags: ['autodocs'],
   parameters: {

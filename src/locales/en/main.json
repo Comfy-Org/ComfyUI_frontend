@@ -37,6 +37,8 @@
     "galleryThumbnail": "Gallery thumbnail",
     "previousImage": "Previous image",
     "nextImage": "Next image",
+    "switchToGridView": "Switch to grid view",
+    "switchToSingleView": "Switch to single view",
     "errorLoadingImage": "Error loading image",
     "errorLoadingVideo": "Error loading video",
     "failedToDownloadImage": "Failed to download image",

@@ -1,12 +1,12 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetGalleria from './WidgetGalleria.vue'
-import type { GalleryImage, GalleryValue } from './WidgetGalleria.vue'
+import DisplayCarousel from './DisplayCarousel.vue'
+import type { GalleryImage, GalleryValue } from './DisplayCarousel.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
@@ -18,7 +18,9 @@ const i18n = createI18n({
         galleryImage: 'Gallery image',
         galleryThumbnail: 'Gallery thumbnail',
         previousImage: 'Previous image',
-        nextImage: 'Next image'
+        nextImage: 'Next image',
+        switchToGridView: 'Switch to grid view',
+        switchToSingleView: 'Switch to single view'
       }
     }
   }
@@ -63,7 +65,7 @@ function mountComponent(
   widget: SimplifiedWidget<GalleryValue>,
   modelValue: GalleryValue
 ) {
-  return mount(WidgetGalleria, {
+  return mount(DisplayCarousel, {
     global: {
       plugins: [i18n]
     },
@@ -93,7 +95,7 @@ function findThumbnailButtons(wrapper: ReturnType<typeof mount>) {
   return wrapper.findAll('button').filter((btn) => btn.find('img').exists())
 }
 
-describe('WidgetGalleria Image Display', () => {
+describe('DisplayCarousel Single Mode', () => {
   describe('Component Rendering', () => {
     it('renders main image', () => {
       const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
@@ -263,46 +265,142 @@ describe('WidgetGalleria Image Display', () => {
       expect(mainImg.attributes('src')).toBe('https://example.com/image0.jpg')
     })
   })
+})
 
-  describe('Edge Cases', () => {
-    it('handles empty array gracefully', () => {
-      const wrapper = createGalleriaWrapper([])
+describe('DisplayCarousel Grid Mode', () => {
+  it('switches to grid mode via toggle button on hover', async () => {
+    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-      expect(wrapper.find('img').exists()).toBe(false)
-      expect(findThumbnailButtons(wrapper)).toHaveLength(0)
+    // Trigger hover to reveal toggle button
+    await wrapper.find('div').trigger('mouseenter')
+    await nextTick()
+
+    const toggleBtn = wrapper.find('[aria-label="Switch to grid view"]')
+    expect(toggleBtn.exists()).toBe(true)
+
+    await toggleBtn.trigger('click')
+    await nextTick()
+
+    // Grid mode should show all images as grid items
+    const gridImages = wrapper.findAll('img')
+    expect(gridImages).toHaveLength(TEST_IMAGES_SMALL.length)
+  })
+
+  it('does not show grid toggle for single image', async () => {
+    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
+
+    await wrapper.find('div').trigger('mouseenter')
+    await nextTick()
+
+    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
+      false
+    )
+  })
+
+  it('switches back to single mode via toggle button', async () => {
+    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+
+    // Switch to grid
+    await wrapper.find('div').trigger('mouseenter')
+    await nextTick()
+    await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
+    await nextTick()
+
+    // Switch back to single
+    const singleToggle = wrapper.find('[aria-label="Switch to single view"]')
+    expect(singleToggle.exists()).toBe(true)
+
+    await singleToggle.trigger('click')
+    await nextTick()
+
+    // Should be back in single mode with main image
+    expect(wrapper.find('[aria-label="Previous image"]').exists()).toBe(true)
+  })
+
+  it('clicking grid image switches to single mode focused on that image', async () => {
+    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+
+    // Switch to grid
+    await wrapper.find('div').trigger('mouseenter')
+    await nextTick()
+    await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
+    await nextTick()
+
+    // Click second grid image
+    const gridButtons = wrapper
+      .findAll('button')
+      .filter((btn) => btn.find('img').exists())
+    await gridButtons[1].trigger('click')
+    await nextTick()
+
+    // Should be in single mode showing the second image
+    const mainImg = wrapper.findAll('img')[0]
+    expect(mainImg.attributes('src')).toBe('https://example.com/image1.jpg')
+  })
+
+  it('reverts to single mode when images reduce to one', async () => {
+    const images = ref<GalleryValue>([...TEST_IMAGES_SMALL])
+    const widget = createGalleriaWidget([...TEST_IMAGES_SMALL])
+    const wrapper = mount(DisplayCarousel, {
+      global: { plugins: [i18n] },
+      props: { widget, modelValue: images.value }
     })
 
-    it('handles malformed image objects', () => {
-      const malformedImages = [{}, { randomProp: 'value' }, null, undefined]
-      const wrapper = createGalleriaWrapper(malformedImages as string[])
+    // Switch to grid
+    await wrapper.find('div').trigger('mouseenter')
+    await nextTick()
+    await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
+    await nextTick()
 
-      // Null/undefined filtered, 2 objects remain but render with empty src
-      expect(wrapper.find('img').exists()).toBe(true)
-    })
+    // Reduce to single image
+    await wrapper.setProps({ modelValue: [TEST_IMAGES_SMALL[0]] })
+    await nextTick()
 
-    it('handles very large image arrays', () => {
-      const largeImageArray = createImageStrings(100)
-      const wrapper = createGalleriaWrapper(largeImageArray)
+    // Should revert to single mode (no grid toggle visible)
+    expect(wrapper.find('[aria-label="Switch to single view"]').exists()).toBe(
+      false
+    )
+  })
+})
 
-      const thumbnailButtons = findThumbnailButtons(wrapper)
-      expect(thumbnailButtons).toHaveLength(100)
-    })
+describe('DisplayCarousel Edge Cases', () => {
+  it('handles empty array gracefully', () => {
+    const wrapper = createGalleriaWrapper([])
 
-    it('handles mixed string and object arrays gracefully', () => {
-      const mixedArray = [
-        'https://example.com/string.jpg',
-        { itemImageSrc: 'https://example.com/object.jpg' },
-        'https://example.com/another-string.jpg'
-      ]
-      expect(() => createGalleriaWrapper(mixedArray as string[])).not.toThrow()
-    })
+    expect(wrapper.find('img').exists()).toBe(false)
+    expect(findThumbnailButtons(wrapper)).toHaveLength(0)
+  })
 
-    it('handles invalid URL strings', () => {
-      const invalidUrls = ['not-a-url', '', ' ', 'http://', 'ftp://invalid']
-      const wrapper = createGalleriaWrapper(invalidUrls)
+  it('handles malformed image objects', () => {
+    const malformedImages = [{}, { randomProp: 'value' }, null, undefined]
+    const wrapper = createGalleriaWrapper(malformedImages as string[])
 
-      // Should still render without crashing
-      expect(wrapper.find('img').exists()).toBe(true)
-    })
+    // Null/undefined filtered, 2 objects remain but render with empty src
+    expect(wrapper.find('img').exists()).toBe(true)
+  })
+
+  it('handles very large image arrays', () => {
+    const largeImageArray = createImageStrings(100)
+    const wrapper = createGalleriaWrapper(largeImageArray)
+
+    const thumbnailButtons = findThumbnailButtons(wrapper)
+    expect(thumbnailButtons).toHaveLength(100)
+  })
+
+  it('handles mixed string and object arrays gracefully', () => {
+    const mixedArray = [
+      'https://example.com/string.jpg',
+      { itemImageSrc: 'https://example.com/object.jpg' },
+      'https://example.com/another-string.jpg'
+    ]
+    expect(() => createGalleriaWrapper(mixedArray as string[])).not.toThrow()
+  })
+
+  it('handles invalid URL strings', () => {
+    const invalidUrls = ['not-a-url', '', ' ', 'http://', 'ftp://invalid']
+    const wrapper = createGalleriaWrapper(invalidUrls)
+
+    // Should still render without crashing
+    expect(wrapper.find('img').exists()).toBe(true)
   })
 })
