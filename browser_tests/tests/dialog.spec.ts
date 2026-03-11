@@ -328,9 +328,11 @@ test.describe('Settings', () => {
     })
     await newBlankWorkflowRow.click()
 
-    // Click edit button
-    const editKeybindingButton = newBlankWorkflowRow.locator('.pi-pencil')
-    await editKeybindingButton.click()
+    // Click add keybinding button (New Blank Workflow has no default keybinding)
+    const addKeybindingButton = newBlankWorkflowRow.locator(
+      '.icon-\\[lucide--plus\\]'
+    )
+    await addKeybindingButton.click()
 
     // Set new keybinding
     const input = comfyPage.page.getByPlaceholder('Press keys for new binding')
