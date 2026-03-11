@@ -71,46 +71,15 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   })
 }))
 
-// Mock TaskItemImpl
-vi.mock('@/stores/queueStore', () => ({
-  TaskItemImpl: class {
-    public flatOutputs: Array<{
-      supportsPreview: boolean
-      filename: string
-      subfolder: string
-      type: string
-      url: string
-    }>
-    public previewOutput:
-      | {
-          supportsPreview: boolean
-          filename: string
-          subfolder: string
-          type: string
-          url: string
-        }
-      | undefined
-    public jobId: string
-
-    constructor(public job: JobListItem) {
-      this.jobId = job.id
-      this.flatOutputs = [
-        {
-          supportsPreview: true,
-          filename: 'test.png',
-          subfolder: '',
-          type: 'output',
-          url: 'http://test.com/test.png'
-        }
-      ]
-      this.previewOutput = this.flatOutputs[0]
-    }
-
-    get previewableOutputs() {
-      return this.flatOutputs.filter((o) => o.supportsPreview)
-    }
+// Use the real TaskItemImpl and ResultItemImpl from queueStore
+// to avoid redefining types and filtering logic inline.
+vi.mock('@/stores/queueStore', async (importOriginal) => {
+  const original = (await importOriginal()) as Record<string, unknown>
+  return {
+    TaskItemImpl: original.TaskItemImpl,
+    ResultItemImpl: original.ResultItemImpl
   }
-}))
+})
 
 // Mock asset mappers - add unique timestamps
 vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
@@ -140,20 +109,29 @@ describe('assetsStore - Refactored (Option A)', () => {
   let store: ReturnType<typeof useAssetsStore>
 
   // Helper function to create mock job items
-  const createMockJobItem = (index: number): JobListItem => ({
+  const createMockJobItem = (
+    index: number,
+    overrides?: {
+      status?: JobListItem['status']
+      preview_output?: JobListItem['preview_output'] | null
+    }
+  ): JobListItem => ({
     id: `prompt_${index}`,
-    status: 'completed',
+    status: overrides?.status ?? 'completed',
     create_time: 1000 + index,
     update_time: 1000 + index,
     last_state_update: 1000 + index,
     priority: 1000 + index,
-    preview_output: {
-      filename: `output_${index}.png`,
-      subfolder: '',
-      type: 'output',
-      nodeId: 'node_1',
-      mediaType: 'images'
-    }
+    preview_output:
+      overrides?.preview_output === null
+        ? undefined
+        : (overrides?.preview_output ?? {
+            filename: `output_${index}.png`,
+            subfolder: '',
+            type: 'output',
+            nodeId: 'node_1',
+            mediaType: 'images'
+          })
   })
 
   beforeEach(() => {
@@ -492,6 +470,140 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(asset.user_metadata).toHaveProperty('outputCount')
       expect(asset.user_metadata).toHaveProperty('allOutputs')
       expect(Array.isArray(asset.user_metadata!.allOutputs)).toBe(true)
+    })
+  })
+
+  describe('Media Type Filtering', () => {
+    it('should include image outputs as previewable', async () => {
+      const mockHistory = [
+        createMockJobItem(0, {
+          preview_output: {
+            filename: 'photo.png',
+            subfolder: '',
+            type: 'output',
+            nodeId: 'node_1',
+            mediaType: 'images'
+          }
+        })
+      ]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(1)
+    })
+
+    it('should include video outputs as previewable', async () => {
+      const mockHistory = [
+        createMockJobItem(0, {
+          preview_output: {
+            filename: 'clip.mp4',
+            subfolder: '',
+            type: 'output',
+            nodeId: 'node_1',
+            mediaType: 'video'
+          }
+        })
+      ]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(1)
+    })
+
+    it('should include audio outputs as previewable', async () => {
+      const mockHistory = [
+        createMockJobItem(0, {
+          preview_output: {
+            filename: 'sound.mp3',
+            subfolder: '',
+            type: 'output',
+            nodeId: 'node_1',
+            mediaType: 'audio'
+          }
+        })
+      ]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(1)
+    })
+
+    it('should include 3D outputs as previewable', async () => {
+      const mockHistory = [
+        createMockJobItem(0, {
+          preview_output: {
+            filename: 'model.glb',
+            subfolder: '',
+            type: 'output',
+            nodeId: 'node_1',
+            mediaType: '3d'
+          }
+        })
+      ]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(1)
+    })
+
+    it('should skip non-previewable outputs (e.g., text files)', async () => {
+      const mockHistory = [
+        createMockJobItem(0, {
+          preview_output: {
+            filename: 'data.txt',
+            subfolder: '',
+            type: 'output',
+            nodeId: 'node_1',
+            mediaType: 'text'
+          }
+        })
+      ]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(0)
+    })
+  })
+
+  describe('Edge Cases', () => {
+    it('should skip jobs without preview_output', async () => {
+      const mockHistory = [
+        createMockJobItem(0, { preview_output: null }),
+        createMockJobItem(1)
+      ]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(1)
+    })
+
+    it('should skip non-completed jobs', async () => {
+      const mockHistory = [
+        createMockJobItem(0, { status: 'failed' }),
+        createMockJobItem(1, { status: 'cancelled' }),
+        createMockJobItem(2, { status: 'pending' }),
+        createMockJobItem(3)
+      ]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(1)
+    })
+
+    it('should handle empty history response', async () => {
+      vi.mocked(api.getHistory).mockResolvedValue([])
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(0)
+      expect(store.hasMoreHistory).toBe(false)
     })
   })
 })
