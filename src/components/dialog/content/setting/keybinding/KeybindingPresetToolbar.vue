@@ -4,7 +4,7 @@
       {{ $t('g.keybindingPresets.saveChanges') }}
     </Button>
     <Select v-model="selectedPreset">
-      <SelectTrigger class="w-48">
+      <SelectTrigger class="w-64">
         <SelectValue :placeholder="$t('g.keybindingPresets.default')">
           {{ displayLabel }}
         </SelectValue>
