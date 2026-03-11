@@ -72,7 +72,7 @@ const menuItems = computed(() => [
   },
   {
     label: t('builderMenu.exitAppBuilder'),
-    icon: 'icon-[lucide--square-pen]',
+    icon: 'icon-[lucide--x]',
     action: onExitBuilder
   }
 ])

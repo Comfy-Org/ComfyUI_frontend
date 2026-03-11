@@ -46,7 +46,10 @@
                 onThumbnailError($event.name, $event.previewUrl)
               "
             />
-            <span class="truncate text-xs text-base-foreground">
+            <span
+              v-tooltip="buildTooltipConfig(item.name)"
+              class="truncate text-xs text-base-foreground"
+            >
               {{ item.name }}
             </span>
             <span
@@ -74,6 +77,7 @@ import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAss
 import { useAssetSections } from '@/platform/workflow/sharing/composables/useAssetSections'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 const { items } = defineProps<{
   items: AssetInfo[]

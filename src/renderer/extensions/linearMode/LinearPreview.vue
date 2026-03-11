@@ -126,7 +126,7 @@ async function rerun(e: Event) {
           : []),
         {
           icon: 'icon-[lucide--trash-2]',
-          label: t('queue.jobMenu.deleteAsset'),
+          label: t('linearMode.deleteAllAssets'),
           command: () => mediaActions.deleteAssets(selectedItem!)
         }
       ]"

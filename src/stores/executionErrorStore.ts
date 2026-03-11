@@ -238,7 +238,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
-    if (!app.rootGraph) return ids
+    if (!app.isGraphReady) return ids
 
     // Fall back to rootGraph when currentGraph hasn't been initialized yet
     const activeGraph = canvasStore.currentGraph ?? app.rootGraph
@@ -287,7 +287,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   const activeMissingNodeGraphIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
-    if (!app.rootGraph) return ids
+    if (!app.isGraphReady) return ids
 
     const activeGraph = canvasStore.currentGraph ?? app.rootGraph
 
@@ -357,7 +357,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** True if the node has errors inside it at any nesting depth. */
   function isContainerWithInternalError(node: LGraphNode): boolean {
-    if (!app.rootGraph) return false
+    if (!app.isGraphReady) return false
     const execId = getExecutionIdByNode(app.rootGraph, node)
     if (!execId) return false
     return errorAncestorExecutionIds.value.has(execId)
@@ -365,15 +365,15 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** True if the node has a missing node inside it at any nesting depth. */
   function isContainerWithMissingNode(node: LGraphNode): boolean {
-    if (!app.rootGraph) return false
+    if (!app.isGraphReady) return false
     const execId = getExecutionIdByNode(app.rootGraph, node)
     if (!execId) return false
     return missingAncestorExecutionIds.value.has(execId)
   }
 
   watch(lastNodeErrors, () => {
+    if (!app.isGraphReady) return
     const rootGraph = app.rootGraph
-    if (!rootGraph) return
 
     clearAllNodeErrorFlags(rootGraph)
 

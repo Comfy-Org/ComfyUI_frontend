@@ -73,8 +73,7 @@ export function createAssetWidget(
           toastStore.add({
             severity: 'error',
             summary: t('assetBrowser.invalidAsset'),
-            detail: t('assetBrowser.invalidAssetDetail'),
-            life: 5000
+            detail: t('assetBrowser.invalidAssetDetail')
           })
           return
         }
@@ -92,8 +91,7 @@ export function createAssetWidget(
           toastStore.add({
             severity: 'error',
             summary: t('assetBrowser.invalidFilename'),
-            detail: t('assetBrowser.invalidFilenameDetail'),
-            life: 5000
+            detail: t('assetBrowser.invalidFilenameDetail')
           })
           return
         }

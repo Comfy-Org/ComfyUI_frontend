@@ -83,13 +83,18 @@
       v-if="isIntegratedTabBar"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
-      <TopMenuHelpButton />
-      <CurrentUserButton
-        v-if="isLoggedIn"
-        :show-arrow="false"
-        compact
-        class="grid w-10 shrink-0 p-1"
-      />
+      <Button
+        v-if="isCloud || isNightly"
+        v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
+        variant="muted-textonly"
+        size="icon"
+        class="shrink-0 text-base-foreground"
+        :aria-label="$t('actionbar.feedback')"
+        @click="openFeedback"
+      >
+        <i class="icon-[lucide--message-square-text]" />
+      </Button>
+      <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else-if="isDesktop" class="p-1" />
     </div>
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
@@ -102,21 +107,20 @@ import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
-
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
-import TopMenuHelpButton from '@/components/topbar/TopMenuHelpButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { buildFeedbackUrl } from '@/platform/support/config'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
@@ -138,8 +142,14 @@ const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
 
 const isIntegratedTabBar = computed(
-  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
+  () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
+const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
+
+const feedbackUrl = buildFeedbackUrl()
+function openFeedback() {
+  window.open(feedbackUrl, '_blank', 'noopener,noreferrer')
+}
 
 const containerRef = ref<HTMLElement | null>(null)
 const showOverflowArrows = ref(false)

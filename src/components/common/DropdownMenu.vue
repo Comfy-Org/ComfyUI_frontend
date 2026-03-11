@@ -27,7 +27,7 @@ const { itemClass: itemProp, contentClass: contentProp } = defineProps<{
 
 const itemClass = computed(() =>
   cn(
-    'm-1 flex cursor-pointer gap-1 rounded-lg p-2 leading-none data-disabled:pointer-events-none data-disabled:text-muted-foreground data-highlighted:bg-secondary-background-hover',
+    'm-1 flex cursor-pointer items-center-safe gap-1 rounded-lg p-2 leading-none data-disabled:pointer-events-none data-disabled:text-muted-foreground data-highlighted:bg-secondary-background-hover',
     itemProp
   )
 )
