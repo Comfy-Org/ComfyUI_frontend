@@ -327,7 +327,11 @@ function handleTitleCancel() {
             :value="tab.value"
           >
             {{ tab.label() }}
-            <i v-if="tab.icon" :class="cn(tab.icon, 'size-4')" />
+            <i
+              v-if="tab.icon"
+              aria-hidden="true"
+              :class="cn(tab.icon, 'size-4')"
+            />
           </Tab>
         </TabList>
       </nav>

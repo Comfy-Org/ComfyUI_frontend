@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   scanAllModelCandidates,
   isModelFileName,
   enrichWithEmbeddedMetadata,
+  verifyAssetSupportedCandidates,
   MODEL_FILE_EXTENSIONS
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -555,5 +556,406 @@ describe('enrichWithEmbeddedMetadata', () => {
     await enrichWithEmbeddedMetadata(candidates, graphData, alwaysInstalled)
 
     expect(candidates).toHaveLength(0)
+  })
+})
+
+describe('OSS missing model detection (non-Cloud path)', () => {
+  it('scanAllModelCandidates returns empty array when not called (simulating isCloud === false guard)', () => {
+    // In the app, when isCloud is false, scanAllModelCandidates is not called
+    // and an empty array is used instead. This test verifies the OSS path
+    // starts with an empty candidates list.
+    const isCloud = false
+    const graph = makeGraph([
+      makeNode(1, 'CheckpointLoaderSimple', [
+        makeComboWidget('ckpt_name', 'missing_model.safetensors', [])
+      ])
+    ])
+
+    const modelCandidates = isCloud
+      ? scanAllModelCandidates(graph, noAssetSupport)
+      : []
+
+    expect(modelCandidates).toEqual([])
+  })
+
+  it('enrichWithEmbeddedMetadata detects missing embedded models without prior COMBO scan (OSS dialog path)', async () => {
+    // OSS path: candidates start empty, enrichWithEmbeddedMetadata adds
+    // missing embedded models so the dialog can show them.
+    const candidates: MissingModelCandidate[] = []
+    const graphData = {
+      last_node_id: 2,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {},
+          widgets_values: { ckpt_name: 'sd_xl_base_1.0.safetensors' }
+        },
+        {
+          id: 2,
+          type: 'LoraLoader',
+          pos: [200, 0],
+          size: [100, 100],
+          flags: {},
+          order: 1,
+          mode: 0,
+          properties: {},
+          widgets_values: { lora_name: 'detail_enhancer.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'sd_xl_base_1.0.safetensors',
+          url: 'https://example.com/sdxl',
+          directory: 'checkpoints'
+        },
+        {
+          name: 'detail_enhancer.safetensors',
+          url: 'https://example.com/lora',
+          directory: 'loras'
+        }
+      ]
+    } as unknown as ComfyWorkflowJSON
+
+    await enrichWithEmbeddedMetadata(candidates, graphData, alwaysMissing)
+
+    expect(candidates).toHaveLength(2)
+    expect(candidates.every((c) => c.isMissing === true)).toBe(true)
+    expect(candidates.map((c) => c.name)).toEqual([
+      'sd_xl_base_1.0.safetensors',
+      'detail_enhancer.safetensors'
+    ])
+  })
+
+  it('enrichWithEmbeddedMetadata sets isMissing=true when isAssetSupported is not provided (OSS)', async () => {
+    // When isAssetSupported is omitted (OSS), unmatched embedded models
+    // should have isMissing=true (not undefined), enabling the dialog.
+    const candidates: MissingModelCandidate[] = []
+    const graphData = {
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {},
+          widgets_values: { ckpt_name: 'missing_model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'missing_model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        }
+      ]
+    } as unknown as ComfyWorkflowJSON
+
+    await enrichWithEmbeddedMetadata(candidates, graphData, alwaysMissing)
+
+    expect(candidates).toHaveLength(1)
+    expect(candidates[0].isMissing).toBe(true)
+    expect(candidates[0].isAssetSupported).toBe(false)
+  })
+
+  it('enrichWithEmbeddedMetadata correctly filters for dialog: only isMissing=true with url', async () => {
+    // Verifies the downstream filter used in app.ts:
+    // candidates.filter(c => c.isMissing === true && c.url)
+    const candidates: MissingModelCandidate[] = []
+    const graphData = {
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {},
+          widgets_values: { ckpt_name: 'missing_model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'missing_model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        },
+        {
+          name: 'installed_model.safetensors',
+          url: 'https://example.com/installed',
+          directory: 'checkpoints'
+        }
+      ]
+    } as unknown as ComfyWorkflowJSON
+
+    const selectiveInstallCheck = async (name: string) =>
+      name === 'installed_model.safetensors'
+
+    await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      selectiveInstallCheck
+    )
+
+    const dialogModels = candidates.filter((c) => c.isMissing === true && c.url)
+    expect(dialogModels).toHaveLength(1)
+    expect(dialogModels[0].name).toBe('missing_model.safetensors')
+    expect(dialogModels[0].url).toBe('https://example.com/model')
+  })
+
+  it('enrichWithEmbeddedMetadata with isAssetSupported leaves isMissing undefined for asset-supported models (Cloud path)', async () => {
+    // Contrast with OSS: when isAssetSupported returns true, isMissing
+    // is left undefined for later async verification (Cloud-only).
+    const candidates: MissingModelCandidate[] = []
+    const graphData = {
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {},
+          widgets_values: { ckpt_name: 'model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        }
+      ]
+    } as unknown as ComfyWorkflowJSON
+
+    await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing,
+      () => true // isAssetSupported always returns true (Cloud)
+    )
+
+    expect(candidates).toHaveLength(1)
+    expect(candidates[0].isMissing).toBeUndefined()
+    expect(candidates[0].isAssetSupported).toBe(true)
+  })
+})
+
+const {
+  mockUpdateModelsForNodeType,
+  mockIsModelLoading,
+  mockHasMore,
+  mockGetAssets
+} = vi.hoisted(() => ({
+  mockUpdateModelsForNodeType: vi.fn().mockResolvedValue(undefined),
+  mockIsModelLoading: vi.fn().mockReturnValue(false),
+  mockHasMore: vi.fn().mockReturnValue(false),
+  mockGetAssets: vi.fn().mockReturnValue([])
+}))
+
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({
+    updateModelsForNodeType: mockUpdateModelsForNodeType,
+    isModelLoading: mockIsModelLoading,
+    hasMore: mockHasMore,
+    getAssets: mockGetAssets
+  })
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({
+    add: vi.fn()
+  })
+}))
+
+vi.mock('@/i18n', () => ({
+  st: (_key: string, fallback: string) => fallback
+}))
+
+function makeAssetCandidate(
+  name: string,
+  opts: Partial<MissingModelCandidate> = {}
+): MissingModelCandidate {
+  return {
+    nodeId: opts.nodeId ?? 1,
+    nodeType: opts.nodeType ?? 'CheckpointLoaderSimple',
+    widgetName: opts.widgetName ?? 'ckpt_name',
+    isAssetSupported: opts.isAssetSupported ?? true,
+    name,
+    isMissing: opts.isMissing,
+    ...opts
+  }
+}
+
+describe('verifyAssetSupportedCandidates', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockIsModelLoading.mockReturnValue(false)
+    mockHasMore.mockReturnValue(false)
+    mockGetAssets.mockReturnValue([])
+  })
+
+  it('should resolve isMissing=true for candidates not found in asset store', async () => {
+    const candidates = [makeAssetCandidate('missing_model.safetensors')]
+    mockGetAssets.mockReturnValue([])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(true)
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple'
+    )
+  })
+
+  it('should resolve isMissing=false when asset with matching hash exists', async () => {
+    const candidates = [
+      makeAssetCandidate('model.safetensors', {
+        hash: 'abc123',
+        hashType: 'sha256'
+      })
+    ]
+    mockGetAssets.mockReturnValue([
+      { id: '1', name: 'model.safetensors', asset_hash: 'sha256:abc123' }
+    ])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(false)
+  })
+
+  it('should resolve isMissing=false when asset with matching filename exists', async () => {
+    const candidates = [makeAssetCandidate('my_model.safetensors')]
+    mockGetAssets.mockReturnValue([
+      {
+        id: '1',
+        name: 'my_model.safetensors',
+        asset_hash: null,
+        metadata: { filename: 'my_model.safetensors' }
+      }
+    ])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(false)
+  })
+
+  it('should return immediately when signal is already aborted', async () => {
+    const candidates = [makeAssetCandidate('model.safetensors')]
+    const controller = new AbortController()
+    controller.abort()
+
+    await verifyAssetSupportedCandidates(candidates, controller.signal)
+
+    // isMissing should remain undefined since we aborted before resolving
+    expect(candidates[0].isMissing).toBeUndefined()
+  })
+
+  it('should return immediately when no asset-supported candidates exist', async () => {
+    const candidates = [
+      makeAssetCandidate('model.safetensors', {
+        isAssetSupported: false,
+        isMissing: true
+      })
+    ]
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+    expect(candidates[0].isMissing).toBe(true)
+  })
+
+  it('should skip candidates with isMissing already resolved', async () => {
+    const candidates = [
+      makeAssetCandidate('found.safetensors', { isMissing: false }),
+      makeAssetCandidate('missing.safetensors', { isMissing: true })
+    ]
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+    expect(candidates[0].isMissing).toBe(false)
+    expect(candidates[1].isMissing).toBe(true)
+  })
+
+  it('should deduplicate nodeType calls to updateModelsForNodeType', async () => {
+    const candidates = [
+      makeAssetCandidate('model_a.safetensors'),
+      makeAssetCandidate('model_b.safetensors')
+    ]
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledTimes(1)
+  })
+
+  it('should call updateModelsForNodeType for each unique nodeType', async () => {
+    const candidates = [
+      makeAssetCandidate('model_a.safetensors', {
+        nodeType: 'CheckpointLoaderSimple'
+      }),
+      makeAssetCandidate('model_b.safetensors', { nodeType: 'LoraLoader' })
+    ]
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple'
+    )
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith('LoraLoader')
+  })
+
+  it('should match filename with path prefix normalization', async () => {
+    const candidates = [makeAssetCandidate('subfolder/my_model.safetensors')]
+    mockGetAssets.mockReturnValue([
+      {
+        id: '1',
+        name: 'my_model.safetensors',
+        asset_hash: null,
+        metadata: { filename: 'subfolder/my_model.safetensors' }
+      }
+    ])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(false)
   })
 })

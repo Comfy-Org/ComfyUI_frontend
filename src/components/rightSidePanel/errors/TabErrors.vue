@@ -53,9 +53,7 @@
                       ? `${group.title} (${missingPackGroups.length})`
                       : group.type === 'swap_nodes'
                         ? `${group.title} (${swapNodeGroups.length})`
-                        : group.type === 'missing_model'
-                          ? group.title
-                          : group.title
+                        : group.title
                   }}
                 </span>
                 <span

@@ -16,13 +16,15 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { app } from '@/scripts/app'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type {
+  MissingModelCandidate,
+  MissingModelViewModel
+} from '@/platform/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 const importSources = [civitaiImportSource, huggingfaceImportSource]
 
-/** Known model type tags that correspond to directory names. */
 const MODEL_TYPE_TAGS = [
   'checkpoints',
   'loras',
@@ -42,7 +44,7 @@ export function getModelStateKey(
   return `${prefix}::${directory ?? ''}::${modelName}`
 }
 
-function getNodeDisplayLabel(
+export function getNodeDisplayLabel(
   nodeId: string | number,
   fallback: string
 ): string {
@@ -72,13 +74,15 @@ function getModelComboWidget(
   return { node, widget }
 }
 
-function getComboValue(model: MissingModelCandidate): string | undefined {
+export function getComboValue(
+  model: MissingModelCandidate
+): string | undefined {
   const result = getModelComboWidget(model)
   if (!result) return undefined
   const val = result.widget.value
   if (typeof val === 'string') return val
   if (typeof val === 'number') return String(val)
-  return ''
+  return undefined
 }
 
 export function useMissingModelInteractions() {
@@ -96,7 +100,6 @@ export function useMissingModelInteractions() {
     return store.modelExpandState[key] ?? false
   }
 
-  /** Load options from asset store for asset-supported nodes, or from widget values. */
   function getComboOptions(
     model: MissingModelCandidate
   ): { name: string; value: string }[] {
@@ -121,7 +124,7 @@ export function useMissingModelInteractions() {
     }
   }
 
-  function isCheckReady(key: string): boolean {
+  function isSelectionConfirmable(key: string): boolean {
     if (!store.selectedLibraryModel[key]) return false
     if (store.importCategoryMismatch[key]) return false
 
@@ -140,15 +143,11 @@ export function useMissingModelInteractions() {
     delete store.importCategoryMismatch[key]
   }
 
-  /**
-   * Apply the selected library model to all referencing nodes and clear errors.
-   * Only removes the specific model name from the error list, preserving
-   * other missing models on the same nodes.
-   */
+  /** Apply selected model to referencing nodes, removing only that model from the error list. */
   function confirmLibrarySelect(
     key: string,
     modelName: string,
-    referencingNodes: Array<{ nodeId: string | number; widgetName: string }>,
+    referencingNodes: MissingModelViewModel['referencingNodes'],
     directory: string | null
   ) {
     const value = store.selectedLibraryModel[key]
@@ -157,7 +156,6 @@ export function useMissingModelInteractions() {
     const graph = app.rootGraph
     if (!graph) return
 
-    // Refresh model caches so the widget dropdown shows the new model
     if (directory) {
       const providers = modelToNodeStore.getAllNodeProviders(directory)
       void Promise.allSettled(
@@ -176,7 +174,6 @@ export function useMissingModelInteractions() {
       })
     }
 
-    // Update ALL referencing nodes' widgets with the selected value
     for (const ref of referencingNodes) {
       const node = getNodeByExecutionId(graph, String(ref.nodeId))
       if (node) {
@@ -187,11 +184,7 @@ export function useMissingModelInteractions() {
       }
     }
 
-    // Clean up
     delete store.selectedLibraryModel[key]
-
-    // Remove only the resolved model from error list, preserving
-    // other missing models on the same nodes
     const nodeIdSet = new Set(referencingNodes.map((ref) => String(ref.nodeId)))
     store.removeMissingModelByNameOnNodes(modelName, nodeIdSet)
   }
@@ -199,12 +192,10 @@ export function useMissingModelInteractions() {
   function handleUrlInput(key: string, value: string) {
     store.urlInputs[key] = value
 
-    // Clear previous state
     delete store.urlMetadata[key]
     delete store.urlErrors[key]
     store.urlFetching[key] = false
 
-    // Clear previous debounce timer
     store.clearDebounceTimer(key)
 
     const trimmed = value.trim()
@@ -235,9 +226,9 @@ export function useMissingModelInteractions() {
       if (metadata.filename) {
         try {
           const decoded = decodeURIComponent(metadata.filename)
-          // Reject path traversal patterns
-          if (!decoded.includes('..') && !decoded.includes('/')) {
-            metadata.filename = decoded
+          const basename = decoded.split(/[/\\]/).pop() ?? decoded
+          if (!basename.includes('..')) {
+            metadata.filename = basename
           }
         } catch {
           /* keep original */
@@ -296,8 +287,6 @@ export function useMissingModelInteractions() {
   }
 
   function handleAsyncCompleted(modelType: string | undefined) {
-    // Task completed immediately — no WebSocket event will fire,
-    // so refresh the asset cache here.
     if (modelType) {
       assetsStore.invalidateModelsForCategory(modelType)
       void assetsStore.updateModelsForTag(modelType)
@@ -367,11 +356,9 @@ export function useMissingModelInteractions() {
   return {
     toggleModelExpand,
     isModelExpanded,
-    getNodeDisplayLabel,
-    getComboValue,
     getComboOptions,
     handleComboSelect,
-    isCheckReady,
+    isSelectionConfirmable,
     cancelLibrarySelect,
     confirmLibrarySelect,
     handleUrlInput,

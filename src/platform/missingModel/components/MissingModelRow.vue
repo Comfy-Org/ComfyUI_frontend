@@ -2,7 +2,10 @@
   <div class="flex w-full flex-col pb-3">
     <!-- Model header -->
     <div class="flex h-8 w-full items-center gap-2">
-      <i class="text-foreground icon-[lucide--file-check] size-4 shrink-0" />
+      <i
+        aria-hidden="true"
+        class="text-foreground icon-[lucide--file-check] size-4 shrink-0"
+      />
 
       <div class="flex min-w-0 flex-1 items-center">
         <p
@@ -20,7 +23,10 @@
           :title="t('rightSidePanel.missingModels.copyModelName')"
           @click="copyToClipboard(model.name)"
         >
-          <i class="icon-[lucide--copy] size-3.5 text-muted-foreground" />
+          <i
+            aria-hidden="true"
+            class="icon-[lucide--copy] size-3.5 text-muted-foreground"
+          />
         </Button>
       </div>
 
@@ -29,11 +35,11 @@
         variant="textonly"
         size="icon-sm"
         :aria-label="t('rightSidePanel.missingModels.confirmSelection')"
-        :disabled="!checkReady"
+        :disabled="!canConfirm"
         :class="
           cn(
             'size-8 shrink-0 rounded-lg transition-colors',
-            checkReady ? 'bg-primary/10 hover:bg-primary/15' : 'opacity-20'
+            canConfirm ? 'bg-primary/10 hover:bg-primary/15' : 'opacity-20'
           )
         "
         @click="
@@ -46,8 +52,9 @@
         "
       >
         <i
+          aria-hidden="true"
           class="icon-[lucide--check] size-4"
-          :class="checkReady ? 'text-primary' : 'text-foreground'"
+          :class="canConfirm ? 'text-primary' : 'text-foreground'"
         />
       </Button>
 
@@ -70,6 +77,7 @@
         @click="toggleModelExpand(modelKey)"
       >
         <i
+          aria-hidden="true"
           class="icon-[lucide--chevron-down] size-4 text-muted-foreground group-hover:text-base-foreground"
         />
       </Button>
@@ -102,7 +110,7 @@
             class="mr-1 size-6 shrink-0 text-muted-foreground hover:text-base-foreground"
             @click="emit('locateModel', String(ref.nodeId))"
           >
-            <i class="icon-[lucide--locate] size-3" />
+            <i aria-hidden="true" class="icon-[lucide--locate] size-3" />
           </Button>
         </div>
       </div>
@@ -110,83 +118,14 @@
 
     <!-- Status card: Using from Library / Importing with Progress -->
     <TransitionCollapse>
-      <div
+      <MissingModelStatusCard
         v-if="selectedLibraryModel[modelKey]"
-        class="bg-foreground/5 relative mt-1 overflow-hidden rounded-lg border border-interface-stroke p-2"
-      >
-        <!-- Progress bar fill -->
-        <div
-          v-if="isDownloadActive"
-          class="absolute inset-y-0 left-0 bg-primary/10 transition-all duration-200 ease-linear"
-          :style="{
-            width: (downloadStatus?.progress ?? 0) * 100 + '%'
-          }"
-        />
-
-        <div class="relative z-10 flex items-center gap-2">
-          <div class="flex size-8 shrink-0 items-center justify-center">
-            <i
-              v-if="importCategoryMismatch[modelKey]"
-              class="mt-0.5 icon-[lucide--triangle-alert] size-5 text-warning-background"
-            />
-            <i
-              v-else-if="downloadStatus?.status === 'failed'"
-              class="icon-[lucide--circle-alert] size-5 text-destructive-background"
-            />
-            <i
-              v-else-if="downloadStatus?.status === 'completed'"
-              class="icon-[lucide--check-circle] size-5 text-success-background"
-            />
-            <i
-              v-else-if="isDownloadActive"
-              class="icon-[lucide--loader-circle] size-5 animate-spin text-muted-foreground"
-            />
-            <i
-              v-else
-              class="icon-[lucide--file-check] size-5 text-muted-foreground"
-            />
-          </div>
-          <div class="flex min-w-0 flex-1 flex-col justify-center">
-            <span class="text-foreground truncate text-xs/tight font-medium">
-              {{ selectedLibraryModel[modelKey] }}
-            </span>
-            <span class="mt-0.5 text-xs/tight text-muted-foreground">
-              <template v-if="importCategoryMismatch[modelKey]">
-                {{
-                  t('rightSidePanel.missingModels.alreadyExistsInCategory', {
-                    category: importCategoryMismatch[modelKey]
-                  })
-                }}
-              </template>
-              <template v-else-if="isDownloadActive">
-                {{ t('rightSidePanel.missingModels.importing') }}
-                {{ Math.round((downloadStatus?.progress ?? 0) * 100) }}%
-              </template>
-              <template v-else-if="downloadStatus?.status === 'completed'">
-                {{ t('rightSidePanel.missingModels.imported') }}
-              </template>
-              <template v-else-if="downloadStatus?.status === 'failed'">
-                {{
-                  downloadStatus?.error ||
-                  t('rightSidePanel.missingModels.importFailed')
-                }}
-              </template>
-              <template v-else>
-                {{ t('rightSidePanel.missingModels.usingFromLibrary') }}
-              </template>
-            </span>
-          </div>
-          <Button
-            variant="textonly"
-            size="icon-sm"
-            :aria-label="t('rightSidePanel.missingModels.cancelSelection')"
-            class="relative z-10 size-6 shrink-0 text-muted-foreground hover:text-base-foreground"
-            @click="cancelLibrarySelect(modelKey)"
-          >
-            <i class="icon-[lucide--circle-x] size-4" />
-          </Button>
-        </div>
-      </div>
+        :model-name="selectedLibraryModel[modelKey]"
+        :is-download-active="isDownloadActive"
+        :download-status="downloadStatus"
+        :category-mismatch="importCategoryMismatch[modelKey]"
+        @cancel="cancelLibrarySelect(modelKey)"
+      />
     </TransitionCollapse>
 
     <!-- Input area -->
@@ -203,6 +142,20 @@
                 'flex h-8 items-center rounded-lg border border-transparent bg-secondary-background px-3 transition-colors focus-within:border-interface-stroke',
                 !canImportModels && 'cursor-pointer'
               )
+            "
+            v-bind="
+              !canImportModels
+                ? {
+                    role: 'button',
+                    tabindex: 0,
+                    onKeydown: (e: KeyboardEvent) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        showUploadDialog()
+                      }
+                    }
+                  }
+                : {}
             "
             @click="!canImportModels && showUploadDialog()"
           >
@@ -236,7 +189,7 @@
               class="ml-1 shrink-0"
               @click.stop="handleUrlInput(modelKey, '')"
             >
-              <i class="icon-[lucide--x] size-3.5" />
+              <i aria-hidden="true" class="icon-[lucide--x] size-3.5" />
             </Button>
           </div>
 
@@ -260,6 +213,7 @@
               <!-- Type mismatch warning -->
               <div v-if="typeMismatch" class="flex items-start gap-1.5 px-0.5">
                 <i
+                  aria-hidden="true"
                   class="mt-0.5 icon-[lucide--triangle-alert] size-3 shrink-0 text-warning-background"
                 />
                 <span class="text-[11px] leading-tight text-warning-background">
@@ -279,6 +233,7 @@
                   @click="handleImport(modelKey, directory)"
                 >
                   <i
+                    aria-hidden="true"
                     :class="
                       urlImporting[modelKey]
                         ? 'icon-[lucide--loader-circle] size-4 animate-spin'
@@ -299,17 +254,20 @@
           <TransitionCollapse>
             <div
               v-if="urlFetching[modelKey]"
+              aria-live="polite"
               class="flex items-center justify-center py-2"
             >
               <i
+                aria-hidden="true"
                 class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
               />
+              <span class="sr-only">{{ t('g.loading') }}</span>
             </div>
           </TransitionCollapse>
 
           <!-- URL error message -->
           <TransitionCollapse>
-            <div v-if="urlErrors[modelKey]" class="px-0.5">
+            <div v-if="urlErrors[modelKey]" class="px-0.5" role="alert">
               <span class="text-xs text-destructive-background-hover">
                 {{ urlErrors[modelKey] }}
               </span>
@@ -338,6 +296,7 @@
               :disabled="comboOptions.length === 0"
               :filter="comboOptions.length > 4"
               auto-filter-focus
+              :aria-label="t('rightSidePanel.missingModels.useFromLibrary')"
               :placeholder="t('rightSidePanel.missingModels.useFromLibrary')"
               class="h-8 w-full rounded-lg border border-transparent bg-secondary-background text-xs transition-colors hover:border-interface-stroke"
               size="small"
@@ -370,6 +329,7 @@ import { cn } from '@/utils/tailwindUtil'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
+import MissingModelStatusCard from '@/platform/missingModel/components/MissingModelStatusCard.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
@@ -377,7 +337,9 @@ import { formatSize } from '@/utils/formatUtil'
 
 import {
   useMissingModelInteractions,
-  getModelStateKey
+  getModelStateKey,
+  getNodeDisplayLabel,
+  getComboValue
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
@@ -407,7 +369,7 @@ const modelKey = computed(() =>
 
 const downloadStatus = computed(() => getDownloadStatus(modelKey.value))
 const comboOptions = computed(() => getComboOptions(model.representative))
-const checkReady = computed(() => isCheckReady(modelKey.value))
+const canConfirm = computed(() => isSelectionConfirmable(modelKey.value))
 const expanded = computed(() => isModelExpanded(modelKey.value))
 const typeMismatch = computed(() => getTypeMismatch(modelKey.value, directory))
 const isDownloadActive = computed(
@@ -430,11 +392,9 @@ const {
 const {
   toggleModelExpand,
   isModelExpanded,
-  getNodeDisplayLabel,
-  getComboValue,
   getComboOptions,
   handleComboSelect,
-  isCheckReady,
+  isSelectionConfirmable,
   cancelLibrarySelect,
   confirmLibrarySelect,
   handleUrlInput,

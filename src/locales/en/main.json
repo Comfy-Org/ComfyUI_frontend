@@ -3415,7 +3415,7 @@
       "collapseNodes": "Hide referencing nodes",
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
-      "assetLoadTimeout": "Model detection timed out"
+      "assetLoadTimeout": "Model detection timed out. Try reloading the workflow."
     }
   },
   "errorOverlay": {

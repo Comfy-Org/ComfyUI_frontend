@@ -3,7 +3,7 @@
     <!-- Category groups (by directory) -->
     <div
       v-for="group in missingModelGroups"
-      :key="group.directory ?? '__unknown__'"
+      :key="`${group.isAssetSupported ? 'supported' : 'unsupported'}::${group.directory ?? '__unknown__'}`"
       class="flex w-full flex-col border-t border-interface-stroke py-2 first:border-t-0 first:pt-0"
     >
       <!-- Category header -->

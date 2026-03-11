@@ -572,7 +572,7 @@ export function useErrorGroups(
   /** Groups missing models. Asset-supported models group by directory; others go into a separate group.
    *  Within each group, candidates with the same model name are merged into a single view model. */
   const missingModelGroups = computed<MissingModelGroup[]>(() => {
-    const candidates = missingModelStore.missingModelsError
+    const candidates = missingModelStore.missingModelCandidates
     if (!candidates?.length) return []
 
     type GroupKey = string | null | typeof UNSUPPORTED
@@ -617,7 +617,7 @@ export function useErrorGroups(
     return [
       {
         type: 'missing_model' as const,
-        title: `${t('rightSidePanel.missingModels.missingModelsTitle')} (${missingModelStore.missingModelsError?.length ?? 0})`,
+        title: `${t('rightSidePanel.missingModels.missingModelsTitle')} (${missingModelStore.missingModelCandidates?.length ?? 0})`,
         priority: 2
       }
     ]

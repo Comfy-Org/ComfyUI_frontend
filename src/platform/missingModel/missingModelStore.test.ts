@@ -38,22 +38,22 @@ describe('missingModelStore', () => {
   })
 
   describe('setMissingModels', () => {
-    it('sets missingModelsError with provided models', () => {
+    it('sets missingModelCandidates with provided models', () => {
       const store = useMissingModelStore()
       store.setMissingModels([makeModelCandidate('model_a.safetensors')])
 
-      expect(store.missingModelsError).not.toBeNull()
-      expect(store.missingModelsError).toHaveLength(1)
+      expect(store.missingModelCandidates).not.toBeNull()
+      expect(store.missingModelCandidates).toHaveLength(1)
       expect(store.hasMissingModels).toBe(true)
     })
 
-    it('clears missingModelsError when given empty array', () => {
+    it('clears missingModelCandidates when given empty array', () => {
       const store = useMissingModelStore()
       store.setMissingModels([makeModelCandidate('model_a.safetensors')])
-      expect(store.missingModelsError).not.toBeNull()
+      expect(store.missingModelCandidates).not.toBeNull()
 
       store.setMissingModels([])
-      expect(store.missingModelsError).toBeNull()
+      expect(store.missingModelCandidates).toBeNull()
       expect(store.hasMissingModels).toBe(false)
     })
 
@@ -116,13 +116,13 @@ describe('missingModelStore', () => {
         new Set(['1'])
       )
 
-      expect(store.missingModelsError).toHaveLength(2)
-      expect(store.missingModelsError![0].name).toBe('model_b.safetensors')
-      expect(store.missingModelsError![1].name).toBe('model_a.safetensors')
-      expect(String(store.missingModelsError![1].nodeId)).toBe('2')
+      expect(store.missingModelCandidates).toHaveLength(2)
+      expect(store.missingModelCandidates![0].name).toBe('model_b.safetensors')
+      expect(store.missingModelCandidates![1].name).toBe('model_a.safetensors')
+      expect(String(store.missingModelCandidates![1].nodeId)).toBe('2')
     })
 
-    it('sets missingModelsError to null when all removed', () => {
+    it('sets missingModelCandidates to null when all removed', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors', { nodeId: '1' })
@@ -133,23 +133,23 @@ describe('missingModelStore', () => {
         new Set(['1'])
       )
 
-      expect(store.missingModelsError).toBeNull()
+      expect(store.missingModelCandidates).toBeNull()
     })
   })
 
   describe('clearMissingModels', () => {
-    it('clears missingModelsError and interaction state', () => {
+    it('clears missingModelCandidates and interaction state', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors', { nodeId: '1' })
       ])
       store.urlInputs['test-key'] = 'https://example.com'
       store.selectedLibraryModel['test-key'] = 'some-model'
-      expect(store.missingModelsError).not.toBeNull()
+      expect(store.missingModelCandidates).not.toBeNull()
 
       store.clearMissingModels()
 
-      expect(store.missingModelsError).toBeNull()
+      expect(store.missingModelCandidates).toBeNull()
       expect(store.hasMissingModels).toBe(false)
       expect(store.urlInputs).toEqual({})
       expect(store.selectedLibraryModel).toEqual({})

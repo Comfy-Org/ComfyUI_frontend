@@ -26,7 +26,8 @@ import {
   executionIdToNodeLocatorId,
   forEachNode,
   getNodeByExecutionId,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  getActiveGraphNodeIds
 } from '@/utils/graphTraversalUtil'
 
 interface MissingNodesError {
@@ -294,19 +295,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   })
 
   const activeMissingNodeGraphIds = computed<Set<string>>(() => {
-    const ids = new Set<string>()
-    if (!app.isGraphReady) return ids
-
-    const activeGraph = canvasStore.currentGraph ?? app.rootGraph
-
-    for (const executionId of missingAncestorExecutionIds.value) {
-      const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
-      if (graphNode?.graph === activeGraph) {
-        ids.add(String(graphNode.id))
-      }
-    }
-
-    return ids
+    if (!app.isGraphReady) return new Set()
+    return getActiveGraphNodeIds(
+      app.rootGraph,
+      canvasStore.currentGraph ?? app.rootGraph,
+      missingAncestorExecutionIds.value
+    )
   })
 
   /** Map of node errors indexed by locator ID. */

@@ -9,8 +9,6 @@ import type {
   EmbeddedModelWithSource
 } from './types'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { st } from '@/i18n'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -51,10 +49,6 @@ export function isModelFileName(name: string): boolean {
   return false
 }
 
-/**
- * Resolve the current options list from a combo widget.
- * Handles array, dictionary, and dynamic function forms.
- */
 function resolveComboOptions(widget: IComboWidget): string[] {
   const values = widget.options.values
   if (!values) return []
@@ -64,24 +58,19 @@ function resolveComboOptions(widget: IComboWidget): string[] {
 }
 
 /**
- * Scan all COMBO and asset widgets on configured graph nodes for model-like values.
+ * Scan COMBO and asset widgets on configured graph nodes for model-like values.
+ * Must be called after `graph.configure()` so widget name/value mappings are accurate.
  *
- * Must be called after `graph.configure()` so that widget name/value
- * mappings are accurate (avoids the array-index guessing of raw JSON).
- *
- * In Cloud environments, asset-supported combo widgets are created as
- * `type: 'asset'` during configure, so both widget types must be scanned.
- *
- * For non-asset-supported nodes, `isMissing` is resolved immediately
- * by checking the widget's dropdown options.
- * For asset-supported nodes (including asset widgets), `isMissing` is left
- * `undefined` for later async verification via the asset store.
+ * Non-asset-supported nodes: `isMissing` resolved immediately via widget options.
+ * Asset-supported nodes: `isMissing` left `undefined` for async verification.
  */
 export function scanAllModelCandidates(
   rootGraph: LGraph,
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
   getDirectory?: (nodeType: string) => string | undefined
 ): MissingModelCandidate[] {
+  if (!rootGraph) return []
+
   const allNodes = collectAllNodes(rootGraph)
   const candidates: MissingModelCandidate[] = []
 
@@ -160,11 +149,7 @@ function scanComboWidget(
   }
 }
 
-/**
- * Enrich candidates with metadata embedded in the workflow JSON.
- * Fills `directory`, `url`, `hash`, `hashType` on existing entries.
- * Creates new entries for embedded models not found by the COMBO scan.
- */
+/** Enrich candidates with embedded workflow metadata and add unmatched embedded models. */
 export async function enrichWithEmbeddedMetadata(
   candidates: MissingModelCandidate[],
   graphData: ComfyWorkflowJSON,
@@ -181,7 +166,6 @@ export async function enrichWithEmbeddedMetadata(
     else candidatesByName.set(c.name, [c])
   }
 
-  // Deduplicate embedded models by name + directory
   const deduped: EmbeddedModelWithSource[] = []
   const enrichedKeys = new Set<string>()
   for (const model of embeddedModels) {
@@ -191,7 +175,6 @@ export async function enrichWithEmbeddedMetadata(
     deduped.push(model)
   }
 
-  // Phase 1 (sync): enrich existing candidates with embedded metadata
   const unmatched: EmbeddedModelWithSource[] = []
   for (const model of deduped) {
     const existing = candidatesByName.get(model.name)
@@ -207,8 +190,7 @@ export async function enrichWithEmbeddedMetadata(
     }
   }
 
-  // Phase 2 (async, parallel): check installation for unmatched models
-  const results = await Promise.all(
+  const settled = await Promise.allSettled(
     unmatched.map(async (model) => {
       const installed = await checkModelInstalled(model.name, model.directory)
       if (installed) return null
@@ -231,6 +213,17 @@ export async function enrichWithEmbeddedMetadata(
       } satisfies MissingModelCandidate
     })
   )
+
+  const results = settled.map((r) => {
+    if (r.status === 'rejected') {
+      console.warn(
+        '[Missing Model Pipeline] checkModelInstalled failed:',
+        r.reason
+      )
+      return null
+    }
+    return r.value
+  })
 
   for (const result of results) {
     if (result) candidates.push(result)
@@ -259,6 +252,9 @@ function collectEmbeddedModelsWithSource(
     }
   }
 
+  // Workflow-level model entries have no originating node; sourceNodeId
+  // remains undefined and empty-string node type/widget are handled by
+  // groupCandidatesByName (no nodeId → no referencing node entry).
   if (graphData.models?.length) {
     for (const model of graphData.models) {
       result.push({
@@ -284,13 +280,7 @@ function findWidgetNameForModel(
   return ''
 }
 
-const MAX_POLL_ATTEMPTS = 300
-const POLL_INTERVAL_MS = 100
-
-/**
- * Resolve `isMissing` for asset-supported candidates by checking the asset store.
- * Pass an `AbortSignal` to cancel the polling when the workflow changes.
- */
+/** Resolve `isMissing` for asset-supported candidates by awaiting asset store loads. */
 export async function verifyAssetSupportedCandidates(
   candidates: MissingModelCandidate[],
   signal?: AbortSignal
@@ -304,45 +294,19 @@ export async function verifyAssetSupportedCandidates(
 
   if (pendingNodeTypes.size === 0) return
 
+  // Dynamic import to avoid circular dependency
   const { useAssetsStore } = await import('@/stores/assetsStore')
   const assetsStore = useAssetsStore()
 
-  // updateModelsForNodeType short-circuits when a pending request exists, so we
-  // must poll isModelLoading + hasMore to wait for all progressive batches.
   await Promise.allSettled(
     [...pendingNodeTypes].map(async (nodeType) => {
-      // Fire-and-forget: the poll below monitors completion
-      assetsStore.updateModelsForNodeType(nodeType).catch((err) => {
+      try {
+        await assetsStore.updateModelsForNodeType(nodeType)
+      } catch (err) {
         console.warn(
           `[Missing Model Pipeline] Failed to load assets for ${nodeType}:`,
           err
         )
-      })
-
-      let attempts = 0
-      while (
-        !signal?.aborted &&
-        (assetsStore.isModelLoading(nodeType) ||
-          assetsStore.hasMore(nodeType)) &&
-        attempts < MAX_POLL_ATTEMPTS
-      ) {
-        await new Promise((res) => setTimeout(res, POLL_INTERVAL_MS))
-        attempts++
-      }
-      if (signal?.aborted) return
-      if (attempts >= MAX_POLL_ATTEMPTS) {
-        console.warn(
-          `[Missing Model Pipeline] Timed out waiting for assets: ${nodeType}`
-        )
-        useToastStore().add({
-          severity: 'warn',
-          summary: st(
-            'rightSidePanel.missingModels.assetLoadTimeout',
-            'Model detection timed out'
-          ),
-          detail: nodeType,
-          life: 5000
-        })
       }
     })
   )
@@ -357,12 +321,10 @@ export async function verifyAssetSupportedCandidates(
   }
 }
 
-/** Normalize path separators to forward slash for consistent matching. */
 function normalizePath(path: string): string {
   return path.replace(/\\/g, '/')
 }
 
-/** Hash match first, then normalized filename match. */
 function isAssetInstalled(
   candidate: MissingModelCandidate,
   assets: AssetItem[]
@@ -383,7 +345,6 @@ function isAssetInstalled(
   })
 }
 
-/** Groups missing model candidates by name, merging referencing nodes. */
 export function groupCandidatesByName(
   candidates: MissingModelCandidate[]
 ): MissingModelViewModel[] {

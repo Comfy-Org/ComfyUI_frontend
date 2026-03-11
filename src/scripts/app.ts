@@ -88,6 +88,7 @@ import {
   enrichWithEmbeddedMetadata,
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -224,7 +225,6 @@ export class ComfyApp {
 
   canvas!: LGraphCanvas
   dragOverNode: LGraphNode | null = null
-  private missingModelAbortController: AbortController | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
     // TODO: Fix possibly undefined reference
@@ -1134,9 +1134,7 @@ export class ComfyApp {
     } = options
     useWorkflowService().beforeLoadNewGraph()
 
-    // Abort any in-progress missing model verification from the previous graph load
-    this.missingModelAbortController?.abort()
-    this.missingModelAbortController = null
+    useMissingModelStore().clearMissingModels()
 
     if (clean !== false) {
       this.clean()
@@ -1391,71 +1389,12 @@ export class ComfyApp {
         requestAnimationFrame(() => fitView())
       }
 
-      // Scan COMBO widgets on the configured graph for model candidates (Cloud-only).
-      // Must run after configure() so widget name/value mappings are accurate.
-      const modelCandidates = isCloud
-        ? scanAllModelCandidates(
-            this.rootGraph,
-            (nodeType, widgetName) =>
-              assetService.shouldUseAssetBrowser(nodeType, widgetName),
-            (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
-          )
-        : []
-
-      // Enrich candidates with embedded workflow metadata and build pending warnings.
-      // Wrapped in try/catch so that model detection failures do not prevent workflow loading.
-      let missingModels: ModelFile[] = []
-      try {
-        const modelStore = useModelStore()
-        await modelStore.loadModelFolders()
-        await enrichWithEmbeddedMetadata(
-          modelCandidates,
-          graphData,
-          async (name, directory) => {
-            const folder = await modelStore.getLoadedModelFolder(directory)
-            const models = folder?.models
-            return !!(
-              models && Object.values(models).some((m) => m.file_name === name)
-            )
-          },
-          isCloud
-            ? (nodeType, widgetName) =>
-                assetService.shouldUseAssetBrowser(nodeType, widgetName)
-            : undefined
-        )
-
-        // Extract confirmed missing models for the modal dialog (ModelFile format)
-        missingModels = modelCandidates
-          .filter((c) => c.isMissing === true && c.url)
-          .map((c) => ({
-            name: c.name,
-            url: c.url ?? '',
-            directory: c.directory ?? '',
-            hash: c.hash,
-            hash_type: c.hashType
-          }))
-
-        // Store pending warnings on the workflow for deferred display
-        const activeWf = useWorkspaceStore().workflow.activeWorkflow
-        if (activeWf) {
-          const warnings: PendingWarnings = {}
-          if (missingNodeTypes.length && showMissingNodesDialog) {
-            warnings.missingNodeTypes = missingNodeTypes
-          }
-          if (missingModels.length && showMissingModelsDialog) {
-            const paths = await api.getFolderPaths()
-            warnings.missingModels = { missingModels: missingModels, paths }
-          }
-          if (warnings.missingNodeTypes || warnings.missingModels) {
-            activeWf.pendingWarnings = warnings
-          }
-        }
-      } catch (err) {
-        console.warn(
-          '[Missing Model Pipeline] Failed to enrich model metadata:',
-          err
-        )
-      }
+      await this.runMissingModelPipeline(
+        graphData,
+        missingNodeTypes,
+        showMissingNodesDialog,
+        showMissingModelsDialog
+      )
 
       if (!deferWarnings) {
         useWorkflowService().showPendingWarnings()
@@ -1464,35 +1403,89 @@ export class ComfyApp {
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
-
-      // Verify asset-supported candidates and surface confirmed missing models (Cloud-only).
-      if (isCloud && modelCandidates.length) {
-        const abortController = new AbortController()
-        this.missingModelAbortController = abortController
-        verifyAssetSupportedCandidates(modelCandidates, abortController.signal)
-          .then(() => {
-            if (abortController.signal.aborted) return
-            const confirmed = modelCandidates.filter(
-              (c) => c.isMissing === true
-            )
-            if (confirmed.length) {
-              useExecutionErrorStore().surfaceMissingModels(confirmed)
-            }
-          })
-          .catch((err) => {
-            if (abortController.signal.aborted) return
-            console.warn(
-              '[Missing Model Pipeline] Asset verification failed:',
-              err
-            )
-            useToastStore().addAlert(
-              t('toastMessages.missingModelVerificationFailed')
-            )
-          })
-      }
     } finally {
       ChangeTracker.isLoadingGraph = false
     }
+  }
+
+  private async runMissingModelPipeline(
+    graphData: ComfyWorkflowJSON,
+    missingNodeTypes: MissingNodeType[],
+    showMissingNodesDialog: boolean,
+    showMissingModelsDialog: boolean
+  ): Promise<{ missingModels: ModelFile[] }> {
+    const missingModelStore = useMissingModelStore()
+
+    const candidates = isCloud
+      ? scanAllModelCandidates(
+          this.rootGraph,
+          (nodeType, widgetName) =>
+            assetService.shouldUseAssetBrowser(nodeType, widgetName),
+          (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
+        )
+      : []
+
+    const modelStore = useModelStore()
+    await modelStore.loadModelFolders()
+    await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      async (name, directory) => {
+        const folder = await modelStore.getLoadedModelFolder(directory)
+        const models = folder?.models
+        return !!(
+          models && Object.values(models).some((m) => m.file_name === name)
+        )
+      },
+      isCloud
+        ? (nodeType, widgetName) =>
+            assetService.shouldUseAssetBrowser(nodeType, widgetName)
+        : undefined
+    )
+
+    const missingModels: ModelFile[] = candidates
+      .filter((c) => c.isMissing === true && c.url)
+      .map((c) => ({
+        name: c.name,
+        url: c.url ?? '',
+        directory: c.directory ?? '',
+        hash: c.hash,
+        hash_type: c.hashType
+      }))
+
+    const activeWf = useWorkspaceStore().workflow.activeWorkflow
+    if (activeWf) {
+      const warnings: PendingWarnings = {}
+      if (missingNodeTypes.length && showMissingNodesDialog) {
+        warnings.missingNodeTypes = missingNodeTypes
+      }
+      if (missingModels.length && showMissingModelsDialog) {
+        const paths = await api.getFolderPaths()
+        warnings.missingModels = { missingModels, paths }
+      }
+      if (warnings.missingNodeTypes || warnings.missingModels) {
+        activeWf.pendingWarnings = warnings
+      }
+    }
+
+    if (isCloud && candidates.length) {
+      const controller = missingModelStore.createVerificationAbortController()
+      verifyAssetSupportedCandidates(candidates, controller.signal)
+        .then(() => {
+          const confirmed = candidates.filter((c) => c.isMissing === true)
+          if (confirmed.length) {
+            useExecutionErrorStore().surfaceMissingModels(confirmed)
+          }
+        })
+        .catch((err) =>
+          console.warn(
+            '[Missing Model Pipeline] Asset verification failed:',
+            err
+          )
+        )
+    }
+
+    return { missingModels }
   }
 
   async graphToPrompt(graph = this.rootGraph) {
