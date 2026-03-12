@@ -157,8 +157,7 @@ function assetKindToMediaType(kind: AssetKind): string {
 }
 
 const outputItems = computed<FormDropdownItem[]>(() => {
-  if (!['image', 'video', 'audio', 'mesh'].includes(assetKind ?? ''))
-    return []
+  if (!['image', 'video', 'audio', 'mesh'].includes(assetKind ?? '')) return []
 
   const targetMediaType = assetKindToMediaType(assetKind!)
   const outputFiles = outputMediaAssets.media.value.filter(
@@ -424,8 +423,7 @@ function getMediaUrl(
   filename: string,
   type: 'input' | 'output' = 'input'
 ): string {
-  if (!['image', 'video', 'audio', 'mesh'].includes(assetKind ?? ''))
-    return ''
+  if (!['image', 'video', 'audio', 'mesh'].includes(assetKind ?? '')) return ''
   const params = new URLSearchParams({ filename, type })
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
