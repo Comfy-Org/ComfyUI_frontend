@@ -222,7 +222,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
           this.posthog.people.set({ subscription_tier: tier })
         }
       },
-      { immediate: true }
+      { immediate: true, once: true }
     )
   }
 
