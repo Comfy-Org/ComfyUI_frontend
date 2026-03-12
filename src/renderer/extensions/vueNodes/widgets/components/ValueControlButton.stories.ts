@@ -2,17 +2,15 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
-import SeedControlButton from './SeedControlButton.vue'
+import ValueControlButton from './ValueControlButton.vue'
 
-const SEED_CONTROL_MODES = [...CONTROL_OPTIONS, 'linked'] as const
-
-const meta: Meta<typeof SeedControlButton> = {
-  title: 'Components/InputHelpers/SeedControlButton',
-  component: SeedControlButton,
+const meta: Meta<typeof ValueControlButton> = {
+  title: 'Components/InputHelpers/ValueControlButton',
+  component: ValueControlButton,
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
   argTypes: {
-    mode: { control: 'select', options: [...SEED_CONTROL_MODES] },
+    mode: { control: 'select', options: [...CONTROL_OPTIONS] },
     variant: { control: 'select', options: ['badge', 'button'] }
   },
   decorators: [
@@ -43,33 +41,27 @@ export const Decrement: Story = {
   args: { mode: 'decrement', variant: 'badge' }
 }
 
-export const Linked: Story = {
-  args: { mode: 'linked', variant: 'badge' }
-}
-
 export const AllModes: Story = {
   render: () => ({
-    components: { SeedControlButton },
+    components: { ValueControlButton },
     template: `
       <div class="flex flex-col gap-6">
         <div>
           <p class="mb-2 text-sm text-muted-foreground">Badge</p>
           <div class="flex items-center gap-3">
-            <SeedControlButton mode="randomize" variant="badge" />
-            <SeedControlButton mode="fixed" variant="badge" />
-            <SeedControlButton mode="linked" variant="badge" />
-            <SeedControlButton mode="increment" variant="badge" />
-            <SeedControlButton mode="decrement" variant="badge" />
+            <ValueControlButton mode="randomize" variant="badge" />
+            <ValueControlButton mode="fixed" variant="badge" />
+            <ValueControlButton mode="increment" variant="badge" />
+            <ValueControlButton mode="decrement" variant="badge" />
           </div>
         </div>
         <div>
           <p class="mb-2 text-sm text-muted-foreground">Button</p>
           <div class="flex items-center gap-3">
-            <SeedControlButton mode="randomize" variant="button" />
-            <SeedControlButton mode="fixed" variant="button" />
-            <SeedControlButton mode="linked" variant="button" />
-            <SeedControlButton mode="increment" variant="button" />
-            <SeedControlButton mode="decrement" variant="button" />
+            <ValueControlButton mode="randomize" variant="button" />
+            <ValueControlButton mode="fixed" variant="button" />
+            <ValueControlButton mode="increment" variant="button" />
+            <ValueControlButton mode="decrement" variant="button" />
           </div>
         </div>
       </div>

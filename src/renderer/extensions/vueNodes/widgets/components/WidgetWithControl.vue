@@ -8,7 +8,7 @@ import type {
   WidgetValue
 } from '@/types/simplifiedWidget'
 
-import SeedControlButton from './SeedControlButton.vue'
+import ValueControlButton from './ValueControlButton.vue'
 
 const ValueControlPopover = defineAsyncComponent(
   () => import('./ValueControlPopover.vue')
@@ -30,7 +30,7 @@ watch(controlModel, props.widget.controlWidget.update)
     <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
       <Popover>
         <template #button>
-          <SeedControlButton :mode="controlModel" class="self-center" />
+          <ValueControlButton :mode="controlModel" class="self-center" />
         </template>
         <ValueControlPopover v-model="controlModel" />
       </Popover>
