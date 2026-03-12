@@ -466,7 +466,9 @@ const zSettings = z.object({
   'Comfy.RightSidePanel.IsOpen': z.boolean(),
   'Comfy.RightSidePanel.ShowErrorsTab': z.boolean(),
   'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean(),
-  'LiteGraph.Group.SelectChildrenOnClick': z.boolean()
+  'LiteGraph.Group.SelectChildrenOnClick': z.boolean(),
+  'Comfy.Cloud.ConcurrentExecution': z.boolean(),
+  'Comfy.Cloud.ConcurrentExecution.OnboardingSeen': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
