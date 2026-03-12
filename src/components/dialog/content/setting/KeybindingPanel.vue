@@ -45,6 +45,15 @@
                       expandedCommandIds.has(slotProps.data.id) && 'rotate-90'
                     "
                   />
+                  <i
+                    v-if="
+                      slotProps.data.keybindings.some(
+                        (b: KeybindingImpl) => b.combo.isBrowserReserved
+                      )
+                    "
+                    v-tooltip="$t('g.browserReservedKeybindingTooltip')"
+                    class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
+                  />
                   {{ slotProps.data.label }}
                 </div>
               </template>
@@ -257,48 +266,6 @@
       </ContextMenuPortal>
     </ContextMenuRoot>
 
-    <Dialog
-      v-model:visible="editDialogVisible"
-      class="min-w-96"
-      modal
-      :header="currentEditingCommand?.label"
-      @hide="cancelEdit"
-    >
-      <div>
-        <InputText
-          ref="keybindingInput"
-          class="mb-2 text-center"
-          :model-value="newBindingKeyCombo?.toString() ?? ''"
-          :placeholder="$t('g.pressKeysForNewBinding')"
-          autocomplete="off"
-          fluid
-          @keydown.stop.prevent="captureKeybinding"
-        />
-        <Message v-if="existingKeybindingOnCombo" severity="warn">
-          {{ $t('g.keybindingAlreadyExists') }}
-          <Tag
-            severity="secondary"
-            :value="existingKeybindingOnCombo.commandId"
-          />
-        </Message>
-      </div>
-      <template #footer>
-        <Button
-          :variant="existingKeybindingOnCombo ? 'destructive' : 'primary'"
-          autofocus
-          @click="saveKeybinding"
-        >
-          <i
-            :class="
-              existingKeybindingOnCombo
-                ? 'icon-[lucide--pencil]'
-                : 'icon-[lucide--check]'
-            "
-          />
-          {{ existingKeybindingOnCombo ? $t('g.overwrite') : $t('g.save') }}
-        </Button>
-      </template>
-    </Dialog>
     <Button
       v-tooltip="$t('g.resetAllKeybindingsTooltip')"
       class="mt-4 w-full"
@@ -315,10 +282,6 @@
 import { FilterMatchMode } from '@primevue/core/api'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import {
   ContextMenuContent,
@@ -328,14 +291,14 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from 'reka-ui'
-import { computed, ref, watch, watchEffect } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
+import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -399,41 +362,27 @@ function toggleExpanded(commandId: string) {
 watch(filters, () => expandedCommandIds.value.clear(), { deep: true })
 
 const selectedCommandData = ref<ICommandData | null>(null)
-const editDialogVisible = ref(false)
-const newBindingKeyCombo = ref<KeyComboImpl | null>(null)
-const currentEditingCommand = ref<ICommandData | null>(null)
-const editingBinding = ref<KeybindingImpl | null>(null)
-const editMode = ref<'edit' | 'add'>('edit')
-const keybindingInput = ref<InstanceType<typeof InputText> | null>(null)
+const editKeybindingDialog = useEditKeybindingDialog()
 
 const contextMenuTarget = ref<ICommandData | null>(null)
 
-const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
-  if (!currentEditingCommand.value) return null
-
-  if (editingBinding.value?.combo?.equals(newBindingKeyCombo.value)) {
-    return null
-  }
-
-  if (!newBindingKeyCombo.value) return null
-
-  return keybindingStore.getKeybinding(newBindingKeyCombo.value)
-})
-
 function editKeybinding(commandData: ICommandData, binding: KeybindingImpl) {
-  currentEditingCommand.value = commandData
-  editingBinding.value = binding
-  editMode.value = 'edit'
-  newBindingKeyCombo.value = binding.combo
-  editDialogVisible.value = true
+  editKeybindingDialog.show({
+    commandId: commandData.id,
+    commandLabel: commandData.label,
+    currentCombo: binding.combo,
+    mode: 'edit',
+    existingBinding: binding
+  })
 }
 
 function addKeybinding(commandData: ICommandData) {
-  currentEditingCommand.value = commandData
-  editingBinding.value = null
-  editMode.value = 'add'
-  newBindingKeyCombo.value = null
-  editDialogVisible.value = true
+  editKeybindingDialog.show({
+    commandId: commandData.id,
+    commandLabel: commandData.label,
+    currentCombo: null,
+    mode: 'add'
+  })
 }
 
 function handleRowClick(event: { originalEvent: Event; data: ICommandData }) {
@@ -466,15 +415,6 @@ function handleRowContextMenu(event: {
 function clearContextMenuTarget() {
   contextMenuTarget.value = null
 }
-
-watchEffect(() => {
-  if (editDialogVisible.value) {
-    setTimeout(() => {
-      // @ts-expect-error - $el is an internal property of the InputText component
-      keybindingInput.value?.$el?.focus()
-    }, 300)
-  }
-})
 
 async function removeSingleKeybinding(
   commandData: ICommandData,
@@ -543,51 +483,6 @@ function ctxRemoveKeybinding() {
   ) {
     handleRemoveKeybindingFromMenu(contextMenuTarget.value)
   }
-}
-
-async function captureKeybinding(event: KeyboardEvent) {
-  if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
-    switch (event.key) {
-      case 'Escape':
-        cancelEdit()
-        return
-      case 'Enter':
-        await saveKeybinding()
-        return
-    }
-  }
-  const keyCombo = KeyComboImpl.fromEvent(event)
-  newBindingKeyCombo.value = keyCombo
-}
-
-function cancelEdit() {
-  editDialogVisible.value = false
-  currentEditingCommand.value = null
-  editingBinding.value = null
-  newBindingKeyCombo.value = null
-}
-
-async function saveKeybinding() {
-  const commandId = currentEditingCommand.value?.id
-  const combo = newBindingKeyCombo.value
-  const currentEditMode = editMode.value
-  const currentEditingBindingValue = editingBinding.value
-  cancelEdit()
-  if (!combo || commandId === undefined) return
-
-  if (currentEditMode === 'add') {
-    keybindingStore.addUserKeybinding(new KeybindingImpl({ commandId, combo }))
-  } else if (currentEditingBindingValue) {
-    keybindingStore.updateSpecificKeybinding(
-      currentEditingBindingValue,
-      new KeybindingImpl({ commandId, combo })
-    )
-  } else {
-    keybindingStore.updateKeybindingOnCommand(
-      new KeybindingImpl({ commandId, combo })
-    )
-  }
-  await keybindingService.persistUserKeybindings()
 }
 
 async function resetKeybinding(commandData: ICommandData) {
