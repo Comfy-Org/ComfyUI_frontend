@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "為 Flux 系列模型的參考圖像啟用 KV 快取最佳化。",
+    "display_name": "Flux KV 快取",
+    "inputs": {
+      "model": {
+        "name": "模型",
+        "tooltip": "要啟用 KV 快取的模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已啟用 KV 快取的修補模型。"
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "此節點將圖像調整為更適合flux kontext的尺寸。",
     "display_name": "FluxKontextImageScale",

@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Flux 계열 모델에서 참조 이미지에 대한 KV 캐시 최적화를 활성화합니다.",
+    "display_name": "Flux KV 캐시",
+    "inputs": {
+      "model": {
+        "name": "모델",
+        "tooltip": "KV 캐시를 사용할 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KV 캐시가 활성화된 패치된 모델입니다."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "이 노드는 이미지를 Flux Kontext에 더 최적화된 크기로 조정합니다.",
     "display_name": "Flux Kontext 이미지 스케일",

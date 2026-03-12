@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Activa la optimización de KV Cache para imágenes de referencia en modelos de la familia Flux.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "modelo",
+        "tooltip": "El modelo en el que se usará KV Cache."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "El modelo modificado con KV Cache activado."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Este nodo redimensiona la imagen a una más óptima para flux kontext.",
     "display_name": "EscalaImagenFluxKontext",

@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "为 Flux 系列模型的参考图像启用 KV 缓存优化。",
+    "display_name": "Flux KV 缓存",
+    "inputs": {
+      "model": {
+        "name": "模型",
+        "tooltip": "要在其上启用 KV 缓存的模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已启用 KV 缓存的模型。"
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "将图像调整为更适合 Flux Kontext 的尺寸。",
     "display_name": "图像缩放为FluxKontext",

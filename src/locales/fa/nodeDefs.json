@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "بهینه‌سازی KV Cache را برای تصاویر مرجع در مدل‌های خانواده Flux فعال می‌کند.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که قرار است KV Cache روی آن فعال شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل اصلاح‌شده با KV Cache فعال."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "این نود تصویر را به اندازه‌ای تغییر می‌دهد که برای flux kontext بهینه‌تر باشد.",
     "display_name": "FluxKontextImageScale",

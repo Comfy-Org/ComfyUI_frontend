@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Flux ailesi modellerinde referans görselleri için KV Cache optimizasyonunu etkinleştirir.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "KV Cache uygulanacak model."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KV Cache etkinleştirilmiş yamalı model."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Bu düğüm, görüntüyü flux kontext için daha uygun bir boyuta yeniden boyutlandırır.",
     "display_name": "FluxKontext Görüntü Ölçeği",

@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Fluxファミリーモデルの参照画像に対してKVキャッシュ最適化を有効にします。",
+    "display_name": "Flux KVキャッシュ",
+    "inputs": {
+      "model": {
+        "name": "モデル",
+        "tooltip": "KVキャッシュを使用するモデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KVキャッシュが有効になったパッチ済みモデル。"
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "このノードは、Flux Kontextに最適なサイズに画像をリサイズします。",
     "display_name": "FluxKontextImageScale",

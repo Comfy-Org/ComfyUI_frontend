@@ -3319,6 +3319,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "display_name": "Flux KV Cache",
+    "description": "Enables KV Cache optimization for reference images on Flux family models.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use KV Cache on."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The patched model with KV Cache enabled."
+      }
+    }
+  },
   "FluxProExpandNode": {
     "display_name": "Flux.1 Expand Image",
     "description": "Outpaints image based on prompt.",
