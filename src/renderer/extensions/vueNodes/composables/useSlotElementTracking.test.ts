@@ -92,7 +92,9 @@ describe('useSlotElementTracking', () => {
   afterEach(() => {
     document.body
       .querySelectorAll('[data-node-id]')
-      .forEach((el) => el.remove())
+      .forEach((el) => {
+        el.remove()
+      })
   })
 
   beforeEach(() => {
