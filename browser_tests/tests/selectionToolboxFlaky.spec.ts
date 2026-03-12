@@ -26,10 +26,7 @@ test.describe(
   { tag: '@ui' },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.SelectionToolbox',
-        true
-      )
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
       await comfyPage.nextFrame()
     })
@@ -38,45 +35,43 @@ test.describe(
     // CSS transform positioning (useSelectionToolboxPosition composable).
     // The toolbox uses requestAnimationFrame-based position sync that places
     // buttons outside the visible area in headless viewport.
-    test.skip(
-      'bypass button toggles node bypass state',
-      async ({ comfyPage }) => {
-        const nodeRef = (
-          await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-        )[0]
-        await selectNodeWithPan(comfyPage, nodeRef)
+    test.skip('bypass button toggles node bypass state', async ({
+      comfyPage
+    }) => {
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
+      await selectNodeWithPan(comfyPage, nodeRef)
 
-        const bypassButton = comfyPage.page.locator(
-          '[data-testid="bypass-button"]'
-        )
-        await expect(bypassButton).toBeVisible()
-        await bypassButton.click({ force: true })
-        await comfyPage.nextFrame()
+      const bypassButton = comfyPage.page.locator(
+        '[data-testid="bypass-button"]'
+      )
+      await expect(bypassButton).toBeVisible()
+      await bypassButton.click({ force: true })
+      await comfyPage.nextFrame()
 
-        await expect(nodeRef).toBeBypassed()
+      await expect(nodeRef).toBeBypassed()
 
-        await selectNodeWithPan(comfyPage, nodeRef)
+      await selectNodeWithPan(comfyPage, nodeRef)
 
-        await expect(bypassButton).toBeVisible()
-        await bypassButton.click({ force: true })
-        await comfyPage.nextFrame()
+      await expect(bypassButton).toBeVisible()
+      await bypassButton.click({ force: true })
+      await comfyPage.nextFrame()
 
-        await expect(nodeRef).not.toBeBypassed()
-      }
-    )
+      await expect(nodeRef).not.toBeBypassed()
+    })
 
-    test.skip(
-      'refresh button is visible when node is selected',
-      async ({ comfyPage }) => {
-        const nodeRef = (
-          await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-        )[0]
-        await selectNodeWithPan(comfyPage, nodeRef)
+    test.skip('refresh button is visible when node is selected', async ({
+      comfyPage
+    }) => {
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
+      await selectNodeWithPan(comfyPage, nodeRef)
 
-        await expect(
-          comfyPage.page.locator('[data-testid="refresh-button"]')
-        ).toBeVisible()
-      }
-    )
+      await expect(
+        comfyPage.page.locator('[data-testid="refresh-button"]')
+      ).toBeVisible()
+    })
   }
 )
