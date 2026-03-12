@@ -66,13 +66,15 @@ const {
   activeCategory = null,
   hasEssentialNodes = false,
   hasBlueprintNodes = false,
-  hasPartnerNodes = false
+  hasPartnerNodes = false,
+  hasCustomNodes = false
 } = defineProps<{
   filters?: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
   activeCategory?: string | null
   hasEssentialNodes?: boolean
   hasBlueprintNodes?: boolean
   hasPartnerNodes?: boolean
+  hasCustomNodes?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -98,7 +100,9 @@ const categoryButtons = computed(() => {
   if (hasEssentialNodes) {
     buttons.push({ id: 'essentials', label: t('g.essentials') })
   }
-  buttons.push({ id: 'custom', label: t('g.extensions') })
+  if (hasCustomNodes) {
+    buttons.push({ id: 'custom', label: t('g.extensions') })
+  }
   return buttons
 })
 

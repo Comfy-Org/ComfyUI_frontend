@@ -52,7 +52,7 @@ describe(NodeSearchFilterBar, () => {
   }
 
   it('should render Extensions button and Input/Output popover triggers', async () => {
-    const wrapper = await createWrapper()
+    const wrapper = await createWrapper({ hasCustomNodes: true })
 
     const buttons = wrapper.findAll('button')
     const texts = buttons.map((b) => b.text())
@@ -73,8 +73,16 @@ describe(NodeSearchFilterBar, () => {
     expect(texts).toContain('Essentials')
   })
 
-  it('should emit selectCategory when category button is clicked', async () => {
+  it('should not render Extensions button when no custom nodes exist', async () => {
     const wrapper = await createWrapper()
+
+    const buttons = wrapper.findAll('button')
+    const texts = buttons.map((b) => b.text())
+    expect(texts).not.toContain('Extensions')
+  })
+
+  it('should emit selectCategory when category button is clicked', async () => {
+    const wrapper = await createWrapper({ hasCustomNodes: true })
 
     const extensionsBtn = wrapper
       .findAll('button')
@@ -85,7 +93,10 @@ describe(NodeSearchFilterBar, () => {
   })
 
   it('should apply active styling when activeCategory matches', async () => {
-    const wrapper = await createWrapper({ activeCategory: 'custom' })
+    const wrapper = await createWrapper({
+      activeCategory: 'custom',
+      hasCustomNodes: true
+    })
 
     const extensionsBtn = wrapper
       .findAll('button')

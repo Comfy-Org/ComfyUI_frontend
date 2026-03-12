@@ -97,6 +97,7 @@ const {
   hideChevrons = false,
   hidePresets = false,
   hasEssentialNodes = false,
+  hasCustomNodes = false,
   nodeDefs,
   rootLabel,
   rootKey
@@ -104,6 +105,7 @@ const {
   hideChevrons?: boolean
   hidePresets?: boolean
   hasEssentialNodes?: boolean
+  hasCustomNodes?: boolean
   nodeDefs?: ComfyNodeDefImpl[]
   rootLabel?: string
   rootKey?: string
@@ -134,7 +136,9 @@ const sourceCategories = computed(() => {
   if (hasEssentialNodes) {
     categories.push({ id: 'essentials', label: t('g.essentials') })
   }
-  categories.push({ id: 'custom', label: t('g.custom') })
+  if (hasCustomNodes) {
+    categories.push({ id: 'custom', label: t('g.custom') })
+  }
   return categories
 })
 

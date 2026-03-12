@@ -23,6 +23,7 @@
         :has-essential-nodes="nodeAvailability.essential"
         :has-blueprint-nodes="nodeAvailability.blueprint"
         :has-partner-nodes="nodeAvailability.partner"
+        :has-custom-nodes="nodeAvailability.custom"
         @toggle-filter="onToggleFilter"
         @clear-filter-group="onClearFilterGroup"
         @focus-search="nextTick(() => searchInputRef?.focus())"
@@ -39,6 +40,7 @@
         :hide-chevrons="!anyTreeCategoryHasChildren"
         :hide-presets="rootFilter !== null"
         :has-essential-nodes="nodeAvailability.essential"
+        :has-custom-nodes="nodeAvailability.custom"
         :node-defs="rootFilteredNodeDefs"
         :root-label="rootFilterLabel"
         :root-key="rootFilter ?? undefined"
@@ -140,15 +142,17 @@ const nodeAvailability = computed(() => {
   let essential = false
   let blueprint = false
   let partner = false
+  let custom = false
   for (const n of nodeDefStore.visibleNodeDefs) {
     if (!essential && flags.nodeLibraryEssentialsEnabled && isEssentialNode(n))
       essential = true
     if (!blueprint && n.category.startsWith(BLUEPRINT_CATEGORY))
       blueprint = true
     if (!partner && n.api_node) partner = true
-    if (essential && blueprint && partner) break
+    if (!custom && isCustomNode(n)) custom = true
+    if (essential && blueprint && partner && custom) break
   }
-  return { essential, blueprint, partner }
+  return { essential, blueprint, partner, custom }
 })
 
 const dialogRef = ref<HTMLElement>()

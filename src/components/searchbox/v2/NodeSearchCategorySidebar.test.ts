@@ -79,9 +79,14 @@ describe('NodeSearchCategorySidebar', () => {
       expect(wrapper.text()).toContain('Favorites')
     })
 
-    it('should show Custom source category', async () => {
-      const wrapper = await createWrapper()
+    it('should show Custom source category when custom nodes exist', async () => {
+      const wrapper = await createWrapper({ hasCustomNodes: true })
       expect(wrapper.text()).toContain('Custom')
+    })
+
+    it('should not show Custom source category when no custom nodes exist', async () => {
+      const wrapper = await createWrapper()
+      expect(wrapper.text()).not.toContain('Custom')
     })
 
     it('should mark the selected preset category as selected', async () => {
