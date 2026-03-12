@@ -64,7 +64,10 @@ import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
-import { showSlotMenu } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
+import {
+  canRenameSlot,
+  showSlotMenu
+} from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -147,10 +150,8 @@ const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
 
 function onSlotContextMenu(event: MouseEvent) {
   if (!props.nodeId) return
-  showSlotMenu(event, {
-    nodeId: props.nodeId,
-    slotIndex: props.index,
-    isInput: true
-  })
+  const ctx = { nodeId: props.nodeId, slotIndex: props.index, isInput: true }
+  if (!canRenameSlot(ctx)) return
+  showSlotMenu(event, ctx)
 }
 </script>
