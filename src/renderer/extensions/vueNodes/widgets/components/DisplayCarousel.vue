@@ -140,7 +140,7 @@
       <div class="p-4">
         <div
           ref="gridContainerEl"
-          class="relative h-72 overflow-clip rounded-sm bg-component-node-background"
+          class="relative h-72 overflow-x-hidden overflow-y-auto rounded-sm bg-component-node-background"
           tabindex="0"
           @mouseenter="isHovered = true"
           @mouseleave="isHovered = false"
@@ -270,6 +270,7 @@ const navButtonClass =
 
 watch(galleryImages, (images) => {
   thumbnailRefs.value = thumbnailRefs.value.slice(0, images.length)
+  imageDimensions.value = null
   if (images.length === 0) {
     activeIndex.value = 0
     return
@@ -368,6 +369,7 @@ function selectFromGrid(index: number) {
   imageDimensions.value = null
   isHovered.value = false
   displayMode.value = 'single'
+  scrollToActive()
 }
 
 function handleEditMask() {

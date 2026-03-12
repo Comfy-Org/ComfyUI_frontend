@@ -122,9 +122,19 @@ describe('DisplayCarousel Single Mode', () => {
       expect(wrapper.find('img').exists()).toBe(false)
     })
 
-    it('handles null or undefined value gracefully', () => {
+    it('handles null value gracefully', () => {
       const widget = createGalleriaWidget([])
-      const wrapper = mountComponent(widget, [])
+      const wrapper = mountComponent(widget, null as unknown as GalleryValue)
+
+      expect(wrapper.find('img').exists()).toBe(false)
+    })
+
+    it('handles undefined value gracefully', () => {
+      const widget = createGalleriaWidget([])
+      const wrapper = mountComponent(
+        widget,
+        undefined as unknown as GalleryValue
+      )
 
       expect(wrapper.find('img').exists()).toBe(false)
     })
