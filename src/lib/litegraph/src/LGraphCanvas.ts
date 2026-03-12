@@ -4391,22 +4391,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (item instanceof LGraphGroup) {
       item.recomputeInsideNodes()
       if (this.groupSelectChildren) {
-        // Iterative traversal avoids stack overflow on deeply nested groups
-        // and skips redundant recomputeInsideNodes (already done recursively)
-        const stack: Positionable[] = [...item._children]
-        while (stack.length > 0) {
-          const child = stack.pop()!
-          if (child instanceof LGraphGroup) {
+        this.#traverseGroupChildren(
+          item,
+          (child) => {
             if (!child.selected || !this.selectedItems.has(child)) {
               child.selected = true
               this.selectedItems.add(child)
               this.state.selectionChanged = true
             }
-            for (const nested of child._children) stack.push(nested)
-          } else if (!child.selected || !this.selectedItems.has(child)) {
-            this.select(child)
-          }
-        }
+          },
+          (child) => this.select(child)
+        )
       }
       return
     }
@@ -4448,20 +4443,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.state.selectionChanged = true
 
     if (item instanceof LGraphGroup && this.groupSelectChildren) {
-      const stack: Positionable[] = [...item._children]
-      while (stack.length > 0) {
-        const child = stack.pop()!
-        if (child instanceof LGraphGroup) {
+      this.#traverseGroupChildren(
+        item,
+        (child) => {
           if (child.selected || this.selectedItems.has(child)) {
             child.selected = false
             this.selectedItems.delete(child)
             this.state.selectionChanged = true
           }
-          for (const nested of child._children) stack.push(nested)
-        } else if (child.selected || this.selectedItems.has(child)) {
-          this.deselect(child)
-        }
-      }
+        },
+        (child) => this.deselect(child)
+      )
       return
     }
 
@@ -4496,6 +4488,29 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (node && this.selectedItems.has(node)) continue
 
         delete this.highlighted_links[id]
+      }
+    }
+  }
+
+  /**
+   * Iterative traversal of a group's descendants.
+   * Calls {@link groupAction} on nested groups and {@link leafAction} on
+   * non-group children.  Always recurses into nested groups regardless of
+   * their current selection state.
+   */
+  #traverseGroupChildren(
+    group: LGraphGroup,
+    groupAction: (child: LGraphGroup) => void,
+    leafAction: (child: Positionable) => void
+  ): void {
+    const stack: Positionable[] = [...group._children]
+    while (stack.length > 0) {
+      const child = stack.pop()!
+      if (child instanceof LGraphGroup) {
+        groupAction(child)
+        for (const nested of child._children) stack.push(nested)
+      } else {
+        leafAction(child)
       }
     }
   }
