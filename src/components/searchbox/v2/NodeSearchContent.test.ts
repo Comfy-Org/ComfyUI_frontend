@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
+import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import {
   createMockNodeDef,
   setupTestPinia,
@@ -226,7 +227,8 @@ describe('NodeSearchContent', () => {
       await nextTick()
 
       const wrapper = await createWrapper()
-      const essentialsBtn = wrapper
+      const filterBar = wrapper.findComponent(NodeSearchFilterBar)
+      const essentialsBtn = filterBar
         .findAll('button')
         .find((b) => b.text().includes('Essentials'))
       expect(essentialsBtn).toBeTruthy()
@@ -252,7 +254,8 @@ describe('NodeSearchContent', () => {
       ])
 
       const wrapper = await createWrapper()
-      const partnerBtn = wrapper
+      const filterBar = wrapper.findComponent(NodeSearchFilterBar)
+      const partnerBtn = filterBar
         .findAll('button')
         .find((b) => b.text().includes('Partner'))
       expect(partnerBtn).toBeTruthy()
@@ -285,7 +288,8 @@ describe('NodeSearchContent', () => {
       ])
 
       const wrapper = await createWrapper()
-      const extensionsBtn = wrapper
+      const filterBar = wrapper.findComponent(NodeSearchFilterBar)
+      const extensionsBtn = filterBar
         .findAll('button')
         .find((b) => b.text().includes('Extensions'))!
 

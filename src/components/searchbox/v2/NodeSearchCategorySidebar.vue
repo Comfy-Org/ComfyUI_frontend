@@ -207,6 +207,10 @@ function categoryBtnClass(id: string) {
 
 const selectedCollapsed = ref(false)
 
+watch(selectedCategory, () => {
+  selectedCollapsed.value = false
+})
+
 function selectCategory(categoryId: string) {
   if (selectedCategory.value === categoryId) {
     selectedCollapsed.value = !selectedCollapsed.value
