@@ -22,7 +22,7 @@ const visible = computed(() => sidebarOnLeft.value === (side === 'left'))
   <div
     :class="
       cn(
-        'flex items-center gap-2 px-4 text-nowrap text-base-foreground self-end pb-4',
+        'flex items-center gap-2 self-end px-4 pb-4 text-nowrap text-base-foreground',
         side === 'right' && 'flex-row-reverse',
         !visible && 'invisible'
       )

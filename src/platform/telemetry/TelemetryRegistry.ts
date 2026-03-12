@@ -3,7 +3,9 @@ import type { AuditLog } from '@/services/customerEventsService'
 import type {
   AuthMetadata,
   BeginCheckoutMetadata,
+  DefaultViewSetMetadata,
   EnterLinearMetadata,
+  ShareFlowMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   ExecutionTriggerSource,
@@ -26,7 +28,8 @@ import type {
   TemplateMetadata,
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
-  WorkflowImportMetadata
+  WorkflowImportMetadata,
+  WorkflowSavedMetadata
 } from './types'
 
 /**
@@ -156,8 +159,20 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackWorkflowOpened?.(metadata))
   }
 
+  trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
+    this.dispatch((provider) => provider.trackWorkflowSaved?.(metadata))
+  }
+
+  trackDefaultViewSet(metadata: DefaultViewSetMetadata): void {
+    this.dispatch((provider) => provider.trackDefaultViewSet?.(metadata))
+  }
+
   trackEnterLinear(metadata: EnterLinearMetadata): void {
     this.dispatch((provider) => provider.trackEnterLinear?.(metadata))
+  }
+
+  trackShareFlow(metadata: ShareFlowMetadata): void {
+    this.dispatch((provider) => provider.trackShareFlow?.(metadata))
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {

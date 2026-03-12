@@ -44,7 +44,7 @@ whenever(() => !canvasStore.linearMode, mountWidgetElement)
 <template>
   <div
     ref="domEl"
-    class="flex flex-col [&>*]:flex-1"
+    class="flex flex-col *:flex-1"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop

@@ -9,7 +9,7 @@
       </p>
 
       <!-- Troubleshooting Section -->
-      <div class="mb-4 rounded bg-secondary-background px-3 py-2 text-left">
+      <div class="mb-4 rounded-sm bg-secondary-background px-3 py-2 text-left">
         <h3 class="mb-2 text-sm font-semibold text-text-primary">
           {{ $t('cloudOnboarding.authTimeout.troubleshooting') }}
         </h3>
@@ -28,7 +28,7 @@
       <!-- Technical Details (Collapsible) -->
       <div v-if="errorMessage" class="mb-4 text-left">
         <button
-          class="flex w-full items-center justify-between rounded bg-secondary-background px-4 py-2 text-sm text-text-secondary transition-colors hover:bg-secondary-background-hover border-0"
+          class="flex w-full items-center justify-between rounded-sm border-0 bg-secondary-background px-4 py-2 text-sm text-text-secondary transition-colors hover:bg-secondary-background-hover"
           @click="showTechnicalDetails = !showTechnicalDetails"
         >
           <span>{{ $t('cloudOnboarding.authTimeout.technicalDetails') }}</span>
@@ -41,7 +41,7 @@
         </button>
         <div
           v-if="showTechnicalDetails"
-          class="mt-2 rounded border-muted-background border p-4 font-mono text-xs text-muted-foreground break-all"
+          class="mt-2 rounded-sm border border-muted-background p-4 font-mono text-xs break-all text-muted-foreground"
         >
           {{ errorMessage }}
         </div>

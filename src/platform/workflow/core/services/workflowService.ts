@@ -24,7 +24,11 @@ import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { appendJsonExt, appendWorkflowJsonExt } from '@/utils/formatUtil'
+import {
+  appendJsonExt,
+  appendWorkflowJsonExt,
+  generateUUID
+} from '@/utils/formatUtil'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
@@ -145,6 +149,8 @@ export const useWorkflowService = () => {
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
     }
+
+    useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
     return true
   }
 
@@ -185,6 +191,7 @@ export const useWorkflowService = () => {
       }
 
       await workflowStore.saveWorkflow(workflow)
+      useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
     }
   }
 
@@ -366,8 +373,7 @@ export const useWorkflowService = () => {
             toastStore.add({
               severity: 'error',
               summary: t('g.error'),
-              detail: t('toastMessages.failedToSaveDraft'),
-              life: 3000
+              detail: t('toastMessages.failedToSaveDraft')
             })
           }
         }
@@ -415,10 +421,24 @@ export const useWorkflowService = () => {
         const fullPath = ComfyWorkflow.basePath + appendJsonExt(path)
         const existingWorkflow = workflowStore.getWorkflowByPath(fullPath)
 
-        // If the workflow exists and is NOT loaded yet (restoration case),
-        // use the existing workflow instead of creating a new one.
-        // If it IS loaded, this is a re-import case - create new with suffix.
-        if (existingWorkflow?.isPersisted && !existingWorkflow.isLoaded) {
+        // Reuse an existing workflow when this is a restoration case
+        // (persisted but currently unloaded) or an idempotent repeated load
+        // of the currently active same-path workflow.
+        //
+        // This prevents accidental duplicate tabs when startup/load flows
+        // invoke loadGraphData more than once for the same workflow name.
+        const isSameActiveWorkflowLoad =
+          !!existingWorkflow &&
+          workflowStore.isActive(existingWorkflow) &&
+          (existingWorkflow.activeState?.id === undefined ||
+            workflowData.id === undefined ||
+            existingWorkflow.activeState.id === workflowData.id)
+
+        if (
+          existingWorkflow &&
+          ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
+            isSameActiveWorkflowLoad)
+        ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
@@ -499,7 +519,10 @@ export const useWorkflowService = () => {
    * Takes an existing workflow and duplicates it with a new name
    */
   const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
+    if (!workflow.isLoaded) await workflow.load()
     const state = JSON.parse(JSON.stringify(workflow.activeState))
+    // Ensure duplicates are always treated as distinct workflows.
+    if (state) state.id = generateUUID()
     const suffix = workflow.isPersisted ? ' (Copy)' : ''
     // Remove the suffix `(2)` or similar
     const filename = workflow.filename.replace(/\s*\(\d+\)$/, '') + suffix
@@ -524,15 +547,16 @@ export const useWorkflowService = () => {
       if (settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')) {
         missingNodesDialog.show({ missingNodeTypes })
       }
-
       executionErrorStore.surfaceMissingNodes(missingNodeTypes)
     }
 
-    if (
-      missingModels &&
-      settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')
-    ) {
-      missingModelsDialog.show(missingModels)
+    // Missing models are NOT surfaced to the Errors tab here.
+    // On Cloud, the dedicated pipeline in app.ts handles detection and
+    // surfacing via surfaceMissingModels(). OSS uses only this dialog.
+    if (missingModels) {
+      if (settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')) {
+        missingModelsDialog.show(missingModels)
+      }
     }
   }
 

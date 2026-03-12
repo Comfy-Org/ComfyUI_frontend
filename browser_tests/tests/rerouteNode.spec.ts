@@ -13,9 +13,9 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
   })
 
   test('loads from inserted workflow', async ({ comfyPage }) => {
-    const workflowName = 'single_connected_reroute_node.json'
+    const workflowName = 'single_connected_reroute_node'
     await comfyPage.workflow.setupWorkflowsDirectory({
-      [workflowName]: 'links/single_connected_reroute_node.json'
+      [`${workflowName}.json`]: `links/${workflowName}.json`
     })
     await comfyPage.setup()
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])

@@ -17,6 +17,7 @@ import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -36,6 +37,19 @@ const rightSidePanelStore = useRightSidePanelStore()
 const { focusedSection, searchQuery } = storeToRefs(rightSidePanelStore)
 
 const advancedInputsCollapsed = ref(true)
+const firstSectionCollapsed = ref(false)
+const isAllCollapsed = computed({
+  get() {
+    const hasAdvanced = advancedInputsWidgets.value.length > 0
+    return hasAdvanced
+      ? firstSectionCollapsed.value && advancedInputsCollapsed.value
+      : firstSectionCollapsed.value
+  },
+  set(collapse: boolean) {
+    firstSectionCollapsed.value = collapse
+    advancedInputsCollapsed.value = collapse
+  }
+})
 const draggableList = ref<DraggableList | undefined>(undefined)
 const sectionWidgetsRef = useTemplateRef('sectionWidgetsRef')
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
@@ -186,15 +200,23 @@ const label = computed(() => {
 </script>
 
 <template>
-  <div class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke">
+  <div
+    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
+  >
     <FormSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="widgetsList"
+      class="flex-1"
+    />
+    <CollapseToggleButton
+      v-model="isAllCollapsed"
+      :show="!isSearching && advancedInputsWidgets.length > 0"
     />
   </div>
   <SectionWidgets
     ref="sectionWidgetsRef"
+    :collapse="firstSectionCollapsed && !isSearching"
     :node
     :label
     :parents
@@ -207,10 +229,15 @@ const label = computed(() => {
         : t('rightSidePanel.inputsNoneTooltip')
     "
     class="border-b border-interface-stroke"
-    @update:collapse="nextTick(setDraggableState)"
+    @update:collapse="
+      (v) => {
+        firstSectionCollapsed = v
+        nextTick(setDraggableState)
+      }
+    "
   >
     <template #empty>
-      <div class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15">
+      <div class="px-4 pt-5 pb-15 text-center text-sm text-muted-foreground">
         {{ t('rightSidePanel.noneSearchDesc') }}
       </div>
     </template>

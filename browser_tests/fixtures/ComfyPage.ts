@@ -206,9 +206,7 @@ export class ComfyPage {
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
-    this.runButton = page
-      .getByTestId(TestIds.topbar.queueButton)
-      .getByRole('button', { name: 'Run' })
+    this.runButton = page.getByTestId(TestIds.topbar.queueButton)
     this.workflowUploadInput = page.locator('#comfy-file-input')
 
     this.searchBox = new ComfyNodeSearchBox(page)
@@ -432,7 +430,10 @@ export const comfyPageFixture = base.extend<{
         'Comfy.VueNodes.AutoScaleLayout': false,
         // Disable toast warning about version compatibility, as they may or
         // may not appear - depending on upstream ComfyUI dependencies
-        'Comfy.VersionCompatibility.DisableWarnings': true
+        'Comfy.VersionCompatibility.DisableWarnings': true,
+        // Browser tests should opt into missing-model warnings explicitly so
+        // workflows do not render differently based on models present on disk.
+        'Comfy.Workflow.ShowMissingModelsWarning': false
       })
     } catch (e) {
       console.error(e)

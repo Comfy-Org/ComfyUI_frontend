@@ -9,19 +9,20 @@ import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputText from './WidgetInputText.vue'
+import { createMockWidget } from './widgetTestUtils'
 
 describe('WidgetInputText Value Binding', () => {
-  const createMockWidget = (
+  const createInputTextWidget = (
     value: string = 'default',
-    options: Partial<InputTextProps> = {},
+    options: Partial<InputTextProps> & IWidgetOptions = {},
     callback?: (value: string) => void
-  ): SimplifiedWidget<string> => ({
-    name: 'test_input',
-    type: 'string',
-    value,
-    options: options as IWidgetOptions,
-    callback
-  })
+  ) =>
+    createMockWidget<string>({
+      value,
+      name: 'test_input',
+      options,
+      callback
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<string>,
@@ -57,7 +58,7 @@ describe('WidgetInputText Value Binding', () => {
 
   describe('Vue Event Emission', () => {
     it('emits Vue event when input value changes on blur', async () => {
-      const widget = createMockWidget('hello')
+      const widget = createInputTextWidget('hello')
       const wrapper = mountComponent(widget, 'hello')
 
       await setInputValueAndTrigger(wrapper, 'world', 'blur')
@@ -68,7 +69,7 @@ describe('WidgetInputText Value Binding', () => {
     })
 
     it('emits Vue event when enter key is pressed', async () => {
-      const widget = createMockWidget('initial')
+      const widget = createInputTextWidget('initial')
       const wrapper = mountComponent(widget, 'initial')
 
       await setInputValueAndTrigger(wrapper, 'new value', 'keydown.enter')
@@ -79,7 +80,7 @@ describe('WidgetInputText Value Binding', () => {
     })
 
     it('handles empty string values', async () => {
-      const widget = createMockWidget('something')
+      const widget = createInputTextWidget('something')
       const wrapper = mountComponent(widget, 'something')
 
       await setInputValueAndTrigger(wrapper, '')
@@ -90,7 +91,7 @@ describe('WidgetInputText Value Binding', () => {
     })
 
     it('handles special characters correctly', async () => {
-      const widget = createMockWidget('normal')
+      const widget = createInputTextWidget('normal')
       const wrapper = mountComponent(widget, 'normal')
 
       const specialText = 'special @#$%^&*()[]{}|\\:";\'<>?,./'
@@ -102,7 +103,7 @@ describe('WidgetInputText Value Binding', () => {
     })
 
     it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget('test', {}, undefined)
+      const widget = createInputTextWidget('test', {}, undefined)
       const wrapper = mountComponent(widget, 'test')
 
       await setInputValueAndTrigger(wrapper, 'new value')
@@ -116,7 +117,7 @@ describe('WidgetInputText Value Binding', () => {
 
   describe('User Interactions', () => {
     it('emits update:modelValue on blur', async () => {
-      const widget = createMockWidget('original')
+      const widget = createInputTextWidget('original')
       const wrapper = mountComponent(widget, 'original')
 
       await setInputValueAndTrigger(wrapper, 'updated')
@@ -127,7 +128,7 @@ describe('WidgetInputText Value Binding', () => {
     })
 
     it('emits update:modelValue on enter key', async () => {
-      const widget = createMockWidget('start')
+      const widget = createInputTextWidget('start')
       const wrapper = mountComponent(widget, 'start')
 
       await setInputValueAndTrigger(wrapper, 'finish', 'keydown.enter')
@@ -140,7 +141,7 @@ describe('WidgetInputText Value Binding', () => {
 
   describe('Component Rendering', () => {
     it('always renders InputText component', () => {
-      const widget = createMockWidget('test value')
+      const widget = createInputTextWidget('test value')
       const wrapper = mountComponent(widget, 'test value')
 
       // WidgetInputText always uses InputText, not Textarea
@@ -155,7 +156,7 @@ describe('WidgetInputText Value Binding', () => {
 
   describe('Edge Cases', () => {
     it('handles very long strings', async () => {
-      const widget = createMockWidget('short')
+      const widget = createInputTextWidget('short')
       const wrapper = mountComponent(widget, 'short')
 
       const longString = 'a'.repeat(10000)
@@ -167,7 +168,7 @@ describe('WidgetInputText Value Binding', () => {
     })
 
     it('handles unicode characters', async () => {
-      const widget = createMockWidget('ascii')
+      const widget = createInputTextWidget('ascii')
       const wrapper = mountComponent(widget, 'ascii')
 
       const unicodeText = '🎨 Unicode: αβγ 中文 العربية 🚀'

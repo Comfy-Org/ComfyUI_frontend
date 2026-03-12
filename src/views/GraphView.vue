@@ -1,5 +1,5 @@
 <template>
-  <div class="comfyui-body grid h-full w-full overflow-hidden">
+  <div class="comfyui-body grid size-full overflow-hidden">
     <div id="comfyui-body-top" class="comfyui-body-top" />
     <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
     <div id="comfyui-body-left" class="comfyui-body-left" />
@@ -132,7 +132,6 @@ watch(
     } else {
       document.body.classList.add(DARK_THEME_CLASS)
     }
-
     if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
