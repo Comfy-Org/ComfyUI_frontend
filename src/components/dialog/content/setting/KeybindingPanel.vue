@@ -7,7 +7,7 @@
 
     <ContextMenuRoot>
       <ContextMenuTrigger as-child>
-        <div @contextmenu="clearContextMenuTarget">
+        <div @contextmenu.capture="clearContextMenuTarget">
           <DataTable
             v-model:selection="selectedCommandData"
             v-model:expanded-rows="expandedRows"
