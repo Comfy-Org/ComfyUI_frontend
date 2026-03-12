@@ -36,6 +36,9 @@ vi.mock('@/stores/executionStore', () => ({
     get activeJobId() {
       return activeJobIdRef.value
     },
+    get focusedJobId() {
+      return activeJobIdRef.value
+    },
     get jobIdToSessionWorkflowPath() {
       return jobIdToWorkflowPathRef.value
     }
