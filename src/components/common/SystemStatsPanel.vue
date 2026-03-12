@@ -1,9 +1,15 @@
 <template>
   <div class="system-stats">
     <div class="mb-6">
-      <h2 class="mb-4 text-2xl font-semibold">
-        {{ $t('g.systemInfo') }}
-      </h2>
+      <div class="mb-4 flex items-center gap-2">
+        <h2 class="text-2xl font-semibold">
+          {{ $t('g.systemInfo') }}
+        </h2>
+        <Button variant="secondary" @click="copySystemInfo">
+          <i class="pi pi-copy" />
+          {{ $t('g.copySystemInfo') }}
+        </Button>
+      </div>
       <div class="grid grid-cols-2 gap-2">
         <template v-for="col in systemColumns" :key="col.field">
           <div :class="cn('font-medium', isOutdated(col) && 'text-danger-100')">
@@ -46,6 +52,8 @@ import TabView from 'primevue/tabview'
 import { computed } from 'vue'
 
 import DeviceInfo from '@/components/common/DeviceInfo.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import type { SystemStats } from '@/schemas/apiSchema'
 import { formatCommitHash, formatSize } from '@/utils/formatUtil'
@@ -54,6 +62,8 @@ import { cn } from '@/utils/tailwindUtil'
 const props = defineProps<{
   stats: SystemStats
 }>()
+
+const { copyToClipboard } = useCopyToClipboard()
 
 const systemInfo = computed(() => ({
   ...props.stats.system,
@@ -108,7 +118,7 @@ function isOutdated(column: ColumnDef): boolean {
   return !!installed && !!required && installed !== required
 }
 
-const getDisplayValue = (column: ColumnDef) => {
+function getDisplayValue(column: ColumnDef) {
   const value = systemInfo.value[column.field]
   if (column.formatNumber && typeof value === 'number') {
     return column.formatNumber(value)
@@ -117,5 +127,34 @@ const getDisplayValue = (column: ColumnDef) => {
     return column.format(value)
   }
   return value
+}
+
+function formatSystemInfoText(): string {
+  const lines: string[] = ['## System Info']
+
+  for (const col of systemColumns.value) {
+    const display = getDisplayValue(col)
+    if (display !== undefined && display !== '') {
+      lines.push(`${col.header}: ${display}`)
+    }
+  }
+
+  if (hasDevices.value) {
+    lines.push('')
+    lines.push('## Devices')
+    for (const device of props.stats.devices) {
+      lines.push(`- ${device.name} (${device.type})`)
+      lines.push(`  VRAM Total: ${formatSize(device.vram_total)}`)
+      lines.push(`  VRAM Free: ${formatSize(device.vram_free)}`)
+      lines.push(`  Torch VRAM Total: ${formatSize(device.torch_vram_total)}`)
+      lines.push(`  Torch VRAM Free: ${formatSize(device.torch_vram_free)}`)
+    }
+  }
+
+  return lines.join('\n')
+}
+
+function copySystemInfo() {
+  copyToClipboard(formatSystemInfoText())
 }
 </script>

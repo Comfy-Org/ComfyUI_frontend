@@ -115,6 +115,7 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { usePromotionStore } from '@/stores/promotionStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -134,6 +135,7 @@ const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
 const promotionStore = usePromotionStore()
 const executionErrorStore = useExecutionErrorStore()
+const missingModelStore = useMissingModelStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -202,6 +204,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const graphId = canvasStore.canvas?.graph?.rootGraph.id
 
   const nodeId = nodeData.id
+  const nodeIdStr = String(nodeId)
   const { widgets } = nodeData
   const result: ProcessedWidget[] = []
 
@@ -284,9 +287,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError:
-        nodeErrors?.errors?.some(
+        (nodeErrors?.errors?.some(
           (error) => error.extra_info?.input_name === widget.name
-        ) ?? false,
+        ) ??
+          false) ||
+        missingModelStore.isWidgetMissingModel(nodeIdStr, widget.name),
       hidden: widget.options?.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,
