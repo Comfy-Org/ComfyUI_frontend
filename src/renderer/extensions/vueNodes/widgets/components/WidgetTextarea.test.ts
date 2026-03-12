@@ -36,18 +36,16 @@ function mountComponent(
 ) {
   return mount(WidgetTextarea, {
     global: {
-      plugins: [createTestingPinia()]
+      plugins: [createTestingPinia()],
+      mocks: {
+        $t: (msg: string) => msg
+      }
     },
     props: {
       widget,
       modelValue,
       readonly,
       placeholder
-    },
-    global: {
-      mocks: {
-        $t: (msg: string) => msg
-      }
     }
   })
 }
