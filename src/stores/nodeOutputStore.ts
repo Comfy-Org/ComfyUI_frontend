@@ -175,8 +175,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     ) {
       outputs = {
         ...outputs,
-        images: (app.nodeOutputs[nodeLocatorId] as ExecutedWsMessage['output'])
-          .images
+        images: app.nodeOutputs[nodeLocatorId].images
       }
     }
 
