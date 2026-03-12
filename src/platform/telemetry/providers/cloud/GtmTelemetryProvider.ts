@@ -211,7 +211,10 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     this.pushEvent('login')
   }
 
-  trackSurvey(stage: 'opened' | 'submitted', responses?: SurveyResponses): void {
+  trackSurvey(
+    stage: 'opened' | 'submitted',
+    responses?: SurveyResponses
+  ): void {
     const ga4EventName =
       stage === 'opened' ? 'survey_opened' : 'survey_submitted'
     this.pushEvent(ga4EventName, responses ? { ...responses } : undefined)
