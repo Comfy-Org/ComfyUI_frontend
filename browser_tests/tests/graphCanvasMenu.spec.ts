@@ -60,6 +60,15 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
     await comfyPage.nextFrame()
   })
 
+  test('Fit view button is present and clickable', async ({ comfyPage }) => {
+    const fitViewButton = comfyPage.page
+      .locator('button')
+      .filter({ has: comfyPage.page.locator('.icon-\\[lucide--focus\\]') })
+    await expect(fitViewButton).toBeVisible()
+    await fitViewButton.click()
+    await comfyPage.nextFrame()
+  })
+
   test('Zoom controls popup opens and closes', async ({ comfyPage }) => {
     // Find the zoom button by its percentage text content
     const zoomButton = comfyPage.page.locator('button').filter({
