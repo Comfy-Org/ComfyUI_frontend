@@ -37,10 +37,7 @@
             class="flex items-center gap-1 rounded-lg bg-secondary-background px-2 py-1"
           >
             <span class="text-sm font-normal tabular-nums">
-              <span class="text-primary-foreground">{{
-                n(runningCount)
-              }}</span>
-              {{ ' ' }}{{ t('menu.running') }}
+              {{ t('menu.nRunning', { count: n(runningCount) }) }}
             </span>
             <Button
               v-tooltip.bottom="cancelJobTooltipConfig"
@@ -57,10 +54,7 @@
             class="flex items-center gap-1 rounded-lg bg-secondary-background px-2 py-1"
           >
             <span class="text-sm font-normal tabular-nums">
-              <span class="text-primary-foreground">{{
-                n(queuedCount)
-              }}</span>
-              {{ ' ' }}{{ t('menu.queued') }}
+              {{ t('menu.nQueued', { count: n(queuedCount) }) }}
             </span>
             <Button
               v-tooltip.bottom="clearQueueTooltipConfig"
