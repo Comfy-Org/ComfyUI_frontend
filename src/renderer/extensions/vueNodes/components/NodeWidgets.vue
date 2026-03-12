@@ -195,14 +195,13 @@ function createWidgetUpdateHandler(
   return (newValue: WidgetValue) => {
     if (widgetState) widgetState.value = newValue
     widget.callback?.(newValue)
-    const errorInputName = widget.slotName ?? widget.name
-    executionErrorStore.clearSimpleWidgetErrorIfValid(
+    executionErrorStore.clearWidgetRelatedErrors(
       nodeExecId,
-      errorInputName,
+      widget.slotName ?? widget.name,
+      widget.name,
       newValue,
       { min: widgetOptions?.min, max: widgetOptions?.max }
     )
-    missingModelStore.removeMissingModelByWidget(nodeExecId, widget.name)
   }
 }
 
@@ -236,7 +235,6 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const graphId = canvasStore.canvas?.graph?.rootGraph.id
 
   const nodeId = nodeData.id
-  const nodeIdStr = String(nodeId)
   const { widgets } = nodeData
   const result: ProcessedWidget[] = []
 
@@ -324,7 +322,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
             error.extra_info?.input_name === (widget.slotName ?? widget.name)
         ) ??
           false) ||
-        missingModelStore.isWidgetMissingModel(nodeIdStr, widget.name),
+        missingModelStore.isWidgetMissingModel(nodeExecId, widget.name),
       hidden: widget.options?.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,

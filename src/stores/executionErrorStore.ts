@@ -210,6 +210,27 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     clearSimpleNodeErrors(executionId, widgetName)
   }
 
+  /**
+   * Clears both validation errors and missing model state for a widget.
+   * `errorInputName` is the name used for error matching (may differ from
+   * `widgetName` for promoted subgraph widgets where slotName !== name).
+   */
+  function clearWidgetRelatedErrors(
+    executionId: string,
+    errorInputName: string,
+    widgetName: string,
+    newValue: unknown,
+    options?: { min?: number; max?: number }
+  ): void {
+    clearSimpleWidgetErrorIfValid(
+      executionId,
+      errorInputName,
+      newValue,
+      options
+    )
+    missingModelStore.removeMissingModelByWidget(executionId, widgetName)
+  }
+
   /** Set missing node types and open the error overlay if the Errors tab is enabled. */
   function surfaceMissingNodes(types: MissingNodeType[]) {
     setMissingNodeTypes(types)
@@ -511,6 +532,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     // Clearing (targeted)
     clearSimpleNodeErrors,
     clearSimpleWidgetErrorIfValid,
+    clearWidgetRelatedErrors,
 
     // Missing node actions
     setMissingNodeTypes,

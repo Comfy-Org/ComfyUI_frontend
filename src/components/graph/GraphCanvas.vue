@@ -147,7 +147,6 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
-import { useNodeErrorAutoResolve } from '@/composables/node/useNodeErrorAutoResolve'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -445,7 +444,6 @@ const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
-useNodeErrorAutoResolve()
 
 useGlobalLitegraph()
 useContextMenuTranslation()

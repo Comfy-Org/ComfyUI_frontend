@@ -314,5 +314,29 @@ describe('executionErrorUtil', () => {
       ]
       expect(isValueStillOutOfRange(15, errors, {})).toBe(true)
     })
+
+    it('should return true if min is undefined but error was value_smaller_than_min (conservative)', () => {
+      const errors = [
+        {
+          type: 'value_smaller_than_min',
+          message: 'too small',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      expect(isValueStillOutOfRange(0, errors, {})).toBe(true)
+    })
+
+    it('should return false when errors contain only non-range types', () => {
+      const errors = [
+        {
+          type: 'value_not_in_list',
+          message: 'not in list',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      expect(isValueStillOutOfRange(5, errors, { min: 1, max: 10 })).toBe(false)
+    })
   })
 })

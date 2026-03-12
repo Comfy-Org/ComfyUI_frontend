@@ -11,6 +11,8 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -314,5 +316,126 @@ describe('Nested promoted widget mapping', () => {
     expect(mappedWidget?.storeNodeId).toBe(
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
     )
+  })
+})
+
+describe('Connection error clearing via node:slot-links:changed', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  function createGraphWithInput() {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('string', 'prompt', 'hello', () => undefined, {})
+    const input = node.addInput('clip', 'CLIP')
+    input.widget = { name: 'clip' }
+    graph.add(node)
+    return { graph, node }
+  }
+
+  it('calls clearSimpleNodeErrors on INPUT connection', () => {
+    const { graph, node } = createGraphWithInput()
+    useGraphNodeManager(graph)
+
+    const store = useExecutionErrorStore()
+    const clearSpy = vi.spyOn(store, 'clearSimpleNodeErrors')
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    graph.trigger('node:slot-links:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: 0,
+      connected: true,
+      linkId: 1
+    })
+
+    expect(clearSpy).toHaveBeenCalledWith(String(node.id), 'clip')
+  })
+
+  it('does not clear errors on disconnection', () => {
+    const { graph, node } = createGraphWithInput()
+    useGraphNodeManager(graph)
+
+    const store = useExecutionErrorStore()
+    const clearSpy = vi.spyOn(store, 'clearSimpleNodeErrors')
+
+    graph.trigger('node:slot-links:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: 0,
+      connected: false,
+      linkId: 1
+    })
+
+    expect(clearSpy).not.toHaveBeenCalled()
+  })
+
+  it('does not clear errors on OUTPUT connection', () => {
+    const { graph, node } = createGraphWithInput()
+    node.addOutput('out', 'CLIP')
+    useGraphNodeManager(graph)
+
+    const store = useExecutionErrorStore()
+    const clearSpy = vi.spyOn(store, 'clearSimpleNodeErrors')
+
+    graph.trigger('node:slot-links:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.OUTPUT,
+      slotIndex: 0,
+      connected: true,
+      linkId: 1
+    })
+
+    expect(clearSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('Widget change error clearing via onWidgetChanged', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('calls clearWidgetRelatedErrors on widget change', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'steps', 20, () => undefined, {
+      min: 1,
+      max: 100
+    })
+    graph.add(node)
+    useGraphNodeManager(graph)
+
+    const store = useExecutionErrorStore()
+    const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
+
+    expect(clearSpy).toHaveBeenCalledWith(
+      String(node.id),
+      'steps',
+      'steps',
+      50,
+      { min: 1, max: 100 }
+    )
+  })
+
+  it('does nothing when rootGraph is unavailable', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'steps', 20, () => undefined, {})
+    graph.add(node)
+    useGraphNodeManager(graph)
+
+    const store = useExecutionErrorStore()
+    const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
+      undefined as unknown as LGraph
+    )
+
+    node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
+
+    expect(clearSpy).not.toHaveBeenCalled()
   })
 })
