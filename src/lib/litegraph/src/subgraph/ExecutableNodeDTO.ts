@@ -266,6 +266,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     }
     visited.add(uniqueId)
 
+    // Muted nodes produce no output
+    if (this.mode === LGraphEventMode.NEVER) return
+
     // Upstreamed: Bypass nodes are bypassed using the first input with matching type
     if (this.mode === LGraphEventMode.BYPASS) {
       // Bypass nodes by finding first input with matching type

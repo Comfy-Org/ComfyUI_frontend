@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
+  LGraphEventMode,
   LGraphNode,
   ExecutableNodeDTO
 } from '@/lib/litegraph/src/litegraph'
@@ -475,5 +476,122 @@ describe.skip('ExecutableNodeDTO Scale Testing', () => {
       const dto = new ExecutableNodeDTO(node, path, new Map(), undefined)
       expect(dto.id).toBe(testCase.expectedId)
     }
+  })
+})
+
+describe('Muted node output resolution', () => {
+  it('returns undefined when node mode is NEVER', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Muted Node')
+    node.addOutput('out', 'number')
+    node.mode = LGraphEventMode.NEVER
+    graph.add(node)
+
+    const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
+    const result = dto.resolveOutput(0, 'number', new Set())
+    expect(result).toBeUndefined()
+  })
+
+  it('does not throw when inner nodes are not registered for muted subgraph', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Muted Subgraph')
+    node.addOutput('out', 'number')
+    graph.add(node)
+    node.mode = LGraphEventMode.NEVER
+    // Simulate a subgraph node that would throw if _resolveSubgraphOutput ran
+    vi.spyOn(node, 'isSubgraphNode').mockReturnValue(true)
+
+    const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
+    expect(() => dto.resolveOutput(0, 'number', new Set())).not.toThrow()
+    expect(dto.resolveOutput(0, 'number', new Set())).toBeUndefined()
+  })
+
+  it('resolveInput to a muted upstream node resolves undefined', () => {
+    const graph = new LGraph()
+
+    const upstream = new LGraphNode('Upstream')
+    upstream.addOutput('out', 'number')
+    upstream.mode = LGraphEventMode.NEVER
+    graph.add(upstream)
+
+    const downstream = new LGraphNode('Downstream')
+    downstream.addInput('in', 'number')
+    graph.add(downstream)
+
+    downstream.connect(0, upstream, 0)
+
+    const nodesByExecutionId = new Map()
+    const upstreamDto = new ExecutableNodeDTO(
+      upstream,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    const downstreamDto = new ExecutableNodeDTO(
+      downstream,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(upstreamDto.id, upstreamDto)
+    nodesByExecutionId.set(downstreamDto.id, downstreamDto)
+
+    const result = downstreamDto.resolveInput(0)
+    expect(result).toBeUndefined()
+  })
+})
+
+describe('Bypass node output resolution', () => {
+  it('bypasses through matching input when mode is BYPASS', () => {
+    const graph = new LGraph()
+
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    graph.add(source)
+
+    const bypass = new LGraphNode('Bypass')
+    bypass.addInput('in', 'number')
+    bypass.addOutput('out', 'number')
+    bypass.mode = LGraphEventMode.BYPASS
+    graph.add(bypass)
+
+    source.connect(0, bypass, 0)
+
+    const nodesByExecutionId = new Map()
+    const sourceDto = new ExecutableNodeDTO(
+      source,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    const bypassDto = new ExecutableNodeDTO(
+      bypass,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(sourceDto.id, sourceDto)
+    nodesByExecutionId.set(bypassDto.id, bypassDto)
+
+    const result = bypassDto.resolveOutput(0, 'number', new Set())
+    expect(result).toBeDefined()
+    expect(result?.node).toBe(sourceDto)
+  })
+})
+
+describe('ALWAYS mode node output resolution', () => {
+  it('resolves to itself when mode is ALWAYS', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Normal Node')
+    node.addOutput('out', 'number')
+    node.mode = LGraphEventMode.ALWAYS
+    graph.add(node)
+
+    const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
+    const result = dto.resolveOutput(0, 'number', new Set())
+    expect(result).toBeDefined()
+    expect(result?.node).toBe(dto)
+    expect(result?.origin_id).toBe(dto.id)
+    expect(result?.origin_slot).toBe(0)
   })
 })
