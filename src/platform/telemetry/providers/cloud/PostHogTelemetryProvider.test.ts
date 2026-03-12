@@ -46,6 +46,12 @@ vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
 
 vi.mock('posthog-js', () => hoisted.mockPosthog)
 
+vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
+  useSubscription: () => ({
+    subscriptionTier: { value: null }
+  })
+}))
+
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 
 function createProvider(
