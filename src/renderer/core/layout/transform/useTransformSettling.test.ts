@@ -86,6 +86,20 @@ describe('useTransformSettling', () => {
     expect(isTransforming.value).toBe(false)
   })
 
+  it('should not treat right-click as pan', async () => {
+    const { isTransforming } = useTransformSettling(element, {
+      settleDelay: 200
+    })
+
+    element.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, button: 2 })
+    )
+    element.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
+    await nextTick()
+
+    expect(isTransforming.value).toBe(false)
+  })
+
   it('should not track pointermove without pointerdown', async () => {
     const { isTransforming } = useTransformSettling(element)
 

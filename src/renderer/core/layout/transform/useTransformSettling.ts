@@ -77,13 +77,15 @@ function usePointerDrag(
   onDrag: () => void,
   eventOptions: AddEventListenerOptions
 ) {
-  const isPointerDown = ref(false)
+  /** Number of active pointers (supports multi-touch correctly). */
+  const pointerCount = ref(0)
 
   useEventListener(
     target,
     'pointerdown',
-    () => {
-      isPointerDown.value = true
+    (e: PointerEvent) => {
+      // Only primary (0) and middle (1) buttons trigger canvas pan.
+      if (e.button === 0 || e.button === 1) pointerCount.value++
     },
     eventOptions
   )
@@ -92,7 +94,7 @@ function usePointerDrag(
     target,
     'pointermove',
     () => {
-      if (isPointerDown.value) onDrag()
+      if (pointerCount.value > 0) onDrag()
     },
     eventOptions
   )
@@ -103,7 +105,7 @@ function usePointerDrag(
     window,
     'pointerup',
     () => {
-      isPointerDown.value = false
+      if (pointerCount.value > 0) pointerCount.value--
     },
     eventOptions
   )
@@ -112,7 +114,7 @@ function usePointerDrag(
     window,
     'pointercancel',
     () => {
-      isPointerDown.value = false
+      if (pointerCount.value > 0) pointerCount.value--
     },
     eventOptions
   )
