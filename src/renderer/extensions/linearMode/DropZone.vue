@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { useDropZone } from '@vueuse/core'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<{
+const {
+  onDragOver,
+  onDragDrop,
+  dropIndicator,
+  forceHovered = false
+} = defineProps<{
   onDragOver?: (e: DragEvent) => boolean
   onDragDrop?: (e: DragEvent) => Promise<boolean> | boolean
   dropIndicator?: {
@@ -13,6 +18,7 @@ const props = defineProps<{
     label?: string
     onClick?: (e: MouseEvent) => void
   }
+  forceHovered?: boolean
 }>()
 
 const dropZoneRef = ref<HTMLElement | null>(null)
@@ -23,53 +29,83 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
     // Stop propagation to prevent global handlers from creating a new node
     event?.stopPropagation()
 
-    if (props.onDragDrop && event) {
-      props.onDragDrop(event)
+    if (onDragDrop && event) {
+      onDragDrop(event)
     }
     canAcceptDrop.value = false
   },
   onOver: (_, event) => {
-    if (props.onDragOver && event) {
-      canAcceptDrop.value = props.onDragOver(event)
+    if (onDragOver && event) {
+      canAcceptDrop.value = onDragOver(event)
     }
   },
   onLeave: () => {
     canAcceptDrop.value = false
   }
 })
+
+const isHovered = computed(
+  () => forceHovered || (canAcceptDrop.value && isOverDropZone.value)
+)
+const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
 </script>
 <template>
   <div
     v-if="onDragOver && onDragDrop"
     ref="dropZoneRef"
+    data-slot="drop-zone"
     :class="
       cn(
-        'rounded-lg ring-primary-500 ring-inset',
-        canAcceptDrop && isOverDropZone && 'bg-primary-500/10 ring-4'
+        'rounded-lg transition-colors',
+        isHovered && 'bg-component-node-widget-background-hovered'
       )
     "
   >
     <slot />
-    <div
+    <component
+      :is="indicatorTag"
       v-if="dropIndicator"
+      :type="dropIndicator?.onClick ? 'button' : undefined"
+      :aria-label="dropIndicator?.onClick ? dropIndicator.label : undefined"
+      data-slot="drop-zone-indicator"
       :class="
         cn(
-          'm-3 flex h-25 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-subtle py-2',
+          'm-3 block w-[calc(100%-1.5rem)] appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
           dropIndicator?.onClick && 'cursor-pointer'
         )
       "
       @click.prevent="dropIndicator?.onClick?.($event)"
     >
-      <img
-        v-if="dropIndicator?.imageUrl"
-        class="h-23"
-        :src="dropIndicator?.imageUrl"
-      />
-      <template v-else>
-        <span v-if="dropIndicator.label" v-text="dropIndicator.label" />
-        <i v-if="dropIndicator.iconClass" :class="dropIndicator.iconClass" />
-      </template>
-    </div>
+      <div
+        :class="
+          cn(
+            'flex min-h-23 w-full flex-col items-center justify-center gap-2 rounded-[7px] p-6 text-center text-sm/tight transition-colors',
+            isHovered &&
+              !dropIndicator?.imageUrl &&
+              'border border-dashed border-component-node-foreground-secondary bg-component-node-widget-background-hovered'
+          )
+        "
+      >
+        <img
+          v-if="dropIndicator?.imageUrl"
+          class="max-h-23 rounded-md object-contain"
+          :alt="dropIndicator?.label ?? ''"
+          :src="dropIndicator?.imageUrl"
+        />
+        <template v-else>
+          <span v-if="dropIndicator.label" v-text="dropIndicator.label" />
+          <i
+            v-if="dropIndicator.iconClass"
+            :class="
+              cn(
+                'size-4 text-component-node-foreground-secondary',
+                dropIndicator.iconClass
+              )
+            "
+          />
+        </template>
+      </div>
+    </component>
   </div>
   <slot v-else />
 </template>

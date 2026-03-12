@@ -3,7 +3,7 @@ import {
   comfyPageFixture as test
 } from '../../../fixtures/ComfyPage'
 
-const ERROR_CLASS = /border-node-stroke-error/
+const ERROR_CLASS = /ring-destructive-background/
 
 test.describe('Vue Node Error', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -18,9 +18,10 @@ test.describe('Vue Node Error', () => {
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
 
     // Expect error state on missing unknown node
-    const unknownNode = comfyPage.page.locator('[data-node-id]').filter({
-      hasText: 'UNKNOWN NODE'
-    })
+    const unknownNode = comfyPage.page
+      .locator('[data-node-id]')
+      .filter({ hasText: 'UNKNOWN NODE' })
+      .getByTestId('node-inner-wrapper')
     await expect(unknownNode).toHaveClass(ERROR_CLASS)
   })
 
@@ -31,7 +32,10 @@ test.describe('Vue Node Error', () => {
     await comfyPage.workflow.loadWorkflow('nodes/execution_error')
     await comfyPage.runButton.click()
 
-    const raiseErrorNode = comfyPage.vueNodes.getNodeByTitle('Raise Error')
+    const raiseErrorNode = comfyPage.page
+      .locator('[data-node-id]')
+      .filter({ hasText: 'Raise Error' })
+      .getByTestId('node-inner-wrapper')
     await expect(raiseErrorNode).toHaveClass(ERROR_CLASS)
   })
 })

@@ -80,26 +80,30 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockInit).toHaveBeenCalledWith('phc_test_token', {
-        api_host: 'https://ph.comfy.org',
-        autocapture: false,
-        capture_pageview: false,
-        capture_pageleave: false,
-        persistence: 'localStorage+cookie'
-      })
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({
+          api_host: 'https://t.comfy.org',
+          ui_host: 'https://us.posthog.com',
+          autocapture: false,
+          capture_pageview: false,
+          capture_pageleave: false,
+          persistence: 'localStorage+cookie'
+        })
+      )
     })
 
-    it('uses custom api_host from config when provided', async () => {
+    it('enables debug mode when posthog_debug is true in config', async () => {
       window.__CONFIG__ = {
         posthog_project_token: 'phc_test_token',
-        posthog_api_host: 'https://custom.host.com'
+        posthog_debug: true
       } as typeof window.__CONFIG__
       new PostHogTelemetryProvider()
       await vi.dynamicImportSettled()
 
       expect(hoisted.mockInit).toHaveBeenCalledWith(
         'phc_test_token',
-        expect.objectContaining({ api_host: 'https://custom.host.com' })
+        expect.objectContaining({ debug: true })
       )
     })
 

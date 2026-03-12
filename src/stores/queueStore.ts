@@ -37,6 +37,7 @@ interface ResultItemInit extends ResultItem {
   mediaType: string
   format?: string
   frame_rate?: number
+  display_name?: string
 }
 
 export class ResultItemImpl {
@@ -47,6 +48,8 @@ export class ResultItemImpl {
   nodeId: NodeId
   // 'audio' | 'images' | ...
   mediaType: string
+
+  display_name?: string
 
   // VHS output specific fields
   format?: string
@@ -59,6 +62,8 @@ export class ResultItemImpl {
 
     this.nodeId = obj.nodeId
     this.mediaType = obj.mediaType
+
+    this.display_name = obj.display_name
 
     this.format = obj.format
     this.frame_rate = obj.frame_rate

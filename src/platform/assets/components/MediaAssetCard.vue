@@ -5,7 +5,7 @@
     :aria-label="
       asset
         ? $t('assetBrowser.ariaLabel.assetCard', {
-            name: asset.name,
+            name: asset.display_name || asset.name,
             type: fileKind
           })
         : $t('assetBrowser.ariaLabel.loadingAsset')
@@ -225,7 +225,7 @@ const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
 
 // Get filename without extension
 const fileName = computed(() => {
-  return getFilenameDetails(asset?.name || '').filename
+  return getFilenameDetails(asset?.display_name || asset?.name || '').filename
 })
 
 // Adapt AssetItem to legacy AssetMeta format for existing components
@@ -234,8 +234,9 @@ const adaptedAsset = computed(() => {
   return {
     id: asset.id,
     name: asset.name,
+    display_name: asset.display_name,
     kind: fileKind.value,
-    src: asset.preview_url || '',
+    src: asset.thumbnail_url || asset.preview_url || '',
     size: asset.size,
     tags: asset.tags || [],
     created_at: asset.created_at,

@@ -137,11 +137,36 @@ export interface WorkflowImportMetadata {
   /**
    * The source of the workflow open/import action
    */
-  open_source?: 'file_button' | 'file_drop' | 'template' | 'unknown'
+  open_source?:
+    | 'file_button'
+    | 'file_drop'
+    | 'template'
+    | 'shared_url'
+    | 'unknown'
 }
 
 export interface EnterLinearMetadata {
   source?: string
+}
+
+export interface WorkflowSavedMetadata {
+  is_app: boolean
+  is_new: boolean
+}
+
+export interface DefaultViewSetMetadata {
+  default_view: 'app' | 'graph'
+}
+
+type ShareFlowStep =
+  | 'dialog_opened'
+  | 'save_prompted'
+  | 'link_created'
+  | 'link_copied'
+
+export interface ShareFlowMetadata {
+  step: ShareFlowStep
+  source?: 'app_mode' | 'graph_mode'
 }
 
 /**
@@ -361,7 +386,10 @@ export interface TelemetryProvider {
   // Workflow management events
   trackWorkflowImported?(metadata: WorkflowImportMetadata): void
   trackWorkflowOpened?(metadata: WorkflowImportMetadata): void
+  trackWorkflowSaved?(metadata: WorkflowSavedMetadata): void
+  trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
+  trackShareFlow?(metadata: ShareFlowMetadata): void
 
   // Page visibility events
   trackPageVisibilityChanged?(metadata: PageVisibilityMetadata): void
@@ -447,7 +475,8 @@ export const TelemetryEvents = {
   // Workflow Management
   WORKFLOW_IMPORTED: 'app:workflow_imported',
   WORKFLOW_OPENED: 'app:workflow_opened',
-  ENTER_LINEAR_MODE: 'app:toggle_linear_mode',
+  ENTER_LINEAR_MODE: 'app:app_mode_opened',
+  SHARE_FLOW: 'app:share_flow',
 
   // Page Visibility
   PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
@@ -472,6 +501,8 @@ export const TelemetryEvents = {
 
   // Workflow Creation
   WORKFLOW_CREATED: 'app:workflow_created',
+  WORKFLOW_SAVED: 'app:workflow_saved',
+  DEFAULT_VIEW_SET: 'app:default_view_set',
 
   // Execution Lifecycle
   EXECUTION_START: 'execution_start',
@@ -521,4 +552,7 @@ export type TelemetryEventProperties =
   | HelpCenterClosedMetadata
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
+  | ShareFlowMetadata
+  | WorkflowSavedMetadata
+  | DefaultViewSetMetadata
   | SubscriptionMetadata

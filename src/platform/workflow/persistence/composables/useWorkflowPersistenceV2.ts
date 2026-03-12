@@ -112,8 +112,7 @@ export function useWorkflowPersistenceV2() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('toastMessages.failedToSaveDraft'),
-        life: 3000
+        detail: t('toastMessages.failedToSaveDraft')
       })
       return
     }
@@ -133,19 +132,28 @@ export function useWorkflowPersistenceV2() {
   const debouncedPersist = debounce(persistCurrentWorkflow, PERSIST_DEBOUNCE_MS)
 
   const loadPreviousWorkflowFromStorage = async () => {
-    // 1. Try session pointer (for tab restoration)
     const sessionPath = tabState.getActivePath()
+
+    // 1. Try draft for session path
     if (
       sessionPath &&
       (await draftStore.loadPersistedWorkflow({
         workflowName: null,
         preferredPath: sessionPath
       }))
-    ) {
+    )
       return true
+
+    // 2. Try saved workflow by path (draft may not exist for saved+unmodified workflows)
+    if (sessionPath) {
+      const saved = workflowStore.getWorkflowByPath(sessionPath)
+      if (saved) {
+        await useWorkflowService().openWorkflow(saved)
+        return true
+      }
     }
 
-    // 2. Fall back to most recent draft
+    // 3. Fall back to most recent draft
     return await draftStore.loadPersistedWorkflow({
       workflowName: null,
       fallbackToLatestDraft: true
@@ -243,7 +251,7 @@ export function useWorkflowPersistenceV2() {
     }
   })
 
-  const restoreWorkflowTabsState = () => {
+  const restoreWorkflowTabsState = async () => {
     if (!workflowPersistenceEnabled.value) {
       tabStateRestored = true
       return
@@ -255,10 +263,11 @@ export function useWorkflowPersistenceV2() {
     const storedWorkflows = storedTabState?.paths ?? []
     const storedActiveIndex = storedTabState?.activeIndex ?? -1
 
-    tabStateRestored = true
-
     const isRestorable = storedWorkflows.length > 0 && storedActiveIndex >= 0
-    if (!isRestorable) return
+    if (!isRestorable) {
+      tabStateRestored = true
+      return
+    }
 
     storedWorkflows.forEach((path: string) => {
       if (workflowStore.getWorkflowByPath(path)) return
@@ -281,6 +290,17 @@ export function useWorkflowPersistenceV2() {
       left: storedWorkflows.slice(0, storedActiveIndex),
       right: storedWorkflows.slice(storedActiveIndex)
     })
+
+    tabStateRestored = true
+
+    // Activate the correct workflow at storedActiveIndex
+    const activePath = storedWorkflows[storedActiveIndex]
+    const workflow = activePath
+      ? workflowStore.getWorkflowByPath(activePath)
+      : null
+    if (workflow) {
+      await useWorkflowService().openWorkflow(workflow)
+    }
   }
 
   return {
