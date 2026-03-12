@@ -1732,6 +1732,9 @@ export class ComfyApp {
         imageNodes.forEach((imageNode, index) => {
           imageNode.connect(0, batchImagesNode, index)
         })
+
+        this.positionBatchNodes(imageNodes, batchImagesNode)
+        this.canvas.selectItems([...imageNodes, batchImagesNode])
       } else {
         this.canvas.selectItems(imageNodes)
       }

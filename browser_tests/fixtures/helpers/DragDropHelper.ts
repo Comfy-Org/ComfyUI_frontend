@@ -4,6 +4,17 @@ import type { Page } from '@playwright/test'
 
 import type { Position } from '../types'
 
+function getFileType(fileName: string): string {
+  if (fileName.endsWith('.png')) return 'image/png'
+  if (fileName.endsWith('.svg')) return 'image/svg+xml'
+  if (fileName.endsWith('.webp')) return 'image/webp'
+  if (fileName.endsWith('.webm')) return 'video/webm'
+  if (fileName.endsWith('.json')) return 'application/json'
+  if (fileName.endsWith('.glb')) return 'model/gltf-binary'
+  if (fileName.endsWith('.avif')) return 'image/avif'
+  return 'application/octet-stream'
+}
+
 export class DragDropHelper {
   constructor(
     private readonly page: Page,
@@ -47,17 +58,6 @@ export class DragDropHelper {
     if (fileName) {
       const filePath = this.assetPath(fileName)
       const buffer = readFileSync(filePath)
-
-      const getFileType = (fileName: string) => {
-        if (fileName.endsWith('.png')) return 'image/png'
-        if (fileName.endsWith('.svg')) return 'image/svg+xml'
-        if (fileName.endsWith('.webp')) return 'image/webp'
-        if (fileName.endsWith('.webm')) return 'video/webm'
-        if (fileName.endsWith('.json')) return 'application/json'
-        if (fileName.endsWith('.glb')) return 'model/gltf-binary'
-        if (fileName.endsWith('.avif')) return 'image/avif'
-        return 'application/octet-stream'
-      }
 
       evaluateParams.fileName = fileName
       evaluateParams.fileType = getFileType(fileName)
@@ -168,17 +168,6 @@ export class DragDropHelper {
     const files = fileNames.map((fileName) => {
       const filePath = this.assetPath(fileName)
       const buffer = readFileSync(filePath)
-
-      const getFileType = (name: string) => {
-        if (name.endsWith('.png')) return 'image/png'
-        if (name.endsWith('.svg')) return 'image/svg+xml'
-        if (name.endsWith('.webp')) return 'image/webp'
-        if (name.endsWith('.webm')) return 'video/webm'
-        if (name.endsWith('.json')) return 'application/json'
-        if (name.endsWith('.glb')) return 'model/gltf-binary'
-        if (name.endsWith('.avif')) return 'image/avif'
-        return 'application/octet-stream'
-      }
 
       return {
         fileName,
