@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { reactive, computed, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
@@ -74,6 +75,12 @@ export const useAppModeStore = defineStore('appMode', () => {
       }
     },
     { immediate: true }
+  )
+
+  useEventListener(
+    () => app.rootGraph?.events,
+    'configured',
+    resetSelectedToWorkflow
   )
 
   watch(
