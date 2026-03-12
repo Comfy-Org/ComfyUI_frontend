@@ -55,11 +55,11 @@ import { useI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
-  STANDARD_EXCLUDED_PROPS,
+  GALLERIA_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-interface GalleryImage {
+export interface GalleryImage {
   itemImageSrc?: string
   thumbnailImageSrc?: string
   src?: string
@@ -79,7 +79,7 @@ const activeIndex = ref(0)
 const { t } = useI18n()
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)
+  filterWidgetProps(props.widget.options, GALLERIA_EXCLUDED_PROPS)
 )
 
 const galleryImages = computed(() => {

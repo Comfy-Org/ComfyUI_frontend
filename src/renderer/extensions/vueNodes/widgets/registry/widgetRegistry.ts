@@ -33,8 +33,8 @@ const WidgetChart = defineAsyncComponent(
 const WidgetImageCompare = defineAsyncComponent(
   () => import('../components/WidgetImageCompare.vue')
 )
-const DisplayCarousel = defineAsyncComponent(
-  () => import('../components/DisplayCarousel.vue')
+const WidgetGalleria = defineAsyncComponent(
+  () => import('../components/WidgetGalleria.vue')
 )
 const WidgetMarkdown = defineAsyncComponent(
   () => import('../components/WidgetMarkdown.vue')
@@ -138,7 +138,7 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   ],
   [
     'galleria',
-    { component: DisplayCarousel, aliases: ['GALLERIA'], essential: false }
+    { component: WidgetGalleria, aliases: ['GALLERIA'], essential: false }
   ],
   [
     'markdown',
