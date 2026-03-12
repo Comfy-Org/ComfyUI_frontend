@@ -489,7 +489,10 @@
     "black": "Black",
     "custom": "Custom",
     "hex": "Hex",
-    "rgba": "RGBA"
+    "rgba": "RGBA",
+    "saturationBrightness": "Color saturation and brightness",
+    "hue": "Hue",
+    "alpha": "Alpha"
   },
   "contextMenu": {
     "Inputs": "Inputs",

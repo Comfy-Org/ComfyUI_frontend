@@ -8,13 +8,7 @@ import {
 import { computed, ref, watch } from 'vue'
 
 import type { HSVA } from '@/utils/colorUtil'
-import {
-  hexToHsva,
-  hexToRgb,
-  hsbToRgb,
-  hsvaToHex,
-  rgbToHex
-} from '@/utils/colorUtil'
+import { hexToHsva, hsbToRgb, hsvaToHex, rgbToHex } from '@/utils/colorUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import ColorPickerPanel from './ColorPickerPanel.vue'
@@ -28,14 +22,11 @@ const modelValue = defineModel<string>({ default: '#000000' })
 const hsva = ref<HSVA>(hexToHsva(modelValue.value || '#000000'))
 const displayMode = ref<'hex' | 'rgba'>('hex')
 
-const isInternalUpdate = ref(false)
-
 watch(modelValue, (newVal) => {
-  if (isInternalUpdate.value) {
-    isInternalUpdate.value = false
-    return
+  const current = hsvaToHex(hsva.value)
+  if (newVal !== current) {
+    hsva.value = hexToHsva(newVal || '#000000')
   }
-  hsva.value = hexToHsva(newVal || '#000000')
 })
 
 watch(
@@ -43,20 +34,18 @@ watch(
   (newHsva) => {
     const hex = hsvaToHex(newHsva)
     if (hex !== modelValue.value) {
-      isInternalUpdate.value = true
       modelValue.value = hex
     }
   },
   { deep: true }
 )
 
+const baseRgb = computed(() =>
+  hsbToRgb({ h: hsva.value.h, s: hsva.value.s, b: hsva.value.v })
+)
+
 const previewColor = computed(() => {
-  const rgb = hsbToRgb({
-    h: hsva.value.h,
-    s: hsva.value.s,
-    b: hsva.value.v
-  })
-  const hex = rgbToHex(rgb)
+  const hex = rgbToHex(baseRgb.value)
   const a = hsva.value.a / 100
   if (a < 1) {
     const alphaHex = Math.round(a * 255)
@@ -67,17 +56,7 @@ const previewColor = computed(() => {
   return hex
 })
 
-const displayRgb = computed(() =>
-  hexToRgb(
-    rgbToHex(hsbToRgb({ h: hsva.value.h, s: hsva.value.s, b: hsva.value.v }))
-  )
-)
-
-const displayHex = computed(() =>
-  rgbToHex(
-    hsbToRgb({ h: hsva.value.h, s: hsva.value.s, b: hsva.value.v })
-  ).toLowerCase()
-)
+const displayHex = computed(() => rgbToHex(baseRgb.value).toLowerCase())
 
 const isOpen = ref(false)
 </script>
@@ -119,9 +98,9 @@ const isOpen = ref(false)
           </template>
           <template v-else>
             <div class="flex gap-2">
-              <span>{{ displayRgb.r }}</span>
-              <span>{{ displayRgb.g }}</span>
-              <span>{{ displayRgb.b }}</span>
+              <span>{{ baseRgb.r }}</span>
+              <span>{{ baseRgb.g }}</span>
+              <span>{{ baseRgb.b }}</span>
             </div>
           </template>
           <span>{{ hsva.a }}%</span>
