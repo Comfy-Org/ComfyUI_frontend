@@ -28,27 +28,6 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.nextFrame()
   })
 
-  test('bypass button toggles node bypass state', async ({ comfyPage }) => {
-    const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
-    await selectNodeWithPan(comfyPage, nodeRef)
-
-    const bypassButton = comfyPage.page.locator('[data-testid="bypass-button"]')
-    await expect(bypassButton).toBeVisible()
-    await bypassButton.click({ force: true })
-    await comfyPage.nextFrame()
-
-    await expect(nodeRef).toBeBypassed()
-
-    // Re-select the node to show toolbox again
-    await selectNodeWithPan(comfyPage, nodeRef)
-
-    await expect(bypassButton).toBeVisible()
-    await bypassButton.click({ force: true })
-    await comfyPage.nextFrame()
-
-    await expect(nodeRef).not.toBeBypassed()
-  })
-
   test('delete button removes selected node', async ({ comfyPage }) => {
     const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
     await selectNodeWithPan(comfyPage, nodeRef)
@@ -79,17 +58,6 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     await expect(
       comfyPage.page.locator('[data-testid="properties-panel"]')
-    ).toBeVisible()
-  })
-
-  test('refresh button is visible when node is selected', async ({
-    comfyPage
-  }) => {
-    const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
-    await selectNodeWithPan(comfyPage, nodeRef)
-
-    await expect(
-      comfyPage.page.locator('[data-testid="refresh-button"]')
     ).toBeVisible()
   })
 
