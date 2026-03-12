@@ -93,6 +93,7 @@
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
     "copyToClipboard": "Copy to Clipboard",
+    "copySystemInfo": "Copy System Info",
     "copyAll": "Copy All",
     "openNewIssue": "Open New Issue",
     "showReport": "Show Report",
@@ -339,7 +340,8 @@
       "conflicting": "Conflicting",
       "inWorkflowSection": "IN WORKFLOW",
       "allInWorkflow": "All in: {workflowName}",
-      "missingNodes": "Missing Nodes"
+      "missingNodes": "Missing Nodes",
+      "unresolvedNodes": "Unresolved Nodes"
     },
     "infoPanelEmpty": "Click an item to see the info",
     "applyChanges": "Apply Changes",
@@ -404,6 +406,10 @@
     "noDescription": "No description available",
     "installSelected": "Install Selected",
     "installAllMissingNodes": "Install All",
+    "unresolvedNodes": {
+      "title": "Unresolved Missing Nodes",
+      "message": "The following nodes are not installed and could not be found in the registry."
+    },
     "allMissingNodesInstalled": "All missing nodes have been successfully installed",
     "packsSelected": "packs selected",
     "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
@@ -1046,6 +1052,8 @@
     "logoProviderSeparator": " & "
   },
   "graphCanvasMenu": {
+    "canvasMode": "Canvas Mode",
+    "canvasToolbar": "Canvas Toolbar",
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",
     "resetView": "Reset View",
@@ -1949,6 +1957,7 @@
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
     "dropFileError": "Unable to process dropped item: {error}",
+    "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
     "interrupted": "Execution has been interrupted",
     "pendingTasksDeleted": "Pending tasks deleted",
     "nothingToGroup": "Nothing to group",
@@ -3181,6 +3190,7 @@
     "deleteAllAssets": "Delete all assets from this run",
     "hasCreditCost": "Requires additional credits",
     "viewGraph": "View node graph",
+    "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
@@ -3379,6 +3389,33 @@
       "viewInManager": "View in Manager",
       "collapse": "Collapse",
       "expand": "Expand"
+    },
+    "missingModels": {
+      "urlPlaceholder": "Paste Model URL (Civitai or Hugging Face)",
+      "or": "OR",
+      "useFromLibrary": "Use from Library",
+      "usingFromLibrary": "Using from Library",
+      "unsupportedUrl": "Only Civitai and Hugging Face URLs are supported.",
+      "metadataFetchFailed": "Failed to retrieve metadata. Please check the link and try again.",
+      "import": "Import",
+      "importing": "Importing...",
+      "imported": "Imported",
+      "importFailed": "Import failed",
+      "typeMismatch": "This model seems to be a \"{detectedType}\". Are you sure?",
+      "importAnyway": "Import Anyway",
+      "alreadyExistsInCategory": "This model already exists in \"{category}\"",
+      "customNodeDownloadDisabled": "Cloud environment does not support model imports for custom nodes in this section. Please use standard loader nodes or substitute with a model from the library below.",
+      "importNotSupported": "Import Not Supported",
+      "copyModelName": "Copy model name",
+      "confirmSelection": "Confirm selection",
+      "locateNode": "Locate node on canvas",
+      "cancelSelection": "Cancel selection",
+      "clearUrl": "Clear URL",
+      "expandNodes": "Show referencing nodes",
+      "collapseNodes": "Hide referencing nodes",
+      "unknownCategory": "Unknown",
+      "missingModelsTitle": "Missing Models",
+      "assetLoadTimeout": "Model detection timed out. Try reloading the workflow."
     }
   },
   "errorOverlay": {

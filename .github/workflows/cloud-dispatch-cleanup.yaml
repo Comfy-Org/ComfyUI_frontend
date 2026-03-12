@@ -1,0 +1,39 @@
+---
+# Dispatches a frontend-preview-cleanup event to the cloud repo when a
+# frontend PR with a preview label is closed or has its preview label
+# removed. The cloud repo handles the actual environment teardown.
+#
+# This is fire-and-forget — it does NOT wait for the cloud workflow to
+# complete. Status is visible in the cloud repo's Actions tab.
+
+name: Cloud Frontend Preview Cleanup Dispatch
+
+on:
+  pull_request:
+    types: [closed, unlabeled]
+
+permissions: {}
+
+jobs:
+  dispatch:
+    # Only dispatch when:
+    # - PR closed AND had a preview label
+    # - Preview label specifically removed
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      ((github.event.action == 'closed' &&
+        (contains(github.event.pull_request.labels.*.name, 'preview') ||
+         contains(github.event.pull_request.labels.*.name, 'preview-cpu') ||
+         contains(github.event.pull_request.labels.*.name, 'preview-gpu'))) ||
+       (github.event.action == 'unlabeled' &&
+        contains(fromJSON('["preview","preview-cpu","preview-gpu"]'), github.event.label.name)))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch to cloud repo
+        uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4.0.1
+        with:
+          token: ${{ secrets.CLOUD_DISPATCH_TOKEN }}
+          repository: Comfy-Org/cloud
+          event-type: frontend-preview-cleanup
+          client-payload: >-
+            {"pr_number": "${{ github.event.pull_request.number }}"}

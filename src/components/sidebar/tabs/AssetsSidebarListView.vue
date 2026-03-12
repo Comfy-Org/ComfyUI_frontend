@@ -18,6 +18,8 @@
       class="flex-1"
       :items="assetItems"
       :grid-style="listGridStyle"
+      :max-columns="1"
+      :default-item-height="48"
       @approach-end="emit('approach-end')"
     >
       <template #item="{ item }">

@@ -237,7 +237,7 @@ const adaptedAsset = computed(() => {
     name: asset.name,
     display_name: asset.display_name,
     kind: fileKind.value,
-    src: asset.preview_url || '',
+    src: asset.thumbnail_url || asset.preview_url || '',
     size: asset.size,
     tags: asset.tags || [],
     created_at: asset.created_at,
