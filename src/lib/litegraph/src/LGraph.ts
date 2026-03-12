@@ -2123,7 +2123,7 @@ export class LGraph
     // disconnect/reconnect cycles on widget inputs that can shift slot indices.
     const seenLinks = new Set<string>()
     const dedupedNewLinks = newLinks.filter((link) => {
-      const key = `${link.oid}:${link.oslot}:${link.tid}:${link.tslot}`
+      const key = `${link.oid}\0${link.oslot}\0${link.tid}\0${link.tslot}`
       if (seenLinks.has(key)) return false
       seenLinks.add(key)
       return true
