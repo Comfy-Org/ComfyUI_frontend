@@ -11,11 +11,11 @@ import QuickLRU from '@alloc/quick-lru'
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { resultItemType } from '@/schemas/apiSchema'
-import type { ResultItem, TaskOutput } from '@/schemas/apiSchema'
+import type { TaskOutput } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { ResultItemImpl } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
+import { parseTaskOutput } from '@/stores/resultItemParsing'
 
 const MAX_TASK_CACHE_SIZE = 50
 const MAX_JOB_DETAIL_CACHE_SIZE = 50
@@ -79,65 +79,7 @@ export async function getOutputsForTask(
 
 function getPreviewableOutputs(outputs?: TaskOutput): ResultItemImpl[] {
   if (!outputs) return []
-  const resultItems = Object.entries(outputs).flatMap(([nodeId, nodeOutputs]) =>
-    Object.entries(nodeOutputs)
-      .filter(([mediaType, _]) => mediaType !== 'animated')
-      .flatMap(([mediaType, items]) => {
-        if (!Array.isArray(items)) {
-          return []
-        }
-
-        return items.filter(isResultItemLike).map(
-          (item) =>
-            new ResultItemImpl({
-              ...item,
-              nodeId,
-              mediaType
-            })
-        )
-      })
-  )
-
-  return ResultItemImpl.filterPreviewable(resultItems)
-}
-
-function isResultItemLike(item: unknown): item is ResultItem {
-  if (!item || typeof item !== 'object' || Array.isArray(item)) {
-    return false
-  }
-
-  const candidate = item as Record<string, unknown>
-
-  if (
-    candidate.filename !== undefined &&
-    typeof candidate.filename !== 'string'
-  ) {
-    return false
-  }
-
-  if (
-    candidate.subfolder !== undefined &&
-    typeof candidate.subfolder !== 'string'
-  ) {
-    return false
-  }
-
-  if (
-    candidate.type !== undefined &&
-    !resultItemType.safeParse(candidate.type).success
-  ) {
-    return false
-  }
-
-  if (
-    candidate.filename === undefined &&
-    candidate.subfolder === undefined &&
-    candidate.type === undefined
-  ) {
-    return false
-  }
-
-  return true
+  return ResultItemImpl.filterPreviewable(parseTaskOutput(outputs))
 }
 
 export function getPreviewableOutputsFromJobDetail(

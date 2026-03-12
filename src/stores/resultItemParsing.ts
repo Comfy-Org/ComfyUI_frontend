@@ -1,0 +1,52 @@
+import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
+import { resultItemType } from '@/schemas/apiSchema'
+import { ResultItemImpl } from '@/stores/queueStore'
+
+const METADATA_KEYS = new Set(['animated', 'text'])
+
+/**
+ * Validates that an unknown value is a well-formed ResultItem with required
+ * fields for constructing a previewable output.
+ *
+ * Stricter than `zResultItem.safeParse()` because the Zod schema marks
+ * `filename` and `subfolder` as optional (matching the wire format), but
+ * a ResultItemImpl needs both to construct a valid URL.
+ */
+function isResultItem(item: unknown): item is ResultItem {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return false
+
+  const candidate = item as Record<string, unknown>
+
+  if (typeof candidate.filename !== 'string') return false
+  if (typeof candidate.subfolder !== 'string') return false
+
+  if (
+    candidate.type !== undefined &&
+    !resultItemType.safeParse(candidate.type).success
+  ) {
+    return false
+  }
+
+  return true
+}
+
+export function parseNodeOutput(
+  nodeId: string | number,
+  nodeOutput: NodeExecutionOutput
+): ResultItemImpl[] {
+  return Object.entries(nodeOutput)
+    .filter(([key, value]) => !METADATA_KEYS.has(key) && Array.isArray(value))
+    .flatMap(([mediaType, items]) =>
+      (items as unknown[])
+        .filter(isResultItem)
+        .map((item) => new ResultItemImpl({ ...item, mediaType, nodeId }))
+    )
+}
+
+export function parseTaskOutput(
+  taskOutput: Record<string, NodeExecutionOutput>
+): ResultItemImpl[] {
+  return Object.entries(taskOutput).flatMap(([nodeId, nodeOutput]) =>
+    parseNodeOutput(nodeId, nodeOutput)
+  )
+}
