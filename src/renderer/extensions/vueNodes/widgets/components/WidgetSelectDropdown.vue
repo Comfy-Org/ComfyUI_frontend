@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
-import { t } from '@/i18n'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { uploadMediaBatch } from '@/platform/assets/services/uploadService'
@@ -43,15 +42,7 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-const {
-  widget,
-  nodeType,
-  assetKind,
-  allowUpload = false,
-  uploadFolder,
-  isAssetMode = false,
-  defaultLayoutMode = 'grid'
-} = defineProps<{
+interface Props {
   widget: SimplifiedWidget<string | undefined>
   nodeType?: string
   assetKind?: AssetKind
@@ -60,7 +51,18 @@ const {
   uploadSubfolder?: string
   isAssetMode?: boolean
   defaultLayoutMode?: LayoutMode
-}>()
+}
+
+const {
+  widget,
+  nodeType,
+  assetKind,
+  allowUpload = false,
+  uploadFolder,
+  uploadSubfolder,
+  isAssetMode = false,
+  defaultLayoutMode = 'grid'
+} = defineProps<Props>()
 
 provide(
   AssetKindKey,
@@ -68,8 +70,9 @@ provide(
 )
 
 const modelValue = defineModel<string | undefined>({
-  default() {
-    return widget.options?.values?.[0] || ''
+  default(props: Props) {
+    const values = props.widget.options?.values
+    return (Array.isArray(values) ? values[0] : undefined) ?? ''
   }
 })
 
@@ -238,9 +241,6 @@ const baseModelFilteredAssetItems = computed<FormDropdownItem[]>(() =>
 
 const allItems = computed<FormDropdownItem[]>(() => {
   if (isAssetMode && assetData) {
-    if (missingValueItem.value) {
-      return [missingValueItem.value, ...baseModelFilteredAssetItems.value]
-    }
     return baseModelFilteredAssetItems.value
   }
   return [
@@ -271,7 +271,7 @@ const dropdownItems = computed<FormDropdownItem[]>(() => {
  * missing items so users can see their selected value even if not in library.
  */
 const displayItems = computed<FormDropdownItem[]>(() => {
-  if (props.isAssetMode && assetData && missingValueItem.value) {
+  if (isAssetMode && assetData && missingValueItem.value) {
     return [missingValueItem.value, ...baseModelFilteredAssetItems.value]
   }
   return dropdownItems.value
@@ -368,7 +368,7 @@ const uploadFiles = async (files: File[]): Promise<string[]> => {
 
   const results = await uploadMediaBatch(
     files.map((file) => ({ source: file })),
-    { type: folder }
+    { type: folder, subfolder: uploadSubfolder }
   )
 
   // Report failed uploads
