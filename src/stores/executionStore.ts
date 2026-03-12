@@ -261,10 +261,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobId(activeJobId.value)
 
     // Auto-focus the first job, or if the current focused job is no longer running
-    if (
-      !focusedJobId.value ||
-      !queuedJobs.value[focusedJobId.value]
-    ) {
+    if (!focusedJobId.value || !queuedJobs.value[focusedJobId.value]) {
       focusedJobId.value = activeJobId.value
     }
 
