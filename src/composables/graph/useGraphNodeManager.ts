@@ -324,7 +324,8 @@ function safeWidgetMapper(
             }
           : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
         slotMetadata: slotInfo,
-        slotName: name !== widget.name ? widget.name : undefined
+        slotName: name !== widget.name ? widget.name : undefined,
+        tooltip: widget.tooltip
       }
     } catch (error) {
       return {

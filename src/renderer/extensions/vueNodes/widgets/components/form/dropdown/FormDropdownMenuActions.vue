@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { MaybeRefOrGetter } from 'vue'
-
 import Popover from 'primevue/popover'
 import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -19,12 +17,7 @@ import type { LayoutMode, SortOption } from './types'
 const { t } = useI18n()
 
 defineProps<{
-  searcher?: (
-    query: string,
-    onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<void>
   sortOptions: SortOption[]
-  updateKey?: MaybeRefOrGetter<unknown>
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
@@ -108,8 +101,6 @@ function toggleBaseModelSelection(item: FilterOption) {
   <div class="text-secondary flex gap-2 px-4">
     <FormSearchInput
       v-model="searchQuery"
-      :searcher
-      :update-key
       :class="
         cn(
           actionButtonStyle,
