@@ -1,4 +1,3 @@
-import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
@@ -257,10 +256,7 @@ export class TaskItemImpl {
             }
           }
         : {})
-    // Remove animated outputs from the outputs object
-    this.outputs = _.mapValues(effectiveOutputs, (nodeOutputs) =>
-      _.omit(nodeOutputs, 'animated')
-    )
+    this.outputs = effectiveOutputs
     this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
   }
 
