@@ -75,9 +75,7 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
     ).toHaveCount(2)
   })
 
-  test('Expand all / Collapse all toggles sections', async ({
-    comfyPage
-  }) => {
+  test('Expand all / Collapse all toggles sections', async ({ comfyPage }) => {
     await comfyPage.actionbar.propertiesButton.click()
     const { propertiesPanel } = comfyPage.menu
 
