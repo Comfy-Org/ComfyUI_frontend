@@ -98,4 +98,25 @@ describe('Preview3d', () => {
     wrapper2.unmount()
     expect(cleanup).toHaveBeenCalledOnce()
   })
+
+  it('reinitializes when modelUrl changes on existing instance', async () => {
+    const wrapper = await mountPreview3d(
+      'http://localhost/view?filename=model-a.glb'
+    )
+    expect(initializeStandaloneViewer).toHaveBeenCalledOnce()
+
+    vi.clearAllMocks()
+
+    await wrapper.setProps({
+      modelUrl: 'http://localhost/view?filename=model-b.glb'
+    })
+    await nextTick()
+    await nextTick()
+
+    expect(initializeStandaloneViewer).toHaveBeenCalledOnce()
+    expect(initializeStandaloneViewer).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      'http://localhost/view?filename=model-b.glb'
+    )
+  })
 })
