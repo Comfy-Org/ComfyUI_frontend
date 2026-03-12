@@ -50,7 +50,7 @@ export class QueueHelper {
         outputs: {},
         status: {
           status_str: job.status === 'success' ? 'success' : 'error',
-          completed: job.status === 'success'
+          completed: true
         }
       }
     }
