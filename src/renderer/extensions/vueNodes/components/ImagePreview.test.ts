@@ -342,8 +342,8 @@ describe('ImagePreview', () => {
           imageUrls: [sameUrl, sameUrl, sameUrl]
         })
 
-        // Simulate initial image load
-        await wrapper.find('img').trigger('load')
+        // Simulate useImage reporting image as ready
+        mockImageIsReady.value = true
         await nextTick()
         expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
 

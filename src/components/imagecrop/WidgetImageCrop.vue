@@ -28,7 +28,7 @@
         :src="imageUrl"
         :alt="$t('imageCrop.cropPreviewAlt')"
         draggable="false"
-        class="block size-full object-contain select-none brightness-50"
+        class="block size-full object-contain brightness-50 select-none"
         @dragstart.prevent
       />
 
