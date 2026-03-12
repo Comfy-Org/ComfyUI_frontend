@@ -106,7 +106,6 @@ onMounted(() => {
           tagName: target.tagName
         })
 
-        // eslint-disable-next-line no-undef
         if (__DISTRIBUTION__ === 'cloud') {
           captureException(new Error(`Resource load failed: ${url}`), {
             tags: {
