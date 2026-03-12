@@ -55,7 +55,7 @@ test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
     await expect(essentialsTab).toBeVisible()
   })
 
-  test('Clicking essentials tab shows essentials panel', async ({
+  test('Clicking essentials tab shows essential node cards', async ({
     comfyPage
   }) => {
     const tabButton = comfyPage.page.locator('.node-library-tab-button')
@@ -68,21 +68,6 @@ test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
 
     const essentialCards = comfyPage.page.locator('[data-node-name]')
     await expect(essentialCards.first()).toBeVisible()
-  })
-
-  test('Essential node cards are displayed', async ({ comfyPage }) => {
-    const tabButton = comfyPage.page.locator('.node-library-tab-button')
-    await tabButton.click()
-
-    const essentialsTab = comfyPage.page.getByRole('tab', {
-      name: /essentials/i
-    })
-    await essentialsTab.click()
-
-    const essentialCards = comfyPage.page.locator('[data-node-name]')
-    await expect(async () => {
-      expect(await essentialCards.count()).toBeGreaterThan(0)
-    }).toPass()
   })
 
   test('Essential node cards have node names', async ({ comfyPage }) => {
