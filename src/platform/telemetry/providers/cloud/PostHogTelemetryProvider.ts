@@ -7,6 +7,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
   AuthMetadata,
+  DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
   ExecutionContext,
@@ -34,7 +35,8 @@ import type {
   TemplateMetadata,
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
-  WorkflowImportMetadata
+  WorkflowImportMetadata,
+  WorkflowSavedMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { getExecutionContext } from '../../utils/getExecutionContext'
@@ -101,12 +103,15 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             this.posthog = posthogModule.default
             this.posthog!.init(apiKey, {
               api_host:
-                window.__CONFIG__?.posthog_api_host || 'https://ph.comfy.org',
+                window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
+              ui_host: 'https://us.posthog.com',
               autocapture: false,
               capture_pageview: false,
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
-              debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true'
+              debug:
+                window.__CONFIG__?.posthog_debug ??
+                import.meta.env.VITE_POSTHOG_DEBUG === 'true'
             })
             this.isInitialized = true
             this.flushEventQueue()
@@ -342,6 +347,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
+  }
+
+  trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_SAVED, metadata)
+  }
+
+  trackDefaultViewSet(metadata: DefaultViewSetMetadata): void {
+    this.trackEvent(TelemetryEvents.DEFAULT_VIEW_SET, metadata)
   }
 
   trackEnterLinear(metadata: EnterLinearMetadata): void {
