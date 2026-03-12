@@ -165,23 +165,12 @@ export class DragDropHelper {
       options
 
     const files = fileNames.map((fileName) => {
-      const filePath = this.assetPath(fileName)
+      const filePath = assetPath(fileName)
       const buffer = readFileSync(filePath)
-
-      const getFileType = (name: string) => {
-        if (name.endsWith('.png')) return 'image/png'
-        if (name.endsWith('.svg')) return 'image/svg+xml'
-        if (name.endsWith('.webp')) return 'image/webp'
-        if (name.endsWith('.webm')) return 'video/webm'
-        if (name.endsWith('.json')) return 'application/json'
-        if (name.endsWith('.glb')) return 'model/gltf-binary'
-        if (name.endsWith('.avif')) return 'image/avif'
-        return 'application/octet-stream'
-      }
 
       return {
         fileName,
-        fileType: getFileType(fileName),
+        fileType: getMimeType(fileName),
         buffer: [...new Uint8Array(buffer)]
       }
     })
@@ -260,7 +249,7 @@ export class DragDropHelper {
       await uploadResponsePromise
     }
 
-    await this.nextFrame()
+    await nextFrame(this.page)
   }
 
   async dragAndDropFile(
