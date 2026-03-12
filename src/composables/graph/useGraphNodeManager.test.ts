@@ -245,26 +245,70 @@ describe('Subgraph output slot label reactivity', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('updates output slot label when node:slot-label:changed is triggered', async () => {
+  it('updates output slot labels when node:slot-label:changed is triggered', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.addOutput('original_name', 'STRING')
+    node.addOutput('other_name', 'STRING')
     graph.add(node)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(node.id))
+    const nodeId = String(node.id)
+    const nodeData = vueNodeData.get(nodeId)
+    if (!nodeData?.outputs) throw new Error('Expected output data to exist')
 
-    expect(nodeData?.outputs?.[0].label).toBeUndefined()
+    expect(nodeData.outputs[0].label).toBeUndefined()
+    expect(nodeData.outputs[1].label).toBeUndefined()
 
     // Simulate what SubgraphNode does: set the label, then fire the trigger
     node.outputs[0].label = 'custom_label'
-    graph.trigger('node:slot-label:changed', { nodeId: node.id })
+    graph.trigger('node:slot-label:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.OUTPUT
+    })
 
     await nextTick()
 
-    // Re-read after trigger — the outputs array was replaced
-    const updatedData = vueNodeData.get(String(node.id))
-    expect(updatedData?.outputs?.[0].label).toBe('custom_label')
+    const updatedData = vueNodeData.get(nodeId)
+    expect(updatedData?.outputs?.[0]?.label).toBe('custom_label')
+    expect(updatedData?.outputs?.[1]?.label).toBeUndefined()
+  })
+
+  it('updates input slot labels when node:slot-label:changed is triggered', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('original_name', 'STRING')
+    graph.add(node)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeId = String(node.id)
+    const nodeData = vueNodeData.get(nodeId)
+    if (!nodeData?.inputs) throw new Error('Expected input data to exist')
+
+    expect(nodeData.inputs[0].label).toBeUndefined()
+
+    node.inputs[0].label = 'custom_label'
+    graph.trigger('node:slot-label:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.INPUT
+    })
+
+    await nextTick()
+
+    const updatedData = vueNodeData.get(nodeId)
+    expect(updatedData?.inputs?.[0]?.label).toBe('custom_label')
+  })
+
+  it('ignores node:slot-label:changed for unknown node ids', () => {
+    const graph = new LGraph()
+    useGraphNodeManager(graph)
+
+    expect(() =>
+      graph.trigger('node:slot-label:changed', {
+        nodeId: 'missing-node',
+        slotType: NodeSlotType.OUTPUT
+      })
+    ).not.toThrow()
   })
 })
 

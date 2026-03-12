@@ -377,7 +377,9 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
       },
       set(v) {
         reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
-      }
+      },
+      configurable: true,
+      enumerable: true
     })
   }
   const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
@@ -387,7 +389,9 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     },
     set(v) {
       reactiveInputs.splice(0, reactiveInputs.length, ...v)
-    }
+    },
+    configurable: true,
+    enumerable: true
   })
   const reactiveOutputs = shallowReactive<INodeOutputSlot[]>(node.outputs ?? [])
   Object.defineProperty(node, 'outputs', {
@@ -396,7 +400,9 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     },
     set(v) {
       reactiveOutputs.splice(0, reactiveOutputs.length, ...v)
-    }
+    },
+    configurable: true,
+    enumerable: true
   })
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
@@ -737,11 +743,11 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         if (!nodeRef) return
 
         // Force shallowReactive to detect the deep property change
-        // by re-assigning the arrays through the defineProperty setter
-        if (nodeRef.inputs) {
+        // by re-assigning the affected array through the defineProperty setter.
+        if (slotLabelEvent.slotType !== NodeSlotType.OUTPUT && nodeRef.inputs) {
           nodeRef.inputs = [...nodeRef.inputs]
         }
-        if (nodeRef.outputs) {
+        if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
           nodeRef.outputs = [...nodeRef.outputs]
         }
       }
