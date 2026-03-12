@@ -347,7 +347,7 @@ describe('executionErrorStore — node error operations', () => {
     })
   })
 
-  describe('clearSimpleWidgetErrorIfValid', () => {
+  describe('clearWidgetRelatedErrors', () => {
     it('clears error if value is valid (isValueStillOutOfRange is false)', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
@@ -366,7 +366,9 @@ describe('executionErrorStore — node error operations', () => {
       }
 
       // Valid value (5 < 10)
-      store.clearSimpleWidgetErrorIfValid('123', 'testWidget', 5, { max: 10 })
+      store.clearWidgetRelatedErrors('123', 'testWidget', 'testWidget', 5, {
+        max: 10
+      })
 
       expect(store.lastNodeErrors).toBeNull()
     })
@@ -388,7 +390,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleWidgetErrorIfValid('123', 'sampler', 'euler_a')
+      store.clearWidgetRelatedErrors('123', 'sampler', 'sampler', 'euler_a')
 
       expect(store.lastNodeErrors).toBeNull()
     })
@@ -411,7 +413,9 @@ describe('executionErrorStore — node error operations', () => {
       }
 
       // Invalid value (15 > 10)
-      store.clearSimpleWidgetErrorIfValid('123', 'testWidget', 15, { max: 10 })
+      store.clearWidgetRelatedErrors('123', 'testWidget', 'testWidget', 15, {
+        max: 10
+      })
 
       expect(store.lastNodeErrors).not.toBeNull()
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)

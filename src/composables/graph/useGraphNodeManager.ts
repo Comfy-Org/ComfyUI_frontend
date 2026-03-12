@@ -568,6 +568,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node.onWidgetChanged = useChainCallback(
       node.onWidgetChanged,
       function (_name, newValue, _oldValue, widget) {
+        if (vueNodeData.has(id)) return
         if (!app.rootGraph) return
         const execId = getExecutionIdByNode(app.rootGraph, node)
         if (!execId) return

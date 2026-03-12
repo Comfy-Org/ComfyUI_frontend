@@ -396,32 +396,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('calls clearWidgetRelatedErrors on widget change', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    node.addWidget('number', 'steps', 20, () => undefined, {
-      min: 1,
-      max: 100
-    })
-    graph.add(node)
-    useGraphNodeManager(graph)
-
-    const store = useExecutionErrorStore()
-    const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-
-    node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
-
-    expect(clearSpy).toHaveBeenCalledWith(
-      String(node.id),
-      'steps',
-      'steps',
-      50,
-      { min: 1, max: 100 }
-    )
-  })
-
-  it('does nothing when rootGraph is unavailable', () => {
+  it('skips error clearing for Vue nodes (handled by NodeWidgets.vue)', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.addWidget('number', 'steps', 20, () => undefined, {})
@@ -430,9 +405,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
     const store = useExecutionErrorStore()
     const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
-      undefined as unknown as LGraph
-    )
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
     node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
 
