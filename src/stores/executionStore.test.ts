@@ -136,6 +136,140 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   })
 })
 
+describe('useExecutionStore - nodeLocationProgressStates caching', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockNodeExecutionIdToNodeLocatorId.mockReset()
+    mockNodeIdToNodeLocatorId.mockReset()
+    mockNodeLocatorIdToNodeExecutionId.mockReset()
+
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should resolve execution IDs to locator IDs for subgraph nodes', () => {
+    const mockSubgraph = {
+      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      nodes: []
+    }
+    const mockNode = createMockLGraphNode({
+      id: 123,
+      isSubgraphNode: () => true,
+      subgraph: mockSubgraph
+    })
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
+
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123:456',
+        state: 'running',
+        value: 50,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node1'
+      }
+    }
+
+    const result = store.nodeLocationProgressStates
+
+    expect(result['123']).toBeDefined()
+    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:456']).toBeDefined()
+  })
+
+  it('should not re-traverse graph for same execution IDs across progress updates', () => {
+    const mockSubgraph = {
+      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      nodes: []
+    }
+    const mockNode = createMockLGraphNode({
+      id: 123,
+      isSubgraphNode: () => true,
+      subgraph: mockSubgraph
+    })
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
+
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123:456',
+        state: 'running',
+        value: 50,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node1'
+      }
+    }
+
+    // First evaluation triggers graph traversal
+    expect(store.nodeLocationProgressStates['123']).toBeDefined()
+    const callCountAfterFirst = vi.mocked(app.rootGraph.getNodeById).mock.calls
+      .length
+
+    // Second update with same execution IDs but different progress
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123:456',
+        state: 'running',
+        value: 75,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node1'
+      }
+    }
+
+    expect(store.nodeLocationProgressStates['123']).toBeDefined()
+
+    // getNodeById should NOT be called again for the same execution ID
+    expect(vi.mocked(app.rootGraph.getNodeById).mock.calls.length).toBe(
+      callCountAfterFirst
+    )
+  })
+
+  it('should correctly resolve multiple sibling nodes in the same subgraph', () => {
+    const mockSubgraph = {
+      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      nodes: []
+    }
+    const mockNode = createMockLGraphNode({
+      id: 123,
+      isSubgraphNode: () => true,
+      subgraph: mockSubgraph
+    })
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
+
+    // Two sibling nodes in the same subgraph
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123:456',
+        state: 'running',
+        value: 50,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node1'
+      },
+      node2: {
+        display_node_id: '123:789',
+        state: 'running',
+        value: 30,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node2'
+      }
+    }
+
+    const result = store.nodeLocationProgressStates
+
+    // Both sibling nodes should be resolved with the correct subgraph UUID
+    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:456']).toBeDefined()
+    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:789']).toBeDefined()
+
+    // The shared parent "123" should also have a merged state
+    expect(result['123']).toBeDefined()
+    expect(result['123'].state).toBe('running')
+  })
+})
+
 describe('useExecutionStore - reconcileInitializingJobs', () => {
   let store: ReturnType<typeof useExecutionStore>
 

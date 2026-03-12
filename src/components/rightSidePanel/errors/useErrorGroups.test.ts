@@ -47,6 +47,13 @@ vi.mock('@/utils/executableGroupNodeDto', () => ({
   isGroupNode: vi.fn(() => false)
 }))
 
+vi.mock(
+  '@/platform/missingModel/composables/useMissingModelInteractions',
+  () => ({
+    clearMissingModelState: vi.fn()
+  })
+)
+
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorGroups } from './useErrorGroups'
 
@@ -518,6 +525,117 @@ describe('useErrorGroups', () => {
       const { groups } = createErrorGroups()
       expect(groups.collapseState).toBeDefined()
       expect(typeof groups.collapseState).toBe('object')
+    })
+  })
+
+  describe('missingModelGroups', () => {
+    function makeModel(
+      name: string,
+      opts: {
+        nodeId?: string | number
+        widgetName?: string
+        directory?: string
+        isAssetSupported?: boolean
+      } = {}
+    ) {
+      return {
+        name,
+        nodeId: opts.nodeId ?? '1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: opts.widgetName ?? 'ckpt_name',
+        isAssetSupported: opts.isAssetSupported ?? false,
+        isMissing: true as const,
+        directory: opts.directory
+      }
+    }
+
+    it('returns empty array when no missing models', () => {
+      const { groups } = createErrorGroups()
+      expect(groups.missingModelGroups.value).toEqual([])
+    })
+
+    it('groups asset-supported models by directory', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model_a.safetensors', {
+          directory: 'checkpoints',
+          isAssetSupported: true
+        }),
+        makeModel('model_b.safetensors', {
+          nodeId: '2',
+          directory: 'checkpoints',
+          isAssetSupported: true
+        }),
+        makeModel('lora_a.safetensors', {
+          nodeId: '3',
+          directory: 'loras',
+          isAssetSupported: true
+        })
+      ])
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toHaveLength(2)
+      const ckptGroup = groups.missingModelGroups.value.find(
+        (g) => g.directory === 'checkpoints'
+      )
+      expect(ckptGroup?.models).toHaveLength(2)
+      expect(ckptGroup?.isAssetSupported).toBe(true)
+    })
+
+    it('puts unsupported models in a separate group', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model_a.safetensors', {
+          directory: 'checkpoints',
+          isAssetSupported: true
+        }),
+        makeModel('custom_model.safetensors', {
+          nodeId: '2',
+          isAssetSupported: false
+        })
+      ])
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toHaveLength(2)
+      const unsupported = groups.missingModelGroups.value.find(
+        (g) => !g.isAssetSupported
+      )
+      expect(unsupported?.models).toHaveLength(1)
+    })
+
+    it('merges same-named models into one view model with multiple referencingNodes', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('shared_model.safetensors', {
+          nodeId: '1',
+          widgetName: 'ckpt_name',
+          directory: 'checkpoints',
+          isAssetSupported: true
+        }),
+        makeModel('shared_model.safetensors', {
+          nodeId: '2',
+          widgetName: 'ckpt_name',
+          directory: 'checkpoints',
+          isAssetSupported: true
+        })
+      ])
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toHaveLength(1)
+      const model = groups.missingModelGroups.value[0].models[0]
+      expect(model.name).toBe('shared_model.safetensors')
+      expect(model.referencingNodes).toHaveLength(2)
+    })
+
+    it('includes missing_model group in allErrorGroups', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([makeModel('model_a.safetensors')])
+      await nextTick()
+
+      const modelGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'missing_model'
+      )
+      expect(modelGroup).toBeDefined()
     })
   })
 })

@@ -649,6 +649,30 @@ export function getExecutionIdsForSelectedNodes(
   })
 }
 
+/**
+ * Returns the set of local graph node IDs (as strings) for nodes that live in
+ * `activeGraph` and whose execution ID appears in `executionIds`.
+ *
+ * @param rootGraph - The root graph used to resolve execution IDs
+ * @param activeGraph - The currently-visible graph scope
+ * @param executionIds - Set of execution IDs to look up
+ * @returns Set of stringified local node IDs belonging to activeGraph
+ */
+export function getActiveGraphNodeIds(
+  rootGraph: LGraph,
+  activeGraph: LGraph | Subgraph,
+  executionIds: Set<NodeExecutionId>
+): Set<string> {
+  const ids = new Set<string>()
+  for (const executionId of executionIds) {
+    const graphNode = getNodeByExecutionId(rootGraph, executionId)
+    if (graphNode?.graph === activeGraph) {
+      ids.add(String(graphNode.id))
+    }
+  }
+  return ids
+}
+
 function findPartialExecutionPathToGraph(
   target: LGraph,
   root: LGraph
