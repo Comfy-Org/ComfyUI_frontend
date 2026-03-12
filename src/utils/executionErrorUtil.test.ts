@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   isCloudValidationError,
   tryExtractValidationError,
-  classifyCloudValidationError
+  classifyCloudValidationError,
+  isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 
 describe('executionErrorUtil', () => {
@@ -185,6 +186,110 @@ describe('executionErrorUtil', () => {
       const result = classifyCloudValidationError(message)
 
       expect(result?.kind).toBe('promptError')
+    })
+  })
+
+  describe('isValueStillOutOfRange', () => {
+    it('should return false if there are no errors', () => {
+      expect(isValueStillOutOfRange(5, [], {})).toBe(false)
+    })
+
+    it('should return true if value is bigger than max', () => {
+      const errors = [
+        {
+          type: 'value_bigger_than_max',
+          message: 'too big',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      expect(isValueStillOutOfRange(15, errors, { max: 10 })).toBe(true)
+    })
+
+    it('should return false if value equals max', () => {
+      const errors = [
+        {
+          type: 'value_bigger_than_max',
+          message: 'too big',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      expect(isValueStillOutOfRange(10, errors, { max: 10 })).toBe(false)
+    })
+
+    it('should return false if value is less than max', () => {
+      const errors = [
+        {
+          type: 'value_bigger_than_max',
+          message: 'too big',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      expect(isValueStillOutOfRange(5, errors, { max: 10 })).toBe(false)
+    })
+
+    it('should return true if value is smaller than min', () => {
+      const errors = [
+        {
+          type: 'value_smaller_than_min',
+          message: 'too small',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      expect(isValueStillOutOfRange(1, errors, { min: 5 })).toBe(true)
+    })
+
+    it('should return false if value equals min', () => {
+      const errors = [
+        {
+          type: 'value_smaller_than_min',
+          message: 'too small',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      expect(isValueStillOutOfRange(5, errors, { min: 5 })).toBe(false)
+    })
+
+    it('should return true when max is undefined (conservative)', () => {
+      const errors = [
+        {
+          type: 'value_bigger_than_max',
+          message: 'too big',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      expect(isValueStillOutOfRange(15, errors, {})).toBe(true)
+    })
+
+    it('should return true when min is undefined (conservative)', () => {
+      const errors = [
+        {
+          type: 'value_smaller_than_min',
+          message: 'too small',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      expect(isValueStillOutOfRange(0, errors, {})).toBe(true)
+    })
+
+    it('should return false when errors contain only non-range types', () => {
+      const errors = [
+        {
+          type: 'value_not_in_list',
+          message: 'not in list',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      expect(isValueStillOutOfRange(5, errors, { min: 1, max: 10 })).toBe(
+        false
+      )
     })
   })
 })

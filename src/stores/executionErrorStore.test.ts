@@ -164,3 +164,249 @@ describe('executionErrorStore — missing node operations', () => {
     })
   })
 })
+
+describe('executionErrorStore — node error operations', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  describe('clearSimpleNodeErrors', () => {
+    it('does nothing if lastNodeErrors is null', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = null
+      store.clearSimpleNodeErrors('123', 'widgetName')
+      expect(store.lastNodeErrors).toBeNull()
+    })
+
+    it('clears entirely if there are only simple errors for the same slot', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: 'Max exceeded',
+              details: '',
+              extra_info: { input_name: 'testSlot' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleNodeErrors('123', 'testSlot')
+
+      expect(store.lastNodeErrors).toBeNull()
+    })
+
+    it('clears only the specific slot errors, leaving other errors alone', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: 'Max exceeded',
+              details: '',
+              extra_info: { input_name: 'testSlot' }
+            },
+            {
+              type: 'required_input_missing',
+              message: 'Missing',
+              details: '',
+              extra_info: { input_name: 'otherSlot' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleNodeErrors('123', 'testSlot')
+
+      expect(store.lastNodeErrors).not.toBeNull()
+      expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+      expect(
+        store.lastNodeErrors?.['123'].errors[0].extra_info?.input_name
+      ).toBe('otherSlot')
+    })
+
+    it('does nothing if executionId is not found in lastNodeErrors', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: 'Max exceeded',
+              details: '',
+              extra_info: { input_name: 'testSlot' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleNodeErrors('999', 'testSlot')
+
+      expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+    })
+
+    it('preserves complex errors when slot has both simple and complex errors', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: 'Max exceeded',
+              details: '',
+              extra_info: { input_name: 'testSlot' }
+            },
+            {
+              type: 'exception_type',
+              message: 'Runtime error',
+              details: '',
+              extra_info: { input_name: 'testSlot' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleNodeErrors('123', 'testSlot')
+
+      // Mixed simple+complex: not all are simple, so none are cleared
+      expect(store.lastNodeErrors?.['123'].errors).toHaveLength(2)
+    })
+
+    it('clears one node while preserving another in multi-node errors', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: 'Max exceeded',
+              details: '',
+              extra_info: { input_name: 'steps' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'KSampler'
+        },
+        '456': {
+          errors: [
+            {
+              type: 'exception_type',
+              message: 'Runtime failure',
+              details: '',
+              extra_info: { input_name: 'model' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'LoadModel'
+        }
+      }
+
+      store.clearSimpleNodeErrors('123', 'steps')
+
+      expect(store.lastNodeErrors?.['123']).toBeUndefined()
+      expect(store.lastNodeErrors?.['456'].errors).toHaveLength(1)
+    })
+
+    it('does not clear if the error is not simple', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'exception_type',
+              message: 'Failed execution',
+              details: '',
+              extra_info: { input_name: 'testSlot' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleNodeErrors('123', 'testSlot')
+
+      expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+    })
+  })
+
+  describe('clearSimpleWidgetErrorIfValid', () => {
+    it('clears error if value is valid', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: '...',
+              details: '',
+              extra_info: { input_name: 'testWidget' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleWidgetErrorIfValid('123', 'testWidget', 5, { max: 10 })
+
+      expect(store.lastNodeErrors).toBeNull()
+    })
+
+    it('optimistically clears value_not_in_list error for string combo values', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_not_in_list',
+              message: 'Value not in list',
+              details: '',
+              extra_info: { input_name: 'sampler' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'KSampler'
+        }
+      }
+
+      store.clearSimpleWidgetErrorIfValid('123', 'sampler', 'euler_a')
+
+      expect(store.lastNodeErrors).toBeNull()
+    })
+
+    it('does not clear error if value is still out of range', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: '...',
+              details: '',
+              extra_info: { input_name: 'testWidget' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleWidgetErrorIfValid('123', 'testWidget', 15, { max: 10 })
+
+      expect(store.lastNodeErrors).not.toBeNull()
+      expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+    })
+  })
+})

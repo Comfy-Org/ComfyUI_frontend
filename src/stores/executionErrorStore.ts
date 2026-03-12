@@ -29,6 +29,10 @@ import {
   getExecutionIdByNode,
   getActiveGraphNodeIds
 } from '@/utils/graphTraversalUtil'
+import {
+  isValueStillOutOfRange,
+  SIMPLE_ERROR_TYPES
+} from '@/utils/executionErrorUtil'
 
 interface MissingNodesError {
   message: string
@@ -110,6 +114,90 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Clear only prompt-level errors. Called during resetExecutionState. */
   function clearPromptError() {
     lastPromptError.value = null
+  }
+
+  /**
+   * Removes a node's errors if they consist entirely of simple, auto-resolvable
+   * types. When `slotName` is provided, only errors for that slot are checked.
+   */
+  function clearSimpleNodeErrors(executionId: string, slotName?: string): void {
+    if (!lastNodeErrors.value) return
+    const nodeError = lastNodeErrors.value[executionId]
+    if (!nodeError) return
+
+    const hasTargetName = slotName !== undefined
+
+    const relevantErrors = hasTargetName
+      ? nodeError.errors.filter((e) => e.extra_info?.input_name === slotName)
+      : nodeError.errors
+
+    if (
+      relevantErrors.length === 0 ||
+      !relevantErrors.every((e) => SIMPLE_ERROR_TYPES.has(e.type))
+    ) {
+      return
+    }
+
+    const updated = { ...lastNodeErrors.value }
+
+    if (hasTargetName) {
+      const remainingErrors = nodeError.errors.filter(
+        (e) => e.extra_info?.input_name !== slotName
+      )
+      if (remainingErrors.length === 0) {
+        delete updated[executionId]
+      } else {
+        updated[executionId] = {
+          ...nodeError,
+          errors: remainingErrors
+        }
+      }
+    } else {
+      delete updated[executionId]
+    }
+
+    lastNodeErrors.value = Object.keys(updated).length > 0 ? updated : null
+  }
+
+  /**
+   * Attempts to clear an error for a given widget, but avoids clearing it if
+   * the error is a range violation and the new value is still out of bounds.
+   */
+  function clearSimpleWidgetErrorIfValid(
+    executionId: string,
+    widgetName: string,
+    newValue: unknown,
+    options?: { min?: number; max?: number }
+  ): void {
+    if (typeof newValue === 'number' && lastNodeErrors.value) {
+      const nodeErrors = lastNodeErrors.value[executionId]
+      if (nodeErrors) {
+        const errs = nodeErrors.errors.filter(
+          (e) => e.extra_info?.input_name === widgetName
+        )
+        if (isValueStillOutOfRange(newValue, errs, options || {})) return
+      }
+    }
+    clearSimpleNodeErrors(executionId, widgetName)
+  }
+
+  /**
+   * Clears both validation errors and missing model state for a widget.
+   */
+  function clearWidgetRelatedErrors(
+    executionId: string,
+    errorInputName: string,
+    widgetName: string,
+    newValue: unknown,
+    options?: { min?: number; max?: number }
+  ): void {
+    clearSimpleWidgetErrorIfValid(
+      executionId,
+      errorInputName,
+      newValue,
+      options
+    )
+    missingModelStore.removeMissingModelByWidget(executionId, widgetName)
   }
 
   /** Set missing node types and open the error overlay if the Errors tab is enabled. */
@@ -400,6 +488,11 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     // Clearing
     clearAllErrors,
     clearPromptError,
+
+    // Clearing (targeted)
+    clearSimpleNodeErrors,
+    clearSimpleWidgetErrorIfValid,
+    clearWidgetRelatedErrors,
 
     // Overlay UI
     isErrorOverlayOpen,

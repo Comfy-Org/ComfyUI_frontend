@@ -36,6 +36,8 @@ import type {
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -560,6 +562,25 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       initializeVueNodeLayout()
     }
 
+    // Clear simple validation errors and missing model state when a widget
+    // value changes in legacy canvas mode. Vue nodes handle this in
+    // NodeWidgets.vue updateHandler instead.
+    node.onWidgetChanged = useChainCallback(
+      node.onWidgetChanged,
+      function (_name, newValue, _oldValue, widget) {
+        if (!app.rootGraph) return
+        const execId = getExecutionIdByNode(app.rootGraph, node)
+        if (!execId) return
+        useExecutionErrorStore().clearWidgetRelatedErrors(
+          execId,
+          widget.name,
+          widget.name,
+          newValue,
+          { min: widget.options?.min, max: widget.options?.max }
+        )
+      }
+    )
+
     // Call original callback if provided
     if (originalCallback) {
       void originalCallback(node)
@@ -720,6 +741,17 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       'node:slot-links:changed': (slotLinksEvent) => {
         if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
           refreshNodeSlots(String(slotLinksEvent.nodeId))
+
+          if (slotLinksEvent.connected) {
+            const node = nodeRefs.get(String(slotLinksEvent.nodeId))
+            const slotName = node?.inputs?.[slotLinksEvent.slotIndex]?.name
+            if (node && slotName && app.rootGraph) {
+              const execId = getExecutionIdByNode(app.rootGraph, node)
+              if (execId) {
+                useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
+              }
+            }
+          }
         }
       }
     }
