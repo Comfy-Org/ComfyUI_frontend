@@ -1,7 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeOutputWith } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 
 type ImageCompareOutput = NodeOutputWith<{
@@ -12,7 +10,7 @@ type ImageCompareOutput = NodeOutputWith<{
 useExtensionService().registerExtension({
   name: 'Comfy.ImageCompare',
 
-  async nodeCreated(node: LGraphNode) {
+  async nodeCreated(node) {
     if (node.constructor.comfyClass !== 'ImageCompare') return
 
     const [oldWidth, oldHeight] = node.size
@@ -24,22 +22,23 @@ useExtensionService().registerExtension({
       onExecuted?.call(this, output)
 
       const { a_images: aImages, b_images: bImages } = output
-      const rand = app.getRandParam()
 
-      const toUrl = (record: Record<string, string>) => {
-        const params = new URLSearchParams(record)
-        return api.apiURL(`/view?${params}${rand}`)
-      }
-
-      const beforeImages =
-        aImages && aImages.length > 0 ? aImages.map(toUrl) : []
-      const afterImages =
-        bImages && bImages.length > 0 ? bImages.map(toUrl) : []
+      const beforeUrl =
+        aImages && aImages.length > 0
+          ? api.apiURL(`/view?${new URLSearchParams(aImages[0])}`)
+          : ''
+      const afterUrl =
+        bImages && bImages.length > 0
+          ? api.apiURL(`/view?${new URLSearchParams(bImages[0])}`)
+          : ''
 
       const widget = node.widgets?.find((w) => w.type === 'imagecompare')
 
       if (widget) {
-        widget.value = { beforeImages, afterImages }
+        widget.value = {
+          before: beforeUrl,
+          after: afterUrl
+        }
         widget.callback?.(widget.value)
       }
     }
