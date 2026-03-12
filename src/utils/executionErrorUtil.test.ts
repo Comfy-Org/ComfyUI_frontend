@@ -266,6 +266,43 @@ describe('executionErrorUtil', () => {
       expect(isValueStillOutOfRange(10, errors, { min: 5 })).toBe(false)
     })
 
+    it('should return true if both max and min errors exist and value is still out of range', () => {
+      const errors = [
+        {
+          type: 'value_bigger_than_max',
+          message: 'too big',
+          details: '',
+          extra_info: {}
+        },
+        {
+          type: 'value_smaller_than_min',
+          message: 'too small',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      // Value above max — still out of range for the max error
+      expect(isValueStillOutOfRange(15, errors, { min: 1, max: 10 })).toBe(true)
+    })
+
+    it('should return false if both max and min errors exist but value is in range', () => {
+      const errors = [
+        {
+          type: 'value_bigger_than_max',
+          message: 'too big',
+          details: '',
+          extra_info: {}
+        },
+        {
+          type: 'value_smaller_than_min',
+          message: 'too small',
+          details: '',
+          extra_info: {}
+        }
+      ]
+      expect(isValueStillOutOfRange(5, errors, { min: 1, max: 10 })).toBe(false)
+    })
+
     it('should return true if max is undefined but error was value_bigger_than_max (conservative)', () => {
       const errors = [
         {

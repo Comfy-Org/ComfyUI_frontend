@@ -86,6 +86,7 @@ import { computed, onErrorCaptured, ref, toValue } from 'vue'
 import type { Component } from 'vue'
 
 import type {
+  SafeWidgetData,
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
@@ -93,6 +94,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -110,6 +112,7 @@ import {
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
+import type { WidgetState } from '@/stores/widgetValueStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -182,6 +185,26 @@ const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
   nodeType.value
 )
 const widgetValueStore = useWidgetValueStore()
+
+function createWidgetUpdateHandler(
+  widgetState: WidgetState | undefined,
+  widget: SafeWidgetData,
+  nodeExecId: string,
+  widgetOptions: IWidgetOptions | Record<string, never>
+): (newValue: WidgetValue) => void {
+  return (newValue: WidgetValue) => {
+    if (widgetState) widgetState.value = newValue
+    widget.callback?.(newValue)
+    const errorInputName = widget.slotName ?? widget.name
+    executionErrorStore.clearSimpleWidgetErrorIfValid(
+      nodeExecId,
+      errorInputName,
+      newValue,
+      { min: widgetOptions?.min, max: widgetOptions?.max }
+    )
+    missingModelStore.removeMissingModelByWidget(nodeExecId, widget.name)
+  }
+}
 
 interface ProcessedWidget {
   advanced: boolean
@@ -269,22 +292,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       spec: widget.spec
     }
 
-    function updateHandler(newValue: WidgetValue) {
-      // Update value in store
-      if (widgetState) widgetState.value = newValue
-      // Invoke LiteGraph callback wrapper (handles triggerDraw, etc.)
-      widget.callback?.(newValue)
-      // Vue widgets bypass onWidgetChanged; resolve errors directly using
-      // the execution ID computed at the top of this computed property.
-      // slotName is the subgraph input name; falls back to the widget's own name.
-      const errorInputName = widget.slotName ?? widget.name
-      executionErrorStore.clearSimpleWidgetErrorIfValid(
-        nodeExecId,
-        errorInputName,
-        newValue,
-        widgetOptions as { min?: number; max?: number }
-      )
-    }
+    const updateHandler = createWidgetUpdateHandler(
+      widgetState,
+      widget,
+      nodeExecId,
+      widgetOptions
+    )
 
     const tooltipText = getWidgetTooltip(widget)
     const tooltipConfig = createTooltipConfig(tooltipText)
@@ -307,7 +320,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError:
         (nodeErrors?.errors?.some(
-          (error) => error.extra_info?.input_name === widget.name
+          (error) =>
+            error.extra_info?.input_name === (widget.slotName ?? widget.name)
         ) ??
           false) ||
         missingModelStore.isWidgetMissingModel(nodeIdStr, widget.name),

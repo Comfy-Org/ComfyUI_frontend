@@ -92,6 +92,17 @@ export function classifyCloudValidationError(
 }
 
 /**
+ * Error types that can be resolved automatically when the user changes a
+ * widget value or establishes a connection, without requiring a re-run.
+ */
+export const SIMPLE_ERROR_TYPES = new Set([
+  'value_bigger_than_max',
+  'value_smaller_than_min',
+  'value_not_in_list',
+  'required_input_missing'
+])
+
+/**
  * Returns true if `value` still violates a recorded range constraint.
  * Pass errors already filtered to the target widget (by `input_name`).
  * `options` should contain the widget's configured `min` / `max`.

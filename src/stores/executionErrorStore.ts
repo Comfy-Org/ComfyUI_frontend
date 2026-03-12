@@ -29,18 +29,10 @@ import {
   getExecutionIdByNode,
   getActiveGraphNodeIds
 } from '@/utils/graphTraversalUtil'
-import { isValueStillOutOfRange } from '@/utils/executionErrorUtil'
-
-/**
- * Error types that can be resolved automatically when the user changes a
- * widget value or establishes a connection, without requiring a re-run.
- */
-const SIMPLE_ERROR_TYPES = new Set([
-  'value_bigger_than_max',
-  'value_smaller_than_min',
-  'value_not_in_list',
-  'required_input_missing'
-])
+import {
+  isValueStillOutOfRange,
+  SIMPLE_ERROR_TYPES
+} from '@/utils/executionErrorUtil'
 
 interface MissingNodesError {
   message: string
@@ -60,42 +52,51 @@ function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
   })
 }
 
-function clearAllNodeErrorFlags(rootGraph: LGraph): void {
+/**
+ * Single-pass reconciliation of node error flags.
+ * Collects the set of nodes that should have errors, then walks all nodes
+ * once, setting each flag exactly once. This avoids the redundant
+ * true→false→true transition (and duplicate events) that a clear-then-apply
+ * approach would cause.
+ */
+function reconcileNodeErrorFlags(
+  rootGraph: LGraph,
+  nodeErrors: Record<string, NodeError> | null
+): void {
+  // Collect nodes and slot info that should be flagged
+  const errorNodes = new Set<LGraphNode>()
+  const errorSlots = new Map<LGraphNode, Set<string>>()
+
+  if (nodeErrors) {
+    for (const [executionId, nodeError] of Object.entries(nodeErrors)) {
+      const node = getNodeByExecutionId(rootGraph, executionId)
+      if (!node) continue
+
+      errorNodes.add(node)
+      const slotNames = new Set<string>()
+      for (const error of nodeError.errors) {
+        const name = error.extra_info?.input_name
+        if (name) slotNames.add(name)
+      }
+      if (slotNames.size > 0) errorSlots.set(node, slotNames)
+
+      for (const parentId of getParentExecutionIds(executionId)) {
+        const parentNode = getNodeByExecutionId(rootGraph, parentId)
+        if (parentNode) errorNodes.add(parentNode)
+      }
+    }
+  }
+
   forEachNode(rootGraph, (node) => {
-    setNodeHasErrors(node, false)
+    setNodeHasErrors(node, errorNodes.has(node))
+
     if (node.inputs) {
+      const nodeSlotNames = errorSlots.get(node)
       for (const slot of node.inputs) {
-        slot.hasErrors = false
+        slot.hasErrors = !!nodeSlotNames?.has(slot.name)
       }
     }
   })
-}
-
-function markNodeSlotErrors(node: LGraphNode, nodeError: NodeError): void {
-  if (!node.inputs) return
-  for (const error of nodeError.errors) {
-    const slotName = error.extra_info?.input_name
-    if (!slotName) continue
-    const slot = node.inputs.find((s) => s.name === slotName)
-    if (slot) slot.hasErrors = true
-  }
-}
-
-function applyNodeError(
-  rootGraph: LGraph,
-  executionId: NodeExecutionId,
-  nodeError: NodeError
-): void {
-  const node = getNodeByExecutionId(rootGraph, executionId)
-  if (!node) return
-
-  setNodeHasErrors(node, true)
-  markNodeSlotErrors(node, nodeError)
-
-  for (const parentId of getParentExecutionIds(executionId)) {
-    const parentNode = getNodeByExecutionId(rootGraph, parentId)
-    if (parentNode) setNodeHasErrors(parentNode, true)
-  }
 }
 
 /** Execution error state: node errors, runtime errors, prompt errors, and missing assets. */
@@ -185,6 +186,11 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /**
    * Attempts to clear an error for a given widget, but avoids clearing it if
    * the error is a range violation and the new value is still out of bounds.
+   *
+   * Note: `value_not_in_list` errors are optimistically cleared without
+   * list-membership validation because combo widgets constrain choices to
+   * valid values at the UI level, and the valid-values source varies
+   * (asset system vs objectInfo) making runtime validation non-trivial.
    */
   function clearSimpleWidgetErrorIfValid(
     executionId: string,
@@ -471,15 +477,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     if (!app.isGraphReady) return
     const rootGraph = app.rootGraph
 
-    clearAllNodeErrorFlags(rootGraph)
-
-    if (!lastNodeErrors.value) return
-
-    for (const [executionId, nodeError] of Object.entries(
-      lastNodeErrors.value
-    )) {
-      applyNodeError(rootGraph, executionId, nodeError)
-    }
+    reconcileNodeErrorFlags(rootGraph, lastNodeErrors.value)
   })
 
   return {
