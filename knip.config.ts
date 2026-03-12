@@ -55,7 +55,10 @@ const config: KnipConfig = {
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Loaded via @plugin directive in CSS, not detected by knip
-    'packages/design-system/src/css/lucideStrokePlugin.js'
+    'packages/design-system/src/css/lucideStrokePlugin.js',
+    // Pending integration in stacked PR (feat/storybook-color-picker)
+    'src/components/ui/color-picker/ColorPickerSaturationValue.vue',
+    'src/components/ui/color-picker/ColorPickerSlider.vue'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199

@@ -498,6 +498,14 @@
     "black": "Black",
     "custom": "Custom"
   },
+  "colorPicker": {
+    "saturationValue": "Saturation and brightness",
+    "saturationBrightnessValue": "Saturation {saturation}%, brightness {value}%",
+    "saturation": "Saturation",
+    "brightness": "Brightness",
+    "hue": "Hue",
+    "alpha": "Alpha"
+  },
   "contextMenu": {
     "Inputs": "Inputs",
     "Outputs": "Outputs",
