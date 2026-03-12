@@ -4,9 +4,9 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
-export type CompletionSummaryMode = 'allSuccess' | 'mixed' | 'allFailed'
+type CompletionSummaryMode = 'allSuccess' | 'mixed' | 'allFailed'
 
-export type CompletionSummary = {
+type CompletionSummary = {
   mode: CompletionSummaryMode
   completedCount: number
   failedCount: number
