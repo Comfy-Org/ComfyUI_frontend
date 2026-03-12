@@ -1,6 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app } from '@/scripts/app'
+import type { NodeProgressState } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
@@ -11,6 +12,7 @@ const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -440,5 +442,113 @@ describe('useExecutionErrorStore - setMissingNodeTypes', () => {
     const input = [{ type: 'NodeA' }, { type: 'NodeB' }]
     store.setMissingNodeTypes(input)
     expect(store.missingNodesError?.nodeTypes).toEqual(input)
+  })
+})
+
+describe('useExecutionStore - Workflow Execution State', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function mockWorkflow(id: string) {
+    return { activeState: { id } } as unknown as ComfyWorkflow
+  }
+
+  function mockNodeProgress(
+    state: NodeProgressState['state']
+  ): NodeProgressState {
+    return { value: 0, max: 1, state, node_id: '1', prompt_id: 'job-1' }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  describe('workflowExecutionStates', () => {
+    it('should return empty map when no workflows are running or have results', () => {
+      expect(store.workflowExecutionStates.size).toBe(0)
+    })
+
+    it('should return running state for workflows with active jobs', () => {
+      store.storeJob({
+        nodes: ['1', '2'],
+        id: 'job-1',
+        workflow: mockWorkflow('wf-1')
+      })
+
+      store.nodeProgressStatesByJob = {
+        'job-1': { '1': mockNodeProgress('running') }
+      }
+
+      expect(store.workflowExecutionStates.get('wf-1')).toBe('running')
+    })
+
+    it('should return completed state from last execution result', () => {
+      const next = new Map(store.lastExecutionResultByWorkflowId)
+      next.set('wf-1', {
+        state: 'completed',
+        timestamp: Date.now(),
+        promptId: 'job-1'
+      })
+      store.lastExecutionResultByWorkflowId = next
+
+      expect(store.workflowExecutionStates.get('wf-1')).toBe('completed')
+    })
+
+    it('should return error state from last execution result', () => {
+      const next = new Map(store.lastExecutionResultByWorkflowId)
+      next.set('wf-1', {
+        state: 'error',
+        timestamp: Date.now(),
+        promptId: 'job-1'
+      })
+      store.lastExecutionResultByWorkflowId = next
+
+      expect(store.workflowExecutionStates.get('wf-1')).toBe('error')
+    })
+
+    it('should prioritize running over completed/error', () => {
+      store.storeJob({
+        nodes: ['1', '2'],
+        id: 'job-2',
+        workflow: mockWorkflow('wf-1')
+      })
+
+      store.nodeProgressStatesByJob = {
+        'job-2': { '1': mockNodeProgress('running') }
+      }
+
+      const next = new Map(store.lastExecutionResultByWorkflowId)
+      next.set('wf-1', {
+        state: 'completed',
+        timestamp: Date.now(),
+        promptId: 'job-1'
+      })
+      store.lastExecutionResultByWorkflowId = next
+
+      expect(store.workflowExecutionStates.get('wf-1')).toBe('running')
+    })
+  })
+
+  describe('getWorkflowExecutionState', () => {
+    it('should return idle for undefined workflowId', () => {
+      expect(store.getWorkflowExecutionState(undefined)).toBe('idle')
+    })
+
+    it('should return idle for unknown workflowId', () => {
+      expect(store.getWorkflowExecutionState('unknown')).toBe('idle')
+    })
+
+    it('should return state from workflowExecutionStates map', () => {
+      const next = new Map(store.lastExecutionResultByWorkflowId)
+      next.set('wf-1', {
+        state: 'completed',
+        timestamp: Date.now(),
+        promptId: 'job-1'
+      })
+      store.lastExecutionResultByWorkflowId = next
+
+      expect(store.getWorkflowExecutionState('wf-1')).toBe('completed')
+    })
   })
 })
