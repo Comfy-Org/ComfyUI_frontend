@@ -1,122 +1,40 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 
-function makeOutput(
-  overrides: Partial<NodeExecutionOutput> = {}
-): NodeExecutionOutput {
-  return { ...overrides }
-}
+vi.mock('@/scripts/api', () => ({
+  api: {
+    apiURL: vi.fn((path: string) => `/api${path}`),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
+  }
+}))
 
 describe(flattenNodeOutput, () => {
-  it('returns empty array for output with no known media types', () => {
-    const result = flattenNodeOutput(['1', makeOutput({ text: 'hello' })])
-    expect(result).toEqual([])
-  })
-
-  it('flattens images into ResultItemImpl instances', () => {
-    const output = makeOutput({
-      images: [
-        { filename: 'a.png', subfolder: '', type: 'output' },
-        { filename: 'b.png', subfolder: 'sub', type: 'output' }
-      ]
-    })
+  it('delegates to shared parser and returns ResultItemImpl instances', () => {
+    const output: NodeExecutionOutput = {
+      images: [{ filename: 'a.png', subfolder: '', type: 'output' }]
+    }
 
     const result = flattenNodeOutput(['42', output])
 
-    expect(result).toHaveLength(2)
+    expect(result).toHaveLength(1)
     expect(result[0].filename).toBe('a.png')
     expect(result[0].nodeId).toBe('42')
     expect(result[0].mediaType).toBe('images')
-    expect(result[1].filename).toBe('b.png')
-    expect(result[1].subfolder).toBe('sub')
   })
 
-  it('flattens audio outputs', () => {
-    const output = makeOutput({
-      audio: [{ filename: 'sound.wav', subfolder: '', type: 'output' }]
-    })
-
-    const result = flattenNodeOutput([7, output])
-
-    expect(result).toHaveLength(1)
-    expect(result[0].mediaType).toBe('audio')
-    expect(result[0].nodeId).toBe(7)
-  })
-
-  it('flattens multiple media types in a single output', () => {
-    const output = makeOutput({
-      images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
-      video: [{ filename: 'vid.mp4', subfolder: '', type: 'output' }]
-    })
-
-    const result = flattenNodeOutput(['1', output])
-
-    expect(result).toHaveLength(2)
-    const types = result.map((r) => r.mediaType)
-    expect(types).toContain('images')
-    expect(types).toContain('video')
-  })
-
-  it('handles gifs and 3d output types', () => {
-    const output = makeOutput({
-      gifs: [
-        { filename: 'anim.gif', subfolder: '', type: 'output' }
-      ] as NodeExecutionOutput['gifs'],
-      '3d': [
-        { filename: 'model.glb', subfolder: '', type: 'output' }
-      ] as NodeExecutionOutput['3d']
-    })
-
-    const result = flattenNodeOutput(['5', output])
-
-    expect(result).toHaveLength(2)
-    const types = result.map((r) => r.mediaType)
-    expect(types).toContain('gifs')
-    expect(types).toContain('3d')
-  })
-
-  it('ignores empty arrays', () => {
-    const output = makeOutput({ images: [], audio: [] })
-    const result = flattenNodeOutput(['1', output])
-    expect(result).toEqual([])
-  })
-
-  it('flattens non-standard output keys with ResultItem-like values', () => {
-    const output = makeOutput({
+  it('supports non-standard output keys', () => {
+    const output = {
       a_images: [{ filename: 'before.png', subfolder: '', type: 'output' }],
       b_images: [{ filename: 'after.png', subfolder: '', type: 'output' }]
-    } as unknown as Partial<NodeExecutionOutput>)
+    } as unknown as NodeExecutionOutput
 
     const result = flattenNodeOutput(['10', output])
 
     expect(result).toHaveLength(2)
     expect(result.map((r) => r.filename)).toContain('before.png')
     expect(result.map((r) => r.filename)).toContain('after.png')
-  })
-
-  it('excludes animated key', () => {
-    const output = makeOutput({
-      images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
-      animated: [true]
-    })
-
-    const result = flattenNodeOutput(['1', output])
-
-    expect(result).toHaveLength(1)
-    expect(result[0].mediaType).toBe('images')
-  })
-
-  it('excludes non-ResultItem array items', () => {
-    const output = {
-      images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
-      custom_data: [{ randomKey: 123 }]
-    } as unknown as NodeExecutionOutput
-
-    const result = flattenNodeOutput(['1', output])
-
-    expect(result).toHaveLength(1)
-    expect(result[0].mediaType).toBe('images')
   })
 })
