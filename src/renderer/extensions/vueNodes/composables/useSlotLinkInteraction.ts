@@ -428,7 +428,7 @@ export function useSlotLinkInteraction({
         const wasPointerOver = node.isPointerOver
         node.onPointerMove(pointerEvent)
 
-        if (wasPointerOver !== node.isPointerOver || node.isPointerOver) {
+        if (wasPointerOver !== node.isPointerOver) {
           subgraphIOHoverChanged = true
         }
 
