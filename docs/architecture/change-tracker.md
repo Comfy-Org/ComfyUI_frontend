@@ -18,18 +18,18 @@ links, etc.) are only captured when `checkState()` is explicitly triggered.
 
 These are set up once in `ChangeTracker.init()`:
 
-| Trigger | Event / Hook | What It Catches |
-| --- | --- | --- |
-| Keyboard (non-modifier, non-repeat) | `window` `keydown` | Shortcuts, typing in canvas |
-| Modifier key release | `window` `keyup` | Releasing Ctrl/Shift/Alt/Meta |
-| Mouse click | `window` `mouseup` | General clicks on native DOM |
-| Canvas mouse up | `LGraphCanvas.processMouseUp` override | LiteGraph canvas interactions |
-| Number/string dialog | `LGraphCanvas.prompt` override | Dialog popups for editing widgets |
-| Context menu close | `LiteGraph.ContextMenu.close` override | COMBO widget menus in LiteGraph |
-| Active input element | `bindInput` (change/input/blur on focused element) | Native HTML input edits |
-| Prompt queued | `api` `promptQueued` event | Dynamic widget changes on queue |
-| Graph cleared | `api` `graphCleared` event | Full graph clear |
-| Transaction end | `litegraph:canvas` `after-change` event | Batched operations via `beforeChange`/`afterChange` |
+| Trigger                             | Event / Hook                                       | What It Catches                                     |
+| ----------------------------------- | -------------------------------------------------- | --------------------------------------------------- |
+| Keyboard (non-modifier, non-repeat) | `window` `keydown`                                 | Shortcuts, typing in canvas                         |
+| Modifier key release                | `window` `keyup`                                   | Releasing Ctrl/Shift/Alt/Meta                       |
+| Mouse click                         | `window` `mouseup`                                 | General clicks on native DOM                        |
+| Canvas mouse up                     | `LGraphCanvas.processMouseUp` override             | LiteGraph canvas interactions                       |
+| Number/string dialog                | `LGraphCanvas.prompt` override                     | Dialog popups for editing widgets                   |
+| Context menu close                  | `LiteGraph.ContextMenu.close` override             | COMBO widget menus in LiteGraph                     |
+| Active input element                | `bindInput` (change/input/blur on focused element) | Native HTML input edits                             |
+| Prompt queued                       | `api` `promptQueued` event                         | Dynamic widget changes on queue                     |
+| Graph cleared                       | `api` `graphCleared` event                         | Full graph clear                                    |
+| Transaction end                     | `litegraph:canvas` `after-change` event            | Batched operations via `beforeChange`/`afterChange` |
 
 ## When You Must Call `checkState()` Manually
 
