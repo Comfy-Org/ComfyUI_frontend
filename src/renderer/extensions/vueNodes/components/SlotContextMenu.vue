@@ -109,7 +109,7 @@ async function handleRename(ctx: SlotMenuContext) {
     title: t('g.rename'),
     message: t('g.enterNewNamePrompt')
   })
-  if (newLabel === null) return
+  if (!newLabel) return
   renameSlot(ctx, newLabel)
 }
 
