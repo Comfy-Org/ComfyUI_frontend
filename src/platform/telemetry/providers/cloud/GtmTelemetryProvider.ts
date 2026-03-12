@@ -221,7 +221,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackUserLoggedIn(): void {
-    this.pushEvent('login')
+    this.pushEvent('user_logged_in')
   }
 
   trackSurvey(
