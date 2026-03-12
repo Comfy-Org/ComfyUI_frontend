@@ -287,9 +287,7 @@ describe('executionErrorUtil', () => {
           extra_info: {}
         }
       ]
-      expect(isValueStillOutOfRange(5, errors, { min: 1, max: 10 })).toBe(
-        false
-      )
+      expect(isValueStillOutOfRange(5, errors, { min: 1, max: 10 })).toBe(false)
     })
   })
 })
