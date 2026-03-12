@@ -1201,10 +1201,10 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Queue.QPOV2',
     category: ['Comfy', 'Queue', 'Layout'],
-    name: 'Use the unified job queue in the Assets side panel',
+    name: 'Docked job history/queue panel',
     type: 'boolean',
     tooltip:
-      'Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout.',
+      'Replaces the floating job queue panel with an equivalent job queue embedded in the job history side panel. You can disable this to return to the floating panel layout.',
     defaultValue: false,
     experimental: true
   },
