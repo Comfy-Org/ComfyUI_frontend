@@ -247,10 +247,7 @@ describe('appModeStore', () => {
 
       // Initially nodes are not resolvable — pruning removes them
       mockResolveNode.mockReturnValue(undefined)
-      workflowStore.activeWorkflow = workflowWithLinearData(
-        [[1, 'seed']],
-        [1]
-      )
+      workflowStore.activeWorkflow = workflowWithLinearData([[1, 'seed']], [1])
       await nextTick()
       expect(store.selectedInputs).toEqual([])
       expect(store.selectedOutputs).toEqual([])
