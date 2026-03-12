@@ -13,6 +13,7 @@
 
 <script setup lang="ts">
 import type { ChartData } from 'chart.js'
+import { useCssVar } from '@vueuse/core'
 import Chart from 'primevue/chart'
 import { computed } from 'vue'
 
@@ -33,50 +34,58 @@ const chartType = computed(() => props.widget.options?.type ?? 'line')
 
 const chartData = computed(() => value.value || { labels: [], datasets: [] })
 
-const chartOptions = computed(() => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      labels: {
-        color: '#FFF',
-        usePointStyle: true,
-        pointStyle: 'circle'
-      }
-    }
-  },
-  scales: {
-    x: {
-      ticks: {
-        color: '#9FA2BD'
-      },
-      grid: {
-        display: true,
-        color: '#9FA2BD',
-        drawTicks: false,
-        drawOnChartArea: true,
-        drawBorder: false
-      },
-      border: {
-        display: true,
-        color: '#9FA2BD'
+const baseForeground = useCssVar('--color-base-foreground')
+const mutedForeground = useCssVar('--color-muted-foreground')
+
+const chartOptions = computed(() => {
+  const legendColor = baseForeground.value || '#FFF'
+  const axisColor = mutedForeground.value || '#9FA2BD'
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: {
+          color: legendColor,
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
       }
     },
-    y: {
-      ticks: {
-        color: '#9FA2BD'
+    scales: {
+      x: {
+        ticks: {
+          color: axisColor
+        },
+        grid: {
+          display: true,
+          color: axisColor,
+          drawTicks: false,
+          drawOnChartArea: true,
+          drawBorder: false
+        },
+        border: {
+          display: true,
+          color: axisColor
+        }
       },
-      grid: {
-        display: false,
-        drawTicks: false,
-        drawOnChartArea: false,
-        drawBorder: false
-      },
-      border: {
-        display: true,
-        color: '#9FA2BD'
+      y: {
+        ticks: {
+          color: axisColor
+        },
+        grid: {
+          display: false,
+          drawTicks: false,
+          drawOnChartArea: false,
+          drawBorder: false
+        },
+        border: {
+          display: true,
+          color: axisColor
+        }
       }
     }
   }
-}))
+})
 </script>
