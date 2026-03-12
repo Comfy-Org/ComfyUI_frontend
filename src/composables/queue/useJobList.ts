@@ -261,8 +261,11 @@ export function useJobList() {
 
   const jobItems = computed<JobListItem[]>(() => {
     return filteredTaskEntries.value.map(({ task, state }) => {
-      const isActive =
-        String(task.jobId ?? '') === String(executionStore.activeJobId ?? '')
+      const isRunning =
+        executionStore.runningJobIds.includes(String(task.jobId ?? ''))
+      const isFocused =
+        String(task.jobId ?? '') === String(executionStore.focusedJobId ?? '')
+      const isActive = isRunning || isFocused
       const showAddedHint = shouldShowAddedHint(task, state)
       const promptKey = taskIdToKey(task.jobId)
       const promptPreviewUrl =
