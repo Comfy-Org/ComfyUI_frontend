@@ -38,6 +38,7 @@ interface ResultItemInit extends ResultItem {
   format?: string
   frame_rate?: number
   display_name?: string
+  content?: string
 }
 
 export class ResultItemImpl {
@@ -55,6 +56,9 @@ export class ResultItemImpl {
   format?: string
   frame_rate?: number
 
+  // text specific field
+  content?: string
+
   constructor(obj: ResultItemInit) {
     this.filename = obj.filename ?? ''
     this.subfolder = obj.subfolder ?? ''
@@ -67,6 +71,7 @@ export class ResultItemImpl {
 
     this.format = obj.format
     this.frame_rate = obj.frame_rate
+    this.content = obj.content
   }
 
   get urlParams(): URLSearchParams {
@@ -216,9 +221,14 @@ export class ResultItemImpl {
   get is3D(): boolean {
     return getMediaTypeFromFilename(this.filename) === '3D'
   }
+  get isText(): boolean {
+    return this.mediaType === 'text'
+  }
 
   get supportsPreview(): boolean {
-    return this.isImage || this.isVideo || this.isAudio || this.is3D
+    return (
+      this.isImage || this.isVideo || this.isAudio || this.is3D || this.isText
+    )
   }
 
   static filterPreviewable(
