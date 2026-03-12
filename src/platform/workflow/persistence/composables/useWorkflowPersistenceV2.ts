@@ -133,38 +133,27 @@ export function useWorkflowPersistenceV2() {
 
   const loadPreviousWorkflowFromStorage = async () => {
     const sessionPath = tabState.getActivePath()
-    if (!sessionPath) {
-      return await draftStore.loadPersistedWorkflow({
-        workflowName: null,
-        fallbackToLatestDraft: true
-      })
-    }
 
     // 1. Try draft for session path
     if (
-      await draftStore.loadPersistedWorkflow({
+      sessionPath &&
+      (await draftStore.loadPersistedWorkflow({
         workflowName: null,
         preferredPath: sessionPath
-      })
-    ) {
+      }))
+    )
       return true
-    }
 
-    // 2. No draft — try loading saved workflow by path
-    const savedWorkflow = workflowStore.getWorkflowByPath(sessionPath)
-    if (savedWorkflow) {
-      try {
-        await useWorkflowService().openWorkflow(savedWorkflow)
+    // 2. Try saved workflow by path (draft may not exist for saved+unmodified workflows)
+    if (sessionPath) {
+      const saved = workflowStore.getWorkflowByPath(sessionPath)
+      if (saved) {
+        await useWorkflowService().openWorkflow(saved)
         return true
-      } catch (err) {
-        console.warn(
-          'Failed to restore saved workflow, falling back to latest draft',
-          err
-        )
       }
     }
 
-    // 3. Last resort: most recent draft
+    // 3. Fall back to most recent draft
     return await draftStore.loadPersistedWorkflow({
       workflowName: null,
       fallbackToLatestDraft: true
@@ -306,15 +295,11 @@ export function useWorkflowPersistenceV2() {
 
     // Activate the correct workflow at storedActiveIndex
     const activePath = storedWorkflows[storedActiveIndex]
-    if (!activePath) return
-
-    const workflow = workflowStore.getWorkflowByPath(activePath)
-    if (!workflow) return
-
-    try {
+    const workflow = activePath
+      ? workflowStore.getWorkflowByPath(activePath)
+      : null
+    if (workflow) {
       await useWorkflowService().openWorkflow(workflow)
-    } catch (err) {
-      console.warn('Failed to activate restored workflow tab', err)
     }
   }
 
