@@ -64,6 +64,7 @@ useEventListener(
 )
 
 const mappedSelections = computed(() => {
+  void graphNodes.value
   let unprocessedInputs = appModeStore.selectedInputs.flatMap(
     ([nodeId, widgetName]) => {
       const [node, widget] = resolveNodeWidget(nodeId, widgetName)

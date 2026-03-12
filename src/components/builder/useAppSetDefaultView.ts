@@ -43,6 +43,9 @@ export function useAppSetDefaultView() {
     const extra = (app.rootGraph.extra ??= {})
     extra.linearMode = openAsApp
     workflow.changeTracker?.checkState()
+    useTelemetry()?.trackDefaultViewSet({
+      default_view: openAsApp ? 'app' : 'graph'
+    })
     closeDialog()
     showAppliedDialog(openAsApp)
   }
