@@ -4,7 +4,7 @@
   >
     <!-- Single Mode -->
     <template v-if="displayMode === 'single'">
-      <div class="flex flex-col gap-2 p-4">
+      <div class="flex flex-col gap-1 p-4">
         <!-- Main Image Container -->
         <div
           ref="imageContainerEl"
@@ -82,8 +82,8 @@
 
         <!-- Thumbnail Strip with Navigation -->
         <div
-          v-if="showThumbnails || showNavButtons"
-          class="flex items-center justify-center gap-2"
+          v-if="showMultipleImages || showNavButtons"
+          class="flex items-center justify-between"
         >
           <!-- Previous Button -->
           <button
@@ -97,37 +97,29 @@
 
           <!-- Thumbnails -->
           <div
-            v-if="showThumbnails"
-            class="flex items-center gap-1 overflow-x-hidden scroll-smooth"
-            style="
-              mask-image: linear-gradient(
-                to right,
-                transparent,
-                black 20px,
-                black calc(100% - 20px),
-                transparent
-              );
-            "
+            v-if="showMultipleImages"
+            class="flex min-w-0 flex-1 items-center gap-1 overflow-x-hidden scroll-smooth py-1"
           >
-            <button
+            <div
               v-for="(item, index) in galleryImages"
               :key="getItemSrc(item)"
               :ref="(el) => setThumbnailRef(el as HTMLElement | null, index)"
               :class="
                 cn(
-                  'shrink-0 cursor-pointer overflow-hidden rounded-lg border-2 border-transparent p-1 transition-colors',
-                  index === activeIndex && 'border-base-foreground'
+                  'shrink-0 overflow-hidden rounded-lg p-1 transition-colors',
+                  index === activeIndex
+                    ? 'border-2 border-base-foreground'
+                    : 'border-2 border-transparent'
                 )
               "
               :aria-label="getItemAlt(item, index)"
-              @click="setActiveIndex(index)"
             >
               <img
                 :src="getItemThumbnail(item)"
                 :alt="getItemAlt(item, index)"
                 class="size-10 rounded-sm object-cover"
               />
-            </button>
+            </div>
           </div>
 
           <!-- Next Button -->
@@ -170,8 +162,7 @@
             <button
               v-for="(item, index) in galleryImages"
               :key="getItemSrc(item)"
-              :style="gridImageStyle"
-              class="shrink-0 cursor-pointer overflow-hidden border-0 p-0"
+              class="size-14 shrink-0 cursor-pointer overflow-hidden border-0 p-0"
               :aria-label="getItemAlt(item, index)"
               @mouseenter="hoveredGridIndex = index"
               @mouseleave="hoveredGridIndex = -1"
@@ -196,7 +187,6 @@
 </template>
 
 <script setup lang="ts">
-import { useElementSize } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -220,7 +210,6 @@ export type GalleryValue = string[] | GalleryImage[]
 type DisplayMode = 'single' | 'grid'
 
 interface GalleryOptions {
-  showThumbnails?: boolean
   showItemNavigators?: boolean
 }
 
@@ -248,8 +237,6 @@ const gridContainerEl = ref<HTMLDivElement>()
 
 const showControls = computed(() => isHovered.value || isFocused.value)
 
-const { width: gridContainerWidth } = useElementSize(gridContainerEl)
-
 const options = computed<GalleryOptions>(() => widget.options ?? {})
 
 const galleryImages = computed<GalleryImage[]>(() => {
@@ -271,35 +258,11 @@ const galleryImages = computed<GalleryImage[]>(() => {
 
 const activeItem = computed(() => galleryImages.value[activeIndex.value])
 
-const showThumbnails = computed(
-  () => options.value.showThumbnails !== false && galleryImages.value.length > 1
-)
+const showMultipleImages = computed(() => galleryImages.value.length > 1)
 
 const showNavButtons = computed(
-  () =>
-    options.value.showItemNavigators !== false && galleryImages.value.length > 1
+  () => options.value.showItemNavigators !== false && showMultipleImages.value
 )
-
-const gridColumns = computed(() => {
-  const count = galleryImages.value.length
-  if (count <= 1) return 1
-  if (count <= 4) return 2
-  if (count <= 9) return 3
-  if (count <= 16) return 4
-  return 5
-})
-
-const gridImageSize = computed(() => {
-  const cols = gridColumns.value
-  const gap = 4
-  const width = gridContainerWidth.value || 296
-  return Math.floor((width - (cols - 1) * gap) / cols)
-})
-
-const gridImageStyle = computed(() => ({
-  width: `${gridImageSize.value}px`,
-  height: `${gridImageSize.value}px`
-}))
 
 const actionButtonClass =
   'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground text-base-background shadow-[1px_1px_8px_0px_rgba(0,0,0,0.4)] transition-colors hover:bg-base-foreground/90'
@@ -307,7 +270,7 @@ const actionButtonClass =
 const toggleButtonClass = actionButtonClass
 
 const navButtonClass =
-  'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-secondary-background text-component-node-foreground-secondary transition-colors'
+  'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-secondary-background text-component-node-foreground-secondary transition-colors'
 
 watch(galleryImages, (images) => {
   thumbnailRefs.value = thumbnailRefs.value.slice(0, images.length)
@@ -374,12 +337,6 @@ function scrollToActive() {
       })
     }
   })
-}
-
-function setActiveIndex(index: number) {
-  activeIndex.value = index
-  imageDimensions.value = null
-  scrollToActive()
 }
 
 function goToPrevious() {

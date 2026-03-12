@@ -96,8 +96,10 @@ function createGalleriaWrapper(
   return mountComponent(widget, images)
 }
 
-function findThumbnailButtons(wrapper: ReturnType<typeof mount>) {
-  return wrapper.findAll('button').filter((btn) => btn.find('img').exists())
+function findThumbnails(wrapper: ReturnType<typeof mount>) {
+  return wrapper.findAll('div').filter((div) => {
+    return div.find('img').exists() && div.classes().includes('border-2')
+  })
 }
 
 function findImageContainer(wrapper: ReturnType<typeof mount>) {
@@ -168,35 +170,22 @@ describe('DisplayCarousel Single Mode', () => {
     it('shows thumbnails when multiple images present', () => {
       const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-      const thumbnailButtons = findThumbnailButtons(wrapper)
+      const thumbnailButtons = findThumbnails(wrapper)
       expect(thumbnailButtons).toHaveLength(3)
     })
 
     it('hides thumbnails for single image', () => {
       const wrapper = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
 
-      const thumbnailButtons = findThumbnailButtons(wrapper)
+      const thumbnailButtons = findThumbnails(wrapper)
       expect(thumbnailButtons).toHaveLength(0)
     })
 
-    it('respects widget option to hide thumbnails', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL], {
-        showThumbnails: false
-      })
-
-      const thumbnailButtons = findThumbnailButtons(wrapper)
-      expect(thumbnailButtons).toHaveLength(0)
-    })
-
-    it('clicking thumbnail changes active image', async () => {
+    it('thumbnails are not interactive', () => {
       const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-      const thumbnailButtons = findThumbnailButtons(wrapper)
-      await thumbnailButtons[2].trigger('click')
-      await nextTick()
-
-      const mainImg = wrapper.findAll('img')[0]
-      expect(mainImg.attributes('src')).toBe('https://example.com/image2.jpg')
+      const thumbnails = findThumbnails(wrapper)
+      expect(thumbnails[0].element.tagName).not.toBe('BUTTON')
     })
   })
 
@@ -414,7 +403,7 @@ describe('DisplayCarousel Edge Cases', () => {
     const wrapper = createGalleriaWrapper([])
 
     expect(wrapper.find('img').exists()).toBe(false)
-    expect(findThumbnailButtons(wrapper)).toHaveLength(0)
+    expect(findThumbnails(wrapper)).toHaveLength(0)
   })
 
   it('filters out malformed image objects without valid src', () => {
@@ -429,7 +418,7 @@ describe('DisplayCarousel Edge Cases', () => {
     const largeImageArray = createImageStrings(100)
     const wrapper = createGalleriaWrapper(largeImageArray)
 
-    const thumbnailButtons = findThumbnailButtons(wrapper)
+    const thumbnailButtons = findThumbnails(wrapper)
     expect(thumbnailButtons).toHaveLength(100)
   })
 

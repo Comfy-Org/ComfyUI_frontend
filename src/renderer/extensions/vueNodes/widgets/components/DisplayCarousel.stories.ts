@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { computed, ref, toRefs } from 'vue'
+import { ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -32,12 +32,7 @@ const SAMPLE_IMAGE_OBJECTS: GalleryImage[] = [
   }
 ]
 
-interface StoryArgs {
-  showThumbnails: boolean
-  showItemNavigators: boolean
-}
-
-const meta: Meta<StoryArgs> = {
+const meta: Meta<typeof DisplayCarousel> = {
   title: 'Components/Display/DisplayCarousel',
   component: DisplayCarousel,
   tags: ['autodocs'],
@@ -49,14 +44,6 @@ const meta: Meta<StoryArgs> = {
           'Image gallery with Single (carousel) and Grid display modes. Hover to reveal a toggle button that switches between modes. Grid mode shows images in a responsive grid; clicking an image switches back to single mode focused on that image.'
       }
     }
-  },
-  argTypes: {
-    showThumbnails: { control: 'boolean' },
-    showItemNavigators: { control: 'boolean' }
-  },
-  args: {
-    showThumbnails: true,
-    showItemNavigators: true
   },
   decorators: [
     (story) => ({
@@ -71,22 +58,15 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  render: (args) => ({
+  render: () => ({
     components: { DisplayCarousel },
     setup() {
-      const { showThumbnails, showItemNavigators } = toRefs(args)
       const value = ref<GalleryValue>([...SAMPLE_IMAGES])
-      const widget = computed<
-        SimplifiedWidget<GalleryValue, Record<string, unknown>>
-      >(() => ({
+      const widget: SimplifiedWidget<GalleryValue, Record<string, unknown>> = {
         name: 'gallery',
         type: 'array',
-        value: [],
-        options: {
-          showThumbnails: showThumbnails.value,
-          showItemNavigators: showItemNavigators.value
-        }
-      }))
+        value: []
+      }
       return { value, widget }
     },
     template: '<DisplayCarousel :widget="widget" v-model="value" />'
@@ -155,24 +135,6 @@ export const GridManyImages: Story = {
         name: 'gallery',
         type: 'array',
         value: []
-      }
-      return { value, widget }
-    },
-    template: '<DisplayCarousel :widget="widget" v-model="value" />'
-  })
-}
-
-export const NoThumbnails: Story = {
-  args: { showThumbnails: false },
-  render: () => ({
-    components: { DisplayCarousel },
-    setup() {
-      const value = ref<GalleryValue>([...SAMPLE_IMAGES.slice(0, 3)])
-      const widget: SimplifiedWidget<GalleryValue, Record<string, unknown>> = {
-        name: 'gallery',
-        type: 'array',
-        value: [],
-        options: { showThumbnails: false }
       }
       return { value, widget }
     },
