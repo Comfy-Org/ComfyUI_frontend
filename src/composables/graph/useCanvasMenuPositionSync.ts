@@ -58,10 +58,9 @@ export function useCanvasMenuPositionSync(
     menuEl.style.top = `${screenY}px`
   }
 
-  const { resume: startSync, pause: stopSync } = useRafFn(
-    updateMenuPosition,
-    { immediate: false }
-  )
+  const { resume: startSync, pause: stopSync } = useRafFn(updateMenuPosition, {
+    immediate: false
+  })
 
   watchEffect(() => {
     if (isOpen.value) {
