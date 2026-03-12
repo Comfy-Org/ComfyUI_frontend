@@ -55,7 +55,11 @@ const config: KnipConfig = {
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Loaded via @plugin directive in CSS, not detected by knip
-    'packages/design-system/src/css/lucideStrokePlugin.js'
+    'packages/design-system/src/css/lucideStrokePlugin.js',
+    // Pending integration in stacked PR (#9744)
+    'src/components/ui/chart/ChartBar.vue',
+    'src/components/ui/chart/ChartLine.vue',
+    'src/components/ui/chart/useChart.ts'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
