@@ -202,8 +202,7 @@ describe('TaskItemImpl', () => {
 
     const task = new TaskItemImpl(job)
 
-    expect(task.flatOutputs).toHaveLength(1)
-    expect(task.flatOutputs[0].filename).toBe('')
+    expect(task.flatOutputs).toHaveLength(0)
     expect(task.previewableOutputs).toHaveLength(0)
     expect(task.previewOutput).toBeUndefined()
   })
