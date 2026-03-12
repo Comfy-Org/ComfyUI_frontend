@@ -183,7 +183,13 @@ watch(
   categoryTree,
   (nodes) => {
     if (nodes.length === 1 && nodes[0].children?.length) {
-      emit('autoExpand', nodes[0].key)
+      const rootKey = nodes[0].key
+      if (
+        selectedCategory.value !== rootKey &&
+        !selectedCategory.value.startsWith(rootKey + '/')
+      ) {
+        emit('autoExpand', rootKey)
+      }
     }
   },
   { immediate: true }

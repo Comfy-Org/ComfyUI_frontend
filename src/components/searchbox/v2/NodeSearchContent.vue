@@ -275,10 +275,15 @@ function getCategoryResults(baseNodes: ComfyNodeDefImpl[], category: string) {
   const categoryPath = category.startsWith(rootPrefix)
     ? category.slice(rootPrefix.length)
     : category
-  return baseNodes.filter(
-    (n) =>
-      n.category === categoryPath || n.category.startsWith(categoryPath + '/')
-  )
+  return baseNodes.filter((n) => {
+    const nodeCategory = n.category.startsWith(rootPrefix)
+      ? n.category.slice(rootPrefix.length)
+      : n.category
+    return (
+      nodeCategory === categoryPath ||
+      nodeCategory.startsWith(categoryPath + '/')
+    )
+  })
 }
 
 const displayedResults = computed<ComfyNodeDefImpl[]>(() => {

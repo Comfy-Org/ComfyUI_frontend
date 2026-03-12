@@ -56,7 +56,7 @@ describe('NodeSearchContent', () => {
 
   function mockBookmarks(
     isBookmarked: boolean | ((node: ComfyNodeDefImpl) => boolean) = true,
-    bookmarkList: string[] = ['placeholder']
+    bookmarkList: string[] = []
   ) {
     const bookmarkStore = useNodeBookmarkStore()
     if (typeof isBookmarked === 'function') {
@@ -71,7 +71,7 @@ describe('NodeSearchContent', () => {
     nodes: Parameters<typeof createMockNodeDef>[0][]
   ) {
     useNodeDefStore().updateNodeDefs(nodes.map(createMockNodeDef))
-    mockBookmarks()
+    mockBookmarks(true, ['placeholder'])
     const wrapper = await createWrapper()
     await wrapper.find('[data-testid="category-favorites"]').trigger('click')
     await nextTick()
@@ -136,7 +136,7 @@ describe('NodeSearchContent', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', display_name: 'Node One' })
       ])
-      mockBookmarks(false)
+      mockBookmarks(false, ['placeholder'])
 
       const wrapper = await createWrapper()
       await wrapper.find('[data-testid="category-favorites"]').trigger('click')
@@ -334,7 +334,7 @@ describe('NodeSearchContent', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'TestNode', display_name: 'Test Node' })
       ])
-      mockBookmarks()
+      mockBookmarks(true, ['placeholder'])
 
       const wrapper = await createWrapper()
 
@@ -529,7 +529,7 @@ describe('NodeSearchContent', () => {
     })
 
     it('should emit null hoverNode when no results', async () => {
-      mockBookmarks(false)
+      mockBookmarks(false, ['placeholder'])
       const wrapper = await createWrapper()
 
       await wrapper.find('[data-testid="category-favorites"]').trigger('click')

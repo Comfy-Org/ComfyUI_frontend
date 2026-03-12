@@ -35,7 +35,13 @@
 
         <div class="flex items-center justify-between py-3">
           <span class="text-sm text-muted-foreground">
-            {{ t('g.itemsSelected', { selectedCount: selectedValues.length }) }}
+            {{
+              t(
+                'g.itemSelected',
+                { count: selectedValues.length },
+                selectedValues.length
+              )
+            }}
           </span>
           <button
             v-if="selectedValues.length > 0"

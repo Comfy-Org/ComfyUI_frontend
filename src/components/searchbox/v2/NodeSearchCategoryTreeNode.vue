@@ -1,7 +1,5 @@
 <template>
   <div
-    role="treeitem"
-    :aria-expanded="node.children?.length ? isExpanded : undefined"
     :class="
       cn(
         selectedCategory === node.key &&
@@ -15,8 +13,10 @@
       <button
         ref="buttonEl"
         type="button"
+        role="treeitem"
         :data-testid="`category-${node.key}`"
         :aria-current="selectedCategory === node.key || undefined"
+        :aria-expanded="node.children?.length ? isExpanded : undefined"
         :style="{ paddingLeft: `${0.75 + depth * 1.25}rem` }"
         :class="
           cn(

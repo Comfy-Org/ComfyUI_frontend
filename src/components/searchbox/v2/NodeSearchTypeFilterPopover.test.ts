@@ -80,7 +80,7 @@ describe(NodeSearchTypeFilterPopover, () => {
   })
 
   it('should display all options sorted alphabetically', async () => {
-    createWrapper()
+    createWrapper({ chip: createMockChip(['MODEL', 'IMAGE', 'LATENT']) })
     await openPopover(wrapper)
 
     const options = getOptions()
