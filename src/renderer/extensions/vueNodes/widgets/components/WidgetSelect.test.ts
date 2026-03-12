@@ -351,9 +351,12 @@ describe('WidgetSelect Value Binding', () => {
 
   describe('Empty options with placeholder', () => {
     it('shows placeholder when options are empty', () => {
-      const widget = createMockWidget('', {
-        values: [],
-        placeholder: 'No models found in ComfyUI/models/checkpoints folder...'
+      const widget = createMockWidget<string | undefined>({
+        value: '',
+        options: {
+          values: [],
+          placeholder: 'No models found in ComfyUI/models/checkpoints folder...'
+        }
       })
       const wrapper = mountComponent(widget, '')
       const selectDefault = wrapper.findComponent(WidgetSelectDefault)
@@ -365,9 +368,12 @@ describe('WidgetSelect Value Binding', () => {
     })
 
     it('does not show placeholder when options exist', () => {
-      const widget = createMockWidget('option1', {
-        values: ['option1', 'option2'],
-        placeholder: 'No models found'
+      const widget = createMockWidget<string | undefined>({
+        value: 'option1',
+        options: {
+          values: ['option1', 'option2'],
+          placeholder: 'No models found'
+        }
       })
       const wrapper = mountComponent(widget, 'option1')
       const selectDefault = wrapper.findComponent(WidgetSelectDefault)
