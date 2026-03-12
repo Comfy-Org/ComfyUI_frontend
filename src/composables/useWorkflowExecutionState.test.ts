@@ -7,9 +7,7 @@ import type { WorkflowExecutionState } from '@/stores/executionStore'
 
 import { useWorkflowExecutionState } from './useWorkflowExecutionState'
 
-const _workflowExecutionStates = ref(
-  new Map<string, WorkflowExecutionState>()
-)
+const _workflowExecutionStates = ref(new Map<string, WorkflowExecutionState>())
 const _clearWorkflowExecutionResult = vi.fn()
 
 vi.mock('@/stores/executionStore', () => ({
