@@ -31,6 +31,8 @@ export function showSlotMenu(
 }
 
 export function renameSlot(context: SlotMenuContext, newLabel: string): void {
+  if (!canRenameSlot(context)) return
+
   const graph = app.canvas?.graph
   if (!graph) return
 
