@@ -7,7 +7,7 @@
     <!-- Image Wrapper -->
     <div
       ref="imageWrapperEl"
-      class="relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-[5px] bg-transparent"
+      class="relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-sm bg-transparent"
       tabindex="0"
       role="img"
       :aria-label="$t('g.imagePreview')"
@@ -33,7 +33,7 @@
       </div>
       <!-- Loading State -->
       <div v-if="showLoader && !imageError" class="size-full">
-        <Skeleton class="size-full rounded-[5px]" />
+        <Skeleton class="size-full rounded-sm" />
       </div>
       <!-- Main Image -->
       <img

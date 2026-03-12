@@ -140,7 +140,7 @@
       <div class="p-4">
         <div
           ref="gridContainerEl"
-          class="relative h-[296px] overflow-clip rounded-sm bg-component-node-background"
+          class="relative h-72 overflow-clip rounded-sm bg-component-node-background"
           tabindex="0"
           @mouseenter="isHovered = true"
           @mouseleave="isHovered = false"
@@ -242,18 +242,14 @@ const options = computed<GalleryOptions>(() => widget.options ?? {})
 const galleryImages = computed<GalleryImage[]>(() => {
   if (!value.value || !Array.isArray(value.value)) return []
 
-  return value.value
-    .filter((item) => item !== null && item !== undefined)
-    .map((item) => {
-      if (typeof item === 'string') {
-        return {
-          itemImageSrc: item,
-          thumbnailImageSrc: item
-        }
-      }
-      return item
-    })
-    .filter((item) => item.itemImageSrc || item.src)
+  return value.value.flatMap((item) => {
+    if (item === null || item === undefined) return []
+    const image =
+      typeof item === 'string'
+        ? { itemImageSrc: item, thumbnailImageSrc: item }
+        : item
+    return image.itemImageSrc || image.src ? [image] : []
+  })
 })
 
 const activeItem = computed(() => galleryImages.value[activeIndex.value])
@@ -265,7 +261,7 @@ const showNavButtons = computed(
 )
 
 const actionButtonClass =
-  'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground text-base-background shadow-[1px_1px_8px_0px_rgba(0,0,0,0.4)] transition-colors hover:bg-base-foreground/90'
+  'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground text-base-background shadow-md transition-colors hover:bg-base-foreground/90'
 
 const toggleButtonClass = actionButtonClass
 
