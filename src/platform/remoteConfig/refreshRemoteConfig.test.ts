@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 
 import { refreshRemoteConfig } from './refreshRemoteConfig'
-import { remoteConfig } from './remoteConfig'
+import { remoteConfig, remoteConfigState } from './remoteConfig'
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -16,7 +16,7 @@ vi.stubGlobal('fetch', vi.fn())
 describe('refreshRemoteConfig', () => {
   const mockConfig = { feature1: true, feature2: 'value' }
 
-  function mockSuccessResponse(config = mockConfig) {
+  function mockSuccessResponse(config: Record<string, unknown> = mockConfig) {
     return {
       ok: true,
       json: async () => config
@@ -121,6 +121,69 @@ describe('refreshRemoteConfig', () => {
 
       expect(remoteConfig.value).toEqual(existingConfig)
       expect(window.__CONFIG__).toEqual(existingConfig)
+    })
+  })
+
+  describe('schema validation', () => {
+    it('accepts a valid remote config response', async () => {
+      const validConfig = {
+        team_workspaces_enabled: true,
+        subscription_required: false,
+        max_upload_size: 1024
+      }
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockSuccessResponse(validConfig)
+      )
+
+      await refreshRemoteConfig()
+
+      expect(remoteConfig.value).toEqual(validConfig)
+      expect(window.__CONFIG__).toEqual(validConfig)
+      expect(remoteConfigState.value).toBe('authenticated')
+    })
+
+    it('rejects response with invalid type for boolean flag', async () => {
+      const invalidConfig = {
+        team_workspaces_enabled: 'not-a-boolean'
+      }
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockSuccessResponse(invalidConfig)
+      )
+
+      await refreshRemoteConfig()
+
+      expect(remoteConfig.value).toEqual({})
+      expect(window.__CONFIG__).toEqual({})
+      expect(remoteConfigState.value).toBe('error')
+    })
+
+    it('rejects response with invalid type for number field', async () => {
+      const invalidConfig = {
+        max_upload_size: 'not-a-number'
+      }
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockSuccessResponse(invalidConfig)
+      )
+
+      await refreshRemoteConfig()
+
+      expect(remoteConfig.value).toEqual({})
+      expect(window.__CONFIG__).toEqual({})
+      expect(remoteConfigState.value).toBe('error')
+    })
+
+    it('preserves unknown keys via passthrough', async () => {
+      const configWithExtra = {
+        team_workspaces_enabled: true,
+        some_future_flag: 'new-value'
+      }
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockSuccessResponse(configWithExtra)
+      )
+
+      await refreshRemoteConfig()
+
+      expect(remoteConfig.value).toEqual(configWithExtra)
     })
   })
 })

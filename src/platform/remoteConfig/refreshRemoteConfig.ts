@@ -1,6 +1,10 @@
+import { fromZodError } from 'zod-validation-error'
+
 import { api } from '@/scripts/api'
 
 import { remoteConfig, remoteConfigState } from './remoteConfig'
+import { remoteConfigSchema } from './remoteConfigSchema'
+import type { RemoteConfig } from './types'
 
 interface RefreshRemoteConfigOptions {
   /**
@@ -30,7 +34,21 @@ export async function refreshRemoteConfig(
       : await fetch('/api/features', { cache: 'no-store' })
 
     if (response.ok) {
-      const config = await response.json()
+      const json = await response.json()
+      const result = remoteConfigSchema.safeParse(json)
+
+      if (!result.success) {
+        console.warn(
+          'Invalid remote config response:',
+          fromZodError(result.error).message
+        )
+        window.__CONFIG__ = {}
+        remoteConfig.value = {}
+        remoteConfigState.value = 'error'
+        return
+      }
+
+      const config = result.data as RemoteConfig
       window.__CONFIG__ = config
       remoteConfig.value = config
       remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
