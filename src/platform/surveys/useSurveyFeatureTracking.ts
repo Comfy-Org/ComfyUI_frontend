@@ -19,7 +19,7 @@ import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 export function useSurveyFeatureTracking(featureId: string) {
   const config = getSurveyConfig(featureId)
 
-  if (!config?.enabled) {
+  if (config?.enabled === false || !config) {
     return {
       trackFeatureUsed: () => {},
       useCount: computed(() => 0)

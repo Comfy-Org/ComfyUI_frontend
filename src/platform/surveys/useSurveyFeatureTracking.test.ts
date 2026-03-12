@@ -47,6 +47,19 @@ describe('useSurveyFeatureTracking', () => {
     expect(useCount.value).toBe(0)
   })
 
+  it('tracks usage when config exists without enabled field', async () => {
+    getSurveyConfig.mockReturnValue({} as { enabled: boolean })
+
+    const { useSurveyFeatureTracking } =
+      await import('./useSurveyFeatureTracking')
+    const { trackFeatureUsed, useCount } =
+      useSurveyFeatureTracking('implicit-enabled-feature')
+
+    trackFeatureUsed()
+
+    expect(useCount.value).toBe(1)
+  })
+
   it('does not track when config does not exist', async () => {
     getSurveyConfig.mockReturnValue(undefined)
 
