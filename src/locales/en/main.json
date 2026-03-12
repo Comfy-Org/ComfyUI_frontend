@@ -93,6 +93,7 @@
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
     "copyToClipboard": "Copy to Clipboard",
+    "copySystemInfo": "Copy System Info",
     "copyAll": "Copy All",
     "openNewIssue": "Open New Issue",
     "showReport": "Show Report",
