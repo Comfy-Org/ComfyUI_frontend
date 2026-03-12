@@ -74,6 +74,8 @@ export interface SimplifiedWidget<
   /** Optional input specification backing this widget */
   spec?: InputSpecV2
 
+  tooltip?: string
+
   controlWidget?: SafeControlWidget
 }
 
