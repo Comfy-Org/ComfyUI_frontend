@@ -5,7 +5,7 @@ import type { MaybeRefOrGetter } from 'vue'
 interface TransformSettlingOptions {
   /**
    * Delay in ms before transform is considered "settled" after last interaction
-   * @default 200
+   * @default 256
    */
   settleDelay?: number
   /**
@@ -16,10 +16,10 @@ interface TransformSettlingOptions {
 }
 
 /**
- * Tracks when canvas zoom transforms are actively changing vs settled.
+ * Tracks when canvas transforms (zoom or pan) are actively changing vs settled.
  *
- * This composable helps optimize rendering quality during zoom transformations.
- * When the user is actively zooming, we can reduce rendering quality
+ * This composable helps optimize rendering quality during transform interactions.
+ * When the user is actively zooming or panning, we can reduce rendering quality
  * for better performance. Once the transform "settles" (stops changing), we can
  * trigger high-quality re-rasterization.
  *
@@ -50,35 +50,72 @@ export function useTransformSettling(
 
   const isTransforming = ref(false)
 
-  /**
-   * Mark transform as active
-   */
-  const markTransformActive = () => {
-    isTransforming.value = true
-  }
-
-  /**
-   * Mark transform as settled (debounced)
-   */
   const markTransformSettled = useDebounceFn(() => {
     isTransforming.value = false
   }, settleDelay)
 
-  /**
-   * Handle zoom transform event - mark active then queue settle
-   */
-  const handleWheel = () => {
-    markTransformActive()
+  function markInteracting() {
+    isTransforming.value = true
     void markTransformSettled()
   }
 
-  // Register wheel event listener with auto-cleanup
-  useEventListener(target, 'wheel', handleWheel, {
-    capture: true,
-    passive
-  })
+  const eventOptions = { capture: true, passive }
+
+  useEventListener(target, 'wheel', markInteracting, eventOptions)
+  usePointerDrag(target, markInteracting, eventOptions)
 
   return {
     isTransforming
   }
+}
+
+/**
+ * Calls `onDrag` on each pointermove while a pointer is held down.
+ */
+function usePointerDrag(
+  target: MaybeRefOrGetter<HTMLElement | null | undefined>,
+  onDrag: () => void,
+  eventOptions: AddEventListenerOptions
+) {
+  /** Number of active pointers (supports multi-touch correctly). */
+  const pointerCount = ref(0)
+
+  useEventListener(
+    target,
+    'pointerdown',
+    (e: PointerEvent) => {
+      // Only primary (0) and middle (1) buttons trigger canvas pan.
+      if (e.button === 0 || e.button === 1) pointerCount.value++
+    },
+    eventOptions
+  )
+
+  useEventListener(
+    target,
+    'pointermove',
+    () => {
+      if (pointerCount.value > 0) onDrag()
+    },
+    eventOptions
+  )
+
+  // Listen on window so the release is caught even if the pointer
+  // leaves the canvas before the button is released.
+  useEventListener(
+    window,
+    'pointerup',
+    () => {
+      if (pointerCount.value > 0) pointerCount.value--
+    },
+    eventOptions
+  )
+
+  useEventListener(
+    window,
+    'pointercancel',
+    () => {
+      if (pointerCount.value > 0) pointerCount.value--
+    },
+    eventOptions
+  )
 }
