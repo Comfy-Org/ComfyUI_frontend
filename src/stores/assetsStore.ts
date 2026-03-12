@@ -70,7 +70,7 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
     assetItem.user_metadata = {
       ...assetItem.user_metadata,
-      outputCount: job.outputs_count,
+      outputCount: task.outputsCount ?? task.previewableOutputs.length,
       allOutputs: task.previewableOutputs
     }
 
@@ -295,6 +295,7 @@ export const useAssetsStore = defineStore('assets', () => {
       >()
 
       const pendingRequestByCategory = new Map<string, ModelPaginationState>()
+      const pendingPromiseByCategory = new Map<string, Promise<void>>()
 
       function createState(
         existingAssets?: Map<string, AssetItem>
@@ -376,6 +377,18 @@ export const useAssetsStore = defineStore('assets', () => {
       }
 
       /**
+       * Check if a category exists in the cache.
+       * Checks both direct category keys and tag-prefixed keys.
+       * @param category The category to check (e.g., 'checkpoints', 'loras')
+       */
+      function hasCategory(category: string): boolean {
+        return (
+          modelStateByCategory.value.has(category) ||
+          modelStateByCategory.value.has(`tag:${category}`)
+        )
+      }
+
+      /**
        * Internal helper to fetch and cache assets for a category.
        * Loads first batch immediately, then progressively loads remaining batches.
        * Keeps existing data visible until new data is successfully fetched.
@@ -388,9 +401,8 @@ export const useAssetsStore = defineStore('assets', () => {
         category: string,
         fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
       ): Promise<void> {
-        // Short-circuit if a request for this category is already in progress
-        if (pendingRequestByCategory.has(category)) {
-          return
+        if (pendingPromiseByCategory.has(category)) {
+          return pendingPromiseByCategory.get(category)!
         }
 
         const existingState = modelStateByCategory.value.get(category)
@@ -466,7 +478,11 @@ export const useAssetsStore = defineStore('assets', () => {
           pendingRequestByCategory.delete(category)
         }
 
-        await loadBatches()
+        const promise = loadBatches().finally(() => {
+          pendingPromiseByCategory.delete(category)
+        })
+        pendingPromiseByCategory.set(category, promise)
+        await promise
       }
 
       /**
@@ -505,6 +521,7 @@ export const useAssetsStore = defineStore('assets', () => {
         modelStateByCategory.value.delete(category)
         assetsArrayCache.delete(category)
         pendingRequestByCategory.delete(category)
+        pendingPromiseByCategory.delete(category)
       }
 
       /**
@@ -608,17 +625,30 @@ export const useAssetsStore = defineStore('assets', () => {
         }
       }
 
+      /**
+       * Invalidate model caches for a given category (e.g., 'checkpoints', 'loras')
+       * Clears the category cache and tag-based caches so next access triggers refetch
+       * @param category The model category to invalidate (e.g., 'checkpoints')
+       */
+      function invalidateModelsForCategory(category: string): void {
+        invalidateCategory(category)
+        invalidateCategory(`tag:${category}`)
+        invalidateCategory('tag:models')
+      }
+
       return {
         getAssets,
         isLoading,
         getError,
         hasMore,
         hasAssetKey,
+        hasCategory,
         updateModelsForNodeType,
         updateModelsForTag,
         invalidateCategory,
         updateAssetMetadata,
-        updateAssetTags
+        updateAssetTags,
+        invalidateModelsForCategory
       }
     }
 
@@ -629,11 +659,13 @@ export const useAssetsStore = defineStore('assets', () => {
       getError: () => undefined,
       hasMore: () => false,
       hasAssetKey: () => false,
+      hasCategory: () => false,
       updateModelsForNodeType: async () => {},
       invalidateCategory: () => {},
       updateModelsForTag: async () => {},
       updateAssetMetadata: async () => {},
-      updateAssetTags: async () => {}
+      updateAssetTags: async () => {},
+      invalidateModelsForCategory: () => {}
     }
   }
 
@@ -643,11 +675,13 @@ export const useAssetsStore = defineStore('assets', () => {
     getError,
     hasMore,
     hasAssetKey,
+    hasCategory,
     updateModelsForNodeType,
     updateModelsForTag,
     invalidateCategory,
     updateAssetMetadata,
-    updateAssetTags
+    updateAssetTags,
+    invalidateModelsForCategory
   } = getModelState()
 
   // Watch for completed downloads and refresh model caches
@@ -718,12 +752,14 @@ export const useAssetsStore = defineStore('assets', () => {
     getError,
     hasMore,
     hasAssetKey,
+    hasCategory,
 
     // Model assets - actions
     updateModelsForNodeType,
     updateModelsForTag,
     invalidateCategory,
     updateAssetMetadata,
-    updateAssetTags
+    updateAssetTags,
+    invalidateModelsForCategory
   }
 })

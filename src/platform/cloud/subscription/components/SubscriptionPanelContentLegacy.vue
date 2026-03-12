@@ -33,9 +33,9 @@
           </div>
 
           <Button
-            v-if="isActiveSubscription"
+            v-if="isActiveSubscription && !isFreeTier"
             variant="secondary"
-            class="ml-auto rounded-lg px-4 py-2 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+            class="ml-auto rounded-lg bg-interface-menu-component-surface-selected px-4 py-2 text-sm font-normal text-text-primary"
             @click="
               async () => {
                 await authActions.accessBillingPortal()
@@ -64,8 +64,8 @@
         </div>
       </div>
 
-      <div class="flex flex-col lg:flex-row gap-6 pt-9">
-        <div class="flex flex-col shrink-0">
+      <div class="flex flex-col gap-6 pt-9 lg:flex-row">
+        <div class="flex shrink-0 flex-col">
           <div class="flex flex-col gap-3">
             <div
               :class="
@@ -82,7 +82,7 @@
                 :loading="isLoadingBalance"
                 @click="handleRefresh"
               >
-                <i class="pi pi-sync text-text-secondary text-sm" />
+                <i class="pi pi-sync text-sm text-text-secondary" />
               </Button>
 
               <div class="flex flex-col gap-2">
@@ -99,7 +99,7 @@
               <table class="text-sm text-muted">
                 <tbody>
                   <tr>
-                    <td class="pr-4 font-bold text-left align-middle">
+                    <td class="pr-4 text-left align-middle font-bold">
                       <Skeleton
                         v-if="isLoadingBalance"
                         width="5rem"
@@ -112,7 +112,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <td class="pr-4 font-bold text-left align-middle">
+                    <td class="pr-4 text-left align-middle font-bold">
                       <Skeleton
                         v-if="isLoadingBalance"
                         width="3rem"
@@ -130,19 +130,27 @@
                 </tbody>
               </table>
 
-              <div class="flex items-center justify-between">
+              <div class="flex flex-col gap-3">
                 <a
                   href="https://platform.comfy.org/profile/usage"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-sm underline text-center text-muted"
+                  class="text-sm text-muted underline"
                 >
                   {{ $t('subscription.viewUsageHistory') }}
                 </a>
                 <Button
-                  v-if="isActiveSubscription"
+                  v-if="isActiveSubscription && isFreeTier"
+                  variant="gradient"
+                  class="min-h-8 w-full rounded-lg p-2 text-sm font-normal"
+                  @click="handleUpgradeToAddCredits"
+                >
+                  {{ $t('subscription.upgradeToAddCredits') }}
+                </Button>
+                <Button
+                  v-else-if="isActiveSubscription"
                   variant="secondary"
-                  class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                  class="min-h-8 rounded-lg bg-interface-menu-component-surface-selected p-2 text-sm font-normal text-text-primary"
                   @click="handleAddApiCredits"
                 >
                   {{ $t('subscription.addCredits') }}
@@ -189,7 +197,7 @@
         href="https://www.comfy.org/cloud/pricing"
         target="_blank"
         rel="noopener noreferrer"
-        class="text-sm underline hover:opacity-80 text-muted"
+        class="text-sm text-muted underline hover:opacity-80"
       >
         {{ $t('subscription.viewMoreDetailsPlans') }}
       </a>
@@ -213,9 +221,10 @@ import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
   getTierCredits,
-  getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { cn } from '@/utils/tailwindUtil'
 
 const authActions = useFirebaseAuthActions()
@@ -224,6 +233,7 @@ const { t, n } = useI18n()
 const {
   isActiveSubscription,
   isCancelled,
+  isFreeTier,
   formattedRenewalDate,
   formattedEndDate,
   subscriptionTier,
@@ -232,7 +242,8 @@ const {
   isYearlySubscription
 } = useSubscription()
 
-const { show: showSubscriptionDialog } = useSubscriptionDialog()
+const { show: showSubscriptionDialog, showPricingTable } =
+  useSubscriptionDialog()
 
 const tierKey = computed(() => {
   const tier = subscriptionTier.value
@@ -254,16 +265,29 @@ const refillsDate = computed(() => {
 
 const creditsRemainingLabel = computed(() =>
   isYearlySubscription.value
-    ? t('subscription.creditsRemainingThisYear', {
-        date: refillsDate.value
-      })
-    : t('subscription.creditsRemainingThisMonth', {
-        date: refillsDate.value
-      })
+    ? t(
+        'subscription.creditsRemainingThisYear',
+        {
+          date: refillsDate.value
+        },
+        {
+          escapeParameter: false
+        }
+      )
+    : t(
+        'subscription.creditsRemainingThisMonth',
+        {
+          date: refillsDate.value
+        },
+        {
+          escapeParameter: false
+        }
+      )
 )
 
 const planTotalCredits = computed(() => {
   const credits = getTierCredits(tierKey.value)
+  if (credits === null) return '—'
   const total = isYearlySubscription.value ? credits * 12 : credits
   return n(total)
 })
@@ -272,53 +296,18 @@ const includedCreditsDisplay = computed(
   () => `${monthlyBonusCredits.value} / ${planTotalCredits.value}`
 )
 
-// Tier benefits for v-for loop
-type BenefitType = 'metric' | 'feature'
-
-interface Benefit {
-  key: string
-  type: BenefitType
-  label: string
-  value?: string
-}
-
-const tierBenefits = computed((): Benefit[] => {
-  const key = tierKey.value
-
-  const benefits: Benefit[] = [
-    {
-      key: 'maxDuration',
-      type: 'metric',
-      value: t(`subscription.maxDuration.${key}`),
-      label: t('subscription.maxDurationLabel')
-    },
-    {
-      key: 'gpu',
-      type: 'feature',
-      label: t('subscription.gpuLabel')
-    },
-    {
-      key: 'addCredits',
-      type: 'feature',
-      label: t('subscription.addCreditsLabel')
-    }
-  ]
-
-  if (getTierFeatures(key).customLoRAs) {
-    benefits.push({
-      key: 'customLoRAs',
-      type: 'feature',
-      label: t('subscription.customLoRAsLabel')
-    })
-  }
-
-  return benefits
-})
+const tierBenefits = computed((): TierBenefit[] =>
+  getCommonTierBenefits(tierKey.value, t, n)
+)
 
 const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
   useSubscriptionCredits()
 
 const { handleAddApiCredits, handleRefresh } = useSubscriptionActions()
+
+function handleUpgradeToAddCredits() {
+  showPricingTable()
+}
 
 // Focus-based polling: refresh balance when user returns from Stripe checkout
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'

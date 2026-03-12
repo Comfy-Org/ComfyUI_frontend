@@ -16,7 +16,7 @@ const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
 const mockTrackBeginCheckout = vi.fn()
 const mockUserId = ref<string | undefined>('user-123')
-const mockGetFirebaseAuthHeader = vi.fn(() =>
+const mockGetAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
 )
 const mockGetCheckoutAttribution = vi.hoisted(() => vi.fn(() => ({})))
@@ -24,6 +24,7 @@ const mockGetCheckoutAttribution = vi.hoisted(() => vi.fn(() => ({})))
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    isFreeTier: computed(() => false),
     subscriptionTier: computed(() => mockSubscriptionTier.value),
     isYearlySubscription: computed(() => mockIsYearlySubscription.value),
     subscriptionStatus: ref(null)
@@ -58,7 +59,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: () =>
     reactive({
-      getFirebaseAuthHeader: mockGetFirebaseAuthHeader,
+      getAuthHeader: mockGetAuthHeader,
       userId: computed(() => mockUserId.value)
     }),
   FirebaseAuthStoreError: class extends Error {}

@@ -18,7 +18,7 @@ import type {
   SubscriptionInfo
 } from './types'
 import { useLegacyBilling } from './useLegacyBilling'
-import { useWorkspaceBilling } from './useWorkspaceBilling'
+import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
 /**
  * Unified billing context that automatically switches between legacy (user-scoped)
@@ -119,6 +119,8 @@ function useBillingContextInternal(): BillingContext {
   const isActiveSubscription = computed(() =>
     toValue(activeContext.value.isActiveSubscription)
   )
+
+  const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
 
   function getMaxSeats(tierKey: TierKey): number {
     if (type.value === 'legacy') return 1
@@ -238,6 +240,7 @@ function useBillingContextInternal(): BillingContext {
     isLoading,
     error,
     isActiveSubscription,
+    isFreeTier,
     getMaxSeats,
 
     initialize,

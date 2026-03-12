@@ -57,7 +57,7 @@ settings: testData as any
 // Don't add test settings to src/schemas/apiSchema.ts
 
 // ❌ Don't chain through unknown to bypass types
-data as unknown as SomeType // Avoid; prefer explicit typings or helpers
+data as unknown as SomeType // Avoid; prefer `as Partial<SomeType> as SomeType` or explicit typings
 ```
 
 ### Accessing Internal State

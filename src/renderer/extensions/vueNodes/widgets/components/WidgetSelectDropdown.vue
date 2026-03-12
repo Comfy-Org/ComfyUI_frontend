@@ -4,6 +4,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
@@ -16,6 +17,7 @@ import {
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import type {
   FilterOption,
@@ -375,6 +377,7 @@ function updateSelectedItems(selectedItems: Set<string>) {
     return
   }
   modelValue.value = name
+  useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
 }
 
 const uploadFile = async (
@@ -449,6 +452,9 @@ async function handleFilesUpdate(files: File[]) {
     if (props.widget.callback) {
       props.widget.callback(uploadedPaths[0])
     }
+
+    // 5. Snapshot undo state so the image change gets its own undo entry
+    useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
   } catch (error) {
     console.error('Upload error:', error)
     toastStore.addAlert(`Upload failed: ${error}`)
@@ -460,7 +466,9 @@ function getMediaUrl(
   type: 'input' | 'output' = 'input'
 ): string {
   if (!['image', 'video'].includes(props.assetKind ?? '')) return ''
-  return `/api/view?filename=${encodeURIComponent(filename)}&type=${type}`
+  const params = new URLSearchParams({ filename, type })
+  appendCloudResParam(params, filename)
+  return `/api/view?${params}`
 }
 </script>
 

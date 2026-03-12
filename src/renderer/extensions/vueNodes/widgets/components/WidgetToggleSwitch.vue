@@ -1,23 +1,38 @@
 <template>
-  <WidgetLayoutField :widget>
-    <div
+  <WidgetLayoutField v-slot="{ borderStyle }" :widget :no-border="!hasLabels">
+    <!-- Use ToggleGroup when explicit labels are provided -->
+    <ToggleGroup
+      v-if="hasLabels"
+      type="single"
+      :model-value="modelValue ? 'on' : 'off'"
+      :disabled="Boolean(widget.options?.read_only)"
       :class="
-        cn('flex w-fit items-center gap-2', !hideLayoutField && 'ml-auto')
+        cn(
+          WidgetInputBaseClass,
+          'flex w-full min-w-0 items-center justify-center gap-1 p-1'
+        )
+      "
+      @update:model-value="(v) => handleOptionChange(v as string)"
+    >
+      <ToggleGroupItem value="off" size="sm">
+        {{ widget.options?.off ?? t('widgets.boolean.false') }}
+      </ToggleGroupItem>
+      <ToggleGroupItem value="on" size="sm">
+        {{ widget.options?.on ?? t('widgets.boolean.true') }}
+      </ToggleGroupItem>
+    </ToggleGroup>
+
+    <!-- Use ToggleSwitch for implicit boolean states -->
+    <div
+      v-else
+      :class="
+        cn(
+          '-m-1 flex w-fit items-center gap-2 rounded-full p-1',
+          hideLayoutField || 'ml-auto',
+          borderStyle
+        )
       "
     >
-      <span
-        v-if="stateLabel"
-        :class="
-          cn(
-            'text-sm transition-colors',
-            modelValue
-              ? 'text-node-component-slot-text'
-              : 'text-node-component-slot-text/50'
-          )
-        "
-      >
-        {{ stateLabel }}
-      </span>
       <ToggleSwitch
         v-model="modelValue"
         v-bind="filteredProps"
@@ -30,7 +45,9 @@
 <script setup lang="ts">
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
@@ -40,6 +57,7 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const { widget } = defineProps<{
@@ -49,14 +67,19 @@ const { widget } = defineProps<{
 const modelValue = defineModel<boolean>()
 
 const hideLayoutField = useHideLayoutField()
+const { t } = useI18n()
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
 )
 
-const stateLabel = computed(() => {
-  const options = widget.options
-  if (!options?.on && !options?.off) return null
-  return modelValue.value ? (options.on ?? 'true') : (options.off ?? 'false')
+const hasLabels = computed(() => {
+  return widget.options?.on != null || widget.options?.off != null
 })
+
+function handleOptionChange(value: string | undefined) {
+  if (value) {
+    modelValue.value = value === 'on'
+  }
+}
 </script>

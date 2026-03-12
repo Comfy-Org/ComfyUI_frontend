@@ -13,6 +13,9 @@ import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+  // Wait for the legacy menu to appear and canvas to settle after layout shift.
+  await comfyPage.page.locator('.comfy-menu').waitFor({ state: 'visible' })
+  await comfyPage.nextFrame()
 })
 
 test.describe('Item Interaction', { tag: ['@screenshot', '@node'] }, () => {
@@ -168,6 +171,9 @@ test.describe('Node Interaction', () => {
 
   test('Can drag node', { tag: '@screenshot' }, async ({ comfyPage }) => {
     await comfyPage.nodeOps.dragTextEncodeNode2()
+    // Move mouse away to avoid hover highlight on the node at the drop position.
+    await comfyPage.canvasOps.moveMouseToEmptyArea()
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png')
   })
 
@@ -733,6 +739,25 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
     )
+    // Wait for V2 persistence debounce to save the modified workflow
+    const start = Date.now()
+    await comfyPage.page.waitForFunction((since) => {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i)
+        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
+        const json = window.localStorage.getItem(key)
+        if (!json) continue
+        try {
+          const index = JSON.parse(json)
+          if (typeof index.updatedAt === 'number' && index.updatedAt >= since) {
+            return true
+          }
+        } catch {
+          // ignore
+        }
+      }
+      return false
+    }, start)
     await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
@@ -755,10 +780,17 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
       await comfyPage.menu.topbar.saveWorkflow(workflowB)
 
-      // Wait for localStorage to persist the workflow paths before reloading
-      await comfyPage.page.waitForFunction(
-        () => !!window.localStorage.getItem('Comfy.OpenWorkflowsPaths')
-      )
+      // Wait for sessionStorage to persist the workflow paths before reloading
+      // V2 persistence uses sessionStorage with client-scoped keys
+      await comfyPage.page.waitForFunction(() => {
+        for (let i = 0; i < window.sessionStorage.length; i++) {
+          const key = window.sessionStorage.key(i)
+          if (key?.startsWith('Comfy.Workflow.OpenPaths:')) {
+            return true
+          }
+        }
+        return false
+      })
       await comfyPage.setup({ clearStorage: false })
     })
 
@@ -787,16 +819,13 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
       const activeWorkflowName =
         await comfyPage.menu.workflowsTab.getActiveWorkflowName()
-      const workflowPathA = `${workflowA}.json`
-      const workflowPathB = `${workflowB}.json`
-
       expect(openWorkflows).toEqual(
-        expect.arrayContaining([workflowPathA, workflowPathB])
+        expect.arrayContaining([workflowA, workflowB])
       )
-      expect(openWorkflows.indexOf(workflowPathA)).toBeLessThan(
-        openWorkflows.indexOf(workflowPathB)
+      expect(openWorkflows.indexOf(workflowA)).toBeLessThan(
+        openWorkflows.indexOf(workflowB)
       )
-      expect(activeWorkflowName).toEqual(workflowPathB)
+      expect(activeWorkflowName).toEqual(workflowB)
     })
   })
 

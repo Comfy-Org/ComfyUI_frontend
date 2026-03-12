@@ -1,5 +1,5 @@
 <template>
-  <div class="comfyui-body grid h-full w-full overflow-hidden">
+  <div class="comfyui-body grid size-full overflow-hidden">
     <div id="comfyui-body-top" class="comfyui-body-top" />
     <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
     <div id="comfyui-body-left" class="comfyui-body-left" />
@@ -13,12 +13,18 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
+    <template v-if="isBuilderMode">
+      <BuilderToolbar />
+      <BuilderMenu />
+      <BuilderFooterToolbar />
+    </template>
   </div>
 
   <GlobalToast />
   <InviteAcceptedToast />
   <RerouteMigrationToast />
   <ModelImportProgressDialog />
+  <AssetExportProgressDialog />
   <ManagerProgressToast />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
@@ -45,15 +51,17 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
-import InviteAcceptedToast from '@/components/toast/InviteAcceptedToast.vue'
+import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
+import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
+import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -66,6 +74,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useAppMode } from '@/composables/useAppMode'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -82,6 +91,9 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
+import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
+import BuilderMenu from '@/components/builder/BuilderMenu.vue'
+import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
@@ -98,7 +110,14 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const { isBuilderMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
+
+watch(linearMode, (isLinear) => {
+  if (isLinear) {
+    useSidebarTabStore().activeSidebarTabId = null
+  }
+})
 
 const telemetry = useTelemetry()
 const firebaseAuthStore = useFirebaseAuthStore()
@@ -113,7 +132,6 @@ watch(
     } else {
       document.body.classList.add(DARK_THEME_CLASS)
     }
-
     if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
@@ -130,12 +148,10 @@ if (isDesktop) {
     (newTasks, oldTasks) => {
       // Report tasks that previously running but are now completed (i.e. in history)
       const oldRunningTaskIds = new Set(
-        oldTasks.filter((task) => task.isRunning).map((task) => task.promptId)
+        oldTasks.filter((task) => task.isRunning).map((task) => task.jobId)
       )
       newTasks
-        .filter(
-          (task) => oldRunningTaskIds.has(task.promptId) && task.isHistory
-        )
+        .filter((task) => oldRunningTaskIds.has(task.jobId) && task.isHistory)
         .forEach((task) => {
           electronAPI().Events.incrementUserProperty(
             `execution:${task.displayStatus.toLowerCase()}`,
@@ -203,6 +219,7 @@ useKeybindingService().registerCoreKeybindings()
 useSidebarTabStore().registerCoreSidebarTabs()
 void useBottomPanelStore().registerCoreBottomPanelTabs()
 
+useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const sidebarTabStore = useSidebarTabStore()
 
@@ -220,7 +237,7 @@ const onExecutionSuccess = async () => {
   await queueStore.update()
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets') {
+  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
     await assetsStore.updateHistory()
   }
 }

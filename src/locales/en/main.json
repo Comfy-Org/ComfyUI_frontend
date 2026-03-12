@@ -20,6 +20,7 @@
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
     "removeTag": "Remove tag",
+    "remove": "Remove",
     "chart": "Chart",
     "chartLowercase": "chart",
     "file": "file",
@@ -34,6 +35,10 @@
     "videoPreview": "Video preview - Use arrow keys to navigate between videos",
     "galleryImage": "Gallery image",
     "galleryThumbnail": "Gallery thumbnail",
+    "previousImage": "Previous image",
+    "nextImage": "Next image",
+    "switchToGridView": "Switch to grid view",
+    "switchToSingleView": "Switch to single view",
     "errorLoadingImage": "Error loading image",
     "errorLoadingVideo": "Error loading video",
     "failedToDownloadImage": "Failed to download image",
@@ -68,7 +73,9 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
+    "enter": "Enter",
     "enterSubgraph": "Enter Subgraph",
+    "inSubgraph": "in subgraph '{name}'",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
@@ -90,6 +97,7 @@
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
     "copyToClipboard": "Copy to Clipboard",
+    "copySystemInfo": "Copy System Info",
     "copyAll": "Copy All",
     "openNewIssue": "Open New Issue",
     "showReport": "Show Report",
@@ -102,6 +110,7 @@
     "delete": "Delete",
     "rename": "Rename",
     "save": "Save",
+    "saveAnyway": "Save Anyway",
     "saving": "Saving",
     "no": "No",
     "cancel": "Cancel",
@@ -112,10 +121,10 @@
     "showRightPanel": "Show right panel",
     "hideRightPanel": "Hide right panel",
     "or": "or",
-    "pressKeysForNewBinding": "Press keys for new binding",
     "defaultBanner": "default banner",
     "enableOrDisablePack": "Enable or disable pack",
     "openManager": "Open Manager",
+    "manageExtensions": "Manage extensions",
     "graphNavigation": "Graph navigation",
     "dropYourFileOr": "Drop your file or",
     "back": "Back",
@@ -171,9 +180,18 @@
     "control_after_generate": "control after generate",
     "control_before_generate": "control before generate",
     "choose_file_to_upload": "choose file to upload",
+    "uploadAlreadyInProgress": "Upload already in progress",
     "capture": "capture",
     "nodes": "Nodes",
-    "nodesCount": "{count} nodes | {count} node | {count} nodes",
+    "nodesCount": "{count} node | {count} nodes",
+    "addNode": "Add a node...",
+    "filterBy": "Filter by:",
+    "filterByType": "Filter by {type}...",
+    "mostRelevant": "Most relevant",
+    "favorites": "Favorites",
+    "essentials": "Essentials",
+    "input": "Input",
+    "output": "Output",
     "community": "Community",
     "all": "All",
     "versionMismatchWarning": "Version Compatibility Warning",
@@ -209,7 +227,7 @@
     "failed": "Failed",
     "cancelled": "Cancelled",
     "job": "Job",
-    "asset": "{count} assets | {count} asset | {count} assets",
+    "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",
     "emDash": "—",
     "enabling": "Enabling {id}",
@@ -247,6 +265,11 @@
     "multiSelectDropdown": "Multi-select dropdown",
     "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
+    "modifyKeybinding": "Modify keybinding",
+    "setAKeybindingForTheFollowing": "Set a keybinding for the following:",
+    "enterYourKeybind": "Enter your keybind",
+    "browserReservedKeybinding": "This shortcut is reserved by some browsers and may have unexpected results.",
+    "browserReservedKeybindingTooltip": "This shortcut conflicts with browser-reserved shortcuts",
     "keybindingAlreadyExists": "Keybinding already exists on",
     "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information.",
     "startRecording": "Start Recording",
@@ -288,11 +311,16 @@
     "1x": "1x",
     "2x": "2x",
     "beta": "BETA",
+    "comfyCloud": "Comfy Cloud",
     "nightly": "NIGHTLY",
     "profile": "Profile",
     "noItems": "No items",
     "preloadError": "A required resource failed to load. Please reload the page.",
-    "preloadErrorTitle": "Loading Error"
+    "preloadErrorTitle": "Loading Error",
+    "recents": "Recents",
+    "partner": "Partner",
+    "collapseAll": "Collapse all",
+    "expandAll": "Expand all"
   },
   "manager": {
     "title": "Nodes Manager",
@@ -323,7 +351,8 @@
       "conflicting": "Conflicting",
       "inWorkflowSection": "IN WORKFLOW",
       "allInWorkflow": "All in: {workflowName}",
-      "missingNodes": "Missing Nodes"
+      "missingNodes": "Missing Nodes",
+      "unresolvedNodes": "Unresolved Nodes"
     },
     "infoPanelEmpty": "Click an item to see the info",
     "applyChanges": "Apply Changes",
@@ -388,6 +417,10 @@
     "noDescription": "No description available",
     "installSelected": "Install Selected",
     "installAllMissingNodes": "Install All",
+    "unresolvedNodes": {
+      "title": "Unresolved Missing Nodes",
+      "message": "The following nodes are not installed and could not be found in the registry."
+    },
     "allMissingNodesInstalled": "All missing nodes have been successfully installed",
     "packsSelected": "packs selected",
     "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
@@ -440,6 +473,9 @@
         "import_failed": "Import Failed"
       },
       "warningTooltip": "This package may have compatibility issues with your current environment"
+    },
+    "packInstall": {
+      "nodeIdRequired": "Node ID is required for installation"
     }
   },
   "importFailed": {
@@ -729,6 +765,7 @@
     "logout": "Logout",
     "queue": "Queue",
     "nodeLibrary": "Node Library",
+    "nodes": "Nodes",
     "workflows": "Workflows",
     "templates": "Templates",
     "assets": "Assets",
@@ -742,9 +779,14 @@
       "filterVideo": "Video",
       "filterAudio": "Audio",
       "filter3D": "3D",
-      "filterText": "Text"
+      "filterText": "Text",
+      "viewSettings": "View settings"
     },
     "backToAssets": "Back to all assets",
+    "folderView": {
+      "errorSummary": "Failed to load outputs",
+      "errorDetail": "Could not retrieve outputs for this job. Please try again."
+    },
     "searchAssets": "Search Assets",
     "labels": {
       "queue": "Queue",
@@ -769,6 +811,17 @@
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
+      "essentials": "Essentials",
+      "allNodes": "All",
+      "blueprints": "Blueprints",
+      "custom": "Custom",
+      "filter": "Filter",
+      "filterOptions": {
+        "blueprints": "Blueprints",
+        "partnerNodes": "Partner Nodes",
+        "comfyNodes": "Comfy Nodes",
+        "extensions": "Extensions"
+      },
       "groupBy": "Group By",
       "sortMode": "Sort Mode",
       "resetView": "Reset View to Default",
@@ -781,11 +834,24 @@
         "sourceDesc": "Group by source type (Core, Custom, API)"
       },
       "sortBy": {
-        "original": "Original",
+        "original": "Categorized",
         "originalDesc": "Keep original order",
-        "alphabetical": "Alphabetical",
+        "alphabetical": "A-Z",
         "alphabeticalDesc": "Sort alphabetically within groups"
-      }
+      },
+      "sections": {
+        "favorites": "Favorites",
+        "favoriteNode": "Favorite Node",
+        "unfavoriteNode": "Unfavorite Node",
+        "bookmarked": "Bookmarked",
+        "subgraphBlueprints": "Subgraph Blueprints",
+        "myBlueprints": "My Blueprints",
+        "comfyBlueprints": "Comfy Blueprints",
+        "partnerNodes": "Partner Nodes",
+        "comfyNodes": "Comfy Nodes",
+        "extensions": "Extensions"
+      },
+      "noBookmarkedNodes": "No favorites yet"
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
@@ -806,11 +872,15 @@
       "showAssetsPanel": "Show assets panel",
       "queuedSuffix": "queued",
       "clearQueued": "Clear queued",
-      "clearHistory": "Clear job queue history",
+      "clearHistory": "Clear job history",
+      "dockedJobHistory": "Docked Job History",
+      "showRunProgressBar": "Show run progress bar",
+      "clearHistoryMenuAssetsNote": "Media assets won't be deleted.",
       "filterJobs": "Filter jobs",
       "filterBy": "Filter by",
       "filterAllWorkflows": "All workflows",
       "filterCurrentWorkflow": "Current workflow",
+      "searchJobs": "Search...",
       "sortJobs": "Sort jobs",
       "sortBy": "Sort by",
       "activeJobs": "{count} active job | {count} active jobs",
@@ -831,6 +901,7 @@
       "jobsAddedToQueue": "{count} job added to queue | {count} jobs added to queue",
       "cancelJobTooltip": "Cancel job",
       "clearQueueTooltip": "Clear queue",
+      "clearAllJobsTooltip": "Cancel all running jobs",
       "clearHistoryDialogTitle": "Clear your job queue history?",
       "clearHistoryDialogDescription": "All the finished or failed jobs below will be removed from this Job queue panel.",
       "clearHistoryDialogAssetsNote": "Assets generated by these jobs won’t be deleted and can always be viewed from the assets panel."
@@ -899,6 +970,8 @@
     "runWorkflowFront": "Run workflow (Queue at front)",
     "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
     "run": "Run",
+    "stopRunInstant": "Stop Run (Instant)",
+    "stopRunInstantTooltip": "Stop running",
     "execute": "Execute",
     "interrupt": "Cancel current run",
     "refresh": "Refresh node definitions",
@@ -913,8 +986,8 @@
     "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
-    "helpAndFeedback": "Help & Feedback",
-    "queue": "Queue Panel"
+    "queue": "Queue Panel",
+    "fullscreen": "Fullscreen"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -990,6 +1063,8 @@
     "logoProviderSeparator": " & "
   },
   "graphCanvasMenu": {
+    "canvasMode": "Canvas Mode",
+    "canvasToolbar": "Canvas Toolbar",
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",
     "resetView": "Reset View",
@@ -1023,7 +1098,9 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
-    "saveWorkflow": "Save workflow"
+    "saveWorkflow": "Save workflow",
+    "savedAsApp": "Converted to app workflow",
+    "savedAsWorkflow": "Converted to node graph only workflow"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -1046,7 +1123,11 @@
     "cannotDeleteGlobal": "Cannot delete installed blueprints",
     "enterDescription": "Enter a description",
     "searchAliases": "Search Aliases",
-    "enterSearchAliases": "Enter search aliases (comma separated)"
+    "enterSearchAliases": "Enter search aliases (comma separated)",
+    "disconnected": "Disconnected",
+    "linked": "(Linked)",
+    "promoteWidget": "Promote Widget: {name}",
+    "unpromoteWidget": "Un-Promote Widget: {name}"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
@@ -1121,8 +1202,8 @@
   "queue": {
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
-    "jobAddedToQueue": "Job added to queue",
-    "jobQueueing": "Job queueing",
+    "jobAddedToQueue": "Job queued",
+    "jobQueueing": "Job queuing",
     "completedIn": "Finished in {duration}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
@@ -1191,6 +1272,7 @@
     "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Experimental: Browse Model Assets": "Experimental: Browse Model Assets",
     "Browse Templates": "Browse Templates",
+    "Copy": "Copy",
     "Delete Selected Items": "Delete Selected Items",
     "Zoom to fit": "Zoom to fit",
     "Lock Canvas": "Lock Canvas",
@@ -1198,8 +1280,11 @@
     "Move Selected Nodes Left": "Move Selected Nodes Left",
     "Move Selected Nodes Right": "Move Selected Nodes Right",
     "Move Selected Nodes Up": "Move Selected Nodes Up",
+    "Paste": "Paste",
+    "Paste with Connect": "Paste with Connect",
     "Reset View": "Reset View",
     "Resize Selected Nodes": "Resize Selected Nodes",
+    "Select All": "Select All",
     "Node Links": "Node Links",
     "Canvas Toggle Lock": "Canvas Toggle Lock",
     "Minimap": "Minimap",
@@ -1288,6 +1373,7 @@
     "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
     "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
     "Focus Mode": "Focus Mode",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps",
     "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
@@ -1359,8 +1445,10 @@
     "Execution": "Execution",
     "PLY": "PLY",
     "Workspace": "Workspace",
+    "Error System": "Error System",
     "Other": "Other",
-    "Secrets": "Secrets"
+    "Secrets": "Secrets",
+    "Node Library": "Node Library"
   },
   "serverConfigItems": {
     "listen": {
@@ -1527,6 +1615,7 @@
     "kandinsky5": "kandinsky5",
     "hooks": "hooks",
     "combine": "combine",
+    "math": "math",
     "logic": "logic",
     "cond single": "cond single",
     "context": "context",
@@ -1537,6 +1626,7 @@
     "deprecated": "deprecated",
     "debug": "debug",
     "model": "model",
+    "ElevenLabs": "ElevenLabs",
     "3d": "3d",
     "ltxv": "ltxv",
     "qwen": "qwen",
@@ -1544,9 +1634,11 @@
     "unet": "unet",
     "sigmas": "sigmas",
     "BFL": "BFL",
+    "": "",
     "Gemini": "Gemini",
     "video_models": "video_models",
     "gligen": "gligen",
+    "shader": "shader",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
     "sd": "sd",
@@ -1577,6 +1669,7 @@
     "primitive": "primitive",
     "Recraft": "Recraft",
     "edit_models": "edit_models",
+    "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
     "animation": "animation",
@@ -1589,11 +1682,11 @@
     "3d_models": "3d_models",
     "style_model": "style_model",
     "Tencent": "Tencent",
+    "textgen": "textgen",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
-    "": "",
     "camera": "camera",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
@@ -1606,6 +1699,7 @@
     "AUDIO_ENCODER_OUTPUT": "AUDIO_ENCODER_OUTPUT",
     "AUDIO_RECORD": "AUDIO_RECORD",
     "BOOLEAN": "BOOLEAN",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "CAMERA_CONTROL",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -1617,6 +1711,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "CONDITIONING",
     "CONTROL_NET": "CONTROL_NET",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -1655,6 +1750,7 @@
     "OPENAI_INPUT_FILES": "OPENAI_INPUT_FILES",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PIXVERSE_TEMPLATE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "RECRAFT_COLOR",
     "RECRAFT_CONTROLS": "RECRAFT_CONTROLS",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
@@ -1706,8 +1802,16 @@
     "doNotAskAgain": "Don't show this again",
     "reEnableInSettings": "Re-enable in {link}",
     "reEnableInSettingsLink": "Settings",
-    "missingModels": "Missing Models",
-    "missingModelsMessage": "When loading the graph, the following models were not found"
+    "title": "This workflow is missing models",
+    "description": "This workflow requires models you haven't downloaded yet.",
+    "totalSize": "Total download size:",
+    "downloadAll": "Download all",
+    "downloadAvailable": "Download available",
+    "gotIt": "Ok, got it",
+    "footerDescription": "Download and place these models in the correct folder.\nNodes with missing models are highlighted red on the canvas.",
+    "customModelsWarning": "Some of these are custom models that we don't recognize.",
+    "customModelsInstruction": "You'll need to find and download them manually. Search for them online (try Civitai or HuggingFace) or contact the original workflow provider.",
+    "acceptTerms": "Accept terms"
   },
   "versionMismatchWarning": {
     "title": "Version Compatibility Warning",
@@ -1753,7 +1857,12 @@
     "errorNotSupported": "Clipboard API not supported in your browser"
   },
   "imageCompare": {
-    "noImages": "No images to compare"
+    "noImages": "No images to compare",
+    "batchLabelA": "A:",
+    "batchLabelB": "B:"
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "load3d": {
     "switchCamera": "Switch Camera",
@@ -1828,6 +1937,19 @@
     "unlockRatio": "Unlock aspect ratio",
     "custom": "Custom"
   },
+  "painter": {
+    "tool": "Tool",
+    "brush": "Brush",
+    "eraser": "Eraser",
+    "size": "Cursor Size",
+    "color": "Color Picker",
+    "hardness": "Hardness",
+    "width": "Width",
+    "height": "Height",
+    "background": "Background",
+    "clear": "Clear",
+    "uploadError": "Failed to upload painter image: {status} - {statusText}"
+  },
   "boundingBox": {
     "x": "X",
     "y": "Y",
@@ -1847,6 +1969,7 @@
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
     "dropFileError": "Unable to process dropped item: {error}",
+    "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
     "interrupted": "Execution has been interrupted",
     "pendingTasksDeleted": "Pending tasks deleted",
     "nothingToGroup": "Nothing to group",
@@ -1862,6 +1985,7 @@
     "nodeDefinitionsUpdated": "Node definitions updated",
     "errorSaveSetting": "Error saving setting {id}: {err}",
     "errorCopyImage": "Error copying image: {error}",
+    "errorOpenImage": "Error opening image: {error}",
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
@@ -1931,6 +2055,7 @@
       "newUser": "New here?",
       "userAvatar": "User Avatar",
       "signUp": "Sign up",
+      "signUpFreeTierPromo": "New here? {signUp} with Google to get {credits} free credits every month.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -1955,7 +2080,12 @@
       "failed": "Login failed",
       "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.",
       "questionsContactPrefix": "Questions? Contact us at",
-      "noAssociatedUser": "There is no Comfy user associated with the provided API key"
+      "noAssociatedUser": "There is no Comfy user associated with the provided API key",
+      "useEmailInstead": "Use email instead",
+      "freeTierBadge": "Eligible for Free Tier",
+      "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
+      "freeTierDescriptionGeneric": "Sign up with Google to get free credits every month. No card needed.",
+      "backToSocialLogin": "Sign up with Google or Github instead"
     },
     "signup": {
       "title": "Create an account",
@@ -1969,12 +2099,15 @@
       "signUpWithGoogle": "Sign up with Google",
       "signUpWithGithub": "Sign up with Github",
       "regionRestrictionChina": "In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China.",
-      "personalDataConsentLabel": "I agree to the processing of my personal data."
+      "personalDataConsentLabel": "I agree to the processing of my personal data.",
+      "emailNotEligibleForFreeTier": "Email sign-up is not eligible for Free Tier."
     },
     "signOut": {
       "signOut": "Log Out",
       "success": "Signed out successfully",
-      "successDetail": "You have been signed out of your account."
+      "successDetail": "You have been signed out of your account.",
+      "unsavedChangesTitle": "Unsaved Changes",
+      "unsavedChangesMessage": "You have unsaved changes that will be lost when you sign out. Do you want to continue?"
     },
     "passwordUpdate": {
       "success": "Password Updated",
@@ -2158,10 +2291,15 @@
     "invoiceHistory": "Invoice history",
     "benefits": {
       "benefit1": "Monthly credits for Partner Nodes — top up when needed",
-      "benefit2": "Up to 30 min runtime per job"
+      "benefit1FreeTier": "More monthly credits, top up anytime",
+      "benefit2": "Up to 1 hour runtime per job on Pro",
+      "benefit3": "Bring your own models (Creator & Pro)"
     },
     "yearlyDiscount": "20% DISCOUNT",
     "tiers": {
+      "free": {
+        "name": "Free"
+      },
       "founder": {
         "name": "Founder's Edition"
       },
@@ -2185,6 +2323,8 @@
     },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
+    "subscribeForMore": "Upgrade",
+    "upgradeToAddCredits": "Upgrade to add credits",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
@@ -2195,6 +2335,21 @@
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
     "viewEnterprise": "View enterprise",
+    "freeTier": {
+      "title": "You're on the Free plan",
+      "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
+      "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
+      "nextRefresh": "Your credits refresh on {date}.",
+      "subscribeCta": "Subscribe for more",
+      "outOfCredits": {
+        "title": "You're out of free credits",
+        "subtitle": "Subscribe to unlock top-ups and more"
+      },
+      "topUpBlocked": {
+        "title": "Unlock top-ups and more"
+      },
+      "upgradeCta": "View plans"
+    },
     "partnerNodesCredits": "Partner nodes pricing",
     "plansAndPricing": "Plans & pricing",
     "managePlan": "Manage plan",
@@ -2222,6 +2377,7 @@
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
     "maxDuration": {
+      "free": "30 min",
       "standard": "30 min",
       "creator": "30 min",
       "pro": "1 hr",
@@ -2406,6 +2562,10 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "boolean": {
+      "true": "true",
+      "false": "false"
+    },
     "node2only": "Node 2.0 only",
     "selectModel": "Select model",
     "uploadSelect": {
@@ -2415,7 +2575,8 @@
       "placeholderVideo": "Select video...",
       "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
-      "placeholderUnknown": "Select media..."
+      "placeholderUnknown": "Select media...",
+      "maxSelectionReached": "Maximum selection limit reached"
     },
     "valueControl": {
       "header": {
@@ -2457,11 +2618,20 @@
   },
   "breadcrumbsMenu": {
     "duplicate": "Duplicate",
+    "enterAppMode": "Enter app mode",
+    "exitAppMode": "Exit app mode",
+    "enterBuilderMode": "Build app",
+    "editBuilderMode": "Edit app",
+    "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
     "enterNewName": "Enter new name",
-    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red)."
+    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red).",
+    "graph": "Graph",
+    "app": "App",
+    "enterNodeGraph": "Enter node graph",
+    "share": "Share"
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",
@@ -2484,6 +2654,14 @@
     "showGroups": "Show Frames/Groups",
     "renderBypassState": "Render Bypass State",
     "renderErrorState": "Render Error State"
+  },
+  "nightlySurvey": {
+    "title": "Help Us Improve",
+    "description": "You've been using this feature. Would you take a moment to share your feedback?",
+    "accept": "Sure, I'll help!",
+    "notNow": "Not Now",
+    "dontAskAgain": "Don't Ask Again",
+    "loadError": "Failed to load survey. Please try again later."
   },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
@@ -2819,9 +2997,10 @@
       "insertAllAssetsAsNodes": "Insert all assets as nodes",
       "openWorkflowAll": "Open all workflows",
       "exportWorkflowAll": "Export all workflows",
-      "downloadStarted": "Downloading {count} files...",
-      "downloadsStarted": "Started downloading {count} file(s)",
-      "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
+      "downloadStarted": "Downloading {count} file... | Downloading {count} files...",
+      "downloadsStarted": "Started downloading {count} file | Started downloading {count} files",
+      "exportStarted": "Preparing ZIP export for {count} file | Preparing ZIP export for {count} files",
+      "assetsDeletedSuccessfully": "{count} asset deleted successfully | {count} assets deleted successfully",
       "failedToDeleteAssets": "Failed to delete selected assets",
       "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed",
       "nodesAddedToWorkflow": "{count} node(s) added to workflow",
@@ -2847,7 +3026,136 @@
   "actionbar": {
     "dockToTop": "Dock to top",
     "feedback": "Feedback",
-    "feedbackTooltip": "Feedback"
+    "feedbackTooltip": "Feedback",
+    "share": "Share",
+    "shareTooltip": "Share workflow"
+  },
+  "shareNoOutputs": {
+    "title": "App has no outputs",
+    "message": "You're about to share an app without outputs. It can't be used until an output is connected.\n\nShare anyway?",
+    "shareAnyway": "Share anyway"
+  },
+  "shareWorkflow": {
+    "shareLinkTab": "Share",
+    "publishToHubTab": "Publish",
+    "loadingTitle": "Share workflow",
+    "unsavedTitle": "Save workflow first",
+    "unsavedDescription": "You must save your workflow before sharing. Save it now to continue.",
+    "saveButton": "Save workflow",
+    "saving": "Saving...",
+    "workflowNameLabel": "Workflow name",
+    "createLinkTitle": "Share workflow",
+    "createLinkDescription": "When you create a link for your workflow, you will share these media items along with your workflow",
+    "privateAssetsDescription": "Your workflow contains private models and/or media files",
+    "createLinkButton": "Create a link",
+    "creatingLink": "Creating a link...",
+    "successTitle": "Workflow successfully published!",
+    "successDescription": "Anyone with this link can view and use this workflow. If you make changes to this workflow, you can republish to update the shared version.",
+    "hasChangesTitle": "Share workflow",
+    "hasChangesDescription": "You have made changes since this workflow was last published.",
+    "updateLinkButton": "Update link",
+    "updatingLink": "Updating link...",
+    "publishedOn": "Published on {date}",
+    "copyLink": "Copy",
+    "linkCopied": "Copied!",
+    "shareUrlLabel": "Share URL",
+    "loadFailed": "Failed to load shared workflow",
+    "saveFailedTitle": "Save failed",
+    "saveFailedDescription": "Failed to save workflow. Please try again.",
+    "mediaLabel": "{count} Media File | {count} Media Files",
+    "modelsLabel": "{count} Model | {count} Models",
+    "checkingAssets": "Checking media visibility…",
+    "acknowledgeCheckbox": "I understand these media items will be published and made public",
+    "inLibrary": "In library",
+    "comfyHubTitle": "Upload to ComfyHub",
+    "comfyHubDescription": "ComfyHub is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
+    "comfyHubButton": "Upload to ComfyHub"
+  },
+  "openSharedWorkflow": {
+    "dialogTitle": "Open shared workflow",
+    "author": "Author:",
+    "copyDescription": "Opening the workflow will create a new copy in your workspace",
+    "nonPublicAssetsWarningLine1": "This workflow comes with non-public assets.",
+    "nonPublicAssetsWarningLine2": "These will be imported to your library when you open the workflow",
+    "copyAssetsAndOpen": "Import assets & open workflow",
+    "openWorkflow": "Open workflow",
+    "openWithoutImporting": "Open without importing",
+    "importFailed": "Failed to import workflow assets",
+    "loadError": "Could not load this shared workflow. Please try again later."
+  },
+  "comfyHubPublish": {
+    "title": "Publish to ComfyHub",
+    "stepDescribe": "Describe your workflow",
+    "stepExamples": "Add output examples",
+    "stepFinish": "Finish publishing",
+    "workflowName": "Workflow name",
+    "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
+    "workflowDescription": "Workflow description",
+    "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
+    "workflowType": "Workflow type",
+    "workflowTypePlaceholder": "Select the type",
+    "workflowTypeImageGeneration": "Image generation",
+    "workflowTypeVideoGeneration": "Video generation",
+    "workflowTypeUpscaling": "Upscaling",
+    "workflowTypeEditing": "Editing",
+    "tags": "Tags",
+    "tagsDescription": "Select tags so people can find your workflow faster",
+    "tagsPlaceholder": "Enter tags that match your workflow to help people find it e.g #nanobanana, #anime or #faceswap",
+    "selectAThumbnail": "Select a thumbnail",
+    "showMoreTags": "Show more...",
+    "showLessTags": "Show less...",
+    "suggestedTags": "Suggested tags",
+    "thumbnailImage": "Image",
+    "thumbnailVideo": "Video",
+    "thumbnailImageComparison": "Image comparison",
+    "uploadThumbnail": "Upload an image",
+    "uploadVideo": "Upload a video",
+    "uploadComparison": "Upload before and after",
+    "thumbnailPreview": "Thumbnail preview",
+    "uploadPromptClickToBrowse": "Click to browse or",
+    "uploadPromptDropImage": "drop an image here",
+    "uploadPromptDropVideo": "drop a video here",
+    "uploadComparisonBeforePrompt": "Before",
+    "uploadComparisonAfterPrompt": "After",
+    "uploadThumbnailHint": "1:1 preferred, 1080p max",
+    "back": "Back",
+    "next": "Next",
+    "publishButton": "Publish to ComfyHub",
+    "examplesDescription": "Add up to {total} additional sample images",
+    "uploadAnImage": "Click to browse or drag an image",
+    "uploadExampleImage": "Upload example image",
+    "exampleImage": "Example image {index}",
+    "videoPreview": "Video thumbnail preview",
+    "maxExamples": "You can select up to {max} examples",
+    "createProfileToPublish": "Create a profile to publish to ComfyHub",
+    "createProfileCta": "Create a profile"
+  },
+  "comfyHubProfile": {
+    "checkingAccess": "Checking your publishing access...",
+    "profileCreationNav": "Profile creation",
+    "introTitle": "Publish to the ComfyHub",
+    "introDescription": "Publish your workflows, build your portfolio and get discovered by millions of users",
+    "introSubtitle": "To share your workflow on ComfyHub, let's first create your profile.",
+    "createProfileButton": "Create my profile",
+    "startPublishingButton": "Start publishing",
+    "modalTitle": "Create your profile on ComfyHub",
+    "createProfileTitle": "Create your Comfy Hub profile",
+    "uploadCover": "+ Upload a cover",
+    "uploadProfilePicture": "+ Upload a profile picture",
+    "chooseProfilePicture": "Choose a profile picture",
+    "nameLabel": "Your name",
+    "namePlaceholder": "Enter your name here",
+    "usernameLabel": "Your username (required)",
+    "usernamePlaceholder": "@",
+    "descriptionLabel": "Your description",
+    "descriptionPlaceholder": "Tell the community about yourself...",
+    "createProfile": "Create profile",
+    "creatingProfile": "Creating profile...",
+    "successTitle": "Looking good, {'@'}{username}!",
+    "successProfileUrl": "Your profile page is live at",
+    "successProfileLink": "comfy.com/p/{username}",
+    "successDescription": "You can now upload your workflow to your creator page",
+    "uploadWorkflowButton": "Upload my workflow"
   },
   "desktopDialogs": {
     "": {
@@ -2875,19 +3183,86 @@
   },
   "linearMode": {
     "linearMode": "App Mode",
-    "beta": "App Mode in Beta - Feedback",
+    "beta": "App mode in beta",
+    "buildAnApp": "Build an app",
+    "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
-    "runCount": "Run count:",
+    "mobileControls": "Edit & Run",
+    "runCount": "Number of runs",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
-    "downloadAll": "Download All",
+    "downloadAll": "Download {count} assets from this run",
+    "viewJob": "View Job",
+    "enterNodeGraph": "Enter node graph",
+    "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
+    "backToWorkflow": "Back to workflow",
+    "loadTemplate": "Load a template",
+    "cancelThisRun": "Cancel this run",
+    "deleteAllAssets": "Delete all assets from this run",
+    "hasCreditCost": "Requires additional credits",
+    "viewGraph": "View node graph",
+    "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
     "welcome": {
-      "title": "Welcome to App Mode",
-      "intro": "A simplified view that hides the node graph so you can focus on creating.",
-      "layout": "On the left, you'll see your generated images, videos, and outputs. On the right, just the controls you need. Everything complex stays out of sight.",
-      "sharing": "Sharing is easy: create your workflow, open App Mode, right-click the tab, and export. When others open your file, it launches straight into this clean view. You can share powerful workflows as simple tools without anyone needing to understand node graphs.",
-      "widget": "If you want to control which settings appear, convert your top-level nodes into a subgraph, then use widget promotion in the toolbox above it to choose what's exposed."
+      "title": "App Mode",
+      "message": "A simplified view that hides the node graph so you can focus on creating.",
+      "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
+      "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
+      "getStarted": "Click {runButton} to get started.",
+      "buildApp": "Build app",
+      "noOutputs": "An app needs at least {count} to be usable.",
+      "oneOutput": "1 output"
+    },
+    "appModeToolbar": {
+      "appBuilder": "App builder",
+      "apps": "Apps",
+      "appsEmptyMessage": "Saved apps will show up here.",
+      "appsEmptyMessageAction": "Click below to build your first app."
+    },
+    "arrange": {
+      "noOutputs": "No outputs added yet",
+      "switchToOutputs": "Switch to the 'Output' step and click on output nodes to add them here.",
+      "connectAtLeastOne": "Connect {atLeastOne} output node so users can see results after running.",
+      "atLeastOne": "at least one",
+      "outputExamples": "Examples: 'Save Image' or 'Save Video'",
+      "switchToOutputsButton": "Switch to Outputs",
+      "outputs": "Outputs",
+      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
+    },
+    "builder": {
+      "title": "App builder mode",
+      "exit": "Exit builder",
+      "exitConfirmTitle": "Exit app builder?",
+      "exitConfirmMessage": "You have unsaved changes that will be lost\nExit without saving?",
+      "promptAddInputs": "Click on node parameters to add them here as inputs",
+      "noInputs": "No inputs added yet",
+      "inputsDesc": "Users will interact and adjust these to generate their outputs.",
+      "inputsExample": "Examples: “Load image”, “Text prompt”, “Steps”",
+      "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
+      "noOutputs": "No output nodes added yet",
+      "outputsDesc": "Connect at least one output node so users can see results after running.",
+      "outputsExample": "Examples: “Save Image” or “Save Video”",
+      "unknownWidget": "Widget not visible",
+      "inputPlaceholder": "Inputs will show up here",
+      "outputPlaceholder": "Output nodes will show up here",
+      "outputRequiredPlaceholder": "At least one node is required"
+    },
+    "error": {
+      "header": "This app encountered an error",
+      "log": "Error Logs",
+      "mobileFixable": "Check {0} for errors",
+      "requiresGraph": "Something went wrong during generation. This could be due to invalid hidden inputs, missing resources, or workflow configuration issues.",
+      "promptVisitGraph": "View the node graph to see the full error.",
+      "getHelp": "For help, view our {0}, {1}, or {2} with the copied error.",
+      "goto": "Show errors in graph",
+      "github": "submit a GitHub issue",
+      "guide": "troubleshooting guide",
+      "support": "contact our support",
+      "promptShow": "Show error report"
+    },
+    "queue": {
+      "clickToClear": "Click to clear queue",
+      "clear": "Clear queue"
     }
   },
   "missingNodes": {
@@ -2904,6 +3279,32 @@
       "description": "This workflow uses custom nodes you haven't installed yet.",
       "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
     }
+  },
+  "nodeReplacement": {
+    "quickFixAvailable": "Quick Fix Available",
+    "installationRequired": "Installation Required",
+    "compatibleAlternatives": "Compatible Alternatives",
+    "replaceable": "Replaceable",
+    "replaced": "Replaced",
+    "notReplaceable": "Install Required",
+    "selectAll": "Select All",
+    "replaceSelected": "Replace Selected ({count})",
+    "replacedNode": "Replaced node: {nodeType}",
+    "replacedAllNodes": "Replaced {count} node type(s)",
+    "replaceFailed": "Failed to replace nodes",
+    "instructionMessage": "You must install these nodes or replace them with installed alternatives to run the workflow. Missing nodes are highlighted in {red} on the canvas. Some nodes cannot be swapped and must be installed via Node Manager.",
+    "redHighlight": "red",
+    "openNodeManager": "Open Node Manager",
+    "skipForNow": "Skip for Now",
+    "installMissingNodes": "Install Missing Nodes",
+    "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure.",
+    "swapNodesGuide": "The following nodes can be automatically replaced with compatible alternatives.",
+    "willBeReplacedBy": "This node will be replaced by:",
+    "replaceNode": "Replace Node",
+    "replaceAll": "Replace All",
+    "unknownNode": "Unknown",
+    "replaceAllWarning": "Replaces all available nodes in this group.",
+    "swapNodesTitle": "Swap Nodes"
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
@@ -2960,8 +3361,78 @@
     "fallbackGroupTitle": "Group",
     "fallbackNodeTitle": "Node",
     "hideAdvancedInputsButton": "Hide advanced inputs",
+    "errors": "Errors",
+    "noErrors": "No errors",
+    "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
+    "enterSubgraph": "Enter subgraph",
+    "seeError": "See Error",
+    "promptErrors": {
+      "prompt_no_outputs": {
+        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
+      },
+      "no_prompt": {
+        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
+      },
+      "server_error_local": {
+        "desc": "The server encountered an unexpected error. Please check the server logs."
+      },
+      "server_error_cloud": {
+        "desc": "The server encountered an unexpected error. Please try again later."
+      }
+    },
+    "errorHelp": "For more help, {github} or {support}",
+    "errorHelpGithub": "submit a GitHub issue",
+    "errorHelpSupport": "contact our support",
     "resetToDefault": "Reset to default",
-    "resetAllParameters": "Reset all parameters"
+    "resetAllParameters": "Reset all parameters",
+    "missingNodePacks": {
+      "title": "Missing Node Packs",
+      "unsupportedTitle": "Unsupported Node Packs",
+      "cloudMessage": "This workflow requires custom nodes not yet available on Comfy Cloud.",
+      "ossMessage": "This workflow uses custom nodes you haven't installed yet.",
+      "ossManagerDisabledHint": "To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.",
+      "installAll": "Install All",
+      "installNodePack": "Install node pack",
+      "unknownPack": "Unknown pack",
+      "installing": "Installing...",
+      "installed": "Installed",
+      "applyChanges": "Apply Changes",
+      "searchInManager": "Search in Node Manager",
+      "viewInManager": "View in Manager",
+      "collapse": "Collapse",
+      "expand": "Expand"
+    },
+    "missingModels": {
+      "urlPlaceholder": "Paste Model URL (Civitai or Hugging Face)",
+      "or": "OR",
+      "useFromLibrary": "Use from Library",
+      "usingFromLibrary": "Using from Library",
+      "unsupportedUrl": "Only Civitai and Hugging Face URLs are supported.",
+      "metadataFetchFailed": "Failed to retrieve metadata. Please check the link and try again.",
+      "import": "Import",
+      "importing": "Importing...",
+      "imported": "Imported",
+      "importFailed": "Import failed",
+      "typeMismatch": "This model seems to be a \"{detectedType}\". Are you sure?",
+      "importAnyway": "Import Anyway",
+      "alreadyExistsInCategory": "This model already exists in \"{category}\"",
+      "customNodeDownloadDisabled": "Cloud environment does not support model imports for custom nodes in this section. Please use standard loader nodes or substitute with a model from the library below.",
+      "importNotSupported": "Import Not Supported",
+      "copyModelName": "Copy model name",
+      "confirmSelection": "Confirm selection",
+      "locateNode": "Locate node on canvas",
+      "cancelSelection": "Cancel selection",
+      "clearUrl": "Clear URL",
+      "expandNodes": "Show referencing nodes",
+      "collapseNodes": "Hide referencing nodes",
+      "unknownCategory": "Unknown",
+      "missingModelsTitle": "Missing Models",
+      "assetLoadTimeout": "Model detection timed out. Try reloading the workflow."
+    }
+  },
+  "errorOverlay": {
+    "errorCount": "{count} ERROR | {count} ERRORS",
+    "seeErrors": "See Errors"
   },
   "help": {
     "recentReleases": "Recent releases",
@@ -2970,7 +3441,7 @@
   "progressToast": {
     "importingModels": "Importing Models",
     "downloadingModel": "Downloading model...",
-    "downloadsFailed": "{count} downloads failed | {count} download failed | {count} downloads failed",
+    "downloadsFailed": "{count} download failed | {count} downloads failed",
     "allDownloadsCompleted": "All downloads completed",
     "noImportsInQueue": "No {filter} in queue",
     "failed": "Failed",
@@ -2983,15 +3454,26 @@
       "failed": "Failed"
     }
   },
+  "exportToast": {
+    "exportingAssets": "Exporting Assets",
+    "preparingExport": "Preparing export...",
+    "exportError": "Export failed",
+    "exportFailed": "{count} export failed | {count} exports failed",
+    "allExportsCompleted": "All exports completed",
+    "noExportsInQueue": "No {filter} exports in queue",
+    "exportStarted": "Preparing ZIP download...",
+    "exportCompleted": "ZIP download ready",
+    "exportFailedSingle": "Failed to create ZIP export",
+    "downloadExport": "Download export",
+    "downloadFailed": "Failed to download \"{name}\"",
+    "retryDownload": "Retry download"
+  },
   "workspace": {
-    "unsavedChanges": {
-      "title": "Unsaved Changes",
-      "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
-    },
     "inviteAccepted": "Invite Accepted",
     "addedToWorkspace": "You have been added to:",
     "inviteFailed": "Failed to Accept Invite",
-    "viewWorkspace": "View workspace"
+    "viewWorkspace": "View workspace",
+    "switchFailed": "Failed to switch workspace. Please try again."
   },
   "workspaceAuth": {
     "errors": {
@@ -3047,5 +3529,77 @@
       "duplicateName": "A secret with this name already exists",
       "duplicateProvider": "A secret for this provider already exists"
     }
+  },
+  "essentials": {
+    "loadImage": "Load Image",
+    "saveImage": "Save Image",
+    "loadVideo": "Load Video",
+    "saveVideo": "Save Video",
+    "load3DModel": "Load 3D model",
+    "save3DModel": "Save 3D Model",
+    "text": "Text",
+    "batchImage": "Batch Image",
+    "cropImage": "Crop Image",
+    "resizeImage": "Resize Image",
+    "rotate": "Rotate",
+    "invert": "Invert",
+    "canny": "Canny",
+    "removeBackground": "Remove Background",
+    "imageCompare": "Image compare",
+    "extractFrame": "Extract frame",
+    "loadStyleLora": "Load style (LoRA)",
+    "lipsync": "Lipsync",
+    "textGenerationLLM": "Text generation (LLM)",
+    "textTo3DModel": "Text to 3D model",
+    "imageTo3DModel": "Image to 3D Model",
+    "musicGeneration": "Music generation",
+    "loadAudio": "Load Audio",
+    "saveAudio": "Save Audio",
+    "inpaintImage": "Inpaint image",
+    "outpaintImage": "Outpaint image",
+    "imageToImage": "Image to image",
+    "textToImage": "Text to image",
+    "poseToImage": "Pose to image",
+    "cannyToImage": "Canny to image",
+    "depthToImage": "Depth to image",
+    "textToVideo": "Text to video",
+    "imageToVideo": "Image to video",
+    "poseToVideo": "Pose to video",
+    "cannyToVideo": "Canny to video",
+    "depthToVideo": "Depth to video"
+  },
+  "builderToolbar": {
+    "label": "App Builder",
+    "inputs": "Inputs",
+    "outputs": "Outputs",
+    "inputsDescription": "Choose inputs",
+    "outputsDescription": "Choose outputs",
+    "arrange": "Preview",
+    "arrangeDescription": "Review app layout",
+    "defaultView": "Set a default view",
+    "defaultViewDescription": "Choose how this opens",
+    "connectOutput": "Connect an output",
+    "connectOutputBody1": "Your app needs at least one output to be connected before it can be saved.",
+    "connectOutputBody2": "Switch to the 'Output' step and click on output nodes to add them here.",
+    "switchToOutputs": "Switch to Outputs",
+    "defaultViewTitle": "Set the default view for this workflow",
+    "defaultViewLabel": "By default, this workflow will open as:",
+    "app": "App",
+    "appDescription": "Opens as an app by default",
+    "nodeGraph": "Node graph",
+    "nodeGraphDescription": "Opens as node graph by default",
+    "defaultModeAppliedTitle": "Successfully set",
+    "defaultModeAppliedAppBody": "This workflow will open in App Mode by default from now on.",
+    "defaultModeAppliedAppPrompt": "Would you like to view it now?",
+    "defaultModeAppliedGraphBody": "This workflow will open as a node graph by default from now on.",
+    "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
+    "viewApp": "View app",
+    "exitToWorkflow": "Exit to workflow",
+    "emptyWorkflowTitle": "This workflow has no nodes",
+    "emptyWorkflowPrompt": "Do you want to start with a template?"
+  },
+  "builderMenu": {
+    "enterAppMode": "Enter app mode",
+    "exitAppBuilder": "Exit app builder"
   }
 }

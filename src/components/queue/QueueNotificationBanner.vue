@@ -45,7 +45,7 @@
       </div>
       <div class="flex h-full items-center">
         <span
-          class="overflow-hidden text-ellipsis text-center font-inter text-[12px] leading-normal font-normal text-base-foreground"
+          class="overflow-hidden text-center font-inter text-[12px] leading-normal font-normal text-ellipsis text-base-foreground"
         >
           {{ bannerText }}
         </span>
@@ -70,11 +70,6 @@ const { t, n } = useI18n()
 const thumbnailUrls = computed(() => {
   if (notification.type !== 'completed') {
     return []
-  }
-  if (typeof notification.thumbnailUrl === 'string') {
-    return notification.thumbnailUrl.length > 0
-      ? [notification.thumbnailUrl]
-      : []
   }
   return notification.thumbnailUrls?.slice(0, 2) ?? []
 })

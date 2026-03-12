@@ -7,20 +7,22 @@ import { describe, expect, it } from 'vitest'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetColorPicker from './WidgetColorPicker.vue'
+import { createMockWidget } from './widgetTestUtils'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 describe('WidgetColorPicker Value Binding', () => {
-  const createMockWidget = (
+  const createColorWidget = (
     value: string = '#000000',
     options: Partial<ColorPickerProps> = {},
     callback?: (value: string) => void
-  ): SimplifiedWidget<string> => ({
-    name: 'test_color_picker',
-    type: 'color',
-    value,
-    options,
-    callback
-  })
+  ) =>
+    createMockWidget<string>({
+      value,
+      name: 'test_color_picker',
+      type: 'color',
+      options,
+      callback
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<string>,
@@ -54,7 +56,7 @@ describe('WidgetColorPicker Value Binding', () => {
 
   describe('Vue Event Emission', () => {
     it('emits Vue event when color changes', async () => {
-      const widget = createMockWidget('#ff0000')
+      const widget = createColorWidget('#ff0000')
       const wrapper = mountComponent(widget, '#ff0000')
 
       const emitted = await setColorPickerValue(wrapper, '#00ff00')
@@ -64,7 +66,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('handles different color formats', async () => {
-      const widget = createMockWidget('#ffffff')
+      const widget = createColorWidget('#ffffff')
       const wrapper = mountComponent(widget, '#ffffff')
 
       const emitted = await setColorPickerValue(wrapper, '#123abc')
@@ -74,7 +76,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget('#000000', {}, undefined)
+      const widget = createColorWidget('#000000', {}, undefined)
       const wrapper = mountComponent(widget, '#000000')
 
       const emitted = await setColorPickerValue(wrapper, '#ff00ff')
@@ -85,7 +87,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('normalizes bare hex without # to #hex on emit', async () => {
-      const widget = createMockWidget('ff0000')
+      const widget = createColorWidget('ff0000')
       const wrapper = mountComponent(widget, 'ff0000')
 
       const emitted = await setColorPickerValue(wrapper, '00ff00')
@@ -95,7 +97,7 @@ describe('WidgetColorPicker Value Binding', () => {
 
     it('normalizes rgb() strings to #hex on emit', async (context) => {
       context.skip('needs diagnosis')
-      const widget = createMockWidget('#000000')
+      const widget = createColorWidget('#000000')
       const wrapper = mountComponent(widget, '#000000')
 
       const emitted = await setColorPickerValue(wrapper, 'rgb(255, 0, 0)')
@@ -104,7 +106,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('normalizes hsb() strings to #hex on emit', async () => {
-      const widget = createMockWidget('#000000', { format: 'hsb' })
+      const widget = createColorWidget('#000000', { format: 'hsb' })
       const wrapper = mountComponent(widget, '#000000')
 
       const emitted = await setColorPickerValue(wrapper, 'hsb(120, 100, 100)')
@@ -113,7 +115,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('normalizes HSB object values to #hex on emit', async () => {
-      const widget = createMockWidget('#000000', { format: 'hsb' })
+      const widget = createColorWidget('#000000', { format: 'hsb' })
       const wrapper = mountComponent(widget, '#000000')
 
       const emitted = await setColorPickerValue(wrapper, {
@@ -128,7 +130,7 @@ describe('WidgetColorPicker Value Binding', () => {
 
   describe('Component Rendering', () => {
     it('renders color picker component', () => {
-      const widget = createMockWidget('#ff0000')
+      const widget = createColorWidget('#ff0000')
       const wrapper = mountComponent(widget, '#ff0000')
 
       const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
@@ -137,20 +139,20 @@ describe('WidgetColorPicker Value Binding', () => {
 
     it('normalizes display to a single leading #', () => {
       // Case 1: model value already includes '#'
-      let widget = createMockWidget('#ff0000')
+      let widget = createColorWidget('#ff0000')
       let wrapper = mountComponent(widget, '#ff0000')
       let colorText = wrapper.find('[data-testid="widget-color-text"]')
       expect.soft(colorText.text()).toBe('#ff0000')
 
       // Case 2: model value missing '#'
-      widget = createMockWidget('ff0000')
+      widget = createColorWidget('ff0000')
       wrapper = mountComponent(widget, 'ff0000')
       colorText = wrapper.find('[data-testid="widget-color-text"]')
       expect.soft(colorText.text()).toBe('#ff0000')
     })
 
     it('renders layout field wrapper', () => {
-      const widget = createMockWidget('#ff0000')
+      const widget = createColorWidget('#ff0000')
       const wrapper = mountComponent(widget, '#ff0000')
 
       const layoutField = wrapper.findComponent({ name: 'WidgetLayoutField' })
@@ -158,7 +160,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('displays current color value as text', () => {
-      const widget = createMockWidget('#ff0000')
+      const widget = createColorWidget('#ff0000')
       const wrapper = mountComponent(widget, '#ff0000')
 
       const colorText = wrapper.find('[data-testid="widget-color-text"]')
@@ -166,7 +168,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('updates color text when value changes', async () => {
-      const widget = createMockWidget('#ff0000')
+      const widget = createColorWidget('#ff0000')
       const wrapper = mountComponent(widget, '#ff0000')
 
       await setColorPickerValue(wrapper, '#00ff00')
@@ -178,7 +180,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('uses default color when no value provided', () => {
-      const widget = createMockWidget('')
+      const widget = createColorWidget('')
       const wrapper = mountComponent(widget, '')
 
       const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
@@ -199,7 +201,7 @@ describe('WidgetColorPicker Value Binding', () => {
       ]
 
       for (const color of validHexColors) {
-        const widget = createMockWidget(color)
+        const widget = createColorWidget(color)
         const wrapper = mountComponent(widget, color)
 
         const colorText = wrapper.find('[data-testid="widget-color-text"]')
@@ -208,7 +210,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('handles short hex colors', () => {
-      const widget = createMockWidget('#fff')
+      const widget = createColorWidget('#fff')
       const wrapper = mountComponent(widget, '#fff')
 
       const colorText = wrapper.find('[data-testid="widget-color-text"]')
@@ -220,7 +222,7 @@ describe('WidgetColorPicker Value Binding', () => {
         format: 'hex' as const,
         inline: true
       }
-      const widget = createMockWidget('#ff0000', colorOptions)
+      const widget = createColorWidget('#ff0000', colorOptions)
       const wrapper = mountComponent(widget, '#ff0000')
 
       const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
@@ -231,7 +233,7 @@ describe('WidgetColorPicker Value Binding', () => {
 
   describe('Widget Layout Integration', () => {
     it('passes widget to layout field', () => {
-      const widget = createMockWidget('#ff0000')
+      const widget = createColorWidget('#ff0000')
       const wrapper = mountComponent(widget, '#ff0000')
 
       const layoutField = wrapper.findComponent({ name: 'WidgetLayoutField' })
@@ -239,7 +241,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('maintains proper component structure', () => {
-      const widget = createMockWidget('#ff0000')
+      const widget = createColorWidget('#ff0000')
       const wrapper = mountComponent(widget, '#ff0000')
 
       // Should have layout field containing label with color picker and text
@@ -257,7 +259,7 @@ describe('WidgetColorPicker Value Binding', () => {
 
   describe('Edge Cases', () => {
     it('handles empty color value', () => {
-      const widget = createMockWidget('')
+      const widget = createColorWidget('')
       const wrapper = mountComponent(widget, '')
 
       const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
@@ -265,7 +267,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('handles invalid color formats gracefully', async () => {
-      const widget = createMockWidget('invalid-color')
+      const widget = createColorWidget('invalid-color')
       const wrapper = mountComponent(widget, 'invalid-color')
 
       const colorText = wrapper.find('[data-testid="widget-color-text"]')
@@ -277,7 +279,7 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
     it('handles widget with no options', () => {
-      const widget = createMockWidget('#ff0000')
+      const widget = createColorWidget('#ff0000')
       const wrapper = mountComponent(widget, '#ff0000')
 
       const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })

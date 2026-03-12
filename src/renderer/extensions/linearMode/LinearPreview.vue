@@ -1,76 +1,54 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
+import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
-// Lazy-loaded to avoid pulling THREE.js into the main bundle
-const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
-import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
-import {
-  getMediaType,
-  mediaTypes
-} from '@/renderer/extensions/linearMode/mediaTypes'
-import type { StatItem } from '@/renderer/extensions/linearMode/mediaTypes'
+import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
+import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
+import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
+import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
+import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
+import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import { formatDuration } from '@/utils/dateTimeUtil'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
-import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 
-const { t, d } = useI18n()
+const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
-
-const { runButtonClick, selectedItem, selectedOutput } = defineProps<{
-  latentPreview?: string
+const { isBuilderMode, isArrangeMode } = useAppMode()
+const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
+  useOutputHistory()
+const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
   runButtonClick?: (e: Event) => void
-  selectedItem?: AssetItem
-  selectedOutput?: ResultItemImpl
   mobile?: boolean
+  typeformWidgetId?: string
 }>()
 
-const dateOptions = {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric'
-} as const
-const timeOptions = {
-  hour: 'numeric',
-  minute: 'numeric',
-  second: 'numeric'
-} as const
+const selectedItem = ref<AssetItem>()
+const selectedOutput = ref<ResultItemImpl>()
+const canShowPreview = ref(true)
+const latentPreview = ref<string>()
+const showSkeleton = ref(false)
 
-function formatTime(time?: string) {
-  if (!time) return ''
-  const date = new Date(time)
-  return `${d(date, dateOptions)} | ${d(date, timeOptions)}`
+function handleSelection(sel: OutputSelection) {
+  selectedItem.value = sel.asset
+  selectedOutput.value = sel.output
+  canShowPreview.value = sel.canShowPreview
+  latentPreview.value = sel.latentPreviewUrl
+  showSkeleton.value = sel.showSkeleton ?? false
 }
 
-const itemStats = computed<StatItem[]>(() => {
-  if (!selectedItem) return []
-  const user_metadata = getOutputAssetMetadata(selectedItem.user_metadata)
-  if (!user_metadata) return []
-
-  const { allOutputs } = user_metadata
-  return [
-    { content: formatTime(selectedItem.created_at) },
-    { content: formatDuration(user_metadata.executionTimeInSeconds) },
-    allOutputs && { content: t('g.asset', allOutputs.length) },
-    (selectedOutput && mediaTypes[getMediaType(selectedOutput)]) ?? {}
-  ].filter((i) => !!i)
-})
-
 function downloadAsset(item?: AssetItem) {
-  const user_metadata = getOutputAssetMetadata(item?.user_metadata)
-  for (const output of user_metadata?.allOutputs ?? [])
+  for (const output of allOutputs(item))
     downloadFile(output.url, output.filename)
 }
 
@@ -84,37 +62,22 @@ async function loadWorkflow(item: AssetItem | undefined) {
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
   if (!changeTracker) return app.loadGraphData(workflow)
   changeTracker.redoQueue = []
-  changeTracker.updateState([workflow], changeTracker.undoQueue)
+  await changeTracker.updateState([workflow], changeTracker.undoQueue)
 }
 
 async function rerun(e: Event) {
   if (!runButtonClick) return
-  await loadWorkflow(selectedItem)
-  //FIXME don't use timeouts here
-  //Currently seeds fail to properly update even with timeouts?
-  await new Promise((r) => setTimeout(r, 500))
-  executeWidgetsCallback(collectAllNodes(app.rootGraph), 'afterQueued')
-
+  await loadWorkflow(selectedItem.value)
   runButtonClick(e)
 }
 </script>
 <template>
   <section
-    v-if="selectedItem"
+    v-if="selectedItem || selectedOutput || showSkeleton || isWorkflowActive"
     data-testid="linear-output-info"
-    class="flex flex-wrap gap-2 p-1 w-full md:z-10 tabular-nums justify-between text-sm"
+    class="flex w-full flex-wrap justify-center gap-2 p-4 text-sm tabular-nums md:z-10"
   >
-    <div class="flex gap-3 text-nowrap">
-      <div
-        v-for="({ content, iconClass }, index) in itemStats"
-        :key="index"
-        class="flex items-center justify-items-center gap-1 tabular-nums"
-      >
-        <i v-if="iconClass" :class="iconClass" />
-        {{ content }}
-      </div>
-    </div>
-    <div class="flex gap-3 justify-self-end">
+    <template v-if="selectedItem">
       <Button size="md" @click="rerun">
         {{ t('linearMode.rerun') }}
         <i class="icon-[lucide--refresh-cw]" />
@@ -123,61 +86,87 @@ async function rerun(e: Event) {
         {{ t('linearMode.reuseParameters') }}
         <i class="icon-[lucide--list-restart]" />
       </Button>
-      <div class="border-r border-border-subtle mx-1" />
-      <Button
-        size="icon"
-        @click="
-          () => {
-            if (selectedOutput?.url) downloadFile(selectedOutput.url)
-          }
-        "
-      >
-        <i class="icon-[lucide--download]" />
-      </Button>
-      <Popover
-        :entries="[
-          [
-            {
-              icon: 'icon-[lucide--download]',
-              label: t('linearMode.downloadAll'),
-              action: () => downloadAsset(selectedItem!)
-            }
-          ],
-          [
-            {
-              icon: 'icon-[lucide--trash-2]',
-              label: t('queue.jobMenu.deleteAsset'),
-              action: () => mediaActions.deleteAssets(selectedItem!)
-            }
-          ]
-        ]"
-      />
-    </div>
+      <div class="mx-1 border-r border-border-subtle" />
+    </template>
+    <Button
+      v-if="selectedOutput"
+      v-tooltip.top="t('g.download')"
+      size="icon"
+      :aria-label="t('g.download')"
+      @click="
+        () => {
+          if (selectedOutput?.url) downloadFile(selectedOutput.url)
+        }
+      "
+    >
+      <i class="icon-[lucide--download]" />
+    </Button>
+    <Button
+      v-if="isWorkflowActive && !selectedItem"
+      variant="destructive"
+      @click="cancelActiveWorkflowJobs()"
+    >
+      <i class="icon-[lucide--x]" />
+      {{ t('linearMode.cancelThisRun') }}
+    </Button>
+    <Popover
+      v-if="selectedItem"
+      :entries="[
+        ...(allOutputs(selectedItem).length > 1
+          ? [
+              {
+                icon: 'icon-[lucide--download]',
+                label: t('linearMode.downloadAll', {
+                  count: allOutputs(selectedItem).length
+                }),
+                command: () => downloadAsset(selectedItem)
+              },
+              { separator: true }
+            ]
+          : []),
+        {
+          icon: 'icon-[lucide--trash-2]',
+          label: t('linearMode.deleteAllAssets'),
+          command: () => mediaActions.deleteAssets(selectedItem!)
+        }
+      ]"
+    />
   </section>
   <ImagePreview
-    v-if="latentPreview ?? getMediaType(selectedOutput) === 'images'"
+    v-if="canShowPreview && latentPreview"
     :mobile
-    :src="latentPreview ?? selectedOutput!.url"
+    :src="latentPreview"
   />
-  <VideoPreview
-    v-else-if="getMediaType(selectedOutput) === 'video'"
-    :src="selectedOutput!.url"
-    class="object-contain flex-1 md:contain-size md:p-3"
+  <MediaOutputPreview
+    v-else-if="selectedOutput"
+    :output="selectedOutput"
+    :mobile
   />
-  <audio
-    v-else-if="getMediaType(selectedOutput) === 'audio'"
-    class="w-full m-auto"
-    controls
-    :src="selectedOutput!.url"
-  />
-  <article
-    v-else-if="getMediaType(selectedOutput) === 'text'"
-    class="w-full max-w-128 m-auto my-12 overflow-y-auto"
-    v-text="selectedOutput!.url"
-  />
-  <Preview3d
-    v-else-if="getMediaType(selectedOutput) === '3d'"
-    :model-url="selectedOutput!.url"
-  />
+  <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
+  <LinearArrange v-else-if="isArrangeMode" />
   <LinearWelcome v-else />
+  <div
+    v-if="!mobile"
+    class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
+  >
+    <LinearFeedback
+      v-if="typeformWidgetId"
+      side="left"
+      :widget-id="typeformWidgetId"
+    />
+    <OutputHistory
+      v-if="!isBuilderMode"
+      class="z-10 min-w-0"
+      @update-selection="handleSelection"
+    />
+    <LinearFeedback
+      v-if="typeformWidgetId"
+      side="right"
+      :widget-id="typeformWidgetId"
+    />
+  </div>
+  <OutputHistory
+    v-else-if="!isBuilderMode"
+    @update-selection="handleSelection"
+  />
 </template>

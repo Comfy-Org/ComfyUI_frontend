@@ -20,15 +20,21 @@ type OutputOverrides = Partial<{
   subfolder: string
   nodeId: string
   url: string
+  display_name: string
 }>
 
 function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
-  return {
+  const merged = {
     filename: 'file.png',
     subfolder: 'sub',
     nodeId: '1',
     url: 'https://example.com/file.png',
     ...overrides
+  }
+  return {
+    ...merged,
+    previewUrl: merged.url,
+    display_name: merged.display_name
   } as ResultItemImpl
 }
 
@@ -49,7 +55,7 @@ describe('resolveOutputAssetItems', () => {
       url: 'https://example.com/b.png'
     })
     const metadata: OutputAssetMetadata = {
-      promptId: 'prompt-1',
+      jobId: 'job-1',
       nodeId: '1',
       subfolder: 'sub',
       executionTimeInSeconds: 12.5,
@@ -66,7 +72,7 @@ describe('resolveOutputAssetItems', () => {
     expect(results).toHaveLength(1)
     expect(results[0]).toEqual(
       expect.objectContaining({
-        id: 'prompt-1-1-sub-a.png',
+        id: 'job-1-1-sub-a.png',
         name: 'a.png',
         created_at: '2025-01-01T00:00:00.000Z',
         tags: ['output'],
@@ -75,7 +81,7 @@ describe('resolveOutputAssetItems', () => {
     )
     expect(results[0].user_metadata).toEqual(
       expect.objectContaining({
-        promptId: 'prompt-1',
+        jobId: 'job-1',
         nodeId: '1',
         subfolder: 'sub',
         executionTimeInSeconds: 12.5
@@ -95,7 +101,7 @@ describe('resolveOutputAssetItems', () => {
       url: 'https://example.com/full.png'
     })
     const metadata: OutputAssetMetadata = {
-      promptId: 'prompt-2',
+      jobId: 'job-2',
       nodeId: '1',
       subfolder: 'sub',
       outputCount: 3,
@@ -111,7 +117,7 @@ describe('resolveOutputAssetItems', () => {
 
     const results = await resolveOutputAssetItems(metadata)
 
-    expect(mocks.getJobDetail).toHaveBeenCalledWith('prompt-2')
+    expect(mocks.getJobDetail).toHaveBeenCalledWith('job-2')
     expect(mocks.getPreviewableOutputsFromJobDetail).toHaveBeenCalledWith(
       jobDetail
     )
@@ -119,6 +125,48 @@ describe('resolveOutputAssetItems', () => {
       'full.png',
       'preview.png'
     ])
+  })
+
+  it('propagates display_name from output to asset item', async () => {
+    const output = createOutput({
+      filename: 'abc123hash.png',
+      nodeId: '1',
+      url: 'https://example.com/abc123hash.png',
+      display_name: 'ComfyUI_00001_.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-dn',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results).toHaveLength(1)
+    expect(results[0].name).toBe('abc123hash.png')
+    expect(results[0].display_name).toBe('ComfyUI_00001_.png')
+  })
+
+  it('omits display_name when not present in output', async () => {
+    const output = createOutput({
+      filename: 'file.png',
+      nodeId: '1',
+      url: 'https://example.com/file.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-nodn',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results).toHaveLength(1)
+    expect(results[0].display_name).toBeUndefined()
   })
 
   it('keeps root outputs with empty subfolders', async () => {
@@ -129,7 +177,7 @@ describe('resolveOutputAssetItems', () => {
       url: 'https://example.com/root.png'
     })
     const metadata: OutputAssetMetadata = {
-      promptId: 'prompt-root',
+      jobId: 'job-root',
       nodeId: '1',
       subfolder: '',
       outputCount: 1,
@@ -144,7 +192,7 @@ describe('resolveOutputAssetItems', () => {
     if (!asset) {
       throw new Error('Expected a root output asset')
     }
-    expect(asset.id).toBe('prompt-root-1--root.png')
+    expect(asset.id).toBe('job-root-1--root.png')
     if (!asset.user_metadata) {
       throw new Error('Expected output metadata')
     }

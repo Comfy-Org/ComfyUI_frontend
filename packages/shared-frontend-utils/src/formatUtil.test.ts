@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import { getMediaTypeFromFilename, truncateFilename } from './formatUtil'
+import {
+  appendWorkflowJsonExt,
+  ensureWorkflowSuffix,
+  getFilenameDetails,
+  getMediaTypeFromFilename,
+  getPathDetails,
+  highlightQuery,
+  isPreviewableMediaType,
+  truncateFilename
+} from './formatUtil'
 
 describe('formatUtil', () => {
   describe('truncateFilename', () => {
@@ -52,7 +61,8 @@ describe('formatUtil', () => {
         { filename: 'image.jpeg', expected: 'image' },
         { filename: 'animation.gif', expected: 'image' },
         { filename: 'web.webp', expected: 'image' },
-        { filename: 'bitmap.bmp', expected: 'image' }
+        { filename: 'bitmap.bmp', expected: 'image' },
+        { filename: 'modern.avif', expected: 'image' }
       ]
 
       it.for(imageTestCases)(
@@ -92,26 +102,37 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('scene.fbx')).toBe('3D')
         expect(getMediaTypeFromFilename('asset.gltf')).toBe('3D')
         expect(getMediaTypeFromFilename('binary.glb')).toBe('3D')
+        expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
+      })
+    })
+
+    describe('text files', () => {
+      it('should identify text file extensions correctly', () => {
+        expect(getMediaTypeFromFilename('notes.txt')).toBe('text')
+        expect(getMediaTypeFromFilename('readme.md')).toBe('text')
+        expect(getMediaTypeFromFilename('data.json')).toBe('text')
+        expect(getMediaTypeFromFilename('table.csv')).toBe('text')
+        expect(getMediaTypeFromFilename('config.yaml')).toBe('text')
       })
     })
 
     describe('edge cases', () => {
       it('should handle empty strings', () => {
-        expect(getMediaTypeFromFilename('')).toBe('image')
+        expect(getMediaTypeFromFilename('')).toBe('other')
       })
 
       it('should handle files without extensions', () => {
-        expect(getMediaTypeFromFilename('README')).toBe('image')
+        expect(getMediaTypeFromFilename('README')).toBe('other')
       })
 
       it('should handle unknown extensions', () => {
-        expect(getMediaTypeFromFilename('document.pdf')).toBe('image')
-        expect(getMediaTypeFromFilename('data.json')).toBe('image')
+        expect(getMediaTypeFromFilename('document.pdf')).toBe('other')
+        expect(getMediaTypeFromFilename('archive.bin')).toBe('other')
       })
 
       it('should handle files with multiple dots', () => {
         expect(getMediaTypeFromFilename('my.file.name.png')).toBe('image')
-        expect(getMediaTypeFromFilename('archive.tar.gz')).toBe('image')
+        expect(getMediaTypeFromFilename('archive.tar.gz')).toBe('other')
       })
 
       it('should handle paths with directories', () => {
@@ -120,8 +141,8 @@ describe('formatUtil', () => {
       })
 
       it('should handle null and undefined gracefully', () => {
-        expect(getMediaTypeFromFilename(null)).toBe('image')
-        expect(getMediaTypeFromFilename(undefined)).toBe('image')
+        expect(getMediaTypeFromFilename(null)).toBe('other')
+        expect(getMediaTypeFromFilename(undefined)).toBe('other')
       })
 
       it('should handle special characters in filenames', () => {
@@ -140,6 +161,199 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('video.Mp4')).toBe('video')
         expect(getMediaTypeFromFilename('audio.WaV')).toBe('audio')
       })
+    })
+  })
+
+  describe('highlightQuery', () => {
+    it('should return text unchanged when query is empty', () => {
+      expect(highlightQuery('Hello World', '')).toBe('Hello World')
+    })
+
+    it('should wrap matching text in highlight span', () => {
+      const result = highlightQuery('Hello World', 'World')
+      expect(result).toBe('Hello <span class="highlight">World</span>')
+    })
+
+    it('should be case-insensitive', () => {
+      const result = highlightQuery('Hello World', 'hello')
+      expect(result).toBe('<span class="highlight">Hello</span> World')
+    })
+
+    it('should sanitize text by default', () => {
+      const result = highlightQuery('<script>alert("xss")</script>', 'alert')
+      expect(result).not.toContain('<script>')
+    })
+
+    it('should skip sanitization when sanitize is false', () => {
+      const result = highlightQuery('<b>bold</b>', 'bold', false)
+      expect(result).toContain('<b>')
+    })
+
+    it('should escape special regex characters in query', () => {
+      const result = highlightQuery('price is $10.00', '$10')
+      expect(result).toContain('<span class="highlight">$10</span>')
+    })
+
+    it('should highlight multiple occurrences', () => {
+      const result = highlightQuery('foo bar foo', 'foo')
+      expect(result).toBe(
+        '<span class="highlight">foo</span> bar <span class="highlight">foo</span>'
+      )
+    })
+  })
+
+  describe('getFilenameDetails', () => {
+    it('splits simple filenames into name and suffix', () => {
+      expect(getFilenameDetails('file.txt')).toEqual({
+        filename: 'file',
+        suffix: 'txt'
+      })
+    })
+
+    it('handles filenames with multiple dots', () => {
+      expect(getFilenameDetails('my.file.name.png')).toEqual({
+        filename: 'my.file.name',
+        suffix: 'png'
+      })
+    })
+
+    it('handles filenames without extension', () => {
+      expect(getFilenameDetails('README')).toEqual({
+        filename: 'README',
+        suffix: null
+      })
+    })
+
+    it('recognises .app.json as a compound extension', () => {
+      expect(getFilenameDetails('workflow.app.json')).toEqual({
+        filename: 'workflow',
+        suffix: 'app.json'
+      })
+    })
+
+    it('recognises .app.json case-insensitively', () => {
+      expect(getFilenameDetails('Workflow.APP.JSON')).toEqual({
+        filename: 'Workflow',
+        suffix: 'app.json'
+      })
+    })
+
+    it('handles regular .json files normally', () => {
+      expect(getFilenameDetails('workflow.json')).toEqual({
+        filename: 'workflow',
+        suffix: 'json'
+      })
+    })
+
+    it('treats bare .app.json as a dotfile without basename', () => {
+      expect(getFilenameDetails('.app.json')).toEqual({
+        filename: '.app',
+        suffix: 'json'
+      })
+    })
+  })
+
+  describe('getPathDetails', () => {
+    it('splits a path with .app.json extension', () => {
+      const result = getPathDetails('workflows/test.app.json')
+      expect(result).toEqual({
+        directory: 'workflows',
+        fullFilename: 'test.app.json',
+        filename: 'test',
+        suffix: 'app.json'
+      })
+    })
+
+    it('splits a path with .json extension', () => {
+      const result = getPathDetails('workflows/test.json')
+      expect(result).toEqual({
+        directory: 'workflows',
+        fullFilename: 'test.json',
+        filename: 'test',
+        suffix: 'json'
+      })
+    })
+  })
+
+  describe('appendWorkflowJsonExt', () => {
+    it('appends .app.json when isApp is true', () => {
+      expect(appendWorkflowJsonExt('test', true)).toBe('test.app.json')
+    })
+
+    it('appends .json when isApp is false', () => {
+      expect(appendWorkflowJsonExt('test', false)).toBe('test.json')
+    })
+
+    it('replaces .json with .app.json when isApp is true', () => {
+      expect(appendWorkflowJsonExt('test.json', true)).toBe('test.app.json')
+    })
+
+    it('replaces .app.json with .json when isApp is false', () => {
+      expect(appendWorkflowJsonExt('test.app.json', false)).toBe('test.json')
+    })
+
+    it('leaves .app.json unchanged when isApp is true', () => {
+      expect(appendWorkflowJsonExt('test.app.json', true)).toBe('test.app.json')
+    })
+
+    it('leaves .json unchanged when isApp is false', () => {
+      expect(appendWorkflowJsonExt('test.json', false)).toBe('test.json')
+    })
+
+    it('handles case-insensitive extensions', () => {
+      expect(appendWorkflowJsonExt('test.JSON', true)).toBe('test.app.json')
+      expect(appendWorkflowJsonExt('test.APP.JSON', false)).toBe('test.json')
+    })
+  })
+
+  describe('ensureWorkflowSuffix', () => {
+    it('appends suffix when missing', () => {
+      expect(ensureWorkflowSuffix('file', 'json')).toBe('file.json')
+    })
+
+    it('does not double-append when suffix already present', () => {
+      expect(ensureWorkflowSuffix('file.json', 'json')).toBe('file.json')
+    })
+
+    it('appends compound suffix when missing', () => {
+      expect(ensureWorkflowSuffix('file', 'app.json')).toBe('file.app.json')
+    })
+
+    it('does not double-append compound suffix', () => {
+      expect(ensureWorkflowSuffix('file.app.json', 'app.json')).toBe(
+        'file.app.json'
+      )
+    })
+
+    it('replaces .json with .app.json when suffix is app.json', () => {
+      expect(ensureWorkflowSuffix('file.json', 'app.json')).toBe(
+        'file.app.json'
+      )
+    })
+
+    it('replaces .app.json with .json when suffix is json', () => {
+      expect(ensureWorkflowSuffix('file.app.json', 'json')).toBe('file.json')
+    })
+
+    it('handles case-insensitive extension detection', () => {
+      expect(ensureWorkflowSuffix('file.JSON', 'json')).toBe('file.json')
+      expect(ensureWorkflowSuffix('file.APP.JSON', 'app.json')).toBe(
+        'file.app.json'
+      )
+    })
+  })
+
+  describe('isPreviewableMediaType', () => {
+    it('returns true for image/video/audio/3D', () => {
+      expect(isPreviewableMediaType('image')).toBe(true)
+      expect(isPreviewableMediaType('video')).toBe(true)
+      expect(isPreviewableMediaType('audio')).toBe(true)
+      expect(isPreviewableMediaType('3D')).toBe(true)
+    })
+
+    it('returns false for text/other', () => {
+      expect(isPreviewableMediaType('text')).toBe(false)
+      expect(isPreviewableMediaType('other')).toBe(false)
     })
   })
 })

@@ -8,7 +8,7 @@ import {
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 type OutputAssetMapOptions = {
-  promptId: string
+  jobId: string
   outputs: readonly ResultItemImpl[]
   createdAt?: string
   executionTimeInSeconds?: number
@@ -51,7 +51,7 @@ export function getOutputKey({
 }
 
 function mapOutputsToAssetItems({
-  promptId,
+  jobId,
   outputs,
   createdAt,
   executionTimeInSeconds,
@@ -67,14 +67,16 @@ function mapOutputsToAssetItems({
     }
 
     items.push({
-      id: `${promptId}-${outputKey}`,
+      id: `${jobId}-${outputKey}`,
       name: output.filename,
+      display_name: output.display_name,
       size: 0,
       created_at: createdAtValue,
       tags: ['output'],
+      thumbnail_url: output.previewUrl,
       preview_url: output.url,
       user_metadata: {
-        promptId,
+        jobId,
         nodeId: output.nodeId,
         subfolder: output.subfolder,
         executionTimeInSeconds,
@@ -92,7 +94,7 @@ export async function resolveOutputAssetItems(
 ): Promise<AssetItem[]> {
   let outputsToDisplay = metadata.allOutputs ?? []
   if (shouldLoadFullOutputs(metadata.outputCount, outputsToDisplay.length)) {
-    const jobDetail = await getJobDetail(metadata.promptId)
+    const jobDetail = await getJobDetail(metadata.jobId)
     const previewableOutputs = getPreviewableOutputsFromJobDetail(jobDetail)
     if (previewableOutputs.length) {
       outputsToDisplay = previewableOutputs
@@ -100,7 +102,7 @@ export async function resolveOutputAssetItems(
   }
 
   return mapOutputsToAssetItems({
-    promptId: metadata.promptId,
+    jobId: metadata.jobId,
     outputs: outputsToDisplay,
     createdAt,
     executionTimeInSeconds: metadata.executionTimeInSeconds,

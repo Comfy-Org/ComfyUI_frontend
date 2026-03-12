@@ -14,7 +14,7 @@
     }"
   >
     <div
-      class="flex min-w-[14rem] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 font-inter"
+      class="flex min-w-56 flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 font-inter"
     >
       <template v-for="entry in entries" :key="entry.key">
         <div v-if="entry.kind === 'divider'" class="px-2 py-1">
@@ -26,6 +26,7 @@
           variant="textonly"
           size="sm"
           :aria-label="entry.label"
+          :disabled="entry.disabled"
           @click="onEntry(entry)"
         >
           <i
@@ -68,6 +69,7 @@ function hide() {
 }
 
 function onEntry(entry: MenuEntry) {
+  if (entry.kind === 'divider' || entry.disabled) return
   emit('action', entry)
 }
 

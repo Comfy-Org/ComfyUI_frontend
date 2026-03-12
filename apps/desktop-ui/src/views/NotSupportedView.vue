@@ -1,6 +1,6 @@
 <template>
   <BaseViewTemplate>
-    <div class="sad-container">
+    <div class="sad-container grid items-center justify-evenly">
       <!-- Right side image -->
       <img
         class="sad-girl"
@@ -9,7 +9,7 @@
       />
 
       <div class="no-drag sad-text flex items-center">
-        <div class="flex flex-col gap-8 p-8 min-w-110">
+        <div class="flex min-w-110 flex-col gap-8 p-8">
           <!-- Header -->
           <h1 class="text-4xl font-bold text-red-500">
             {{ $t('notSupported.title') }}
@@ -20,7 +20,7 @@
             <p class="text-xl">
               {{ $t('notSupported.message') }}
             </p>
-            <ul class="list-disc list-inside space-y-1 text-neutral-800">
+            <ul class="list-inside list-disc space-y-1 text-neutral-800">
               <li>{{ $t('notSupported.supportedDevices.macos') }}</li>
               <li>{{ $t('notSupported.supportedDevices.windows') }}</li>
             </ul>
@@ -79,10 +79,7 @@ const continueToInstall = async () => {
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
 .sad-container {
-  @apply grid items-center justify-evenly;
   grid-template-columns: 25rem 1fr;
 
   & > * {

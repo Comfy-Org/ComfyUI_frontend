@@ -1,6 +1,7 @@
 <template>
   <div
-    class="subgraph-breadcrumb flex w-auto drop-shadow-[var(--interface-panel-drop-shadow)]"
+    data-testid="subgraph-breadcrumb"
+    class="subgraph-breadcrumb -mt-3 flex w-auto items-center pt-4 pl-1 drop-shadow-(--interface-panel-drop-shadow)"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,
       'subgraph-breadcrumb-overflow': overflowingTabs
@@ -13,17 +14,10 @@
       '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
     }"
   >
-    <Button
-      class="context-menu-button pointer-events-auto h-8 w-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
-      icon="pi pi-bars"
-      text
-      severity="secondary"
-      size="small"
-      @click="handleMenuClick"
-    />
+    <WorkflowActionsDropdown source="breadcrumb_subgraph_menu_selected" />
     <Button
       v-if="isInSubgraph"
-      class="back-button pointer-events-auto h-8 w-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
+      class="back-button pointer-events-auto ml-1.5 size-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
       text
       severity="secondary"
       size="small"
@@ -41,7 +35,6 @@
     >
       <template #item="{ item }">
         <SubgraphBreadcrumbItem
-          :ref="(el) => setItemRef(item, el)"
           :item="item"
           :is-active="item.key === activeItemKey"
         />
@@ -60,6 +53,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import { computed, onUpdated, ref, watch } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
+import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -77,12 +71,6 @@ const ICON_WIDTH = 20
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
 const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
-const rootItemRef = ref<InstanceType<typeof SubgraphBreadcrumbItem>>()
-const setItemRef = (item: MenuItem, el: unknown) => {
-  if (item.key === 'root') {
-    rootItemRef.value = el as InstanceType<typeof SubgraphBreadcrumbItem>
-  }
-}
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 const isBlueprint = computed(() =>
   useSubgraphStore().isSubgraphBlueprint(workflowStore.activeWorkflow)
@@ -135,13 +123,6 @@ const items = computed(() => {
 })
 
 const activeItemKey = computed(() => items.value.at(-1)?.key)
-
-const handleMenuClick = (event: MouseEvent) => {
-  useTelemetry()?.trackUiButtonClicked({
-    button_id: 'breadcrumb_subgraph_menu_selected'
-  })
-  rootItemRef.value?.toggleMenu(event)
-}
 
 const handleBackClick = () => {
   void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
@@ -214,8 +195,6 @@ onUpdated(() => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .subgraph-breadcrumb:not(:empty) {
   flex: auto;
   flex-shrink: 10000;
@@ -224,7 +203,7 @@ onUpdated(() => {
 
 .subgraph-breadcrumb,
 :deep(.p-breadcrumb) {
-  @apply overflow-hidden;
+  overflow: hidden;
 }
 
 :deep(.p-breadcrumb) {
@@ -233,7 +212,10 @@ onUpdated(() => {
 }
 
 :deep(.p-breadcrumb-item) {
-  @apply flex items-center overflow-hidden h-8;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  height: calc(var(--spacing) * 8);
   min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem);
   border: 1px solid transparent;
   background-color: transparent;
@@ -255,7 +237,7 @@ onUpdated(() => {
 }
 
 :deep(.p-breadcrumb-item:hover) {
-  @apply rounded-lg;
+  border-radius: var(--radius-lg);
   border-color: var(--interface-stroke);
   background-color: var(--comfy-menu-bg);
 }
@@ -289,18 +271,16 @@ onUpdated(() => {
 </style>
 
 <style>
-@reference '../../assets/css/style.css';
-
 .subgraph-breadcrumb-collapse .p-breadcrumb-list {
   .p-breadcrumb-item,
   .p-breadcrumb-separator {
-    @apply hidden;
+    display: none;
   }
 
   .p-breadcrumb-item:nth-last-child(3),
   .p-breadcrumb-separator:nth-last-child(2),
   .p-breadcrumb-item:nth-last-child(1) {
-    @apply flex;
+    display: flex;
   }
 }
 </style>

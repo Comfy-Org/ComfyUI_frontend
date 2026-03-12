@@ -7,6 +7,7 @@ import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import { i18n } from '@/i18n'
 import type { JobStatus } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
@@ -20,7 +21,12 @@ const QueueOverlayExpandedStub = defineComponent({
       required: true
     }
   },
-  template: '<div data-testid="expanded-title">{{ headerTitle }}</div>'
+  template: `
+    <div>
+      <div data-testid="expanded-title">{{ headerTitle }}</div>
+      <button data-testid="show-assets-button" @click="$emit('show-assets')" />
+    </div>
+  `
 })
 
 function createTask(id: string, status: JobStatus): TaskItemImpl {
@@ -41,10 +47,11 @@ const mountComponent = (
     stubActions: false
   })
   const queueStore = useQueueStore(pinia)
+  const sidebarTabStore = useSidebarTabStore(pinia)
   queueStore.runningTasks = runningTasks
   queueStore.pendingTasks = pendingTasks
 
-  return mount(QueueProgressOverlay, {
+  const wrapper = mount(QueueProgressOverlay, {
     props: {
       expanded: true
     },
@@ -60,6 +67,8 @@ const mountComponent = (
       }
     }
   })
+
+  return { wrapper, sidebarTabStore }
 }
 
 describe('QueueProgressOverlay', () => {
@@ -68,7 +77,7 @@ describe('QueueProgressOverlay', () => {
   })
 
   it('shows expanded header with running and queued labels', () => {
-    const wrapper = mountComponent(
+    const { wrapper } = mountComponent(
       [
         createTask('running-1', 'in_progress'),
         createTask('running-2', 'in_progress')
@@ -82,7 +91,10 @@ describe('QueueProgressOverlay', () => {
   })
 
   it('shows only running label when queued count is zero', () => {
-    const wrapper = mountComponent([createTask('running-1', 'in_progress')], [])
+    const { wrapper } = mountComponent(
+      [createTask('running-1', 'in_progress')],
+      []
+    )
 
     expect(wrapper.get('[data-testid="expanded-title"]').text()).toBe(
       '1 running'
@@ -90,10 +102,22 @@ describe('QueueProgressOverlay', () => {
   })
 
   it('shows job queue title when there are no active jobs', () => {
-    const wrapper = mountComponent([], [])
+    const { wrapper } = mountComponent([], [])
 
     expect(wrapper.get('[data-testid="expanded-title"]').text()).toBe(
       'Job Queue'
     )
+  })
+
+  it('toggles the assets sidebar tab when show-assets is clicked', async () => {
+    const { wrapper, sidebarTabStore } = mountComponent([], [])
+
+    expect(sidebarTabStore.activeSidebarTabId).toBe(null)
+
+    await wrapper.get('[data-testid="show-assets-button"]').trigger('click')
+    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+
+    await wrapper.get('[data-testid="show-assets-button"]').trigger('click')
+    expect(sidebarTabStore.activeSidebarTabId).toBe(null)
   })
 })

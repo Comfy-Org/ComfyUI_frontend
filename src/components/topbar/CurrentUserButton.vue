@@ -11,8 +11,8 @@
       <div
         :class="
           cn(
-            'flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface justify-center',
-            compact && 'size-full '
+            'flex items-center justify-center gap-1 rounded-full hover:bg-interface-button-hover-surface',
+            compact && 'size-full'
           )
         "
       >
@@ -30,7 +30,7 @@
         <UserAvatar
           v-else
           :photo-url="photoURL"
-          :class="compact && 'size-full'"
+          :class="compact && 'h-full w-auto'"
         />
 
         <i v-if="showArrow" class="icon-[lucide--chevron-down] size-4 px-1" />
@@ -69,7 +69,7 @@ import Skeleton from 'primevue/skeleton'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -80,7 +80,8 @@ import { cn } from '@/utils/tailwindUtil'
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const CurrentUserPopoverWorkspace = defineAsyncComponent(
-  () => import('./CurrentUserPopoverWorkspace.vue')
+  () =>
+    import('../../platform/workspace/components/CurrentUserPopoverWorkspace.vue')
 )
 
 const { showArrow = true, compact = false } = defineProps<{
@@ -97,15 +98,21 @@ const photoURL = computed<string | undefined>(
   () => userPhotoUrl.value ?? undefined
 )
 
-const { workspaceName: teamWorkspaceName, initState } = storeToRefs(
-  useTeamWorkspaceStore()
-)
+const {
+  workspaceName: teamWorkspaceName,
+  initState,
+  isInPersonalWorkspace
+} = storeToRefs(useTeamWorkspaceStore())
 
 const showWorkspaceSkeleton = computed(
   () => isCloud && teamWorkspacesEnabled.value && initState.value === 'loading'
 )
 const showWorkspaceIcon = computed(
-  () => isCloud && teamWorkspacesEnabled.value && initState.value === 'ready'
+  () =>
+    isCloud &&
+    teamWorkspacesEnabled.value &&
+    initState.value === 'ready' &&
+    !isInPersonalWorkspace.value
 )
 
 const workspaceName = computed(() => {

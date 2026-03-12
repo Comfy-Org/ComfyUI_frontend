@@ -8,6 +8,7 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
@@ -26,7 +27,10 @@ const inputSpec: CustomInputSpec = {
 useExtensionService().registerExtension({
   name: 'Comfy.SaveGLB',
 
-  async beforeRegisterNodeDef(_nodeType, nodeData) {
+  async beforeRegisterNodeDef(
+    _nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if ('SaveGLB' === nodeData.name) {
       // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D']
@@ -65,7 +69,7 @@ useExtensionService().registerExtension({
     return createExportMenuItems(load3d)
   },
 
-  async nodeCreated(node) {
+  async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'SaveGLB') return
 
     const [oldWidth, oldHeight] = node.size

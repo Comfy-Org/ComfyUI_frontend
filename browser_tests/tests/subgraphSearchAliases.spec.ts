@@ -54,7 +54,10 @@ async function searchAndExpectResult(
 test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
   })
 
   test('Can set search aliases on subgraph and find via search', async ({

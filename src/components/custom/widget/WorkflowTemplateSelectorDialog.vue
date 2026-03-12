@@ -14,10 +14,10 @@
     </template>
 
     <template #header>
-      <SearchBox
+      <SearchInput
         v-model="searchQuery"
         size="lg"
-        class="max-w-[384px]"
+        class="max-w-96 flex-1"
         autofocus
       />
     </template>
@@ -116,7 +116,7 @@
         v-if="!isLoading && filteredTemplates.length === 0"
         class="flex h-64 flex-col items-center justify-center text-neutral-500"
       >
-        <i class="mb-4 icon-[lucide--search] h-12 w-12 opacity-50" />
+        <i class="mb-4 icon-[lucide--search] size-12 opacity-50" />
         <p class="mb-2 text-lg">
           {{ $t('templateWorkflows.noResults', 'No templates found') }}
         </p>
@@ -133,7 +133,7 @@
         <!-- Title -->
         <span
           v-if="isLoading"
-          class="inline-block h-8 w-48 animate-pulse rounded bg-dialog-surface"
+          class="inline-block h-8 w-48 animate-pulse rounded-sm bg-dialog-surface"
         ></span>
 
         <!-- Template Cards Grid -->
@@ -154,9 +154,7 @@
             <template #top>
               <CardTop ratio="landscape">
                 <template #default>
-                  <div
-                    class="h-full w-full animate-pulse bg-dialog-surface"
-                  ></div>
+                  <div class="size-full animate-pulse bg-dialog-surface"></div>
                 </template>
               </CardTop>
             </template>
@@ -164,10 +162,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="mb-2 h-6 animate-pulse rounded bg-dialog-surface"
+                    class="mb-2 h-6 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                   <div
-                    class="h-4 animate-pulse rounded bg-dialog-surface"
+                    class="h-4 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                 </div>
               </CardBottom>
@@ -180,7 +178,7 @@
             v-show="isTemplateVisibleOnDistribution(template)"
             :key="template.name"
             ref="cardRefs"
-            size="compact"
+            size="tall"
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
@@ -193,9 +191,7 @@
               <CardTop ratio="square">
                 <template #default>
                   <!-- Template Thumbnail -->
-                  <div
-                    class="relative h-full w-full overflow-hidden rounded-lg"
-                  >
+                  <div class="relative size-full overflow-hidden rounded-lg">
                     <template v-if="template.mediaType === 'audio'">
                       <AudioThumbnail :src="getBaseThumbnailSrc(template)" />
                     </template>
@@ -263,7 +259,7 @@
                     />
                     <ProgressSpinner
                       v-if="loadingTemplate === template.name"
-                      class="absolute inset-0 z-10 m-auto h-12 w-12"
+                      class="absolute inset-0 z-10 m-auto size-12"
                     />
                   </div>
                 </template>
@@ -322,6 +318,20 @@
                       </Button>
                     </div>
                   </div>
+                  <div class="flex">
+                    <span
+                      class="text-neutral flex items-center gap-1.5 text-xs font-bold"
+                    >
+                      <template v-if="isAppTemplate(template)">
+                        <i class="icon-[lucide--panels-top-left]" />
+                        {{ $t('builderToolbar.app', 'App') }}
+                      </template>
+                      <template v-else>
+                        <i class="icon-[lucide--workflow]" />
+                        {{ $t('builderToolbar.nodeGraph', 'Node Graph') }}
+                      </template>
+                    </span>
+                  </div>
                 </div>
               </CardBottom>
             </template>
@@ -339,9 +349,7 @@
             <template #top>
               <CardTop ratio="square">
                 <template #default>
-                  <div
-                    class="h-full w-full animate-pulse bg-dialog-surface"
-                  ></div>
+                  <div class="size-full animate-pulse bg-dialog-surface"></div>
                 </template>
               </CardTop>
             </template>
@@ -349,10 +357,10 @@
               <CardBottom>
                 <div class="px-4 py-3">
                   <div
-                    class="mb-2 h-6 animate-pulse rounded bg-dialog-surface"
+                    class="mb-2 h-6 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                   <div
-                    class="h-4 animate-pulse rounded bg-dialog-surface"
+                    class="h-4 animate-pulse rounded-sm bg-dialog-surface"
                   ></div>
                 </div>
               </CardBottom>
@@ -395,7 +403,7 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
@@ -438,7 +446,6 @@ onMounted(() => {
 const systemStatsStore = useSystemStatsStore()
 
 const distributions = computed(() => {
-  // eslint-disable-next-line no-undef
   switch (__DISTRIBUTION__) {
     case 'cloud':
       return [TemplateIncludeOnDistributionEnum.Cloud]
@@ -489,6 +496,8 @@ const {
 
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
+
+const isAppTemplate = (template: TemplateInfo) => template.name.endsWith('.app')
 
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)

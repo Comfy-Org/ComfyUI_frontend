@@ -1,9 +1,5 @@
 <template>
   <router-view />
-  <ProgressSpinner
-    v-if="isLoading"
-    class="absolute inset-0 flex h-[unset] items-center justify-center"
-  />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
 </template>
@@ -11,8 +7,7 @@
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
-import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import { useI18n } from 'vue-i18n'
 
@@ -32,6 +27,16 @@ app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
+
+watch(
+  isLoading,
+  (loading, prevLoading) => {
+    if (prevLoading && !loading) {
+      document.getElementById('splash-loader')?.remove()
+    }
+  },
+  { flush: 'post' }
+)
 
 const showContextMenu = (event: MouseEvent) => {
   const { target } = event
@@ -62,7 +67,6 @@ onMounted(() => {
       chunkName: info.chunkName,
       message: info.message
     })
-    // eslint-disable-next-line no-undef
     if (__DISTRIBUTION__ === 'cloud') {
       captureException(event.payload, {
         tags: {

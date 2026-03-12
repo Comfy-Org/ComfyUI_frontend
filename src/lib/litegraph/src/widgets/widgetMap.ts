@@ -16,9 +16,12 @@ import { ButtonWidget } from './ButtonWidget'
 import { ChartWidget } from './ChartWidget'
 import { ColorWidget } from './ColorWidget'
 import { ComboWidget } from './ComboWidget'
+import { CurveWidget } from './CurveWidget'
 import { FileUploadWidget } from './FileUploadWidget'
 import { GalleriaWidget } from './GalleriaWidget'
+import { GradientSliderWidget } from './GradientSliderWidget'
 import { ImageCompareWidget } from './ImageCompareWidget'
+import { PainterWidget } from './PainterWidget'
 import { ImageCropWidget } from './ImageCropWidget'
 import { KnobWidget } from './KnobWidget'
 import { LegacyWidget } from './LegacyWidget'
@@ -35,6 +38,7 @@ export type WidgetTypeMap = {
   button: ButtonWidget
   toggle: BooleanWidget
   slider: SliderWidget
+  gradientslider: GradientSliderWidget
   knob: KnobWidget
   combo: ComboWidget
   number: NumberWidget
@@ -54,6 +58,8 @@ export type WidgetTypeMap = {
   asset: AssetWidget
   imagecrop: ImageCropWidget
   boundingbox: BoundingBoxWidget
+  curve: CurveWidget
+  painter: PainterWidget
   [key: string]: BaseWidget
 }
 
@@ -92,6 +98,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(BooleanWidget, narrowedWidget, node)
     case 'slider':
       return toClass(SliderWidget, narrowedWidget, node)
+    case 'gradientslider':
+      return toClass(GradientSliderWidget, narrowedWidget, node)
     case 'knob':
       return toClass(KnobWidget, narrowedWidget, node)
     case 'combo':
@@ -128,6 +136,10 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(ImageCropWidget, narrowedWidget, node)
     case 'boundingbox':
       return toClass(BoundingBoxWidget, narrowedWidget, node)
+    case 'curve':
+      return toClass(CurveWidget, narrowedWidget, node)
+    case 'painter':
+      return toClass(PainterWidget, narrowedWidget, node)
     default: {
       if (wrapLegacyWidgets) return toClass(LegacyWidget, widget, node)
     }

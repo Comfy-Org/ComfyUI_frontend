@@ -104,7 +104,7 @@ describe('useAudioService', () => {
       const mockTrack2 = { stop: vi.fn() }
       const mockStream = {
         getTracks: vi.fn().mockReturnValue([mockTrack1, mockTrack2])
-      } as unknown as MediaStream
+      } as Partial<MediaStream> as MediaStream
 
       service.stopAllTracks(mockStream)
 
@@ -120,7 +120,7 @@ describe('useAudioService', () => {
     it('should handle stream with no tracks', () => {
       const mockStream = {
         getTracks: vi.fn().mockReturnValue([])
-      } as unknown as MediaStream
+      } as Partial<MediaStream> as MediaStream
 
       expect(() => service.stopAllTracks(mockStream)).not.toThrow()
       expect(mockStream.getTracks).toHaveBeenCalledTimes(1)
@@ -135,7 +135,7 @@ describe('useAudioService', () => {
       }
       const mockStream = {
         getTracks: vi.fn().mockReturnValue([mockTrack1, mockTrack2])
-      } as unknown as MediaStream
+      } as Partial<MediaStream> as MediaStream
 
       expect(() => service.stopAllTracks(mockStream)).toThrow()
       expect(mockTrack1.stop).toHaveBeenCalledTimes(1)

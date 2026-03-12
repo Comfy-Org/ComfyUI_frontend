@@ -1,3 +1,5 @@
+import { fromZodError } from 'zod-validation-error'
+
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -66,15 +68,12 @@ export function createAssetWidget(
         if (!validatedAsset.success) {
           console.error(
             'Invalid asset item:',
-            validatedAsset.error.errors,
-            'Received:',
-            asset
+            fromZodError(validatedAsset.error).message
           )
           toastStore.add({
             severity: 'error',
             summary: t('assetBrowser.invalidAsset'),
-            detail: t('assetBrowser.invalidAssetDetail'),
-            life: 5000
+            detail: t('assetBrowser.invalidAssetDetail')
           })
           return
         }
@@ -92,8 +91,7 @@ export function createAssetWidget(
           toastStore.add({
             severity: 'error',
             summary: t('assetBrowser.invalidFilename'),
-            detail: t('assetBrowser.invalidFilenameDetail'),
-            life: 5000
+            detail: t('assetBrowser.invalidFilenameDetail')
           })
           return
         }

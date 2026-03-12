@@ -37,6 +37,10 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 
 The project uses **Nx** for build orchestration and task management
 
+## Package Manager
+
+This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g., `pnpm test:unit`, `pnpm lint`). To run arbitrary packages not in scripts, use `pnpx` or `pnpm dlx` — never `npx`.
+
 ## Build, Test, and Development Commands
 
 - `pnpm dev`: Start Vite dev server.

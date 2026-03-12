@@ -65,7 +65,7 @@ describe('LGraphNode Title Buttons', () => {
       const canvas = {
         ctx: {} as CanvasRenderingContext2D,
         dispatch: vi.fn()
-      } as unknown as LGraphCanvas
+      } as Partial<LGraphCanvas> as LGraphCanvas
 
       // Mock the node's onTitleButtonClick method to verify it gets called
       const onTitleButtonClickSpy = vi.spyOn(node, 'onTitleButtonClick')
@@ -119,7 +119,7 @@ describe('LGraphNode Title Buttons', () => {
       const canvas = {
         ctx: {} as CanvasRenderingContext2D,
         dispatch: vi.fn()
-      } as unknown as LGraphCanvas
+      } as Partial<LGraphCanvas> as LGraphCanvas
 
       // Calculate node-relative position
       const clickPosRelativeToNode: [number, number] = [
@@ -177,7 +177,7 @@ describe('LGraphNode Title Buttons', () => {
       const canvas = {
         ctx: {} as CanvasRenderingContext2D,
         dispatch: vi.fn()
-      } as unknown as LGraphCanvas
+      } as Partial<LGraphCanvas> as LGraphCanvas
 
       // Mock the node's onTitleButtonClick method
       const onTitleButtonClickSpy = vi.spyOn(node, 'onTitleButtonClick')
@@ -242,7 +242,7 @@ describe('LGraphNode Title Buttons', () => {
       const canvas = {
         ctx: {} as CanvasRenderingContext2D,
         dispatch: vi.fn()
-      } as unknown as LGraphCanvas
+      } as Partial<LGraphCanvas> as LGraphCanvas
 
       // Mock the node's onTitleButtonClick method
       const onTitleButtonClickSpy = vi.spyOn(node, 'onTitleButtonClick')
@@ -292,7 +292,7 @@ describe('LGraphNode Title Buttons', () => {
 
       const canvas = {
         dispatch: vi.fn()
-      } as unknown as LGraphCanvas
+      } as Partial<LGraphCanvas> as LGraphCanvas
 
       node.onTitleButtonClick(button, canvas)
 

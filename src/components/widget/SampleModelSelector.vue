@@ -12,7 +12,7 @@
     </template>
 
     <template #header>
-      <SearchBox v-model="searchQuery" size="lg" class="max-w-[384px]" />
+      <SearchInput v-model="searchQuery" size="lg" class="max-w-96 flex-1" />
     </template>
 
     <template #header-right-area>
@@ -87,12 +87,12 @@
           <template #top>
             <CardTop ratio="landscape">
               <template #default>
-                <div class="h-full w-full bg-blue-500"></div>
+                <div class="size-full bg-blue-500"></div>
               </template>
               <template #top-right>
                 <Button
                   size="icon"
-                  class="!bg-white !text-neutral-900"
+                  class="bg-white! text-neutral-900!"
                   @click="() => {}"
                 >
                   <i class="icon-[lucide--info]" />
@@ -130,7 +130,7 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import Button from '@/components/ui/button/Button.vue'

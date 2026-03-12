@@ -166,13 +166,22 @@ describe('TopMenuSection', () => {
   })
 
   describe('authentication state', () => {
+    function createLegacyTabBarWrapper() {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      const settingStore = useSettingStore(pinia)
+      vi.mocked(settingStore.get).mockImplementation((key) =>
+        key === 'Comfy.UI.TabBarLayout' ? 'Legacy' : undefined
+      )
+      return createWrapper({ pinia })
+    }
+
     describe('when user is logged in', () => {
       beforeEach(() => {
         mockData.isLoggedIn = true
       })
 
       it('should display CurrentUserButton and not display LoginButton', () => {
-        const wrapper = createWrapper()
+        const wrapper = createLegacyTabBarWrapper()
         expect(wrapper.findComponent(CurrentUserButton).exists()).toBe(true)
         expect(wrapper.findComponent(LoginButton).exists()).toBe(false)
       })
@@ -186,7 +195,7 @@ describe('TopMenuSection', () => {
       describe('on desktop platform', () => {
         it('should display LoginButton and not display CurrentUserButton', () => {
           mockData.isDesktop = true
-          const wrapper = createWrapper()
+          const wrapper = createLegacyTabBarWrapper()
           expect(wrapper.findComponent(LoginButton).exists()).toBe(true)
           expect(wrapper.findComponent(CurrentUserButton).exists()).toBe(false)
         })
@@ -194,7 +203,7 @@ describe('TopMenuSection', () => {
 
       describe('on web platform', () => {
         it('should not display CurrentUserButton and not display LoginButton', () => {
-          const wrapper = createWrapper()
+          const wrapper = createLegacyTabBarWrapper()
           expect(wrapper.findComponent(CurrentUserButton).exists()).toBe(false)
           expect(wrapper.findComponent(LoginButton).exists()).toBe(false)
         })
@@ -262,7 +271,7 @@ describe('TopMenuSection', () => {
     )
   })
 
-  it('opens the assets sidebar tab when QPO V2 is enabled', async () => {
+  it('opens the job history sidebar tab when QPO V2 is enabled', async () => {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) =>
@@ -273,10 +282,10 @@ describe('TopMenuSection', () => {
 
     await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
 
-    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+    expect(sidebarTabStore.activeSidebarTabId).toBe('job-history')
   })
 
-  it('toggles the assets sidebar tab when QPO V2 is enabled', async () => {
+  it('toggles the job history sidebar tab when QPO V2 is enabled', async () => {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) =>
@@ -287,7 +296,7 @@ describe('TopMenuSection', () => {
     const toggleButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
 
     await toggleButton.trigger('click')
-    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+    expect(sidebarTabStore.activeSidebarTabId).toBe('job-history')
 
     await toggleButton.trigger('click')
     expect(sidebarTabStore.activeSidebarTabId).toBe(null)
@@ -296,11 +305,13 @@ describe('TopMenuSection', () => {
   describe('inline progress summary', () => {
     const configureSettings = (
       pinia: ReturnType<typeof createTestingPinia>,
-      qpoV2Enabled: boolean
+      qpoV2Enabled: boolean,
+      showRunProgressBar = true
     ) => {
       const settingStore = useSettingStore(pinia)
       vi.mocked(settingStore.get).mockImplementation((key) => {
         if (key === 'Comfy.Queue.QPOV2') return qpoV2Enabled
+        if (key === 'Comfy.Queue.ShowRunProgressBar') return showRunProgressBar
         if (key === 'Comfy.UseNewMenu') return 'Top'
         return undefined
       })
@@ -332,6 +343,19 @@ describe('TopMenuSection', () => {
       ).toBe(false)
     })
 
+    it('does not render inline progress summary when run progress bar is disabled', async () => {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      configureSettings(pinia, true, false)
+
+      const wrapper = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        wrapper.findComponent({ name: 'QueueInlineProgressSummary' }).exists()
+      ).toBe(false)
+    })
+
     it('teleports inline progress summary when actionbar is floating', async () => {
       localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
       const actionbarTarget = document.createElement('div')
@@ -339,7 +363,7 @@ describe('TopMenuSection', () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true)
       const executionStore = useExecutionStore(pinia)
-      executionStore.activePromptId = 'prompt-1'
+      executionStore.activeJobId = 'job-1'
 
       const ComfyActionbarStub = createComfyActionbarStub(actionbarTarget)
 
@@ -429,7 +453,7 @@ describe('TopMenuSection', () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true)
       const executionStore = useExecutionStore(pinia)
-      executionStore.activePromptId = 'prompt-1'
+      executionStore.activeJobId = 'job-1'
 
       const ComfyActionbarStub = createComfyActionbarStub(actionbarTarget)
 
