@@ -13,7 +13,6 @@
     >
       <SelectTrigger
         size="md"
-        :aria-label="t('rightSidePanel.missingModels.useFromLibrary')"
         class="border-transparent bg-secondary-background text-xs hover:border-interface-stroke"
       >
         <SelectValue
