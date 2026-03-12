@@ -32,7 +32,7 @@
           v-if="uiConfig.showSearch && !isSingleSeatPlan"
           class="flex items-start gap-2"
         >
-          <SearchBox
+          <SearchInput
             v-model="searchQuery"
             :placeholder="$t('g.search')"
             size="lg"
@@ -367,7 +367,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -543,8 +543,7 @@ async function handleCopyInviteLink(invite: PendingInvite) {
   } catch {
     toast.add({
       severity: 'error',
-      summary: t('g.error'),
-      life: 3000
+      summary: t('g.error')
     })
   }
 }

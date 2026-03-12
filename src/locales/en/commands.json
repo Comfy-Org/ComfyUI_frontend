@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "Paste"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "Paste with Connect"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Reset View"
   },

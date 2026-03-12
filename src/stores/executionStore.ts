@@ -549,6 +549,13 @@ export const useExecutionStore = defineStore('execution', () => {
     () => runningJobIds.value.length
   )
 
+  const isActiveWorkflowRunning = computed(() => {
+    if (!activeJobId.value) return false
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return false
+    return jobIdToSessionWorkflowPath.value.get(activeJobId.value) === path
+  })
+
   return {
     isIdle,
     clientId,
@@ -568,6 +575,7 @@ export const useExecutionStore = defineStore('execution', () => {
     runningJobIds,
     runningWorkflowCount,
     initializingJobIds,
+    isActiveWorkflowRunning,
     isJobInitializing,
     clearInitializationByJobId,
     clearInitializationByJobIds,

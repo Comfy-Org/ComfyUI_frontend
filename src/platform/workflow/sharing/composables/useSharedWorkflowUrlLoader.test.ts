@@ -164,7 +164,8 @@ describe('useSharedWorkflowUrlLoader', () => {
       { nodes: [] },
       true,
       true,
-      'Test Workflow'
+      'Test Workflow',
+      { openSource: 'shared_url' }
     )
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -338,8 +339,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to load shared workflow',
-      life: 3000
+      detail: 'Failed to load shared workflow'
     })
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -361,7 +361,8 @@ describe('useSharedWorkflowUrlLoader', () => {
       expect.anything(),
       true,
       true,
-      'Open shared workflow'
+      'Open shared workflow',
+      { openSource: 'shared_url' }
     )
   })
 })

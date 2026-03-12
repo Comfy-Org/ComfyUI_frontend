@@ -118,8 +118,7 @@ export function useSharedWorkflowUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('shareWorkflow.loadFailed'),
-        life: 3000
+        detail: t('shareWorkflow.loadFailed')
       })
       cleanupUrlParams()
       clearPreservedQuery(SHARE_NAMESPACE)
@@ -139,7 +138,9 @@ export function useSharedWorkflowUrlLoader() {
     const nonOwnedAssets = payload.assets.filter((a) => !a.in_library)
 
     try {
-      await app.loadGraphData(payload.workflowJson, true, true, workflowName)
+      await app.loadGraphData(payload.workflowJson, true, true, workflowName, {
+        openSource: 'shared_url'
+      })
     } catch (error) {
       console.error(
         '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',
@@ -148,8 +149,7 @@ export function useSharedWorkflowUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('shareWorkflow.loadFailed'),
-        life: 5000
+        detail: t('shareWorkflow.loadFailed')
       })
       return 'failed'
     }

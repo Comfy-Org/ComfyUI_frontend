@@ -19,7 +19,8 @@ export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>
 const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
-  type: resultItemType.optional()
+  type: resultItemType.optional(),
+  display_name: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 const zOutputs = z
@@ -296,7 +297,7 @@ const zSettings = z.object({
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
-  'Comfy.UI.TabBarLayout': z.enum(['Default', 'Integrated']),
+  'Comfy.UI.TabBarLayout': z.enum(['Default', 'Legacy']),
   'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
