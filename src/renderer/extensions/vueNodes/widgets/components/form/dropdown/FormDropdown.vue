@@ -90,11 +90,11 @@ const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
 const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
   default: () => new Set()
 })
+const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
-const isOpen = ref(false)
 
 const maxSelectable = computed(() => {
   if (multiple === true) return Infinity

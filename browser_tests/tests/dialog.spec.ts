@@ -333,7 +333,7 @@ test.describe('Settings', () => {
     await editKeybindingButton.click()
 
     // Set new keybinding
-    const input = comfyPage.page.getByPlaceholder('Press keys for new binding')
+    const input = comfyPage.page.getByPlaceholder('Enter your keybind')
     await input.press('Alt+n')
 
     const requestPromise = comfyPage.page.waitForRequest(
@@ -345,7 +345,7 @@ test.describe('Settings', () => {
 
     // Save keybinding
     const saveButton = comfyPage.page
-      .getByLabel('New Blank Workflow')
+      .getByLabel('Modify keybinding')
       .getByText('Save')
     await saveButton.click()
 
