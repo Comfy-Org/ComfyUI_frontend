@@ -57,13 +57,15 @@ describe('Preview3d', () => {
   }
 
   it('initializes the viewer on mount', async () => {
-    await mountPreview3d()
+    const wrapper = await mountPreview3d()
 
     expect(initializeStandaloneViewer).toHaveBeenCalledOnce()
     expect(initializeStandaloneViewer).toHaveBeenCalledWith(
       expect.any(HTMLElement),
       'http://localhost/view?filename=model.glb'
     )
+
+    wrapper.unmount()
   })
 
   it('cleans up the viewer on unmount', async () => {
@@ -113,10 +115,13 @@ describe('Preview3d', () => {
     await nextTick()
     await nextTick()
 
+    expect(cleanup).toHaveBeenCalledOnce()
     expect(initializeStandaloneViewer).toHaveBeenCalledOnce()
     expect(initializeStandaloneViewer).toHaveBeenCalledWith(
       expect.any(HTMLElement),
       'http://localhost/view?filename=model-b.glb'
     )
+
+    wrapper.unmount()
   })
 })
