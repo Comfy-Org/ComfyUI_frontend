@@ -1257,5 +1257,21 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.Cloud.ConcurrentExecution',
+    name: 'Run jobs in parallel',
+    tooltip:
+      'When enabled, multiple workflow runs execute concurrently instead of queuing sequentially.',
+    type: isCloud ? 'boolean' : 'hidden',
+    defaultValue: true,
+    versionAdded: '1.42.0'
+  },
+  {
+    id: 'Comfy.Cloud.ConcurrentExecution.OnboardingSeen',
+    name: 'Concurrent execution onboarding dialog seen',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.42.0'
   }
 ]
