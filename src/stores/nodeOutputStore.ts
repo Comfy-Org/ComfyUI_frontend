@@ -166,7 +166,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     // Note: intentional preview clears go through setNodeOutputs (widget
     // path), not setNodeOutputsByExecutionId, so this guard does not
     // interfere with user-initiated clears.
-    const incomingImages = (outputs as ExecutedWsMessage['output'])?.images
+    const incomingImages = (outputs as ExecutedWsMessage['output']).images
     const hasIncomingImages =
       Array.isArray(incomingImages) && incomingImages.length > 0
     if (
