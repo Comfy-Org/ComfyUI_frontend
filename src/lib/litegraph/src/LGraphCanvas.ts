@@ -403,6 +403,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   set read_only(value: boolean) {
+    if (this.state.readOnly === value) {
+      this._updateCursorStyle()
+      return
+    }
     this.state.readOnly = value
     this._updateCursorStyle()
     this.onReadOnlyChanged?.(value)
