@@ -1,11 +1,5 @@
 <template>
   <router-view />
-  <div
-    v-if="isLoading"
-    class="absolute inset-0 flex items-center justify-center"
-  >
-    <Loader size="lg" class="text-white" />
-  </div>
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
 </template>
@@ -13,9 +7,8 @@
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
-import Loader from '@/components/common/Loader.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -30,6 +23,16 @@ app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
+
+watch(
+  isLoading,
+  (loading, prevLoading) => {
+    if (prevLoading && !loading) {
+      document.getElementById('splash-loader')?.remove()
+    }
+  },
+  { flush: 'post' }
+)
 
 const showContextMenu = (event: MouseEvent) => {
   const { target } = event

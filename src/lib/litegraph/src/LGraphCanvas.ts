@@ -559,6 +559,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   clear_background_color: string
   render_only_selected: boolean
   show_info: boolean
+  /** Additional text appended to the canvas info overlay (rendered by {@link renderInfo}). */
+  info_text: string | undefined
   allow_dragcanvas: boolean
   allow_dragnodes: boolean
   allow_interaction: boolean
@@ -3791,13 +3793,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return
   }
 
-  private _noItemsSelected(): void {
-    const event = new CustomEvent('litegraph:no-items-selected', {
-      bubbles: true
-    })
-    this.canvas.dispatchEvent(event)
-  }
-
   /**
    * process a key event
    */
@@ -3842,31 +3837,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.node_panel?.close()
         this.options_panel?.close()
         if (this.node_panel || this.options_panel) block_default = true
-      } else if (e.keyCode === 65 && e.ctrlKey) {
-        // select all Control A
-        this.selectItems()
-        block_default = true
-      } else if (e.keyCode === 67 && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
-        // copy
-        if (this.selected_nodes) {
-          this.copyToClipboard()
-          block_default = true
-        }
-      } else if (e.keyCode === 86 && (e.metaKey || e.ctrlKey)) {
-        // paste
-        this.pasteFromClipboard({ connectInputs: e.shiftKey })
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        // delete or backspace
-        // @ts-expect-error EventTarget.localName is not in standard types
-        if (e.target.localName != 'input' && e.target.localName != 'textarea') {
-          if (this.selectedItems.size === 0) {
-            this._noItemsSelected()
-            return
-          }
-
-          this.deleteSelected()
-          block_default = true
-        }
       }
 
       // TODO
@@ -5212,8 +5182,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * draws some useful stats in the corner of the canvas
    */
   renderInfo(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+    const lineHeight = 13
+    const lineCount = (this.graph ? 5 : 1) + (this.info_text ? 1 : 0)
     x = x || 10
-    y = y || this.canvas.offsetHeight - 80
+    y = y || this.canvas.offsetHeight - (lineCount + 1) * lineHeight
 
     ctx.save()
     ctx.translate(x, y)
@@ -5221,18 +5193,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.font = `10px ${LiteGraph.DEFAULT_FONT}`
     ctx.fillStyle = '#888'
     ctx.textAlign = 'left'
+    let line = 1
     if (this.graph) {
-      ctx.fillText(`T: ${this.graph.globaltime.toFixed(2)}s`, 5, 13 * 1)
-      ctx.fillText(`I: ${this.graph.iteration}`, 5, 13 * 2)
+      ctx.fillText(
+        `T: ${this.graph.globaltime.toFixed(2)}s`,
+        5,
+        lineHeight * line++
+      )
+      ctx.fillText(`I: ${this.graph.iteration}`, 5, lineHeight * line++)
       ctx.fillText(
         `N: ${this.graph._nodes.length} [${this.visible_nodes.length}]`,
         5,
-        13 * 3
+        lineHeight * line++
       )
-      ctx.fillText(`V: ${this.graph._version}`, 5, 13 * 4)
-      ctx.fillText(`FPS:${this.fps.toFixed(2)}`, 5, 13 * 5)
+      ctx.fillText(`V: ${this.graph._version}`, 5, lineHeight * line++)
+      ctx.fillText(`FPS:${this.fps.toFixed(2)}`, 5, lineHeight * line++)
     } else {
-      ctx.fillText('No graph selected', 5, 13 * 1)
+      ctx.fillText('No graph selected', 5, lineHeight * line++)
+    }
+    if (this.info_text) {
+      ctx.fillText(this.info_text, 5, lineHeight * line++)
     }
     ctx.restore()
   }

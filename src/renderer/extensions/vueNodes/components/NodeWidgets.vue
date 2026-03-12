@@ -53,7 +53,11 @@
           />
         </div>
         <!-- Widget Component -->
-        <AppInput :id="widget.id" :name="widget.name" :is-select-inputs-mode>
+        <AppInput
+          :id="widget.id"
+          :name="widget.name"
+          :enable="canSelectInputs && !widget.simplified.options?.disabled"
+        >
           <component
             :is="widget.vueComponent"
             v-model="widget.value"
@@ -89,6 +93,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -104,11 +109,13 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { usePromotionStore } from '@/stores/promotionStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -128,6 +135,7 @@ const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
 const promotionStore = usePromotionStore()
 const executionErrorStore = useExecutionErrorStore()
+const missingModelStore = useMissingModelStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -154,6 +162,13 @@ onErrorCaptured((error) => {
   return false
 })
 
+const canSelectInputs = computed(
+  () =>
+    isSelectInputsMode.value &&
+    nodeData?.mode === LGraphEventMode.ALWAYS &&
+    nodeTypeValidForApp(nodeData.type) &&
+    !nodeData.hasErrors
+)
 const nodeType = computed(() => nodeData?.type || '')
 const settingStore = useSettingStore()
 const showAdvanced = computed(
@@ -189,6 +204,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const graphId = canvasStore.canvas?.graph?.rootGraph.id
 
   const nodeId = nodeData.id
+  const nodeIdStr = String(nodeId)
   const { widgets } = nodeData
   const result: ProcessedWidget[] = []
 
@@ -271,9 +287,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError:
-        nodeErrors?.errors?.some(
+        (nodeErrors?.errors?.some(
           (error) => error.extra_info?.input_name === widget.name
-        ) ?? false,
+        ) ??
+          false) ||
+        missingModelStore.isWidgetMissingModel(nodeIdStr, widget.name),
       hidden: widget.options?.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,

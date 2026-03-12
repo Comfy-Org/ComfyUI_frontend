@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Expressão Matemática",
+    "inputs": {
+      "expression": {
+        "name": "expressão"
+      },
+      "values": {
+        "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Alternar",
     "inputs": {
@@ -3188,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Ativa a otimização KV Cache para imagens de referência em modelos da família Flux.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo para aplicar o KV Cache."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O modelo modificado com KV Cache ativado."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Este nó redimensiona a imagem para um tamanho mais ideal para flux kontext.",
     "display_name": "FluxKontextImageScale",
@@ -3947,6 +3981,10 @@
     "description": "Modifique uma imagem existente com base em um prompt de texto",
     "display_name": "Grok Image Edit",
     "inputs": {
+      "aspect_ratio": {
+        "name": "proporção",
+        "tooltip": "Só é permitido quando várias imagens estão conectadas à entrada de imagem."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -3998,6 +4036,9 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "O prompt de texto usado para gerar a imagem"
+      },
+      "resolution": {
+        "name": "resolução"
       },
       "seed": {
         "name": "seed",
@@ -5853,6 +5894,9 @@
       },
       "mode": {
         "name": "modo"
+      },
+      "model": {
+        "name": "modelo"
       },
       "prompt": {
         "name": "prompt"
@@ -12826,6 +12870,133 @@
       }
     }
   },
+  "ReveImageCreateNode": {
+    "description": "Gere imagens a partir de descrições de texto usando o Reve.",
+    "display_name": "Reve Image Create",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Versão do modelo a ser usada para geração."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto da imagem desejada. Máximo de 2560 caracteres."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remover o fundo da imagem gerada. Pode gerar custo adicional."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Aumentar a resolução da imagem gerada. Pode gerar custo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Edite imagens usando instruções em linguagem natural com o Reve.",
+    "display_name": "Reve Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "edit_instruction": {
+        "name": "edit_instruction",
+        "tooltip": "Descrição em texto de como editar a imagem. Máximo de 2560 caracteres."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "A imagem a ser editada."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Versão do modelo a ser usada para edição."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remover o fundo da imagem gerada. Pode gerar custo adicional."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Aumentar a resolução da imagem gerada. Pode gerar custo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Combine imagens de referência com prompts de texto para criar novas imagens usando o Reve.",
+    "display_name": "Reve Image Remix",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Versão do modelo a ser usada para remix."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto da imagem desejada. Pode incluir tags XML img para referenciar imagens específicas pelo índice, por exemplo, <img>0</img>, <img>1</img>, etc."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remover o fundo da imagem gerada. Pode gerar custo adicional."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Aumentar a resolução da imagem gerada. Pode gerar custo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Gerar ativos 3D usando a API Rodin",
     "display_name": "Rodin 3D Gerar - Geração Detalhada",
@@ -15097,6 +15268,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Realiza o desdobramento UV em um modelo 3D para gerar textura UV. O modelo de entrada deve ter menos de 30.000 faces.",
+    "display_name": "Hunyuan3D: Modelo para UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D de entrada (GLB, OBJ ou FBX)"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Realiza retopologia inteligente em um modelo 3D. Suporta formatos GLB/OBJ; máximo de 200MB; recomendado para modelos de alta poligonagem.",
+    "display_name": "Hunyuan3D: Topologia Inteligente",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "face_level": {
+        "name": "nível_de_faces",
+        "tooltip": "Nível de redução de polígonos."
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D de entrada (GLB ou OBJ)"
+      },
+      "polygon_type": {
+        "name": "tipo_de_polígono",
+        "tooltip": "Tipo de composição da superfície."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

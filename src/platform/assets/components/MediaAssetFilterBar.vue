@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center gap-3">
-    <SearchBox
+    <SearchInput
       :model-value="searchQuery"
       :placeholder="
         $t('g.searchPlaceholder', { subject: $t('sideToolbar.labels.assets') })
@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { isCloud } from '@/platform/distribution/types'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'

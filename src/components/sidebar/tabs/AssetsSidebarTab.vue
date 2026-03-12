@@ -236,6 +236,7 @@ import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
@@ -569,7 +570,7 @@ const handleZoomClick = (asset: AssetItem) => {
     const dialogStore = useDialogStore()
     dialogStore.showDialog({
       key: 'asset-3d-viewer',
-      title: asset.name,
+      title: getAssetDisplayName(asset),
       component: Load3dViewerContent,
       props: {
         modelUrl: asset.preview_url || ''
@@ -615,8 +616,7 @@ const enterFolderView = async (asset: AssetItem) => {
     toast.add({
       severity: 'error',
       summary: t('sideToolbar.folderView.errorSummary'),
-      detail: t('sideToolbar.folderView.errorDetail'),
-      life: 5000
+      detail: t('sideToolbar.folderView.errorDetail')
     })
     exitFolderView()
   }
@@ -662,8 +662,7 @@ const copyJobId = async () => {
       toast.add({
         severity: 'error',
         summary: t('mediaAsset.jobIdToast.error'),
-        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed'),
-        life: 3000
+        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed')
       })
     }
   }

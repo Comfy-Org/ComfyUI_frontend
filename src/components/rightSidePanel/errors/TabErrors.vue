@@ -12,7 +12,7 @@
     </div>
 
     <!-- Scrollable content -->
-    <div class="min-w-0 flex-1 overflow-y-auto">
+    <div class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
       <TransitionGroup tag="div" name="list-scale" class="relative">
         <div
           v-if="filteredGroups.length === 0"
@@ -32,11 +32,7 @@
           :key="group.title"
           :collapse="isSectionCollapsed(group.title) && !isSearching"
           class="border-b border-interface-stroke"
-          :size="
-            group.type === 'missing_node' || group.type === 'swap_nodes'
-              ? 'lg'
-              : 'default'
-          "
+          :size="getGroupSize(group)"
           @update:collapse="setSectionCollapsed(group.title, $event)"
         >
           <template #label>
@@ -130,6 +126,14 @@
               @copy-to-clipboard="copyToClipboard"
             />
           </div>
+
+          <!-- Missing Models -->
+          <MissingModelCard
+            v-else-if="group.type === 'missing_model'"
+            :missing-model-groups="missingModelGroups"
+            :show-node-id-badge="showNodeIdBadge"
+            @locate-model="handleLocateModel"
+          />
         </PropertiesAccordionItem>
       </TransitionGroup>
     </div>
@@ -187,12 +191,14 @@ import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/f
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
+import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
+import type { ErrorGroup } from './types'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 
 const { t } = useI18n()
@@ -211,6 +217,15 @@ const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 
+const fullSizeGroupTypes = new Set([
+  'missing_node',
+  'swap_nodes',
+  'missing_model'
+])
+function getGroupSize(group: ErrorGroup) {
+  return fullSizeGroupTypes.has(group.type) ? 'lg' : 'default'
+}
+
 const showNodeIdBadge = computed(
   () =>
     (settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode) !==
@@ -226,6 +241,7 @@ const {
   errorNodeCache,
   missingNodeCache,
   missingPackGroups,
+  missingModelGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
 
@@ -281,6 +297,10 @@ function handleLocateNode(nodeId: string) {
 
 function handleLocateMissingNode(nodeId: string) {
   focusNode(nodeId, missingNodeCache.value)
+}
+
+function handleLocateModel(nodeId: string) {
+  focusNode(nodeId)
 }
 
 function handleOpenManagerInfo(packId: string) {

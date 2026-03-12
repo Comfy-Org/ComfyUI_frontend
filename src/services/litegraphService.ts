@@ -216,14 +216,18 @@ export const useLitegraphService = () => {
    */
   function addNodeInput(node: LGraphNode, inputSpec: InputSpec) {
     addInputSocket(node, inputSpec)
-    addInputWidget(node, inputSpec)
+    addInputWidget(node, inputSpec, { dynamic: true })
   }
 
   /**
    * @internal Add a widget to the node. For both primitive types and custom widgets
    * (unless `socketless`), an input socket is also added.
    */
-  function addInputWidget(node: LGraphNode, inputSpec: InputSpec) {
+  function addInputWidget(
+    node: LGraphNode,
+    inputSpec: InputSpec,
+    { dynamic }: { dynamic?: boolean } = {}
+  ) {
     const widgetInputSpec = { ...inputSpec }
     if (inputSpec.widgetType) {
       widgetInputSpec.type = inputSpec.widgetType
@@ -254,6 +258,7 @@ export const useLitegraphService = () => {
         advanced: inputSpec.advanced,
         hidden: inputSpec.hidden
       })
+      if (dynamic) widget.tooltip = inputSpec.tooltip
     }
 
     if (!widget?.options?.socketless) {

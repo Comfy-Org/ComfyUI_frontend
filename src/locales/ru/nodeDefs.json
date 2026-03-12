@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Математическое выражение",
+    "inputs": {
+      "expression": {
+        "name": "выражение"
+      },
+      "values": {
+        "name": "значения"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Переключатель",
     "inputs": {
@@ -3188,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Включает оптимизацию KV Cache для эталонных изображений в моделях семейства Flux.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, для которой будет использоваться KV Cache."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Патченная модель с включённым KV Cache."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Этот узел изменяет размер изображения до более оптимального для flux kontext.",
     "display_name": "FluxKontextImageScale",
@@ -3947,6 +3981,10 @@
     "description": "Изменить существующее изображение на основе текстового запроса",
     "display_name": "Grok Image Edit",
     "inputs": {
+      "aspect_ratio": {
+        "name": "соотношение сторон",
+        "tooltip": "Разрешено только при подключении нескольких изображений к входу изображения."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -3998,6 +4036,9 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Текстовый запрос, используемый для генерации изображения"
+      },
+      "resolution": {
+        "name": "разрешение"
       },
       "seed": {
         "name": "seed",
@@ -5853,6 +5894,9 @@
       },
       "mode": {
         "name": "режим"
+      },
+      "model": {
+        "name": "модель"
       },
       "prompt": {
         "name": "промпт"
@@ -12826,6 +12870,133 @@
       }
     }
   },
+  "ReveImageCreateNode": {
+    "description": "Генерируйте изображения по текстовым описаниям с помощью Reve.",
+    "display_name": "Reve Создание изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Версия модели для генерации."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого изображения. Максимум 2560 символов."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Удалить фон с сгенерированного изображения. Может потребоваться дополнительная оплата."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел запускаться повторно; результаты не являются детерминированными независимо от seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Увеличить разрешение сгенерированного изображения. Может потребоваться дополнительная оплата."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Редактируйте изображения с помощью естественно-языковых инструкций в Reve.",
+    "display_name": "Reve Редактирование изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "edit_instruction": {
+        "name": "edit_instruction",
+        "tooltip": "Текстовое описание того, как редактировать изображение. Максимум 2560 символов."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Изображение для редактирования."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Версия модели для редактирования."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Удалить фон с сгенерированного изображения. Может потребоваться дополнительная оплата."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел запускаться повторно; результаты не являются детерминированными независимо от seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Увеличить разрешение сгенерированного изображения. Может потребоваться дополнительная оплата."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Комбинируйте референсные изображения с текстовыми подсказками для создания новых изображений с помощью Reve.",
+    "display_name": "Reve Ремикс изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Версия модели для ремикса."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого изображения. Можно использовать XML-теги img для ссылки на определённые изображения по индексу, например <img>0</img>, <img>1</img> и т.д."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Удалить фон с сгенерированного изображения. Может потребоваться дополнительная оплата."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел запускаться повторно; результаты не являются детерминированными независимо от seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Увеличить разрешение сгенерированного изображения. Может потребоваться дополнительная оплата."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Создание 3D-объектов с помощью Rodin API",
     "display_name": "Rodin 3D Generate - Детальная генерация",
@@ -15097,6 +15268,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Выполнить UV-развёртку 3D-модели для генерации UV-текстуры. Входная модель должна содержать менее 30000 граней.",
+    "display_name": "Hunyuan3D: Модель в UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model_3d": {
+        "name": "3D-модель",
+        "tooltip": "Входная 3D-модель (GLB, OBJ или FBX)"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты всегда недетерминированы независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Выполнить умную ретопологию 3D-модели. Поддерживаются форматы GLB/OBJ; максимум 200 МБ; рекомендуется для высокополигональных моделей.",
+    "display_name": "Hunyuan3D: Умная топология",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "face_level": {
+        "name": "уровень граней",
+        "tooltip": "Уровень редукции полигонов."
+      },
+      "model_3d": {
+        "name": "3D-модель",
+        "tooltip": "Входная 3D-модель (GLB или OBJ)"
+      },
+      "polygon_type": {
+        "name": "тип полигона",
+        "tooltip": "Тип композиции поверхности."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты всегда недетерминированы независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

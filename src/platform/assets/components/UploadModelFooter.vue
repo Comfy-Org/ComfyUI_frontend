@@ -106,7 +106,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import Button from '@/components/ui/button/Button.vue'
 import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
 

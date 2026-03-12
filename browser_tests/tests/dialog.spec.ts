@@ -89,6 +89,17 @@ test.describe('Execution error', () => {
 })
 
 test.describe('Missing models warning', () => {
+  test('Should be disabled by default in browser tests', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('missing/missing_models')
+
+    const dialogTitle = comfyPage.page.getByText(
+      'This workflow is missing models'
+    )
+    await expect(dialogTitle).not.toBeVisible()
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.ShowMissingModelsWarning',
@@ -322,7 +333,7 @@ test.describe('Settings', () => {
     await editKeybindingButton.click()
 
     // Set new keybinding
-    const input = comfyPage.page.getByPlaceholder('Press keys for new binding')
+    const input = comfyPage.page.getByPlaceholder('Enter your keybind')
     await input.press('Alt+n')
 
     const requestPromise = comfyPage.page.waitForRequest(
@@ -334,7 +345,7 @@ test.describe('Settings', () => {
 
     // Save keybinding
     const saveButton = comfyPage.page
-      .getByLabel('New Blank Workflow')
+      .getByLabel('Modify keybinding')
       .getByText('Save')
     await saveButton.click()
 

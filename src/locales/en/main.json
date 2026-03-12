@@ -35,6 +35,10 @@
     "videoPreview": "Video preview - Use arrow keys to navigate between videos",
     "galleryImage": "Gallery image",
     "galleryThumbnail": "Gallery thumbnail",
+    "previousImage": "Previous image",
+    "nextImage": "Next image",
+    "switchToGridView": "Switch to grid view",
+    "switchToSingleView": "Switch to single view",
     "errorLoadingImage": "Error loading image",
     "errorLoadingVideo": "Error loading video",
     "failedToDownloadImage": "Failed to download image",
@@ -93,6 +97,7 @@
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
     "copyToClipboard": "Copy to Clipboard",
+    "copySystemInfo": "Copy System Info",
     "copyAll": "Copy All",
     "openNewIssue": "Open New Issue",
     "showReport": "Show Report",
@@ -105,6 +110,7 @@
     "delete": "Delete",
     "rename": "Rename",
     "save": "Save",
+    "saveAnyway": "Save Anyway",
     "saving": "Saving",
     "no": "No",
     "cancel": "Cancel",
@@ -115,7 +121,6 @@
     "showRightPanel": "Show right panel",
     "hideRightPanel": "Hide right panel",
     "or": "or",
-    "pressKeysForNewBinding": "Press keys for new binding",
     "defaultBanner": "default banner",
     "enableOrDisablePack": "Enable or disable pack",
     "openManager": "Open Manager",
@@ -260,6 +265,11 @@
     "multiSelectDropdown": "Multi-select dropdown",
     "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
+    "modifyKeybinding": "Modify keybinding",
+    "setAKeybindingForTheFollowing": "Set a keybinding for the following:",
+    "enterYourKeybind": "Enter your keybind",
+    "browserReservedKeybinding": "This shortcut is reserved by some browsers and may have unexpected results.",
+    "browserReservedKeybindingTooltip": "This shortcut conflicts with browser-reserved shortcuts",
     "keybindingAlreadyExists": "Keybinding already exists on",
     "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information.",
     "startRecording": "Start Recording",
@@ -301,6 +311,7 @@
     "1x": "1x",
     "2x": "2x",
     "beta": "BETA",
+    "comfyCloud": "Comfy Cloud",
     "nightly": "NIGHTLY",
     "profile": "Profile",
     "noItems": "No items",
@@ -338,7 +349,8 @@
       "conflicting": "Conflicting",
       "inWorkflowSection": "IN WORKFLOW",
       "allInWorkflow": "All in: {workflowName}",
-      "missingNodes": "Missing Nodes"
+      "missingNodes": "Missing Nodes",
+      "unresolvedNodes": "Unresolved Nodes"
     },
     "infoPanelEmpty": "Click an item to see the info",
     "applyChanges": "Apply Changes",
@@ -403,6 +415,10 @@
     "noDescription": "No description available",
     "installSelected": "Install Selected",
     "installAllMissingNodes": "Install All",
+    "unresolvedNodes": {
+      "title": "Unresolved Missing Nodes",
+      "message": "The following nodes are not installed and could not be found in the registry."
+    },
     "allMissingNodesInstalled": "All missing nodes have been successfully installed",
     "packsSelected": "packs selected",
     "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
@@ -968,7 +984,6 @@
     "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
-    "helpAndFeedback": "Help & Feedback",
     "queue": "Queue Panel",
     "fullscreen": "Fullscreen"
   },
@@ -1046,6 +1061,8 @@
     "logoProviderSeparator": " & "
   },
   "graphCanvasMenu": {
+    "canvasMode": "Canvas Mode",
+    "canvasToolbar": "Canvas Toolbar",
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",
     "resetView": "Reset View",
@@ -1262,6 +1279,7 @@
     "Move Selected Nodes Right": "Move Selected Nodes Right",
     "Move Selected Nodes Up": "Move Selected Nodes Up",
     "Paste": "Paste",
+    "Paste with Connect": "Paste with Connect",
     "Reset View": "Reset View",
     "Resize Selected Nodes": "Resize Selected Nodes",
     "Select All": "Select All",
@@ -1595,6 +1613,7 @@
     "kandinsky5": "kandinsky5",
     "hooks": "hooks",
     "combine": "combine",
+    "math": "math",
     "logic": "logic",
     "cond single": "cond single",
     "context": "context",
@@ -1613,6 +1632,7 @@
     "unet": "unet",
     "sigmas": "sigmas",
     "BFL": "BFL",
+    "": "",
     "Gemini": "Gemini",
     "video_models": "video_models",
     "gligen": "gligen",
@@ -1647,6 +1667,7 @@
     "primitive": "primitive",
     "Recraft": "Recraft",
     "edit_models": "edit_models",
+    "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
     "animation": "animation",
@@ -1660,7 +1681,6 @@
     "style_model": "style_model",
     "Tencent": "Tencent",
     "textgen": "textgen",
-    "": "",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1947,6 +1967,7 @@
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
     "dropFileError": "Unable to process dropped item: {error}",
+    "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
     "interrupted": "Execution has been interrupted",
     "pendingTasksDeleted": "Pending tasks deleted",
     "nothingToGroup": "Nothing to group",
@@ -2597,13 +2618,18 @@
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",
-    "enterBuilderMode": "App builder",
+    "enterBuilderMode": "Build app",
+    "editBuilderMode": "Edit app",
     "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
     "enterNewName": "Enter new name",
-    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red)."
+    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red).",
+    "graph": "Graph",
+    "app": "App",
+    "enterNodeGraph": "Enter node graph",
+    "share": "Share"
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",
@@ -3002,6 +3028,11 @@
     "share": "Share",
     "shareTooltip": "Share workflow"
   },
+  "shareNoOutputs": {
+    "title": "App has no outputs",
+    "message": "You're about to share an app without outputs. It can't be used until an output is connected.\n\nShare anyway?",
+    "shareAnyway": "Share anyway"
+  },
   "shareWorkflow": {
     "shareLinkTab": "Share",
     "publishToHubTab": "Publish",
@@ -3151,6 +3182,7 @@
   "linearMode": {
     "linearMode": "App Mode",
     "beta": "App mode in beta",
+    "buildAnApp": "Build an app",
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
@@ -3158,25 +3190,32 @@
     "runCount": "Number of runs",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
-    "downloadAll": "Download All",
+    "downloadAll": "Download {count} assets from this run",
     "viewJob": "View Job",
     "enterNodeGraph": "Enter node graph",
     "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
     "backToWorkflow": "Back to workflow",
     "loadTemplate": "Load a template",
+    "cancelThisRun": "Cancel this run",
+    "deleteAllAssets": "Delete all assets from this run",
+    "hasCreditCost": "Requires additional credits",
+    "viewGraph": "View node graph",
+    "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
       "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
       "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
       "getStarted": "Click {runButton} to get started.",
-      "buildApp": "Build app"
+      "buildApp": "Build app",
+      "noOutputs": "An app needs at least {count} to be usable.",
+      "oneOutput": "1 output"
     },
     "appModeToolbar": {
       "appBuilder": "App builder",
       "apps": "Apps",
-      "appsEmptyMessage": "Saved apps will show up here.\nClick below to build your first app.",
-      "enterAppMode": "Enter app mode"
+      "appsEmptyMessage": "Saved apps will show up here.",
+      "appsEmptyMessageAction": "Click below to build your first app."
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
@@ -3201,7 +3240,23 @@
       "noOutputs": "No output nodes added yet",
       "outputsDesc": "Connect at least one output node so users can see results after running.",
       "outputsExample": "Examples: “Save Image” or “Save Video”",
-      "unknownWidget": "Widget not visible"
+      "unknownWidget": "Widget not visible",
+      "inputPlaceholder": "Inputs will show up here",
+      "outputPlaceholder": "Output nodes will show up here",
+      "outputRequiredPlaceholder": "At least one node is required"
+    },
+    "error": {
+      "header": "This app encountered an error",
+      "log": "Error Logs",
+      "mobileFixable": "Check {0} for errors",
+      "requiresGraph": "Something went wrong during generation. This could be due to invalid hidden inputs, missing resources, or workflow configuration issues.",
+      "promptVisitGraph": "View the node graph to see the full error.",
+      "getHelp": "For help, view our {0}, {1}, or {2} with the copied error.",
+      "goto": "Show errors in graph",
+      "github": "submit a GitHub issue",
+      "guide": "troubleshooting guide",
+      "support": "contact our support",
+      "promptShow": "Show error report"
     },
     "queue": {
       "clickToClear": "Click to clear queue",
@@ -3344,6 +3399,33 @@
       "viewInManager": "View in Manager",
       "collapse": "Collapse",
       "expand": "Expand"
+    },
+    "missingModels": {
+      "urlPlaceholder": "Paste Model URL (Civitai or Hugging Face)",
+      "or": "OR",
+      "useFromLibrary": "Use from Library",
+      "usingFromLibrary": "Using from Library",
+      "unsupportedUrl": "Only Civitai and Hugging Face URLs are supported.",
+      "metadataFetchFailed": "Failed to retrieve metadata. Please check the link and try again.",
+      "import": "Import",
+      "importing": "Importing...",
+      "imported": "Imported",
+      "importFailed": "Import failed",
+      "typeMismatch": "This model seems to be a \"{detectedType}\". Are you sure?",
+      "importAnyway": "Import Anyway",
+      "alreadyExistsInCategory": "This model already exists in \"{category}\"",
+      "customNodeDownloadDisabled": "Cloud environment does not support model imports for custom nodes in this section. Please use standard loader nodes or substitute with a model from the library below.",
+      "importNotSupported": "Import Not Supported",
+      "copyModelName": "Copy model name",
+      "confirmSelection": "Confirm selection",
+      "locateNode": "Locate node on canvas",
+      "cancelSelection": "Cancel selection",
+      "clearUrl": "Clear URL",
+      "expandNodes": "Show referencing nodes",
+      "collapseNodes": "Hide referencing nodes",
+      "unknownCategory": "Unknown",
+      "missingModelsTitle": "Missing Models",
+      "assetLoadTimeout": "Model detection timed out. Try reloading the workflow."
     }
   },
   "errorOverlay": {
@@ -3385,14 +3467,11 @@
     "retryDownload": "Retry download"
   },
   "workspace": {
-    "unsavedChanges": {
-      "title": "Unsaved Changes",
-      "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
-    },
     "inviteAccepted": "Invite Accepted",
     "addedToWorkspace": "You have been added to:",
     "inviteFailed": "Failed to Accept Invite",
-    "viewWorkspace": "View workspace"
+    "viewWorkspace": "View workspace",
+    "switchFailed": "Failed to switch workspace. Please try again."
   },
   "workspaceAuth": {
     "errors": {
@@ -3513,10 +3592,12 @@
     "defaultModeAppliedGraphBody": "This workflow will open as a node graph by default from now on.",
     "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
     "viewApp": "View app",
+    "exitToWorkflow": "Exit to workflow",
     "emptyWorkflowTitle": "This workflow has no nodes",
     "emptyWorkflowPrompt": "Do you want to start with a template?"
   },
   "builderMenu": {
+    "enterAppMode": "Enter app mode",
     "exitAppBuilder": "Exit app builder"
   }
 }

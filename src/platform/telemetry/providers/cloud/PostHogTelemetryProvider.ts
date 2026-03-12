@@ -7,7 +7,9 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
   AuthMetadata,
+  DefaultViewSetMetadata,
   EnterLinearMetadata,
+  ShareFlowMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
@@ -33,7 +35,8 @@ import type {
   TemplateMetadata,
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
-  WorkflowImportMetadata
+  WorkflowImportMetadata,
+  WorkflowSavedMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { getExecutionContext } from '../../utils/getExecutionContext'
@@ -98,13 +101,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         void import('posthog-js')
           .then((posthogModule) => {
             this.posthog = posthogModule.default
+            const serverConfig = remoteConfig.value?.posthog_config ?? {}
             this.posthog!.init(apiKey, {
               api_host:
-                window.__CONFIG__?.posthog_api_host || 'https://ph.comfy.org',
+                window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
+              ui_host: 'https://us.posthog.com',
               autocapture: false,
               capture_pageview: false,
               capture_pageleave: false,
-              persistence: 'localStorage+cookie'
+              persistence: 'localStorage+cookie',
+              debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
+              ...serverConfig
             })
             this.isInitialized = true
             this.flushEventQueue()
@@ -342,8 +349,20 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
   }
 
+  trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_SAVED, metadata)
+  }
+
+  trackDefaultViewSet(metadata: DefaultViewSetMetadata): void {
+    this.trackEvent(TelemetryEvents.DEFAULT_VIEW_SET, metadata)
+  }
+
   trackEnterLinear(metadata: EnterLinearMetadata): void {
     this.trackEvent(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
+  }
+
+  trackShareFlow(metadata: ShareFlowMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
