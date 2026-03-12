@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "Colar"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "Colar com Conexão"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Redefinir visualização"
   },
@@ -343,6 +346,10 @@
   },
   "Workspace_ToggleFocusMode": {
     "label": "Alternar modo de foco"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "Alternar Barra Lateral de Apps",
+    "tooltip": "Apps"
   },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "Alternar barra lateral de assets",

@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "数学表达式",
+    "inputs": {
+      "expression": {
+        "name": "表达式"
+      },
+      "values": {
+        "name": "数值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "切换",
     "inputs": {
@@ -3947,6 +3966,10 @@
     "description": "根据文本提示修改现有图像",
     "display_name": "Grok 图像编辑",
     "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "仅当多个图像连接到图像输入时允许。"
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -3998,6 +4021,9 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "用于生成图像的文本提示"
+      },
+      "resolution": {
+        "name": "分辨率"
       },
       "seed": {
         "name": "seed",
@@ -5853,6 +5879,9 @@
       },
       "mode": {
         "name": "模式"
+      },
+      "model": {
+        "name": "模型"
       },
       "prompt": {
         "name": "提示词"
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "对3D模型进行UV展开，生成UV贴图。输入模型面数需小于30000。",
+    "display_name": "Hunyuan3D：模型转UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model_3d": {
+        "name": "3D模型",
+        "tooltip": "输入3D模型（GLB、OBJ或FBX）"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "对3D模型进行智能重拓扑。支持GLB/OBJ格式；最大200MB；推荐用于高面数模型。",
+    "display_name": "Hunyuan3D：智能拓扑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "face_level": {
+        "name": "面数级别",
+        "tooltip": "多边形简化级别。"
+      },
+      "model_3d": {
+        "name": "3D模型",
+        "tooltip": "输入3D模型（GLB或OBJ）"
+      },
+      "polygon_type": {
+        "name": "面类型",
+        "tooltip": "表面组成类型。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

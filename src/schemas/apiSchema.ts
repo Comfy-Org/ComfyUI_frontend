@@ -19,7 +19,8 @@ export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>
 const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
-  type: resultItemType.optional()
+  type: resultItemType.optional(),
+  display_name: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 const zOutputs = z
@@ -296,7 +297,7 @@ const zSettings = z.object({
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
-  'Comfy.UI.TabBarLayout': z.enum(['Default', 'Integrated']),
+  'Comfy.UI.TabBarLayout': z.enum(['Default', 'Legacy']),
   'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
@@ -411,6 +412,7 @@ const zSettings = z.object({
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),
+  'Comfy.Queue.ShowRunProgressBar': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
@@ -479,3 +481,31 @@ export type UserDataFullInfo = z.infer<typeof zUserDataFullInfo>
 export type TerminalSize = z.infer<typeof zTerminalSize>
 export type LogEntry = z.infer<typeof zLogEntry>
 export type LogsRawResponse = z.infer<typeof zLogRawResponse>
+
+export const zComfyHubProfile = z.object({
+  username: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  coverImageUrl: z.string().nullish(),
+  profilePictureUrl: z.string().nullish()
+})
+
+export type ComfyHubProfile = z.infer<typeof zComfyHubProfile>
+
+export const zAssetInfo = z.object({
+  id: z.string(),
+  name: z.string(),
+  preview_url: z.string(),
+  storage_url: z.string(),
+  model: z.boolean(),
+  public: z.boolean(),
+  in_library: z.boolean()
+})
+
+export type AssetInfo = z.infer<typeof zAssetInfo>
+
+export const zShareableAssetsResponse = z.object({
+  assets: z.array(zAssetInfo)
+})
+
+export type ShareableAssetsResponse = z.infer<typeof zShareableAssetsResponse>

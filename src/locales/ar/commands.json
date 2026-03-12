@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "لصق"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "لصق مع الاتصال"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "إعادة تعيين العرض"
   },
@@ -343,6 +346,10 @@
   },
   "Workspace_ToggleFocusMode": {
     "label": "تبديل وضع التركيز"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "تبديل الشريط الجانبي للتطبيقات",
+    "tooltip": "التطبيقات"
   },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "تبديل الشريط الجانبي للأصول",

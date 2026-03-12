@@ -1,13 +1,13 @@
 <template>
-  <div class="flex gap-3 items-center">
-    <SearchBox
+  <div class="flex items-center gap-3">
+    <SearchInput
       :model-value="searchQuery"
       :placeholder="
         $t('g.searchPlaceholder', { subject: $t('sideToolbar.labels.assets') })
       "
       @update:model-value="handleSearchChange"
     />
-    <div class="flex gap-1.5 items-center">
+    <div class="flex items-center gap-1.5">
       <MediaAssetFilterButton
         v-if="isCloud"
         v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { isCloud } from '@/platform/distribution/types'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'

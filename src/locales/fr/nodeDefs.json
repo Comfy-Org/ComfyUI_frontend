@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Expression mathématique",
+    "inputs": {
+      "expression": {
+        "name": "expression"
+      },
+      "values": {
+        "name": "valeurs"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Commutateur",
     "inputs": {
@@ -3947,6 +3966,10 @@
     "description": "Modifiez une image existante à partir d'une invite textuelle",
     "display_name": "Grok Image Edit",
     "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d'aspect",
+        "tooltip": "Autorisé uniquement lorsque plusieurs images sont connectées à l'entrée image."
+      },
       "control_after_generate": {
         "name": "contrôle après génération"
       },
@@ -3998,6 +4021,9 @@
       "prompt": {
         "name": "invite",
         "tooltip": "L'invite textuelle utilisée pour générer l'image"
+      },
+      "resolution": {
+        "name": "résolution"
       },
       "seed": {
         "name": "graine",
@@ -5853,6 +5879,9 @@
       },
       "mode": {
         "name": "mode"
+      },
+      "model": {
+        "name": "modèle"
       },
       "prompt": {
         "name": "invite"
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Effectue le dépliage UV d’un modèle 3D pour générer une texture UV. Le modèle d’entrée doit comporter moins de 30 000 faces.",
+    "display_name": "Hunyuan3D : Modèle vers UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model_3d": {
+        "name": "modèle_3d",
+        "tooltip": "Modèle 3D en entrée (GLB, OBJ ou FBX)"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Effectue une retopologie intelligente sur un modèle 3D. Prend en charge les formats GLB/OBJ ; 200 Mo max ; recommandé pour les modèles haute résolution.",
+    "display_name": "Hunyuan3D : Topologie intelligente",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "face_level": {
+        "name": "niveau_de_faces",
+        "tooltip": "Niveau de réduction des polygones."
+      },
+      "model_3d": {
+        "name": "modèle_3d",
+        "tooltip": "Modèle 3D en entrée (GLB ou OBJ)"
+      },
+      "polygon_type": {
+        "name": "type_polygone",
+        "tooltip": "Type de composition de surface."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

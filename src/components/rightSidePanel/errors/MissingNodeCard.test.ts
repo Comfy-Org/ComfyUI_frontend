@@ -57,6 +57,8 @@ const i18n = createI18n({
         missingNodePacks: {
           ossMessage: 'Missing node packs detected. Install them.',
           cloudMessage: 'Unsupported node packs detected.',
+          ossManagerDisabledHint:
+            'To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.',
           applyChanges: 'Apply Changes'
         }
       }
@@ -143,6 +145,27 @@ describe('MissingNodeCard', () => {
       const row = wrapper.findComponent({ name: 'MissingPackGroupRow' })
       expect(row.props('showInfoButton')).toBe(true)
       expect(row.props('showNodeIdBadge')).toBe(true)
+    })
+  })
+
+  describe('Manager Disabled Hint', () => {
+    it('shows hint when OSS and manager is disabled (showInfoButton false)', () => {
+      mockIsCloud.value = false
+      const wrapper = mountCard({ showInfoButton: false })
+      expect(wrapper.text()).toContain('pip install -U --pre comfyui-manager')
+      expect(wrapper.text()).toContain('--enable-manager')
+    })
+
+    it('hides hint when manager is enabled (showInfoButton true)', () => {
+      mockIsCloud.value = false
+      const wrapper = mountCard({ showInfoButton: true })
+      expect(wrapper.text()).not.toContain('--enable-manager')
+    })
+
+    it('hides hint on Cloud even when showInfoButton is false', () => {
+      mockIsCloud.value = true
+      const wrapper = mountCard({ showInfoButton: false })
+      expect(wrapper.text()).not.toContain('--enable-manager')
     })
   })
 

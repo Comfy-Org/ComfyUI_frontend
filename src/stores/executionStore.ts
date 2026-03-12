@@ -27,7 +27,7 @@ import type {
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
@@ -549,6 +549,13 @@ export const useExecutionStore = defineStore('execution', () => {
     () => runningJobIds.value.length
   )
 
+  const isActiveWorkflowRunning = computed(() => {
+    if (!activeJobId.value) return false
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return false
+    return jobIdToSessionWorkflowPath.value.get(activeJobId.value) === path
+  })
+
   return {
     isIdle,
     clientId,
@@ -568,6 +575,7 @@ export const useExecutionStore = defineStore('execution', () => {
     runningJobIds,
     runningWorkflowCount,
     initializingJobIds,
+    isActiveWorkflowRunning,
     isJobInitializing,
     clearInitializationByJobId,
     clearInitializationByJobIds,

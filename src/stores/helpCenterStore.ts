@@ -1,21 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export type HelpCenterTriggerLocation = 'sidebar' | 'topbar'
-
 export const useHelpCenterStore = defineStore('helpCenter', () => {
   const isVisible = ref(false)
-  const triggerLocation = ref<HelpCenterTriggerLocation>('sidebar')
 
-  const toggle = (location: HelpCenterTriggerLocation = 'sidebar') => {
-    if (!isVisible.value) {
-      triggerLocation.value = location
-    }
+  const toggle = () => {
     isVisible.value = !isVisible.value
   }
 
-  const show = (location: HelpCenterTriggerLocation = 'sidebar') => {
-    triggerLocation.value = location
+  const show = () => {
     isVisible.value = true
   }
 
@@ -25,7 +18,6 @@ export const useHelpCenterStore = defineStore('helpCenter', () => {
 
   return {
     isVisible,
-    triggerLocation,
     toggle,
     show,
     hide

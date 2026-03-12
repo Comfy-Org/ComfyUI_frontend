@@ -2,7 +2,7 @@
   <span
     :class="
       cn(
-        'flex items-center gap-1 rounded border px-1.5 py-0.5 text-xxs',
+        'flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-xxs',
         textColorClass
       )
     "

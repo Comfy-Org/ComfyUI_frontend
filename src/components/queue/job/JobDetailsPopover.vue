@@ -3,21 +3,20 @@
     class="w-[300px] min-w-[260px] rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-md"
   >
     <div class="flex items-center border-b border-interface-stroke p-4">
-      <span
-        class="text-[0.875rem] leading-normal font-normal text-text-primary"
-        >{{ t('queue.jobDetails.header') }}</span
-      >
+      <span class="text-sm/normal font-normal text-text-primary">{{
+        t('queue.jobDetails.header')
+      }}</span>
     </div>
-    <div class="flex flex-col gap-6 px-4 pt-4 pb-4">
-      <div class="grid grid-cols-2 items-center gap-x-2 gap-y-2">
+    <div class="flex flex-col gap-6 p-4">
+      <div class="grid grid-cols-2 items-center gap-2">
         <template v-for="row in baseRows" :key="row.label">
           <div
-            class="flex items-center text-[0.75rem] leading-normal font-normal text-text-primary"
+            class="flex items-center text-xs/normal font-normal text-text-primary"
           >
             {{ row.label }}
           </div>
           <div
-            class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-text-secondary"
+            class="flex min-w-0 items-center text-xs/normal font-normal text-text-secondary"
           >
             <span class="block min-w-0 truncate">{{ row.value }}</span>
             <Button
@@ -33,18 +32,15 @@
         </template>
       </div>
 
-      <div
-        v-if="extraRows.length"
-        class="grid grid-cols-2 items-center gap-x-2 gap-y-2"
-      >
+      <div v-if="extraRows.length" class="grid grid-cols-2 items-center gap-2">
         <template v-for="row in extraRows" :key="row.label">
           <div
-            class="flex items-center text-[0.75rem] leading-normal font-normal text-text-primary"
+            class="flex items-center text-xs/normal font-normal text-text-primary"
           >
             {{ row.label }}
           </div>
           <div
-            class="flex min-w-0 items-center text-[0.75rem] leading-normal font-normal text-text-secondary"
+            class="flex min-w-0 items-center text-xs/normal font-normal text-text-secondary"
           >
             <span class="block min-w-0 truncate">{{ row.value }}</span>
           </div>
@@ -53,7 +49,7 @@
 
       <div v-if="jobState === 'failed'" class="grid grid-cols-2 gap-x-2">
         <div
-          class="flex items-center text-[0.75rem] leading-normal font-normal text-text-primary"
+          class="flex items-center text-xs/normal font-normal text-text-primary"
         >
           {{ t('queue.jobDetails.errorMessage') }}
         </div>
@@ -82,7 +78,7 @@
           </Button>
         </div>
         <div
-          class="col-span-2 mt-2 rounded bg-interface-panel-hover-surface px-4 py-2 text-[0.75rem] leading-normal text-text-secondary"
+          class="col-span-2 mt-2 rounded-sm bg-interface-panel-hover-surface px-4 py-2 text-xs/normal text-text-secondary"
         >
           {{ errorMessageValue }}
         </div>

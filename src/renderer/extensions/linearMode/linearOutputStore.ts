@@ -67,7 +67,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     inProgressItems.value = [item, ...inProgressItems.value]
 
     trackedJobId.value = jobId
-    autoSelect(`slot:${item.id}`)
+    autoSelect(`slot:${item.id}`, jobId)
   }
 
   let raf: number | null = null
@@ -88,7 +88,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
           state: 'latent',
           latentPreviewUrl: url
         }))
-        if (wasEmpty) autoSelect(`slot:${existing.id}`)
+        if (wasEmpty) autoSelect(`slot:${existing.id}`, jobId)
         return
       }
 
@@ -103,7 +103,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       }
       currentSkeletonId.value = item.id
       inProgressItems.value = [item, ...inProgressItems.value]
-      autoSelect(`slot:${item.id}`)
+      autoSelect(`slot:${item.id}`, jobId)
     })
   }
 
@@ -136,7 +136,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
         output: newOutputs[0],
         latentPreviewUrl: undefined
       }
-      autoSelect(`slot:${imageItem.id}`)
+      autoSelect(`slot:${imageItem.id}`, jobId)
 
       const extras: InProgressItem[] = newOutputs.slice(1).map((o) => ({
         id: makeItemId(jobId),
@@ -162,7 +162,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       state: 'image' as const,
       output: o
     }))
-    autoSelect(`slot:${newItems[0].id}`)
+    autoSelect(`slot:${newItems[0].id}`, jobId)
     inProgressItems.value = [...newItems, ...inProgressItems.value]
   }
 
@@ -226,7 +226,12 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     isFollowing.value = true
   }
 
-  function autoSelect(slotId: string) {
+  function autoSelect(slotId: string, jobId: string) {
+    // Only auto-select if the job belongs to the active workflow
+    const path = workflowStore.activeWorkflow?.path
+    if (path && executionStore.jobIdToSessionWorkflowPath.get(jobId) !== path)
+      return
+
     const sel = selectedId.value
     if (!sel || sel.startsWith('slot:') || isFollowing.value) {
       selectedId.value = slotId

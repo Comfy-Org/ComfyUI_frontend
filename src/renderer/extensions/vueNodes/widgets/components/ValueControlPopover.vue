@@ -51,10 +51,10 @@ const controlMode = defineModel<ControlOptions>()
 </script>
 
 <template>
-  <div class="w-113 max-w-md p-4 space-y-4">
-    <div class="text-sm text-muted-foreground leading-tight">
+  <div class="w-113 max-w-md space-y-4 p-4">
+    <div class="text-sm/tight text-muted-foreground">
       {{ $t('widgets.valueControl.header.prefix') }}
-      <span class="text-base-foreground font-medium">
+      <span class="font-medium text-base-foreground">
         {{
           widgetControlMode === 'before'
             ? $t('widgets.valueControl.header.before')
@@ -71,12 +71,12 @@ const controlMode = defineModel<ControlOptions>()
         as="label"
         variant="textonly"
         size="lg"
-        class="flex w-full h-[unset] text-left items-center justify-between py-2 gap-7"
+        class="flex h-[unset] w-full items-center justify-between gap-7 py-2 text-left"
         :for="option.mode"
       >
-        <div class="flex items-center gap-2 flex-1 min-w-0 text-wrap">
+        <div class="flex min-w-0 flex-1 items-center gap-2 text-wrap">
           <div
-            class="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 bg-secondary-background border border-border-subtle"
+            class="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-secondary-background"
           >
             <i
               v-if="option.icon"
@@ -91,15 +91,13 @@ const controlMode = defineModel<ControlOptions>()
             </span>
           </div>
 
-          <div class="flex flex-col gap-0.5 min-w-0 flex-1">
-            <div class="text-sm font-normal text-base-foreground leading-tight">
+          <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+            <div class="text-sm/tight font-normal text-base-foreground">
               <span>
                 {{ $t(`widgets.valueControl.${option.title}`) }}
               </span>
             </div>
-            <div
-              class="text-sm font-normal text-muted-foreground leading-tight"
-            >
+            <div class="text-sm/tight font-normal text-muted-foreground">
               {{ $t(`widgets.valueControl.${option.description}`) }}
             </div>
           </div>

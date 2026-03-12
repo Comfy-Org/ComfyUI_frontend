@@ -1,12 +1,12 @@
 <template>
   <div
-    class="relative flex flex-col p-4 pt-8 md:p-16 !overflow-y-auto h-full gap-8"
+    class="relative flex h-full flex-col gap-8 overflow-y-auto! p-4 pt-8 md:p-16"
   >
     <Button
       v-if="checkoutStep === 'preview'"
       size="icon"
       variant="muted-textonly"
-      class="rounded-full shrink-0 text-text-secondary hover:bg-white/10 absolute left-2.5 top-2.5"
+      class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
       :aria-label="$t('g.back')"
       @click="handleBackToPricing"
     >
@@ -16,7 +16,7 @@
     <Button
       size="icon"
       variant="muted-textonly"
-      class="rounded-full shrink-0 text-text-secondary hover:bg-white/10 absolute right-2.5 top-2.5"
+      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
@@ -24,7 +24,7 @@
     </Button>
 
     <div v-if="reason === 'out_of_credits'" class="text-center">
-      <h2 class="text-xl lg:text-2xl text-muted-foreground m-0">
+      <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
         {{ $t('credits.topUp.insufficientTitle') }}
       </h2>
       <p class="m-0 mt-2 text-sm text-text-secondary">
@@ -148,8 +148,7 @@ async function handleSubscribeClick(payload: {
       toast.add({
         severity: 'error',
         summary: 'Unable to subscribe',
-        detail: 'This plan is not available',
-        life: 5000
+        detail: 'This plan is not available'
       })
       return
     }
@@ -159,8 +158,7 @@ async function handleSubscribeClick(payload: {
       toast.add({
         severity: 'error',
         summary: 'Unable to subscribe',
-        detail: response?.reason || 'This plan is not available',
-        life: 5000
+        detail: response?.reason || 'This plan is not available'
       })
       return
     }
@@ -175,8 +173,7 @@ async function handleSubscribeClick(payload: {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: message,
-      life: 5000
+      detail: message
     })
   } finally {
     isLoadingPreview.value = false
@@ -236,8 +233,7 @@ async function handleAddCreditCard() {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: message,
-      life: 5000
+      detail: message
     })
   } finally {
     isSubscribing.value = false
@@ -291,8 +287,7 @@ async function handleConfirmTransition() {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: message,
-      life: 5000
+      detail: message
     })
   } finally {
     isSubscribing.value = false
@@ -316,8 +311,7 @@ async function handleResubscribe() {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: message,
-      life: 5000
+      detail: message
     })
   } finally {
     isResubscribing.value = false

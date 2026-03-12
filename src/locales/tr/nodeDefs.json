@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Matematiksel İfade",
+    "inputs": {
+      "expression": {
+        "name": "ifade"
+      },
+      "values": {
+        "name": "değerler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Anahtar",
     "inputs": {
@@ -3947,6 +3966,10 @@
     "description": "Mevcut bir görüntüyü metin istemine göre değiştir",
     "display_name": "Grok Görüntü Düzenle",
     "inputs": {
+      "aspect_ratio": {
+        "name": "en-boy oranı",
+        "tooltip": "Yalnızca birden fazla görsel, görsel girişine bağlandığında kullanılabilir."
+      },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
@@ -3998,6 +4021,9 @@
       "prompt": {
         "name": "istem",
         "tooltip": "Görüntüyü oluşturmak için kullanılan metin istemi"
+      },
+      "resolution": {
+        "name": "çözünürlük"
       },
       "seed": {
         "name": "tohum",
@@ -5853,6 +5879,9 @@
       },
       "mode": {
         "name": "mod"
+      },
+      "model": {
+        "name": "model"
       },
       "prompt": {
         "name": "istem"
@@ -15097,6 +15126,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Bir 3D model üzerinde UV açılımı yaparak UV doku oluşturur. Girdi modelinin 30000'den az yüzü olmalıdır.",
+    "display_name": "Hunyuan3D: Modelden UV'ye",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model girişi (GLB, OBJ veya FBX)"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Bir 3D model üzerinde akıllı retopoloji uygular. GLB/OBJ formatlarını destekler; maksimum 200MB; yüksek poligonlu modeller için önerilir.",
+    "display_name": "Hunyuan3D: Akıllı Topoloji",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "face_level": {
+        "name": "yüz seviyesi",
+        "tooltip": "Poligon azaltma seviyesi."
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model girişi (GLB veya OBJ)"
+      },
+      "polygon_type": {
+        "name": "poligon_tipi",
+        "tooltip": "Yüzey bileşimi tipi."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }

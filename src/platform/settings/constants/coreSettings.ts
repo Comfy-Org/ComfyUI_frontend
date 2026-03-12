@@ -570,10 +570,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Appearance', 'General'],
     name: 'Tab Bar Layout',
     type: 'combo',
-    options: ['Default', 'Integrated'],
-    tooltip:
-      'Controls the layout of the tab bar. "Integrated" moves Help and User controls into the tab bar area.',
-    defaultValue: 'Default'
+    options: ['Default', 'Legacy'],
+    tooltip: 'Controls the elements contained in the integrated tab bar.',
+    defaultValue: 'Default',
+    migrateDeprecatedValue: (value: unknown) =>
+      value === 'Integrated' ? 'Default' : value
   },
   {
     id: 'Comfy.UseNewMenu',
@@ -1206,6 +1207,13 @@ export const CORE_SETTINGS: SettingParams[] = [
       'Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout.',
     defaultValue: false,
     experimental: true
+  },
+  {
+    id: 'Comfy.Queue.ShowRunProgressBar',
+    name: 'Show run progress bar',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.41.3'
   },
   {
     id: 'Comfy.Node.AlwaysShowAdvancedWidgets',

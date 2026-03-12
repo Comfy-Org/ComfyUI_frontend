@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "Paste"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "Paste with Connect"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Reset View"
   },
@@ -343,6 +346,10 @@
   },
   "Workspace_ToggleFocusMode": {
     "label": "Toggle Focus Mode"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "Toggle Apps Sidebar",
+    "tooltip": "Apps"
   },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "Toggle Assets Sidebar",
