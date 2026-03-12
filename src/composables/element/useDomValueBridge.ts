@@ -48,7 +48,8 @@ export function useDomValueBridge(element: ValueElement): Ref<string> {
   if (canOverride) {
     Object.defineProperty(element, 'value', {
       configurable: true,
-      enumerable: true,
+      enumerable:
+        existingDescriptor?.enumerable ?? nativeDescriptor?.enumerable ?? true,
       get() {
         return prevGet.call(element)
       },
