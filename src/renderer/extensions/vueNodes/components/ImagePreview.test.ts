@@ -101,7 +101,7 @@ describe('ImagePreview', () => {
   it('shows navigation dots for multiple images', () => {
     const wrapper = mountImagePreview()
 
-    const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
+    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
     expect(navigationDots).toHaveLength(2)
   })
 
@@ -110,7 +110,7 @@ describe('ImagePreview', () => {
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
-    const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
+    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
     expect(navigationDots).toHaveLength(0)
   })
 
@@ -249,7 +249,7 @@ describe('ImagePreview', () => {
     )
 
     // Click second navigation dot
-    const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
+    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
     await navigationDots[1].trigger('click')
     await nextTick()
 
@@ -259,22 +259,22 @@ describe('ImagePreview', () => {
     expect(imgElement.attributes('src')).toBe(defaultProps.imageUrls[1])
   })
 
-  it('applies correct classes to navigation dots based on current image', async () => {
+  it('marks active navigation dot with aria-current', async () => {
     const wrapper = mountImagePreview()
 
-    const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
+    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
 
-    // First dot should be active (has bg-white class)
-    expect(navigationDots[0].classes()).toContain('bg-base-foreground')
-    expect(navigationDots[1].classes()).toContain('bg-base-foreground/50')
+    // First dot should be active
+    expect(navigationDots[0].attributes('aria-current')).toBe('true')
+    expect(navigationDots[1].attributes('aria-current')).toBeUndefined()
 
     // Switch to second image
     await navigationDots[1].trigger('click')
     await nextTick()
 
     // Second dot should now be active
-    expect(navigationDots[0].classes()).toContain('bg-base-foreground/50')
-    expect(navigationDots[1].classes()).toContain('bg-base-foreground')
+    expect(navigationDots[0].attributes('aria-current')).toBeUndefined()
+    expect(navigationDots[1].attributes('aria-current')).toBe('true')
   })
 
   it('loads image without errors', async () => {
@@ -301,7 +301,7 @@ describe('ImagePreview', () => {
     expect(wrapper.find('img').attributes('alt')).toBe('Node output 1')
 
     // Switch to second image
-    const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
+    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
     await navigationDots[1].trigger('click')
     await nextTick()
 
@@ -326,7 +326,7 @@ describe('ImagePreview', () => {
         expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
 
         // Click second navigation dot to cycle
-        const dots = wrapper.findAll('.w-2.h-2.rounded-full')
+        const dots = wrapper.findAll('[aria-label*="View image"]')
         await dots[1].trigger('click')
         await nextTick()
 
