@@ -8,7 +8,10 @@
         <slot name="actions" />
       </div>
     </div>
-    <div v-if="bottomDivider" class="border border-dashed border-comfy-input" />
+    <div
+      v-if="bottomDivider"
+      class="border-t border-dashed border-comfy-input"
+    />
   </div>
 </template>
 

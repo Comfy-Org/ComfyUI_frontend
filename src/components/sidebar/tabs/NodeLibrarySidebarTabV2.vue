@@ -120,29 +120,34 @@
         </div>
         <!-- Tab content (scrollable) -->
         <div class="min-h-0 flex-1 overflow-y-auto py-2">
-          <EssentialNodesPanel
-            v-if="
-              flags.nodeLibraryEssentialsEnabled && selectedTab === 'essentials'
-            "
-            v-model:expanded-keys="expandedKeys"
-            :root="renderedEssentialRoot"
-            :flat-nodes="essentialFlatNodes"
-            @node-click="handleNodeClick"
-          />
-          <AllNodesPanel
-            v-if="selectedTab === 'all'"
-            v-model:expanded-keys="expandedKeys"
-            :sections="renderedSections"
-            :fill-node-info="fillNodeInfo"
-            :sort-order="sortOrder"
-            @node-click="handleNodeClick"
-          />
-          <BlueprintsPanel
-            v-if="selectedTab === 'blueprints'"
-            v-model:expanded-keys="expandedKeys"
-            :sections="renderedBlueprintsSections"
-            @node-click="handleNodeClick"
-          />
+          <TabPanel
+            v-if="flags.nodeLibraryEssentialsEnabled"
+            :model-value="selectedTab"
+            value="essentials"
+          >
+            <EssentialNodesPanel
+              v-model:expanded-keys="expandedKeys"
+              :root="renderedEssentialRoot"
+              :flat-nodes="essentialFlatNodes"
+              @node-click="handleNodeClick"
+            />
+          </TabPanel>
+          <TabPanel :model-value="selectedTab" value="all">
+            <AllNodesPanel
+              v-model:expanded-keys="expandedKeys"
+              :sections="renderedSections"
+              :fill-node-info="fillNodeInfo"
+              :sort-order="sortOrder"
+              @node-click="handleNodeClick"
+            />
+          </TabPanel>
+          <TabPanel :model-value="selectedTab" value="blueprints">
+            <BlueprintsPanel
+              v-model:expanded-keys="expandedKeys"
+              :sections="renderedBlueprintsSections"
+              @node-click="handleNodeClick"
+            />
+          </TabPanel>
         </div>
       </div>
     </template>
@@ -167,6 +172,7 @@ import { useI18n } from 'vue-i18n'
 import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
+import TabPanel from '@/components/tab/TabPanel.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'

@@ -1,10 +1,12 @@
 <template>
   <button
+    :id="`tab-${props.value}`"
     role="tab"
     type="button"
     :aria-selected="isActive"
+    :aria-controls="`tabpanel-${props.value}`"
     :data-state="isActive ? 'active' : 'inactive'"
-    tabindex="0"
+    :tabindex="isActive ? 0 : -1"
     :class="
       cn(
         'flex shrink-0 items-center justify-center',
@@ -67,6 +69,7 @@ function handleKeydown(event: KeyboardEvent) {
   if (targetIndex !== -1) {
     event.preventDefault()
     tabs[targetIndex].focus()
+    tabs[targetIndex].click()
   }
 }
 </script>
