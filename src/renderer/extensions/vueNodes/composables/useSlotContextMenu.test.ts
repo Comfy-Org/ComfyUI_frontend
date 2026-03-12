@@ -19,7 +19,7 @@ vi.mock('@/scripts/app', () => ({
 
 import { canRenameSlot, renameSlot } from './useSlotContextMenu'
 
-describe('canRenameSlot', () => {
+describe(canRenameSlot, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCanvas.graph = mockGraph
@@ -92,7 +92,7 @@ describe('canRenameSlot', () => {
   })
 })
 
-describe('renameSlot', () => {
+describe(renameSlot, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCanvas.graph = mockGraph
@@ -110,9 +110,31 @@ describe('renameSlot', () => {
     expect(mockGraph.beforeChange).not.toHaveBeenCalled()
   })
 
+  it('does nothing when slot is nameLocked', () => {
+    const inputSlot = {
+      type: 'IMAGE',
+      link: null,
+      name: 'image',
+      label: '',
+      nameLocked: true
+    }
+    mockGraph.getNodeById.mockReturnValue({
+      inputs: [inputSlot],
+      outputs: [],
+      getInputInfo: () => inputSlot,
+      getOutputInfo: () => null
+    })
+
+    renameSlot({ nodeId: '1', slotIndex: 0, isInput: true }, 'new')
+    expect(mockGraph.beforeChange).not.toHaveBeenCalled()
+    expect(inputSlot.label).toBe('')
+  })
+
   it('renames an input slot label', () => {
     const inputSlot = { type: 'IMAGE', link: null, name: 'image', label: '' }
     mockGraph.getNodeById.mockReturnValue({
+      inputs: [inputSlot],
+      outputs: [],
       getInputInfo: () => inputSlot,
       getOutputInfo: () => null
     })
@@ -133,6 +155,8 @@ describe('renameSlot', () => {
       label: ''
     }
     mockGraph.getNodeById.mockReturnValue({
+      inputs: [],
+      outputs: [outputSlot],
       getInputInfo: () => null,
       getOutputInfo: () => outputSlot
     })
