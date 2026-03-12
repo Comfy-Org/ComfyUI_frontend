@@ -33,7 +33,7 @@ const hideLayoutField = useHideLayoutField()
       <div
         :class="
           cn(
-            'min-w-0 cursor-default rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
+            'min-w-0 cursor-default rounded-lg transition-all has-focus-visible:ring has-focus-visible:ring-component-node-widget-background-highlighted',
             widget.borderStyle
           )
         "

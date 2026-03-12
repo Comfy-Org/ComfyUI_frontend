@@ -1,11 +1,5 @@
 <template>
   <slot v-if="isReady" />
-  <div
-    v-else
-    class="fixed inset-0 z-1100 flex items-center justify-center bg-(--p-mask-background)"
-  >
-    <LogoComfyWaveLoader size="xl" color="yellow" disable-animation />
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -20,6 +14,9 @@
  *
  * This prevents race conditions where API calls use Firebase tokens
  * instead of workspace tokens when the workspace feature is enabled.
+ *
+ * The splash loader in index.html (z-9999) covers the screen during this
+ * phase, so no separate loading indicator is needed here.
  */
 import { promiseTimeout, until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
@@ -30,7 +27,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import LogoComfyWaveLoader from '@/components/loader/LogoComfyWaveLoader.vue'
 
 const FIREBASE_INIT_TIMEOUT_MS = 16_000
 const CONFIG_REFRESH_TIMEOUT_MS = 10_000

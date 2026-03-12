@@ -64,6 +64,7 @@ useEventListener(
 )
 
 const mappedSelections = computed(() => {
+  void graphNodes.value
   let unprocessedInputs = appModeStore.selectedInputs.flatMap(
     ([nodeId, widgetName]) => {
       const [node, widget] = resolveNodeWidget(nodeId, widgetName)
@@ -120,7 +121,7 @@ function getDropIndicator(node: LGraphNode) {
   return {
     iconClass: 'icon-[lucide--image]',
     imageUrl: buildImageUrl(),
-    label: t('linearMode.dragAndDropImage'),
+    label: props.mobile ? undefined : t('linearMode.dragAndDropImage'),
     onClick: () => node.widgets?.[1]?.callback?.(undefined)
   }
 }
@@ -206,14 +207,14 @@ defineExpose({ runButtonClick })
           <DropZone
             :on-drag-over="nodeData.onDragOver"
             :on-drag-drop="nodeData.onDragDrop"
-            :drop-indicator="mobile ? undefined : nodeData.dropIndicator"
+            :drop-indicator="nodeData.dropIndicator"
             class="text-muted-foreground"
           >
             <NodeWidgets
               :node-data
               :class="
                 cn(
-                  'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 **:[.h-7]:h-10',
+                  'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
                   nodeData.hasErrors &&
                     'ring-2 ring-node-stroke-error ring-inset'
                 )
@@ -325,4 +326,9 @@ defineExpose({ runButtonClick })
       </section>
     </div>
   </div>
+  <div
+    v-else-if="mobile"
+    class="flex size-full items-center bg-base-background p-4 text-center"
+    v-text="t('linearMode.mobileNoWorkflow')"
+  />
 </template>

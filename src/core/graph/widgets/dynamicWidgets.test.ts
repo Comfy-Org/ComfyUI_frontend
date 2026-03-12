@@ -27,7 +27,7 @@ function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
         `${namePrefix}.${depth}.${inputIndex}`,
         Array.isArray(input)
           ? ['COMFY_DYNAMICCOMBO_V3', { options: getSpec(input, depth + 1) }]
-          : [input, {}]
+          : [input, { tooltip: `${groupIndex}` }]
       ])
       return {
         key: `${groupIndex}`,
@@ -105,6 +105,13 @@ describe('Dynamic Combos', () => {
     expect(node.inputs.length).toBe(4)
     expect(node.inputs[1].name).toBe('0.0.0.0')
     expect(node.inputs[3].name).toBe('2.2.0.0')
+  })
+  test('Dynamically added widgets have tooltips', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['STRING']])
+    expect.soft(node.widgets[1].tooltip).toBe('0')
+    node.widgets[0].value = '1'
+    expect.soft(node.widgets[1].tooltip).toBe('1')
   })
 })
 describe('Autogrow', () => {
