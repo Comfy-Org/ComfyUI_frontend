@@ -25,9 +25,9 @@
           type="button"
           data-testid="chip-delete"
           :aria-label="$t('g.remove')"
-          class="ml-1 aspect-square cursor-pointer rounded-full border-none bg-transparent text-muted-foreground hover:text-base-foreground"
+          class="ml-1 flex aspect-square cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-muted-foreground hover:text-base-foreground"
         >
-          <i class="pi pi-times text-xs" />
+          <i class="icon-[lucide--x] size-3" />
         </TagsInputItemDelete>
       </TagsInputItem>
       <TagsInputInput as-child>
@@ -41,7 +41,7 @@
           aria-controls="results-list"
           :aria-label="t('g.addNode')"
           :placeholder="t('g.addNode')"
-          class="text-foreground h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+          class="text-foreground h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent font-inter text-sm outline-none placeholder:text-muted-foreground"
           @keydown.enter.prevent="emit('selectCurrent')"
           @keydown.down.prevent="emit('navigateDown')"
           @keydown.up.prevent="emit('navigateUp')"

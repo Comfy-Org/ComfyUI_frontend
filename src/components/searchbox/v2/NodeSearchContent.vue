@@ -1,7 +1,7 @@
 <template>
   <div
     ref="dialogRef"
-    class="flex max-h-[50vh] min-h-[400px] w-full flex-col overflow-hidden rounded-lg border border-interface-stroke bg-base-background"
+    class="flex max-h-[min(80vh,750px)] min-h-[400px] w-full flex-col overflow-hidden rounded-lg border border-interface-stroke bg-base-background"
   >
     <!-- Search input row -->
     <NodeSearchInput
@@ -20,9 +20,9 @@
         class="flex-1"
         :filters="filters"
         :active-category="rootFilter"
-        :has-essential-nodes="hasEssentialNodes"
-        :has-blueprint-nodes="hasBlueprintNodes"
-        :has-partner-nodes="hasPartnerNodes"
+        :has-essential-nodes="nodeAvailability.essential"
+        :has-blueprint-nodes="nodeAvailability.blueprint"
+        :has-partner-nodes="nodeAvailability.partner"
         @toggle-filter="onToggleFilter"
         @clear-filter-group="onClearFilterGroup"
         @focus-search="nextTick(() => searchInputRef?.focus())"
@@ -38,7 +38,7 @@
         class="w-52 shrink-0"
         :hide-chevrons="!anyTreeCategoryHasChildren"
         :hide-presets="rootFilter !== null"
-        :has-essential-nodes="hasEssentialNodes"
+        :has-essential-nodes="nodeAvailability.essential"
         :node-defs="rootFilteredNodeDefs"
         :root-label="rootFilterLabel"
         :root-key="rootFilter ?? undefined"
@@ -49,7 +49,8 @@
       <div
         id="results-list"
         role="listbox"
-        class="flex-1 overflow-y-auto py-2"
+        tabindex="-1"
+        class="flex-1 overflow-y-auto py-2 pr-3 pl-1 select-none"
         @pointermove="onPointerMove"
       >
         <div
@@ -58,14 +59,18 @@
           :key="node.name"
           role="option"
           data-testid="result-item"
+          :tabindex="index === selectedIndex ? 0 : -1"
           :aria-selected="index === selectedIndex"
           :class="
             cn(
-              'flex h-14 cursor-pointer items-center px-4',
+              'flex h-14 cursor-pointer items-center rounded-lg px-4 outline-none focus-visible:ring-2 focus-visible:ring-primary',
               index === selectedIndex && 'bg-secondary-background'
             )
           "
           @click="emit('addNode', node, $event)"
+          @keydown.down.prevent="navigateResults(1, true)"
+          @keydown.up.prevent="navigateResults(-1, true)"
+          @keydown.enter.prevent="selectCurrentResult"
         >
           <NodeSearchListItem
             :node-def="node"
@@ -91,7 +96,9 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
-import NodeSearchCategorySidebar from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
+import NodeSearchCategorySidebar, {
+  DEFAULT_CATEGORY
+} from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
 import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
@@ -129,25 +136,25 @@ const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
 
-const hasEssentialNodes = computed(
-  () =>
-    flags.nodeLibraryEssentialsEnabled &&
-    nodeDefStore.visibleNodeDefs.some(isEssentialNode)
-)
-
-const hasBlueprintNodes = computed(() =>
-  nodeDefStore.visibleNodeDefs.some((n) =>
-    n.category.startsWith(BLUEPRINT_CATEGORY)
-  )
-)
-
-const hasPartnerNodes = computed(() =>
-  nodeDefStore.visibleNodeDefs.some((n) => n.api_node)
-)
+const nodeAvailability = computed(() => {
+  let essential = false
+  let blueprint = false
+  let partner = false
+  for (const n of nodeDefStore.visibleNodeDefs) {
+    if (!essential && flags.nodeLibraryEssentialsEnabled && isEssentialNode(n))
+      essential = true
+    if (!blueprint && n.category.startsWith(BLUEPRINT_CATEGORY))
+      blueprint = true
+    if (!partner && n.api_node) partner = true
+    if (essential && blueprint && partner) break
+  }
+  return { essential, blueprint, partner }
+})
 
 const dialogRef = ref<HTMLElement>()
 const searchInputRef = ref<InstanceType<typeof NodeSearchInput>>()
 
+// Freeze dialog height to prevent layout shift when switching categories
 onMounted(() => {
   if (dialogRef.value) {
     dialogRef.value.style.height = `${dialogRef.value.offsetHeight}px`
@@ -155,7 +162,7 @@ onMounted(() => {
 })
 
 const searchQuery = ref('')
-const selectedCategory = ref('most-relevant')
+const selectedCategory = ref(DEFAULT_CATEGORY)
 const selectedIndex = ref(0)
 
 // Root filter from filter bar category buttons (radio toggle)
@@ -217,7 +224,7 @@ function onSelectCategory(category: string) {
   } else {
     rootFilter.value = category
   }
-  selectedCategory.value = 'most-relevant'
+  selectedCategory.value = DEFAULT_CATEGORY
   searchQuery.value = ''
   nextTick(() => searchInputRef.value?.focus())
 }
@@ -232,7 +239,7 @@ const searchResults = computed(() => {
 })
 
 const effectiveCategory = computed(() =>
-  searchQuery.value ? 'most-relevant' : selectedCategory.value
+  searchQuery.value ? DEFAULT_CATEGORY : selectedCategory.value
 )
 
 const sidebarCategory = computed({
@@ -278,7 +285,7 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
   const baseNodes = rootFilteredNodeDefs.value
   const category = effectiveCategory.value
 
-  if (category === 'most-relevant') return getMostRelevantResults(baseNodes)
+  if (category === DEFAULT_CATEGORY) return getMostRelevantResults(baseNodes)
 
   const sourceFilter = sourceCategoryFilters[category]
   let results: ComfyNodeDefImpl[]
@@ -305,7 +312,7 @@ watch(
   { immediate: true }
 )
 
-watch([selectedCategory, searchQuery, rootFilter, () => filters], () => {
+watch([selectedCategory, searchQuery, rootFilter, () => filters.length], () => {
   selectedIndex.value = 0
 })
 
@@ -317,14 +324,16 @@ function onPointerMove(event: PointerEvent) {
     selectedIndex.value = index
 }
 
-function navigateResults(direction: number) {
+function navigateResults(direction: number, focusItem = false) {
   const newIndex = selectedIndex.value + direction
   if (newIndex >= 0 && newIndex < displayedResults.value.length) {
     selectedIndex.value = newIndex
     nextTick(() => {
-      dialogRef.value
-        ?.querySelector(`#result-item-${newIndex}`)
-        ?.scrollIntoView({ block: 'nearest' })
+      const el = dialogRef.value?.querySelector(
+        `#result-item-${newIndex}`
+      ) as HTMLElement | null
+      el?.scrollIntoView({ block: 'nearest' })
+      if (focusItem) el?.focus()
     })
   }
 }

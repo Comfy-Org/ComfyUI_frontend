@@ -29,7 +29,7 @@
             ref="searchFilterRef"
             v-model="searchQuery"
             :placeholder="t('g.search')"
-            class="text-foreground size-full border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            class="text-foreground size-full border-none bg-transparent font-inter text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
 
@@ -40,7 +40,7 @@
           <button
             v-if="selectedValues.length > 0"
             type="button"
-            class="cursor-pointer border-none bg-transparent text-sm text-base-foreground"
+            class="cursor-pointer border-none bg-transparent font-inter text-sm text-base-foreground"
             @click="emit('clear')"
           >
             {{ t('g.clearAll') }}
@@ -61,13 +61,13 @@
               :class="
                 cn(
                   'flex size-4 shrink-0 items-center justify-center rounded-sm border border-border-default',
-                  selectedValues.includes(option) &&
+                  selectedSet.has(option) &&
                     'text-primary-foreground border-primary bg-primary'
                 )
               "
             >
               <i
-                v-if="selectedValues.includes(option)"
+                v-if="selectedSet.has(option)"
                 class="icon-[lucide--check] size-3"
               />
             </span>
@@ -94,6 +94,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { AcceptableValue } from 'reka-ui'
 import {
   ListboxContent,
   ListboxFilter,
@@ -129,9 +130,11 @@ function onOpenChange(isOpen: boolean) {
   if (!isOpen) searchQuery.value = ''
 }
 
-function onSelectionChange(newValues: unknown) {
-  if (!Array.isArray(newValues)) return
-  const added = newValues.find((v) => !selectedValues.includes(v))
+const selectedSet = computed(() => new Set(selectedValues))
+
+function onSelectionChange(value: AcceptableValue) {
+  const newValues = value as string[]
+  const added = newValues.find((v) => !selectedSet.value.has(v))
   const removed = selectedValues.find((v) => !newValues.includes(v))
   const toggled = added ?? removed
   if (toggled) emit('toggle', toggled)

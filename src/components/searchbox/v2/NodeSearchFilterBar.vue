@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-2 px-2 py-1.5">
+  <div class="flex items-center gap-2 px-3">
     <!-- Category filter buttons -->
     <button
       v-for="btn in categoryButtons"
@@ -129,7 +129,7 @@ const typeFilters = computed(() => [
 
 function chipClass(isActive: boolean, hasSelections = false) {
   return cn(
-    'flex cursor-pointer items-center justify-center gap-1 rounded-md border border-secondary-background px-3 py-1 text-sm transition-colors',
+    'flex cursor-pointer items-center justify-center gap-1 rounded-md border border-secondary-background px-3 py-1 font-inter text-sm transition-colors',
     isActive
       ? 'border-base-foreground bg-base-foreground text-base-background'
       : hasSelections

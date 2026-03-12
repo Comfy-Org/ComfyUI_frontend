@@ -129,6 +129,18 @@ describe(NodeSearchTypeFilterPopover, () => {
     expect(wrapper.emitted('clear')).toHaveLength(1)
   })
 
+  it('should emit toggle when an option is clicked', async () => {
+    createWrapper()
+    await openPopover(wrapper)
+
+    const options = getOptions()
+    await options[0].trigger('click')
+    await nextTick()
+
+    expect(wrapper.emitted('toggle')).toBeTruthy()
+    expect(wrapper.emitted('toggle')![0][0]).toBe('IMAGE')
+  })
+
   it('should filter options via search input', async () => {
     createWrapper()
     await openPopover(wrapper)

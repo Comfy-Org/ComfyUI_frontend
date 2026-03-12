@@ -458,6 +458,50 @@ describe('NodeSearchContent', () => {
       expect(results[1].attributes('aria-selected')).toBe('true')
     })
 
+    it('should navigate results with ArrowDown/ArrowUp from a focused result item', async () => {
+      const wrapper = await setupFavorites([
+        { name: 'Node1', display_name: 'Node One' },
+        { name: 'Node2', display_name: 'Node Two' },
+        { name: 'Node3', display_name: 'Node Three' }
+      ])
+
+      const results = getResultItems(wrapper)
+      await results[0].trigger('keydown', { key: 'ArrowDown' })
+      await nextTick()
+
+      expect(getResultItems(wrapper)[1].attributes('aria-selected')).toBe(
+        'true'
+      )
+
+      await getResultItems(wrapper)[1].trigger('keydown', { key: 'ArrowDown' })
+      await nextTick()
+
+      expect(getResultItems(wrapper)[2].attributes('aria-selected')).toBe(
+        'true'
+      )
+
+      await getResultItems(wrapper)[2].trigger('keydown', { key: 'ArrowUp' })
+      await nextTick()
+
+      expect(getResultItems(wrapper)[1].attributes('aria-selected')).toBe(
+        'true'
+      )
+    })
+
+    it('should select node with Enter from a focused result item', async () => {
+      const wrapper = await setupFavorites([
+        { name: 'TestNode', display_name: 'Test Node' }
+      ])
+
+      await getResultItems(wrapper)[0].trigger('keydown', { key: 'Enter' })
+      await nextTick()
+
+      expect(wrapper.emitted('addNode')).toBeTruthy()
+      expect(wrapper.emitted('addNode')![0][0]).toMatchObject({
+        name: 'TestNode'
+      })
+    })
+
     it('should add node on click', async () => {
       const wrapper = await setupFavorites([
         { name: 'TestNode', display_name: 'Test Node' }

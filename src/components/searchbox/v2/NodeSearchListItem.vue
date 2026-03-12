@@ -2,9 +2,9 @@
   <div
     class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden"
   >
-    <div class="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden">
+    <div class="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
       <!-- Row 1: Name (left) + badges (right) -->
-      <div class="text-foreground flex items-center gap-2 font-semibold">
+      <div class="text-foreground flex items-center gap-2 text-sm">
         <span v-if="isBookmarked && !hideBookmarkIcon">
           <i class="pi pi-bookmark-fill mr-1 text-sm" />
         </span>
@@ -60,7 +60,7 @@
 
       <div
         v-if="showDescription"
-        class="flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground"
+        class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"
       >
         <span v-if="showCategory" class="max-w-2/5 shrink-0 truncate">
           {{ nodeDef.category.replaceAll('/', ' / ') }}

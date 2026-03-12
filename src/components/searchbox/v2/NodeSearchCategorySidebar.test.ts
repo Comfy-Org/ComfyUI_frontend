@@ -1,8 +1,11 @@
+import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import NodeSearchCategorySidebar from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
+import NodeSearchCategorySidebar, {
+  DEFAULT_CATEGORY
+} from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
 import {
   createMockNodeDef,
   setupTestPinia,
@@ -23,15 +26,22 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 describe('NodeSearchCategorySidebar', () => {
+  let wrapper: VueWrapper
+
   beforeEach(() => {
     vi.restoreAllMocks()
     setupTestPinia()
   })
 
+  afterEach(() => {
+    wrapper?.unmount()
+  })
+
   async function createWrapper(props = {}) {
-    const wrapper = mount(NodeSearchCategorySidebar, {
-      props: { selectedCategory: 'most-relevant', ...props },
-      global: { plugins: [testI18n] }
+    wrapper = mount(NodeSearchCategorySidebar, {
+      props: { selectedCategory: DEFAULT_CATEGORY, ...props },
+      global: { plugins: [testI18n] },
+      attachTo: document.body
     })
     await nextTick()
     return wrapper
@@ -75,7 +85,9 @@ describe('NodeSearchCategorySidebar', () => {
     })
 
     it('should mark the selected preset category as selected', async () => {
-      const wrapper = await createWrapper({ selectedCategory: 'most-relevant' })
+      const wrapper = await createWrapper({
+        selectedCategory: DEFAULT_CATEGORY
+      })
 
       const mostRelevantBtn = wrapper.find(
         '[data-testid="category-most-relevant"]'
@@ -88,7 +100,9 @@ describe('NodeSearchCategorySidebar', () => {
       vi.spyOn(useNodeBookmarkStore(), 'bookmarks', 'get').mockReturnValue([
         'some-bookmark'
       ])
-      const wrapper = await createWrapper({ selectedCategory: 'most-relevant' })
+      const wrapper = await createWrapper({
+        selectedCategory: DEFAULT_CATEGORY
+      })
 
       await clickCategory(wrapper, 'Favorites')
 
@@ -218,7 +232,9 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper({ selectedCategory: 'most-relevant' })
+      const wrapper = await createWrapper({
+        selectedCategory: DEFAULT_CATEGORY
+      })
 
       // Expand and click subcategory
       await clickCategory(wrapper, 'sampling', true)
@@ -282,5 +298,118 @@ describe('NodeSearchCategorySidebar', () => {
     await clickCategory(wrapper, 'sampling')
 
     expect(wrapper.emitted('update:selectedCategory')![0][0]).toBe('sampling')
+  })
+
+  describe('keyboard navigation', () => {
+    it('should expand a collapsed tree node on ArrowRight', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'sampling' }),
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
+        createMockNodeDef({ name: 'Node3', category: 'loaders' })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper()
+
+      expect(wrapper.text()).not.toContain('advanced')
+
+      const samplingBtn = wrapper.find('[data-testid="category-sampling"]')
+      await samplingBtn.trigger('keydown', { key: 'ArrowRight' })
+      await nextTick()
+
+      // Should have emitted select for sampling, expanding it
+      expect(wrapper.emitted('update:selectedCategory')).toBeTruthy()
+      expect(wrapper.emitted('update:selectedCategory')![0]).toEqual([
+        'sampling'
+      ])
+    })
+
+    it('should collapse an expanded tree node on ArrowLeft', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'sampling' }),
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
+        createMockNodeDef({ name: 'Node3', category: 'loaders' })
+      ])
+      await nextTick()
+
+      // First expand sampling by clicking
+      const wrapper = await createWrapper()
+      await clickCategory(wrapper, 'sampling', true)
+
+      expect(wrapper.text()).toContain('advanced')
+
+      const samplingBtn = wrapper.find('[data-testid="category-sampling"]')
+      await samplingBtn.trigger('keydown', { key: 'ArrowLeft' })
+      await nextTick()
+
+      // Collapse toggles internal state; children should be hidden
+      expect(wrapper.text()).not.toContain('advanced')
+    })
+
+    it('should focus first child on ArrowRight when already expanded', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'sampling' }),
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
+        createMockNodeDef({ name: 'Node3', category: 'loaders' })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper()
+      await clickCategory(wrapper, 'sampling', true)
+
+      expect(wrapper.text()).toContain('advanced')
+
+      const samplingBtn = wrapper.find('[data-testid="category-sampling"]')
+      await samplingBtn.trigger('keydown', { key: 'ArrowRight' })
+      await nextTick()
+
+      const advancedBtn = wrapper.find(
+        '[data-testid="category-sampling/advanced"]'
+      )
+      expect(advancedBtn.element).toBe(document.activeElement)
+    })
+
+    it('should focus parent on ArrowLeft from a leaf or collapsed node', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'sampling' }),
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
+        createMockNodeDef({ name: 'Node3', category: 'loaders' })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper()
+      await clickCategory(wrapper, 'sampling', true)
+
+      const advancedBtn = wrapper.find(
+        '[data-testid="category-sampling/advanced"]'
+      )
+      await advancedBtn.trigger('keydown', { key: 'ArrowLeft' })
+      await nextTick()
+
+      const samplingBtn = wrapper.find('[data-testid="category-sampling"]')
+      expect(samplingBtn.element).toBe(document.activeElement)
+    })
+
+    it('should set aria-expanded on tree nodes with children', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'sampling' }),
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
+        createMockNodeDef({ name: 'Node3', category: 'loaders' })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper()
+
+      const samplingTreeItem = wrapper
+        .find('[data-testid="category-sampling"]')
+        .element.closest('[role="treeitem"]')!
+      expect(samplingTreeItem.getAttribute('aria-expanded')).toBe('false')
+
+      // Leaf node should not have aria-expanded
+      const loadersTreeItem = wrapper
+        .find('[data-testid="category-loaders"]')
+        .element.closest('[role="treeitem"]')!
+      expect(loadersTreeItem.getAttribute('aria-expanded')).toBeNull()
+    })
   })
 })
