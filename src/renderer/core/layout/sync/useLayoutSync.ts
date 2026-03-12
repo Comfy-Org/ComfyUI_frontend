@@ -19,10 +19,11 @@ export function useLayoutSync() {
   const pendingNodeIds = new Set<string>()
   let rafId: number | null = null
   let isMicrotaskQueued = false
+  let syncGeneration = 0
 
-  const flushPendingChanges = (
+  function flushPendingChanges(
     canvas: ReturnType<typeof useCanvasStore>['canvas']
-  ) => {
+  ) {
     rafId = null
     isMicrotaskQueued = false
     if (!canvas?.graph || pendingNodeIds.size === 0) return
@@ -62,10 +63,10 @@ export function useLayoutSync() {
     canvas.setDirty(true, true)
   }
 
-  const scheduleFlush = (
+  function scheduleFlush(
     source: LayoutSource,
     canvas: ReturnType<typeof useCanvasStore>['canvas']
-  ) => {
+  ) {
     const shouldFlushInMicrotask =
       source === LayoutSource.Vue || source === LayoutSource.DOM
 
@@ -77,7 +78,9 @@ export function useLayoutSync() {
       if (isMicrotaskQueued) return
 
       isMicrotaskQueued = true
+      const gen = syncGeneration
       queueMicrotask(() => {
+        if (gen !== syncGeneration) return
         flushPendingChanges(canvas)
       })
       return
@@ -85,7 +88,9 @@ export function useLayoutSync() {
 
     if (rafId !== null || isMicrotaskQueued) return
 
+    const gen = syncGeneration
     rafId = requestAnimationFrame(() => {
+      if (gen !== syncGeneration) return
       flushPendingChanges(canvas)
     })
   }
@@ -110,6 +115,7 @@ export function useLayoutSync() {
   }
 
   function stopSync() {
+    syncGeneration++
     if (rafId !== null) {
       cancelAnimationFrame(rafId)
       rafId = null

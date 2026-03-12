@@ -100,12 +100,9 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  /**
-   * Move multiple nodes in a single transaction
-   */
-  const batchMoveNodes = (
+  function batchMoveNodes(
     updates: Array<{ nodeId: NodeId; position: Point }>
-  ): void => {
+  ): void {
     if (updates.length === 0) return
 
     const nodeBoundsUpdates = updates.flatMap(({ nodeId, position }) => {
