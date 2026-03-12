@@ -30,12 +30,18 @@ function onPointerDown(e: PointerEvent) {
 }
 
 function onIndicatorClick(e: MouseEvent) {
-  const start = pointerStart.value
-  if (start) {
-    const dx = e.clientX - start.x
-    const dy = e.clientY - start.y
-    if (dx * dx + dy * dy > 25) return
+  if (e.detail !== 0) {
+    const start = pointerStart.value
+    if (start) {
+      const dx = e.clientX - start.x
+      const dy = e.clientY - start.y
+      if (dx * dx + dy * dy > 25) {
+        pointerStart.value = null
+        return
+      }
+    }
   }
+  pointerStart.value = null
   dropIndicator?.onClick?.(e)
 }
 
