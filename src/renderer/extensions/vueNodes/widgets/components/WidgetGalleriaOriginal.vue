@@ -59,7 +59,7 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-export interface GalleryImage {
+interface GalleryImage {
   itemImageSrc?: string
   thumbnailImageSrc?: string
   src?: string
