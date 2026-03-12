@@ -89,6 +89,7 @@ describe(usePromotedPreviews, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    getNodeImageUrls.mockReset()
 
     nodeOutputStore = createMockNodeOutputStore()
     useNodeOutputStoreMock.mockReturnValue(nodeOutputStore)
@@ -229,6 +230,33 @@ describe(usePromotedPreviews, () => {
     getNodeImageUrls.mockReturnValue([blobUrl])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([
+      {
+        interiorNodeId: '10',
+        widgetName: '$$canvas-image-preview',
+        type: 'image',
+        urls: [blobUrl]
+      }
+    ])
+  })
+
+  it('recomputes when preview images are populated after first evaluation', () => {
+    const setup = createSetup()
+    addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
+      setup.subgraphNode.id,
+      '10',
+      '$$canvas-image-preview'
+    )
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([])
+
+    const blobUrl = 'blob:http://localhost/glsl-preview'
+    seedPreviewImages(setup.subgraph.id, [{ nodeId: 10, urls: [blobUrl] }])
+    getNodeImageUrls.mockReturnValue([blobUrl])
+
     expect(promotedPreviews.value).toEqual([
       {
         interiorNodeId: '10',
