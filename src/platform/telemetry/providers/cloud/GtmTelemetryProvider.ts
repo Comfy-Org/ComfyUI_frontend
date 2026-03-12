@@ -1,7 +1,10 @@
 import type {
   AuthMetadata,
   BeginCheckoutMetadata,
+  ExecutionErrorMetadata,
+  ExecutionTriggerSource,
   PageViewMetadata,
+  TemplateMetadata,
   TelemetryProvider
 } from '../../types'
 
@@ -113,5 +116,46 @@ export class GtmTelemetryProvider implements TelemetryProvider {
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
     this.pushEvent('begin_checkout', metadata)
+  }
+
+  trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
+    this.pushEvent('subscription_change', { action: event })
+  }
+
+  trackMonthlySubscriptionSucceeded(): void {
+    this.pushEvent('subscription_success')
+  }
+
+  trackRunButton(options?: {
+    subscribe_to_run?: boolean
+    trigger_source?: ExecutionTriggerSource
+  }): void {
+    this.pushEvent('run_workflow', {
+      subscribe_to_run: options?.subscribe_to_run,
+      trigger_source: options?.trigger_source
+    })
+  }
+
+  trackWorkflowExecution(): void {
+    this.pushEvent('workflow_execution')
+  }
+
+  trackExecutionError(metadata: ExecutionErrorMetadata): void {
+    this.pushEvent('execution_error', {
+      node_type: metadata.nodeType,
+      error: metadata.error
+    })
+  }
+
+  trackAddApiCreditButtonClicked(): void {
+    this.pushEvent('add_credit_clicked')
+  }
+
+  trackTemplate(metadata: TemplateMetadata): void {
+    this.pushEvent('template_used', {
+      workflow_name: metadata.workflow_name,
+      template_source: metadata.template_source,
+      template_category: metadata.template_category
+    })
   }
 }
