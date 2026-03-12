@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import Select from '@/components/ui/select/Select.vue'
@@ -86,6 +86,13 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const filterQuery = ref('')
+
+watch(
+  () => options.length,
+  (len) => {
+    if (len <= 4) filterQuery.value = ''
+  }
+)
 
 const { results: fuseResults } = useFuse(filterQuery, () => options, {
   fuseOptions: {
