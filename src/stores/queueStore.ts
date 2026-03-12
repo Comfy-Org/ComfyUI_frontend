@@ -32,7 +32,7 @@ enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
-interface ResultItemInit extends ResultItem {
+export interface ResultItemInit extends ResultItem {
   nodeId: NodeId
   mediaType: string
   format?: string

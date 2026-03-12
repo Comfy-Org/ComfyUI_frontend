@@ -44,7 +44,7 @@ const attrs = useAttrs()
     v-else-if="getMediaType(output) === 'text'"
     :class="
       cn(
-        'm-auto my-12 size-full max-w-lg overflow-y-auto bg-secondary-background',
+        'm-auto my-12 size-full max-w-lg overflow-y-auto bg-secondary-background whitespace-pre',
         attrs.class as string
       )
     "
