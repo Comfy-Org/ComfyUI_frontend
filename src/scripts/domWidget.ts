@@ -1,5 +1,6 @@
 import _ from 'es-toolkit/compat'
-import { type Component, effectScope, toRaw, watch } from 'vue'
+import type { Component } from 'vue'
+import { effectScope, toRaw, watch } from 'vue'
 
 import { useDomValueBridge } from '@/composables/element/useDomValueBridge'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
