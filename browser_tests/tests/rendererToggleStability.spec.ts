@@ -2,11 +2,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
 import type { Position } from '../fixtures/types'
 
 type NodeSnapshot = { id: number } & Position
-
-type ComfyPage = Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
 
 async function getAllNodePositions(
   comfyPage: ComfyPage
