@@ -952,6 +952,7 @@
     "collapseAll": "모두 접기",
     "color": "색상",
     "comfy": "Comfy",
+    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 로고",
     "comingSoon": "곧 출시 예정",
     "command": "명령",
@@ -1459,12 +1460,14 @@
       "unknownWidget": "위젯이 표시되지 않습니다"
     },
     "cancelThisRun": "이 실행 취소",
+    "deleteAllAssets": "이 실행에서 모든 에셋 삭제",
     "downloadAll": "모두 다운로드",
     "dragAndDropImage": "이미지를 드래그 앤 드롭하세요",
     "emptyWorkflowExplanation": "워크플로우가 비어 있습니다. 앱을 만들려면 먼저 노드를 추가해야 합니다.",
     "enterNodeGraph": "노드 그래프로 진입",
     "giveFeedback": "피드백 보내기",
     "graphMode": "그래프 모드",
+    "hasCreditCost": "추가 크레딧 필요",
     "linearMode": "앱 모드",
     "loadTemplate": "템플릿 불러오기",
     "mobileControls": "편집 및 실행",
@@ -1855,7 +1858,6 @@
     "execute": "실행",
     "fullscreen": "전체 화면",
     "help": "도움말",
-    "helpAndFeedback": "도움말 및 피드백",
     "hideMenu": "메뉴 숨기기",
     "instant": "즉시",
     "instantTooltip": "워크플로 실행이 완료되면 즉시 실행 대기열에 추가합니다.",
@@ -3374,10 +3376,7 @@
     "addedToWorkspace": "{workspaceName} 워크스페이스에 추가되었습니다",
     "inviteAccepted": "초대 수락됨",
     "inviteFailed": "초대 수락에 실패했습니다",
-    "unsavedChanges": {
-      "message": "저장되지 않은 변경 사항이 있습니다. 변경 사항을 취소하고 워크스페이스를 전환하시겠습니까?",
-      "title": "저장되지 않은 변경 사항"
-    },
+    "switchFailed": "워크스페이스 전환에 실패했습니다. 다시 시도해 주세요.",
     "viewWorkspace": "워크스페이스 보기"
   },
   "workspaceAuth": {

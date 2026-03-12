@@ -93,6 +93,7 @@
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
     "copyToClipboard": "Copy to Clipboard",
+    "copySystemInfo": "Copy System Info",
     "copyAll": "Copy All",
     "openNewIssue": "Open New Issue",
     "showReport": "Show Report",
@@ -301,6 +302,7 @@
     "1x": "1x",
     "2x": "2x",
     "beta": "BETA",
+    "comfyCloud": "Comfy Cloud",
     "nightly": "NIGHTLY",
     "profile": "Profile",
     "noItems": "No items",
@@ -338,7 +340,8 @@
       "conflicting": "Conflicting",
       "inWorkflowSection": "IN WORKFLOW",
       "allInWorkflow": "All in: {workflowName}",
-      "missingNodes": "Missing Nodes"
+      "missingNodes": "Missing Nodes",
+      "unresolvedNodes": "Unresolved Nodes"
     },
     "infoPanelEmpty": "Click an item to see the info",
     "applyChanges": "Apply Changes",
@@ -403,6 +406,10 @@
     "noDescription": "No description available",
     "installSelected": "Install Selected",
     "installAllMissingNodes": "Install All",
+    "unresolvedNodes": {
+      "title": "Unresolved Missing Nodes",
+      "message": "The following nodes are not installed and could not be found in the registry."
+    },
     "allMissingNodesInstalled": "All missing nodes have been successfully installed",
     "packsSelected": "packs selected",
     "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
@@ -968,7 +975,6 @@
     "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
-    "helpAndFeedback": "Help & Feedback",
     "queue": "Queue Panel",
     "fullscreen": "Fullscreen"
   },
@@ -1046,6 +1052,8 @@
     "logoProviderSeparator": " & "
   },
   "graphCanvasMenu": {
+    "canvasMode": "Canvas Mode",
+    "canvasToolbar": "Canvas Toolbar",
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",
     "resetView": "Reset View",
@@ -3178,6 +3186,10 @@
     "backToWorkflow": "Back to workflow",
     "loadTemplate": "Load a template",
     "cancelThisRun": "Cancel this run",
+    "deleteAllAssets": "Delete all assets from this run",
+    "hasCreditCost": "Requires additional credits",
+    "viewGraph": "View node graph",
+    "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
@@ -3221,6 +3233,19 @@
       "inputPlaceholder": "Inputs will show up here",
       "outputPlaceholder": "Output nodes will show up here",
       "outputRequiredPlaceholder": "At least one node is required"
+    },
+    "error": {
+      "header": "This app encountered an error",
+      "log": "Error Logs",
+      "mobileFixable": "Check {0} for errors",
+      "requiresGraph": "Something went wrong during generation. This could be due to invalid hidden inputs, missing resources, or workflow configuration issues.",
+      "promptVisitGraph": "View the node graph to see the full error.",
+      "getHelp": "For help, view our {0}, {1}, or {2} with the copied error.",
+      "goto": "Show errors in graph",
+      "github": "submit a GitHub issue",
+      "guide": "troubleshooting guide",
+      "support": "contact our support",
+      "promptShow": "Show error report"
     },
     "queue": {
       "clickToClear": "Click to clear queue",
@@ -3404,14 +3429,11 @@
     "retryDownload": "Retry download"
   },
   "workspace": {
-    "unsavedChanges": {
-      "title": "Unsaved Changes",
-      "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
-    },
     "inviteAccepted": "Invite Accepted",
     "addedToWorkspace": "You have been added to:",
     "inviteFailed": "Failed to Accept Invite",
-    "viewWorkspace": "View workspace"
+    "viewWorkspace": "View workspace",
+    "switchFailed": "Failed to switch workspace. Please try again."
   },
   "workspaceAuth": {
     "errors": {

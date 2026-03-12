@@ -484,8 +484,7 @@ describe('ShareWorkflowDialogContent', () => {
       expect(mockToast.add).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'Error',
-        detail: 'Publish failed',
-        life: 5000
+        detail: 'Publish failed'
       })
     })
 

@@ -952,6 +952,7 @@
     "collapseAll": "Recolher tudo",
     "color": "Cor",
     "comfy": "Comfy",
+    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo do ComfyOrg",
     "comingSoon": "Em breve",
     "command": "Comando",
@@ -1459,12 +1460,14 @@
       "unknownWidget": "Widget não visível"
     },
     "cancelThisRun": "Cancelar esta execução",
+    "deleteAllAssets": "Excluir todos os ativos desta execução",
     "downloadAll": "Baixar tudo",
     "dragAndDropImage": "Arraste e solte uma imagem",
     "emptyWorkflowExplanation": "Seu fluxo de trabalho está vazio. Você precisa adicionar alguns nós primeiro para começar a construir um app.",
     "enterNodeGraph": "Entrar no grafo de nós",
     "giveFeedback": "Enviar feedback",
     "graphMode": "Modo Gráfico",
+    "hasCreditCost": "Requer créditos adicionais",
     "linearMode": "Modo App",
     "loadTemplate": "Carregar um modelo",
     "mobileControls": "Editar e Executar",
@@ -1855,7 +1858,6 @@
     "execute": "Executar",
     "fullscreen": "Tela cheia",
     "help": "Ajuda",
-    "helpAndFeedback": "Ajuda e feedback",
     "hideMenu": "Ocultar menu",
     "instant": "Instantâneo",
     "instantTooltip": "O fluxo de trabalho será enfileirado instantaneamente após uma geração terminar",
@@ -3386,10 +3388,7 @@
     "addedToWorkspace": "Você foi adicionado ao {workspaceName}",
     "inviteAccepted": "Convite aceito",
     "inviteFailed": "Falha ao aceitar convite",
-    "unsavedChanges": {
-      "message": "Você tem alterações não salvas. Deseja descartá-las e trocar de espaço de trabalho?",
-      "title": "Alterações não salvas"
-    },
+    "switchFailed": "Falha ao alternar o workspace. Por favor, tente novamente.",
     "viewWorkspace": "Ver workspace"
   },
   "workspaceAuth": {
