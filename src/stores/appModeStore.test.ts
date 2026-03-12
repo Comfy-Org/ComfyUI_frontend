@@ -25,7 +25,7 @@ const mockEmptyWorkflowDialog = vi.hoisted(() => {
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    rootGraph: { extra: {}, nodes: [{ id: 1 }] }
+    rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() }
   }
 }))
 
@@ -239,6 +239,29 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = workflowWithLinearData([], [1, 99])
       await nextTick()
 
+      expect(store.selectedOutputs).toEqual([1])
+    })
+
+    it('reloads selections on configured event', async () => {
+      const node1 = mockNode(1)
+
+      // Initially nodes are not resolvable — pruning removes them
+      mockResolveNode.mockReturnValue(undefined)
+      workflowStore.activeWorkflow = workflowWithLinearData([[1, 'seed']], [1])
+      await nextTick()
+      expect(store.selectedInputs).toEqual([])
+      expect(store.selectedOutputs).toEqual([])
+
+      // After graph configures, nodes become resolvable
+      mockResolveNode.mockImplementation((id) =>
+        id == 1 ? (node1 as unknown as LGraphNode) : undefined
+      )
+      ;(app.rootGraph.events as EventTarget).dispatchEvent(
+        new Event('configured')
+      )
+      await nextTick()
+
+      expect(store.selectedInputs).toEqual([[1, 'seed']])
       expect(store.selectedOutputs).toEqual([1])
     })
 

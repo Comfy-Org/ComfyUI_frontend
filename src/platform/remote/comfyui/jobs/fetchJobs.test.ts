@@ -150,6 +150,41 @@ describe('fetchJobs', () => {
 
       expect(result).toEqual([])
     })
+
+    it('parses batch containing text-only preview outputs', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse([
+              createMockJob('image-job', 'completed', {
+                preview_output: {
+                  filename: 'output.png',
+                  subfolder: '',
+                  type: 'output',
+                  nodeId: '1',
+                  mediaType: 'images'
+                }
+              }),
+              createMockJob('text-job', 'completed', {
+                preview_output: {
+                  content: 'some generated text',
+                  nodeId: '5',
+                  mediaType: 'text'
+                }
+              }),
+              createMockJob('no-preview-job', 'completed')
+            ])
+          )
+      })
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toHaveLength(3)
+      expect(result[0].id).toBe('image-job')
+      expect(result[1].id).toBe('text-job')
+      expect(result[2].id).toBe('no-preview-job')
+    })
   })
 
   describe('fetchQueue', () => {

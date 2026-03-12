@@ -10,6 +10,7 @@ import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -29,7 +30,7 @@ import { useQueueSettingsStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { resolveNode } from '@/utils/litegraphUtil'
+import { resolveNodeWidget } from '@/utils/litegraphUtil'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -63,21 +64,42 @@ useEventListener(
 )
 
 const mappedSelections = computed(() => {
-  let unprocessedInputs = [...appModeStore.selectedInputs]
-  //FIXME strict typing here
+  void graphNodes.value
+  let unprocessedInputs = appModeStore.selectedInputs.flatMap(
+    ([nodeId, widgetName]) => {
+      const [node, widget] = resolveNodeWidget(nodeId, widgetName)
+      return widget ? ([[node, widget]] as const) : []
+    }
+  )
   const processedInputs: ReturnType<typeof nodeToNodeData>[] = []
   while (unprocessedInputs.length) {
-    const nodeId = unprocessedInputs[0][0]
-    const inputGroup = takeWhile(
-      unprocessedInputs,
-      ([id]) => id === nodeId
-    ).map(([, widgetName]) => widgetName)
+    const [node] = unprocessedInputs[0]
+    const inputGroup = takeWhile(unprocessedInputs, ([n]) => n === node).map(
+      ([, widget]) => widget
+    )
     unprocessedInputs = unprocessedInputs.slice(inputGroup.length)
-    const node = resolveNode(nodeId)
+    //FIXME: hide widget if owning node bypassed
     if (node?.mode !== LGraphEventMode.ALWAYS) continue
 
     const nodeData = nodeToNodeData(node)
-    remove(nodeData.widgets ?? [], (w) => !inputGroup.includes(w.name))
+    remove(nodeData.widgets ?? [], (vueWidget) => {
+      if (vueWidget.slotMetadata?.linked) return true
+
+      if (!node.isSubgraphNode())
+        return !inputGroup.some((w) => w.name === vueWidget.name)
+
+      const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
+      return !inputGroup.some(
+        (subWidget) =>
+          isPromotedWidgetView(subWidget) &&
+          subWidget.sourceNodeId == storeNodeId &&
+          subWidget.sourceWidgetName === vueWidget.storeName
+      )
+    })
+    for (const widget of nodeData.widgets ?? []) {
+      widget.slotMetadata = undefined
+      widget.nodeId = String(node.id)
+    }
     processedInputs.push(nodeData)
   }
   return processedInputs
@@ -99,7 +121,7 @@ function getDropIndicator(node: LGraphNode) {
   return {
     iconClass: 'icon-[lucide--image]',
     imageUrl: buildImageUrl(),
-    label: t('linearMode.dragAndDropImage'),
+    label: props.mobile ? undefined : t('linearMode.dragAndDropImage'),
     onClick: () => node.widgets?.[1]?.callback?.(undefined)
   }
 }
@@ -107,8 +129,6 @@ function getDropIndicator(node: LGraphNode) {
 function nodeToNodeData(node: LGraphNode) {
   const dropIndicator = getDropIndicator(node)
   const nodeData = extractVueNodeData(node)
-  remove(nodeData.widgets ?? [], (w) => w.slotMetadata?.linked ?? false)
-  for (const widget of nodeData.widgets ?? []) widget.slotMetadata = undefined
 
   return {
     ...nodeData,
@@ -187,14 +207,14 @@ defineExpose({ runButtonClick })
           <DropZone
             :on-drag-over="nodeData.onDragOver"
             :on-drag-drop="nodeData.onDragDrop"
-            :drop-indicator="mobile ? undefined : nodeData.dropIndicator"
+            :drop-indicator="nodeData.dropIndicator"
             class="text-muted-foreground"
           >
             <NodeWidgets
               :node-data
               :class="
                 cn(
-                  'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 **:[.h-7]:h-10',
+                  'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
                   nodeData.hasErrors &&
                     'ring-2 ring-node-stroke-error ring-inset'
                 )
@@ -306,4 +326,9 @@ defineExpose({ runButtonClick })
       </section>
     </div>
   </div>
+  <div
+    v-else-if="mobile"
+    class="flex size-full items-center bg-base-background p-4 text-center"
+    v-text="t('linearMode.mobileNoWorkflow')"
+  />
 </template>

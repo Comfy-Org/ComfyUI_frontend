@@ -1,11 +1,10 @@
 <template>
-  <ComboboxRoot :ignore-filter="true" :open="false" :disabled="disabled">
+  <ComboboxRoot :open="false" ignore-filter :disabled :class="className">
     <ComboboxAnchor
       :class="
         cn(
           searchInputVariants({ size }),
-          disabled && 'pointer-events-none opacity-50',
-          className
+          disabled && 'pointer-events-none opacity-50'
         )
       "
       @click="focus"

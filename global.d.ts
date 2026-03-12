@@ -35,6 +35,7 @@ interface Window {
     mixpanel_token?: string
     posthog_project_token?: string
     posthog_api_host?: string
+    posthog_debug?: boolean
     require_whitelist?: boolean
     subscription_required?: boolean
     max_upload_size?: number
