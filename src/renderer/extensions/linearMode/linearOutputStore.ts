@@ -258,12 +258,12 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function handleExecuted({ detail }: CustomEvent<ExecutedWsMessage>) {
     const jobId = detail.prompt_id
-    if (jobId !== executionStore.activeJobId) return
+    if (jobId !== executionStore.focusedJobId) return
     onNodeExecuted(jobId, detail)
   }
 
   watch(
-    () => executionStore.activeJobId,
+    () => executionStore.focusedJobId,
     (jobId, oldJobId) => {
       if (!isAppMode.value) return
       if (oldJobId && oldJobId !== jobId) {
@@ -282,7 +282,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     () => jobPreviewStore.nodePreviewsByPromptId,
     (previews) => {
       if (!isAppMode.value) return
-      const jobId = executionStore.activeJobId
+      const jobId = executionStore.focusedJobId
       if (!jobId) return
       const preview = previews[jobId]
       if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)

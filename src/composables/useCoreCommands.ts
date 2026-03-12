@@ -315,7 +315,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Interrupt',
       category: 'essentials' as const,
       function: async () => {
-        await api.interrupt(executionStore.activeJobId)
+        await api.interrupt(executionStore.focusedJobId)
         toastStore.add({
           severity: 'info',
           summary: t('g.interrupted'),

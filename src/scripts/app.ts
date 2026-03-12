@@ -764,6 +764,14 @@ export class ComfyApp {
         useNodeOutputStore()
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
+
+      // Only render preview on canvas if this is the focused job
+      const executionStore = useExecutionStore()
+      if (jobId && executionStore.focusedJobId && jobId !== executionStore.focusedJobId) {
+        releaseSharedObjectUrl(blobUrl)
+        return
+      }
+
       // Ensure clean up if `executing` event is missed.
       revokePreviewsByExecutionId(displayNodeId)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
