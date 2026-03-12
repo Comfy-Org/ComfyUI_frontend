@@ -108,9 +108,22 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     gtag('config', measurementId, { send_page_view: false })
   }
 
+  private sanitizeProperties(
+    properties?: Record<string, unknown>
+  ): Record<string, unknown> | undefined {
+    if (!properties) return undefined
+
+    return Object.fromEntries(
+      Object.entries(properties).map(([key, value]) => [
+        key,
+        typeof value === 'string' ? value.slice(0, 100) : value
+      ])
+    )
+  }
+
   private pushEvent(event: string, properties?: Record<string, unknown>): void {
     if (!this.initialized) return
-    window.dataLayer?.push({ event, ...properties })
+    window.dataLayer?.push({ event, ...this.sanitizeProperties(properties) })
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
@@ -169,7 +182,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
     this.pushEvent('execution_error', {
       node_type: metadata.nodeType,
-      error: metadata.error?.slice(0, 100)
+      error: metadata.error
     })
   }
 
