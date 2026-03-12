@@ -260,6 +260,80 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     expect(store.nodeOutputs['4']).toStrictEqual(execOutput)
   })
 
+  it('should preserve outputs across a simulated tab switch cycle', () => {
+    const store = useNodeOutputStore()
+
+    // Tab A: execution produces outputs for two nodes
+    const outputA1 = createMockOutputs([
+      { filename: 'ComfyUI_00001.png', subfolder: '', type: 'temp' }
+    ])
+    const outputA2 = createMockOutputs([
+      { filename: 'example.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId('1', outputA1)
+    store.setNodeOutputsByExecutionId('3', outputA2)
+
+    // --- Switch away: store() then clean ---
+    const tabASnapshot = store.snapshotOutputs()
+    store.resetAllOutputsAndPreviews()
+
+    expect(Object.keys(store.nodeOutputs)).toHaveLength(0)
+    expect(Object.keys(app.nodeOutputs)).toHaveLength(0)
+
+    // Tab B: fresh empty workflow (no outputs)
+    const tabBSnapshot = store.snapshotOutputs()
+    expect(Object.keys(tabBSnapshot)).toHaveLength(0)
+
+    // --- Switch back to Tab A: store Tab B then restore Tab A ---
+    store.resetAllOutputsAndPreviews()
+    store.restoreOutputs(tabASnapshot)
+
+    // Tab A's outputs should be fully restored
+    expect(store.nodeOutputs['1']).toStrictEqual(outputA1)
+    expect(store.nodeOutputs['3']).toStrictEqual(outputA2)
+    expect(app.nodeOutputs['1']).toStrictEqual(outputA1)
+    expect(app.nodeOutputs['3']).toStrictEqual(outputA2)
+
+    // New execution should still work after restore
+    const newOutput = createMockOutputs([{ filename: 'new.png' }])
+    store.setNodeOutputsByExecutionId('5', newOutput)
+    expect(store.nodeOutputs['5']).toStrictEqual(newOutput)
+  })
+
+  it('should keep tab outputs independent across multiple switches', () => {
+    const store = useNodeOutputStore()
+
+    // Tab A: execute
+    const outputA = createMockOutputs([{ filename: 'tab_a.png' }])
+    store.setNodeOutputsByExecutionId('1', outputA)
+    const snapshotA = store.snapshotOutputs()
+
+    // Switch to Tab B
+    store.resetAllOutputsAndPreviews()
+    const outputB = createMockOutputs([{ filename: 'tab_b.png' }])
+    store.setNodeOutputsByExecutionId('1', outputB)
+    const snapshotB = store.snapshotOutputs()
+
+    // Switch back to Tab A
+    store.resetAllOutputsAndPreviews()
+    store.restoreOutputs(snapshotA)
+
+    expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('tab_a.png')
+
+    // Switch back to Tab B
+    const snapshotA2 = store.snapshotOutputs()
+    store.resetAllOutputsAndPreviews()
+    store.restoreOutputs(snapshotB)
+
+    expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('tab_b.png')
+
+    // And back to Tab A again - still correct
+    store.resetAllOutputsAndPreviews()
+    store.restoreOutputs(snapshotA2)
+
+    expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('tab_a.png')
+  })
+
   it('should return a deep clone from snapshotOutputs', () => {
     const store = useNodeOutputStore()
 
