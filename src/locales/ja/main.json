@@ -970,6 +970,7 @@
     "copy": "コピー",
     "copyAll": "すべてコピー",
     "copyJobId": "ジョブIDをコピー",
+    "copySystemInfo": "システム情報をコピー",
     "copyToClipboard": "クリップボードにコピー",
     "copyURL": "URLをコピー",
     "core": "コア",
@@ -1229,6 +1230,8 @@
     "you": "あなた"
   },
   "graphCanvasMenu": {
+    "canvasMode": "キャンバスモード",
+    "canvasToolbar": "キャンバスツールバー",
     "fitView": "ビューに合わせる",
     "focusMode": "フォーカスモード",
     "hand": "パンビュー",
@@ -1465,12 +1468,26 @@
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
     "emptyWorkflowExplanation": "ワークフローが空です。アプリを作成するには、まずノードを追加してください。",
     "enterNodeGraph": "ノードグラフに入る",
+    "error": {
+      "getHelp": "ヘルプが必要な場合は、コピーしたエラーを使って{0}、{1}、または{2}をご覧ください。",
+      "github": "GitHub イシューを提出",
+      "goto": "グラフでエラーを表示",
+      "guide": "トラブルシューティングガイド",
+      "header": "このアプリでエラーが発生しました",
+      "log": "エラーログ",
+      "mobileFixable": "{0}でエラーを確認してください",
+      "promptVisitGraph": "ノードグラフを表示して、エラーの詳細を確認してください。",
+      "requiresGraph": "生成中に問題が発生しました。無効な非表示入力、リソースの不足、またはワークフロー設定の問題が原因の可能性があります。",
+      "support": "サポートに連絡"
+    },
     "giveFeedback": "フィードバックを送る",
     "graphMode": "グラフモード",
     "hasCreditCost": "追加クレジットが必要です",
     "linearMode": "アプリモード",
     "loadTemplate": "テンプレートを読み込む",
     "mobileControls": "編集と実行",
+    "mobileNoWorkflow": "このワークフローはアプリモード用に作成されていません。別のものをお試しください。",
+    "promptShow": "エラーレポートを表示",
     "queue": {
       "clear": "キューをクリア",
       "clickToClear": "クリックしてキューをクリア"
@@ -1478,6 +1495,7 @@
     "rerun": "再実行",
     "reuseParameters": "パラメータを再利用",
     "runCount": "実行回数：",
+    "viewGraph": "ノードグラフを表示",
     "viewJob": "ジョブを表示",
     "welcome": {
       "buildApp": "アプリを作成",
@@ -1686,6 +1704,7 @@
       "installedSection": "インストール済み",
       "missingNodes": "不足しているノード",
       "notInstalled": "未インストール",
+      "unresolvedNodes": "未解決ノード",
       "updatesAvailable": "アップデートあり"
     },
     "nightlyVersion": "ナイトリー",
@@ -1732,6 +1751,10 @@
     "uninstall": "アンインストール",
     "uninstallSelected": "選択したものをアンインストール",
     "uninstalling": "アンインストール中",
+    "unresolvedNodes": {
+      "message": "以下のノードがインストールされておらず、レジストリで見つかりませんでした。",
+      "title": "未解決の欠落ノード"
+    },
     "update": "更新",
     "updateAll": "すべて更新",
     "updateSelected": "選択したものを更新",
@@ -2080,6 +2103,7 @@
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
+    "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sora": "Sora",

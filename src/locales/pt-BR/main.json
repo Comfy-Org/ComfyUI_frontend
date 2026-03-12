@@ -970,6 +970,7 @@
     "copy": "Copiar",
     "copyAll": "Copiar tudo",
     "copyJobId": "Copiar ID da tarefa",
+    "copySystemInfo": "Copiar informações do sistema",
     "copyToClipboard": "Copiar para a área de transferência",
     "copyURL": "Copiar URL",
     "core": "Núcleo",
@@ -1229,6 +1230,8 @@
     "you": "Você"
   },
   "graphCanvasMenu": {
+    "canvasMode": "Modo de tela",
+    "canvasToolbar": "Barra de ferramentas da tela",
     "fitView": "Ajustar à Tela",
     "focusMode": "Modo de Foco",
     "hand": "Mão",
@@ -1465,12 +1468,26 @@
     "dragAndDropImage": "Arraste e solte uma imagem",
     "emptyWorkflowExplanation": "Seu fluxo de trabalho está vazio. Você precisa adicionar alguns nós primeiro para começar a construir um app.",
     "enterNodeGraph": "Entrar no grafo de nós",
+    "error": {
+      "getHelp": "Para obter ajuda, veja nosso {0}, {1} ou {2} com o erro copiado.",
+      "github": "enviar um problema no GitHub",
+      "goto": "Mostrar erros no grafo",
+      "guide": "guia de solução de problemas",
+      "header": "Este aplicativo encontrou um erro",
+      "log": "Logs de erro",
+      "mobileFixable": "Verifique {0} para erros",
+      "promptShow": "Mostrar relatório de erro",
+      "promptVisitGraph": "Veja o grafo de nós para ver o erro completo.",
+      "requiresGraph": "Algo deu errado durante a geração. Isso pode ser devido a entradas ocultas inválidas, recursos ausentes ou problemas de configuração do fluxo de trabalho.",
+      "support": "contate nosso suporte"
+    },
     "giveFeedback": "Enviar feedback",
     "graphMode": "Modo Gráfico",
     "hasCreditCost": "Requer créditos adicionais",
     "linearMode": "Modo App",
     "loadTemplate": "Carregar um modelo",
     "mobileControls": "Editar e Executar",
+    "mobileNoWorkflow": "Este fluxo de trabalho não foi criado para o modo aplicativo. Tente outro.",
     "queue": {
       "clear": "Limpar fila",
       "clickToClear": "Clique para limpar a fila"
@@ -1478,6 +1495,7 @@
     "rerun": "Executar novamente",
     "reuseParameters": "Reutilizar parâmetros",
     "runCount": "Número de execuções:",
+    "viewGraph": "Ver grafo de nós",
     "viewJob": "Ver tarefa",
     "welcome": {
       "buildApp": "Criar aplicativo",
@@ -1686,6 +1704,7 @@
       "installedSection": "INSTALADO",
       "missingNodes": "Nós Ausentes",
       "notInstalled": "Não Instalado",
+      "unresolvedNodes": "Nós não resolvidos",
       "updatesAvailable": "Atualizações Disponíveis"
     },
     "nightlyVersion": "Noturna",
@@ -1732,6 +1751,10 @@
     "uninstall": "Desinstalar",
     "uninstallSelected": "Desinstalar Selecionados",
     "uninstalling": "Desinstalando {id}",
+    "unresolvedNodes": {
+      "message": "Os seguintes nós não estão instalados e não foram encontrados no registro.",
+      "title": "Nós ausentes não resolvidos"
+    },
     "update": "Atualizar",
     "updateAll": "Atualizar Todos",
     "updateSelected": "Atualizar Selecionados",
@@ -2080,6 +2103,7 @@
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
+    "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sora": "Sora",

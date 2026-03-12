@@ -12855,6 +12855,133 @@
       }
     }
   },
+  "ReveImageCreateNode": {
+    "description": "Gere imagens a partir de descrições de texto usando o Reve.",
+    "display_name": "Reve Image Create",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Versão do modelo a ser usada para geração."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto da imagem desejada. Máximo de 2560 caracteres."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remover o fundo da imagem gerada. Pode gerar custo adicional."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Aumentar a resolução da imagem gerada. Pode gerar custo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Edite imagens usando instruções em linguagem natural com o Reve.",
+    "display_name": "Reve Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "edit_instruction": {
+        "name": "edit_instruction",
+        "tooltip": "Descrição em texto de como editar a imagem. Máximo de 2560 caracteres."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "A imagem a ser editada."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Versão do modelo a ser usada para edição."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remover o fundo da imagem gerada. Pode gerar custo adicional."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Aumentar a resolução da imagem gerada. Pode gerar custo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Combine imagens de referência com prompts de texto para criar novas imagens usando o Reve.",
+    "display_name": "Reve Image Remix",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Versão do modelo a ser usada para remix."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto da imagem desejada. Pode incluir tags XML img para referenciar imagens específicas pelo índice, por exemplo, <img>0</img>, <img>1</img>, etc."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remover o fundo da imagem gerada. Pode gerar custo adicional."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Aumentar a resolução da imagem gerada. Pode gerar custo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Gerar ativos 3D usando a API Rodin",
     "display_name": "Rodin 3D Gerar - Geração Detalhada",

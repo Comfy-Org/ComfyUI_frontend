@@ -970,6 +970,7 @@
     "copy": "Copier",
     "copyAll": "Tout copier",
     "copyJobId": "Copier l'ID du travail",
+    "copySystemInfo": "Copier les informations système",
     "copyToClipboard": "Copier dans le presse-papiers",
     "copyURL": "Copier l’URL",
     "core": "Noyau",
@@ -1229,6 +1230,8 @@
     "you": "Vous"
   },
   "graphCanvasMenu": {
+    "canvasMode": "Mode canevas",
+    "canvasToolbar": "Barre d’outils du canevas",
     "fitView": "Adapter la vue",
     "focusMode": "Mode focus",
     "hand": "Main",
@@ -1465,12 +1468,26 @@
     "dragAndDropImage": "Glissez-déposez une image",
     "emptyWorkflowExplanation": "Votre workflow est vide. Vous devez d'abord ajouter des nodes pour commencer à créer une application.",
     "enterNodeGraph": "Entrer dans le graphique de nœuds",
+    "error": {
+      "getHelp": "Pour obtenir de l’aide, consultez notre {0}, {1} ou {2} avec l’erreur copiée.",
+      "github": "soumettre un ticket GitHub",
+      "goto": "Afficher les erreurs dans le graphe",
+      "guide": "guide de dépannage",
+      "header": "Une erreur est survenue dans cette application",
+      "log": "Journaux d’erreurs",
+      "mobileFixable": "Vérifiez {0} pour les erreurs",
+      "promptShow": "Afficher le rapport d’erreur",
+      "promptVisitGraph": "Consultez le graphe des nœuds pour voir l’erreur complète.",
+      "requiresGraph": "Une erreur s’est produite lors de la génération. Cela peut être dû à des entrées cachées invalides, des ressources manquantes ou des problèmes de configuration du workflow.",
+      "support": "contacter notre support"
+    },
     "giveFeedback": "Donner un avis",
     "graphMode": "Mode graphique",
     "hasCreditCost": "Nécessite des crédits supplémentaires",
     "linearMode": "Mode App",
     "loadTemplate": "Charger un modèle",
     "mobileControls": "Éditer & Exécuter",
+    "mobileNoWorkflow": "Ce workflow n’a pas été conçu pour le mode application. Essayez-en un autre.",
     "queue": {
       "clear": "Vider la file d'attente",
       "clickToClear": "Cliquez pour vider la file d'attente"
@@ -1478,6 +1495,7 @@
     "rerun": "Relancer",
     "reuseParameters": "Réutiliser les paramètres",
     "runCount": "Nombre d’exécutions :",
+    "viewGraph": "Voir le graphe des nœuds",
     "viewJob": "Voir la tâche",
     "welcome": {
       "buildApp": "Créer une application",
@@ -1686,6 +1704,7 @@
       "installedSection": "INSTALLÉ",
       "missingNodes": "Nœuds manquants",
       "notInstalled": "Non installé",
+      "unresolvedNodes": "Nœuds non résolus",
       "updatesAvailable": "Mises à jour disponibles"
     },
     "nightlyVersion": "Nocturne",
@@ -1732,6 +1751,10 @@
     "uninstall": "Désinstaller",
     "uninstallSelected": "Désinstaller sélectionné",
     "uninstalling": "Désinstallation",
+    "unresolvedNodes": {
+      "message": "Les nœuds suivants ne sont pas installés et n'ont pas pu être trouvés dans le registre.",
+      "title": "Nœuds manquants non résolus"
+    },
     "update": "Mettre à jour",
     "updateAll": "Tout mettre à jour",
     "updateSelected": "Mettre à jour la sélection",
@@ -2080,6 +2103,7 @@
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
+    "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sora": "Sora",

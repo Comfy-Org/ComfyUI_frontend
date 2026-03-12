@@ -12855,6 +12855,133 @@
       }
     }
   },
+  "ReveImageCreateNode": {
+    "description": "تولید تصویر از توضیحات متنی با استفاده از Reve.",
+    "display_name": "ایجاد تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی تصویر مورد نظر. حداکثر ۲۵۶۰ کاراکتر."
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "ویرایش تصاویر با استفاده از دستور زبان طبیعی در Reve.",
+    "display_name": "ویرایش تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "edit_instruction": {
+        "name": "دستور ویرایش",
+        "tooltip": "توضیح متنی نحوه ویرایش تصویر. حداکثر ۲۵۶۰ کاراکتر."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویری که باید ویرایش شود."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای ویرایش."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "ترکیب تصاویر مرجع با پرامپت متنی برای ایجاد تصاویر جدید با استفاده از Reve.",
+    "display_name": "ترکیب تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای ترکیب."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی تصویر مورد نظر. می‌توانید از تگ XML img برای ارجاع به تصاویر خاص با شماره اندیس استفاده کنید، مانند <img>۰</img>، <img>۱</img> و غیره."
+      },
+      "reference_images": {
+        "name": "تصاویر مرجع"
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
     "display_name": "Rodin 3D Generate - تولید جزئیات",

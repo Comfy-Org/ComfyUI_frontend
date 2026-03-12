@@ -970,6 +970,7 @@
     "copy": "复制",
     "copyAll": "全部复制",
     "copyJobId": "复制队列 ID",
+    "copySystemInfo": "复制系统信息",
     "copyToClipboard": "复制到剪贴板",
     "copyURL": "复制链接",
     "core": "核心",
@@ -1229,6 +1230,8 @@
     "you": "你"
   },
   "graphCanvasMenu": {
+    "canvasMode": "画布模式",
+    "canvasToolbar": "画布工具栏",
     "fitView": "适应视图",
     "focusMode": "专注模式",
     "hand": "拖拽",
@@ -1465,12 +1468,26 @@
     "dragAndDropImage": "拖拽图片到此处",
     "emptyWorkflowExplanation": "你的工作流为空。你需要先添加一些节点，才能开始构建应用。",
     "enterNodeGraph": "进入节点图",
+    "error": {
+      "getHelp": "如需帮助，请查看我们的 {0}、{1} 或 {2}，并附上复制的错误信息。",
+      "github": "提交 GitHub 问题",
+      "goto": "在图中显示错误",
+      "guide": "故障排查指南",
+      "header": "应用遇到错误",
+      "log": "错误日志",
+      "mobileFixable": "请检查 {0} 以获取错误信息",
+      "promptShow": "显示错误报告",
+      "promptVisitGraph": "查看节点图以获取完整错误信息。",
+      "requiresGraph": "生成过程中出现问题。可能由于无效的隐藏输入、缺失资源或工作流配置问题导致。",
+      "support": "联系我们的支持团队"
+    },
     "giveFeedback": "提供反馈",
     "graphMode": "图形模式",
     "hasCreditCost": "需要额外积分",
     "linearMode": "App 模式",
     "loadTemplate": "加载模板",
     "mobileControls": "编辑与运行",
+    "mobileNoWorkflow": "此工作流未为应用模式构建。请尝试其他工作流。",
     "queue": {
       "clear": "清空队列",
       "clickToClear": "点击清空队列"
@@ -1478,6 +1495,7 @@
     "rerun": "重新运行",
     "reuseParameters": "复用参数",
     "runCount": "运行次数：",
+    "viewGraph": "查看节点图",
     "viewJob": "查看任务",
     "welcome": {
       "buildApp": "构建应用",
@@ -1686,6 +1704,7 @@
       "installedSection": "已安装",
       "missingNodes": "缺失节点",
       "notInstalled": "未安装",
+      "unresolvedNodes": "未解析节点",
       "updatesAvailable": "有可用更新"
     },
     "nightlyVersion": "每夜",
@@ -1732,6 +1751,10 @@
     "uninstall": "卸载",
     "uninstallSelected": "卸载所选",
     "uninstalling": "正在卸载",
+    "unresolvedNodes": {
+      "message": "以下节点未安装，且在注册表中未找到。",
+      "title": "未解析的缺失节点"
+    },
     "update": "更新",
     "updateAll": "全部更新",
     "updateSelected": "更新所选",
@@ -2080,6 +2103,7 @@
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
+    "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sora": "Sora",

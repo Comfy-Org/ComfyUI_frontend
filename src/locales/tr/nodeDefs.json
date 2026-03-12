@@ -12855,6 +12855,133 @@
       }
     }
   },
+  "ReveImageCreateNode": {
+    "description": "Reve kullanarak metin açıklamalarından görseller oluşturun.",
+    "display_name": "Reve Görsel Oluştur",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Oluşturma için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenen görselin metin açıklaması. En fazla 2560 karakter."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Reve ile doğal dil talimatları kullanarak görselleri düzenleyin.",
+    "display_name": "Reve Görsel Düzenle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "edit_instruction": {
+        "name": "düzenleme_talimatı",
+        "tooltip": "Görselin nasıl düzenleneceğine dair metin açıklaması. En fazla 2560 karakter."
+      },
+      "image": {
+        "name": "görsel",
+        "tooltip": "Düzenlenecek görsel."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Düzenleme için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Referans görselleri ve metin istemlerini birleştirerek Reve ile yeni görseller oluşturun.",
+    "display_name": "Reve Görsel Remix",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Remix için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenen görselin metin açıklaması. Belirli görselleri indeks ile referans göstermek için XML img etiketleri ekleyebilirsiniz, örn. <img>0</img>, <img>1</img> vb."
+      },
+      "reference_images": {
+        "name": "referans_görseller"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
     "display_name": "Rodin 3D Oluştur - Detay Oluştur",

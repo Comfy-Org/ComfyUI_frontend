@@ -970,6 +970,7 @@
     "copy": "Copiar",
     "copyAll": "Copiar todo",
     "copyJobId": "Copiar ID de trabajo",
+    "copySystemInfo": "Copiar información del sistema",
     "copyToClipboard": "Copiar al portapapeles",
     "copyURL": "Copiar URL",
     "core": "Núcleo",
@@ -1229,6 +1230,8 @@
     "you": "Tú"
   },
   "graphCanvasMenu": {
+    "canvasMode": "Modo lienzo",
+    "canvasToolbar": "Barra de herramientas del lienzo",
     "fitView": "Ajustar vista",
     "focusMode": "Modo de Enfoque",
     "hand": "Mano",
@@ -1465,12 +1468,26 @@
     "dragAndDropImage": "Arrastra y suelta una imagen",
     "emptyWorkflowExplanation": "Tu flujo de trabajo está vacío. Necesitas algunos nodos primero para empezar a construir una aplicación.",
     "enterNodeGraph": "Entrar al grafo de nodos",
+    "error": {
+      "getHelp": "Para obtener ayuda, consulta nuestro {0}, {1} o {2} con el error copiado.",
+      "github": "enviar un issue en GitHub",
+      "goto": "Mostrar errores en el grafo",
+      "guide": "guía de solución de problemas",
+      "header": "Esta aplicación encontró un error",
+      "log": "Registros de errores",
+      "mobileFixable": "Revisa {0} para ver los errores",
+      "promptShow": "Mostrar informe de error",
+      "promptVisitGraph": "Ve el grafo de nodos para ver el error completo.",
+      "requiresGraph": "Algo salió mal durante la generación. Esto puede deberse a entradas ocultas no válidas, recursos faltantes o problemas de configuración del flujo de trabajo.",
+      "support": "contacta a nuestro soporte"
+    },
     "giveFeedback": "Enviar comentarios",
     "graphMode": "Modo gráfico",
     "hasCreditCost": "Requiere créditos adicionales",
     "linearMode": "Modo App",
     "loadTemplate": "Cargar una plantilla",
     "mobileControls": "Editar y ejecutar",
+    "mobileNoWorkflow": "Este flujo de trabajo no ha sido creado para el modo de aplicación. Prueba con otro.",
     "queue": {
       "clear": "Limpiar cola",
       "clickToClear": "Haz clic para limpiar la cola"
@@ -1478,6 +1495,7 @@
     "rerun": "Volver a ejecutar",
     "reuseParameters": "Reutilizar parámetros",
     "runCount": "Número de ejecuciones:",
+    "viewGraph": "Ver grafo de nodos",
     "viewJob": "Ver tarea",
     "welcome": {
       "buildApp": "Crear aplicación",
@@ -1686,6 +1704,7 @@
       "installedSection": "INSTALADO",
       "missingNodes": "Nodos faltantes",
       "notInstalled": "No instalado",
+      "unresolvedNodes": "Nodos no resueltos",
       "updatesAvailable": "Actualizaciones disponibles"
     },
     "nightlyVersion": "Nocturna",
@@ -1732,6 +1751,10 @@
     "uninstall": "Desinstalar",
     "uninstallSelected": "Desinstalar Seleccionado",
     "uninstalling": "Desinstalando",
+    "unresolvedNodes": {
+      "message": "Los siguientes nodos no están instalados y no se pudieron encontrar en el registro.",
+      "title": "Nodos faltantes no resueltos"
+    },
     "update": "Actualizar",
     "updateAll": "Actualizar Todos",
     "updateSelected": "Actualizar Seleccionados",
@@ -2080,6 +2103,7 @@
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
+    "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sora": "Sora",

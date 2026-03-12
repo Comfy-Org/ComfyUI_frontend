@@ -970,6 +970,7 @@
     "copy": "복사",
     "copyAll": "모두 복사",
     "copyJobId": "작업 ID 복사",
+    "copySystemInfo": "시스템 정보 복사",
     "copyToClipboard": "클립보드에 복사",
     "copyURL": "URL 복사",
     "core": "코어",
@@ -1229,6 +1230,8 @@
     "you": "당신"
   },
   "graphCanvasMenu": {
+    "canvasMode": "캔버스 모드",
+    "canvasToolbar": "캔버스 툴바",
     "fitView": "보기 맞춤",
     "focusMode": "집중 모드",
     "hand": "손",
@@ -1465,12 +1468,26 @@
     "dragAndDropImage": "이미지를 드래그 앤 드롭하세요",
     "emptyWorkflowExplanation": "워크플로우가 비어 있습니다. 앱을 만들려면 먼저 노드를 추가해야 합니다.",
     "enterNodeGraph": "노드 그래프로 진입",
+    "error": {
+      "getHelp": "도움이 필요하다면 복사된 오류와 함께 {0}, {1}, 또는 {2}를 확인하세요.",
+      "github": "GitHub 이슈 제출",
+      "goto": "그래프에서 오류 보기",
+      "guide": "문제 해결 가이드",
+      "header": "앱에서 오류가 발생했습니다",
+      "log": "오류 로그",
+      "mobileFixable": "{0}에서 오류를 확인하세요",
+      "promptShow": "오류 보고서 보기",
+      "promptVisitGraph": "전체 오류를 보려면 노드 그래프를 확인하세요.",
+      "requiresGraph": "생성 중 문제가 발생했습니다. 잘못된 숨겨진 입력, 누락된 리소스 또는 워크플로우 구성 문제일 수 있습니다.",
+      "support": "고객 지원 문의"
+    },
     "giveFeedback": "피드백 보내기",
     "graphMode": "그래프 모드",
     "hasCreditCost": "추가 크레딧 필요",
     "linearMode": "앱 모드",
     "loadTemplate": "템플릿 불러오기",
     "mobileControls": "편집 및 실행",
+    "mobileNoWorkflow": "이 워크플로우는 앱 모드에 맞게 제작되지 않았습니다. 다른 워크플로우를 시도해 보세요.",
     "queue": {
       "clear": "대기열 비우기",
       "clickToClear": "클릭하여 대기열 비우기"
@@ -1478,6 +1495,7 @@
     "rerun": "다시 실행",
     "reuseParameters": "파라미터 재사용",
     "runCount": "실행 횟수:",
+    "viewGraph": "노드 그래프 보기",
     "viewJob": "작업 보기",
     "welcome": {
       "buildApp": "앱 만들기",
@@ -1686,6 +1704,7 @@
       "installedSection": "설치됨",
       "missingNodes": "누락된 노드",
       "notInstalled": "미설치",
+      "unresolvedNodes": "해결되지 않은 노드",
       "updatesAvailable": "업데이트 가능"
     },
     "nightlyVersion": "최신 테스트 버전(nightly)",
@@ -1732,6 +1751,10 @@
     "uninstall": "제거",
     "uninstallSelected": "선택 항목 제거",
     "uninstalling": "제거 중",
+    "unresolvedNodes": {
+      "message": "다음 노드가 설치되어 있지 않으며 레지스트리에서 찾을 수 없습니다.",
+      "title": "해결되지 않은 누락된 노드"
+    },
     "update": "업데이트",
     "updateAll": "모두 업데이트",
     "updateSelected": "선택 항목 업데이트",
@@ -2080,6 +2103,7 @@
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
+    "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sora": "Sora",

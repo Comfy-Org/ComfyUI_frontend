@@ -970,6 +970,7 @@
     "copy": "نسخ",
     "copyAll": "نسخ الكل",
     "copyJobId": "نسخ معرف المهمة",
+    "copySystemInfo": "نسخ معلومات النظام",
     "copyToClipboard": "نسخ إلى الحافظة",
     "copyURL": "نسخ الرابط",
     "core": "النواة",
@@ -1229,6 +1230,8 @@
     "you": "أنت"
   },
   "graphCanvasMenu": {
+    "canvasMode": "وضع اللوحة",
+    "canvasToolbar": "شريط أدوات اللوحة",
     "fitView": "ملائمة العرض",
     "focusMode": "وضع التركيز",
     "hand": "يد",
@@ -1465,12 +1468,26 @@
     "dragAndDropImage": "اسحب وأسقط صورة",
     "emptyWorkflowExplanation": "سير العمل الخاص بك فارغ. تحتاج إلى بعض العقد أولاً لبدء بناء التطبيق.",
     "enterNodeGraph": "دخول مخطط العقد",
+    "error": {
+      "getHelp": "للمساعدة، راجع {0} أو {1} أو {2} مع تقرير الخطأ المنسوخ.",
+      "github": "إرسال مشكلة على GitHub",
+      "goto": "عرض الأخطاء في المخطط",
+      "guide": "دليل استكشاف الأخطاء",
+      "header": "حدث خطأ في هذا التطبيق",
+      "log": "سجلات الأخطاء",
+      "mobileFixable": "تحقق من {0} للأخطاء",
+      "promptShow": "عرض تقرير الخطأ",
+      "promptVisitGraph": "اعرض مخطط العُقد لرؤية الخطأ بالكامل.",
+      "requiresGraph": "حدث خطأ أثناء التوليد. قد يكون ذلك بسبب مدخلات مخفية غير صالحة، أو موارد مفقودة، أو مشاكل في إعداد سير العمل.",
+      "support": "الاتصال بالدعم"
+    },
     "giveFeedback": "إعطاء ملاحظات",
     "graphMode": "وضع الرسم البياني",
     "hasCreditCost": "يتطلب أرصدة إضافية",
     "linearMode": "وضع التطبيق",
     "loadTemplate": "تحميل قالب",
     "mobileControls": "تعديل وتشغيل",
+    "mobileNoWorkflow": "لم يتم بناء سير العمل هذا لوضع التطبيق. جرب سير عمل آخر.",
     "queue": {
       "clear": "مسح قائمة الانتظار",
       "clickToClear": "انقر لمسح قائمة الانتظار"
@@ -1478,6 +1495,7 @@
     "rerun": "تشغيل مجدد",
     "reuseParameters": "إعادة استخدام المعلمات",
     "runCount": "عدد مرات التشغيل:",
+    "viewGraph": "عرض مخطط العُقد",
     "viewJob": "عرض المهمة",
     "welcome": {
       "buildApp": "إنشاء تطبيق",
@@ -1686,6 +1704,7 @@
       "installedSection": "المثبتة",
       "missingNodes": "عقد مفقودة",
       "notInstalled": "غير مثبت",
+      "unresolvedNodes": "العُقد غير المحلولة",
       "updatesAvailable": "تحديثات متوفرة"
     },
     "nightlyVersion": "ليلي",
@@ -1732,6 +1751,10 @@
     "uninstall": "إلغاء التثبيت",
     "uninstallSelected": "إلغاء تثبيت المحدد",
     "uninstalling": "جاري إلغاء التثبيت",
+    "unresolvedNodes": {
+      "message": "العُقد التالية غير مثبتة ولم يتم العثور عليها في السجل.",
+      "title": "العُقد المفقودة غير المحلولة"
+    },
     "update": "تحديث",
     "updateAll": "تحديث الكل",
     "updateSelected": "تحديث المحدد",
@@ -2080,6 +2103,7 @@
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
+    "Reve": "Reve",
     "Rodin": "رودان",
     "Runway": "رن واي",
     "Sora": "سورا",

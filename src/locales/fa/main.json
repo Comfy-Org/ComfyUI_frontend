@@ -970,6 +970,7 @@
     "copy": "کپی",
     "copyAll": "کپی همه",
     "copyJobId": "کپی شناسه وظیفه",
+    "copySystemInfo": "کپی اطلاعات سیستم",
     "copyToClipboard": "کپی در کلیپ‌بورد",
     "copyURL": "کپی آدرس",
     "core": "هسته",
@@ -1229,6 +1230,8 @@
     "you": "شما"
   },
   "graphCanvasMenu": {
+    "canvasMode": "حالت بوم",
+    "canvasToolbar": "نوار ابزار بوم",
     "fitView": "تطبیق با نما",
     "focusMode": "حالت تمرکز",
     "hand": "دست",
@@ -1465,12 +1468,26 @@
     "dragAndDropImage": "تصویر را بکشید و رها کنید",
     "emptyWorkflowExplanation": "جریان کاری شما خالی است. ابتدا باید چند node اضافه کنید تا بتوانید یک برنامه بسازید.",
     "enterNodeGraph": "ورود به گراف node",
+    "error": {
+      "getHelp": "برای دریافت راهنما، {0}، {1} یا {2} را با خطای کپی‌شده مشاهده کنید.",
+      "github": "ارسال issue در GitHub",
+      "goto": "نمایش خطاها در گراف",
+      "guide": "راهنمای رفع اشکال",
+      "header": "این اپلیکیشن با خطا مواجه شد",
+      "log": "گزارش‌های خطا",
+      "mobileFixable": "برای مشاهده خطاها به {0} مراجعه کنید",
+      "promptShow": "نمایش گزارش خطا",
+      "promptVisitGraph": "برای مشاهده خطای کامل، گراف نود را ببینید.",
+      "requiresGraph": "در طول تولید مشکلی پیش آمد. ممکن است به دلیل ورودی‌های مخفی نامعتبر، منابع گمشده یا مشکلات پیکربندی workflow باشد.",
+      "support": "تماس با پشتیبانی ما"
+    },
     "giveFeedback": "ارسال بازخورد",
     "graphMode": "حالت گراف",
     "hasCreditCost": "نیازمند اعتبار اضافی",
     "linearMode": "حالت برنامه",
     "loadTemplate": "بارگذاری قالب",
     "mobileControls": "ویرایش و اجرا",
+    "mobileNoWorkflow": "این workflow برای حالت اپلیکیشن ساخته نشده است. مورد دیگری را امتحان کنید.",
     "queue": {
       "clear": "پاک‌سازی صف",
       "clickToClear": "برای پاک‌سازی صف کلیک کنید"
@@ -1478,6 +1495,7 @@
     "rerun": "اجرای مجدد",
     "reuseParameters": "استفاده مجدد از پارامترها",
     "runCount": "تعداد اجرا: ",
+    "viewGraph": "مشاهده گراف نود",
     "viewJob": "مشاهده وظیفه",
     "welcome": {
       "buildApp": "ساخت اپلیکیشن",
@@ -1686,6 +1704,7 @@
       "installedSection": "نصب شده",
       "missingNodes": "Nodeهای مفقود",
       "notInstalled": "نصب نشده",
+      "unresolvedNodes": "نودهای حل‌نشده",
       "updatesAvailable": "به‌روزرسانی‌های موجود"
     },
     "nightlyVersion": "نسخه nightly",
@@ -1732,6 +1751,10 @@
     "uninstall": "حذف نصب",
     "uninstallSelected": "حذف نصب انتخاب‌شده‌ها",
     "uninstalling": "در حال حذف نصب {id}",
+    "unresolvedNodes": {
+      "message": "نودهای زیر نصب نشده‌اند و در رجیستری یافت نشدند.",
+      "title": "نودهای گمشده حل‌نشده"
+    },
     "update": "به‌روزرسانی",
     "updateAll": "به‌روزرسانی همه",
     "updateSelected": "به‌روزرسانی انتخاب‌شده‌ها",
@@ -2080,6 +2103,7 @@
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
+    "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sora": "Sora",

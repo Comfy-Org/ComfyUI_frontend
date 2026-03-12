@@ -970,6 +970,7 @@
     "copy": "Kopyala",
     "copyAll": "Tümünü Kopyala",
     "copyJobId": "İş Kimliğini Kopyala",
+    "copySystemInfo": "Sistem Bilgilerini Kopyala",
     "copyToClipboard": "Panoya Kopyala",
     "copyURL": "URL'yi Kopyala",
     "core": "Çekirdek",
@@ -1229,6 +1230,8 @@
     "you": "Sen"
   },
   "graphCanvasMenu": {
+    "canvasMode": "Tuval Modu",
+    "canvasToolbar": "Tuval Araç Çubuğu",
     "fitView": "Görünüme Sığdır",
     "focusMode": "Odak Modu",
     "hand": "El",
@@ -1465,12 +1468,26 @@
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
     "emptyWorkflowExplanation": "Çalışma akışınız boş. Bir uygulama oluşturmaya başlamak için önce bazı düğümler eklemelisiniz.",
     "enterNodeGraph": "Düğüm grafiğine gir",
+    "error": {
+      "getHelp": "Yardım için, kopyalanan hatayla birlikte {0}, {1} veya {2} adresini ziyaret edin.",
+      "github": "GitHub sorunu gönder",
+      "goto": "Grafikte hataları göster",
+      "guide": "sorun giderme rehberi",
+      "header": "Uygulamada bir hata oluştu",
+      "log": "Hata Kayıtları",
+      "mobileFixable": "Hatalar için {0} kontrol edin",
+      "promptShow": "Hata raporunu göster",
+      "promptVisitGraph": "Tüm hatayı görmek için düğüm grafiğini görüntüleyin.",
+      "requiresGraph": "Oluşturma sırasında bir şeyler ters gitti. Bu, geçersiz gizli girdiler, eksik kaynaklar veya iş akışı yapılandırma sorunlarından kaynaklanıyor olabilir.",
+      "support": "destek ekibimizle iletişime geçin"
+    },
     "giveFeedback": "Geri bildirim ver",
     "graphMode": "Grafik Modu",
     "hasCreditCost": "Ekstra kredi gerektirir",
     "linearMode": "Uygulama Modu",
     "loadTemplate": "Şablon yükle",
     "mobileControls": "Düzenle ve Çalıştır",
+    "mobileNoWorkflow": "Bu iş akışı uygulama modu için oluşturulmamış. Farklı bir tane deneyin.",
     "queue": {
       "clear": "Kuyruğu temizle",
       "clickToClear": "Kuyruğu temizlemek için tıklayın"
@@ -1478,6 +1495,7 @@
     "rerun": "Tekrar Çalıştır",
     "reuseParameters": "Parametreleri Yeniden Kullan",
     "runCount": "Çalıştırma sayısı:",
+    "viewGraph": "Düğüm grafiğini görüntüle",
     "viewJob": "İşi Görüntüle",
     "welcome": {
       "buildApp": "Uygulama oluştur",
@@ -1686,6 +1704,7 @@
       "installedSection": "YÜKLÜ",
       "missingNodes": "Eksik Düğümler",
       "notInstalled": "Yüklü Değil",
+      "unresolvedNodes": "Çözülemeyen Düğümler",
       "updatesAvailable": "Güncellemeler Mevcut"
     },
     "nightlyVersion": "Gecelik",
@@ -1732,6 +1751,10 @@
     "uninstall": "Kaldır",
     "uninstallSelected": "Seçilenleri Kaldır",
     "uninstalling": "{id} kaldırılıyor",
+    "unresolvedNodes": {
+      "message": "Aşağıdaki düğümler yüklü değil ve kayıt defterinde bulunamadı.",
+      "title": "Çözülemeyen Eksik Düğümler"
+    },
     "update": "Güncelle",
     "updateAll": "Tümünü Güncelle",
     "updateSelected": "Seçilenleri Güncelle",
@@ -2080,6 +2103,7 @@
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Recraft": "Recraft",
+    "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sora": "Sora",
