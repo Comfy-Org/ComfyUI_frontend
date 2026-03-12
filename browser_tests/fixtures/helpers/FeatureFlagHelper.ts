@@ -9,6 +9,9 @@ export class FeatureFlagHelper {
    * Seed feature flags via `addInitScript` so they are available in
    * localStorage before the app JS executes on first load.
    * Must be called before `comfyPage.setup()` / `page.goto()`.
+   *
+   * Note: Playwright init scripts persist for the page lifetime and
+   * cannot be removed. Call this once per test, before navigation.
    */
   async seedFlags(flags: Record<string, unknown>): Promise<void> {
     await this.page.addInitScript((flagMap: Record<string, unknown>) => {
@@ -42,7 +45,9 @@ export class FeatureFlagHelper {
         const key = localStorage.key(i)
         if (key?.startsWith('ff:')) keysToRemove.push(key)
       }
-      keysToRemove.forEach((k) => localStorage.removeItem(k))
+      keysToRemove.forEach((k) => {
+        localStorage.removeItem(k)
+      })
     })
   }
 
