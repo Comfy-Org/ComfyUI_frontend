@@ -81,8 +81,7 @@ function getParentNodes(): SubgraphNode[] {
     useToastStore().add({
       severity: 'error',
       summary: t('g.error'),
-      detail: t('subgraphStore.promoteOutsideSubgraph'),
-      life: 2000
+      detail: t('subgraphStore.promoteOutsideSubgraph')
     })
     return []
   }

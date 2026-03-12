@@ -482,49 +482,52 @@ useEventListener(
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
-  // ChangeTracker needs to be initialized before setup, as it will overwrite
-  // some listeners of litegraph canvas.
-  ChangeTracker.init()
+  try {
+    // ChangeTracker needs to be initialized before setup, as it will overwrite
+    // some listeners of litegraph canvas.
+    ChangeTracker.init()
 
-  await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
+    await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
 
-  if (settingsError.value) {
-    if (settingsError.value instanceof UnauthorizedError) {
-      localStorage.removeItem('Comfy.userId')
-      localStorage.removeItem('Comfy.userName')
-      window.location.reload()
-      return
+    if (settingsError.value) {
+      if (settingsError.value instanceof UnauthorizedError) {
+        localStorage.removeItem('Comfy.userId')
+        localStorage.removeItem('Comfy.userName')
+        window.location.reload()
+        return
+      }
+      throw settingsError.value
     }
-    throw settingsError.value
+
+    // Register core settings immediately after settings are ready
+    CORE_SETTINGS.forEach(settingStore.addSetting)
+
+    await Promise.all([
+      until(() => isI18nReady.value || !!i18nError.value).toBe(true),
+      useNewUserService().initializeIfNewUser()
+    ])
+    if (i18nError.value) {
+      console.warn(
+        '[GraphCanvas] Failed to load custom nodes i18n:',
+        i18nError.value
+      )
+    }
+
+    // @ts-expect-error fixme ts strict error
+    await comfyApp.setup(canvasRef.value)
+    canvasStore.canvas = comfyApp.canvas
+    canvasStore.canvas.render_canvas_border = false
+    useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
+
+    window.app = comfyApp
+    window.graph = comfyApp.graph
+
+    comfyAppReady.value = true
+
+    vueNodeLifecycle.setupEmptyGraphListener()
+  } finally {
+    workspaceStore.spinner = false
   }
-
-  // Register core settings immediately after settings are ready
-  CORE_SETTINGS.forEach(settingStore.addSetting)
-
-  await Promise.all([
-    until(() => isI18nReady.value || !!i18nError.value).toBe(true),
-    useNewUserService().initializeIfNewUser()
-  ])
-  if (i18nError.value) {
-    console.warn(
-      '[GraphCanvas] Failed to load custom nodes i18n:',
-      i18nError.value
-    )
-  }
-
-  // @ts-expect-error fixme ts strict error
-  await comfyApp.setup(canvasRef.value)
-  canvasStore.canvas = comfyApp.canvas
-  canvasStore.canvas.render_canvas_border = false
-  workspaceStore.spinner = false
-  useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
-
-  window.app = comfyApp
-  window.graph = comfyApp.graph
-
-  comfyAppReady.value = true
-
-  vueNodeLifecycle.setupEmptyGraphListener()
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
@@ -538,7 +541,7 @@ onMounted(async () => {
 
   // Restore saved workflow and workflow tabs state
   await workflowPersistence.initializeWorkflow()
-  workflowPersistence.restoreWorkflowTabsState()
+  await workflowPersistence.restoreWorkflowTabsState()
 
   const sharedWorkflowLoadStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()

@@ -16,20 +16,23 @@
     :pt="{
       root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
         class: cn(
-          'relative inline-flex h-10 cursor-pointer select-none',
+          'relative inline-flex cursor-pointer select-none',
+          size === 'md' ? 'h-8' : 'h-10',
           'rounded-lg bg-secondary-background text-base-foreground',
           'transition-all duration-200 ease-in-out',
+          'hover:bg-secondary-background-hover',
           'border-[2.5px] border-solid',
-          selectedCount > 0
-            ? 'border-node-component-border'
-            : 'border-transparent',
-          'focus-within:border-node-component-border',
-          { 'cursor-default opacity-60': props.disabled }
+          selectedCount > 0 ? 'border-base-foreground' : 'border-transparent',
+          'focus-within:border-base-foreground',
+          props.disabled &&
+            'cursor-default opacity-30 hover:bg-secondary-background'
         )
       }),
       labelContainer: {
-        class:
-          'flex-1 flex items-center overflow-hidden whitespace-nowrap pl-4 py-2 '
+        class: cn(
+          'flex flex-1 items-center overflow-hidden py-2 whitespace-nowrap',
+          size === 'md' ? 'pl-3' : 'pl-4'
+        )
       },
       label: {
         class: 'p-0'
@@ -93,13 +96,12 @@
       #header
     >
       <div class="flex flex-col px-2 pt-2 pb-0">
-        <SearchBox
+        <SearchInput
           v-if="showSearchBox"
           v-model="searchQuery"
           :class="showSelectedCount || showClearButton ? 'mb-2' : ''"
-          :show-order="true"
-          :show-border="true"
-          :place-holder="searchPlaceholder"
+          :placeholder="searchPlaceholder"
+          size="sm"
         />
         <div
           v-if="showSelectedCount || showClearButton"
@@ -130,12 +132,12 @@
 
     <!-- Trigger value (keep text scale identical) -->
     <template #value>
-      <span class="text-sm">
+      <span :class="size === 'md' ? 'text-xs' : 'text-sm'">
         {{ label }}
       </span>
       <span
         v-if="selectedCount > 0"
-        class="pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 items-center justify-center rounded-full bg-primary-background text-xs font-semibold text-base-foreground"
+        class="pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 items-center justify-center rounded-full bg-base-foreground text-xs font-semibold text-base-background"
       >
         {{ selectedCount }}
       </span>
@@ -182,7 +184,7 @@ import MultiSelect from 'primevue/multiselect'
 import { computed, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
@@ -198,6 +200,8 @@ defineOptions({
 interface Props {
   /** Input label shown on the trigger button */
   label?: string
+  /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
+  size?: 'lg' | 'md'
   /** Show search box in the panel header */
   showSearchBox?: boolean
   /** Show selected count text in the panel header */
@@ -217,6 +221,7 @@ interface Props {
 }
 const {
   label,
+  size = 'lg',
   showSearchBox = false,
   showSelectedCount = false,
   showClearButton = false,

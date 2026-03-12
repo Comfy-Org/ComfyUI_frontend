@@ -149,6 +149,8 @@ export const useWorkflowService = () => {
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
     }
+
+    useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
     return true
   }
 
@@ -189,6 +191,7 @@ export const useWorkflowService = () => {
       }
 
       await workflowStore.saveWorkflow(workflow)
+      useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
     }
   }
 
@@ -370,8 +373,7 @@ export const useWorkflowService = () => {
             toastStore.add({
               severity: 'error',
               summary: t('g.error'),
-              detail: t('toastMessages.failedToSaveDraft'),
-              life: 3000
+              detail: t('toastMessages.failedToSaveDraft')
             })
           }
         }
@@ -545,15 +547,16 @@ export const useWorkflowService = () => {
       if (settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')) {
         missingNodesDialog.show({ missingNodeTypes })
       }
-
       executionErrorStore.surfaceMissingNodes(missingNodeTypes)
     }
 
-    if (
-      missingModels &&
-      settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')
-    ) {
-      missingModelsDialog.show(missingModels)
+    // Missing models are NOT surfaced to the Errors tab here.
+    // On Cloud, the dedicated pipeline in app.ts handles detection and
+    // surfacing via surfaceMissingModels(). OSS uses only this dialog.
+    if (missingModels) {
+      if (settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')) {
+        missingModelsDialog.show(missingModels)
+      }
     }
   }
 

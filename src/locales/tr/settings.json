@@ -400,7 +400,7 @@
     "name": "Sekme Çubuğu Düzeni",
     "options": {
       "Default": "Varsayılan",
-      "Integrated": "Entegre"
+      "Legacy": "Klasik"
     },
     "tooltip": "Sekme çubuğu düzenini kontrol eder. \"Entegre\" seçeneği, Yardım ve Kullanıcı kontrollerini sekme çubuğu alanına taşır."
   },

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { reactive, computed, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
@@ -7,8 +8,14 @@ import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { resolveNode } from '@/utils/litegraphUtil'
+
+export function nodeTypeValidForApp(type: string) {
+  return !['Note', 'MarkdownNote'].includes(type)
+}
 
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
@@ -26,20 +33,25 @@ export const useAppModeStore = defineStore('appMode', () => {
     return !!app.rootGraph?.nodes?.length
   })
 
-  function loadSelections(data: Partial<LinearData> | undefined) {
+  // Prune entries referencing nodes deleted in workflow mode.
+  // Only check node existence, not widgets — dynamic widgets can
+  // hide/show other widgets so a missing widget does not mean stale data.
+  function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
 
-    // Prune entries referencing nodes deleted in workflow mode.
-    // Only check node existence, not widgets — dynamic widgets can
-    // hide/show other widgets so a missing widget does not mean stale data.
-    const inputs = app.rootGraph
-      ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
-      : rawInputs
-    const outputs = app.rootGraph
-      ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
-      : rawOutputs
+    return {
+      inputs: app.rootGraph
+        ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
+        : rawInputs,
+      outputs: app.rootGraph
+        ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
+        : rawOutputs
+    }
+  }
 
+  function loadSelections(data: Partial<LinearData> | undefined) {
+    const { inputs, outputs } = pruneLinearData(data)
     selectedInputs.splice(0, selectedInputs.length, ...inputs)
     selectedOutputs.splice(0, selectedOutputs.length, ...outputs)
   }
@@ -65,13 +77,19 @@ export const useAppModeStore = defineStore('appMode', () => {
     { immediate: true }
   )
 
+  useEventListener(
+    () => app.rootGraph?.events,
+    'configured',
+    resetSelectedToWorkflow
+  )
+
   watch(
     () =>
       isBuilderMode.value
         ? { inputs: selectedInputs, outputs: selectedOutputs }
         : null,
     (data) => {
-      if (!data) return
+      if (!data || ChangeTracker.isLoadingGraph) return
       const graph = app.rootGraph
       if (!graph) return
       const extra = (graph.extra ??= {})
@@ -105,6 +123,8 @@ export const useAppModeStore = defineStore('appMode', () => {
       return
     }
 
+    useSidebarTabStore().activeSidebarTabId = null
+
     setMode(
       mode.value === 'app' && hasOutputs.value
         ? 'builder:arrange'
@@ -112,7 +132,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     )
   }
 
-  async function exitBuilder() {
+  function exitBuilder() {
     resetSelectedToWorkflow()
     setMode('graph')
   }
@@ -122,6 +142,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     exitBuilder,
     hasNodes,
     hasOutputs,
+    pruneLinearData,
     resetSelectedToWorkflow,
     selectedInputs,
     selectedOutputs

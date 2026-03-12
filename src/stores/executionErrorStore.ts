@@ -13,6 +13,8 @@ import type {
   PromptError
 } from '@/schemas/apiSchema'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   getAncestorExecutionIds,
@@ -24,7 +26,8 @@ import {
   executionIdToNodeLocatorId,
   forEachNode,
   getNodeByExecutionId,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  getActiveGraphNodeIds
 } from '@/utils/graphTraversalUtil'
 import { isValueStillOutOfRange } from '@/utils/executionErrorUtil'
 
@@ -95,10 +98,12 @@ function applyNodeError(
   }
 }
 
-/** Execution error state: node errors, runtime errors, prompt errors, and missing nodes. */
+/** Execution error state: node errors, runtime errors, prompt errors, and missing assets. */
 export const useExecutionErrorStore = defineStore('executionError', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
+
+  const missingModelStore = useMissingModelStore()
 
   const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
@@ -115,7 +120,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear all error state. Called at execution start. */
+  /** Clear all error state. Called at execution start and workflow changes.
+   *  Missing model state is intentionally preserved here to avoid wiping
+   *  in-progress model repairs (importTaskIds, URL inputs, etc.).
+   *  Missing models are cleared separately during workflow load/clean paths. */
   function clearAllErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
@@ -204,6 +212,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
   }
 
+  /** Set missing models and open the error overlay if the Errors tab is enabled. */
+  function surfaceMissingModels(models: MissingModelCandidate[]) {
+    missingModelStore.setMissingModels(models)
+    if (
+      models.length &&
+      useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+    ) {
+      showErrorOverlay()
+    }
+  }
+
   /** Remove specific node types from the missing nodes list (e.g. after replacement). */
   function removeMissingNodesByType(typesToRemove: string[]) {
     if (!missingNodesError.value) return
@@ -262,27 +281,23 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return localId != null ? String(localId) : null
   })
 
-  /** Whether a runtime execution error is present */
   const hasExecutionError = computed(() => !!lastExecutionError.value)
 
-  /** Whether a prompt-level error is present (e.g. invalid_prompt, prompt_no_outputs) */
   const hasPromptError = computed(() => !!lastPromptError.value)
 
-  /** Whether any node validation errors are present */
   const hasNodeError = computed(
     () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
   )
 
-  /** Whether any missing node types are present in the current workflow */
   const hasMissingNodes = computed(() => !!missingNodesError.value)
 
-  /** Whether any error (node validation, runtime execution, prompt-level, or missing nodes) is present */
   const hasAnyError = computed(
     () =>
       hasExecutionError.value ||
       hasPromptError.value ||
       hasNodeError.value ||
-      hasMissingNodes.value
+      hasMissingNodes.value ||
+      missingModelStore.hasMissingModels
   )
 
   const allErrorExecutionIds = computed<string[]>(() => {
@@ -299,10 +314,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return ids
   })
 
-  /** Count of prompt-level errors (0 or 1) */
   const promptErrorCount = computed(() => (lastPromptError.value ? 1 : 0))
 
-  /** Count of all individual node validation errors */
   const nodeErrorCount = computed(() => {
     if (!lastNodeErrors.value) return 0
     let count = 0
@@ -312,25 +325,23 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return count
   })
 
-  /** Count of runtime execution errors (0 or 1) */
   const executionErrorCount = computed(() => (lastExecutionError.value ? 1 : 0))
 
-  /** Count of missing node errors (0 or 1) */
   const missingNodeCount = computed(() => (missingNodesError.value ? 1 : 0))
 
-  /** Total count of all individual errors */
   const totalErrorCount = computed(
     () =>
       promptErrorCount.value +
       nodeErrorCount.value +
       executionErrorCount.value +
-      missingNodeCount.value
+      missingNodeCount.value +
+      missingModelStore.missingModelCount
   )
 
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
-    if (!app.rootGraph) return ids
+    if (!app.isGraphReady) return ids
 
     // Fall back to rootGraph when currentGraph hasn't been initialized yet
     const activeGraph = canvasStore.currentGraph ?? app.rootGraph
@@ -378,19 +389,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   })
 
   const activeMissingNodeGraphIds = computed<Set<string>>(() => {
-    const ids = new Set<string>()
-    if (!app.rootGraph) return ids
-
-    const activeGraph = canvasStore.currentGraph ?? app.rootGraph
-
-    for (const executionId of missingAncestorExecutionIds.value) {
-      const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
-      if (graphNode?.graph === activeGraph) {
-        ids.add(String(graphNode.id))
-      }
-    }
-
-    return ids
+    if (!app.isGraphReady) return new Set()
+    return getActiveGraphNodeIds(
+      app.rootGraph,
+      canvasStore.currentGraph ?? app.rootGraph,
+      missingAncestorExecutionIds.value
+    )
   })
 
   /** Map of node errors indexed by locator ID. */
@@ -449,7 +453,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** True if the node has errors inside it at any nesting depth. */
   function isContainerWithInternalError(node: LGraphNode): boolean {
-    if (!app.rootGraph) return false
+    if (!app.isGraphReady) return false
     const execId = getExecutionIdByNode(app.rootGraph, node)
     if (!execId) return false
     return errorAncestorExecutionIds.value.has(execId)
@@ -457,15 +461,15 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** True if the node has a missing node inside it at any nesting depth. */
   function isContainerWithMissingNode(node: LGraphNode): boolean {
-    if (!app.rootGraph) return false
+    if (!app.isGraphReady) return false
     const execId = getExecutionIdByNode(app.rootGraph, node)
     if (!execId) return false
     return missingAncestorExecutionIds.value.has(execId)
   }
 
   watch(lastNodeErrors, () => {
+    if (!app.isGraphReady) return
     const rootGraph = app.rootGraph
-    if (!rootGraph) return
 
     clearAllNodeErrorFlags(rootGraph)
 
@@ -514,6 +518,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     setMissingNodeTypes,
     surfaceMissingNodes,
     removeMissingNodesByType,
+
+    // Missing model coordination (delegates to missingModelStore)
+    surfaceMissingModels,
 
     // Lookup helpers
     getNodeErrors,

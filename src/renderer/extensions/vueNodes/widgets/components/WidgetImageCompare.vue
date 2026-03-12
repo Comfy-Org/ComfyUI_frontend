@@ -26,14 +26,14 @@
     <div
       v-if="beforeImage || afterImage"
       ref="containerRef"
-      class="relative min-h-0 flex-1"
+      class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-node-component-surface py-4"
     >
       <img
         v-if="afterImage"
         :src="afterImage"
         :alt="afterAlt"
         draggable="false"
-        class="size-full object-contain"
+        class="absolute inset-0 size-full object-cover"
       />
 
       <img
@@ -41,12 +41,18 @@
         :src="beforeImage"
         :alt="beforeAlt"
         draggable="false"
-        class="absolute inset-0 size-full object-contain"
-        :style="{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }"
+        class="absolute inset-0 size-full object-cover"
+        :style="
+          hasCompareImages
+            ? { clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }
+            : undefined
+        "
       />
 
+      <!-- Circular drag handle -->
       <div
-        class="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-white shadow-md"
+        v-if="hasCompareImages"
+        class="pointer-events-none absolute top-1/2 z-10 size-6 -translate-1/2 rounded-full border-2 border-white bg-white/30 shadow-lg backdrop-blur-sm"
         :style="{ left: `${sliderPosition}%` }"
         role="presentation"
       />
@@ -141,6 +147,10 @@ const afterImage = computed(() => {
   if (isSingleImage(value)) return ''
   return value?.afterImages?.[afterIndex.value] ?? ''
 })
+
+const hasCompareImages = computed(() =>
+  Boolean(beforeImage.value && afterImage.value)
+)
 
 const beforeAlt = computed(() => {
   const value = props.widget.value

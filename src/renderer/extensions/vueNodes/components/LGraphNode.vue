@@ -39,7 +39,8 @@
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
         isSelectOutputsMode &&
-        nodeData.mode === LGraphEventMode.ALWAYS
+        nodeData.mode === LGraphEventMode.ALWAYS &&
+        !nodeData.hasErrors
       "
       :id="nodeData.id"
     />
@@ -91,10 +92,6 @@
         backgroundColor: applyLightThemeColor(nodeData?.color)
       }"
     >
-      <AppOutput
-        v-if="lgraphNode?.constructor?.nodeData?.output_node && isSelectMode"
-        :id="nodeData.id"
-      />
       <div
         v-if="displayHeader"
         class="relative flex flex-col items-center justify-center"
@@ -292,6 +289,7 @@ import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useN
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -342,6 +340,7 @@ const isSelected = computed(() => {
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 const executionErrorStore = useExecutionErrorStore()
+const missingModelStore = useMissingModelStore()
 const hasExecutionError = computed(
   () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
 )
@@ -352,9 +351,11 @@ const hasAnyError = computed((): boolean => {
     nodeData.hasErrors ||
     error ||
     executionErrorStore.getNodeErrors(nodeLocatorId.value) ||
+    missingModelStore.hasMissingModelOnNode(nodeLocatorId.value) ||
     (lgraphNode.value &&
       (executionErrorStore.isContainerWithInternalError(lgraphNode.value) ||
-        executionErrorStore.isContainerWithMissingNode(lgraphNode.value)))
+        executionErrorStore.isContainerWithMissingNode(lgraphNode.value) ||
+        missingModelStore.isContainerWithMissingModel(lgraphNode.value)))
   )
 })
 

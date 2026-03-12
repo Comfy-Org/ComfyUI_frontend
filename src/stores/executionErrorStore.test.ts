@@ -18,6 +18,13 @@ vi.mock('@/stores/settingStore', () => ({
   }))
 }))
 
+vi.mock(
+  '@/platform/missingModel/composables/useMissingModelInteractions',
+  () => ({
+    clearMissingModelState: vi.fn()
+  })
+)
+
 import { useExecutionErrorStore } from './executionErrorStore'
 
 describe('executionErrorStore — missing node operations', () => {

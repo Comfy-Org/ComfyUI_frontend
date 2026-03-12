@@ -3,29 +3,31 @@ import { ref } from 'vue'
 
 import SingleSelect from './SingleSelect.vue'
 
-// SingleSelect already includes options prop, so no need to extend
 const meta: Meta<typeof SingleSelect> = {
-  title: 'Components/Input/SingleSelect',
+  title: 'Components/Select/SingleSelect',
   component: SingleSelect,
   tags: ['autodocs'],
+  parameters: { layout: 'padded' },
+  decorators: [
+    () => ({
+      template: '<div class="pt-4"><story /></div>'
+    })
+  ],
   argTypes: {
     label: { control: 'text' },
     options: { control: 'object' },
-    listMaxHeight: {
-      control: 'text',
-      description: 'Maximum height of the dropdown list'
+    size: {
+      control: { type: 'select' },
+      options: ['lg', 'md']
     },
-    popoverMinWidth: {
-      control: 'text',
-      description: 'Minimum width of the popover'
-    },
-    popoverMaxWidth: {
-      control: 'text',
-      description: 'Maximum width of the popover'
-    }
+    invalid: { control: 'boolean' },
+    loading: { control: 'boolean' }
   },
   args: {
-    label: 'Sorting Type',
+    label: 'Category',
+    size: 'lg',
+    invalid: false,
+    loading: false,
     options: [
       { name: 'Popular', value: 'popular' },
       { name: 'Newest', value: 'newest' },
@@ -37,7 +39,7 @@ const meta: Meta<typeof SingleSelect> = {
 }
 
 export default meta
-export type Story = StoryObj<typeof meta>
+type Story = StoryObj<typeof meta>
 
 const sampleOptions = [
   { name: 'Popular', value: 'popular' },
@@ -52,18 +54,24 @@ export const Default: Story = {
     components: { SingleSelect },
     setup() {
       const selected = ref<string | null>(null)
-      const options = args.options || sampleOptions
-      return { selected, options, args }
+      return { selected, args }
     },
-    template: `
-      <div>
-        <SingleSelect v-model="selected" :options="options" :label="args.label" />
-        <div class="mt-4 p-3 bg-base-background rounded">
-          <p class="text-sm">Selected: {{ selected ?? 'None' }}</p>
-        </div>
-      </div>
-    `
+    template:
+      '<SingleSelect v-model="selected" :options="args.options" :label="args.label" :size="args.size" :invalid="args.invalid" :loading="args.loading" />'
   })
+}
+
+export const MediumSize: Story = {
+  render: () => ({
+    components: { SingleSelect },
+    setup() {
+      const selected = ref<string | null>('popular')
+      return { selected, sampleOptions }
+    },
+    template:
+      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" size="md" />'
+  }),
+  parameters: { controls: { disable: true } }
 }
 
 export const WithIcon: Story = {
@@ -71,186 +79,93 @@ export const WithIcon: Story = {
     components: { SingleSelect },
     setup() {
       const selected = ref<string | null>('popular')
-      const options = sampleOptions
-      return { selected, options }
+      return { selected, sampleOptions }
     },
     template: `
-      <div>
-        <SingleSelect v-model="selected" :options="options" label="Sorting Type">
-          <template #icon>
-            <i class="icon-[lucide--arrow-up-down] w-3.5 h-3.5" />
-          </template>
-        </SingleSelect>
-        <div class="mt-4 p-3 bg-base-background rounded">
-          <p class="text-sm">Selected: {{ selected }}</p>
-        </div>
-      </div>
+      <SingleSelect v-model="selected" :options="sampleOptions" label="Sorting Type">
+        <template #icon>
+          <i class="icon-[lucide--arrow-up-down] size-3.5" />
+        </template>
+      </SingleSelect>
     `
-  })
+  }),
+  parameters: { controls: { disable: true } }
 }
 
-export const Preselected: Story = {
+export const Disabled: Story = {
   render: () => ({
     components: { SingleSelect },
     setup() {
-      const selected = ref<string | null>('newest')
-      const options = sampleOptions
-      return { selected, options }
+      const selected = ref<string | null>('popular')
+      return { selected, sampleOptions }
     },
-    template: `
-      <SingleSelect v-model="selected" :options="options" label="Sorting Type" />
-    `
-  })
+    template:
+      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" disabled />'
+  }),
+  parameters: { controls: { disable: true } }
 }
 
-export const AllVariants: Story = {
+export const Invalid: Story = {
   render: () => ({
     components: { SingleSelect },
     setup() {
-      const options = sampleOptions
-      const a = ref<string | null>(null)
+      const selected = ref<string | null>('popular')
+      return { selected, sampleOptions }
+    },
+    template:
+      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" invalid />'
+  }),
+  parameters: { controls: { disable: true } }
+}
+
+export const Loading: Story = {
+  render: () => ({
+    components: { SingleSelect },
+    setup() {
+      const selected = ref<string | null>('popular')
+      return { selected, sampleOptions }
+    },
+    template:
+      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" loading />'
+  }),
+  parameters: { controls: { disable: true } }
+}
+
+export const AllStates: Story = {
+  render: () => ({
+    components: { SingleSelect },
+    setup() {
+      const a = ref<string | null>('popular')
       const b = ref<string | null>('popular')
-      const c = ref<string | null>('az')
-      return { options, a, b, c }
+      const c = ref<string | null>('popular')
+      const d = ref<string | null>('popular')
+      const e = ref<string | null>('popular')
+      return { sampleOptions, a, b, c, d, e }
     },
     template: `
-      <div class="flex flex-col gap-4">
-        <div class="flex items-center gap-3">
-          <SingleSelect v-model="a" :options="options" label="No Icon" />
+      <div class="flex flex-col gap-6">
+        <div>
+          <p class="mb-2 text-xs text-muted-foreground">Large (Interface)</p>
+          <div class="flex flex-col gap-3">
+            <SingleSelect v-model="a" :options="sampleOptions" label="Default" />
+            <SingleSelect v-model="b" :options="sampleOptions" label="Disabled" disabled />
+            <SingleSelect v-model="c" :options="sampleOptions" label="Invalid" invalid />
+            <SingleSelect v-model="d" :options="sampleOptions" label="Loading" loading />
+          </div>
         </div>
-        <div class="flex items-center gap-3">
-          <SingleSelect v-model="b" :options="options" label="With Icon">
-            <template #icon>
-              <i class="icon-[lucide--arrow-up-down] w-3.5 h-3.5" />
-            </template>
-          </SingleSelect>
-        </div>
-        <div class="flex items-center gap-3">
-          <SingleSelect v-model="c" :options="options" label="Preselected (A→Z)" />
+        <div>
+          <p class="mb-2 text-xs text-muted-foreground">Medium (Node)</p>
+          <div class="flex flex-col gap-3">
+            <SingleSelect v-model="a" :options="sampleOptions" label="Default" size="md" />
+            <SingleSelect v-model="b" :options="sampleOptions" label="Disabled" size="md" disabled />
+            <SingleSelect v-model="c" :options="sampleOptions" label="Invalid" size="md" invalid />
+            <SingleSelect v-model="e" :options="sampleOptions" label="Loading" size="md" loading />
+          </div>
         </div>
       </div>
     `
   }),
   parameters: {
-    controls: { disable: true },
-    actions: { disable: true },
-    slot: { disable: true }
-  }
-}
-
-export const CustomMaxHeight: Story = {
-  render: () => ({
-    components: { SingleSelect },
-    setup() {
-      const selected = ref<string | null>(null)
-      const manyOptions = Array.from({ length: 20 }, (_, i) => ({
-        name: `Option ${i + 1}`,
-        value: `option${i + 1}`
-      }))
-      return { selected, manyOptions }
-    },
-    template: `
-      <div class="flex gap-4">
-        <div>
-          <h3 class="text-sm font-semibold mb-2">Small Height (10rem)</h3>
-          <SingleSelect v-model="selected" :options="manyOptions" label="Small Dropdown" list-max-height="10rem" />
-        </div>
-        <div>
-          <h3 class="text-sm font-semibold mb-2">Default Height (28rem)</h3>
-          <SingleSelect v-model="selected" :options="manyOptions" label="Default Dropdown" />
-        </div>
-        <div>
-          <h3 class="text-sm font-semibold mb-2">Large Height (32rem)</h3>
-          <SingleSelect v-model="selected" :options="manyOptions" label="Large Dropdown" list-max-height="32rem" />
-        </div>
-      </div>
-    `
-  }),
-  parameters: {
-    controls: { disable: true },
-    actions: { disable: true },
-    slot: { disable: true }
-  }
-}
-
-export const CustomMinWidth: Story = {
-  render: () => ({
-    components: { SingleSelect },
-    setup() {
-      const selected1 = ref<string | null>(null)
-      const selected2 = ref<string | null>(null)
-      const selected3 = ref<string | null>(null)
-      const options = [
-        { name: 'A', value: 'a' },
-        { name: 'B', value: 'b' },
-        { name: 'Very Long Option Name Here', value: 'long' }
-      ]
-      return { selected1, selected2, selected3, options }
-    },
-    template: `
-      <div class="flex gap-4">
-        <div>
-          <h3 class="text-sm font-semibold mb-2">Auto Width</h3>
-          <SingleSelect v-model="selected1" :options="options" label="Auto" />
-        </div>
-        <div>
-          <h3 class="text-sm font-semibold mb-2">Min Width 15rem</h3>
-          <SingleSelect v-model="selected2" :options="options" label="Min 15rem" popover-min-width="15rem" />
-        </div>
-        <div>
-          <h3 class="text-sm font-semibold mb-2">Min Width 25rem</h3>
-          <SingleSelect v-model="selected3" :options="options" label="Min 25rem" popover-min-width="25rem" />
-        </div>
-      </div>
-    `
-  }),
-  parameters: {
-    controls: { disable: true },
-    actions: { disable: true },
-    slot: { disable: true }
-  }
-}
-
-export const CustomMaxWidth: Story = {
-  render: () => ({
-    components: { SingleSelect },
-    setup() {
-      const selected1 = ref<string | null>(null)
-      const selected2 = ref<string | null>(null)
-      const selected3 = ref<string | null>(null)
-      const longOptions = [
-        { name: 'Short', value: 'short' },
-        {
-          name: 'This is a very long option name that would normally expand the dropdown',
-          value: 'long1'
-        },
-        {
-          name: 'Another extremely long option that demonstrates max-width constraint',
-          value: 'long2'
-        }
-      ]
-      return { selected1, selected2, selected3, longOptions }
-    },
-    template: `
-      <div class="flex gap-4">
-        <div>
-          <h3 class="text-sm font-semibold mb-2">Auto Width</h3>
-          <SingleSelect v-model="selected1" :options="longOptions" label="Auto" />
-        </div>
-        <div>
-          <h3 class="text-sm font-semibold mb-2">Max Width 15rem</h3>
-          <SingleSelect v-model="selected2" :options="longOptions" label="Max 15rem" popover-max-width="15rem" />
-        </div>
-        <div>
-          <h3 class="text-sm font-semibold mb-2">Min 10rem Max 20rem</h3>
-          <SingleSelect v-model="selected3" :options="longOptions" label="Min & Max" popover-min-width="10rem" popover-max-width="20rem" />
-        </div>
-      </div>
-    `
-  }),
-  parameters: {
-    controls: { disable: true },
-    actions: { disable: true },
-    slot: { disable: true }
+    controls: { disable: true }
   }
 }
