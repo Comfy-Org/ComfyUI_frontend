@@ -398,7 +398,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       setupAnimationEvents()
     } catch (error) {
       console.error('Error initializing standalone 3D viewer:', error)
-      useToastStore().addAlert('Failed to load 3D model')
+      useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
     }
   }
 
