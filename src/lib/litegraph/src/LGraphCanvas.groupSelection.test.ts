@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+
 import {
   LGraph,
   LGraphCanvas,
@@ -288,6 +290,40 @@ describe('LGraphCanvas group selection', () => {
         expect(n.selected).toBe(false)
         expect(canvas.selectedItems.has(n)).toBe(false)
       }
+    })
+  })
+
+  describe('processSelect modifier-click deselect', () => {
+    beforeEach(() => {
+      canvas.groupSelectChildren = true
+    })
+
+    it('modifier-click deselects only the group, not its children', () => {
+      canvas.select(group)
+      expect(group.selected).toBe(true)
+      expect(nodeA.selected).toBe(true)
+      expect(nodeB.selected).toBe(true)
+
+      const shiftEvent = { shiftKey: true } as CanvasPointerEvent
+      canvas.processSelect(group, shiftEvent)
+
+      expect(group.selected).toBe(false)
+      expect(canvas.selectedItems.has(group)).toBe(false)
+      expect(nodeA.selected).toBe(true)
+      expect(nodeB.selected).toBe(true)
+      expect(canvas.selectedItems.has(nodeA)).toBe(true)
+      expect(canvas.selectedItems.has(nodeB)).toBe(true)
+    })
+
+    it('ctrl-click deselects only the group, not its children', () => {
+      canvas.select(group)
+
+      const ctrlEvent = { ctrlKey: true } as CanvasPointerEvent
+      canvas.processSelect(group, ctrlEvent)
+
+      expect(group.selected).toBe(false)
+      expect(nodeA.selected).toBe(true)
+      expect(nodeB.selected).toBe(true)
     })
   })
 

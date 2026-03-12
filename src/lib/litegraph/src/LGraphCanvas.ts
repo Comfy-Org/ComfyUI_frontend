@@ -4365,7 +4365,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (!modifySelection) this.deselectAll(item)
       this.select(item)
     } else if (modifySelection && !sticky) {
-      this.deselect(item)
+      // Modifier-click toggles only the clicked item, not its children.
+      // Cascade on select is a convenience; cascade on deselect would
+      // remove the user's ability to keep children selected (e.g. for
+      // deletion) after toggling the group off.
+      if (item instanceof LGraphGroup && this.groupSelectChildren) {
+        item.selected = false
+        this.selectedItems.delete(item)
+        this.state.selectionChanged = true
+      } else {
+        this.deselect(item)
+      }
     } else if (!sticky) {
       this.deselectAll(item)
     } else {
