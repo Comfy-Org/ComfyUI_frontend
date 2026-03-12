@@ -5,12 +5,10 @@ import { ResultItemImpl } from '@/stores/queueStore'
 const METADATA_KEYS = new Set(['animated', 'text'])
 
 /**
- * Validates that an unknown value is a well-formed ResultItem with required
- * fields for constructing a previewable output.
+ * Validates that an unknown value is a well-formed ResultItem.
  *
- * Stricter than `zResultItem.safeParse()` because the Zod schema marks
- * `filename` and `subfolder` as optional (matching the wire format), but
- * a ResultItemImpl needs both to construct a valid URL.
+ * Requires `filename` (string) since ResultItemImpl needs it for a valid URL.
+ * `subfolder` is optional here — ResultItemImpl constructor falls back to ''.
  */
 function isResultItem(item: unknown): item is ResultItem {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return false
@@ -18,7 +16,6 @@ function isResultItem(item: unknown): item is ResultItem {
   const candidate = item as Record<string, unknown>
 
   if (typeof candidate.filename !== 'string') return false
-  if (typeof candidate.subfolder !== 'string') return false
 
   if (
     candidate.type !== undefined &&
