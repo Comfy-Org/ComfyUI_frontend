@@ -17,6 +17,7 @@ import {
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import type {
   FilterOption,
@@ -376,6 +377,7 @@ function updateSelectedItems(selectedItems: Set<string>) {
     return
   }
   modelValue.value = name
+  useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
 }
 
 const uploadFile = async (
@@ -450,6 +452,9 @@ async function handleFilesUpdate(files: File[]) {
     if (props.widget.callback) {
       props.widget.callback(uploadedPaths[0])
     }
+
+    // 5. Snapshot undo state so the image change gets its own undo entry
+    useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
   } catch (error) {
     console.error('Upload error:', error)
     toastStore.addAlert(`Upload failed: ${error}`)
