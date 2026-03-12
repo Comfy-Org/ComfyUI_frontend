@@ -384,6 +384,17 @@ describe('TopMenuSection', () => {
       configureSettings(pinia, true)
       const executionStore = useExecutionStore(pinia)
       executionStore.activeJobId = 'job-1'
+      executionStore.nodeProgressStatesByJob = {
+        'job-1': {
+          'node-1': {
+            value: 50,
+            max: 100,
+            state: 'running',
+            node_id: 'node-1',
+            prompt_id: 'job-1'
+          }
+        }
+      }
 
       const ComfyActionbarStub = createComfyActionbarStub(actionbarTarget)
 
