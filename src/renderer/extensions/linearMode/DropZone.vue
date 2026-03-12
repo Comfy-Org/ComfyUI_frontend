@@ -85,7 +85,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
       data-slot="drop-zone-indicator"
       :class="
         cn(
-          'm-3 block w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
+          'm-3 block h-25 w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
           dropIndicator?.onClick && 'cursor-pointer'
         )
       "
@@ -95,7 +95,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
       <div
         :class="
           cn(
-            'flex min-h-23 w-full flex-col items-center justify-center gap-2 rounded-[7px] p-6 text-center text-sm/tight transition-colors',
+            'flex h-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[7px] p-3 text-center text-sm/tight transition-colors',
             isHovered &&
               !dropIndicator?.imageUrl &&
               'border border-dashed border-component-node-foreground-secondary bg-component-node-widget-background-hovered'
@@ -104,7 +104,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
       >
         <img
           v-if="dropIndicator?.imageUrl"
-          class="max-h-23 rounded-md object-contain"
+          class="max-h-full rounded-md object-contain"
           :alt="dropIndicator?.label ?? ''"
           :src="dropIndicator?.imageUrl"
         />
