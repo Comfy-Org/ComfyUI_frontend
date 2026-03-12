@@ -1,3 +1,4 @@
+import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import {
@@ -9,10 +10,12 @@ import {
 export function setupAutoQueueHandler() {
   const queueCountStore = useQueuePendingTaskCountStore()
   const queueSettingsStore = useQueueSettingsStore()
+  const { isConcurrentExecutionEnabled } = useConcurrentExecution()
 
   let graphHasChanged = false
   let internalCount = 0 // Use an internal counter here so it is instantly updated when re-queuing
   api.addEventListener('graphChanged', () => {
+    if (isConcurrentExecutionEnabled.value) return
     if (queueSettingsStore.mode === 'change') {
       if (internalCount) {
         graphHasChanged = true
@@ -29,6 +32,7 @@ export function setupAutoQueueHandler() {
     async () => {
       internalCount = queueCountStore.count
       if (!internalCount && !app.lastExecutionError) {
+        if (isConcurrentExecutionEnabled.value) return
         if (
           isInstantRunningMode(queueSettingsStore.mode) ||
           (queueSettingsStore.mode === 'change' && graphHasChanged)

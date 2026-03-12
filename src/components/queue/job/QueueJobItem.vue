@@ -170,6 +170,25 @@
             <slot name="secondary">{{ rightText }}</slot>
           </div>
         </Transition>
+        <!-- Running job focus button - always visible (concurrent execution) -->
+        <Button
+          v-if="state === 'running' && isFocused !== undefined"
+          v-tooltip.top="focusTooltipConfig"
+          variant="textonly"
+          size="icon-sm"
+          :aria-label="t('queue.jobItem.focusTooltip')"
+          @click.stop="emit('focus')"
+        >
+          <i
+            :class="
+              cn(
+                'size-4',
+                isFocused ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]',
+                isFocused ? 'text-text-primary' : 'text-text-secondary'
+              )
+            "
+          />
+        </Button>
         <!-- Running job cancel button - always visible -->
         <Button
           v-if="state === 'running' && computedShowClear"
@@ -212,7 +231,8 @@ const {
   showMenu,
   progressTotalPercent,
   progressCurrentPercent,
-  activeDetailsId = null
+  activeDetailsId = null,
+  isFocused
 } = defineProps<{
   jobId: string
   workflowId?: string
@@ -226,6 +246,7 @@ const {
   progressTotalPercent?: number
   progressCurrentPercent?: number
   activeDetailsId?: string | null
+  isFocused?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -233,6 +254,7 @@ const emit = defineEmits<{
   (e: 'delete'): void
   (e: 'menu', event: MouseEvent): void
   (e: 'view'): void
+  (e: 'focus'): void
   (e: 'details-enter', jobId: string): void
   (e: 'details-leave', jobId: string): void
 }>()
@@ -250,6 +272,9 @@ const {
 const cancelTooltipConfig = computed(() => buildTooltipConfig(t('g.cancel')))
 const deleteTooltipConfig = computed(() => buildTooltipConfig(t('g.delete')))
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
+const focusTooltipConfig = computed(() =>
+  buildTooltipConfig(t('queue.jobItem.focusTooltip'))
+)
 
 const rowRef = ref<HTMLDivElement | null>(null)
 const showDetails = computed(() => activeDetailsId === jobId)

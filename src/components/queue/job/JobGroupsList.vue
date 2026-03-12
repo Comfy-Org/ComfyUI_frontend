@@ -24,10 +24,16 @@
         :progress-current-percent="ji.progressCurrentPercent"
         :running-node-name="ji.runningNodeName"
         :active-details-id="activeDetailsId"
+        :is-focused="
+          isConcurrentExecutionEnabled && ji.state === 'running'
+            ? ji.id === String(executionStore.focusedJobId ?? '')
+            : undefined
+        "
         @cancel="emitCancelItem(ji)"
         @delete="emitDeleteItem(ji)"
         @menu="(ev) => $emit('menu', ji, ev)"
         @view="$emit('viewItem', ji)"
+        @focus="executionStore.setFocusedJob(ji.id)"
         @details-enter="onDetailsEnter"
         @details-leave="onDetailsLeave"
       />
@@ -37,10 +43,15 @@
 
 <script setup lang="ts">
 import QueueJobItem from '@/components/queue/job/QueueJobItem.vue'
+import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import { useJobDetailsHover } from '@/composables/queue/useJobDetailsHover'
+import { useExecutionStore } from '@/stores/executionStore'
 
 const { displayedJobGroups } = defineProps<{ displayedJobGroups: JobGroup[] }>()
+
+const executionStore = useExecutionStore()
+const { isConcurrentExecutionEnabled } = useConcurrentExecution()
 
 const emit = defineEmits<{
   (e: 'cancelItem', item: JobListItem): void

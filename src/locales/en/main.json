@@ -1004,7 +1004,11 @@
     "settings": "Settings",
     "help": "Help",
     "queue": "Queue Panel",
-    "fullscreen": "Fullscreen"
+    "fullscreen": "Fullscreen",
+    "running": "running",
+    "queued": "queued",
+    "parallelExecution": "Run jobs in parallel",
+    "parallelUpTo": "Up to {count}"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -1222,6 +1226,9 @@
     "jobAddedToQueue": "Job queued",
     "jobQueueing": "Job queuing",
     "completedIn": "Finished in {duration}",
+    "jobItem": {
+      "focusTooltip": "Progress currently shown on canvas"
+    },
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
       "openWorkflowNewTab": "Open workflow in new tab",
