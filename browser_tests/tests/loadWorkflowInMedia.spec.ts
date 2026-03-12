@@ -67,5 +67,37 @@ test.describe(
         )
       })
     })
+
+    test('Load workflow from URL dropped onto Vue node', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.vueNodes.waitForNodes()
+
+      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+
+      const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
+      const box = await node.boundingBox()
+      expect(box).not.toBeNull()
+
+      const dropPosition = {
+        x: box!.x + box!.width / 2,
+        y: box!.y + box!.height / 2
+      }
+
+      await comfyPage.dragDrop.dragAndDropURL(
+        'https://comfyanonymous.github.io/ComfyUI_examples/hidream/hidream_dev_example.png',
+        { dropPosition, preserveNativePropagation: true }
+      )
+
+      await comfyPage.page.waitForFunction(
+        (prevCount) => window.app!.graph.nodes.length !== prevCount,
+        initialNodeCount,
+        { timeout: 10000 }
+      )
+
+      const newNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+      expect(newNodeCount).not.toBe(initialNodeCount)
+    })
   }
 )
