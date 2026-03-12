@@ -551,6 +551,8 @@ onMounted(async () => {
       )
     }
 
+    setNodeLocatorResolver(workflowStore.nodeToNodeLocatorId)
+
     // @ts-expect-error fixme ts strict error
     await comfyApp.setup(canvasRef.value)
     canvasStore.canvas = comfyApp.canvas
@@ -582,7 +584,6 @@ onMounted(async () => {
   }
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
-
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
