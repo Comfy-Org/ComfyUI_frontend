@@ -47,7 +47,9 @@ const config: KnipConfig = {
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js'
+    '.agents/checks/eslint.strict.config.js',
+    // Pending integration in stacked PR (concurrent job execution)
+    'src/composables/useConcurrentExecution.ts'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
