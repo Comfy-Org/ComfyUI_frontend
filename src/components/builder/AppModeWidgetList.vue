@@ -144,13 +144,22 @@ function nodeToNodeData(node: LGraphNode) {
         : undefined
     "
   >
-    <div class="mt-1.5 flex min-h-8 items-center gap-1 px-3">
-      <span class="truncate text-sm/8">
+    <div
+      :class="
+        cn(
+          'mt-1.5 flex min-h-8 items-center gap-1 px-3',
+          builderMode && 'drag-handle'
+        )
+      "
+    >
+      <span
+        :class="cn('truncate text-sm/8', builderMode && 'pointer-events-none')"
+      >
         {{ action.widget.label || action.widget.name }}
       </span>
       <span
         v-if="builderMode"
-        class="mx-1 min-w-10 flex-1 truncate text-right text-xs text-muted-foreground"
+        class="pointer-events-none mx-1 min-w-10 flex-1 truncate text-right text-xs text-muted-foreground"
       >
         {{ action.node.title }}
       </span>
