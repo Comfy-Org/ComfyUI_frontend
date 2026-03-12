@@ -96,11 +96,12 @@ onMounted(() => {
     'error',
     (event) => {
       const target = event.target
-      if (
-        target instanceof HTMLLinkElement ||
-        target instanceof HTMLScriptElement
-      ) {
-        const url = target instanceof HTMLLinkElement ? target.href : target.src
+      const isStylesheet =
+        target instanceof HTMLLinkElement && target.rel === 'stylesheet'
+      const isScript = target instanceof HTMLScriptElement
+
+      if (isStylesheet || isScript) {
+        const url = isStylesheet ? target.href : target.src
         console.error('[resource:loadError]', {
           url,
           tagName: target.tagName
