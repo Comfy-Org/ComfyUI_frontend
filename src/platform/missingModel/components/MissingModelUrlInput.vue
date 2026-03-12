@@ -6,20 +6,7 @@
         !canImportModels && 'cursor-pointer'
       )
     "
-    v-bind="
-      !canImportModels
-        ? {
-            role: 'button',
-            tabindex: 0,
-            onKeydown: (e: KeyboardEvent) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                showUploadDialog()
-              }
-            }
-          }
-        : {}
-    "
+    v-bind="upgradePromptAttrs"
     @click="!canImportModels && showUploadDialog()"
   >
     <label :for="`url-input-${modelKey}`" class="sr-only">
@@ -61,7 +48,7 @@
         </span>
         <span
           v-if="(urlMetadata[modelKey]?.content_length ?? 0) > 0"
-          class="shrink-0 rounded-sm bg-secondary-background-selected px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+          class="shrink-0 rounded-sm bg-secondary-background-selected px-1.5 py-0.5 text-xs font-medium text-muted-foreground"
         >
           {{ formatSize(urlMetadata[modelKey]?.content_length ?? 0) }}
         </span>
@@ -72,7 +59,7 @@
           aria-hidden="true"
           class="mt-0.5 icon-[lucide--triangle-alert] size-3 shrink-0 text-warning-background"
         />
-        <span class="text-[11px] leading-tight text-warning-background">
+        <span class="text-xs/tight text-warning-background">
           {{
             t('rightSidePanel.missingModels.typeMismatch', {
               detectedType: typeMismatch
@@ -85,17 +72,10 @@
         <Button
           variant="primary"
           class="h-9 w-full justify-center gap-2 text-sm font-semibold"
-          :disabled="urlImporting[modelKey]"
+          :loading="urlImporting[modelKey]"
           @click="handleImport(modelKey, directory)"
         >
-          <i
-            aria-hidden="true"
-            :class="
-              urlImporting[modelKey]
-                ? 'icon-[lucide--loader-circle] size-4 animate-spin'
-                : 'icon-[lucide--download] size-4'
-            "
-          />
+          <i aria-hidden="true" class="icon-[lucide--download] size-4" />
           {{
             typeMismatch
               ? t('rightSidePanel.missingModels.importAnyway')
@@ -158,4 +138,19 @@ const { urlInputs, urlMetadata, urlFetching, urlErrors, urlImporting } =
   storeToRefs(store)
 
 const { handleUrlInput, handleImport } = useMissingModelInteractions()
+
+const upgradePromptAttrs = computed(() =>
+  canImportModels.value
+    ? {}
+    : {
+        role: 'button',
+        tabindex: 0,
+        onKeydown: (e: KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            showUploadDialog()
+          }
+        }
+      }
+)
 </script>

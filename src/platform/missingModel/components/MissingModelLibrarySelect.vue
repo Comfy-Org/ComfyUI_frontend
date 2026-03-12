@@ -1,43 +1,79 @@
 <template>
   <div class="flex flex-col gap-2">
     <div v-if="showDivider" class="flex items-center justify-center py-0.5">
-      <span class="text-[10px] font-bold text-muted-foreground">
+      <span class="text-xs font-bold text-muted-foreground">
         {{ t('rightSidePanel.missingModels.or') }}
       </span>
     </div>
 
-    <SelectPlus
+    <Select
       :model-value="modelValue"
-      :options="options"
-      option-label="name"
-      option-value="value"
       :disabled="options.length === 0"
-      :filter="options.length > 4"
-      auto-filter-focus
-      :aria-label="t('rightSidePanel.missingModels.useFromLibrary')"
-      :placeholder="t('rightSidePanel.missingModels.useFromLibrary')"
-      class="h-8 w-full rounded-lg border border-transparent bg-secondary-background text-xs transition-colors hover:border-interface-stroke"
-      size="small"
-      :pt="{
-        option: 'text-xs',
-        dropdown: 'w-8',
-        label: 'min-w-[4ch] truncate text-xs',
-        overlay: 'w-fit min-w-full'
-      }"
-      @update:model-value="emit('select', $event)"
+      @update:model-value="handleSelect"
     >
-      <template #dropdownicon>
-        <i class="icon-[lucide--chevron-down] size-3.5 text-muted-foreground" />
-      </template>
-    </SelectPlus>
+      <SelectTrigger
+        size="md"
+        :aria-label="t('rightSidePanel.missingModels.useFromLibrary')"
+        class="border-transparent bg-secondary-background text-xs hover:border-interface-stroke"
+      >
+        <SelectValue
+          :placeholder="t('rightSidePanel.missingModels.useFromLibrary')"
+        />
+      </SelectTrigger>
+
+      <SelectContent>
+        <template v-if="options.length > 4" #prepend>
+          <div class="px-1 pb-1.5">
+            <div
+              class="flex items-center gap-1.5 rounded-md border border-border-default px-2"
+            >
+              <i
+                aria-hidden="true"
+                class="icon-[lucide--search] size-3.5 shrink-0 text-muted-foreground"
+              />
+              <input
+                v-model="filterQuery"
+                type="text"
+                :aria-label="t('g.searchPlaceholder', { subject: '' })"
+                class="h-7 w-full border-none bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+                :placeholder="t('g.searchPlaceholder', { subject: '' })"
+                @keydown.stop
+              />
+            </div>
+          </div>
+        </template>
+
+        <SelectItem
+          v-for="option in filteredOptions"
+          :key="option.value"
+          :value="option.value"
+          class="text-xs"
+        >
+          {{ option.name }}
+        </SelectItem>
+        <div
+          v-if="filteredOptions.length === 0"
+          role="status"
+          class="px-3 py-2 text-xs text-muted-foreground"
+        >
+          {{ t('g.noResultsFound') }}
+        </div>
+      </SelectContent>
+    </Select>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
+import { useFuse } from '@vueuse/integrations/useFuse'
+import Select from '@/components/ui/select/Select.vue'
+import SelectContent from '@/components/ui/select/SelectContent.vue'
+import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
+import SelectValue from '@/components/ui/select/SelectValue.vue'
+import SelectItem from '@/components/ui/select/SelectItem.vue'
 
-const { showDivider = false } = defineProps<{
+const { options, showDivider = false } = defineProps<{
   modelValue: string | undefined
   options: { name: string; value: string }[]
   showDivider?: boolean
@@ -48,4 +84,24 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const filterQuery = ref('')
+
+const { results: fuseResults } = useFuse(filterQuery, () => options, {
+  fuseOptions: {
+    keys: ['name'],
+    threshold: 0.4,
+    ignoreLocation: true
+  },
+  matchAllWhenSearchEmpty: true
+})
+
+const filteredOptions = computed(() => fuseResults.value.map((r) => r.item))
+
+function handleSelect(value: unknown) {
+  if (typeof value === 'string') {
+    filterQuery.value = ''
+    emit('select', value)
+  }
+}
 </script>

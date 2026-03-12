@@ -32,13 +32,7 @@
           :key="group.title"
           :collapse="isSectionCollapsed(group.title) && !isSearching"
           class="border-b border-interface-stroke"
-          :size="
-            group.type === 'missing_node' ||
-            group.type === 'swap_nodes' ||
-            group.type === 'missing_model'
-              ? 'lg'
-              : 'default'
-          "
+          :size="getGroupSize(group)"
           @update:collapse="setSectionCollapsed(group.title, $event)"
         >
           <template #label>
@@ -204,6 +198,7 @@ import { usePackInstall } from '@/workbench/extensions/manager/composables/nodeP
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
+import type { ErrorGroup } from './types'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 
 const { t } = useI18n()
@@ -221,6 +216,15 @@ const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.trim() !== '')
+
+const fullSizeGroupTypes = new Set([
+  'missing_node',
+  'swap_nodes',
+  'missing_model'
+])
+function getGroupSize(group: ErrorGroup) {
+  return fullSizeGroupTypes.has(group.type) ? 'lg' : 'default'
+}
 
 const showNodeIdBadge = computed(
   () =>

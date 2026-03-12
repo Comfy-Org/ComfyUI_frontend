@@ -41,14 +41,7 @@
             canConfirm ? 'bg-primary/10 hover:bg-primary/15' : 'opacity-20'
           )
         "
-        @click="
-          confirmLibrarySelect(
-            modelKey,
-            model.name,
-            model.referencingNodes,
-            directory
-          )
-        "
+        @click="handleLibrarySelect"
       >
         <i
           aria-hidden="true"
@@ -219,4 +212,13 @@ const {
   getTypeMismatch,
   getDownloadStatus
 } = useMissingModelInteractions()
+
+function handleLibrarySelect() {
+  confirmLibrarySelect(
+    modelKey.value,
+    model.name,
+    model.referencingNodes,
+    directory
+  )
+}
 </script>

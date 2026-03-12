@@ -39,7 +39,7 @@
           aria-hidden="true"
           class="mt-0.5 icon-[lucide--info] size-3.5 shrink-0 text-muted-foreground"
         />
-        <span class="text-[11px] leading-tight text-muted-foreground">
+        <span class="text-xs/tight text-muted-foreground">
           {{ t('rightSidePanel.missingModels.customNodeDownloadDisabled') }}
         </span>
       </div>
@@ -65,7 +65,7 @@ import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 
-defineProps<{
+const { missingModelGroups, showNodeIdBadge } = defineProps<{
   missingModelGroups: MissingModelGroup[]
   showNodeIdBadge: boolean
 }>()
