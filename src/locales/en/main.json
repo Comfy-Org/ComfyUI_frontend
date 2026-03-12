@@ -1005,10 +1005,11 @@
     "help": "Help",
     "queue": "Queue Panel",
     "fullscreen": "Fullscreen",
-    "running": "running",
-    "queued": "queued",
+    "nRunning": "{count} running",
+    "nQueued": "{count} queued",
     "parallelExecution": "Run jobs in parallel",
-    "parallelUpTo": "Up to {count}"
+    "parallelUpTo": "Up to {count}",
+    "parallelNew": "NEW"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",

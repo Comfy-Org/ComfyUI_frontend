@@ -1,10 +1,18 @@
+import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
 import JobGroupsList from '@/components/queue/job/JobGroupsList.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import type { TaskItemImpl } from '@/stores/queueStore'
+
+vi.mock('@/composables/useConcurrentExecution', () => ({
+  useConcurrentExecution: () => ({
+    isConcurrentExecutionEnabled: { value: false }
+  })
+}))
 
 const QueueJobItemStub = defineComponent({
   name: 'QueueJobItemStub',
@@ -55,6 +63,10 @@ const mountComponent = (groups: JobGroup[]) =>
       }
     }
   })
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+})
 
 describe('JobGroupsList hover behavior', () => {
   afterEach(() => {

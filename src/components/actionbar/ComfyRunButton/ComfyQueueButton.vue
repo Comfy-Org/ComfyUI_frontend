@@ -70,7 +70,10 @@
                 <span class="text-sm text-text-primary">{{
                   t('menu.parallelExecution')
                 }}</span>
-                <StatusBadge label="NEW" class="text-[10px]" />
+                <StatusBadge
+                  :label="t('menu.parallelNew')"
+                  class="text-[10px]"
+                />
               </div>
               <span class="text-xs text-text-muted">{{
                 t('menu.parallelUpTo', { count: maxConcurrentJobs })
