@@ -52,8 +52,9 @@ describe('useSurveyFeatureTracking', () => {
 
     const { useSurveyFeatureTracking } =
       await import('./useSurveyFeatureTracking')
-    const { trackFeatureUsed, useCount } =
-      useSurveyFeatureTracking('implicit-enabled-feature')
+    const { trackFeatureUsed, useCount } = useSurveyFeatureTracking(
+      'implicit-enabled-feature'
+    )
 
     trackFeatureUsed()
 
