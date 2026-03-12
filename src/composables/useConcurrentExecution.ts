@@ -1,13 +1,14 @@
 import { computed } from 'vue'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 export function useConcurrentExecution() {
   const settingStore = useSettingStore()
+  const { flags } = useFeatureFlags()
 
   const isFeatureEnabled = computed(
-    () => remoteConfig.value.concurrent_execution_enabled === true
+    () => flags.concurrentExecutionEnabled === true
   )
 
   const isUserEnabled = computed(
@@ -18,9 +19,7 @@ export function useConcurrentExecution() {
     () => isFeatureEnabled.value && isUserEnabled.value
   )
 
-  const maxConcurrentJobs = computed(
-    () => remoteConfig.value.max_concurrent_jobs ?? 1
-  )
+  const maxConcurrentJobs = computed(() => flags.maxConcurrentJobs as number)
 
   const hasSeenOnboarding = computed(
     () =>
