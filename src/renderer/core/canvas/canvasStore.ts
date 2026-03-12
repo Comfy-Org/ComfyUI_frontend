@@ -44,10 +44,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   // Reactive scale percentage that syncs with app.canvas.ds.scale
   const appScalePercentage = ref(100)
   const updateAppScalePercentage = (scale: number) => {
-    const newValue = Math.round(scale * 100)
-    if (newValue !== appScalePercentage.value) {
-      appScalePercentage.value = newValue
-    }
+    appScalePercentage.value = Math.round(scale * 100)
   }
 
   const { isAppMode, setMode } = useAppMode()

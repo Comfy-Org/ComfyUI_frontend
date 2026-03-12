@@ -1,7 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { watch } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
@@ -46,26 +45,16 @@ describe('useCanvasStore', () => {
   })
 
   describe('appScalePercentage', () => {
-    it('skips reactive update when rounded scale has not changed', async () => {
+    it('rounds scale to integer percentage', async () => {
       const { app } = await import('@/scripts/app')
 
       app.canvas.ds.scale = 1.004
       store.initScaleSync()
       expect(store.appScalePercentage).toBe(100)
 
-      const watcher = vi.fn()
-      const stop = watch(() => store.appScalePercentage, watcher)
-
-      // Simulate zoom events with scales that all round to 100
-      app.canvas.ds.scale = 1.001
+      app.canvas.ds.scale = 1.506
       app.canvas.ds.onChanged!(app.canvas.ds.scale, app.canvas.ds.offset)
-      app.canvas.ds.scale = 1.003
-      app.canvas.ds.onChanged!(app.canvas.ds.scale, app.canvas.ds.offset)
-
-      expect(watcher).not.toHaveBeenCalled()
-      expect(store.appScalePercentage).toBe(100)
-
-      stop()
+      expect(store.appScalePercentage).toBe(151)
     })
 
     it('updates reactive value when rounded scale changes', async () => {
