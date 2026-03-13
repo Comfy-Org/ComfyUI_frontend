@@ -17,22 +17,43 @@
     <Textarea
       v-bind="filteredProps"
       :id
+      ref="textareaRef"
       v-model="modelValue"
       :class="
         cn(
           WidgetInputBaseClass,
           'size-full resize-none text-xs',
-          !hideLayoutField && 'pt-5'
+          !hideLayoutField && 'pt-5',
+          showHighlight && 'selection:bg-blue-500/50 selection:text-transparent'
         )
       "
       :placeholder
       :readonly="isReadOnly"
+      :style="showHighlight ? '-webkit-text-fill-color: transparent;' : ''"
       data-capture-wheel="true"
+      @compositionstart="isComposing = true"
+      @compositionend="isComposing = false"
+      @scroll.passive="syncScroll"
       @pointerdown.capture.stop
       @pointermove.capture.stop
       @pointerup.capture.stop
       @contextmenu.capture.stop
     />
+    <div
+      v-if="showHighlight"
+      ref="overlayRef"
+      aria-hidden="true"
+      :class="
+        cn(
+          'pointer-events-none absolute inset-0',
+          'overflow-y-auto font-[monospace] text-xs wrap-break-word whitespace-pre-wrap',
+          'border border-transparent px-2.75 pb-5',
+          '[scrollbar-color:transparent_transparent] [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent',
+          !hideLayoutField ? 'pt-5' : 'pt-2'
+        )
+      "
+      v-html="sanitizedHighlightedText"
+    ></div>
     <Button
       v-if="isReadOnly"
       variant="textonly"
@@ -49,7 +70,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, useId, ref, watch, nextTick } from 'vue'
+import dompurify from 'dompurify'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
@@ -63,16 +86,37 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import { WidgetInputBaseClass } from './layout'
+import { useTextareaHighlighting } from '../composables/useTextareaHighlighting'
 
-const { widget, placeholder = '' } = defineProps<{
+const {
+  widget,
+  placeholder = '',
+  nodeType = ''
+} = defineProps<{
   widget: SimplifiedWidget<string>
   placeholder?: string
+  nodeType?: string
 }>()
 
 const modelValue = defineModel<string>({ default: '' })
 
 const hideLayoutField = useHideLayoutField()
 const { copyToClipboard } = useCopyToClipboard()
+
+const settingStore = useSettingStore()
+
+const isComposing = ref(false)
+
+const isClipTextEncode = computed(() => {
+  const isEnabled = settingStore.get(
+    'Comfy.TextareaWidget.HighlightClipComments'
+  )
+  return isEnabled && nodeType.includes('CLIPTextEncode')
+})
+
+const showHighlight = computed(
+  () => isClipTextEncode.value && !isComposing.value
+)
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
@@ -83,6 +127,40 @@ const id = useId()
 
 const isReadOnly = computed(() =>
   Boolean(widget.options?.read_only || widget.options?.disabled)
+)
+
+const textareaRef = ref<InstanceType<typeof Textarea> | null>(null)
+const overlayRef = ref<HTMLElement | null>(null)
+const highlightedText = useTextareaHighlighting(modelValue, isClipTextEncode)
+
+const sanitizedHighlightedText = computed(() => {
+  return dompurify.sanitize(highlightedText.value)
+})
+
+const syncScroll = (e?: Event) => {
+  if (!overlayRef.value) return
+
+  let target: HTMLElement
+  if (e) {
+    target = e.target as HTMLElement
+  } else {
+    target = textareaRef.value?.$el ?? textareaRef.value
+  }
+
+  if (target) {
+    overlayRef.value.scrollTop = target.scrollTop
+    overlayRef.value.scrollLeft = target.scrollLeft
+  }
+}
+
+watch(
+  showHighlight,
+  (newValue) => {
+    if (newValue) {
+      nextTick(() => syncScroll())
+    }
+  },
+  { immediate: true }
 )
 
 function handleCopy() {

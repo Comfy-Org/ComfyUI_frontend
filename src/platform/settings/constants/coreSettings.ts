@@ -144,6 +144,20 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.TextareaWidget.HighlightClipComments',
+    category: [
+      'Comfy',
+      'Node Widget',
+      'TextareaWidget',
+      'HighlightClipComments'
+    ],
+    name: 'Highlight text encode comments',
+    tooltip: 'Highlight block and line comments in CLIP text encode nodes',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true
+  },
+  {
     id: 'Comfy.Workflow.SortNodeIdOnSave',
     name: 'Sort node IDs when saving workflow',
     type: 'boolean',
