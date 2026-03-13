@@ -544,10 +544,22 @@ export const useExecutionStore = defineStore('execution', () => {
       return
     }
 
-    removeTrackedJobState(jobId, {
+    const normalizedJobId = String(jobId)
+    const staleActiveJobId =
+      activeJobId.value && activeJobId.value !== normalizedJobId
+        ? activeJobId.value
+        : null
+
+    removeTrackedJobState(normalizedJobId, {
       clearAllNodeProgressStates: true,
       clearPromptError: true
     })
+
+    if (staleActiveJobId) {
+      removeTrackedJobState(staleActiveJobId, {
+        clearPromptError: true
+      })
+    }
   }
 
   /**

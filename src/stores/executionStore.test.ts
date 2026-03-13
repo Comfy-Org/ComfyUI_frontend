@@ -491,6 +491,45 @@ describe('useExecutionStore - clearTrackedJob', () => {
     expect(store.initializingJobIds).toEqual(new Set(['job-2']))
     expect(store._executingNodeProgress).toBeNull()
   })
+
+  it('clears a stale active job when a different prompt completes', () => {
+    const terminalJobState = {
+      value: 3,
+      max: 10,
+      state: 'running' as const,
+      node_id: 'node-2',
+      prompt_id: 'job-2'
+    }
+
+    store.activeJobId = 'job-1'
+    store.queuedJobs = {
+      'job-1': { nodes: {} },
+      'job-2': { nodes: {} }
+    }
+    store.nodeProgressStates = {
+      'node-2': terminalJobState
+    }
+    store.nodeProgressStatesByJob = {
+      'job-1': {},
+      'job-2': { 'node-2': terminalJobState }
+    }
+    store.initializingJobIds = new Set(['job-1', 'job-2'])
+    store.bindExecutionEvents()
+
+    const handler = apiEventHandlers.get('execution_success')
+    if (!handler) throw new Error('execution_success handler not bound')
+    handler(
+      new CustomEvent('execution_success', {
+        detail: { prompt_id: 'job-2' }
+      })
+    )
+
+    expect(store.activeJobId).toBeNull()
+    expect(store.queuedJobs).toEqual({})
+    expect(store.nodeProgressStates).toEqual({})
+    expect(store.nodeProgressStatesByJob).toEqual({})
+    expect(store.initializingJobIds).toEqual(new Set())
+  })
 })
 
 describe('useExecutionErrorStore - Node Error Lookups', () => {

@@ -585,7 +585,7 @@ export const useQueueStore = defineStore('queue', () => {
       const activeJobId = executionStore.activeJobId
       const missedTerminalExecution =
         activeJobId !== null &&
-        !activeJobIds.has(String(activeJobId)) &&
+        !activeJobIds.has(activeJobId) &&
         nextHistoryTasks.some((task) => task.jobId === activeJobId)
 
       if (missedTerminalExecution) {
