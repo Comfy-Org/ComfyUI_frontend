@@ -496,7 +496,12 @@
     "cyan": "Cyan",
     "purple": "Purple",
     "black": "Black",
-    "custom": "Custom"
+    "custom": "Custom",
+    "hex": "Hex",
+    "rgba": "RGBA",
+    "saturationBrightness": "Color saturation and brightness",
+    "hue": "Hue",
+    "alpha": "Alpha"
   },
   "contextMenu": {
     "Inputs": "Inputs",
