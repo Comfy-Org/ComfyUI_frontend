@@ -1258,5 +1258,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
+  },
+  {
+    id: 'LiteGraph.Group.SelectChildrenOnClick',
+    category: ['LiteGraph', 'Group', 'SelectChildrenOnClick'],
+    name: 'Select group children on click',
+    tooltip:
+      'When enabled, clicking a group selects all nodes and items inside it',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.42.0'
   }
 ]
