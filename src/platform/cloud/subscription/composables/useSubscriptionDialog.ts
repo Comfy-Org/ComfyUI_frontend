@@ -7,6 +7,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 const DIALOG_KEY = 'subscription-required'
 const FREE_TIER_DIALOG_KEY = 'free-tier-info'
+const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
 export type SubscriptionDialogReason =
   | 'subscription_required'
@@ -44,7 +45,8 @@ export const useSubscriptionDialog = () => {
       component,
       props: {
         onClose: hide,
-        reason: options?.reason
+        reason: options?.reason,
+        onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
       },
       dialogComponentProps: {
         style: 'width: min(1328px, 95vw); max-height: 958px;',
@@ -98,9 +100,47 @@ export const useSubscriptionDialog = () => {
     showPricingTable(options)
   }
 
+  /**
+   * Start the two-stage team workspace upgrade flow:
+   * 1. Close the current pricing dialog
+   * 2. Open the create workspace dialog
+   * 3. On successful creation, persist a resume intent so the team pricing
+   *    dialog reopens automatically after the page reload
+   */
+  function startTeamWorkspaceUpgradeFlow() {
+    hide()
+    dialogService.showCreateWorkspaceDialog(() => {
+      try {
+        sessionStorage.setItem(RESUME_PRICING_KEY, '1')
+      } catch {
+        // sessionStorage may be unavailable
+      }
+    })
+  }
+
+  /**
+   * Check for and consume a pending team pricing resume intent.
+   * Call once after workspace initialization on app boot.
+   */
+  function resumePendingPricingFlow() {
+    try {
+      const pending = sessionStorage.getItem(RESUME_PRICING_KEY)
+      if (!pending) return
+      sessionStorage.removeItem(RESUME_PRICING_KEY)
+
+      if (!workspaceStore.isInPersonalWorkspace) {
+        showPricingTable()
+      }
+    } catch {
+      // sessionStorage may be unavailable
+    }
+  }
+
   return {
     show,
     showPricingTable,
-    hide
+    hide,
+    startTeamWorkspaceUpgradeFlow,
+    resumePendingPricingFlow
   }
 }
