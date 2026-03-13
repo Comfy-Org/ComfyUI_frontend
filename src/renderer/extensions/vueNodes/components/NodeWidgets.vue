@@ -231,13 +231,15 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
 
-    // Build options from store state, with disabled override for
-    // slot-linked widgets or widgets with disabled state (e.g. display-only)
-    const storeOptions = widgetState?.options ?? {}
+    // PromotedWidgetView is not a BaseWidget and never registers in the
+    // widgetValueStore, so read options from the widget directly.
+    const baseOptions = isPromotedView
+      ? (widget.options ?? {})
+      : (widgetState?.options ?? {})
     const isDisabled = slotMetadata?.linked || widgetState?.disabled
     const widgetOptions = isDisabled
-      ? { ...storeOptions, disabled: true }
-      : storeOptions
+      ? { ...baseOptions, disabled: true }
+      : baseOptions
 
     const borderStyle =
       graphId &&
