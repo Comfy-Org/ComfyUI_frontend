@@ -93,6 +93,7 @@ const mockData = vi.hoisted(() => {
 vi.mock('@/renderer/core/layout/store/layoutStore', () => {
   const isDraggingVueNodes = ref(false)
   const isResizingVueNodes = ref(false)
+  const vueDragSnapGuides = ref([])
   const fakeNodeLayoutRef = ref(mockData.fakeNodeLayout)
   const getNodeLayoutRef = vi.fn(() => fakeNodeLayoutRef)
   const setSource = vi.fn()
@@ -100,6 +101,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => {
     layoutStore: {
       isDraggingVueNodes,
       isResizingVueNodes,
+      vueDragSnapGuides,
       getNodeLayoutRef,
       setSource
     }
@@ -136,6 +138,9 @@ describe('useNodePointerInteractions', () => {
     vi.resetAllMocks()
     selectedItemsState.items = []
     setActivePinia(createTestingPinia())
+    layoutStore.isDraggingVueNodes.value = false
+    layoutStore.isResizingVueNodes.value = false
+    layoutStore.vueDragSnapGuides.value = []
   })
 
   it('should only start drag on left-click', async () => {
