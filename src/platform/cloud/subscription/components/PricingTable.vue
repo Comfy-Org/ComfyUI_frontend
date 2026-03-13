@@ -95,6 +95,21 @@
             </div>
           </div>
 
+          <div
+            class="flex h-10 items-center rounded-lg bg-secondary-background px-3"
+          >
+            <span class="text-sm text-muted-foreground">
+              {{ t('subscription.soloUseOnly') }}
+              <span class="mx-1 text-muted-foreground">–</span>
+              <button
+                class="text-primary-foreground cursor-pointer border-none bg-transparent p-0 text-sm font-medium underline hover:text-base-foreground"
+                @click="emit('chooseTeamWorkspace')"
+              >
+                {{ t('subscription.needTeamWorkspace') }}
+              </button>
+            </span>
+          </div>
+
           <div class="flex flex-1 flex-col gap-4 pb-0">
             <div class="flex flex-row items-center justify-between">
               <span
@@ -302,6 +317,10 @@ interface PricingTierConfig {
   customLoRAs: boolean
   isPopular?: boolean
 }
+
+const emit = defineEmits<{
+  chooseTeamWorkspace: []
+}>()
 
 const { t, n } = useI18n()
 

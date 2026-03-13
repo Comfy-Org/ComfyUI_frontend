@@ -107,6 +107,8 @@ const i18n = createI18n({
         videoEstimateHelp: 'How is this calculated?',
         videoEstimateExplanation: 'Based on average usage.',
         videoEstimateTryTemplate: 'Try template',
+        soloUseOnly: 'Solo use only',
+        needTeamWorkspace: 'Need team workspace?',
         maxDuration: {
           standard: '30 min',
           creator: '30 min',

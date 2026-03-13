@@ -1,9 +1,5 @@
 <template>
   <div class="flex flex-col gap-8">
-    <h2 class="m-0 text-center text-xl text-muted-foreground lg:text-2xl">
-      {{ t('subscription.chooseBestPlanWorkspace') }}
-    </h2>
-
     <div class="flex justify-center">
       <SelectButton
         v-model="currentBillingCycle"
@@ -97,6 +93,20 @@
                 </span>
               </div>
             </div>
+          </div>
+
+          <div
+            class="flex h-10 items-center justify-between rounded-lg bg-emerald-950/40 px-3"
+          >
+            <div class="flex items-center gap-2">
+              <i class="pi pi-users text-xs text-emerald-400" />
+              <span class="text-sm text-emerald-400">
+                {{ t('subscription.inviteUpTo') }}
+              </span>
+            </div>
+            <span class="text-sm font-bold text-base-foreground">
+              {{ t('subscription.memberCount', getMaxMembers(tier)) }}
+            </span>
           </div>
 
           <div class="flex flex-1 flex-col gap-4 pb-0">

@@ -12,13 +12,20 @@
     >
       <i class="pi pi-times text-xl" />
     </Button>
-    <div class="text-center">
+    <div class="flex flex-col items-center gap-4">
+      <WorkspaceProfilePic
+        class="size-12 rounded-xl text-lg"
+        workspace-name="Personal"
+      />
       <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
-        {{ $t('subscription.description') }}
+        {{ $t('subscription.plansFor') }}
+        <span class="text-primary-foreground">
+          {{ $t('subscription.personalWorkspace') }}
+        </span>
       </h2>
     </div>
 
-    <PricingTable class="flex-1" />
+    <PricingTable class="flex-1" @choose-team-workspace="handleChooseTeam" />
 
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center gap-2">
@@ -143,10 +150,12 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 
-const { onClose, reason } = defineProps<{
+const { onClose, reason, onChooseTeam } = defineProps<{
   onClose: () => void
   reason?: SubscriptionDialogReason
+  onChooseTeam?: () => void
 }>()
 
 const emit = defineEmits<{
@@ -243,6 +252,11 @@ watch(
 
 const handleSubscribed = () => {
   emit('close', true)
+}
+
+const handleChooseTeam = () => {
+  stopPolling()
+  onChooseTeam?.()
 }
 
 const handleClose = () => {
