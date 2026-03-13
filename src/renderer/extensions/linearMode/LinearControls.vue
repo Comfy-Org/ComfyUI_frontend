@@ -96,7 +96,7 @@ defineExpose({ runButtonClick })
     >
       <section
         data-testid="linear-widgets"
-        class="grow overflow-y-auto contain-size"
+        class="grow scroll-shadows-comfy-menu-bg overflow-y-auto contain-size"
       >
         <AppModeWidgetList :mobile />
       </section>
