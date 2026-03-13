@@ -143,7 +143,6 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-
 interface ImagePreviewProps {
   /** Array of image URLs to display */
   readonly imageUrls: readonly string[]
@@ -154,7 +153,7 @@ interface ImagePreviewProps {
 const props = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
-const maskEditor = useMaskEditor()
+const { openMaskEditor, clearMask, isClearingMask } = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 
 const actionButtonClass =
@@ -167,7 +166,6 @@ const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
-const isClearingMask = ref(false)
 
 const imageWrapperEl = ref<HTMLDivElement>()
 
@@ -238,7 +236,7 @@ const handleEditMask = () => {
   if (!props.nodeId) return
   const node = app.rootGraph?.getNodeById(Number(props.nodeId))
   if (!node) return
-  maskEditor.openMaskEditor(node)
+  openMaskEditor(node)
 }
 
 const handleClearMask = async () => {
@@ -246,10 +244,8 @@ const handleClearMask = async () => {
   const node = app.rootGraph?.getNodeById(Number(props.nodeId))
   if (!node) return
 
-  isClearingMask.value = true
-
   try {
-    await maskEditor.clearMask(node)
+    await clearMask(node)
   } catch (error) {
     useToast().add({
       severity: 'error',
@@ -258,8 +254,6 @@ const handleClearMask = async () => {
       life: 3000,
       group: 'image-preview'
     })
-  } finally {
-    isClearingMask.value = false
   }
 }
 

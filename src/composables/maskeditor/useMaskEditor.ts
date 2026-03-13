@@ -8,8 +8,14 @@ import { useMaskEditorLoader } from '@/composables/maskeditor/useMaskEditorLoade
 import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
 import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
+import { ref } from 'vue'
+
+const isClearingMask = ref(false)
 
 export function useMaskEditor() {
+  const toast = useToast()
+  const { t } = useI18n()
   const openMaskEditor = (node: LGraphNode) => {
     if (!node) {
       console.error('[MaskEditor] No node provided')
@@ -53,19 +59,25 @@ export function useMaskEditor() {
       return
     }
 
+    if (isClearingMask.value) {
+      return
+    }
+
     const dialogStore = useDialogStore()
     if (dialogStore.isDialogOpen('global-mask-editor')) {
       console.warn(
         '[MaskEditor] Cannot clear mask while the mask editor is open'
       )
-      useToast().add({
+      toast.add({
         severity: 'warn',
-        summary: 'Warning',
-        detail: 'Please close the mask editor before clearing masks.',
+        summary: t('maskEditor.cannotClearWhenOpenSummary'),
+        detail: t('maskEditor.cannotClearWhenOpenDetail'),
         life: 3000
       })
       return
     }
+
+    isClearingMask.value = true
 
     const dataStore = useMaskEditorDataStore()
     const editorStore = useMaskEditorStore()
@@ -85,10 +97,12 @@ export function useMaskEditor() {
     } finally {
       dataStore.reset()
       editorStore.resetState()
+      isClearingMask.value = false
     }
   }
 
   return {
+    isClearingMask,
     openMaskEditor,
     clearMask
   }
