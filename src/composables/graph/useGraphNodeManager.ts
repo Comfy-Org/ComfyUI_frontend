@@ -378,7 +378,9 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
       },
       set(v) {
         reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
-      }
+      },
+      configurable: true,
+      enumerable: true
     })
   }
   const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
@@ -388,7 +390,20 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     },
     set(v) {
       reactiveInputs.splice(0, reactiveInputs.length, ...v)
-    }
+    },
+    configurable: true,
+    enumerable: true
+  })
+  const reactiveOutputs = shallowReactive<INodeOutputSlot[]>(node.outputs ?? [])
+  Object.defineProperty(node, 'outputs', {
+    get() {
+      return reactiveOutputs
+    },
+    set(v) {
+      reactiveOutputs.splice(0, reactiveOutputs.length, ...v)
+    },
+    configurable: true,
+    enumerable: true
   })
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
@@ -430,7 +445,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     hasErrors: !!node.has_errors,
     widgets: safeWidgets,
     inputs: reactiveInputs,
-    outputs: node.outputs ? [...node.outputs] : undefined,
+    outputs: reactiveOutputs,
     flags: node.flags ? { ...node.flags } : undefined,
     color: node.color || undefined,
     bgcolor: node.bgcolor || undefined,
@@ -721,6 +736,20 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
           refreshNodeSlots(String(slotLinksEvent.nodeId))
         }
+      },
+      'node:slot-label:changed': (slotLabelEvent) => {
+        const nodeId = String(slotLabelEvent.nodeId)
+        const nodeRef = nodeRefs.get(nodeId)
+        if (!nodeRef) return
+
+        // Force shallowReactive to detect the deep property change
+        // by re-assigning the affected array through the defineProperty setter.
+        if (slotLabelEvent.slotType !== NodeSlotType.OUTPUT && nodeRef.inputs) {
+          nodeRef.inputs = [...nodeRef.inputs]
+        }
+        if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
+          nodeRef.outputs = [...nodeRef.outputs]
+        }
       }
     }
 
@@ -734,6 +763,9 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
           break
         case 'node:slot-links:changed':
           triggerHandlers['node:slot-links:changed'](event)
+          break
+        case 'node:slot-label:changed':
+          triggerHandlers['node:slot-label:changed'](event)
           break
       }
 
