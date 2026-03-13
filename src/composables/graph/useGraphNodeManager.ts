@@ -242,16 +242,23 @@ function safeWidgetMapper(
       }
     }
 
-    const promotedInputName = node.inputs?.find((input) => {
+    const matchedInput = node.inputs?.find((input) => {
       if (input.name === widget.name) return true
       if (input._widget === widget) return true
       return false
-    })?.name
+    })
+    const promotedInputName = matchedInput?.name
     const displayName = promotedInputName ?? widget.name
-    const promotedSource = resolvePromotedSourceByInputName(displayName) ?? {
-      sourceNodeId: widget.sourceNodeId,
-      sourceWidgetName: widget.sourceWidgetName
-    }
+    const promotedSource =
+      matchedInput?._widget === widget
+        ? (resolvePromotedSourceByInputName(displayName) ?? {
+            sourceNodeId: widget.sourceNodeId,
+            sourceWidgetName: widget.sourceWidgetName
+          })
+        : {
+            sourceNodeId: widget.sourceNodeId,
+            sourceWidgetName: widget.sourceWidgetName
+          }
 
     return {
       displayName,

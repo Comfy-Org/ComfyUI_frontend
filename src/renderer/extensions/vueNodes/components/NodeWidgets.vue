@@ -21,10 +21,7 @@
     @pointermove="handleWidgetPointerEvent"
     @pointerup="handleWidgetPointerEvent"
   >
-    <template
-      v-for="(widget, index) in processedWidgets"
-      :key="`widget-${index}-${widget.name}`"
-    >
+    <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
@@ -214,6 +211,7 @@ interface ProcessedWidget {
   hidden: boolean
   id: string
   name: string
+  renderKey: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
   type: string
@@ -241,6 +239,26 @@ function hasWidgetError(
   )
 }
 
+function getWidgetIdentity(
+  widget: SafeWidgetData,
+  nodeId: string | number | undefined
+): {
+  bareWidgetId: string
+  storeWidgetName: string
+  widgetIdentity: string
+} {
+  const rawWidgetId = widget.storeNodeId ?? widget.nodeId ?? nodeId ?? ''
+  const bareWidgetId = String(stripGraphPrefix(rawWidgetId))
+  const storeWidgetName = widget.storeName ?? widget.name
+  const slotNameForIdentity = widget.slotName ?? widget.name
+
+  return {
+    bareWidgetId,
+    storeWidgetName,
+    widgetIdentity: `${String(bareWidgetId)}:${storeWidgetName}:${slotNameForIdentity}`
+  }
+}
+
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
 
@@ -256,10 +274,26 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const nodeId = nodeData.id
   const { widgets } = nodeData
   const result: ProcessedWidget[] = []
+  const uniqueWidgets: Array<{
+    widget: SafeWidgetData
+    identity: ReturnType<typeof getWidgetIdentity>
+  }> = []
+  const seenWidgetIdentities = new Set<string>()
 
   for (const widget of widgets) {
     if (!shouldRenderAsVue(widget)) continue
 
+    const identity = getWidgetIdentity(widget, nodeId)
+    if (seenWidgetIdentities.has(identity.widgetIdentity)) continue
+
+    seenWidgetIdentities.add(identity.widgetIdentity)
+    uniqueWidgets.push({ widget, identity })
+  }
+
+  for (const {
+    widget,
+    identity: { bareWidgetId, storeWidgetName, widgetIdentity }
+  } of uniqueWidgets) {
     const isPromotedView = !!widget.nodeId
 
     const vueComponent =
@@ -269,10 +303,6 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const { slotMetadata } = widget
 
     // Get metadata from store (registered during BaseWidget.setNodeId)
-    const bareWidgetId = stripGraphPrefix(
-      widget.storeNodeId ?? widget.nodeId ?? nodeId
-    )
-    const storeWidgetName = widget.storeName ?? widget.name
     const widgetState = graphId
       ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
       : undefined
@@ -337,8 +367,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError: hasWidgetError(widget, nodeExecId, nodeErrors),
       hidden: widget.options?.hidden ?? false,
-      id: String(bareWidgetId),
+      id: widgetIdentity,
       name: widget.name,
+      renderKey: widgetIdentity,
       type: widget.type,
       vueComponent,
       simplified,

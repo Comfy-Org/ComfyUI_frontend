@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -13,6 +13,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+import type { WidgetState } from '@/stores/widgetValueStore'
 import {
   resolveConcretePromotedWidget,
   resolvePromotedWidgetAtHost
@@ -37,6 +38,12 @@ type LegacyMouseWidget = IBaseWidget & {
 
 function hasLegacyMouse(widget: IBaseWidget): widget is LegacyMouseWidget {
   return 'mouse' in widget && typeof widget.mouse === 'function'
+}
+
+function hasWidgetNode(
+  widget: IBaseWidget
+): widget is IBaseWidget & { node: LGraphNode } {
+  return 'node' in widget && !!widget.node
 }
 
 const designTokenCache = new Map<string, string>()
@@ -125,12 +132,31 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get value(): IBaseWidget['value'] {
+    const linkedState = this.getLinkedInputWidgetStates()[0]
+    if (linkedState && isWidgetValue(linkedState.value))
+      return linkedState.value
+
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
     return this.resolveAtHost()?.widget.value
   }
 
   set value(value: IBaseWidget['value']) {
+    const linkedWidgets = this.getLinkedInputWidgets()
+    if (linkedWidgets.length > 0) {
+      const widgetStore = useWidgetValueStore()
+      for (const linkedWidget of linkedWidgets) {
+        const state = widgetStore.getWidget(
+          this.graphId,
+          linkedWidget.nodeId,
+          linkedWidget.widgetName
+        )
+        if (state) state.value = value
+        if (isWidgetValue(value)) linkedWidget.widget.value = value
+      }
+      return
+    }
+
     const state = this.getWidgetState()
     if (state) {
       state.value = value
@@ -278,6 +304,9 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private getWidgetState() {
+    const linkedState = this.getLinkedInputWidgetStates()[0]
+    if (linkedState) return linkedState
+
     const resolved = this.resolveDeepest()
     if (!resolved) return undefined
     return useWidgetValueStore().getWidget(
@@ -285,6 +314,37 @@ class PromotedWidgetView implements IPromotedWidgetView {
       stripGraphPrefix(String(resolved.node.id)),
       resolved.widget.name
     )
+  }
+
+  private getLinkedInputWidgets(): Array<{
+    nodeId: NodeId
+    widgetName: string
+    widget: IBaseWidget
+  }> {
+    const linkedInputSlot = this.subgraphNode.inputs.find(
+      (input) => input._widget === this && input._subgraphSlot
+    )
+    const linkedInput = linkedInputSlot?._subgraphSlot
+    if (!linkedInput) return []
+
+    return linkedInput
+      .getConnectedWidgets()
+      .filter(hasWidgetNode)
+      .map((widget) => ({
+        nodeId: stripGraphPrefix(String(widget.node.id)),
+        widgetName: widget.name,
+        widget
+      }))
+  }
+
+  private getLinkedInputWidgetStates(): WidgetState[] {
+    const widgetStore = useWidgetValueStore()
+
+    return this.getLinkedInputWidgets()
+      .map(({ nodeId, widgetName }) =>
+        widgetStore.getWidget(this.graphId, nodeId, widgetName)
+      )
+      .filter((state): state is WidgetState => state !== undefined)
   }
 
   private getProjectedWidget(resolved: {

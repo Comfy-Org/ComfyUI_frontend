@@ -93,6 +93,17 @@ function isWidgetShownOnParents(
   })
 }
 
+function getWidgetRenderKey(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget
+): string {
+  if (isPromotedWidgetView(widget)) {
+    return `${String(widgetNode.id)}:${widget.sourceNodeId}:${widget.sourceWidgetName}:${widget.name}:${widget.type}`
+  }
+
+  return `${String(widgetNode.id)}:${widget.name}:${widget.type}`
+}
+
 const isEmpty = computed(() => widgets.value.length === 0)
 
 const displayLabel = computed(
@@ -272,7 +283,7 @@ defineExpose({
         <TransitionGroup name="list-scale">
           <WidgetItem
             v-for="{ widget, node } in widgets"
-            :key="`${node.id}-${widget.name}-${widget.type}`"
+            :key="getWidgetRenderKey(node, widget)"
             :widget="widget"
             :node="node"
             :is-draggable="isDraggable"

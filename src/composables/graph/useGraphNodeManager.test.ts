@@ -390,6 +390,56 @@ describe('Nested promoted widget mapping', () => {
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
     )
   })
+
+  it('keeps linked and independent same-name promotions as distinct sources', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'string_a', type: '*' }]
+    })
+
+    const linkedNode = new LGraphNode('LinkedNode')
+    const linkedInput = linkedNode.addInput('string_a', '*')
+    linkedNode.addWidget('text', 'string_a', 'linked', () => undefined, {})
+    linkedInput.widget = { name: 'string_a' }
+    subgraph.add(linkedNode)
+    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+
+    const independentNode = new LGraphNode('IndependentNode')
+    independentNode.addWidget(
+      'text',
+      'string_a',
+      'independent',
+      () => undefined,
+      {}
+    )
+    subgraph.add(independentNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 109 })
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+
+    usePromotionStore().promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      String(independentNode.id),
+      'string_a'
+    )
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const promotedWidgets = nodeData?.widgets?.filter(
+      (widget) => widget.name === 'string_a'
+    )
+
+    expect(promotedWidgets).toHaveLength(2)
+    expect(
+      new Set(promotedWidgets?.map((widget) => widget.storeNodeId))
+    ).toEqual(
+      new Set([
+        `${subgraph.id}:${linkedNode.id}`,
+        `${subgraph.id}:${independentNode.id}`
+      ])
+    )
+  })
 })
 
 describe('Promoted widget sourceExecutionId', () => {

@@ -117,4 +117,40 @@ describe('NodeWidgets', () => {
       }
     )
   })
+
+  it('deduplicates widgets with identical render identity while keeping distinct promoted sources', () => {
+    const duplicateA = createMockWidget({
+      name: 'string_a',
+      type: 'text',
+      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeName: 'string_a',
+      slotName: 'string_a'
+    })
+    const duplicateB = createMockWidget({
+      name: 'string_a',
+      type: 'text',
+      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeName: 'string_a',
+      slotName: 'string_a'
+    })
+    const distinct = createMockWidget({
+      name: 'string_a',
+      type: 'text',
+      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20',
+      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20',
+      storeName: 'string_a',
+      slotName: 'string_a'
+    })
+    const nodeData = createMockNodeData('SubgraphNode', [
+      duplicateA,
+      duplicateB,
+      distinct
+    ])
+
+    const wrapper = mountComponent(nodeData)
+
+    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+  })
 })
