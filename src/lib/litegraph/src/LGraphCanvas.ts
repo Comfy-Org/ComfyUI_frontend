@@ -12,6 +12,7 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
+import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
 import type { LGraph } from './LGraph'
@@ -364,6 +365,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.canvas.dispatchEvent(new CustomEvent(type, { detail }))
   }
 
+  private _setCursor!: ReturnType<typeof createCursorCache>
+
   private _updateCursorStyle() {
     if (!this.state.shouldSetCursor) return
 
@@ -386,7 +389,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       cursor = 'grab'
     }
 
-    this.canvas.style.cursor = cursor
+    this._setCursor(cursor)
   }
 
   // Whether the canvas was previously being dragged prior to pressing space key.
@@ -556,6 +559,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   clear_background_color: string
   render_only_selected: boolean
   show_info: boolean
+  /** Additional text appended to the canvas info overlay (rendered by {@link renderInfo}). */
+  info_text: string | undefined
   allow_dragcanvas: boolean
   allow_dragnodes: boolean
   allow_interaction: boolean
@@ -1911,6 +1916,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.pointer.element = element
 
     if (!element) return
+    this._setCursor = createCursorCache(element)
 
     // TODO: classList.add
     element.className += ' lgraphcanvas'
@@ -1943,6 +1949,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // console.log("pointerevents: _doNothing "+e.type);
     e.preventDefault()
     return false
+  }
+
+  /** Prevents default for middle-click auxclick only. */
+  _preventMiddleAuxClick(e: MouseEvent): void {
+    if (e.button === 1) e.preventDefault()
   }
 
   /** Captures an event and prevents default - returns true. */
@@ -1980,6 +1991,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas.addEventListener('pointercancel', this._mousecancel_callback, true)
 
     canvas.addEventListener('contextmenu', this._doNothing)
+    // Prevent middle-click paste (PRIMARY clipboard on Linux) - fixes #4464
+    canvas.addEventListener('auxclick', this._preventMiddleAuxClick)
 
     // Keyboard
     this._key_callback = this.processKey.bind(this)
@@ -2018,6 +2031,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas.removeEventListener('keydown', this._key_callback!)
     document.removeEventListener('keyup', this._key_callback!)
     canvas.removeEventListener('contextmenu', this._doNothing)
+    canvas.removeEventListener('auxclick', this._preventMiddleAuxClick)
     canvas.removeEventListener('dragenter', this._doReturnTrue)
 
     this._mousedown_callback = undefined
@@ -2970,7 +2984,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
 
           // Set appropriate cursor for resize direction
-          this.canvas.style.cursor = cursors[resizeDirection]
+          this._setCursor(cursors[resizeDirection])
           return
         }
       }
@@ -3787,13 +3801,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return
   }
 
-  private _noItemsSelected(): void {
-    const event = new CustomEvent('litegraph:no-items-selected', {
-      bubbles: true
-    })
-    this.canvas.dispatchEvent(event)
-  }
-
   /**
    * process a key event
    */
@@ -3838,31 +3845,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.node_panel?.close()
         this.options_panel?.close()
         if (this.node_panel || this.options_panel) block_default = true
-      } else if (e.keyCode === 65 && e.ctrlKey) {
-        // select all Control A
-        this.selectItems()
-        block_default = true
-      } else if (e.keyCode === 67 && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
-        // copy
-        if (this.selected_nodes) {
-          this.copyToClipboard()
-          block_default = true
-        }
-      } else if (e.keyCode === 86 && (e.metaKey || e.ctrlKey)) {
-        // paste
-        this.pasteFromClipboard({ connectInputs: e.shiftKey })
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        // delete or backspace
-        // @ts-expect-error EventTarget.localName is not in standard types
-        if (e.target.localName != 'input' && e.target.localName != 'textarea') {
-          if (this.selectedItems.size === 0) {
-            this._noItemsSelected()
-            return
-          }
-
-          this.deleteSelected()
-          block_default = true
-        }
       }
 
       // TODO
@@ -5208,8 +5190,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * draws some useful stats in the corner of the canvas
    */
   renderInfo(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+    const lineHeight = 13
+    const lineCount = (this.graph ? 5 : 1) + (this.info_text ? 1 : 0)
     x = x || 10
-    y = y || this.canvas.offsetHeight - 80
+    y = y || this.canvas.offsetHeight - (lineCount + 1) * lineHeight
 
     ctx.save()
     ctx.translate(x, y)
@@ -5217,18 +5201,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.font = `10px ${LiteGraph.DEFAULT_FONT}`
     ctx.fillStyle = '#888'
     ctx.textAlign = 'left'
+    let line = 1
     if (this.graph) {
-      ctx.fillText(`T: ${this.graph.globaltime.toFixed(2)}s`, 5, 13 * 1)
-      ctx.fillText(`I: ${this.graph.iteration}`, 5, 13 * 2)
+      ctx.fillText(
+        `T: ${this.graph.globaltime.toFixed(2)}s`,
+        5,
+        lineHeight * line++
+      )
+      ctx.fillText(`I: ${this.graph.iteration}`, 5, lineHeight * line++)
       ctx.fillText(
         `N: ${this.graph._nodes.length} [${this.visible_nodes.length}]`,
         5,
-        13 * 3
+        lineHeight * line++
       )
-      ctx.fillText(`V: ${this.graph._version}`, 5, 13 * 4)
-      ctx.fillText(`FPS:${this.fps.toFixed(2)}`, 5, 13 * 5)
+      ctx.fillText(`V: ${this.graph._version}`, 5, lineHeight * line++)
+      ctx.fillText(`FPS:${this.fps.toFixed(2)}`, 5, lineHeight * line++)
     } else {
-      ctx.fillText('No graph selected', 5, 13 * 1)
+      ctx.fillText('No graph selected', 5, lineHeight * line++)
+    }
+    if (this.info_text) {
+      ctx.fillText(this.info_text, 5, lineHeight * line++)
     }
     ctx.restore()
   }
@@ -6573,7 +6565,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const ySizeFix = opts.posSizeFix[1] * LiteGraph.NODE_SLOT_HEIGHT
         const nodeX = opts.position[0] + opts.posAdd[0] + xSizeFix
         const nodeY = opts.position[1] + opts.posAdd[1] + ySizeFix
-        const pos = [nodeX, nodeY]
+        const pos: [number, number] = [nodeX, nodeY]
         const newNode = LiteGraph.createNode(nodeTypeStr, nodeNewOpts?.title, {
           pos
         })

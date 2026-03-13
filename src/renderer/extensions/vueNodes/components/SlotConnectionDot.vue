@@ -46,13 +46,13 @@ const isListShape = computed(() => props.slotData?.shape === RenderShape.GRID)
 
 const slotClass = computed(() =>
   cn(
-    'bg-slate-300 slot-dot',
+    'slot-dot bg-slate-300',
     isListShape.value ? 'rounded-[1px]' : 'rounded-full',
     'transition-all duration-150',
     'border border-solid border-node-component-slot-dot-outline',
     props.multi
-      ? 'w-3 h-6'
-      : 'size-3 cursor-crosshair group-hover/slot:[--node-component-slot-dot-outline-opacity-mult:5] group-hover/slot:scale-125'
+      ? 'h-6 w-3'
+      : 'size-3 cursor-crosshair group-hover/slot:scale-125 group-hover/slot:[--node-component-slot-dot-outline-opacity-mult:5]'
   )
 )
 </script>
@@ -61,7 +61,7 @@ const slotClass = computed(() =>
   <div
     :class="
       cn(
-        'after:absolute after:inset-y-0 after:w-5/2 relative size-6 flex items-center justify-center group/slot',
+        'group/slot relative flex size-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
         props.class
       )
     "

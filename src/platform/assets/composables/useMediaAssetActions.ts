@@ -14,6 +14,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -68,7 +69,7 @@ export function useMediaAssetActions() {
     if (!targetAsset) return
 
     try {
-      const filename = targetAsset.name
+      const filename = getAssetDisplayName(targetAsset)
       // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
       const downloadUrl = targetAsset.preview_url || getAssetUrl(targetAsset)
 
@@ -84,8 +85,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('g.failedToDownloadImage'),
-        life: 3000
+        detail: t('g.failedToDownloadImage')
       })
     }
   }
@@ -110,7 +110,7 @@ export function useMediaAssetActions() {
 
     try {
       assets.forEach((asset) => {
-        const filename = asset.name
+        const filename = getAssetDisplayName(asset)
         const downloadUrl = asset.preview_url || getAssetUrl(asset)
         downloadFile(downloadUrl, filename)
       })
@@ -126,8 +126,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('g.failedToDownloadImage'),
-        life: 3000
+        detail: t('g.failedToDownloadImage')
       })
     }
   }
@@ -147,7 +146,10 @@ export function useMediaAssetActions() {
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
           }
-          if (metadata?.jobId && asset.name) {
+          // Only add name filters when outputCount is unknown.
+          // When outputCount is set, the asset is a job-level selection
+          // from the gallery and the user wants all outputs for that job.
+          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
             if (!jobAssetNameFilters[metadata.jobId]) {
               jobAssetNameFilters[metadata.jobId] = []
             }
@@ -182,8 +184,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('exportToast.exportFailedSingle'),
-        life: 3000
+        detail: t('exportToast.exportFailedSingle')
       })
     }
   }
@@ -238,8 +239,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('mediaAsset.nodeTypeNotFound', { nodeType }),
-        life: 3000
+        detail: t('mediaAsset.nodeTypeNotFound', { nodeType })
       })
       return
     }
@@ -252,8 +252,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('mediaAsset.failedToCreateNode'),
-        life: 3000
+        detail: t('mediaAsset.failedToCreateNode')
       })
       return
     }
@@ -443,8 +442,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('mediaAsset.selection.failedToAddNodes'),
-        life: 3000
+        detail: t('mediaAsset.selection.failedToAddNodes')
       })
     } else {
       toast.add({
@@ -676,8 +674,7 @@ export function useMediaAssetActions() {
                   summary: t('g.error'),
                   detail: isSingle
                     ? t('mediaAsset.failedToDeleteAsset')
-                    : t('mediaAsset.selection.failedToDeleteAssets'),
-                  life: 3000
+                    : t('mediaAsset.selection.failedToDeleteAssets')
                 })
               } else {
                 // Partial success (only possible with multiple assets)
@@ -698,8 +695,7 @@ export function useMediaAssetActions() {
                 summary: t('g.error'),
                 detail: isSingle
                   ? t('mediaAsset.failedToDeleteAsset')
-                  : t('mediaAsset.selection.failedToDeleteAssets'),
-                life: 3000
+                  : t('mediaAsset.selection.failedToDeleteAssets')
               })
             } finally {
               // Hide loading overlay for all assets

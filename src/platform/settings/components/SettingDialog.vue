@@ -7,7 +7,7 @@
 
     <template #leftPanel>
       <div class="px-3">
-        <SearchBox
+        <SearchInput
           v-model:model-value="searchQuery"
           size="md"
           :placeholder="$t('g.searchSettings') + '...'"
@@ -18,7 +18,7 @@
 
       <nav
         ref="navRef"
-        class="scrollbar-hide flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
+        class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
       >
         <div
           v-for="(group, index) in navGroups"
@@ -71,7 +71,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'

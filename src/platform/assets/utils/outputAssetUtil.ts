@@ -69,9 +69,11 @@ function mapOutputsToAssetItems({
     items.push({
       id: `${jobId}-${outputKey}`,
       name: output.filename,
+      display_name: output.display_name,
       size: 0,
       created_at: createdAtValue,
       tags: ['output'],
+      thumbnail_url: output.previewUrl,
       preview_url: output.url,
       user_metadata: {
         jobId,

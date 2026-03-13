@@ -272,3 +272,47 @@ describe('Subgraph Promoted Pseudo Widgets', () => {
     expect(promotedWidget?.options?.canvasOnly).toBe(true)
   })
 })
+
+describe('Nested promoted widget mapping', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('maps store identity to deepest concrete widget for two-layer promotions', () => {
+    const subgraphA = createTestSubgraph({
+      inputs: [{ name: 'a_input', type: '*' }]
+    })
+    const innerNode = new LGraphNode('InnerComboNode')
+    const innerInput = innerNode.addInput('picker_input', '*')
+    innerNode.addWidget('combo', 'picker', 'a', () => undefined, {
+      values: ['a', 'b']
+    })
+    innerInput.widget = { name: 'picker' }
+    subgraphA.add(innerNode)
+    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
+
+    const subgraphB = createTestSubgraph({
+      inputs: [{ name: 'b_input', type: '*' }]
+    })
+    subgraphB.add(subgraphNodeA)
+    subgraphNodeA._internalConfigureAfterSlots()
+    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
+    const graph = subgraphNodeB.graph as LGraph
+    graph.add(subgraphNodeB)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(subgraphNodeB.id))
+    const mappedWidget = nodeData?.widgets?.[0]
+
+    expect(mappedWidget).toBeDefined()
+    expect(mappedWidget?.type).toBe('combo')
+    expect(mappedWidget?.storeName).toBe('picker')
+    expect(mappedWidget?.storeNodeId).toBe(
+      `${subgraphNodeB.subgraph.id}:${innerNode.id}`
+    )
+  })
+})

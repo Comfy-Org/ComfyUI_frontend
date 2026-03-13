@@ -1,8 +1,9 @@
-import { computed, reactive, ref, watch } from 'vue'
-import type { Ref } from 'vue'
+import { computed, reactive, ref, toValue, watch } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -23,7 +24,15 @@ import { st } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { isNodeExecutionId } from '@/types/nodeIdentification'
+import type {
+  MissingModelCandidate,
+  MissingModelGroup
+} from '@/platform/missingModel/types'
+import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
+import {
+  isNodeExecutionId,
+  compareExecutionId
+} from '@/types/nodeIdentification'
 
 const PROMPT_CARD_ID = '__prompt__'
 const SINGLE_GROUP_KEY = '__single__'
@@ -35,6 +44,9 @@ const KNOWN_PROMPT_ERROR_TYPES = new Set([
 
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */
 const RESOLVING = '__RESOLVING__'
+
+/** Sentinel key for grouping non-asset-supported missing models. */
+const UNSUPPORTED = Symbol('unsupported')
 
 export interface MissingPackGroup {
   packId: string | null
@@ -151,12 +163,16 @@ function addCardErrorToGroup(
   group.get(card.id)?.errors.push(error)
 }
 
+function compareNodeId(a: ErrorCardData, b: ErrorCardData): number {
+  return compareExecutionId(a.nodeId, b.nodeId)
+}
+
 function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
   return Array.from(groupsMap.entries())
     .map(([title, groupData]) => ({
       type: 'execution' as const,
       title,
-      cards: Array.from(groupData.cards.values()),
+      cards: Array.from(groupData.cards.values()).sort(compareNodeId),
       priority: groupData.priority
     }))
     .sort((a, b) => {
@@ -220,10 +236,11 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
 }
 
 export function useErrorGroups(
-  searchQuery: Ref<string>,
+  searchQuery: MaybeRefOrGetter<string>,
   t: (key: string) => string
 ) {
   const executionErrorStore = useExecutionErrorStore()
+  const missingModelStore = useMissingModelStore()
   const canvasStore = useCanvasStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
   const collapseState = reactive<Record<string, boolean>>({})
@@ -552,6 +569,60 @@ export function useErrorGroups(
     return groups.sort((a, b) => a.priority - b.priority)
   }
 
+  /** Groups missing models. Asset-supported models group by directory; others go into a separate group.
+   *  Within each group, candidates with the same model name are merged into a single view model. */
+  const missingModelGroups = computed<MissingModelGroup[]>(() => {
+    const candidates = missingModelStore.missingModelCandidates
+    if (!candidates?.length) return []
+
+    type GroupKey = string | null | typeof UNSUPPORTED
+    const map = new Map<
+      GroupKey,
+      { candidates: MissingModelCandidate[]; isAssetSupported: boolean }
+    >()
+
+    for (const c of candidates) {
+      const groupKey: GroupKey = c.isAssetSupported
+        ? c.directory || null
+        : UNSUPPORTED
+
+      const existing = map.get(groupKey)
+      if (existing) {
+        existing.candidates.push(c)
+      } else {
+        map.set(groupKey, {
+          candidates: [c],
+          isAssetSupported: c.isAssetSupported
+        })
+      }
+    }
+
+    return Array.from(map.entries())
+      .sort(([dirA], [dirB]) => {
+        if (dirA === UNSUPPORTED) return 1
+        if (dirB === UNSUPPORTED) return -1
+        if (dirA === null) return 1
+        if (dirB === null) return -1
+        return dirA.localeCompare(dirB)
+      })
+      .map(([key, { candidates: groupCandidates, isAssetSupported }]) => ({
+        directory: typeof key === 'string' ? key : null,
+        models: groupCandidatesByName(groupCandidates),
+        isAssetSupported
+      }))
+  })
+
+  function buildMissingModelGroups(): ErrorGroup[] {
+    if (!missingModelGroups.value.length) return []
+    return [
+      {
+        type: 'missing_model' as const,
+        title: `${t('rightSidePanel.missingModels.missingModelsTitle')} (${missingModelGroups.value.reduce((count, group) => count + group.models.length, 0)})`,
+        priority: 2
+      }
+    ]
+  }
+
   const allErrorGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
@@ -559,7 +630,11 @@ export function useErrorGroups(
     processNodeErrors(groupsMap)
     processExecutionError(groupsMap)
 
-    return [...buildMissingNodeGroups(), ...toSortedGroups(groupsMap)]
+    return [
+      ...buildMissingNodeGroups(),
+      ...buildMissingModelGroups(),
+      ...toSortedGroups(groupsMap)
+    ]
   })
 
   const tabErrorGroups = computed<ErrorGroup[]>(() => {
@@ -573,11 +648,15 @@ export function useErrorGroups(
       ? toSortedGroups(regroupByErrorMessage(groupsMap))
       : toSortedGroups(groupsMap)
 
-    return [...buildMissingNodeGroups(), ...executionGroups]
+    return [
+      ...buildMissingNodeGroups(),
+      ...buildMissingModelGroups(),
+      ...executionGroups
+    ]
   })
 
   const filteredGroups = computed<ErrorGroup[]>(() => {
-    const query = searchQuery.value.trim()
+    const query = toValue(searchQuery).trim()
     return searchErrorGroups(tabErrorGroups.value, query)
   })
 
@@ -608,6 +687,7 @@ export function useErrorGroups(
     missingNodeCache,
     groupedErrorMessages,
     missingPackGroups,
+    missingModelGroups,
     swapNodeGroups
   }
 }

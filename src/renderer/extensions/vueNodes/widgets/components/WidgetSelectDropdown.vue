@@ -4,8 +4,10 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
+import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -16,6 +18,7 @@ import {
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import type {
   FilterOption,
@@ -31,9 +34,9 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useQueueStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
@@ -66,7 +69,8 @@ const modelValue = defineModel<string | undefined>({
 
 const { t } = useI18n()
 const toastStore = useToastStore()
-const queueStore = useQueueStore()
+
+const outputMediaAssets = useMediaAssets('output')
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -145,36 +149,28 @@ const inputItems = computed<FormDropdownItem[]>(() => {
     label: getDisplayLabel(String(value))
   }))
 })
+function assetKindToMediaType(kind: AssetKind): string {
+  return kind === 'mesh' ? '3D' : kind
+}
+
 const outputItems = computed<FormDropdownItem[]>(() => {
-  if (!['image', 'video', 'mesh'].includes(props.assetKind ?? '')) return []
+  if (!['image', 'video', 'audio', 'mesh'].includes(props.assetKind ?? ''))
+    return []
 
-  const outputs = new Set<string>()
+  const targetMediaType = assetKindToMediaType(props.assetKind!)
+  const outputFiles = outputMediaAssets.media.value.filter(
+    (asset) => getMediaTypeFromFilename(asset.name) === targetMediaType
+  )
 
-  // Extract output images/videos from queue history
-  queueStore.historyTasks.forEach((task) => {
-    task.flatOutputs.forEach((output) => {
-      const isTargetType =
-        (props.assetKind === 'image' && output.mediaType === 'images') ||
-        (props.assetKind === 'video' && output.mediaType === 'video') ||
-        (props.assetKind === 'mesh' && output.is3D)
-
-      if (output.type === 'output' && isTargetType) {
-        const path = output.subfolder
-          ? `${output.subfolder}/${output.filename}`
-          : output.filename
-        // Add [output] annotation so the preview component knows the type
-        const annotatedPath = `${path} [output]`
-        outputs.add(annotatedPath)
-      }
-    })
+  return outputFiles.map((asset) => {
+    const annotatedPath = `${asset.name} [output]`
+    return {
+      id: `output-${annotatedPath}`,
+      preview_url: asset.preview_url || getMediaUrl(asset.name, 'output'),
+      name: annotatedPath,
+      label: getDisplayLabel(annotatedPath)
+    }
   })
-
-  return Array.from(outputs).map((output) => ({
-    id: `output-${output}`,
-    preview_url: getMediaUrl(output.replace(' [output]', ''), 'output'),
-    name: output,
-    label: getDisplayLabel(output)
-  }))
 })
 
 /**
@@ -375,6 +371,7 @@ function updateSelectedItems(selectedItems: Set<string>) {
     return
   }
   modelValue.value = name
+  useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
 }
 
 const uploadFile = async (
@@ -449,6 +446,9 @@ async function handleFilesUpdate(files: File[]) {
     if (props.widget.callback) {
       props.widget.callback(uploadedPaths[0])
     }
+
+    // 5. Snapshot undo state so the image change gets its own undo entry
+    useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
   } catch (error) {
     console.error('Upload error:', error)
     toastStore.addAlert(`Upload failed: ${error}`)
@@ -459,8 +459,17 @@ function getMediaUrl(
   filename: string,
   type: 'input' | 'output' = 'input'
 ): string {
-  if (!['image', 'video'].includes(props.assetKind ?? '')) return ''
-  return `/api/view?filename=${encodeURIComponent(filename)}&type=${type}`
+  if (!['image', 'video', 'audio', 'mesh'].includes(props.assetKind ?? ''))
+    return ''
+  const params = new URLSearchParams({ filename, type })
+  appendCloudResParam(params, filename)
+  return `/api/view?${params}`
+}
+
+function handleIsOpenUpdate(isOpen: boolean) {
+  if (isOpen && !outputMediaAssets.loading.value) {
+    void outputMediaAssets.refresh()
+  }
 }
 </script>
 
@@ -487,6 +496,7 @@ function getMediaUrl(
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="handleFilesUpdate"
+      @update:is-open="handleIsOpenUpdate"
     />
   </WidgetLayoutField>
 </template>

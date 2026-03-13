@@ -34,26 +34,18 @@
             </Button>
           </div>
 
-          <div
-            ref="actionbarContainerRef"
-            :class="
-              cn(
-                'actionbar-container relative pointer-events-auto flex gap-2 h-12 items-center rounded-lg border bg-comfy-menu-bg px-2 shadow-interface',
-                hasAnyError
-                  ? 'border-destructive-background-hover'
-                  : 'border-interface-stroke'
-              )
-            "
-          >
+          <div ref="actionbarContainerRef" :class="actionbarContainerClass">
             <ActionBarButtons />
             <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
             <div
               ref="legacyCommandsContainerRef"
               class="[&:not(:has(*>*:not(:empty)))]:hidden"
             ></div>
+
             <ComfyActionbar
               :top-menu-container="actionbarContainerRef"
               :queue-overlay-expanded="isQueueOverlayExpanded"
+              :has-any-error="hasAnyError"
               @update:progress-target="updateProgressTarget"
             />
             <CurrentUserButton
@@ -61,6 +53,19 @@
               class="shrink-0"
             />
             <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+            <Button
+              v-if="isCloud && flags.workflowSharingEnabled"
+              v-tooltip.bottom="shareTooltipConfig"
+              variant="secondary"
+              :aria-label="t('actionbar.shareTooltip')"
+              @click="() => openShareDialog().catch(toastErrorHandler)"
+              @pointerenter="prefetchShareDialog"
+            >
+              <i class="icon-[comfy--send] size-4" />
+              <span class="not-md:hidden">
+                {{ t('actionbar.share') }}
+              </span>
+            </Button>
             <Button
               v-if="!isRightSidePanelOpen"
               v-tooltip.bottom="rightSidePanelTooltipConfig"
@@ -88,7 +93,7 @@
         :to="inlineProgressSummaryTarget"
       >
         <div
-          class="pointer-events-none absolute left-0 right-0 top-full mt-1 flex justify-end pr-1"
+          class="pointer-events-none absolute inset-x-0 top-full mt-1 flex justify-end pr-1"
         >
           <QueueInlineProgressSummary
             :hidden="shouldHideInlineProgressSummary"
@@ -109,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage } from '@vueuse/core'
+import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -125,15 +130,22 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  openShareDialog,
+  prefetchShareDialog
+} from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -143,10 +155,12 @@ const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
+const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const executionErrorStore = useExecutionErrorStore()
+const actionBarButtonStore = useActionBarButtonStore()
 const queueUIStore = useQueueUIStore()
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
@@ -161,17 +175,56 @@ const isActionbarEnabled = computed(
 const isActionbarFloating = computed(
   () => isActionbarEnabled.value && !isActionbarDocked.value
 )
+/**
+ * Whether the actionbar container has any visible docked buttons
+ * (excluding ComfyActionbar, which uses position:fixed when floating
+ * and does not contribute to the container's visual layout).
+ */
+const hasDockedButtons = computed(() => {
+  if (actionBarButtonStore.buttons.length > 0) return true
+  if (hasLegacyContent.value) return true
+  if (isLoggedIn.value && !isIntegratedTabBar.value) return true
+  if (isDesktop && !isIntegratedTabBar.value) return true
+  if (isCloud && flags.workflowSharingEnabled) return true
+  if (!isRightSidePanelOpen.value) return true
+  return false
+})
+const isActionbarContainerEmpty = computed(
+  () => isActionbarFloating.value && !hasDockedButtons.value
+)
+const actionbarContainerClass = computed(() => {
+  const base =
+    'actionbar-container pointer-events-auto relative flex h-12 items-center gap-2 rounded-lg border bg-comfy-menu-bg shadow-interface'
+
+  if (isActionbarContainerEmpty.value) {
+    return cn(
+      base,
+      '-ml-2 w-0 min-w-0 border-transparent shadow-none',
+      'has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto',
+      'has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
+    )
+  }
+
+  const borderClass =
+    !isActionbarFloating.value && hasAnyError.value
+      ? 'border-destructive-background-hover'
+      : 'border-interface-stroke'
+
+  return cn(base, 'px-2', borderClass)
+})
 const isIntegratedTabBar = computed(
-  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
+  () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
-const isQueuePanelV2Enabled = computed(() =>
-  settingStore.get('Comfy.Queue.QPOV2')
-)
+const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
+  useQueueFeatureFlags()
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
 )
 const shouldShowInlineProgressSummary = computed(
-  () => isQueuePanelV2Enabled.value && isActionbarEnabled.value
+  () =>
+    isQueuePanelV2Enabled.value &&
+    isActionbarEnabled.value &&
+    isRunProgressBarEnabled.value
 )
 const shouldShowQueueNotificationBanners = computed(
   () => isActionbarEnabled.value
@@ -192,6 +245,9 @@ const shouldHideInlineProgressSummary = computed(
 const customNodesManagerTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.manageExtensions'))
 )
+const shareTooltipConfig = computed(() =>
+  buildTooltipConfig(t('actionbar.shareTooltip'))
+)
 
 const shouldShowRedDot = computed((): boolean => {
   return shouldShowConflictRedDot.value
@@ -207,6 +263,25 @@ const rightSidePanelTooltipConfig = computed(() =>
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
+const hasLegacyContent = ref(false)
+
+function checkLegacyContent() {
+  const el = legacyCommandsContainerRef.value
+  if (!el) {
+    hasLegacyContent.value = false
+    return
+  }
+  // Mirror the CSS: [&:not(:has(*>*:not(:empty)))]:hidden
+  hasLegacyContent.value =
+    el.querySelector(':scope > * > *:not(:empty)') !== null
+}
+
+useMutationObserver(legacyCommandsContainerRef, checkLegacyContent, {
+  childList: true,
+  subtree: true,
+  characterData: true
+})
+
 onMounted(() => {
   if (legacyCommandsContainerRef.value) {
     app.menu.element.style.width = 'fit-content'

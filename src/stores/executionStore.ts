@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { isCloud } from '@/platform/distribution/types'
@@ -27,7 +27,7 @@ import type {
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
@@ -65,7 +65,31 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   const jobIdToWorkflowId = ref<Map<string, string>>(new Map())
 
+  /**
+   * Map of job ID to workflow file path in the current session.
+   * Only populated for jobs that are queued in this browser tab.
+   */
+  const jobIdToSessionWorkflowPath = shallowRef<Map<string, string>>(new Map())
+
   const initializingJobIds = ref<Set<string>>(new Set())
+
+  /**
+   * Cache for executionIdToNodeLocatorId lookups.
+   * Avoids redundant graph traversals during a single execution run.
+   * Cleared at execution start and end to ensure fresh graph state.
+   */
+  const executionIdToLocatorCache = new Map<string, NodeLocatorId | undefined>()
+
+  function cachedExecutionIdToLocator(
+    executionId: string
+  ): NodeLocatorId | undefined {
+    if (executionIdToLocatorCache.has(executionId)) {
+      return executionIdToLocatorCache.get(executionId)
+    }
+    const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+    executionIdToLocatorCache.set(executionId, locatorId)
+    return locatorId
+  }
 
   const mergeExecutionProgressStates = (
     currentState: NodeProgressState | undefined,
@@ -106,7 +130,7 @@ export const useExecutionStore = defineStore('execution', () => {
       const parts = String(state.display_node_id).split(':')
       for (let i = 0; i < parts.length; i++) {
         const executionId = parts.slice(0, i + 1).join(':')
-        const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+        const locatorId = cachedExecutionIdToLocator(executionId)
         if (!locatorId) continue
 
         result[locatorId] = mergeExecutionProgressStates(
@@ -214,10 +238,18 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
+    executionIdToLocatorCache.clear()
     executionErrorStore.clearAllErrors()
     activeJobId.value = e.detail.prompt_id
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
     clearInitializationByJobId(activeJobId.value)
+
+    // Ensure path mapping exists — execution_start can arrive via WebSocket
+    // before the HTTP response from queuePrompt triggers storeJob.
+    if (!jobIdToSessionWorkflowPath.value.has(activeJobId.value)) {
+      const path = queuedJobs.value[activeJobId.value]?.workflow?.path
+      if (path) ensureSessionWorkflowPath(activeJobId.value, path)
+    }
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
@@ -424,6 +456,7 @@ export const useExecutionStore = defineStore('execution', () => {
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: string | null) {
+    executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
     if (jobId) {
@@ -482,6 +515,24 @@ export const useExecutionStore = defineStore('execution', () => {
     if (wid) {
       jobIdToWorkflowId.value.set(String(id), String(wid))
     }
+    if (workflow?.path) {
+      ensureSessionWorkflowPath(String(id), workflow.path)
+    }
+  }
+
+  // ~0.65 MB at capacity (32 char GUID key + 50 char path value)
+  const MAX_SESSION_PATH_ENTRIES = 4000
+
+  function ensureSessionWorkflowPath(jobId: string, path: string) {
+    if (jobIdToSessionWorkflowPath.value.get(jobId) === path) return
+    const next = new Map(jobIdToSessionWorkflowPath.value)
+    next.set(jobId, path)
+    while (next.size > MAX_SESSION_PATH_ENTRIES) {
+      const oldest = next.keys().next().value
+      if (oldest !== undefined) next.delete(oldest)
+      else break
+    }
+    jobIdToSessionWorkflowPath.value = next
   }
 
   /**
@@ -518,6 +569,13 @@ export const useExecutionStore = defineStore('execution', () => {
     () => runningJobIds.value.length
   )
 
+  const isActiveWorkflowRunning = computed(() => {
+    if (!activeJobId.value) return false
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return false
+    return jobIdToSessionWorkflowPath.value.get(activeJobId.value) === path
+  })
+
   return {
     isIdle,
     clientId,
@@ -537,6 +595,7 @@ export const useExecutionStore = defineStore('execution', () => {
     runningJobIds,
     runningWorkflowCount,
     initializingJobIds,
+    isActiveWorkflowRunning,
     isJobInitializing,
     clearInitializationByJobId,
     clearInitializationByJobIds,
@@ -550,6 +609,8 @@ export const useExecutionStore = defineStore('execution', () => {
     _executingNodeProgress,
     // NodeLocatorId conversion helpers
     nodeLocatorIdToExecutionId,
-    jobIdToWorkflowId
+    jobIdToWorkflowId,
+    jobIdToSessionWorkflowPath,
+    ensureSessionWorkflowPath
   }
 })

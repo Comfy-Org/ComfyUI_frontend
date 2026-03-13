@@ -40,8 +40,21 @@ const mockMenuItemStore = vi.hoisted(() => ({
   hasSeenLinear: false
 }))
 
-const mockCanvasStore = vi.hoisted(() => ({
-  linearMode: false
+const mockAppModeStore = vi.hoisted(() => ({
+  enterBuilder: vi.fn(),
+  pruneLinearData: vi.fn(
+    (
+      data?: Partial<{
+        inputs: [number | string, string][]
+        outputs: (number | string)[]
+      }>
+    ) => ({
+      inputs: data?.inputs ?? [],
+      outputs: data?.outputs ?? []
+    })
+  ),
+  selectedInputs: [] as [number | string, string][],
+  selectedOutputs: [] as (number | string)[]
 }))
 
 const mockFeatureFlags = vi.hoisted(() => ({
@@ -69,9 +82,11 @@ vi.mock('@/stores/menuItemStore', () => ({
   useMenuItemStore: vi.fn(() => mockMenuItemStore)
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn(() => mockCanvasStore)
+vi.mock('@/stores/appModeStore', () => ({
+  useAppModeStore: vi.fn(() => mockAppModeStore)
 }))
+
+vi.mock('@/composables/useErrorHandling', () => ({}))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: vi.fn(() => mockFeatureFlags)
@@ -80,7 +95,9 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 type MenuItems = ReturnType<typeof useWorkflowActionsMenu>['menuItems']['value']
 
 function actionItems(items: MenuItems): WorkflowMenuAction[] {
-  return items.filter((i): i is WorkflowMenuAction => !i.separator)
+  return items.filter(
+    (i): i is WorkflowMenuAction => !i.separator && i.visible !== false
+  )
 }
 
 function menuLabels(items: MenuItems) {
@@ -100,8 +117,9 @@ describe('useWorkflowActionsMenu', () => {
     mockBookmarkStore.isBookmarked.mockReturnValue(false)
     mockSubgraphStore.isSubgraphBlueprint.mockReturnValue(false)
     mockMenuItemStore.hasSeenLinear = false
-    mockCanvasStore.linearMode = false
     mockFeatureFlags.flags.linearToggleEnabled = false
+    mockAppModeStore.selectedInputs.length = 0
+    mockAppModeStore.selectedOutputs.length = 0
     mockWorkflowStore.activeWorkflow = {
       path: 'test.json',
       isPersisted: true
@@ -182,7 +200,11 @@ describe('useWorkflowActionsMenu', () => {
 
   it('shows "go to workflow mode" when in linear mode', () => {
     mockFeatureFlags.flags.linearToggleEnabled = true
-    mockCanvasStore.linearMode = true
+    mockWorkflowStore.activeWorkflow = {
+      path: 'test.json',
+      isPersisted: true,
+      activeMode: 'app'
+    } as ComfyWorkflow
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const labels = menuLabels(menuItems.value)
@@ -286,6 +308,34 @@ describe('useWorkflowActionsMenu', () => {
     await findItem(menuItems.value, 'tabMenu.addToBookmarks').command?.()
 
     expect(mockBookmarkStore.toggleBookmarked).toHaveBeenCalledWith('test.json')
+  })
+
+  it('enter builder mode calls enterBuilder', async () => {
+    mockFeatureFlags.flags.linearToggleEnabled = true
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    await findItem(
+      menuItems.value,
+      'breadcrumbsMenu.enterBuilderMode'
+    ).command?.()
+
+    expect(mockAppModeStore.enterBuilder).toHaveBeenCalled()
+  })
+
+  it('shows "Edit app" when workflow has linear data', async () => {
+    mockFeatureFlags.flags.linearToggleEnabled = true
+    mockWorkflowStore.activeWorkflow = {
+      path: 'test.json',
+      isPersisted: true
+    } as ComfyWorkflow
+    mockAppModeStore.selectedInputs.push([1, 'widget'])
+    mockAppModeStore.selectedOutputs.push(2)
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const item = findItem(menuItems.value, 'breadcrumbsMenu.editBuilderMode')
+
+    expect(item).toBeDefined()
+    expect(item.isNew).toBeTruthy()
   })
 
   it('app mode toggle executes Comfy.ToggleLinear', async () => {

@@ -276,6 +276,8 @@ export function createMockCanvas2DContext(
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
+    save: vi.fn(),
+    restore: vi.fn(),
     ...overrides
   }
   return partial as CanvasRenderingContext2D

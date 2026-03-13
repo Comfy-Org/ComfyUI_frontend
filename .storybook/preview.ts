@@ -58,7 +58,7 @@ export const withTheme = (Story: StoryFn, context: StoryContext) => {
     document.documentElement.classList.remove('dark-theme')
     document.body.classList.remove('dark-theme')
   }
-  document.body.classList.add('[&_*]:!font-inter')
+  document.body.classList.add('font-inter')
 
   return Story(context.args, context)
 }

@@ -2,7 +2,7 @@
   <div class="flex h-full flex-col">
     <div v-if="assetItems.length" class="px-2">
       <div
-        class="flex items-center p-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
+        class="flex items-center p-2 font-inter text-sm/normal font-normal text-muted-foreground"
       >
         {{
           t(
@@ -18,6 +18,8 @@
       class="flex-1"
       :items="assetItems"
       :grid-style="listGridStyle"
+      :max-columns="1"
+      :default-item-height="48"
       @approach-end="emit('approach-end')"
     >
       <template #item="{ item }">
@@ -33,7 +35,7 @@
             tabindex="0"
             :aria-label="
               t('assetBrowser.ariaLabel.assetCard', {
-                name: item.asset.name,
+                name: getAssetDisplayName(item.asset),
                 type: getAssetMediaType(item.asset)
               })
             "
@@ -44,7 +46,7 @@
               )
             "
             :preview-url="getAssetPreviewUrl(item.asset)"
-            :preview-alt="item.asset.name"
+            :preview-alt="getAssetDisplayName(item.asset)"
             :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
             :is-video-preview="isVideoAsset(item.asset)"
             :primary-text="getAssetPrimaryText(item.asset)"
@@ -88,6 +90,7 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -134,7 +137,7 @@ const listGridStyle = {
 }
 
 function getAssetPrimaryText(asset: AssetItem): string {
-  return truncateFilename(asset.name)
+  return truncateFilename(getAssetDisplayName(asset))
 }
 
 function getAssetMediaType(asset: AssetItem) {
@@ -189,7 +192,7 @@ function getAssetCardClass(selected: boolean): string {
     'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
     'cursor-pointer',
     selected &&
-      'bg-secondary-background-hover ring-1 ring-inset ring-modal-card-border-highlighted'
+      'bg-secondary-background-hover ring-1 ring-modal-card-border-highlighted ring-inset'
   )
 }
 

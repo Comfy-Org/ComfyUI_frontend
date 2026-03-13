@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "عبارت ریاضی",
+    "inputs": {
+      "expression": {
+        "name": "عبارت"
+      },
+      "values": {
+        "name": "مقادیر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "سوئیچ",
     "inputs": {
@@ -3188,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "بهینه‌سازی KV Cache را برای تصاویر مرجع در مدل‌های خانواده Flux فعال می‌کند.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که قرار است KV Cache روی آن فعال شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل اصلاح‌شده با KV Cache فعال."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "این نود تصویر را به اندازه‌ای تغییر می‌دهد که برای flux kontext بهینه‌تر باشد.",
     "display_name": "FluxKontextImageScale",
@@ -3778,6 +3812,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -3944,6 +3981,10 @@
     "description": "ویرایش یک تصویر موجود بر اساس یک متن راهنما",
     "display_name": "ویرایش تصویر Grok",
     "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "فقط زمانی مجاز است که چندین تصویر به ورودی تصویر متصل باشند."
+      },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
@@ -3995,6 +4036,9 @@
       "prompt": {
         "name": "راهنما",
         "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "resolution": {
+        "name": "وضوح"
       },
       "seed": {
         "name": "بذر",
@@ -5850,6 +5894,9 @@
       },
       "mode": {
         "name": "حالت"
+      },
+      "model": {
+        "name": "مدل"
       },
       "prompt": {
         "name": "پرامپت"
@@ -11259,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "نقاش",
+    "inputs": {
+      "bg_color": {
+        "name": "رنگ پس‌زمینه"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر پایه اختیاری برای نقاشی روی آن"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "ترکیب جفت شرطی",
     "inputs": {
@@ -12820,6 +12896,133 @@
       "1": {
         "name": "ارتفاع",
         "tooltip": "ارتفاع محاسبه‌شده بر حسب پیکسل (مضربی از ۸)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "تولید تصویر از توضیحات متنی با استفاده از Reve.",
+    "display_name": "ایجاد تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی تصویر مورد نظر. حداکثر ۲۵۶۰ کاراکتر."
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "ویرایش تصاویر با استفاده از دستور زبان طبیعی در Reve.",
+    "display_name": "ویرایش تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "edit_instruction": {
+        "name": "دستور ویرایش",
+        "tooltip": "توضیح متنی نحوه ویرایش تصویر. حداکثر ۲۵۶۰ کاراکتر."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویری که باید ویرایش شود."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای ویرایش."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "ترکیب تصاویر مرجع با پرامپت متنی برای ایجاد تصاویر جدید با استفاده از Reve.",
+    "display_name": "ترکیب تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای ترکیب."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی تصویر مورد نظر. می‌توانید از تگ XML img برای ارجاع به تصاویر خاص با شماره اندیس استفاده کنید، مانند <img>۰</img>، <img>۱</img> و غیره."
+      },
+      "reference_images": {
+        "name": "تصاویر مرجع"
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15094,6 +15297,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "بازکردن UV روی یک مدل سه‌بعدی برای تولید بافت UV. مدل ورودی باید کمتر از ۳۰۰۰۰ وجه داشته باشد.",
+    "display_name": "Hunyuan3D: مدل به UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model_3d": {
+        "name": "مدل سه‌بعدی",
+        "tooltip": "مدل سه‌بعدی ورودی (GLB، OBJ یا FBX)"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "اجرای رتپولوژی هوشمند روی یک مدل سه‌بعدی. پشتیبانی از فرمت‌های GLB/OBJ؛ حداکثر ۲۰۰ مگابایت؛ توصیه‌شده برای مدل‌های با چندضلعی بالا.",
+    "display_name": "Hunyuan3D: توپولوژی هوشمند",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "face_level": {
+        "name": "سطح وجه",
+        "tooltip": "سطح کاهش چندضلعی."
+      },
+      "model_3d": {
+        "name": "مدل سه‌بعدی",
+        "tooltip": "مدل سه‌بعدی ورودی (GLB یا OBJ)"
+      },
+      "polygon_type": {
+        "name": "نوع چندضلعی",
+        "tooltip": "نوع ترکیب سطح."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }
@@ -18151,6 +18412,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته"
+      },
+      "clip_vision_output": {
+        "name": "خروجی clip vision"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "pose_end": {
+        "name": "پایان pose",
+        "tooltip": "گام پایان برای استفاده از pose conditioning."
+      },
+      "pose_start": {
+        "name": "شروع pose",
+        "tooltip": "گام شروع برای استفاده از pose conditioning."
+      },
+      "pose_strength": {
+        "name": "قدرت pose",
+        "tooltip": "قدرت pose در latent."
+      },
+      "pose_video": {
+        "name": "ویدئوی pose",
+        "tooltip": "ویدئو برای pose conditioning استفاده می‌شود. به نصف وضوح ویدئوی اصلی کاهش داده می‌شود."
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "reference_image": {
+        "name": "تصویر مرجع"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent خالی با اندازه تولید."
       }
     }
   },

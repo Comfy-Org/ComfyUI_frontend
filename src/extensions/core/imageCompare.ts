@@ -26,8 +26,10 @@ useExtensionService().registerExtension({
       const { a_images: aImages, b_images: bImages } = output
       const rand = app.getRandParam()
 
-      const toUrl = (params: Record<string, string>) =>
-        api.apiURL(`/view?${new URLSearchParams(params)}${rand}`)
+      const toUrl = (record: Record<string, string>) => {
+        const params = new URLSearchParams(record)
+        return api.apiURL(`/view?${params}${rand}`)
+      }
 
       const beforeImages =
         aImages && aImages.length > 0 ? aImages.map(toUrl) : []

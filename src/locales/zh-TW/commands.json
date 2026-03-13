@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "貼上"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "貼上並連接"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "重設視圖"
   },
@@ -343,6 +346,10 @@
   },
   "Workspace_ToggleFocusMode": {
     "label": "切換專注模式"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "切換應用程式側邊欄",
+    "tooltip": "應用程式"
   },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "切換資源側邊欄",

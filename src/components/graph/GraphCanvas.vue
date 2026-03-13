@@ -6,18 +6,19 @@
     <template v-if="showUI" #workflow-tabs>
       <div
         v-if="workflowTabsPosition === 'Topbar'"
-        class="workflow-tabs-container pointer-events-auto relative w-full h-(--workflow-tabs-height)"
+        class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
       >
         <!-- Native drag area for Electron -->
         <div
           v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-          class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
+          class="app-drag fixed top-0 left-0 z-10 h-(--comfy-topbar-height) w-full"
         />
         <div
           class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
         >
           <WorkflowTabs />
           <TopbarBadges />
+          <TopbarSubscribeButton />
         </div>
       </div>
     </template>
@@ -26,7 +27,7 @@
     </template>
     <template v-if="showUI" #side-bar-panel>
       <div
-        class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto"
+        class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
@@ -38,8 +39,8 @@
       <BottomPanel />
     </template>
     <template v-if="showUI" #right-side-panel>
-      <AppBuilder v-if="mode === 'builder:select'" />
-      <NodePropertiesPanel v-else-if="!isBuilderMode" />
+      <AppBuilder v-if="isBuilderMode" />
+      <NodePropertiesPanel v-else />
     </template>
     <template #graph-canvas-panel>
       <GraphCanvasMenu
@@ -80,7 +81,6 @@
           ? 'Execution error'
           : null
       "
-      :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
     />
   </TransformPane>
@@ -140,6 +140,7 @@ import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -202,7 +203,7 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
-const { mode, isBuilderMode } = useAppMode()
+const { isBuilderMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const executionStore = useExecutionStore()
@@ -477,49 +478,52 @@ useEventListener(
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
-  // ChangeTracker needs to be initialized before setup, as it will overwrite
-  // some listeners of litegraph canvas.
-  ChangeTracker.init()
+  try {
+    // ChangeTracker needs to be initialized before setup, as it will overwrite
+    // some listeners of litegraph canvas.
+    ChangeTracker.init()
 
-  await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
+    await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
 
-  if (settingsError.value) {
-    if (settingsError.value instanceof UnauthorizedError) {
-      localStorage.removeItem('Comfy.userId')
-      localStorage.removeItem('Comfy.userName')
-      window.location.reload()
-      return
+    if (settingsError.value) {
+      if (settingsError.value instanceof UnauthorizedError) {
+        localStorage.removeItem('Comfy.userId')
+        localStorage.removeItem('Comfy.userName')
+        window.location.reload()
+        return
+      }
+      throw settingsError.value
     }
-    throw settingsError.value
+
+    // Register core settings immediately after settings are ready
+    CORE_SETTINGS.forEach(settingStore.addSetting)
+
+    await Promise.all([
+      until(() => isI18nReady.value || !!i18nError.value).toBe(true),
+      useNewUserService().initializeIfNewUser()
+    ])
+    if (i18nError.value) {
+      console.warn(
+        '[GraphCanvas] Failed to load custom nodes i18n:',
+        i18nError.value
+      )
+    }
+
+    // @ts-expect-error fixme ts strict error
+    await comfyApp.setup(canvasRef.value)
+    canvasStore.canvas = comfyApp.canvas
+    canvasStore.canvas.render_canvas_border = false
+    useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
+
+    window.app = comfyApp
+    window.graph = comfyApp.graph
+
+    comfyAppReady.value = true
+
+    vueNodeLifecycle.setupEmptyGraphListener()
+  } finally {
+    workspaceStore.spinner = false
   }
-
-  // Register core settings immediately after settings are ready
-  CORE_SETTINGS.forEach(settingStore.addSetting)
-
-  await Promise.all([
-    until(() => isI18nReady.value || !!i18nError.value).toBe(true),
-    useNewUserService().initializeIfNewUser()
-  ])
-  if (i18nError.value) {
-    console.warn(
-      '[GraphCanvas] Failed to load custom nodes i18n:',
-      i18nError.value
-    )
-  }
-
-  // @ts-expect-error fixme ts strict error
-  await comfyApp.setup(canvasRef.value)
-  canvasStore.canvas = comfyApp.canvas
-  canvasStore.canvas.render_canvas_border = false
-  workspaceStore.spinner = false
-  useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
-
-  window.app = comfyApp
-  window.graph = comfyApp.graph
-
-  comfyAppReady.value = true
-
-  vueNodeLifecycle.setupEmptyGraphListener()
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
@@ -533,10 +537,15 @@ onMounted(async () => {
 
   // Restore saved workflow and workflow tabs state
   await workflowPersistence.initializeWorkflow()
-  workflowPersistence.restoreWorkflowTabsState()
+  await workflowPersistence.restoreWorkflowTabsState()
+
+  const sharedWorkflowLoadStatus =
+    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
   // Load template from URL if present
-  await workflowPersistence.loadTemplateFromUrlIfPresent()
+  if (sharedWorkflowLoadStatus === 'not-present') {
+    await workflowPersistence.loadTemplateFromUrlIfPresent()
+  }
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
   // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts

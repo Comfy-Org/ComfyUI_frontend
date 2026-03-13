@@ -10,13 +10,13 @@
       <!-- Active filter label (filter selection mode) -->
       <span
         v-if="activeFilter"
-        class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-base-background px-2 py-1 -my-1 text-sm opacity-80 text-foreground"
+        class="text-foreground -my-1 inline-flex shrink-0 items-center gap-1 rounded-lg bg-base-background px-2 py-1 text-sm opacity-80"
       >
         {{ activeFilter.label }}:
         <button
           type="button"
           data-testid="cancel-filter"
-          class="cursor-pointer border-none bg-transparent text-muted-foreground hover:text-base-foreground rounded-full aspect-square"
+          class="aspect-square cursor-pointer rounded-full border-none bg-transparent text-muted-foreground hover:text-base-foreground"
           :aria-label="$t('g.remove')"
           @click="emit('cancelFilter')"
         >
@@ -30,7 +30,7 @@
           :key="filterKey(filter)"
           :value="filterKey(filter)"
           data-testid="filter-chip"
-          class="inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 -my-1 data-[state=active]:ring-2 data-[state=active]:ring-primary"
+          class="-my-1 inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary"
         >
           <span class="text-sm opacity-80">
             {{ t(`g.${filter.filterDef.id}`) }}:
@@ -44,7 +44,7 @@
             type="button"
             data-testid="chip-delete"
             :aria-label="$t('g.remove')"
-            class="ml-1 cursor-pointer border-none bg-transparent text-muted-foreground hover:text-base-foreground rounded-full aspect-square"
+            class="ml-1 aspect-square cursor-pointer rounded-full border-none bg-transparent text-muted-foreground hover:text-base-foreground"
           >
             <i class="pi pi-times text-xs" />
           </TagsInputItemDelete>
@@ -61,7 +61,7 @@
           :aria-controls="activeFilter ? 'filter-options-list' : 'results-list'"
           :aria-label="inputPlaceholder"
           :placeholder="inputPlaceholder"
-          class="h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent text-foreground text-sm outline-none placeholder:text-muted-foreground"
+          class="text-foreground h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           @keydown.enter.prevent="emit('selectCurrent')"
           @keydown.down.prevent="emit('navigateDown')"
           @keydown.up.prevent="emit('navigateUp')"

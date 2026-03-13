@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Math Expression",
+    "inputs": {
+      "expression": {
+        "name": "expression"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Switch",
     "inputs": {
@@ -3300,6 +3319,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "display_name": "Flux KV Cache",
+    "description": "Enables KV Cache optimization for reference images on Flux family models.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use KV Cache on."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The patched model with KV Cache enabled."
+      }
+    }
+  },
   "FluxProExpandNode": {
     "display_name": "Flux.1 Expand Image",
     "description": "Outpaints image based on prompt.",
@@ -3678,6 +3712,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -3965,6 +4002,10 @@
         "name": "seed",
         "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
       },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Only allowed when multiple images are connected to the image input."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -3996,6 +4037,9 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "resolution": {
+        "name": "resolution"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -5746,6 +5790,9 @@
       },
       "mode": {
         "name": "mode"
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -8030,7 +8077,7 @@
     }
   },
   "Mahiro": {
-    "display_name": "Mahiro CFG",
+    "display_name": "Positive-Biased Guidance",
     "description": "Modify the guidance to scale more on the 'direction' of the positive prompt rather than the difference between the negative prompt.",
     "inputs": {
       "model": {
@@ -11259,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "bg_color": {
+        "name": "bg_color"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional base image to paint over"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Cond Pair Combine",
     "inputs": {
@@ -12820,6 +12896,133 @@
       "1": {
         "name": "height",
         "tooltip": "Calculated height in pixels (multiple of 8)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "display_name": "Reve Image Create",
+    "description": "Generate images from text descriptions using Reve.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired image. Maximum 2560 characters."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model version to use for generation."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Upscale the generated image. May add additional cost."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remove the background from the generated image. May add additional cost."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "display_name": "Reve Image Edit",
+    "description": "Edit images using natural language instructions with Reve.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The image to edit."
+      },
+      "edit_instruction": {
+        "name": "edit_instruction",
+        "tooltip": "Text description of how to edit the image. Maximum 2560 characters."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model version to use for editing."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Upscale the generated image. May add additional cost."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remove the background from the generated image. May add additional cost."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "display_name": "Reve Image Remix",
+    "description": "Combine reference images with text prompts to create new images using Reve.",
+    "inputs": {
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired image. May include XML img tags to reference specific images by index, e.g. <img>0</img>, <img>1</img>, etc."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model version to use for remixing."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Upscale the generated image. May add additional cost."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remove the background from the generated image. May add additional cost."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15094,6 +15297,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "display_name": "Hunyuan3D: Model to UV",
+    "description": "Perform UV unfolding on a 3D model to generate UV texture. Input model must have less than 30000 faces.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Input 3D model (GLB, OBJ, or FBX)"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "display_name": "Hunyuan3D: Smart Topology",
+    "description": "Perform smart retopology on a 3D model. Supports GLB/OBJ formats; max 200MB; recommended for high-poly models.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Input 3D model (GLB or OBJ)"
+      },
+      "polygon_type": {
+        "name": "polygon_type",
+        "tooltip": "Surface composition type."
+      },
+      "face_level": {
+        "name": "face_level",
+        "tooltip": "Polygon reduction level."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }
@@ -18190,6 +18451,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "pose_strength": {
+        "name": "pose_strength",
+        "tooltip": "Strength of the pose latent."
+      },
+      "pose_start": {
+        "name": "pose_start",
+        "tooltip": "Start step to use pose conditioning."
+      },
+      "pose_end": {
+        "name": "pose_end",
+        "tooltip": "End step to use pose conditioning."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "reference_image": {
+        "name": "reference_image"
+      },
+      "pose_video": {
+        "name": "pose_video",
+        "tooltip": "Video used for pose conditioning. Will be downscaled to half the resolution of the main video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Empty latent of the generation size."
       }
     }
   },

@@ -37,15 +37,27 @@ export const testI18n = createI18n({
         addNode: 'Add a node...',
         filterBy: 'Filter by:',
         mostRelevant: 'Most relevant',
+        recents: 'Recents',
         favorites: 'Favorites',
         essentials: 'Essentials',
         custom: 'Custom',
+        comfy: 'Comfy',
+        partner: 'Partner',
+        extensions: 'Extensions',
         noResults: 'No results',
         filterByType: 'Filter by {type}...',
         input: 'Input',
         output: 'Output',
         source: 'Source',
         search: 'Search'
+      },
+      sideToolbar: {
+        nodeLibraryTab: {
+          filterOptions: {
+            blueprints: 'Blueprints',
+            partnerNodes: 'Partner Nodes'
+          }
+        }
       }
     }
   }

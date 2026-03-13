@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Expression mathématique",
+    "inputs": {
+      "expression": {
+        "name": "expression"
+      },
+      "values": {
+        "name": "valeurs"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Commutateur",
     "inputs": {
@@ -3188,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Active l’optimisation KV Cache pour les images de référence sur les modèles de la famille Flux.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle sur lequel activer le KV Cache."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Le modèle modifié avec le KV Cache activé."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Ce nœud redimensionne l'image pour une optimisation avec flux kontext.",
     "display_name": "Échelle d'image FluxKontext",
@@ -3778,6 +3812,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -3944,6 +3981,10 @@
     "description": "Modifiez une image existante à partir d'une invite textuelle",
     "display_name": "Grok Image Edit",
     "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d'aspect",
+        "tooltip": "Autorisé uniquement lorsque plusieurs images sont connectées à l'entrée image."
+      },
       "control_after_generate": {
         "name": "contrôle après génération"
       },
@@ -3995,6 +4036,9 @@
       "prompt": {
         "name": "invite",
         "tooltip": "L'invite textuelle utilisée pour générer l'image"
+      },
+      "resolution": {
+        "name": "résolution"
       },
       "seed": {
         "name": "graine",
@@ -5850,6 +5894,9 @@
       },
       "mode": {
         "name": "mode"
+      },
+      "model": {
+        "name": "modèle"
       },
       "prompt": {
         "name": "invite"
@@ -11259,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Peintre",
+    "inputs": {
+      "bg_color": {
+        "name": "couleur de fond"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image de base optionnelle sur laquelle peindre"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Cond Pair Combiner",
     "inputs": {
@@ -12820,6 +12896,133 @@
       "1": {
         "name": "hauteur",
         "tooltip": "Hauteur calculée en pixels (multiple de 8)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Générez des images à partir de descriptions textuelles avec Reve.",
+    "display_name": "Reve Création d’Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Version du modèle à utiliser pour la génération."
+      },
+      "model_aspect_ratio": {
+        "name": "rapport d’aspect"
+      },
+      "model_test_time_scaling": {
+        "name": "mise à l’échelle à l’exécution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Description textuelle de l’image souhaitée. Maximum 2560 caractères."
+      },
+      "remove_background": {
+        "name": "supprimer l’arrière-plan",
+        "tooltip": "Supprimer l’arrière-plan de l’image générée. Peut entraîner un coût supplémentaire."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "upscale": {
+        "name": "agrandir",
+        "tooltip": "Agrandir l’image générée. Peut entraîner un coût supplémentaire."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Modifiez des images à l’aide d’instructions en langage naturel avec Reve.",
+    "display_name": "Reve Édition d’Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "edit_instruction": {
+        "name": "instruction d’édition",
+        "tooltip": "Description textuelle de la modification à apporter à l’image. Maximum 2560 caractères."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "L’image à modifier."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Version du modèle à utiliser pour l’édition."
+      },
+      "model_aspect_ratio": {
+        "name": "rapport d’aspect"
+      },
+      "model_test_time_scaling": {
+        "name": "mise à l’échelle à l’exécution"
+      },
+      "remove_background": {
+        "name": "supprimer l’arrière-plan",
+        "tooltip": "Supprimer l’arrière-plan de l’image générée. Peut entraîner un coût supplémentaire."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "upscale": {
+        "name": "agrandir",
+        "tooltip": "Agrandir l’image générée. Peut entraîner un coût supplémentaire."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Combinez des images de référence avec des prompts textuels pour créer de nouvelles images avec Reve.",
+    "display_name": "Reve Remix d’Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Version du modèle à utiliser pour le remix."
+      },
+      "model_aspect_ratio": {
+        "name": "rapport d’aspect"
+      },
+      "model_test_time_scaling": {
+        "name": "mise à l’échelle à l’exécution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Description textuelle de l’image souhaitée. Peut inclure des balises XML img pour référencer des images spécifiques par index, par exemple <img>0</img>, <img>1</img>, etc."
+      },
+      "reference_images": {
+        "name": "images de référence"
+      },
+      "remove_background": {
+        "name": "supprimer l’arrière-plan",
+        "tooltip": "Supprimer l’arrière-plan de l’image générée. Peut entraîner un coût supplémentaire."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "upscale": {
+        "name": "agrandir",
+        "tooltip": "Agrandir l’image générée. Peut entraîner un coût supplémentaire."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15094,6 +15297,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Effectue le dépliage UV d’un modèle 3D pour générer une texture UV. Le modèle d’entrée doit comporter moins de 30 000 faces.",
+    "display_name": "Hunyuan3D : Modèle vers UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model_3d": {
+        "name": "modèle_3d",
+        "tooltip": "Modèle 3D en entrée (GLB, OBJ ou FBX)"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Effectue une retopologie intelligente sur un modèle 3D. Prend en charge les formats GLB/OBJ ; 200 Mo max ; recommandé pour les modèles haute résolution.",
+    "display_name": "Hunyuan3D : Topologie intelligente",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "face_level": {
+        "name": "niveau_de_faces",
+        "tooltip": "Niveau de réduction des polygones."
+      },
+      "model_3d": {
+        "name": "modèle_3d",
+        "tooltip": "Modèle 3D en entrée (GLB ou OBJ)"
+      },
+      "polygon_type": {
+        "name": "type_polygone",
+        "tooltip": "Type de composition de surface."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }
@@ -18151,6 +18412,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "pose_end": {
+        "name": "fin_de_pose",
+        "tooltip": "Étape de fin pour utiliser le conditionnement de pose."
+      },
+      "pose_start": {
+        "name": "début_de_pose",
+        "tooltip": "Étape de début pour utiliser le conditionnement de pose."
+      },
+      "pose_strength": {
+        "name": "force_de_pose",
+        "tooltip": "Force du latent de pose."
+      },
+      "pose_video": {
+        "name": "vidéo_de_pose",
+        "tooltip": "Vidéo utilisée pour le conditionnement de pose. Sera réduite à la moitié de la résolution de la vidéo principale."
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "reference_image": {
+        "name": "image_de_référence"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latent vide de la taille de génération."
       }
     }
   },

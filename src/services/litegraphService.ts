@@ -22,6 +22,7 @@ import {
   createBounds
 } from '@/lib/litegraph/src/litegraph'
 import type {
+  CreateNodeOptions,
   GraphAddOptions,
   IContextMenuValue,
   Point,
@@ -54,7 +55,7 @@ import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -215,14 +216,18 @@ export const useLitegraphService = () => {
    */
   function addNodeInput(node: LGraphNode, inputSpec: InputSpec) {
     addInputSocket(node, inputSpec)
-    addInputWidget(node, inputSpec)
+    addInputWidget(node, inputSpec, { dynamic: true })
   }
 
   /**
    * @internal Add a widget to the node. For both primitive types and custom widgets
    * (unless `socketless`), an input socket is also added.
    */
-  function addInputWidget(node: LGraphNode, inputSpec: InputSpec) {
+  function addInputWidget(
+    node: LGraphNode,
+    inputSpec: InputSpec,
+    { dynamic }: { dynamic?: boolean } = {}
+  ) {
     const widgetInputSpec = { ...inputSpec }
     if (inputSpec.widgetType) {
       widgetInputSpec.type = inputSpec.widgetType
@@ -253,6 +258,7 @@ export const useLitegraphService = () => {
         advanced: inputSpec.advanced,
         hidden: inputSpec.hidden
       })
+      if (dynamic) widget.tooltip = inputSpec.tooltip
     }
 
     if (!widget?.options?.socketless) {
@@ -885,7 +891,7 @@ export const useLitegraphService = () => {
 
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
-    options: Record<string, unknown> & { pos?: Point } = {},
+    options: CreateNodeOptions = {},
     addOptions?: GraphAddOptions
   ): LGraphNode | null {
     options.pos ??= getCanvasCenter()

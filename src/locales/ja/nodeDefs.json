@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "数式",
+    "inputs": {
+      "expression": {
+        "name": "式"
+      },
+      "values": {
+        "name": "値"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "スイッチ",
     "inputs": {
@@ -3188,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Fluxファミリーモデルの参照画像に対してKVキャッシュ最適化を有効にします。",
+    "display_name": "Flux KVキャッシュ",
+    "inputs": {
+      "model": {
+        "name": "モデル",
+        "tooltip": "KVキャッシュを使用するモデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KVキャッシュが有効になったパッチ済みモデル。"
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "このノードは、Flux Kontextに最適なサイズに画像をリサイズします。",
     "display_name": "FluxKontextImageScale",
@@ -3778,6 +3812,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -3944,6 +3981,10 @@
     "description": "テキストプロンプトに基づいて既存の画像を編集します",
     "display_name": "Grok画像編集",
     "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "複数の画像が画像入力に接続されている場合のみ使用できます。"
+      },
       "control_after_generate": {
         "name": "生成後の制御"
       },
@@ -3995,6 +4036,9 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "画像生成に使用するテキストプロンプト"
+      },
+      "resolution": {
+        "name": "解像度"
       },
       "seed": {
         "name": "シード値",
@@ -5850,6 +5894,9 @@
       },
       "mode": {
         "name": "モード"
+      },
+      "model": {
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト"
@@ -11259,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "背景色"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "上から描画するための任意のベース画像"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "ペア条件付け組み合わせ",
     "inputs": {
@@ -12820,6 +12896,133 @@
       "1": {
         "name": "高さ",
         "tooltip": "計算された高さ（ピクセル単位、8の倍数）。"
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Reveを使用してテキスト説明から画像を生成します。",
+    "display_name": "Reve画像生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "生成に使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成したい画像のテキスト説明。最大2560文字。"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Reveを使って自然言語指示で画像を編集します。",
+    "display_name": "Reve画像編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "edit_instruction": {
+        "name": "編集指示",
+        "tooltip": "画像の編集方法のテキスト説明。最大2560文字。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "編集する画像。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "編集に使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "参照画像とテキストプロンプトを組み合わせてReveで新しい画像を作成します。",
+    "display_name": "Reve画像リミックス",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "リミックスに使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成したい画像のテキスト説明。特定の画像をインデックスで参照するXML imgタグ（例：<img>0</img>, <img>1</img>など）を含めることができます。"
+      },
+      "reference_images": {
+        "name": "参照画像"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15094,6 +15297,64 @@
         "tooltip": null
       },
       "2": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "3DモデルにUV展開を行い、UVテクスチャを生成します。入力モデルは30,000面未満である必要があります。",
+    "display_name": "Hunyuan3D: モデルからUVへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "入力3Dモデル（GLB、OBJ、またはFBX）"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "3Dモデルにスマートリトポロジーを実行します。GLB/OBJ形式をサポート、最大200MB、高ポリゴンモデルに推奨。",
+    "display_name": "Hunyuan3D: スマートトポロジー",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "face_level": {
+        "name": "面レベル",
+        "tooltip": "ポリゴン削減レベル。"
+      },
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "入力3Dモデル（GLBまたはOBJ）"
+      },
+      "polygon_type": {
+        "name": "ポリゴンタイプ",
+        "tooltip": "表面構成タイプ。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "OBJ",
         "tooltip": null
       }
@@ -18151,6 +18412,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end": {
+        "name": "ポーズ終了ステップ",
+        "tooltip": "ポーズ条件付けを使用する終了ステップ。"
+      },
+      "pose_start": {
+        "name": "ポーズ開始ステップ",
+        "tooltip": "ポーズ条件付けを使用する開始ステップ。"
+      },
+      "pose_strength": {
+        "name": "ポーズ強度",
+        "tooltip": "ポーズのlatentの強さ。"
+      },
+      "pose_video": {
+        "name": "ポーズビデオ",
+        "tooltip": "ポーズ条件付けに使用するビデオ。メインビデオの解像度の半分にダウンサンプリングされます。"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_image": {
+        "name": "参照画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "生成サイズの空のlatent。"
       }
     }
   },

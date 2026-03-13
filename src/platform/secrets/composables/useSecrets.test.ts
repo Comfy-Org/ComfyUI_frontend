@@ -83,8 +83,7 @@ describe('useSecrets', () => {
       expect(mockAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'g.error',
-        detail: 'Network error',
-        life: 5000
+        detail: 'Network error'
       })
     })
   })
@@ -130,8 +129,7 @@ describe('useSecrets', () => {
       expect(mockAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'g.error',
-        detail: 'Delete failed',
-        life: 5000
+        detail: 'Delete failed'
       })
     })
   })

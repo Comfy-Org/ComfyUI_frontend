@@ -1,9 +1,5 @@
 <template>
   <router-view />
-  <ProgressSpinner
-    v-if="isLoading"
-    class="absolute inset-0 flex h-[unset] items-center justify-center"
-  />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
 </template>
@@ -11,8 +7,7 @@
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
-import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
@@ -28,6 +23,16 @@ app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
+
+watch(
+  isLoading,
+  (loading, prevLoading) => {
+    if (prevLoading && !loading) {
+      document.getElementById('splash-loader')?.remove()
+    }
+  },
+  { flush: 'post' }
+)
 
 const showContextMenu = (event: MouseEvent) => {
   const { target } = event

@@ -51,6 +51,31 @@ describe('defaultSearcher', () => {
     const result = await defaultSearcher('xyz', items)
     expect(result).toHaveLength(0)
   })
+
+  it('matches against label when provided', async () => {
+    const itemsWithLabels = [
+      createItem('model_v1.safetensors', 'My Cool Model'),
+      createItem('lora_v2.safetensors', 'Style Transfer LoRA'),
+      createItem('checkpoint.ckpt', 'Realistic Vision')
+    ]
+    const result = await defaultSearcher('cool', itemsWithLabels)
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('model_v1.safetensors')
+  })
+
+  it('matches by label case-insensitively', async () => {
+    const itemsWithLabels = [createItem('file.safetensors', 'My Cool Model')]
+    const result = await defaultSearcher('MY COOL', itemsWithLabels)
+    expect(result).toHaveLength(1)
+  })
+
+  it('matches when word is in name or label', async () => {
+    const itemsWithLabels = [
+      createItem('sd_v15.safetensors', 'Stable Diffusion 1.5')
+    ]
+    const result = await defaultSearcher('stable', itemsWithLabels)
+    expect(result).toHaveLength(1)
+  })
 })
 
 describe('getDefaultSortOptions', () => {

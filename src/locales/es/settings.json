@@ -400,7 +400,7 @@
     "name": "Diseño de barra de pestañas",
     "options": {
       "Default": "Predeterminado",
-      "Integrated": "Integrado"
+      "Legacy": "Clásico"
     },
     "tooltip": "Controla el diseño de la barra de pestañas. \"Integrado\" mueve los controles de Ayuda y Usuario al área de la barra de pestañas."
   },

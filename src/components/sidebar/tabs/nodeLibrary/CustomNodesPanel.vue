@@ -1,14 +1,14 @@
 <template>
-  <TabsContent value="custom" class="flex-1 flex flex-col h-full">
+  <TabsContent value="custom" class="flex h-full flex-1 flex-col">
     <div
       v-for="(section, index) in sections"
       :key="section.title ?? index"
-      class="flex-1 overflow-y-auto h-full"
+      class="h-full flex-1 overflow-y-auto"
     >
       <!-- Section header -->
       <h3
         v-if="section.title"
-        class="px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground mb-0"
+        class="mb-0 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
       >
         {{ section.title }}
       </h3>
@@ -20,7 +20,7 @@
         @node-click="(node) => emit('nodeClick', node)"
       />
     </div>
-    <div class="flex-none py-3 border-t border-border-default text-center">
+    <div class="flex-none border-t border-border-default py-3 text-center">
       <Button
         variant="secondary"
         class="justify-start gap-3"
@@ -46,7 +46,7 @@ import type {
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 
 defineProps<{
-  sections: NodeLibrarySection[]
+  sections: NodeLibrarySection<ComfyNodeDefImpl>[]
 }>()
 
 const expandedKeys = defineModel<string[]>('expandedKeys', { required: true })

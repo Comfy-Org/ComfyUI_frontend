@@ -1,7 +1,7 @@
 <template>
   <div class="grow overflow-auto pt-6">
     <div
-      class="flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke border-inter p-6"
+      class="border-inter flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
     >
       <!-- Section Header -->
       <div class="flex w-full items-center gap-9">
@@ -32,7 +32,7 @@
           v-if="uiConfig.showSearch && !isSingleSeatPlan"
           class="flex items-start gap-2"
         >
-          <SearchBox
+          <SearchInput
             v-model="searchQuery"
             :placeholder="$t('g.search')"
             size="lg"
@@ -153,7 +153,7 @@
                       </span>
                       <span
                         v-if="uiConfig.showRoleBadge"
-                        class="text-[10px] font-bold uppercase text-base-background bg-base-foreground px-1 py-0.5 rounded-full"
+                        class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
                       >
                         {{ $t('workspaceSwitcher.roleOwner') }}
                       </span>
@@ -202,7 +202,7 @@
                       </span>
                       <span
                         v-if="uiConfig.showRoleBadge"
-                        class="text-[10px] font-bold uppercase text-base-background bg-base-foreground px-1 py-0.5 rounded-full"
+                        class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
                       >
                         {{ getRoleBadgeLabel(member.role) }}
                       </span>
@@ -215,7 +215,7 @@
                 <!-- Join date -->
                 <span
                   v-if="uiConfig.showDateColumn && !isSingleSeatPlan"
-                  class="text-sm text-muted-foreground text-right"
+                  class="text-right text-sm text-muted-foreground"
                 >
                   {{ formatDate(member.joinDate) }}
                 </span>
@@ -248,9 +248,9 @@
           <!-- Upsell Banner -->
           <div
             v-if="isSingleSeatPlan"
-            class="flex items-center gap-2 rounded-xl border bg-secondary-background border-border-default px-4 py-3 mt-4 justify-center"
+            class="mt-4 flex items-center justify-center gap-2 rounded-xl border border-border-default bg-secondary-background px-4 py-3"
           >
-            <p class="m-0 text-sm text-foreground">
+            <p class="text-foreground m-0 text-sm">
               {{
                 isActiveSubscription
                   ? $t('workspacePanel.members.upsellBannerUpgrade')
@@ -259,7 +259,7 @@
             </p>
             <Button
               variant="muted-textonly"
-              class="cursor-pointer underline text-sm"
+              class="cursor-pointer text-sm underline"
               @click="showSubscriptionDialog()"
             >
               {{ $t('workspacePanel.members.viewPlans') }}
@@ -351,7 +351,7 @@
         {{ $t('workspacePanel.members.personalWorkspaceMessage') }}
       </p>
       <button
-        class="underline bg-transparent border-none cursor-pointer"
+        class="cursor-pointer border-none bg-transparent underline"
         @click="handleCreateWorkspace"
       >
         {{ $t('workspacePanel.members.createNewWorkspace') }}
@@ -367,7 +367,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -543,8 +543,7 @@ async function handleCopyInviteLink(invite: PendingInvite) {
   } catch {
     toast.add({
       severity: 'error',
-      summary: t('g.error'),
-      life: 3000
+      summary: t('g.error')
     })
   }
 }

@@ -570,10 +570,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Appearance', 'General'],
     name: 'Tab Bar Layout',
     type: 'combo',
-    options: ['Default', 'Integrated'],
-    tooltip:
-      'Controls the layout of the tab bar. "Integrated" moves Help and User controls into the tab bar area.',
-    defaultValue: 'Default'
+    options: ['Default', 'Legacy'],
+    tooltip: 'Controls the elements contained in the integrated tab bar.',
+    defaultValue: 'Default',
+    migrateDeprecatedValue: (value: unknown) =>
+      value === 'Integrated' ? 'Default' : value
   },
   {
     id: 'Comfy.UseNewMenu',
@@ -855,6 +856,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.37.0'
+  },
+  {
+    id: 'Comfy.WorkflowActions.SeenItems',
+    name: 'Seen new workflow action items',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.41.5'
   },
   {
     id: 'Comfy.Execution.PreviewMethod',
@@ -1193,12 +1201,19 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Queue.QPOV2',
     category: ['Comfy', 'Queue', 'Layout'],
-    name: 'Use the unified job queue in the Assets side panel',
+    name: 'Docked job history/queue panel',
     type: 'boolean',
     tooltip:
-      'Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout.',
+      'Replaces the floating job queue panel with an equivalent job queue embedded in the job history side panel. You can disable this to return to the floating panel layout.',
     defaultValue: false,
     experimental: true
+  },
+  {
+    id: 'Comfy.Queue.ShowRunProgressBar',
+    name: 'Show run progress bar',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.41.3'
   },
   {
     id: 'Comfy.Node.AlwaysShowAdvancedWidgets',

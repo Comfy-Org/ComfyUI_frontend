@@ -5,3 +5,10 @@ reviews:
   high_level_summary: false
   auto_review:
     drafts: true
+    ignore_title_keywords:
+      - '[release]'
+      - '[backport'
+    ignore_usernames:
+      - comfy-pr-bot
+      - github-actions
+      - github-actions[bot]
