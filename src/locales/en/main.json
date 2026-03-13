@@ -1011,6 +1011,13 @@
     "parallelUpTo": "Up to {count}",
     "parallelNew": "NEW"
   },
+  "concurrentExecution": {
+    "onboarding": {
+      "title": "Run Jobs in Parallel",
+      "description": "You can now run multiple workflows at the same time. Use the eye icon in the queue to control which job's progress is shown on the canvas.",
+      "gotIt": "Got it"
+    }
+  },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
     "closeTab": "Close Tab",
