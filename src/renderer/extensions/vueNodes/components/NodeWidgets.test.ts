@@ -153,4 +153,89 @@ describe('NodeWidgets', () => {
 
     expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
   })
+
+  it('prefers a visible duplicate over a hidden duplicate when identities collide', () => {
+    const hiddenDuplicate = createMockWidget({
+      name: 'string_a',
+      type: 'text',
+      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeName: 'string_a',
+      slotName: 'string_a',
+      options: { hidden: true }
+    })
+    const visibleDuplicate = createMockWidget({
+      name: 'string_a',
+      type: 'text',
+      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeName: 'string_a',
+      slotName: 'string_a',
+      options: { hidden: false }
+    })
+    const nodeData = createMockNodeData('SubgraphNode', [
+      hiddenDuplicate,
+      visibleDuplicate
+    ])
+
+    const wrapper = mountComponent(nodeData)
+
+    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(1)
+  })
+
+  it('does not deduplicate entries that share names but have different widget types', () => {
+    const textWidget = createMockWidget({
+      name: 'string_a',
+      type: 'text',
+      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeName: 'string_a',
+      slotName: 'string_a'
+    })
+    const comboWidget = createMockWidget({
+      name: 'string_a',
+      type: 'combo',
+      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      storeName: 'string_a',
+      slotName: 'string_a'
+    })
+    const nodeData = createMockNodeData('SubgraphNode', [
+      textWidget,
+      comboWidget
+    ])
+
+    const wrapper = mountComponent(nodeData)
+
+    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+  })
+
+  it('keeps unresolved same-name promoted entries distinct by source execution identity', () => {
+    const firstTransientEntry = createMockWidget({
+      nodeId: undefined,
+      storeNodeId: undefined,
+      name: 'string_a',
+      storeName: 'string_a',
+      slotName: 'string_a',
+      type: 'text',
+      sourceExecutionId: '65:18'
+    })
+    const secondTransientEntry = createMockWidget({
+      nodeId: undefined,
+      storeNodeId: undefined,
+      name: 'string_a',
+      storeName: 'string_a',
+      slotName: 'string_a',
+      type: 'text',
+      sourceExecutionId: '65:19'
+    })
+    const nodeData = createMockNodeData('SubgraphNode', [
+      firstTransientEntry,
+      secondTransientEntry
+    ])
+
+    const wrapper = mountComponent(nodeData)
+
+    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+  })
 })

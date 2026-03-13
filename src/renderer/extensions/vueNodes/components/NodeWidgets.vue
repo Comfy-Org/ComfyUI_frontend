@@ -241,22 +241,45 @@ function hasWidgetError(
 
 function getWidgetIdentity(
   widget: SafeWidgetData,
-  nodeId: string | number | undefined
+  nodeId: string | number | undefined,
+  index: number
 ): {
   bareWidgetId: string
   storeWidgetName: string
-  widgetIdentity: string
+  dedupeIdentity?: string
+  renderKey: string
 } {
-  const rawWidgetId = widget.storeNodeId ?? widget.nodeId ?? nodeId ?? ''
-  const bareWidgetId = String(stripGraphPrefix(rawWidgetId))
+  const rawWidgetId = widget.storeNodeId ?? widget.nodeId
+  const widgetIdForStoreLookup = rawWidgetId ?? nodeId ?? ''
+  const bareWidgetId = String(stripGraphPrefix(widgetIdForStoreLookup))
   const storeWidgetName = widget.storeName ?? widget.name
   const slotNameForIdentity = widget.slotName ?? widget.name
+  const typeForIdentity = widget.type
+  const stableIdentityRoot = rawWidgetId
+    ? `node:${String(stripGraphPrefix(rawWidgetId))}`
+    : widget.sourceExecutionId
+      ? `exec:${widget.sourceExecutionId}`
+      : undefined
+
+  const dedupeIdentity = stableIdentityRoot
+    ? `${stableIdentityRoot}:${storeWidgetName}:${slotNameForIdentity}:${typeForIdentity}`
+    : undefined
+  const renderKey =
+    dedupeIdentity ??
+    `transient:${String(nodeId ?? '')}:${storeWidgetName}:${slotNameForIdentity}:${typeForIdentity}:${index}`
 
   return {
     bareWidgetId,
     storeWidgetName,
-    widgetIdentity: `${String(bareWidgetId)}:${storeWidgetName}:${slotNameForIdentity}`
+    dedupeIdentity,
+    renderKey
   }
+}
+
+function isWidgetVisible(widget: SafeWidgetData): boolean {
+  const hidden = widget.options?.hidden ?? false
+  const advanced = widget.options?.advanced ?? false
+  return !hidden && (!advanced || showAdvanced.value)
 }
 
 const processedWidgets = computed((): ProcessedWidget[] => {
@@ -264,7 +287,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
   // nodeData.id is the local node ID; subgraph nodes need the full execution
   // path (e.g. "65:63") to match keys in lastNodeErrors.
-  const nodeExecId = app.rootGraph
+  const nodeExecId = app.isGraphReady
     ? getExecutionIdFromNodeData(app.rootGraph, nodeData)
     : String(nodeData.id ?? '')
 
@@ -277,22 +300,36 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const uniqueWidgets: Array<{
     widget: SafeWidgetData
     identity: ReturnType<typeof getWidgetIdentity>
+    isVisible: boolean
   }> = []
-  const seenWidgetIdentities = new Set<string>()
+  const dedupeIndexByIdentity = new Map<string, number>()
 
-  for (const widget of widgets) {
+  for (const [index, widget] of widgets.entries()) {
     if (!shouldRenderAsVue(widget)) continue
 
-    const identity = getWidgetIdentity(widget, nodeId)
-    if (seenWidgetIdentities.has(identity.widgetIdentity)) continue
+    const identity = getWidgetIdentity(widget, nodeId, index)
+    const visible = isWidgetVisible(widget)
+    if (!identity.dedupeIdentity) {
+      uniqueWidgets.push({ widget, identity, isVisible: visible })
+      continue
+    }
 
-    seenWidgetIdentities.add(identity.widgetIdentity)
-    uniqueWidgets.push({ widget, identity })
+    const existingIndex = dedupeIndexByIdentity.get(identity.dedupeIdentity)
+    if (existingIndex === undefined) {
+      dedupeIndexByIdentity.set(identity.dedupeIdentity, uniqueWidgets.length)
+      uniqueWidgets.push({ widget, identity, isVisible: visible })
+      continue
+    }
+
+    const existingWidget = uniqueWidgets[existingIndex]
+    if (existingWidget && !existingWidget.isVisible && visible) {
+      uniqueWidgets[existingIndex] = { widget, identity, isVisible: true }
+    }
   }
 
   for (const {
     widget,
-    identity: { bareWidgetId, storeWidgetName, widgetIdentity }
+    identity: { bareWidgetId, storeWidgetName, renderKey }
   } of uniqueWidgets) {
     const isPromotedView = !!widget.nodeId
 
@@ -367,9 +404,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError: hasWidgetError(widget, nodeExecId, nodeErrors),
       hidden: widget.options?.hidden ?? false,
-      id: widgetIdentity,
+      id: renderKey,
       name: widget.name,
-      renderKey: widgetIdentity,
+      renderKey,
       type: widget.type,
       vueComponent,
       simplified,
