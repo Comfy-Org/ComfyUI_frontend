@@ -862,7 +862,7 @@
     "promptExecutionError": "Falha na execução do prompt"
   },
   "errorOverlay": {
-    "errorCount": "{count} ERROS | {count} ERRO | {count} ERROS",
+    "errorCount": "{count} ERRO | {count} ERROS",
     "seeErrors": "Ver erros"
   },
   "essentials": {
@@ -909,7 +909,7 @@
     "downloadFailed": "Falha ao baixar \"{name}\"",
     "exportCompleted": "Download ZIP pronto",
     "exportError": "Falha na exportação",
-    "exportFailed": "{count} exportação falhou | {count} exportação falhou | {count} exportações falharam",
+    "exportFailed": "{count} exportação falhou | {count} exportações falharam",
     "exportFailedSingle": "Falha ao criar exportação ZIP",
     "exportStarted": "Preparando download ZIP...",
     "exportingAssets": "Exportando ativos",
@@ -928,7 +928,7 @@
     "amount": "Quantidade",
     "apply": "Aplicar",
     "architecture": "Arquitetura",
-    "asset": "{count} ativos | {count} ativo | {count} ativos",
+    "asset": "{count} ativo | {count} ativos",
     "audioFailedToLoad": "Falha ao carregar áudio",
     "audioProgress": "Progresso do áudio",
     "author": "Autor",
@@ -1114,7 +1114,7 @@
     "nodeSlotsError": "Erro nos slots do nó",
     "nodeWidgetsError": "Erro nos widgets do nó",
     "nodes": "Nós",
-    "nodesCount": "{count} nós | {count} nó | {count} nós",
+    "nodesCount": "{count} nó | {count} nós",
     "nodesRunning": "nós em execução",
     "none": "Nenhum",
     "nothingToCopy": "Nada para copiar",
@@ -2295,7 +2295,7 @@
   "progressToast": {
     "allDownloadsCompleted": "Todos os downloads concluídos",
     "downloadingModel": "Baixando modelo...",
-    "downloadsFailed": "{count} downloads falharam | {count} download falhou | {count} downloads falharam",
+    "downloadsFailed": "{count} download falhou | {count} downloads falharam",
     "failed": "Falhou",
     "filter": {
       "all": "Todos",
