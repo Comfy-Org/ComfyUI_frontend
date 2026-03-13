@@ -181,7 +181,6 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     store = useExecutionStore()
   })
 
-
   it('should resolve execution IDs to locator IDs for subgraph nodes', () => {
     const mockSubgraph = {
       id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -386,7 +385,6 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
       MAX_PROGRESS_JOBS
     )
     expect(store.nodeProgressStatesByJob).toHaveProperty('job-0')
-
   })
 })
 
