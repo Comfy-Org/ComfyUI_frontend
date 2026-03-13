@@ -11306,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "цвет_фона"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Необязательное базовое изображение для рисования поверх"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Объединение пар кондиционирования",
     "inputs": {

@@ -11306,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "bg_color": {
+        "name": "bg_color"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional base image to paint over"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Cond Pair Combine",
     "inputs": {
