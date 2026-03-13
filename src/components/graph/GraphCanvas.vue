@@ -381,10 +381,17 @@ watch(
  * No `deep: true` needed — `nodeLocationProgressStates` is a computed that
  * returns a new `Record` object on every progress event (the underlying
  * `nodeProgressStates` ref is replaced wholesale by the WebSocket handler).
+ *
+ * `currentGraph` triggers this watcher on subgraph navigation so stale
+ * progress bars are cleared when returning to the root graph.
  */
 watch(
   () =>
-    [executionStore.nodeLocationProgressStates, canvasStore.canvas] as const,
+    [
+      executionStore.nodeLocationProgressStates,
+      canvasStore.canvas,
+      canvasStore.currentGraph
+    ] as const,
   ([nodeLocationProgressStates, canvas]) => {
     if (!canvas?.graph) return
     for (const node of canvas.graph.nodes) {
