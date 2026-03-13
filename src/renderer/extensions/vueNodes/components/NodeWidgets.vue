@@ -269,9 +269,9 @@ function getWidgetIdentity(
   }
 }
 
-function isWidgetVisible(widget: SafeWidgetData): boolean {
-  const hidden = widget.options?.hidden ?? false
-  const advanced = widget.options?.advanced ?? false
+function isWidgetVisible(options: IWidgetOptions): boolean {
+  const hidden = options.hidden ?? false
+  const advanced = options.advanced ?? false
   return !hidden && (!advanced || showAdvanced.value)
 }
 
@@ -293,6 +293,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const uniqueWidgets: Array<{
     widget: SafeWidgetData
     identity: ReturnType<typeof getWidgetIdentity>
+    mergedOptions: IWidgetOptions
+    widgetState: WidgetState | undefined
     isVisible: boolean
   }> = []
   const dedupeIndexByIdentity = new Map<string, number>()
@@ -301,30 +303,60 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     if (!shouldRenderAsVue(widget)) continue
 
     const identity = getWidgetIdentity(widget, nodeId, index)
-    const visible = isWidgetVisible(widget)
+    const storeWidgetName = widget.storeName ?? widget.name
+    const bareWidgetId = String(
+      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
+    )
+    const widgetState = graphId
+      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
+      : undefined
+    const mergedOptions: IWidgetOptions = {
+      ...(widget.options ?? {}),
+      ...(widgetState?.options ?? {})
+    }
+    const visible = isWidgetVisible(mergedOptions)
     if (!identity.dedupeIdentity) {
-      uniqueWidgets.push({ widget, identity, isVisible: visible })
+      uniqueWidgets.push({
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: visible
+      })
       continue
     }
 
     const existingIndex = dedupeIndexByIdentity.get(identity.dedupeIdentity)
     if (existingIndex === undefined) {
       dedupeIndexByIdentity.set(identity.dedupeIdentity, uniqueWidgets.length)
-      uniqueWidgets.push({ widget, identity, isVisible: visible })
+      uniqueWidgets.push({
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: visible
+      })
       continue
     }
 
     const existingWidget = uniqueWidgets[existingIndex]
     if (existingWidget && !existingWidget.isVisible && visible) {
-      uniqueWidgets[existingIndex] = { widget, identity, isVisible: true }
+      uniqueWidgets[existingIndex] = {
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: true
+      }
     }
   }
 
   for (const {
     widget,
+    mergedOptions,
+    widgetState,
     identity: { renderKey }
   } of uniqueWidgets) {
-    const storeWidgetName = widget.storeName ?? widget.name
     const bareWidgetId = String(
       stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
     )
@@ -336,28 +368,22 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const { slotMetadata } = widget
 
-    // Get metadata from store (registered during BaseWidget.setNodeId)
-    const widgetState = graphId
-      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
-      : undefined
-
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
 
     // Build options from store state, with disabled override for
     // slot-linked widgets or widgets with disabled state (e.g. display-only)
-    const storeOptions = widgetState?.options ?? {}
     const isDisabled = slotMetadata?.linked || widgetState?.disabled
     const widgetOptions = isDisabled
-      ? { ...storeOptions, disabled: true }
-      : storeOptions
+      ? { ...mergedOptions, disabled: true }
+      : mergedOptions
 
     const borderStyle =
       graphId &&
       !isPromotedView &&
       promotionStore.isPromotedByAny(graphId, String(bareWidgetId), widget.name)
         ? 'ring ring-component-node-widget-promoted'
-        : widget.options?.advanced
+        : mergedOptions.advanced
           ? 'ring ring-component-node-widget-advanced'
           : undefined
 
@@ -396,12 +422,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     }
 
     result.push({
-      advanced: widget.options?.advanced ?? false,
+      advanced: mergedOptions.advanced ?? false,
       handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError: hasWidgetError(widget, nodeExecId, nodeErrors),
-      hidden: widget.options?.hidden ?? false,
-      id: bareWidgetId,
+      hidden: mergedOptions.hidden ?? false,
+      id: `${bareWidgetId}:${renderKey}`,
       name: widget.name,
       renderKey,
       type: widget.type,

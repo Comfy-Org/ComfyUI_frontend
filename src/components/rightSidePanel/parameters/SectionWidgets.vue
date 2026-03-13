@@ -23,6 +23,7 @@ import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
+import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
 
 const {
   label,
@@ -91,17 +92,6 @@ function isWidgetShownOnParents(
       widget.name
     )
   })
-}
-
-function getWidgetRenderKey(
-  widgetNode: LGraphNode,
-  widget: IBaseWidget
-): string {
-  if (isPromotedWidgetView(widget)) {
-    return `${String(widgetNode.id)}:${widget.sourceNodeId}:${widget.sourceWidgetName}:${widget.name}:${widget.type}`
-  }
-
-  return `${String(widgetNode.id)}:${widget.name}:${widget.type}`
 }
 
 const isEmpty = computed(() => widgets.value.length === 0)
@@ -283,7 +273,7 @@ defineExpose({
         <TransitionGroup name="list-scale">
           <WidgetItem
             v-for="{ widget, node } in widgets"
-            :key="getWidgetRenderKey(node, widget)"
+            :key="getStableWidgetRenderKey(widget)"
             :widget="widget"
             :node="node"
             :is-draggable="isDraggable"

@@ -281,6 +281,31 @@ describe(createPromotedWidgetView, () => {
     expect(fallbackWidget.value).toBe('updated')
   })
 
+  test('value setter falls back to host widget when linked states are unavailable', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'string_a', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 124 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNode = new LGraphNode('LinkedNode')
+    const linkedInput = linkedNode.addInput('string_a', '*')
+    linkedNode.addWidget('text', 'string_a', 'initial', () => {})
+    linkedInput.widget = { name: 'string_a' }
+    subgraph.add(linkedNode)
+    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+
+    const linkedView = promotedWidgets(subgraphNode)[0]
+    if (!linkedView) throw new Error('Expected a linked promoted widget')
+
+    const widgetValueStore = useWidgetValueStore()
+    vi.spyOn(widgetValueStore, 'getWidget').mockReturnValue(undefined)
+
+    linkedView.value = 'updated'
+
+    expect(linkedNode.widgets?.[0].value).toBe('updated')
+  })
+
   test('label falls back to displayName then widgetName', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
@@ -755,6 +780,52 @@ describe('SubgraphNode.widgets getter', () => {
     ])
   })
 
+  test('full linked coverage does not prune unresolved independent fallback promotions', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'widgetA', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 125 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const liveNode = new LGraphNode('LiveNode')
+    const liveInput = liveNode.addInput('widgetA', '*')
+    liveNode.addWidget('text', 'widgetA', 'a', () => {})
+    liveInput.widget = { name: 'widgetA' }
+    subgraph.add(liveNode)
+    subgraph.inputNode.slots[0].connect(liveInput, liveNode)
+
+    setPromotions(subgraphNode, [
+      [String(liveNode.id), 'widgetA'],
+      ['9999', 'widgetA']
+    ])
+
+    callSyncPromotions(subgraphNode)
+
+    const promotions = usePromotionStore().getPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+    expect(promotions).toStrictEqual([
+      { interiorNodeId: String(liveNode.id), widgetName: 'widgetA' },
+      { interiorNodeId: '9999', widgetName: 'widgetA' }
+    ])
+  })
+
+  test('input-added existing-input path tolerates missing link metadata', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'widgetA', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 126 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const existingSlot = subgraph.inputNode.slots[0]
+    if (!existingSlot) throw new Error('Expected subgraph input slot')
+
+    expect(() => {
+      subgraph.events.dispatch('input-added', { input: existingSlot })
+    }).not.toThrow()
+  })
+
   test('syncPromotions prunes stale connected entries but keeps independent promotions', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'string_a', type: '*' }]
@@ -904,6 +975,76 @@ describe('SubgraphNode.widgets getter', () => {
     const restoredWidgets = promotedWidgets(restoredNode)
     expect(restoredWidgets).toHaveLength(1)
     expect(restoredWidgets[0].sourceNodeId).toBe(String(activeAliasNode.id))
+  })
+
+  test('serialize syncs duplicate-name linked inputs by subgraph slot identity', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'seed', type: '*' },
+        { name: 'seed', type: '*' }
+      ]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 127 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const firstNode = new LGraphNode('FirstNode')
+    const firstInput = firstNode.addInput('seed', '*')
+    firstNode.addWidget('text', 'seed', 'first-initial', () => {})
+    firstInput.widget = { name: 'seed' }
+    subgraph.add(firstNode)
+
+    const secondNode = new LGraphNode('SecondNode')
+    const secondInput = secondNode.addInput('seed', '*')
+    secondNode.addWidget('text', 'seed', 'second-initial', () => {})
+    secondInput.widget = { name: 'seed' }
+    subgraph.add(secondNode)
+
+    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
+    subgraph.inputNode.slots[1].connect(secondInput, secondNode)
+
+    const widgets = promotedWidgets(subgraphNode)
+    const firstView = widgets[0]
+    const secondView = widgets[1]
+    if (!firstView || !secondView)
+      throw new Error('Expected two linked promoted views')
+
+    firstView.value = 'first-updated'
+    secondView.value = 'second-updated'
+
+    expect(firstNode.widgets?.[0].value).toBe('first-updated')
+    expect(secondNode.widgets?.[0].value).toBe('second-updated')
+
+    subgraphNode.serialize()
+
+    expect(firstNode.widgets?.[0].value).toBe('first-updated')
+    expect(secondNode.widgets?.[0].value).toBe('second-updated')
+  })
+
+  test('renaming an input updates linked promoted view display names', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 128 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNode = new LGraphNode('LinkedNode')
+    const linkedInput = linkedNode.addInput('seed', '*')
+    linkedNode.addWidget('text', 'seed', 'value', () => {})
+    linkedInput.widget = { name: 'seed' }
+    subgraph.add(linkedNode)
+    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+
+    const beforeRename = promotedWidgets(subgraphNode)[0]
+    if (!beforeRename) throw new Error('Expected linked promoted view')
+    expect(beforeRename.name).toBe('seed')
+
+    const inputToRename = subgraph.inputs[0]
+    if (!inputToRename) throw new Error('Expected input to rename')
+    subgraph.renameInput(inputToRename, 'seed_renamed')
+
+    const afterRename = promotedWidgets(subgraphNode)[0]
+    if (!afterRename) throw new Error('Expected linked promoted view')
+    expect(afterRename.name).toBe('seed_renamed')
   })
 
   test('caches view objects across getter calls (stable references)', () => {

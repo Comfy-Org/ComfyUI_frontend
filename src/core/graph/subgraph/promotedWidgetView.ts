@@ -136,13 +136,17 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const linkedWidgets = this.getLinkedInputWidgets()
     if (linkedWidgets.length > 0) {
       const widgetStore = useWidgetValueStore()
+      let didUpdateState = false
       for (const linkedWidget of linkedWidgets) {
         const state = widgetStore.getWidget(
           this.graphId,
           linkedWidget.nodeId,
           linkedWidget.widgetName
         )
-        if (state) state.value = value
+        if (state) {
+          state.value = value
+          didUpdateState = true
+        }
       }
 
       const resolved = this.resolveDeepest()
@@ -152,10 +156,13 @@ class PromotedWidgetView implements IPromotedWidgetView {
           stripGraphPrefix(String(resolved.node.id)),
           resolved.widget.name
         )
-        if (resolvedState) resolvedState.value = value
+        if (resolvedState) {
+          resolvedState.value = value
+          didUpdateState = true
+        }
       }
 
-      return
+      if (didUpdateState) return
     }
 
     const state = this.getWidgetState()

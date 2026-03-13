@@ -7,6 +7,7 @@ import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
@@ -242,11 +243,7 @@ function safeWidgetMapper(
       }
     }
 
-    const matchedInput = node.inputs?.find((input) => {
-      if (input.name === widget.name) return true
-      if (input._widget === widget) return true
-      return false
-    })
+    const matchedInput = matchPromotedInput(node.inputs, widget)
     const promotedInputName = matchedInput?.name
     const displayName = promotedInputName ?? widget.name
     const directSource = {

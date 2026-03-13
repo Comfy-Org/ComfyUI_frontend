@@ -1,13 +1,28 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import type {
   SafeWidgetData,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({
+    canvas: {
+      graph: {
+        rootGraph: {
+          id: 'graph-test'
+        }
+      }
+    }
+  })
+}))
 
 describe('NodeWidgets', () => {
   const createMockWidget = (
@@ -40,12 +55,15 @@ describe('NodeWidgets', () => {
   })
 
   const mountComponent = (nodeData?: VueNodeData) => {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+
     return mount(NodeWidgets, {
       props: {
         nodeData
       },
       global: {
-        plugins: [createTestingPinia()],
+        plugins: [pinia],
         stubs: {
           // Stub InputSlot to avoid complex slot registration dependencies
           InputSlot: true
@@ -237,5 +255,45 @@ describe('NodeWidgets', () => {
     const wrapper = mountComponent(nodeData)
 
     expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+  })
+
+  it('hides widgets when merged store options mark them hidden', async () => {
+    const nodeData = createMockNodeData('TestNode', [
+      createMockWidget({
+        nodeId: 'test_node',
+        name: 'test_widget',
+        options: { hidden: false }
+      })
+    ])
+
+    const wrapper = mountComponent(nodeData)
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.registerWidget('graph-test', {
+      nodeId: 'test_node',
+      name: 'test_widget',
+      type: 'combo',
+      value: 'value',
+      options: { hidden: true },
+      label: undefined,
+      serialize: true,
+      disabled: false
+    })
+
+    await nextTick()
+
+    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(0)
+  })
+
+  it('assigns unique AppInput ids for widgets on the same node', () => {
+    const nodeData = createMockNodeData('TestNode', [
+      createMockWidget({ nodeId: 'test_node', name: 'seed_a', type: 'text' }),
+      createMockWidget({ nodeId: 'test_node', name: 'seed_b', type: 'text' })
+    ])
+
+    const wrapper = mountComponent(nodeData)
+    const appInputWrappers = wrapper.findAllComponents({ name: 'AppInput' })
+    const ids = appInputWrappers.map((component) => component.props('id'))
+
+    expect(new Set(ids).size).toBe(2)
   })
 })

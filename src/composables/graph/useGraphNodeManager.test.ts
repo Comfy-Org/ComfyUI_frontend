@@ -241,6 +241,62 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 
     expect(widgetData?.slotMetadata?.linked).toBe(false)
   })
+
+  it('prefers exact _widget input matches before same-name fallbacks for promoted widgets', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'seed', type: '*' },
+        { name: 'seed', type: '*' }
+      ]
+    })
+
+    const firstNode = new LGraphNode('FirstNode')
+    const firstInput = firstNode.addInput('seed', '*')
+    firstNode.addWidget('number', 'seed', 1, () => undefined, {})
+    firstInput.widget = { name: 'seed' }
+    subgraph.add(firstNode)
+
+    const secondNode = new LGraphNode('SecondNode')
+    const secondInput = secondNode.addInput('seed', '*')
+    secondNode.addWidget('number', 'seed', 2, () => undefined, {})
+    secondInput.widget = { name: 'seed' }
+    subgraph.add(secondNode)
+
+    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
+    subgraph.inputNode.slots[1].connect(secondInput, secondNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 124 })
+    const graph = subgraphNode.graph
+    if (!graph) throw new Error('Expected subgraph node graph')
+    graph.add(subgraphNode)
+
+    const promotedViews = subgraphNode.widgets
+    const secondPromotedView = promotedViews[1]
+    if (!secondPromotedView) throw new Error('Expected second promoted view')
+
+    ;(
+      secondPromotedView as unknown as {
+        sourceNodeId: string
+        sourceWidgetName: string
+      }
+    ).sourceNodeId = '9999'
+    ;(
+      secondPromotedView as unknown as {
+        sourceNodeId: string
+        sourceWidgetName: string
+      }
+    ).sourceWidgetName = 'stale_widget'
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const secondMappedWidget = nodeData?.widgets?.find(
+      (widget) => widget.slotMetadata?.index === 1
+    )
+    if (!secondMappedWidget)
+      throw new Error('Expected mapped widget for slot 1')
+
+    expect(secondMappedWidget.name).not.toBe('stale_widget')
+  })
 })
 
 describe('Subgraph output slot label reactivity', () => {
