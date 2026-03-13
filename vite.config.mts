@@ -429,12 +429,15 @@ export default defineConfig({
     ...(DISTRIBUTION === 'cloud' &&
     process.env.SENTRY_AUTH_TOKEN &&
     process.env.SENTRY_ORG &&
-    process.env.SENTRY_PROJECT &&
+    (process.env.SENTRY_PROJECT || process.env.SENTRY_PROJECT_PROD) &&
     !IS_DEV
       ? [
           sentryVitePlugin({
             org: process.env.SENTRY_ORG,
-            project: process.env.SENTRY_PROJECT,
+            project:
+              (process.env.USE_PROD_CONFIG === 'true'
+                ? process.env.SENTRY_PROJECT_PROD
+                : process.env.SENTRY_PROJECT) || '',
             authToken: process.env.SENTRY_AUTH_TOKEN,
             sourcemaps: {
               // Delete source maps after upload to prevent public access
