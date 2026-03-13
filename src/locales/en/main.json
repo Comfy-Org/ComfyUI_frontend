@@ -2629,7 +2629,9 @@
     "graph": "Graph",
     "app": "App",
     "enterNodeGraph": "Enter node graph",
-    "share": "Share"
+    "share": "Share",
+    "publishToMarketplace": "Publish to Marketplace",
+    "myTemplates": "My Templates"
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",
@@ -3599,5 +3601,53 @@
   "builderMenu": {
     "enterAppMode": "Enter app mode",
     "exitAppBuilder": "Exit app builder"
+  },
+  "marketplace": {
+    "publishToMarketplace": "Publish to Marketplace",
+    "steps": {
+      "details": "Details",
+      "preview": "Preview",
+      "submit": "Submit"
+    },
+    "title": "Title",
+    "titlePlaceholder": "Enter workflow title",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe your workflow",
+    "shortDescription": "Short Description",
+    "shortDescriptionPlaceholder": "Brief summary",
+    "thumbnail": "Thumbnail",
+    "categories": "Categories",
+    "tags": "Tags",
+    "difficulty": "Difficulty",
+    "license": "License",
+    "next": "Next",
+    "back": "Back",
+    "saveDraft": "Save Draft",
+    "submitForReview": "Submit for Review",
+    "submitting": "Submitting...",
+    "submitted": "Submitted for review!",
+    "uploadThumbnail": "Upload Thumbnail",
+    "previewTitle": "Preview",
+    "previewDescription": "This is how your template will appear in the marketplace.",
+    "authorDashboard": "My Templates",
+    "status": {
+      "draft": "Draft",
+      "pending_review": "Pending Review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "unpublished": "Unpublished"
+    },
+    "stats": {
+      "downloads": "Downloads",
+      "favorites": "Favorites",
+      "rating": "Rating",
+      "trend": "Trend"
+    },
+    "period": {
+      "day": "Today",
+      "week": "This Week",
+      "month": "This Month"
+    },
+    "errorUnavailable": "Marketplace is unavailable. Start the mock server (pnpm mock:marketplace) and run the app with pnpm dev:marketplace to use this feature."
   }
 }

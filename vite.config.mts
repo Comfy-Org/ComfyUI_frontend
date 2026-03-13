@@ -85,6 +85,8 @@ const DEV_SEVER_FALLBACK_URL =
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 
+const DEV_SERVER_MARKETPLACE_URL = process.env.DEV_SERVER_MARKETPLACE_URL
+
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
 
@@ -185,6 +187,15 @@ export default defineConfig({
         ? {
             '/api/view': gcsRedirectProxyConfig,
             '/api/viewvideo': gcsRedirectProxyConfig
+          }
+        : {}),
+
+      ...(DEV_SERVER_MARKETPLACE_URL
+        ? {
+            '/api/marketplace': {
+              target: DEV_SERVER_MARKETPLACE_URL,
+              changeOrigin: true
+            }
           }
         : {}),
 
@@ -636,7 +647,8 @@ export default defineConfig({
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
       reporter: ['text', 'json', 'html']

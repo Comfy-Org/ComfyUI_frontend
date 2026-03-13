@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { useAuthorDashboardDialog } from '@/platform/marketplace/composables/useAuthorDashboardDialog'
+import { usePublishDialog } from '@/platform/marketplace/composables/usePublishDialog'
 import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -47,6 +49,8 @@ export function useWorkflowActionsMenu(
 ) {
   const { isRoot = true, includeDelete = true, workflow } = options
   const { t } = useI18n()
+  const { show: showPublishDialog } = usePublishDialog()
+  const { show: showAuthorDashboard } = useAuthorDashboardDialog()
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const bookmarkStore = useWorkflowBookmarkStore()
@@ -199,6 +203,34 @@ export function useWorkflowActionsMenu(
       command: () =>
         openShareDialog().catch(useErrorHandling().toastErrorHandler),
       visible: isCloud && flags.workflowSharingEnabled
+    })
+
+    addItem({
+      id: 'publish-marketplace',
+      label: t('breadcrumbsMenu.publishToMarketplace'),
+      icon: 'icon-[lucide--store]',
+      command: () => {
+        try {
+          showPublishDialog()
+        } catch (e) {
+          useErrorHandling().toastErrorHandler(e)
+        }
+      },
+      visible: isRoot
+    })
+
+    addItem({
+      id: 'my-templates',
+      label: t('breadcrumbsMenu.myTemplates'),
+      icon: 'icon-[lucide--layout-list]',
+      command: () => {
+        try {
+          showAuthorDashboard()
+        } catch (e) {
+          useErrorHandling().toastErrorHandler(e)
+        }
+      },
+      visible: isRoot
     })
 
     addItem({

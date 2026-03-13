@@ -36,7 +36,8 @@ const settings = {
       project: [
         './tsconfig.json',
         './apps/*/tsconfig.json',
-        './packages/*/tsconfig.json'
+        './packages/*/tsconfig.json',
+        './tools/*/tsconfig.json'
       ],
       noWarnOnMultipleProjects: true
     })
