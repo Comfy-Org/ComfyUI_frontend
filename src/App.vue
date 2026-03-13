@@ -104,22 +104,24 @@ onMounted(() => {
     })
   })
 
-  // Capture resource load failures (CSS, scripts) in production
-  window.addEventListener(
-    'error',
-    (event) => {
-      const target = event.target
-      if (target instanceof HTMLScriptElement) {
-        handleResourceError(target.src, 'script')
-      } else if (
-        target instanceof HTMLLinkElement &&
-        target.rel === 'stylesheet'
-      ) {
-        handleResourceError(target.href, 'link')
-      }
-    },
-    true
-  )
+  // Capture resource load failures (CSS, scripts) in non-localhost distributions
+  if (__DISTRIBUTION__ !== 'localhost') {
+    window.addEventListener(
+      'error',
+      (event) => {
+        const target = event.target
+        if (target instanceof HTMLScriptElement) {
+          handleResourceError(target.src, 'script')
+        } else if (
+          target instanceof HTMLLinkElement &&
+          target.rel === 'stylesheet'
+        ) {
+          handleResourceError(target.href, 'link')
+        }
+      },
+      true
+    )
+  }
 
   // Initialize conflict detection in background
   // This runs async and doesn't block UI setup

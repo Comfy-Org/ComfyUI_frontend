@@ -69,6 +69,17 @@
     "resetAll": "Reset All",
     "clearFilters": "Clear Filters",
     "resetAllKeybindingsTooltip": "Reset all keybindings to default",
+    "resetAllKeybindingsTitle": "Reset all keybindings?",
+    "resetAllKeybindingsMessage": "All keybindings will be reset to their default values. This cannot be undone.",
+    "allKeybindingsReset": "All keybindings reset to default",
+    "removeAllKeybindingsTitle": "Remove all keybindings?",
+    "removeAllKeybindingsMessage": "All keybindings for this command will be removed",
+    "removeAll": "Remove all",
+    "changeKeybinding": "Change keybinding",
+    "addNewKeybinding": "Add new keybinding",
+    "resetToDefault": "Reset to default",
+    "removeKeybinding": "Remove keybinding",
+    "nMoreKeybindings": "+ {count} more",
     "customizeFolder": "Customize Folder",
     "icon": "Icon",
     "color": "Color",
@@ -498,7 +509,12 @@
     "cyan": "Cyan",
     "purple": "Purple",
     "black": "Black",
-    "custom": "Custom"
+    "custom": "Custom",
+    "hex": "Hex",
+    "rgba": "RGBA",
+    "saturationBrightness": "Color saturation and brightness",
+    "hue": "Hue",
+    "alpha": "Alpha"
   },
   "contextMenu": {
     "Inputs": "Inputs",
@@ -2513,7 +2529,7 @@
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
-      "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
+      "message": "Workspaces create a new credit pool that can be shared among members. You'll become the owner after creating this.",
       "nameLabel": "Workspace name*",
       "namePlaceholder": "Enter workspace name",
       "create": "Create"
