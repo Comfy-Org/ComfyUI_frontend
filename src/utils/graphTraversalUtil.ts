@@ -657,15 +657,13 @@ export function getExecutionIdsForSelectedNodes(
     : findPartialExecutionPathToGraph(startGraph, rootGraph)
   if (parentPath === undefined) return []
 
+  const buildExecId = (node: LGraphNode, parentExecutionId: string) => {
+    const nodeId = String(node.id)
+    return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
+  }
   return collectFromNodes<NodeExecutionId, string>(selectedNodes, {
-    collector: (node, parentExecutionId) => {
-      const nodeId = String(node.id)
-      return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
-    },
-    contextBuilder: (node, parentExecutionId) => {
-      const nodeId = String(node.id)
-      return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
-    },
+    collector: buildExecId,
+    contextBuilder: buildExecId,
     initialContext: parentPath,
     expandSubgraphs: true
   })

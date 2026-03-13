@@ -7,11 +7,31 @@
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+
+function resolvePromotedExecId(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  widget: IBaseWidget,
+  hostExecId: string
+): string {
+  if (!isPromotedWidgetView(widget)) return hostExecId
+  const result = resolveConcretePromotedWidget(
+    node,
+    widget.sourceNodeId,
+    widget.sourceWidgetName
+  )
+  if (result.status === 'resolved' && result.resolved.node) {
+    return getExecutionIdByNode(rootGraph, result.resolved.node) ?? hostExecId
+  }
+  return hostExecId
+}
 
 function installNodeHooks(node: LGraphNode): void {
   node.onConnectionsChange = useChainCallback(
@@ -31,8 +51,15 @@ function installNodeHooks(node: LGraphNode): void {
     node.onWidgetChanged,
     function (_name, newValue, _oldValue, widget) {
       if (!app.rootGraph) return
-      const execId = getExecutionIdByNode(app.rootGraph, node)
-      if (!execId) return
+      const hostExecId = getExecutionIdByNode(app.rootGraph, node)
+      if (!hostExecId) return
+
+      const execId = resolvePromotedExecId(
+        app.rootGraph,
+        node,
+        widget,
+        hostExecId
+      )
       const widgetName = isPromotedWidgetView(widget)
         ? widget.sourceWidgetName
         : widget.name
@@ -48,7 +75,7 @@ function installNodeHooks(node: LGraphNode): void {
 }
 
 export function installErrorClearingHooks(graph: LGraph): () => void {
-  for (const node of graph._nodes) {
+  for (const node of graph._nodes ?? []) {
     installNodeHooks(node)
   }
 

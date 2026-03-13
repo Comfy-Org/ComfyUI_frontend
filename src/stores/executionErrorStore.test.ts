@@ -478,3 +478,55 @@ describe('executionErrorStore — node error operations', () => {
     })
   })
 })
+
+describe('clearAllErrors', () => {
+  let store: ReturnType<typeof useExecutionErrorStore>
+
+  beforeEach(() => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    store = useExecutionErrorStore()
+  })
+
+  it('resets all error categories and closes error overlay', () => {
+    store.lastExecutionError = {
+      prompt_id: 'test',
+      timestamp: 0,
+      node_id: '1',
+      node_type: 'Test',
+      executed: [],
+      exception_message: 'fail',
+      exception_type: 'RuntimeError',
+      traceback: []
+    }
+    store.lastPromptError = { type: 'execution', message: 'fail', details: '' }
+    store.lastNodeErrors = {
+      '1': {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing',
+            details: '',
+            extra_info: { input_name: 'x' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'Test'
+      }
+    }
+    store.missingNodesError = {
+      message: 'Missing nodes',
+      nodeTypes: [{ type: 'MissingNode', hint: '' }]
+    }
+    store.showErrorOverlay()
+
+    store.clearAllErrors()
+
+    expect(store.lastExecutionError).toBeNull()
+    expect(store.lastPromptError).toBeNull()
+    expect(store.lastNodeErrors).toBeNull()
+    expect(store.missingNodesError).toBeNull()
+    expect(store.isErrorOverlayOpen).toBe(false)
+    expect(store.hasAnyError).toBe(false)
+  })
+})

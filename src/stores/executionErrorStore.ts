@@ -64,7 +64,8 @@ function reconcileNodeErrorFlags(
   nodeErrors: Record<string, NodeError> | null
 ): void {
   // Collect nodes and slot info that should be flagged
-  const errorNodes = new Set<LGraphNode>()
+  // Includes both error-owning nodes and their ancestor containers
+  const flaggedNodes = new Set<LGraphNode>()
   const errorSlots = new Map<LGraphNode, Set<string>>()
 
   if (nodeErrors) {
@@ -72,7 +73,7 @@ function reconcileNodeErrorFlags(
       const node = getNodeByExecutionId(rootGraph, executionId)
       if (!node) continue
 
-      errorNodes.add(node)
+      flaggedNodes.add(node)
       const slotNames = new Set<string>()
       for (const error of nodeError.errors) {
         const name = error.extra_info?.input_name
@@ -82,13 +83,13 @@ function reconcileNodeErrorFlags(
 
       for (const parentId of getParentExecutionIds(executionId)) {
         const parentNode = getNodeByExecutionId(rootGraph, parentId)
-        if (parentNode) errorNodes.add(parentNode)
+        if (parentNode) flaggedNodes.add(parentNode)
       }
     }
   }
 
   forEachNode(rootGraph, (node) => {
-    setNodeHasErrors(node, errorNodes.has(node))
+    setNodeHasErrors(node, flaggedNodes.has(node))
 
     if (node.inputs) {
       const nodeSlotNames = errorSlots.get(node)

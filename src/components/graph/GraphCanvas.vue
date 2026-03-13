@@ -553,6 +553,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  cleanupErrorHooks?.()
+  cleanupErrorHooks = null
   vueNodeLifecycle.cleanup()
 })
 function forwardPanEvent(e: PointerEvent) {
