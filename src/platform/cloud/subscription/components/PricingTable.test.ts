@@ -298,4 +298,20 @@ describe('PricingTable', () => {
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('standard-yearly')
     })
   })
+
+  describe('team workspace link', () => {
+    it('should emit chooseTeamWorkspace when clicking "Need team workspace?" link', async () => {
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      const teamLink = wrapper
+        .findAll('button')
+        .find((btn) => btn.text().includes('Need team workspace?'))
+
+      expect(teamLink).toBeDefined()
+      await teamLink?.trigger('click')
+
+      expect(wrapper.emitted('chooseTeamWorkspace')).toHaveLength(1)
+    })
+  })
 })
