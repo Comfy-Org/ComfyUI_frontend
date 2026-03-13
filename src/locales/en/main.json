@@ -2493,7 +2493,7 @@
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
-      "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
+      "message": "Workspaces create a new credit pool that can be shared among members. You'll become the owner after creating this.",
       "nameLabel": "Workspace name*",
       "namePlaceholder": "Enter workspace name",
       "create": "Create"
