@@ -1,7 +1,10 @@
 <template>
   <span>
     <template v-for="(sequence, index) in keySequences" :key="index">
-      <Tag :severity="isModified ? 'info' : 'secondary'">
+      <Tag
+        class="bg-interface-menu-keybind-surface-default text-base-foreground"
+        :severity="isModified ? 'info' : 'secondary'"
+      >
         {{ sequence }}
       </Tag>
       <span v-if="index < keySequences.length - 1" class="px-2">+</span>

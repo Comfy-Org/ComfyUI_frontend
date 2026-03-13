@@ -10,7 +10,7 @@
     </Button>
     <Button
       :variant="
-        hasConflict
+        existingKeybindingOnCombo
           ? 'destructive'
           : dialogState.newCombo?.isBrowserReserved
             ? 'secondary'
@@ -22,7 +22,7 @@
       @click="handleSave"
     >
       {{
-        hasConflict
+        existingKeybindingOnCombo
           ? $t('g.overwrite')
           : dialogState.newCombo?.isBrowserReserved
             ? $t('g.saveAnyway')
@@ -35,8 +35,6 @@
 <script setup lang="ts">
 import type { Reactive } from 'vue'
 
-import { computed } from 'vue'
-
 import Button from '@/components/ui/button/Button.vue'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
@@ -46,19 +44,14 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingDialog'
 import { DIALOG_KEY } from '@/composables/useEditKeybindingDialog'
 
-const { dialogState } = defineProps<{
+const { dialogState, existingKeybindingOnCombo } = defineProps<{
   dialogState: Reactive<EditKeybindingDialogState>
+  existingKeybindingOnCombo: KeybindingImpl | null
 }>()
 
 const keybindingStore = useKeybindingStore()
 const keybindingService = useKeybindingService()
 const dialogStore = useDialogStore()
-
-const hasConflict = computed(() => {
-  if (!dialogState.newCombo) return false
-  if (dialogState.currentCombo?.equals(dialogState.newCombo)) return false
-  return !!keybindingStore.getKeybinding(dialogState.newCombo)
-})
 
 function handleCancel() {
   dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -71,9 +64,18 @@ async function handleSave() {
 
   dialogStore.closeDialog({ key: DIALOG_KEY })
 
-  const updated = keybindingStore.updateKeybindingOnCommand(
-    new KeybindingImpl({ commandId, combo })
-  )
-  if (updated) await keybindingService.persistUserKeybindings()
+  if (dialogState.mode === 'add') {
+    keybindingStore.addUserKeybinding(new KeybindingImpl({ commandId, combo }))
+  } else if (dialogState.existingBinding) {
+    keybindingStore.updateSpecificKeybinding(
+      dialogState.existingBinding,
+      new KeybindingImpl({ commandId, combo })
+    )
+  } else {
+    keybindingStore.updateKeybindingOnCommand(
+      new KeybindingImpl({ commandId, combo })
+    )
+  }
+  await keybindingService.persistUserKeybindings()
 }
 </script>

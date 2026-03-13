@@ -17,6 +17,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isCloud } from '@/platform/distribution/types'
@@ -73,6 +74,7 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -82,6 +84,15 @@ import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { getCnrIdFromProperties } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
+import {
+  scanAllModelCandidates,
+  enrichWithEmbeddedMetadata,
+  verifyAssetSupportedCandidates
+} from '@/platform/missingModel/missingModelScan'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { assetService } from '@/platform/assets/services/assetService'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
   collectAllNodes,
@@ -104,7 +115,7 @@ import {
   findLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
-import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
+
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
@@ -1124,6 +1135,8 @@ export class ComfyApp {
     } = options
     useWorkflowService().beforeLoadNewGraph()
 
+    useMissingModelStore().clearMissingModels()
+
     if (clean !== false) {
       this.clean()
     }
@@ -1168,18 +1181,17 @@ export class ComfyApp {
     useSubgraphService().loadSubgraphs(graphData)
 
     const missingNodeTypes: MissingNodeType[] = []
-    const missingModels: ModelFile[] = []
     await useExtensionService().invokeExtensionsAsync(
       'beforeConfigureGraph',
       graphData,
       missingNodeTypes
     )
 
-    const embeddedModels: ModelFile[] = []
-
     const nodeReplacementStore = useNodeReplacementStore()
     await nodeReplacementStore.load()
-    const collectMissingNodesAndModels = (
+
+    // Collect missing node types from all nodes (root + subgraphs)
+    const collectMissingNodes = (
       nodes: ComfyWorkflowJSON['nodes'],
       pathPrefix: string = '',
       displayName: string = ''
@@ -1192,16 +1204,11 @@ export class ComfyApp {
         return
       }
       for (let n of nodes) {
-        // Find missing node types
         if (!(n.type in LiteGraph.registered_node_types)) {
           const replacement = nodeReplacementStore.getReplacementFor(n.type)
-
-          // To access missing node information in the error tab
-          // we collect the cnr_id and execution_id here.
           const cnrId = getCnrIdFromProperties(
             n.properties as Record<string, unknown> | undefined
           )
-
           const executionId = pathPrefix
             ? `${pathPrefix}:${n.id}`
             : String(n.id)
@@ -1219,65 +1226,25 @@ export class ComfyApp {
 
           n.type = sanitizeNodeName(n.type)
         }
-
-        // Collect models metadata from node
-        const selectedModels = getSelectedModelsMetadata(n)
-        if (selectedModels?.length) {
-          embeddedModels.push(...selectedModels)
-        }
       }
     }
 
-    // Process nodes at the top level
-    collectMissingNodesAndModels(graphData.nodes)
-
-    // Build map: subgraph definition UUID → full execution path prefix.
-    // Handles arbitrary nesting depth (e.g. root node 11 → "11", node 14 in sg 11 → "11:14").
+    collectMissingNodes(graphData.nodes)
+    const subgraphDefs = graphData.definitions?.subgraphs ?? []
     const subgraphContainerIdMap = buildSubgraphExecutionPaths(
       graphData.nodes,
-      graphData.definitions?.subgraphs ?? []
+      subgraphDefs
     )
-
-    // Process nodes in subgraphs
-    if (graphData.definitions?.subgraphs) {
-      for (const subgraph of graphData.definitions.subgraphs) {
-        if (isSubgraphDefinition(subgraph)) {
-          const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
-          for (const pathPrefix of paths) {
-            collectMissingNodesAndModels(
-              subgraph.nodes,
-              pathPrefix,
-              subgraph.name || subgraph.id
-            )
-          }
-        }
-      }
-    }
-
-    // Merge models from the workflow's root-level 'models' field
-    const workflowSchemaV1Models = graphData.models
-    if (workflowSchemaV1Models?.length)
-      embeddedModels.push(...workflowSchemaV1Models)
-
-    const getModelKey = (model: ModelFile) => model.url || model.hash
-    const validModels = embeddedModels.filter(getModelKey)
-    const uniqueModels = _.uniqBy(validModels, getModelKey)
-
-    if (
-      uniqueModels.length &&
-      useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
-    ) {
-      const modelStore = useModelStore()
-      await modelStore.loadModelFolders()
-      for (const m of uniqueModels) {
-        const modelFolder = await modelStore.getLoadedModelFolder(m.directory)
-        const modelsAvailable = modelFolder?.models
-        const modelExists =
-          modelsAvailable &&
-          Object.values(modelsAvailable).some(
-            (model) => model.file_name === m.name
+    for (const subgraph of subgraphDefs) {
+      if (isSubgraphDefinition(subgraph)) {
+        const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
+        for (const pathPrefix of paths) {
+          collectMissingNodes(
+            subgraph.nodes,
+            pathPrefix,
+            subgraph.name || subgraph.id
           )
-        if (!modelExists) missingModels.push(m)
+        }
       }
     }
 
@@ -1323,7 +1290,7 @@ export class ComfyApp {
           this.rootGraph.extra.workflowRendererVersion
 
         // Scale main graph
-        ensureCorrectLayoutScale(originalMainGraphRenderer)
+        ensureCorrectLayoutScale(originalMainGraphRenderer, this.rootGraph)
 
         // Scale all subgraphs that were loaded with the workflow
         // Use original main graph renderer as fallback (not the modified one)
@@ -1343,10 +1310,14 @@ export class ComfyApp {
         console.error(error)
         return
       }
+      const snapTo = LiteGraph.alwaysSnapToGrid
+        ? this.rootGraph.getSnapToGridSize()
+        : 0
       forEachNode(this.rootGraph, (node) => {
         const size = node.computeSize()
         size[0] = Math.max(node.size[0], size[0])
         size[1] = Math.max(node.size[1], size[1])
+        snapPoint(size, snapTo, 'ceil')
         node.setSize(size)
         if (node.widgets) {
           // If you break something in the backend and want to patch workflows in the frontend
@@ -1423,21 +1394,12 @@ export class ComfyApp {
         requestAnimationFrame(() => fitView())
       }
 
-      // Store pending warnings on the workflow for deferred display
-      const activeWf = useWorkspaceStore().workflow.activeWorkflow
-      if (activeWf) {
-        const warnings: PendingWarnings = {}
-        if (missingNodeTypes.length && showMissingNodesDialog) {
-          warnings.missingNodeTypes = missingNodeTypes
-        }
-        if (missingModels.length && showMissingModelsDialog) {
-          const paths = await api.getFolderPaths()
-          warnings.missingModels = { missingModels: missingModels, paths }
-        }
-        if (warnings.missingNodeTypes || warnings.missingModels) {
-          activeWf.pendingWarnings = warnings
-        }
-      }
+      await this.runMissingModelPipeline(
+        graphData,
+        missingNodeTypes,
+        showMissingNodesDialog,
+        showMissingModelsDialog
+      )
 
       if (!deferWarnings) {
         useWorkflowService().showPendingWarnings()
@@ -1449,6 +1411,97 @@ export class ComfyApp {
     } finally {
       ChangeTracker.isLoadingGraph = false
     }
+  }
+
+  private async runMissingModelPipeline(
+    graphData: ComfyWorkflowJSON,
+    missingNodeTypes: MissingNodeType[],
+    showMissingNodesDialog: boolean,
+    showMissingModelsDialog: boolean
+  ): Promise<{ missingModels: ModelFile[] }> {
+    const missingModelStore = useMissingModelStore()
+
+    const candidates = isCloud
+      ? scanAllModelCandidates(
+          this.rootGraph,
+          (nodeType, widgetName) =>
+            assetService.shouldUseAssetBrowser(nodeType, widgetName),
+          (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
+        )
+      : []
+
+    const modelStore = useModelStore()
+    await modelStore.loadModelFolders()
+    const enrichedCandidates = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      async (name, directory) => {
+        const folder = await modelStore.getLoadedModelFolder(directory)
+        const models = folder?.models
+        return !!(
+          models && Object.values(models).some((m) => m.file_name === name)
+        )
+      },
+      isCloud
+        ? (nodeType, widgetName) =>
+            assetService.shouldUseAssetBrowser(nodeType, widgetName)
+        : undefined
+    )
+
+    const missingModels: ModelFile[] = enrichedCandidates
+      .filter((c) => c.isMissing === true && c.url)
+      .map((c) => ({
+        name: c.name,
+        url: c.url ?? '',
+        directory: c.directory ?? '',
+        hash: c.hash,
+        hash_type: c.hashType
+      }))
+
+    const activeWf = useWorkspaceStore().workflow.activeWorkflow
+    if (activeWf) {
+      const warnings: PendingWarnings = {}
+      if (missingNodeTypes.length && showMissingNodesDialog) {
+        warnings.missingNodeTypes = missingNodeTypes
+      }
+      if (missingModels.length && showMissingModelsDialog) {
+        const paths = await api.getFolderPaths()
+        warnings.missingModels = { missingModels, paths }
+      }
+      if (warnings.missingNodeTypes || warnings.missingModels) {
+        activeWf.pendingWarnings = warnings
+      }
+    }
+
+    if (isCloud && enrichedCandidates.length) {
+      const controller = missingModelStore.createVerificationAbortController()
+      verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+        .then(() => {
+          if (controller.signal.aborted) return
+          const confirmed = enrichedCandidates.filter(
+            (c) => c.isMissing === true
+          )
+          if (confirmed.length) {
+            useExecutionErrorStore().surfaceMissingModels(confirmed)
+          }
+        })
+        .catch((err) => {
+          console.warn(
+            '[Missing Model Pipeline] Asset verification failed:',
+            err
+          )
+          useToastStore().add({
+            severity: 'warn',
+            summary: st(
+              'toastMessages.missingModelVerificationFailed',
+              'Failed to verify missing models. Some models may not be shown in the Errors tab.'
+            ),
+            life: 5000
+          })
+        })
+    }
+
+    return { missingModels }
   }
 
   async graphToPrompt(graph = this.rootGraph) {
@@ -1830,7 +1883,6 @@ export class ComfyApp {
     )
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
-      return
     }
 
     const ids = Object.keys(apiData)

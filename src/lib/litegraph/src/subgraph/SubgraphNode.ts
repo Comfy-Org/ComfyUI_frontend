@@ -27,6 +27,7 @@ import type {
   ExportedSubgraphInstance,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import {
@@ -441,6 +442,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (input._widget) {
           input._widget.label = newName
         }
+        this.graph?.trigger('node:slot-label:changed', {
+          nodeId: this.id,
+          slotType: NodeSlotType.INPUT
+        })
       },
       { signal }
     )
@@ -453,6 +458,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!output) throw new Error('Subgraph output not found')
 
         output.label = newName
+        this.graph?.trigger('node:slot-label:changed', {
+          nodeId: this.id,
+          slotType: NodeSlotType.OUTPUT
+        })
       },
       { signal }
     )

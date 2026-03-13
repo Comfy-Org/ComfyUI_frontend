@@ -1,10 +1,5 @@
 <template>
-  <ComboboxRoot
-    :ignore-filter="true"
-    :open="false"
-    :disabled="disabled"
-    :class="className"
-  >
+  <ComboboxRoot :open="false" ignore-filter :disabled :class="className">
     <ComboboxAnchor
       :class="
         cn(

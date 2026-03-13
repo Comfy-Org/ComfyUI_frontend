@@ -39,27 +39,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 
 import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingDialog'
 
-const { dialogState, onUpdateCombo } = defineProps<{
+const { dialogState, onUpdateCombo, existingKeybindingOnCombo } = defineProps<{
   dialogState: EditKeybindingDialogState
   commandLabel: string
   onUpdateCombo: (combo: KeyComboImpl) => void
+  existingKeybindingOnCombo: KeybindingImpl | null
 }>()
-
-const keybindingStore = useKeybindingStore()
-
-const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
-  if (!dialogState.newCombo) return null
-  if (dialogState.currentCombo?.equals(dialogState.newCombo)) return null
-  return keybindingStore.getKeybinding(dialogState.newCombo)
-})
 
 function captureKeybinding(event: KeyboardEvent) {
   if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {

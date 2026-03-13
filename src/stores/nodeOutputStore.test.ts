@@ -151,6 +151,110 @@ describe('nodeOutputStore restoreOutputs', () => {
   })
 })
 
+describe('nodeOutputStore input preview preservation', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('should preserve input preview when execution sends empty output', () => {
+    const store = useNodeOutputStore()
+    const executionId = '3'
+
+    const inputPreview = createMockOutputs([
+      { filename: 'example.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId(executionId, inputPreview)
+
+    expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
+
+    const emptyExecutionOutput = createMockOutputs()
+    store.setNodeOutputsByExecutionId(executionId, emptyExecutionOutput)
+
+    expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
+    expect(store.nodeOutputs[executionId]?.images?.[0].filename).toBe(
+      'example.png'
+    )
+  })
+
+  it('should preserve input preview when execution sends output with empty images array', () => {
+    const store = useNodeOutputStore()
+    const executionId = '3'
+
+    const inputPreview = createMockOutputs([
+      { filename: 'example.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId(executionId, inputPreview)
+
+    const emptyImagesOutput = createMockOutputs([])
+    store.setNodeOutputsByExecutionId(executionId, emptyImagesOutput)
+
+    expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
+    expect(store.nodeOutputs[executionId]?.images?.[0].type).toBe('input')
+  })
+
+  it('should allow execution output with images to overwrite input preview', () => {
+    const store = useNodeOutputStore()
+    const executionId = '3'
+
+    const inputPreview = createMockOutputs([
+      { filename: 'example.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId(executionId, inputPreview)
+
+    const executionOutput = createMockOutputs([
+      { filename: 'output.png', subfolder: '', type: 'output' }
+    ])
+    store.setNodeOutputsByExecutionId(executionId, executionOutput)
+
+    expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
+    expect(store.nodeOutputs[executionId]?.images?.[0].filename).toBe(
+      'output.png'
+    )
+  })
+
+  it('should not preserve non-input outputs from being overwritten', () => {
+    const store = useNodeOutputStore()
+    const executionId = '4'
+
+    const tempOutput = createMockOutputs([
+      { filename: 'temp.png', subfolder: '', type: 'temp' }
+    ])
+    store.setNodeOutputsByExecutionId(executionId, tempOutput)
+
+    const emptyOutput = createMockOutputs()
+    store.setNodeOutputsByExecutionId(executionId, emptyOutput)
+
+    expect(store.nodeOutputs[executionId]?.images).toBeUndefined()
+  })
+
+  it('should pass through non-image fields while preserving input preview images', () => {
+    const store = useNodeOutputStore()
+    const executionId = '5'
+
+    const inputPreview = createMockOutputs([
+      { filename: 'example.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId(executionId, inputPreview)
+
+    const videoOutput: ExecutedWsMessage['output'] = {
+      video: [{ filename: 'output.mp4', subfolder: '', type: 'output' }]
+    }
+    store.setNodeOutputsByExecutionId(executionId, videoOutput)
+
+    expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
+    expect(store.nodeOutputs[executionId]?.images?.[0].filename).toBe(
+      'example.png'
+    )
+    expect(store.nodeOutputs[executionId]?.video).toHaveLength(1)
+    expect(store.nodeOutputs[executionId]?.video?.[0].filename).toBe(
+      'output.mp4'
+    )
+  })
+})
+
 describe('nodeOutputStore getPreviewParam', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))

@@ -101,7 +101,7 @@ export const useColorPaletteService = () => {
     linkColorPalette: Colors['node_slot']
   ) {
     if (!linkColorPalette) return
-    const rootStyle = document.body?.style
+    const rootStyle = document.documentElement?.style
     if (!rootStyle) return
 
     for (const dataType of nodeDefStore.nodeDataTypes) {
@@ -121,7 +121,7 @@ export const useColorPaletteService = () => {
     colorPaletteId: string
   ) {
     if (!palette) return
-    const rootStyle = document.body?.style
+    const rootStyle = document.documentElement?.style
     if (!rootStyle) return
 
     for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
@@ -206,7 +206,10 @@ export const useColorPaletteService = () => {
    *
    * @param comfyColorPalette - The palette to set.
    */
-  const loadComfyColorPalette = (comfyColorPalette: Colors['comfy_base']) => {
+  const loadComfyColorPalette = (
+    comfyColorPalette: Colors['comfy_base'],
+    isLightTheme: boolean
+  ) => {
     if (!comfyColorPalette) return
     const rootStyle = document.documentElement.style
     for (const [key, value] of Object.entries(comfyColorPalette)) {
@@ -227,6 +230,14 @@ export const useColorPaletteService = () => {
       rootStyle.setProperty('--bg-img', `url('${backgroundImage}')`)
     } else {
       rootStyle.removeProperty('--bg-img')
+    }
+
+    try {
+      const splashBg = isLightTheme ? '#FFFFFF' : comfyColorPalette['bg-color']
+      localStorage.setItem('comfy-splash-bg', splashBg)
+      localStorage.setItem('comfy-splash-fg', comfyColorPalette['fg-color'])
+    } catch (_) {
+      /* empty */
     }
   }
 
@@ -249,7 +260,10 @@ export const useColorPaletteService = () => {
       colorPaletteId
     )
     loadLinkColorPaletteForVueNodes(completedPalette.colors.node_slot)
-    loadComfyColorPalette(completedPalette.colors.comfy_base)
+    loadComfyColorPalette(
+      completedPalette.colors.comfy_base,
+      completedPalette.light_theme === true
+    )
     app.canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId

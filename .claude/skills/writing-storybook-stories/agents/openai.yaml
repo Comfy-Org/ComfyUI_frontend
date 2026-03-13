@@ -1,0 +1,4 @@
+interface:
+  display_name: 'ComfyUI Storybook Stories'
+  short_description: 'Write Vue Storybook stories for ComfyUI'
+  default_prompt: 'Use $writing-storybook-stories to add or update a Storybook story for this ComfyUI_frontend component.'
