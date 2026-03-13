@@ -90,7 +90,8 @@ function createWrapper() {
       stubs: {
         BatchCountEdit: BatchCountEditStub,
         DropdownMenu: {
-          template: '<div><slot name="button" /><slot :item-class="\'\'" /></div>'
+          template:
+            '<div><slot name="button" /><slot :item-class="\'\'" /></div>'
         },
         DropdownMenuItem: { template: '<div><slot /></div>' },
         DropdownMenuSeparator: { template: '<div />' }
