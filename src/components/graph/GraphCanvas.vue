@@ -563,10 +563,8 @@ onUnmounted(() => {
   vueNodeLifecycle.cleanup()
 })
 function forwardPanEvent(e: PointerEvent) {
-  if (
-    (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target) ||
-    !isMiddlePointerInput(e)
-  )
+  if (!isMiddlePointerInput(e)) return
+  if (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target)
     return
 
   canvasInteractions.forwardEventToCanvas(e)
