@@ -102,6 +102,7 @@ export function useNodePointerInteractions(
 
   function cleanupDragState() {
     layoutStore.isDraggingVueNodes.value = false
+    layoutStore.vueDragSnapGuides.value = []
   }
 
   function safeDragStart(event: PointerEvent, nodeId: string) {
