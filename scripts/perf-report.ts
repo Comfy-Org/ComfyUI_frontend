@@ -110,7 +110,10 @@ function formatDelta(pct: number | null): string {
   return `${sign}${pct.toFixed(0)}%`
 }
 
-function getMetricValue(sample: PerfMeasurement, key: MetricKey): number | null {
+function getMetricValue(
+  sample: PerfMeasurement,
+  key: MetricKey
+): number | null {
   const value = sample[key]
   return Number.isFinite(value) ? value : null
 }
@@ -293,7 +296,8 @@ function renderNoBaselineReport(
       lines.push(`| ${testName}: ${label} | ${formatValue(prMean, unit)} |`)
     }
     const heapMean =
-      prSamples.reduce((sum, s) => sum + (s.heapDeltaBytes ?? 0), 0) / prSamples.length
+      prSamples.reduce((sum, s) => sum + (s.heapDeltaBytes ?? 0), 0) /
+      prSamples.length
     lines.push(`| ${testName}: heap delta | ${formatBytes(heapMean)} |`)
   }
   return lines
