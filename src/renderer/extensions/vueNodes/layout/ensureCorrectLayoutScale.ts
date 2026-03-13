@@ -17,8 +17,7 @@ export function ensureCorrectLayoutScale(
   renderer: RendererType = 'LG',
   targetGraph?: LGraph
 ) {
-  const settingStore = useSettingStore()
-  const autoScaleLayoutSetting = settingStore.get(
+  const autoScaleLayoutSetting = useSettingStore().get(
     'Comfy.VueNodes.AutoScaleLayout'
   )
 
@@ -40,10 +39,6 @@ export function ensureCorrectLayoutScale(
     return
   }
 
-  const alwaysSnapToGrid = settingStore.get('pysssss.SnapToGrid')
-  const snapSize =
-    settingStore.get('Comfy.SnapToGrid.GridSize') || LiteGraph.CANVAS_GRID_SIZE
-
   const lgBounds = createBounds(graph.nodes)
 
   if (!lgBounds) return
@@ -62,8 +57,9 @@ export function ensureCorrectLayoutScale(
     pos: [number, number],
     method: 'round' | 'ceil' | 'floor' = 'round'
   ) => {
-    if (alwaysSnapToGrid) {
-      snapPoint(pos, snapSize, method)
+    if (LiteGraph.alwaysSnapToGrid) {
+      const snapTo = graph.getSnapToGridSize()
+      snapPoint(pos, snapTo, method)
     }
   }
 
