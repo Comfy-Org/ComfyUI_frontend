@@ -20,7 +20,10 @@ import { useTransformState } from '@/renderer/core/layout/transform/useTransform
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 import { createSharedComposable } from '@vueuse/core'
 
-import type { NodeAlignmentGuide } from './nodeAlignmentSnap'
+import type {
+  NodeAlignmentGuide,
+  NodeAlignmentSnapResult
+} from './nodeAlignmentSnap'
 import { resolveNodeAlignmentSnap } from './nodeAlignmentSnap'
 
 export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
@@ -286,7 +289,7 @@ function useNodeDragIndividual() {
       return canvasDelta
     }
 
-    const snapResult = resolveNodeAlignmentSnap({
+    const snapResult: NodeAlignmentSnapResult = resolveNodeAlignmentSnap({
       selectionBounds: draggedSelectionBounds,
       candidateBounds: alignmentCandidateBounds,
       delta: canvasDelta,
