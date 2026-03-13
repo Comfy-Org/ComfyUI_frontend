@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+import ToastService from 'primevue/toastservice'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
@@ -56,7 +57,8 @@ describe('ImagePreview', () => {
           createTestingPinia({
             createSpy: vi.fn
           }),
-          i18n
+          i18n,
+          ToastService
         ],
         stubs: {
           'i-lucide:venetian-mask': true,

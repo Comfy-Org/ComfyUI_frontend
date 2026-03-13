@@ -201,7 +201,7 @@ interface ImagePreviewProps {
 const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
-const maskEditor = useMaskEditor()
+const { openMaskEditor, clearMask, isClearingMask } = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
 
@@ -220,7 +220,6 @@ const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
-const isClearingMask = ref(false)
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -298,7 +297,7 @@ function handleEditMask() {
   if (!nodeId) return
   const node = resolveNode(Number(nodeId))
   if (!node) return
-  maskEditor.openMaskEditor(node)
+  openMaskEditor(node)
 }
 
 function handleDownload() {
