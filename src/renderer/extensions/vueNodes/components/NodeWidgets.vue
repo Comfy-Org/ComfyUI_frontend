@@ -120,7 +120,11 @@ import {
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type {
+  LinkedUpstreamInfo,
+  SimplifiedWidget,
+  WidgetValue
+} from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import { getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
 import { app } from '@/scripts/app'
@@ -297,6 +301,14 @@ const processedWidgets = computed((): ProcessedWidget[] => {
           ? 'ring ring-component-node-widget-advanced'
           : undefined
 
+    const linkedUpstream: LinkedUpstreamInfo | undefined =
+      slotMetadata?.linked && slotMetadata.originNodeId
+        ? {
+            nodeId: slotMetadata.originNodeId,
+            outputName: slotMetadata.originOutputName
+          }
+        : undefined
+
     const simplified: SimplifiedWidget = {
       name: widget.name,
       type: widget.type,
@@ -305,6 +317,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       callback: widget.callback,
       controlWidget: widget.controlWidget,
       label: widgetState?.label,
+      linkedUpstream,
       options: widgetOptions,
       spec: widget.spec
     }
