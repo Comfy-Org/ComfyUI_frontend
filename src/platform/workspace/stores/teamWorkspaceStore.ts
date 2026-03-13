@@ -493,6 +493,28 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Transfer ownership of the current workspace to another member.
+   * After transfer, the page reloads to reflect the role change.
+   */
+  async function transferOwnership(targetUserId: string): Promise<void> {
+    const current = activeWorkspace.value
+    if (!current || current.type === 'personal') {
+      throw new Error('Cannot transfer ownership of personal workspace')
+    }
+
+    const workspaceAuthStore = useWorkspaceAuthStore()
+
+    await workspaceApi.transferOwnership(targetUserId)
+
+    // Reload to get fresh token with updated role
+    workspaceAuthStore.clearWorkspaceContext()
+    if (current.id) {
+      setLastWorkspaceId(current.id)
+    }
+    window.location.reload()
+  }
+
+  /**
    * Fetch members for the current workspace.
    */
   async function fetchMembers(
@@ -505,6 +527,24 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const members = response.members.map(mapApiMemberToWorkspaceMember)
     updateActiveWorkspace({ members })
     return members
+  }
+
+  /**
+   * Update a member's role in the current workspace.
+   */
+  async function updateMemberRole(
+    userId: string,
+    role: 'owner' | 'member'
+  ): Promise<void> {
+    await workspaceApi.updateMemberRole(userId, role)
+    const current = activeWorkspace.value
+    if (current) {
+      updateActiveWorkspace({
+        members: current.members.map((m) =>
+          m.id === userId ? { ...m, role } : m
+        )
+      })
+    }
   }
 
   /**
@@ -672,9 +712,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     renameWorkspace,
     updateWorkspaceName,
     leaveWorkspace,
+    transferOwnership,
 
     // Member Actions
     fetchMembers,
+    updateMemberRole,
     removeMember,
 
     // Invite Actions

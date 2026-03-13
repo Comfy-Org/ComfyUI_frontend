@@ -452,6 +452,16 @@ export const useDialogService = () => {
     })
   }
 
+  async function showTransferOwnershipDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/TransferOwnershipDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'transfer-ownership',
+      component,
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
   async function showLeaveWorkspaceDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/LeaveWorkspaceDialogContent.vue')
@@ -471,6 +481,21 @@ export const useDialogService = () => {
       dialogComponentProps: {
         ...workspaceDialogPt
       }
+    })
+  }
+
+  async function showChangeRoleDialog(options: {
+    memberId: string
+    memberName: string
+    currentRole: 'owner' | 'member'
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/ChangeRoleDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'change-role',
+      component,
+      props: options,
+      dialogComponentProps: workspaceDialogPt
     })
   }
 
@@ -565,9 +590,11 @@ export const useDialogService = () => {
     showLayoutDialog,
     showSmallLayoutDialog,
     showDeleteWorkspaceDialog,
+    showTransferOwnershipDialog,
     showCreateWorkspaceDialog,
     showLeaveWorkspaceDialog,
     showEditWorkspaceDialog,
+    showChangeRoleDialog,
     showRemoveMemberDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,

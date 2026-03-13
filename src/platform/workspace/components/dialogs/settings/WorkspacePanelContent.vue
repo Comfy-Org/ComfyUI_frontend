@@ -38,6 +38,18 @@
               })
             }}
           </TabsTrigger>
+          <TabsTrigger
+            v-if="showSettingsTab"
+            value="settings"
+            :class="
+              cn(
+                tabTriggerBase,
+                activeTab === 'settings' ? tabTriggerActive : tabTriggerInactive
+              )
+            "
+          >
+            {{ $t('workspacePanel.tabs.settings') }}
+          </TabsTrigger>
         </TabsList>
         <div class="flex items-center gap-1">
           <Button
@@ -109,6 +121,75 @@
       <TabsContent value="members" class="mt-4">
         <MembersPanelContent :key="workspaceRole" />
       </TabsContent>
+      <TabsContent v-if="showSettingsTab" value="settings" class="mt-4">
+        <div class="flex flex-col gap-6">
+          <div class="rounded-2xl border border-danger/30 p-6">
+            <h3 class="m-0 mb-4 text-base font-semibold text-danger">
+              {{ $t('workspacePanel.dangerZone.title') }}
+            </h3>
+            <div class="flex flex-col gap-4">
+              <!-- Transfer Ownership -->
+              <div
+                class="flex items-center justify-between gap-4 rounded-lg border border-border-default p-4"
+              >
+                <div class="flex flex-col gap-1">
+                  <span class="text-sm font-medium text-base-foreground">
+                    {{
+                      $t('workspacePanel.dangerZone.transferOwnership.title')
+                    }}
+                  </span>
+                  <span class="text-xs text-muted-foreground">
+                    {{
+                      $t(
+                        'workspacePanel.dangerZone.transferOwnership.description'
+                      )
+                    }}
+                  </span>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  class="shrink-0 border border-danger bg-transparent text-danger hover:bg-danger/10"
+                  @click="showTransferOwnershipDialog()"
+                >
+                  {{ $t('workspacePanel.dangerZone.transferOwnership.button') }}
+                </Button>
+              </div>
+              <!-- Delete Workspace -->
+              <div
+                class="flex items-center justify-between gap-4 rounded-lg border border-border-default p-4"
+              >
+                <div class="flex flex-col gap-1">
+                  <span class="text-sm font-medium text-base-foreground">
+                    {{ $t('workspacePanel.dangerZone.deleteWorkspace.title') }}
+                  </span>
+                  <span class="text-xs text-muted-foreground">
+                    {{
+                      $t(
+                        'workspacePanel.dangerZone.deleteWorkspace.description'
+                      )
+                    }}
+                  </span>
+                </div>
+                <Button
+                  v-tooltip="
+                    isDeleteDisabled && deleteTooltip
+                      ? { value: deleteTooltip, showDelay: 0 }
+                      : undefined
+                  "
+                  variant="destructive"
+                  size="md"
+                  class="shrink-0"
+                  :disabled="isDeleteDisabled"
+                  @click="handleDeleteWorkspace"
+                >
+                  {{ $t('workspacePanel.dangerZone.deleteWorkspace.button') }}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </TabsContent>
     </TabsRoot>
   </div>
 </template>
@@ -147,6 +228,7 @@ const { t } = useI18n()
 const {
   showLeaveWorkspaceDialog,
   showDeleteWorkspaceDialog,
+  showTransferOwnershipDialog,
   showInviteMemberDialog,
   showInviteMemberUpsellDialog,
   showEditWorkspaceDialog
@@ -168,6 +250,12 @@ const { fetchMembers, fetchPendingInvites } = workspaceStore
 
 const { workspaceRole, permissions, uiConfig } = useWorkspaceUI()
 const activeTab = ref(defaultTab)
+
+const showSettingsTab = computed(
+  () =>
+    workspaceStore.activeWorkspace?.type === 'team' &&
+    workspaceRole.value === 'owner'
+)
 
 const menu = ref<InstanceType<typeof Menu> | null>(null)
 
@@ -225,17 +313,7 @@ const menuItems = computed(() => {
   }
 
   const action = uiConfig.value.workspaceMenuAction
-  if (action === 'delete') {
-    items.push({
-      label: t('workspacePanel.menu.deleteWorkspace'),
-      icon: 'pi pi-trash',
-      class: isDeleteDisabled.value
-        ? 'text-danger/50 cursor-not-allowed'
-        : 'text-danger',
-      disabled: isDeleteDisabled.value,
-      command: isDeleteDisabled.value ? undefined : handleDeleteWorkspace
-    })
-  } else if (action === 'leave') {
+  if (action === 'leave') {
     items.push({
       label: t('workspacePanel.menu.leaveWorkspace'),
       icon: 'pi pi-sign-out',
