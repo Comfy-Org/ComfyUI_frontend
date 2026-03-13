@@ -113,7 +113,11 @@ vi.mock('@/stores/queueStore', () => ({
       this.outputsCount = job.outputs_count ?? null
       if (mockOutputOverrides.value) {
         this.flatOutputs = mockOutputOverrides.value
-        this.previewOutput = mockOutputOverrides.value[0]
+        const previewable = mockOutputOverrides.value.filter(
+          (o) => o.supportsPreview
+        )
+        this.previewOutput =
+          previewable.findLast((o) => o.type === 'output') ?? previewable.at(-1)
       } else {
         const preview = job.preview_output
         const isPreviewable =

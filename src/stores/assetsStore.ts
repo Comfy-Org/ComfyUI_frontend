@@ -61,18 +61,12 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
     }
 
     const task = new TaskItemImpl(job)
-    const previewable = task.previewableOutputs
 
-    // Use the last previewable output as the batch cover (most recent result)
-    const coverOutput =
-      previewable.findLast((output) => output.type === 'output') ??
-      previewable.at(-1)
-
-    if (!coverOutput) {
+    if (!task.previewOutput) {
       continue
     }
 
-    const assetItem = mapTaskOutputToAssetItem(task, coverOutput)
+    const assetItem = mapTaskOutputToAssetItem(task, task.previewOutput)
 
     assetItem.user_metadata = {
       ...assetItem.user_metadata,

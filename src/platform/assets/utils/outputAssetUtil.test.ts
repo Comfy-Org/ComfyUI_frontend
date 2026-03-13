@@ -89,7 +89,7 @@ describe('resolveOutputAssetItems', () => {
     )
   })
 
-  it('loads full outputs when metadata indicates more outputs', async () => {
+  it('loads full outputs when metadata indicates more outputs (newest first)', async () => {
     const previewOutput = createOutput({
       filename: 'preview.png',
       nodeId: '1',
