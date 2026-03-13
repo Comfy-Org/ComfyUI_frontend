@@ -99,10 +99,12 @@ test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
     const allNodesTab = comfyPage.page.getByRole('tab', { name: /^all$/i })
 
     await essentialsTab.click()
+    await expect(essentialsTab).toHaveAttribute('aria-selected', 'true')
     const essentialCards = comfyPage.page.locator('[data-node-name]')
     await expect(essentialCards.first()).toBeVisible()
 
     await allNodesTab.click()
-    await expect(essentialCards.first()).not.toBeVisible()
+    await expect(allNodesTab).toHaveAttribute('aria-selected', 'true')
+    await expect(essentialsTab).toHaveAttribute('aria-selected', 'false')
   })
 })
