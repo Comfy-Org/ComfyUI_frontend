@@ -24,6 +24,10 @@ function onValueChange(this: INumericWidget, v: number) {
     // Round to nearest step, accounting for offset
     this.value = Math.round((v - offset) / step) * step + offset
   }
+  if (this.options.min !== undefined && this.value < this.options.min)
+    this.value = this.options.min
+  if (this.options.max !== undefined && this.value > this.options.max)
+    this.value = this.options.max
 }
 
 export const _for_testing = {
