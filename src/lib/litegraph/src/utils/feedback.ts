@@ -53,6 +53,6 @@ export function defineDeprecatedProperty<T>(
       this[currentKey] = value
     },
     configurable: true,
-    enumerable: false
+    enumerable: true
   })
 }
