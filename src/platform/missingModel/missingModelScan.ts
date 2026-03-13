@@ -76,6 +76,9 @@ export function scanAllModelCandidates(
 
   for (const node of allNodes) {
     if (!node.widgets?.length) continue
+    // Skip subgraph container nodes: their promoted widgets are synthetic
+    // views of interior widgets, which are already scanned via recursion.
+    if (node.isSubgraphNode?.()) continue
 
     const executionId = getExecutionIdByNode(rootGraph, node)
     if (!executionId) continue
