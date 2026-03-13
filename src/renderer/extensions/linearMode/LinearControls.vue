@@ -24,9 +24,11 @@ import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -38,6 +40,7 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
 const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
+const maskEditor = useMaskEditor()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
@@ -108,21 +111,24 @@ const mappedSelections = computed(() => {
 function getDropIndicator(node: LGraphNode) {
   if (node.type !== 'LoadImage') return undefined
 
-  const filename = node.widgets?.[0]?.value
-  const resultItem = { type: 'input', filename: `${filename}` }
+  const rawValue = node.widgets?.[0]?.value
+  const { filename, subfolder, type } = parseImageWidgetValue(`${rawValue}`)
 
   const buildImageUrl = () => {
     if (!filename) return undefined
-    const params = new URLSearchParams(resultItem)
-    appendCloudResParam(params, resultItem.filename)
+    const params = new URLSearchParams({ filename, subfolder, type })
+    appendCloudResParam(params, filename)
     return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
   }
 
+  const imageUrl = buildImageUrl()
+
   return {
     iconClass: 'icon-[lucide--image]',
-    imageUrl: buildImageUrl(),
+    imageUrl,
     label: props.mobile ? undefined : t('linearMode.dragAndDropImage'),
-    onClick: () => node.widgets?.[1]?.callback?.(undefined)
+    onClick: () => node.widgets?.[1]?.callback?.(undefined),
+    onMaskEdit: imageUrl ? () => maskEditor.openMaskEditor(node) : undefined
   }
 }
 
