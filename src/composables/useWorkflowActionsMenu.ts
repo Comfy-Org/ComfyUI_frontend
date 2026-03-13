@@ -216,7 +216,8 @@ export function useWorkflowActionsMenu(
           useErrorHandling().toastErrorHandler(e)
         }
       },
-      visible: isRoot
+      visible: isRoot,
+      disabled: workflow?.isTemporary ?? true
     })
 
     addItem({
