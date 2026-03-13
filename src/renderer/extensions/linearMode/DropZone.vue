@@ -91,7 +91,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
       data-slot="drop-zone-indicator"
       :class="
         cn(
-          'm-3 block h-25 w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
+          'm-3 block h-42 min-h-32 w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
           dropIndicator?.onClick && 'cursor-pointer'
         )
       "
