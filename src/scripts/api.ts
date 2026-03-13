@@ -338,7 +338,12 @@ export class ComfyApi extends EventTarget {
     return { ...defaultClientFeatureFlags }
   }
 
-  /** @deprecated Use `getServerCapability()` from `@/services/serverCapabilities` */
+  /**
+   * @deprecated Use `getServerCapability()` from `@/services/serverCapabilities`.
+   * Note: This field was previously a Vue `Ref`; accessing `.value` or using it as
+   * a reactive source no longer works. Migrate to `getServerCapability()` for
+   * both value access and capability observation.
+   */
   serverFeatureFlags: Record<string, unknown> = {}
 
   /**

@@ -17,7 +17,13 @@ export async function initServerCapabilities(): Promise<void> {
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const res = await fetch(url, { cache: 'no-store' })
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
+      const res = await fetch(url, {
+        cache: 'no-store',
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
       if (res.ok) {
         capabilities = Object.freeze(await res.json())
         return

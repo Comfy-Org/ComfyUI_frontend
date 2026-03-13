@@ -46,13 +46,16 @@ export function useFeatureFlags() {
   const flags = reactive({
     // Direct server-only flags — resolved via getServerCapability() only
     get supportsPreviewMetadata() {
-      return getServerCapability(ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
+      return getServerCapability(
+        ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA,
+        false
+      )
     },
     get maxUploadSize() {
       return getServerCapability(ServerFeatureFlag.MAX_UPLOAD_SIZE)
     },
     get supportsManagerV4() {
-      return getServerCapability(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
+      return getServerCapability(ServerFeatureFlag.MANAGER_SUPPORTS_V4, false)
     },
 
     // Flags with remoteConfig override — resolved via resolveFlag()

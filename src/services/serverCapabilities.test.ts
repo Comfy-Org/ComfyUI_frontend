@@ -94,11 +94,11 @@ describe('serverCapabilities', () => {
     })
   })
 
-  describe('getServerCapability', () => {
-    it('returns default value when called before init', () => {
-      expect(getServerCapability('some_key', 'fallback')).toBe('fallback')
-    })
+  it('returns default value when called before init', () => {
+    expect(getServerCapability('some_key', 'fallback')).toBe('fallback')
+  })
 
+  describe('getServerCapability', () => {
     beforeEach(async () => {
       await initServerCapabilities()
     })
