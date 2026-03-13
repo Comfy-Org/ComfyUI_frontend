@@ -433,24 +433,73 @@ export const useExecutionStore = defineStore('execution', () => {
     return initializingJobIds.value.has(String(jobId))
   }
 
+  function removeTrackedJobState(
+    jobId: string,
+    options?: {
+      clearAllNodeProgressStates?: boolean
+      clearPromptError?: boolean
+    }
+  ) {
+    const normalizedJobId = String(jobId)
+    const wasActiveJob = activeJobId.value === normalizedJobId
+
+    clearInitializationByJobId(normalizedJobId)
+
+    const progressStatesByJob = { ...nodeProgressStatesByJob.value }
+    delete progressStatesByJob[normalizedJobId]
+    nodeProgressStatesByJob.value = progressStatesByJob
+
+    nodeProgressStates.value = options?.clearAllNodeProgressStates
+      ? {}
+      : Object.fromEntries(
+          Object.entries(nodeProgressStates.value).filter(
+            ([_, state]) => state.prompt_id !== normalizedJobId
+          )
+        )
+
+    delete queuedJobs.value[normalizedJobId]
+    useJobPreviewStore().clearPreview(normalizedJobId)
+
+    if (
+      options?.clearAllNodeProgressStates ||
+      _executingNodeProgress.value?.prompt_id === normalizedJobId
+    ) {
+      _executingNodeProgress.value = null
+    }
+
+    if (wasActiveJob) {
+      activeJobId.value = null
+      if (options?.clearPromptError) {
+        executionErrorStore.clearPromptError()
+      }
+    }
+  }
+
   /**
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: string | null) {
-    nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
-    if (jobId) {
-      const map = { ...nodeProgressStatesByJob.value }
-      delete map[jobId]
-      nodeProgressStatesByJob.value = map
-      useJobPreviewStore().clearPreview(jobId)
+    if (!jobId) {
+      nodeProgressStates.value = {}
+      activeJobId.value = null
+      _executingNodeProgress.value = null
+      executionErrorStore.clearPromptError()
+      return
     }
-    if (activeJobId.value) {
-      delete queuedJobs.value[activeJobId.value]
-    }
-    activeJobId.value = null
-    _executingNodeProgress.value = null
-    executionErrorStore.clearPromptError()
+
+    removeTrackedJobState(jobId, {
+      clearAllNodeProgressStates: true,
+      clearPromptError: true
+    })
+  }
+
+  /**
+   * Clear tracked execution state for a single job.
+   * Used to recover from missed terminal websocket events after reconnects.
+   */
+  function clearTrackedJob(jobId: string) {
+    removeTrackedJobState(jobId)
   }
 
   function getNodeIdIfExecuting(nodeId: string | number) {
@@ -580,6 +629,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobId,
     clearInitializationByJobIds,
     reconcileInitializingJobs,
+    clearTrackedJob,
     bindExecutionEvents,
     unbindExecutionEvents,
     storeJob,
