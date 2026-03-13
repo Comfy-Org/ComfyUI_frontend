@@ -37,7 +37,7 @@ import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDra
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import {
-  canRenameSlot,
+  hasAnySlotAction,
   showSlotMenu
 } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
@@ -141,7 +141,7 @@ const { onPointerDown } = useSlotLinkInteraction({
 function onSlotContextMenu(event: MouseEvent) {
   if (!props.nodeId) return
   const ctx = { nodeId: props.nodeId, slotIndex: props.index, isInput: false }
-  if (!canRenameSlot(ctx)) return
+  if (!hasAnySlotAction(ctx)) return
   showSlotMenu(event, ctx)
 }
 </script>
