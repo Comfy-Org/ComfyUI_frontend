@@ -154,12 +154,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       ? nodeError.errors.filter((e) => e.extra_info?.input_name === slotName)
       : nodeError.errors
 
-    if (
-      relevantErrors.length === 0 ||
-      !relevantErrors.every((e) => SIMPLE_ERROR_TYPES.has(e.type))
-    ) {
-      return
-    }
+    if (relevantErrors.length === 0) return
+    if (!relevantErrors.every((e) => SIMPLE_ERROR_TYPES.has(e.type))) return
 
     const updated = { ...lastNodeErrors.value }
 
@@ -193,7 +189,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * valid values at the UI level, and the valid-values source varies
    * (asset system vs objectInfo) making runtime validation non-trivial.
    */
-  function clearSimpleWidgetErrorIfValid(
+  function clearSlotErrorsWithRangeCheck(
     executionId: string,
     widgetName: string,
     newValue: unknown,
@@ -227,7 +223,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     newValue: unknown,
     options?: { min?: number; max?: number }
   ): void {
-    clearSimpleWidgetErrorIfValid(
+    clearSlotErrorsWithRangeCheck(
       executionId,
       errorInputName,
       newValue,

@@ -332,6 +332,8 @@ function safeWidgetMapper(
             }
           : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
         slotMetadata: slotInfo,
+        // For promoted widgets, name is sourceWidgetName while widget.name
+        // is the subgraph input slot name — store the slot name for lookups.
         slotName: name !== widget.name ? widget.name : undefined,
         sourceExecutionId:
           sourceNode && app.rootGraph

@@ -265,3 +265,88 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     expect(store.lastNodeErrors).toBeNull()
   })
 })
+
+describe('installErrorClearingHooks lifecycle', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
+  })
+
+  it('propagates hooks to nodes added after installation', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('value', 'INT')
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    // Add a new node after hooks are installed
+    const lateNode = new LGraphNode('late')
+    lateNode.addInput('value', 'INT')
+    graph.add(lateNode)
+
+    // The late-added node should have error-clearing hooks
+    expect(lateNode.onConnectionsChange).toBeDefined()
+    expect(lateNode.onWidgetChanged).toBeDefined()
+
+    // Verify the hooks actually work
+    const store = useExecutionErrorStore()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    seedSimpleError(store, String(lateNode.id), 'value')
+
+    lateNode.onConnectionsChange!(
+      NodeSlotType.INPUT,
+      0,
+      true,
+      null,
+      lateNode.inputs[0]
+    )
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('restores original onNodeAdded when cleanup is called', () => {
+    const graph = new LGraph()
+    const originalHook = vi.fn()
+    graph.onNodeAdded = originalHook
+
+    const cleanup = installErrorClearingHooks(graph)
+    expect(graph.onNodeAdded).not.toBe(originalHook)
+
+    cleanup()
+    expect(graph.onNodeAdded).toBe(originalHook)
+  })
+})
+
+describe('clearWidgetRelatedErrors parameter routing', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
+  })
+
+  it('passes widgetName (not errorInputName) for model lookup', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const widget = node.addWidget('number', 'steps', 42, () => undefined, {
+      min: 0,
+      max: 100
+    })
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const store = useExecutionErrorStore()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
+
+    node.onWidgetChanged!.call(node, 'steps', 42, 0, widget)
+
+    expect(clearSpy).toHaveBeenCalledWith(
+      String(node.id),
+      'steps',
+      'steps',
+      42,
+      { min: 0, max: 100 }
+    )
+
+    clearSpy.mockRestore()
+  })
+})

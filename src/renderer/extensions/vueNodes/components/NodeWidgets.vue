@@ -223,6 +223,24 @@ interface ProcessedWidget {
   slotMetadata?: WidgetSlotMetadata
 }
 
+function hasWidgetError(
+  widget: SafeWidgetData,
+  nodeExecId: string,
+  nodeErrors: { errors: { extra_info?: { input_name?: string } }[] } | undefined
+): boolean {
+  const errors = widget.sourceExecutionId
+    ? executionErrorStore.lastNodeErrors?.[widget.sourceExecutionId]?.errors
+    : nodeErrors?.errors
+  const inputName = widget.slotName ?? widget.name
+  return (
+    !!errors?.some((e) => e.extra_info?.input_name === inputName) ||
+    missingModelStore.isWidgetMissingModel(
+      widget.sourceExecutionId ?? nodeExecId,
+      widget.name
+    )
+  )
+}
+
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
 
@@ -317,14 +335,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       advanced: widget.options?.advanced ?? false,
       handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
-      hasError:
-        nodeErrors?.errors?.some(
-          (e) => e.extra_info?.input_name === (widget.slotName ?? widget.name)
-        ) ||
-        missingModelStore.isWidgetMissingModel(
-          widget.sourceExecutionId ?? nodeExecId,
-          widget.name
-        ),
+      hasError: hasWidgetError(widget, nodeExecId, nodeErrors),
       hidden: widget.options?.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,
