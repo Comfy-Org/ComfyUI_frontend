@@ -32,24 +32,32 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
+      ctrl: true,
+      shift: true,
       key: 'w'
     },
     commandId: 'Workspace.ToggleSidebarTab.workflows'
   },
   {
     combo: {
+      ctrl: true,
+      shift: true,
       key: 'n'
     },
     commandId: 'Workspace.ToggleSidebarTab.node-library'
   },
   {
     combo: {
+      ctrl: true,
+      shift: true,
       key: 'm'
     },
     commandId: 'Workspace.ToggleSidebarTab.model-library'
   },
   {
     combo: {
+      ctrl: true,
+      shift: true,
       key: 'a'
     },
     commandId: 'Workspace.ToggleSidebarTab.assets'
@@ -58,7 +66,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     combo: {
       ctrl: true,
       shift: true,
-      key: 'a'
+      key: 'd'
     },
     commandId: 'Comfy.ToggleLinear'
   },
