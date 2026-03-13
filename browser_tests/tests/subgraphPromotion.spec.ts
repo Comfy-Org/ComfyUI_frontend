@@ -405,6 +405,46 @@ test.describe(
       })
     })
 
+    test.describe('Textarea Widget Context Menu in Subgraph', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+      })
+
+      test('Right-click on textarea widget inside subgraph shows Promote Widget option', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-text-widget'
+        )
+        await fitToViewInstant(comfyPage)
+
+        // Navigate into the subgraph (node id 11)
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
+        await subgraphNode.navigateIntoSubgraph()
+
+        // Find the interior CLIPTextEncode node and right-click its text
+        // widget position on the canvas. The textarea DOM widget overlays
+        // this area, so this tests that the contextmenu event propagates
+        // correctly (fix from PR #9840).
+        const interiorNode = await comfyPage.nodeOps.getNodeRefById('10')
+        const textWidget = await interiorNode.getWidget(0)
+        const widgetPos = await textWidget.getPosition()
+
+        await comfyPage.canvas.click({
+          position: widgetPos,
+          button: 'right',
+          force: true
+        })
+        await comfyPage.nextFrame()
+
+        const promoteEntry = comfyPage.page
+          .locator('.litemenu-entry, .p-contextmenu .p-menuitem-text')
+          .filter({ hasText: /Promote Widget/ })
+
+        await expect(promoteEntry.first()).toBeVisible({ timeout: 5000 })
+      })
+    })
+
     test.describe('Pseudo-Widget Promotion', () => {
       test('Promotion store tracks pseudo-widget entries for subgraph with preview node', async ({
         comfyPage
