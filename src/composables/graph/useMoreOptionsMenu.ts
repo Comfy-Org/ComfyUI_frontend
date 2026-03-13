@@ -41,6 +41,8 @@ export interface SubMenuOption {
   action: () => void
   color?: string
   disabled?: boolean
+  pickerValue?: string
+  onColorPick?: (color: string) => void | Promise<void>
 }
 
 export enum BadgeVariant {

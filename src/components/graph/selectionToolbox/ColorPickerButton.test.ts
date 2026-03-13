@@ -5,6 +5,7 @@ import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import type * as ColorUtilModule from '@/utils/colorUtil'
 
 // Import after mocks
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -62,9 +63,14 @@ vi.mock('@/lib/litegraph/src/litegraph', async () => {
 })
 
 // Mock the colorUtil module
-vi.mock('@/utils/colorUtil', () => ({
-  adjustColor: vi.fn((color: string) => color + '_light')
-}))
+vi.mock('@/utils/colorUtil', async () => {
+  const actual = await vi.importActual<typeof ColorUtilModule>('@/utils/colorUtil')
+
+  return {
+    ...actual,
+    adjustColor: vi.fn((color: string) => color + '_light')
+  }
+})
 
 // Mock the litegraphUtil module
 vi.mock('@/utils/litegraphUtil', () => ({
@@ -83,11 +89,25 @@ describe('ColorPickerButton', () => {
     locale: 'en',
     messages: {
       en: {
+        g: {
+          color: 'Color',
+          custom: 'Custom',
+          favorites: 'Favorites',
+          remove: 'Remove'
+        },
         color: {
           noColor: 'No Color',
           red: 'Red',
           green: 'Green',
           blue: 'Blue'
+        },
+        shape: {
+          default: 'Default',
+          box: 'Box',
+          CARD: 'Card'
+        },
+        modelLibrary: {
+          sortRecent: 'Recent'
         }
       }
     }
@@ -137,5 +157,18 @@ describe('ColorPickerButton', () => {
 
     await button.trigger('click')
     expect(wrapper.findComponent({ name: 'SelectButton' }).exists()).toBe(false)
+  })
+
+  it('disables favoriting when the selection has no shared applied color', async () => {
+    canvasStore.selectedItems = [createMockPositionable()]
+    const wrapper = createWrapper()
+
+    await wrapper.find('[data-testid="color-picker-button"]').trigger('click')
+
+    expect(
+      wrapper.find('[data-testid="toggle-favorite-color"]').attributes(
+        'disabled'
+      )
+    ).toBeDefined()
   })
 })
