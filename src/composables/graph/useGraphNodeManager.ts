@@ -36,6 +36,7 @@ import type {
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -80,6 +81,13 @@ export interface SafeWidgetData {
    * which differs from the subgraph node's input slot widget name.
    */
   slotName?: string
+  /**
+   * Execution ID of the interior node that owns the source widget.
+   * Only set for promoted widgets where the source node differs from the
+   * host subgraph node. Used for missing-model lookups that key by
+   * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
+   */
+  sourceExecutionId?: string
 }
 
 export interface VueNodeData {
@@ -204,7 +212,7 @@ function safeWidgetMapper(
 
     return {
       canvasOnly: widget.options.canvasOnly,
-      advanced: widget.advanced,
+      advanced: widget.options?.advanced ?? widget.advanced,
       hidden: widget.options.hidden,
       read_only: widget.options.read_only
     }
@@ -324,10 +332,21 @@ function safeWidgetMapper(
             }
           : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
         slotMetadata: slotInfo,
+        // For promoted widgets, name is sourceWidgetName while widget.name
+        // is the subgraph input slot name — store the slot name for lookups.
         slotName: name !== widget.name ? widget.name : undefined,
+        sourceExecutionId:
+          sourceNode && app.rootGraph
+            ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
+            : undefined,
         tooltip: widget.tooltip
       }
     } catch (error) {
+      console.warn(
+        '[safeWidgetMapper] Failed to map widget:',
+        widget.name,
+        error
+      )
       return {
         name: widget.name || 'unknown',
         type: widget.type || 'text'
@@ -640,6 +659,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
               vueNodeData.set(nodeId, {
                 ...currentData,
                 title: String(propertyEvent.newValue)
+              })
+              break
+            case 'has_errors':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                hasErrors: Boolean(propertyEvent.newValue)
               })
               break
             case 'flags.collapsed':

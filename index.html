@@ -47,7 +47,60 @@
         border: 0;
       }
     </style>
-    <link rel="stylesheet" href="splash.css" />
+    <style>
+      /* Pre-Vue splash loader — inlined to avoid SPA fallback serving
+         index.html instead of CSS on cloud/ephemeral environments */
+      #splash-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        contain: strict;
+      }
+      #splash-loader svg {
+        width: min(200px, 50vw);
+        height: auto;
+        transform: translateZ(0);
+      }
+      #splash-loader .wave-group {
+        animation: splash-rise 4s ease-in-out infinite alternate;
+        will-change: transform;
+        transform: translateZ(0);
+      }
+      #splash-loader .wave-path {
+        animation: splash-wave 1.2s linear infinite;
+        will-change: transform;
+        transform: translateZ(0);
+      }
+      @keyframes splash-rise {
+        from {
+          transform: translateY(280px);
+        }
+        to {
+          transform: translateY(-80px);
+        }
+      }
+      @keyframes splash-wave {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-880px);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash-loader .wave-group,
+        #splash-loader .wave-path {
+          animation: none;
+        }
+        #splash-loader .wave-group {
+          transform: translateY(-80px);
+        }
+      }
+    </style>
     <link rel="manifest" href="manifest.json" />
   </head>
 
