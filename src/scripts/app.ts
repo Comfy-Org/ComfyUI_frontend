@@ -767,7 +767,11 @@ export class ComfyApp {
 
       // Only render preview on canvas if this is the focused job
       const executionStore = useExecutionStore()
-      if (jobId && executionStore.focusedJobId && jobId !== executionStore.focusedJobId) {
+      if (
+        jobId &&
+        executionStore.focusedJobId &&
+        jobId !== executionStore.focusedJobId
+      ) {
         releaseSharedObjectUrl(blobUrl)
         return
       }

@@ -58,7 +58,7 @@
           </DropdownMenuItem>
           <DropdownMenuSeparator
             v-if="isParallelToggleVisible"
-            class="mx-1 my-1 border-t border-border-subtle"
+            class="m-1 border-t border-border-subtle"
           />
           <div
             v-if="isParallelToggleVisible"
@@ -75,14 +75,14 @@
                   class="text-[10px]"
                 />
               </div>
-              <span class="text-xs text-text-muted">{{
+              <span class="text-text-muted text-xs">{{
                 t('menu.parallelUpTo', { count: maxConcurrentJobs })
               }}</span>
             </div>
             <SwitchRoot
               :checked="parallelToggleChecked"
               :disabled="isParallelToggleDisabled"
-              class="relative h-5 w-9 shrink-0 cursor-pointer rounded-full bg-secondary-background transition-colors data-[state=checked]:bg-primary-background data-[disabled]:cursor-not-allowed"
+              class="relative h-5 w-9 shrink-0 cursor-pointer rounded-full bg-secondary-background transition-colors data-disabled:cursor-not-allowed data-[state=checked]:bg-primary-background"
               @update:checked="onParallelToggle"
             >
               <SwitchThumb
@@ -258,12 +258,8 @@ const queueButtonTooltip = computed(() => {
   return t('menu.runWorkflow')
 })
 
-const {
-  isFeatureEnabled,
-  isUserEnabled,
-  maxConcurrentJobs,
-  setUserEnabled
-} = useConcurrentExecution()
+const { isFeatureEnabled, isUserEnabled, maxConcurrentJobs, setUserEnabled } =
+  useConcurrentExecution()
 
 const isParallelToggleVisible = isFeatureEnabled
 const isParallelToggleDisabled = computed(

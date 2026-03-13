@@ -261,8 +261,9 @@ export function useJobList() {
 
   const jobItems = computed<JobListItem[]>(() => {
     return filteredTaskEntries.value.map(({ task, state }) => {
-      const isRunning =
-        executionStore.runningJobIds.includes(String(task.jobId ?? ''))
+      const isRunning = executionStore.runningJobIds.includes(
+        String(task.jobId ?? '')
+      )
       const isFocused =
         String(task.jobId ?? '') === String(executionStore.focusedJobId ?? '')
       const isActive = isRunning || isFocused
