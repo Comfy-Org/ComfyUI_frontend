@@ -26,59 +26,43 @@ test.describe('Widget copy button', { tag: '@ui' }, () => {
   })
 
   test('Copy button has correct aria-label', async ({ comfyPage }) => {
-    const copyButtons = comfyPage.page.locator(
-      '[data-node-id] button[aria-label]'
-    )
-    const count = await copyButtons.count()
-
-    if (count > 0) {
-      const button = copyButtons.filter({
-        has: comfyPage.page.locator('.icon-\\[lucide--copy\\]')
-      })
-      if ((await button.count()) > 0) {
-        await expect(button.first()).toHaveAttribute('aria-label', /copy/i)
-      }
-    }
+    const copyButton = comfyPage.page
+      .locator('[data-node-id] button[aria-label]')
+      .filter({ has: comfyPage.page.locator('.icon-\\[lucide--copy\\]') })
+      .first()
+    await expect(copyButton).toBeAttached()
+    await expect(copyButton).toHaveAttribute('aria-label', /copy/i)
   })
 
   test('Copy icon uses lucide copy class', async ({ comfyPage }) => {
-    const copyIcons = comfyPage.page.locator(
-      '[data-node-id] .icon-\\[lucide--copy\\]'
-    )
-    const count = await copyIcons.count()
-
-    if (count > 0) {
-      await expect(copyIcons.first()).toBeVisible()
-    }
+    const copyIcon = comfyPage.page
+      .locator('[data-node-id] .icon-\\[lucide--copy\\]')
+      .first()
+    await expect(copyIcon).toBeAttached()
   })
 
   test('Widget container has group class for hover', async ({ comfyPage }) => {
-    const textareas = comfyPage.page.locator('[data-node-id] textarea')
-    const count = await textareas.count()
-
-    if (count > 0) {
-      const container = textareas.first().locator('..')
-      await expect(container).toHaveClass(/group/)
-    }
+    const textarea = comfyPage.page
+      .locator('[data-node-id] textarea')
+      .first()
+    await expect(textarea).toBeVisible()
+    const container = textarea.locator('..')
+    await expect(container).toHaveClass(/group/)
   })
 
   test('Copy button exists within textarea widget group container', async ({
     comfyPage
   }) => {
-    const groupContainers = comfyPage.page.locator('[data-node-id] div.group')
-    const count = await groupContainers.count()
+    const container = comfyPage.page
+      .locator('[data-node-id] div.group:has(textarea)')
+      .first()
+    await expect(container).toBeVisible()
+    await container.hover()
+    await comfyPage.nextFrame()
 
-    if (count > 0) {
-      const container = groupContainers.first()
-      await container.hover()
-      await comfyPage.nextFrame()
-
-      const copyButton = container.locator('button').filter({
-        has: comfyPage.page.locator('.icon-\\[lucide--copy\\]')
-      })
-      if ((await copyButton.count()) > 0) {
-        await expect(copyButton.first()).toHaveClass(/invisible/)
-      }
-    }
+    const copyButton = container.locator('button').filter({
+      has: comfyPage.page.locator('.icon-\\[lucide--copy\\]')
+    })
+    await expect(copyButton.first()).toBeAttached()
   })
 })
