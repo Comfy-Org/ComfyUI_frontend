@@ -2,7 +2,7 @@
 export const SIDE_PANEL_SIZE = 20
 
 /** Default panel size (%) for the center/main panel */
-export const CENTER_PANEL_SIZE = 80
+export const CENTER_PANEL_SIZE = 60
 
 /** Minimum panel size (%) for the sidebar */
 export const SIDEBAR_MIN_SIZE = 10

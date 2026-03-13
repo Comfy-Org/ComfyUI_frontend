@@ -18,7 +18,7 @@
       <SplitterGroup
         :key="splitterRefreshKey"
         direction="horizontal"
-        :auto-save-id="isSelectMode ? 'builder-splitter' : sidebarStateKey"
+        :auto-save-id="splitterRefreshKey"
         class="pointer-events-none flex-1 overflow-hidden"
       >
         <!-- First panel: sidebar when left, properties when right -->
@@ -60,7 +60,7 @@
           "
           :class="
             cn(
-              'splitter-resize-handle pointer-events-auto',
+              'splitter-resize-handle pointer-events-auto w-1',
               sidebarLocation === 'left' && !sidebarPanelVisible && 'hidden'
             )
           "
@@ -85,7 +85,7 @@
             <SplitterResizeHandle
               :class="
                 cn(
-                  'splitter-resize-handle pointer-events-auto translate-y-[5px] rounded-t-lg',
+                  'splitter-resize-handle pointer-events-auto w-1 translate-y-[5px] rounded-t-lg',
                   !(bottomPanelVisible && !focusMode) && 'hidden'
                 )
               "
@@ -107,7 +107,7 @@
           "
           :class="
             cn(
-              'splitter-resize-handle pointer-events-auto',
+              'splitter-resize-handle pointer-events-auto w-1',
               sidebarLocation === 'right' && !sidebarPanelVisible && 'hidden'
             )
           "
@@ -175,14 +175,10 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 
-const unifiedWidth = computed(() =>
-  settingStore.get('Comfy.Sidebar.UnifiedWidth')
-)
-
 const { focusMode } = storeToRefs(workspaceStore)
 
 const { isSelectMode, isBuilderMode } = useAppMode()
-const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
+const { activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
 const showOffsideSplitter = computed(
@@ -192,13 +188,6 @@ const showOffsideSplitter = computed(
 const sidebarPanelVisible = computed(
   () => activeSidebarTab.value !== null && !isBuilderMode.value
 )
-
-const sidebarStateKey = computed(() => {
-  return unifiedWidth.value
-    ? 'unified-sidebar'
-    : // When no tab is active, use a default key to maintain state
-      (activeSidebarTabId.value ?? 'default-sidebar')
-})
 
 /*
  * Force refresh the splitter when right panel visibility or sidebar location changes

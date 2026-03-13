@@ -92,7 +92,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
     <SplitterGroup
       :key="splitterKey"
       direction="horizontal"
-      :auto-save-id="`linear-view-${splitterKey}`"
+      :auto-save-id="`linear-view-${sidebarOnLeft ? 'left' : 'right'}-${splitterKey}`"
       class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full"
     >
       <SplitterPanel
@@ -129,7 +129,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         v-if="hasLeftPanel"
         :class="
           cn(
-            'splitter-resize-handle',
+            'splitter-resize-handle w-1',
             showRightBuilder && !activeTab && 'hidden'
           )
         "
@@ -157,7 +157,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         v-if="hasRightPanel"
         :class="
           cn(
-            'splitter-resize-handle',
+            'splitter-resize-handle w-1',
             showLeftBuilder && !activeTab && 'hidden'
           )
         "
