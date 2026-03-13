@@ -95,6 +95,8 @@ export class SubgraphInput extends SubgraphSlot {
         widget: inputWidget,
         node
       })
+    } else {
+      this.events.dispatch('input-connected', { input: slot })
     }
 
     const link = new LLink(
