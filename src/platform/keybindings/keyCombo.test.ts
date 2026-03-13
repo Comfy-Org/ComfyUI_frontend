@@ -3,6 +3,85 @@ import { describe, expect, it } from 'vitest'
 import { KeyComboImpl } from './keyCombo'
 
 describe('KeyComboImpl', () => {
+  describe('fromEvent resolves physical key from event.code', () => {
+    function mockKeyEvent(overrides: Partial<KeyboardEvent>): KeyboardEvent {
+      return {
+        key: '',
+        code: '',
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        shiftKey: false,
+        ...overrides
+      } as KeyboardEvent
+    }
+
+    it.each([
+      { key: 'µ', code: 'KeyM', expected: 'm' },
+      { key: 'ß', code: 'KeyS', expected: 's' },
+      { key: 'å', code: 'KeyA', expected: 'a' }
+    ])(
+      'resolves Alt+$code to "$expected" instead of "$key" (macOS)',
+      ({ key, code, expected }) => {
+        const combo = KeyComboImpl.fromEvent(
+          mockKeyEvent({ key, code, altKey: true })
+        )
+        expect(combo.key).toBe(expected)
+        expect(combo.alt).toBe(true)
+      }
+    )
+
+    it.each([
+      { key: '¡', code: 'Digit1', expected: '1' },
+      { key: '€', code: 'Digit2', expected: '2' }
+    ])(
+      'resolves Alt+$code to "$expected" instead of "$key" (macOS)',
+      ({ key, code, expected }) => {
+        const combo = KeyComboImpl.fromEvent(
+          mockKeyEvent({ key, code, altKey: true })
+        )
+        expect(combo.key).toBe(expected)
+        expect(combo.alt).toBe(true)
+      }
+    )
+
+    it.each([
+      { key: 'ы', code: 'KeyS', expected: 's', label: 'Ctrl+S Russian' },
+      { key: 'я', code: 'KeyZ', expected: 'z', label: 'Ctrl+Z Russian' },
+      { key: 'с', code: 'KeyC', expected: 'c', label: 'Meta+C Russian' }
+    ])(
+      'resolves $label to "$expected" instead of "$key" (non-English layout)',
+      ({ key, code, expected, label }) => {
+        const useMeta = label.includes('Meta')
+        const combo = KeyComboImpl.fromEvent(
+          mockKeyEvent({
+            key,
+            code,
+            ctrlKey: !useMeta,
+            metaKey: useMeta
+          })
+        )
+        expect(combo.key).toBe(expected)
+        expect(combo.ctrl).toBe(true)
+      }
+    )
+
+    it('uses event.key when no modifier is pressed', () => {
+      const combo = KeyComboImpl.fromEvent(
+        mockKeyEvent({ key: 'ы', code: 'KeyS' })
+      )
+      expect(combo.key).toBe('ы')
+    })
+
+    it('uses event.key for non-letter/digit codes with modifier', () => {
+      const combo = KeyComboImpl.fromEvent(
+        mockKeyEvent({ key: 'Enter', code: 'Enter', altKey: true })
+      )
+      expect(combo.key).toBe('Enter')
+      expect(combo.alt).toBe(true)
+    })
+  })
+
   describe('isBrowserReserved', () => {
     it.each([
       { key: 't', ctrl: true, label: 'Ctrl + t' },

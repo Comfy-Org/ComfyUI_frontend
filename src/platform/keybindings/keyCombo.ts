@@ -18,7 +18,7 @@ export class KeyComboImpl implements KeyCombo {
 
   static fromEvent(event: KeyboardEvent) {
     return new KeyComboImpl({
-      key: event.key,
+      key: resolveKeyFromEvent(event),
       ctrl: event.ctrlKey || event.metaKey,
       alt: event.altKey,
       shift: event.shiftKey
@@ -87,6 +87,23 @@ export class KeyComboImpl implements KeyCombo {
     sequences.push(this.key)
     return sequences
   }
+}
+
+/**
+ * When modifier keys (Ctrl, Alt, Meta) are held, event.key may return
+ * unexpected characters:
+ * - macOS Option (Alt) produces special chars (e.g., Alt+M → µ, Alt+S → ß)
+ * - Non-English layouts return localized chars (e.g., Ctrl+S → Ctrl+ы in Russian)
+ *
+ * Use event.code to resolve the physical key in these cases.
+ */
+function resolveKeyFromEvent(event: KeyboardEvent): string {
+  if ((event.ctrlKey || event.altKey || event.metaKey) && event.code) {
+    const { code } = event
+    if (code.startsWith('Key')) return code.slice(3).toLowerCase()
+    if (code.startsWith('Digit')) return code.slice(5)
+  }
+  return event.key
 }
 
 function toNormalizedString(combo: KeyComboImpl): string {
