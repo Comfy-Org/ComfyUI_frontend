@@ -244,17 +244,12 @@ function getWidgetIdentity(
   nodeId: string | number | undefined,
   index: number
 ): {
-  bareWidgetId: string
-  storeWidgetName: string
   dedupeIdentity?: string
   renderKey: string
 } {
   const rawWidgetId = widget.storeNodeId ?? widget.nodeId
-  const widgetIdForStoreLookup = rawWidgetId ?? nodeId ?? ''
-  const bareWidgetId = String(stripGraphPrefix(widgetIdForStoreLookup))
   const storeWidgetName = widget.storeName ?? widget.name
   const slotNameForIdentity = widget.slotName ?? widget.name
-  const typeForIdentity = widget.type
   const stableIdentityRoot = rawWidgetId
     ? `node:${String(stripGraphPrefix(rawWidgetId))}`
     : widget.sourceExecutionId
@@ -262,15 +257,13 @@ function getWidgetIdentity(
       : undefined
 
   const dedupeIdentity = stableIdentityRoot
-    ? `${stableIdentityRoot}:${storeWidgetName}:${slotNameForIdentity}:${typeForIdentity}`
+    ? `${stableIdentityRoot}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}`
     : undefined
   const renderKey =
     dedupeIdentity ??
-    `transient:${String(nodeId ?? '')}:${storeWidgetName}:${slotNameForIdentity}:${typeForIdentity}:${index}`
+    `transient:${String(nodeId ?? '')}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}:${index}`
 
   return {
-    bareWidgetId,
-    storeWidgetName,
     dedupeIdentity,
     renderKey
   }
@@ -329,8 +322,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
   for (const {
     widget,
-    identity: { bareWidgetId, storeWidgetName, renderKey }
+    identity: { renderKey }
   } of uniqueWidgets) {
+    const storeWidgetName = widget.storeName ?? widget.name
+    const bareWidgetId = String(
+      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
+    )
     const isPromotedView = !!widget.nodeId
 
     const vueComponent =
@@ -404,7 +401,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError: hasWidgetError(widget, nodeExecId, nodeErrors),
       hidden: widget.options?.hidden ?? false,
-      id: renderKey,
+      id: bareWidgetId,
       name: widget.name,
       renderKey,
       type: widget.type,

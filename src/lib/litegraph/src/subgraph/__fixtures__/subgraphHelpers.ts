@@ -8,7 +8,12 @@
 import { expect } from 'vitest'
 
 import type { ISlotType, NodeId } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   ExportedSubgraph,
@@ -16,6 +21,22 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
+
+import { subgraphComplexPromotion1 } from './subgraphComplexPromotion1'
+
+const FIXTURE_STRING_CONCAT_TYPE = 'Fixture/StringConcatenate'
+
+class FixtureStringConcatenateNode extends LGraphNode {
+  constructor() {
+    super('StringConcatenate')
+    const input = this.addInput('string_a', 'STRING')
+    input.widget = { name: 'string_a' }
+    this.addOutput('STRING', 'STRING')
+    this.addWidget('text', 'string_a', '', () => {})
+    this.addWidget('text', 'string_b', '', () => {})
+    this.addWidget('text', 'delimiter', '', () => {})
+  }
+}
 
 interface TestSubgraphOptions {
   id?: UUID
@@ -207,6 +228,47 @@ export function createTestSubgraphNode(
   }
 
   return new SubgraphNode(parentGraph, subgraph, instanceData)
+}
+
+export function setupComplexPromotionFixture(): {
+  graph: LGraph
+  subgraph: Subgraph
+  hostNode: SubgraphNode
+} {
+  const fixture = structuredClone(subgraphComplexPromotion1)
+  const subgraphData = fixture.definitions?.subgraphs?.[0]
+  if (!subgraphData)
+    throw new Error('Expected fixture to contain one subgraph definition')
+
+  LiteGraph.registerNodeType(
+    FIXTURE_STRING_CONCAT_TYPE,
+    FixtureStringConcatenateNode
+  )
+
+  for (const node of subgraphData.nodes as Array<{ type: string }>) {
+    if (node.type === 'StringConcatenate')
+      node.type = FIXTURE_STRING_CONCAT_TYPE
+  }
+
+  const hostNodeData = fixture.nodes.find((node) => node.id === 21)
+  if (!hostNodeData)
+    throw new Error('Expected fixture to contain subgraph instance node id 21')
+
+  const graph = new LGraph()
+  const subgraph = graph.createSubgraph(subgraphData as ExportedSubgraph)
+  subgraph.configure(subgraphData as ExportedSubgraph)
+  const hostNode = new SubgraphNode(
+    graph,
+    subgraph,
+    hostNodeData as ExportedSubgraphInstance
+  )
+  graph.add(hostNode)
+
+  return {
+    graph,
+    subgraph,
+    hostNode
+  }
 }
 
 /**

@@ -18,6 +18,7 @@ import {
   resolveConcretePromotedWidget,
   resolvePromotedWidgetAtHost
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
 
@@ -38,12 +39,6 @@ type LegacyMouseWidget = IBaseWidget & {
 
 function hasLegacyMouse(widget: IBaseWidget): widget is LegacyMouseWidget {
   return 'mouse' in widget && typeof widget.mouse === 'function'
-}
-
-function hasWidgetNode(
-  widget: IBaseWidget
-): widget is IBaseWidget & { node: LGraphNode } {
-  return 'node' in widget && !!widget.node
 }
 
 const designTokenCache = new Map<string, string>()
@@ -132,10 +127,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get value(): IBaseWidget['value'] {
-    const linkedState = this.getLinkedInputWidgetStates()[0]
-    if (linkedState && isWidgetValue(linkedState.value))
-      return linkedState.value
-
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
     return this.resolveAtHost()?.widget.value
@@ -152,8 +143,18 @@ class PromotedWidgetView implements IPromotedWidgetView {
           linkedWidget.widgetName
         )
         if (state) state.value = value
-        if (isWidgetValue(value)) linkedWidget.widget.value = value
       }
+
+      const resolved = this.resolveDeepest()
+      if (resolved) {
+        const resolvedState = widgetStore.getWidget(
+          this.graphId,
+          stripGraphPrefix(String(resolved.node.id)),
+          resolved.widget.name
+        )
+        if (resolvedState) resolvedState.value = value
+      }
+
       return
     }
 

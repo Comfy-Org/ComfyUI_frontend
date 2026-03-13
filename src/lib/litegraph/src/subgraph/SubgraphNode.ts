@@ -37,6 +37,7 @@ import {
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { usePromotionStore } from '@/stores/promotionStore'
@@ -65,12 +66,6 @@ type PromotionEntry = {
 // Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
-
-function hasWidgetNode(
-  widget: IBaseWidget
-): widget is IBaseWidget & { node: LGraphNode } {
-  return 'node' in widget && !!widget.node
-}
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
@@ -104,17 +99,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    * `onAdded()`, so construction-time promotions require normal add-to-graph
    * lifecycle to persist.
    */
-  private _pendingPromotions: Array<{
-    interiorNodeId: string
-    widgetName: string
-  }> = []
-  private _linkedPromotionEntriesCache?: {
-    stateSignature: string
+  private _pendingPromotions: PromotionEntry[] = []
+  private _cacheVersion = 0
+  private _linkedEntriesCache?: {
+    version: number
+    hasMissingBoundSourceWidget: boolean
     entries: LinkedPromotionEntry[]
   }
   private _promotedViewsCache?: {
-    entriesSignature: string
-    linkedEntriesSignature: string
+    version: number
+    entriesRef: PromotionEntry[]
+    hasMissingBoundSourceWidget: boolean
     views: PromotedWidgetView[]
   }
 
@@ -156,16 +151,42 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  private _getLinkedPromotionEntries(): LinkedPromotionEntry[] {
-    const stateSignature = this._makeLinkedPromotionEntriesStateSignature()
-    const cached = this._linkedPromotionEntriesCache
-    if (cached?.stateSignature === stateSignature) return cached.entries
+  private _getLinkedPromotionEntries(cache = true): LinkedPromotionEntry[] {
+    const hasMissingBoundSourceWidget = this._hasMissingBoundSourceWidget()
+    const cached = this._linkedEntriesCache
+    if (
+      cache &&
+      cached?.version === this._cacheVersion &&
+      cached.hasMissingBoundSourceWidget === hasMissingBoundSourceWidget
+    )
+      return cached.entries
 
     const linkedEntries: LinkedPromotionEntry[] = []
 
     for (const input of this.inputs) {
       const subgraphInput = input._subgraphSlot
       if (!subgraphInput) continue
+
+      const boundWidget =
+        input._widget && isPromotedWidgetView(input._widget)
+          ? input._widget
+          : undefined
+      if (boundWidget) {
+        const boundNode = this.subgraph.getNodeById(boundWidget.sourceNodeId)
+        const hasBoundSourceWidget =
+          boundNode?.widgets?.some(
+            (widget) => widget.name === boundWidget.sourceWidgetName
+          ) === true
+        if (hasBoundSourceWidget) {
+          linkedEntries.push({
+            inputName: input.name,
+            inputKey: String(subgraphInput.id),
+            interiorNodeId: boundWidget.sourceNodeId,
+            widgetName: boundWidget.sourceWidgetName
+          })
+          continue
+        }
+      }
 
       const resolved =
         this._resolveLinkedPromotionBySubgraphInput(subgraphInput)
@@ -191,51 +212,46 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       return true
     })
 
-    this._linkedPromotionEntriesCache = {
-      stateSignature,
-      entries: deduplicatedEntries
-    }
+    if (cache)
+      this._linkedEntriesCache = {
+        version: this._cacheVersion,
+        hasMissingBoundSourceWidget,
+        entries: deduplicatedEntries
+      }
 
     return deduplicatedEntries
   }
 
-  private _makeLinkedPromotionEntriesStateSignature(): string {
-    return this.inputs
-      .map((input) => {
-        const subgraphInput = input._subgraphSlot
-        if (!subgraphInput) return `${input.name}:no-subgraph-slot`
+  private _hasMissingBoundSourceWidget(): boolean {
+    return this.inputs.some((input) => {
+      const boundWidget =
+        input._widget && isPromotedWidgetView(input._widget)
+          ? input._widget
+          : undefined
+      if (!boundWidget) return false
 
-        const linkIdsSignature = subgraphInput.linkIds.join(',')
-        const boundWidget =
-          input._widget && isPromotedWidgetView(input._widget)
-            ? input._widget
-            : undefined
-        if (!boundWidget) {
-          const connectedWidgetSignature = subgraphInput
-            .getConnectedWidgets()
-            .filter(hasWidgetNode)
-            .map((widget) => `${String(widget.node.id)}:${widget.name}`)
-            .join(',')
-          return `${String(subgraphInput.id)}:${linkIdsSignature}:unbound:${connectedWidgetSignature}`
-        }
-
-        const boundNode = this.subgraph.getNodeById(boundWidget.sourceNodeId)
-        const hasBoundSourceWidget =
-          boundNode?.widgets?.some(
-            (widget) => widget.name === boundWidget.sourceWidgetName
-          ) === true
-
-        return `${String(subgraphInput.id)}:${linkIdsSignature}:${boundWidget.sourceNodeId}:${boundWidget.sourceWidgetName}:${hasBoundSourceWidget ? '1' : '0'}`
-      })
-      .join('|')
+      const boundNode = this.subgraph.getNodeById(boundWidget.sourceNodeId)
+      return (
+        boundNode?.widgets?.some(
+          (widget) => widget.name === boundWidget.sourceWidgetName
+        ) !== true
+      )
+    })
   }
 
   private _getPromotedViews(): PromotedWidgetView[] {
     const store = usePromotionStore()
     const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
+    const hasMissingBoundSourceWidget = this._hasMissingBoundSourceWidget()
+    const cachedViews = this._promotedViewsCache
+    if (
+      cachedViews?.version === this._cacheVersion &&
+      cachedViews.entriesRef === entries &&
+      cachedViews.hasMissingBoundSourceWidget === hasMissingBoundSourceWidget
+    )
+      return cachedViews.views
+
     const linkedEntries = this._getLinkedPromotionEntries()
-    const cachedViews = this._readPromotedViewsCache(entries, linkedEntries)
-    if (cachedViews) return cachedViews
 
     const { displayNameByViewKey, reconcileEntries } =
       this._buildPromotionReconcileState(entries, linkedEntries)
@@ -251,65 +267,18 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         )
     )
 
-    this._writePromotedViewsCache(entries, linkedEntries, views)
+    this._promotedViewsCache = {
+      version: this._cacheVersion,
+      entriesRef: entries,
+      hasMissingBoundSourceWidget,
+      views
+    }
+
     return views
   }
 
   private _invalidatePromotedViewsCache(): void {
-    this._linkedPromotionEntriesCache = undefined
-    this._promotedViewsCache = undefined
-  }
-
-  private _readPromotedViewsCache(
-    entries: PromotionEntry[],
-    linkedEntries: LinkedPromotionEntry[]
-  ): PromotedWidgetView[] | undefined {
-    const entriesSignature = this._makePromotedEntriesSignature(entries)
-    const linkedEntriesSignature =
-      this._makeLinkedEntriesSignature(linkedEntries)
-    const cache = this._promotedViewsCache
-    if (
-      !cache ||
-      cache.entriesSignature !== entriesSignature ||
-      cache.linkedEntriesSignature !== linkedEntriesSignature
-    )
-      return undefined
-
-    return cache.views
-  }
-
-  private _writePromotedViewsCache(
-    entries: PromotionEntry[],
-    linkedEntries: LinkedPromotionEntry[],
-    views: PromotedWidgetView[]
-  ): void {
-    this._promotedViewsCache = {
-      entriesSignature: this._makePromotedEntriesSignature(entries),
-      linkedEntriesSignature: this._makeLinkedEntriesSignature(linkedEntries),
-      views
-    }
-  }
-
-  private _makePromotedEntriesSignature(entries: PromotionEntry[]): string {
-    return entries
-      .map((entry) =>
-        this._makePromotionEntryKey(entry.interiorNodeId, entry.widgetName)
-      )
-      .join('|')
-  }
-
-  private _makeLinkedEntriesSignature(
-    linkedEntries: LinkedPromotionEntry[]
-  ): string {
-    return linkedEntries
-      .map((entry) =>
-        this._makePromotionViewKey(
-          entry.inputKey,
-          entry.interiorNodeId,
-          entry.widgetName
-        )
-      )
-      .join('|')
+    this._cacheVersion++
   }
 
   private _syncPromotions(): void {
@@ -317,7 +286,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const store = usePromotionStore()
     const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
-    const linkedEntries = this._getLinkedPromotionEntries()
+    const linkedEntries = this._getLinkedPromotionEntries(false)
+    // Intentionally preserve independent store promotions when linked coverage is partial;
+    // tests assert that mixed linked/independent states must not collapse to linked-only.
     const { mergedEntries } = this._buildPromotionPersistenceState(
       entries,
       linkedEntries
@@ -371,7 +342,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     linkedEntries: LinkedPromotionEntry[]
   ): {
     mergedEntries: PromotionEntry[]
-    shouldPersistLinkedOnly: boolean
   } {
     const { linkedPromotionEntries, fallbackStoredEntries } =
       this._collectLinkedAndFallbackEntries(entries, linkedEntries)
@@ -383,8 +353,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return {
       mergedEntries: shouldPersistLinkedOnly
         ? linkedPromotionEntries
-        : [...linkedPromotionEntries, ...fallbackStoredEntries],
-      shouldPersistLinkedOnly
+        : [...linkedPromotionEntries, ...fallbackStoredEntries]
     }
   }
 
@@ -515,12 +484,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const connectedWidgets = subgraphInput.getConnectedWidgets()
 
       for (const widget of connectedWidgets) {
-        const hasNodeRef = hasWidgetNode(widget)
-        const widgetNodeId = hasNodeRef ? String(widget.node.id) : undefined
-        if (!widgetNodeId) continue
+        if (!hasWidgetNode(widget)) continue
 
         connectedEntryKeys.add(
-          this._makePromotionEntryKey(widgetNodeId, widget.name)
+          this._makePromotionEntryKey(String(widget.node.id), widget.name)
         )
       }
     }

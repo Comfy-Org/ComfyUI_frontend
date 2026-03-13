@@ -249,16 +249,14 @@ function safeWidgetMapper(
     })
     const promotedInputName = matchedInput?.name
     const displayName = promotedInputName ?? widget.name
+    const directSource = {
+      sourceNodeId: widget.sourceNodeId,
+      sourceWidgetName: widget.sourceWidgetName
+    }
     const promotedSource =
       matchedInput?._widget === widget
-        ? (resolvePromotedSourceByInputName(displayName) ?? {
-            sourceNodeId: widget.sourceNodeId,
-            sourceWidgetName: widget.sourceWidgetName
-          })
-        : {
-            sourceNodeId: widget.sourceNodeId,
-            sourceWidgetName: widget.sourceWidgetName
-          }
+        ? (resolvePromotedSourceByInputName(displayName) ?? directSource)
+        : directSource
 
     return {
       displayName,
