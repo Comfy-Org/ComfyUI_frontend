@@ -323,6 +323,62 @@ describe('executionErrorStore — node error operations', () => {
       expect(store.lastNodeErrors?.['456'].errors).toHaveLength(1)
     })
 
+    it('clears entire node when no slotName and all errors are simple', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: 'Max exceeded',
+              details: '',
+              extra_info: { input_name: 'steps' }
+            },
+            {
+              type: 'required_input_missing',
+              message: 'Missing',
+              details: '',
+              extra_info: { input_name: 'model' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleNodeErrors('123')
+
+      expect(store.lastNodeErrors).toBeNull()
+    })
+
+    it('does not clear when no slotName and some errors are not simple', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'value_bigger_than_max',
+              message: 'Max exceeded',
+              details: '',
+              extra_info: { input_name: 'steps' }
+            },
+            {
+              type: 'exception_type',
+              message: 'Runtime error',
+              details: '',
+              extra_info: { input_name: 'model' }
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'TestNode'
+        }
+      }
+
+      store.clearSimpleNodeErrors('123')
+
+      expect(store.lastNodeErrors?.['123'].errors).toHaveLength(2)
+    })
+
     it('does not clear if the error is not simple', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {

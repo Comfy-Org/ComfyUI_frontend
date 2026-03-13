@@ -562,13 +562,29 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       initializeVueNodeLayout()
     }
 
+    // Clear required_input_missing errors when any input slot gets connected.
+    // onConnectionsChange fires for ALL inputs (unlike node:slot-links:changed
+    // which only fires for widget-converted inputs).
+    node.onConnectionsChange = useChainCallback(
+      node.onConnectionsChange,
+      function (type, slotIndex, isConnected) {
+        if (type !== NodeSlotType.INPUT || !isConnected) return
+        if (!app.rootGraph) return
+        const slotName = node.inputs?.[slotIndex]?.name
+        if (!slotName) return
+        const execId = getExecutionIdByNode(app.rootGraph, node)
+        if (!execId) return
+        useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
+      }
+    )
+
     // Clear simple validation errors and missing model state when a widget
-    // value changes in legacy canvas mode. Vue nodes handle this in
-    // NodeWidgets.vue updateHandler instead.
+    // value changes via the canvas interaction path (BaseWidget.setValue).
+    // Vue-rendered widgets set value via the store (BaseWidget.set value),
+    // which does NOT trigger onWidgetChanged, so there is no double-fire.
     node.onWidgetChanged = useChainCallback(
       node.onWidgetChanged,
       function (_name, newValue, _oldValue, widget) {
-        if (vueNodeData.has(id)) return
         if (!app.rootGraph) return
         const execId = getExecutionIdByNode(app.rootGraph, node)
         if (!execId) return
@@ -748,17 +764,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       'node:slot-links:changed': (slotLinksEvent) => {
         if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
           refreshNodeSlots(String(slotLinksEvent.nodeId))
-
-          if (slotLinksEvent.connected) {
-            const node = nodeRefs.get(String(slotLinksEvent.nodeId))
-            const slotName = node?.inputs?.[slotLinksEvent.slotIndex]?.name
-            if (node && slotName && app.rootGraph) {
-              const execId = getExecutionIdByNode(app.rootGraph, node)
-              if (execId) {
-                useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
-              }
-            }
-          }
         }
       }
     }

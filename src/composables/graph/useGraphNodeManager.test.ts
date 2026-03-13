@@ -319,7 +319,7 @@ describe('Nested promoted widget mapping', () => {
   })
 })
 
-describe('Connection error clearing via node:slot-links:changed', () => {
+describe('Connection error clearing via onConnectionsChange', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
@@ -328,8 +328,7 @@ describe('Connection error clearing via node:slot-links:changed', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.addWidget('string', 'prompt', 'hello', () => undefined, {})
-    const input = node.addInput('clip', 'CLIP')
-    input.widget = { name: 'clip' }
+    node.addInput('clip', 'CLIP')
     graph.add(node)
     return { graph, node }
   }
@@ -342,13 +341,7 @@ describe('Connection error clearing via node:slot-links:changed', () => {
     const clearSpy = vi.spyOn(store, 'clearSimpleNodeErrors')
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
-    graph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.INPUT,
-      slotIndex: 0,
-      connected: true,
-      linkId: 1
-    })
+    node.onConnectionsChange!(NodeSlotType.INPUT, 0, true, null, node.inputs[0])
 
     expect(clearSpy).toHaveBeenCalledWith(String(node.id), 'clip')
   })
@@ -360,13 +353,13 @@ describe('Connection error clearing via node:slot-links:changed', () => {
     const store = useExecutionErrorStore()
     const clearSpy = vi.spyOn(store, 'clearSimpleNodeErrors')
 
-    graph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.INPUT,
-      slotIndex: 0,
-      connected: false,
-      linkId: 1
-    })
+    node.onConnectionsChange!(
+      NodeSlotType.INPUT,
+      0,
+      false,
+      null,
+      node.inputs[0]
+    )
 
     expect(clearSpy).not.toHaveBeenCalled()
   })
@@ -379,15 +372,32 @@ describe('Connection error clearing via node:slot-links:changed', () => {
     const store = useExecutionErrorStore()
     const clearSpy = vi.spyOn(store, 'clearSimpleNodeErrors')
 
-    graph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.OUTPUT,
-      slotIndex: 0,
-      connected: true,
-      linkId: 1
-    })
+    node.onConnectionsChange!(
+      NodeSlotType.OUTPUT,
+      0,
+      true,
+      null,
+      node.outputs[0]
+    )
 
     expect(clearSpy).not.toHaveBeenCalled()
+  })
+
+  it('clears errors for pure input slots without widget property', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    // Pure input slot (no widget) - like MODEL, CLIP, etc.
+    node.addInput('model', 'MODEL')
+    graph.add(node)
+    useGraphNodeManager(graph)
+
+    const store = useExecutionErrorStore()
+    const clearSpy = vi.spyOn(store, 'clearSimpleNodeErrors')
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    node.onConnectionsChange!(NodeSlotType.INPUT, 0, true, null, node.inputs[0])
+
+    expect(clearSpy).toHaveBeenCalledWith(String(node.id), 'model')
   })
 })
 
@@ -396,7 +406,32 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('skips error clearing for Vue nodes (handled by NodeWidgets.vue)', () => {
+  it('clears errors when widget value changes via canvas interaction', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'steps', 20, () => undefined, {
+      min: 1,
+      max: 100
+    })
+    graph.add(node)
+    useGraphNodeManager(graph)
+
+    const store = useExecutionErrorStore()
+    const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
+
+    expect(clearSpy).toHaveBeenCalledWith(
+      String(node.id),
+      'steps',
+      'steps',
+      50,
+      { min: 1, max: 100 }
+    )
+  })
+
+  it('does not clear errors when rootGraph is unavailable', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.addWidget('number', 'steps', 20, () => undefined, {})
@@ -405,7 +440,9 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
     const store = useExecutionErrorStore()
     const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
+      undefined as unknown as LGraph
+    )
 
     node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
 
