@@ -149,13 +149,14 @@ export function getPreviewableOutputsFromJobDetail(
 // ===== Job Detail Caching =====
 
 export async function getJobDetail(
-  jobId: string
+  jobId: string,
+  signal?: AbortSignal
 ): Promise<JobDetail | undefined> {
   const cached = jobDetailCache.get(jobId)
   if (cached) return cached
 
   try {
-    const detail = await api.getJobDetail(jobId)
+    const detail = await api.getJobDetail(jobId, signal)
     if (detail) {
       jobDetailCache.set(jobId, detail)
     }

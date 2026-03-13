@@ -118,11 +118,12 @@ export async function fetchQueue(
  * Fetches full job details from /jobs/{job_id}
  */
 export async function fetchJobDetail(
-  fetchApi: (url: string) => Promise<Response>,
-  jobId: JobId
+  fetchApi: (url: string, options?: RequestInit) => Promise<Response>,
+  jobId: JobId,
+  signal?: AbortSignal
 ): Promise<JobDetail | undefined> {
   try {
-    const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`)
+    const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`, { signal })
 
     if (!res.ok) {
       console.warn(`Job not found for job ${jobId}`)

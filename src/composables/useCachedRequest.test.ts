@@ -239,4 +239,32 @@ describe('useCachedRequest', () => {
     await cachedRequest.call(123)
     expect(mockRequestFn).toHaveBeenCalledTimes(1)
   })
+
+  it('should not cache aborted requests', async () => {
+    vi.unstubAllGlobals()
+
+    let callCount = 0
+    const abortFn = vi.fn(async (_params: unknown, _signal?: AbortSignal) => {
+      callCount++
+      if (callCount === 1) {
+        const error = new DOMException(
+          'The operation was aborted.',
+          'AbortError'
+        )
+        throw error
+      }
+      return { data: 'success' }
+    })
+
+    const cachedRequest = useCachedRequest(abortFn)
+
+    // First call throws AbortError — should NOT be cached
+    const result1 = await cachedRequest.call('key')
+    expect(result1).toBeNull()
+
+    // Second call should retry (not use cached null)
+    const result2 = await cachedRequest.call('key')
+    expect(result2).toEqual({ data: 'success' })
+    expect(abortFn).toHaveBeenCalledTimes(2)
+  })
 })

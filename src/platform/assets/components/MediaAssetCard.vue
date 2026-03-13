@@ -105,10 +105,11 @@
       >
         <!-- Left side: Media name and metadata -->
         <div class="flex flex-col gap-1">
-          <!-- Title -->
-          <MediaTitle :file-name="fileName" />
-          <!-- Metadata -->
-          <div class="flex gap-1.5 text-xs text-muted-foreground">
+          <MediaTitle v-if="showAssetNames" :file-name="fileName" />
+          <div
+            v-if="showAssetDetails"
+            class="flex gap-1.5 text-xs text-muted-foreground"
+          >
             <span v-if="formattedDuration">{{ formattedDuration }}</span>
             <span v-if="metaInfo">{{ metaInfo }}</span>
           </div>
@@ -134,7 +135,14 @@
 
 <script setup lang="ts">
 import { useElementHover } from '@vueuse/core'
-import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  inject,
+  provide,
+  ref,
+  toRef
+} from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -154,7 +162,11 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey } from '../schemas/mediaAssetSchema'
+import {
+  MediaAssetKey,
+  ShowAssetDetailsKey,
+  ShowAssetNamesKey
+} from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
@@ -181,6 +193,9 @@ const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
   showOutputCount?: boolean
   outputCount?: number
 }>()
+
+const showAssetNames = inject(ShowAssetNamesKey, ref(true))
+const showAssetDetails = inject(ShowAssetDetailsKey, ref(true))
 
 const assetsStore = useAssetsStore()
 

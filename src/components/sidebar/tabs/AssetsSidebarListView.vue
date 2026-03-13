@@ -49,9 +49,13 @@
             :preview-alt="getAssetDisplayName(item.asset)"
             :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
             :is-video-preview="isVideoAsset(item.asset)"
-            :primary-text="getAssetPrimaryText(item.asset)"
-            :secondary-text="getAssetSecondaryText(item.asset)"
-            :stack-count="getStackCount(item.asset)"
+            :primary-text="
+              showAssetNames ? getAssetPrimaryText(item.asset) : undefined
+            "
+            :secondary-text="
+              showAssetDetails ? getAssetSecondaryText(item.asset) : undefined
+            "
+            :stack-count="groupByJob ? getStackCount(item.asset) : undefined"
             :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
             :stack-expanded="isStackExpanded(item.asset)"
             @mouseenter="onAssetEnter(item.asset.id)"
@@ -107,7 +111,10 @@ const {
   isSelected,
   isStackExpanded,
   toggleStack,
-  assetType = 'output'
+  assetType = 'output',
+  groupByJob = true,
+  showAssetNames = true,
+  showAssetDetails = true
 } = defineProps<{
   assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
@@ -115,6 +122,9 @@ const {
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
   assetType?: 'input' | 'output'
+  groupByJob?: boolean
+  showAssetNames?: boolean
+  showAssetDetails?: boolean
 }>()
 
 const assetsStore = useAssetsStore()

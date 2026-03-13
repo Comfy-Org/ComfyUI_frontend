@@ -783,7 +783,10 @@
       "filterAudio": "Audio",
       "filter3D": "3D",
       "filterText": "Text",
-      "viewSettings": "View settings"
+      "viewSettings": "View settings",
+      "groupByJob": "Group assets by job",
+      "showAssetNames": "Show asset names",
+      "showAssetDetails": "Show asset details"
     },
     "backToAssets": "Back to all assets",
     "folderView": {

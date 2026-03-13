@@ -30,6 +30,49 @@
       />
     </Button>
 
+    <div class="my-1 w-full border-b border-border-subtle" />
+
+    <Button
+      variant="textonly"
+      class="w-full"
+      :aria-pressed="groupByJob"
+      @click="groupByJob = !groupByJob"
+    >
+      <span>{{ $t('sideToolbar.mediaAssets.groupByJob') }}</span>
+      <i
+        class="ml-auto icon-[lucide--check] size-4"
+        :class="!groupByJob && 'opacity-0'"
+      />
+    </Button>
+
+    <div class="my-1 w-full border-b border-border-subtle" />
+
+    <Button
+      variant="textonly"
+      class="w-full"
+      :aria-pressed="showAssetNames"
+      @click="showAssetNames = !showAssetNames"
+    >
+      <span>{{ $t('sideToolbar.mediaAssets.showAssetNames') }}</span>
+      <i
+        class="ml-auto icon-[lucide--check] size-4"
+        :class="!showAssetNames && 'opacity-0'"
+      />
+    </Button>
+
+    <Button
+      variant="textonly"
+      class="w-full"
+      :aria-pressed="showAssetDetails"
+      @click="showAssetDetails = !showAssetDetails"
+    >
+      <span>{{ $t('sideToolbar.mediaAssets.showAssetDetails') }}</span>
+      <i
+        class="ml-auto icon-[lucide--check] size-4"
+        :class="!showAssetDetails && 'opacity-0'"
+      />
+    </Button>
+
     <template v-if="showSortOptions">
       <div class="my-1 w-full border-b border-border-subtle" />
 
@@ -99,6 +142,13 @@ const { showSortOptions = false, showGenerationTimeSort = false } =
 
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
+const groupByJob = defineModel<boolean>('groupByJob', { required: true })
+const showAssetNames = defineModel<boolean>('showAssetNames', {
+  required: true
+})
+const showAssetDetails = defineModel<boolean>('showAssetDetails', {
+  required: true
+})
 
 function handleViewModeChange(value: 'list' | 'grid') {
   viewMode.value = value

@@ -48,6 +48,10 @@ export function useCachedRequest<TParams, TResult>(
 
       return result
     } catch (err) {
+      // Don't cache aborted requests — they should be retried
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return null
+      }
       // Set cache on error to prevent retrying bad requests
       cache.set(cacheKey, null)
       return null
