@@ -30,31 +30,33 @@
           </div>
           <div class="flex shrink-0 items-center gap-2">
             <Skeleton v-if="showSkeleton(model)" class="ml-1.5 h-4 w-12" />
-            <span
-              v-else-if="model.isDownloadable && fileSizes.get(model.url)"
-              class="pl-1.5 text-xs text-muted-foreground"
-            >
-              {{ formatSize(fileSizes.get(model.url)) }}
-            </span>
-            <a
-              v-else-if="gatedModelUrls.has(model.url)"
-              :href="gatedModelUrls.get(model.url)"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-xs text-primary hover:underline"
-            >
-              {{ $t('missingModelsDialog.acceptTerms') }}
-            </a>
-            <Button
-              v-else-if="model.isDownloadable"
-              variant="textonly"
-              size="icon"
-              :title="model.url"
-              :aria-label="$t('g.download')"
-              @click="downloadModel(model, paths)"
-            >
-              <i class="icon-[lucide--download] size-4" />
-            </Button>
+            <template v-else-if="model.isDownloadable">
+              <span
+                v-if="fileSizes.get(model.url)"
+                class="pl-1.5 text-xs text-muted-foreground"
+              >
+                {{ formatSize(fileSizes.get(model.url)) }}
+              </span>
+              <a
+                v-if="gatedModelUrls.has(model.url)"
+                :href="gatedModelUrls.get(model.url)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-xs text-primary hover:underline"
+              >
+                {{ $t('missingModelsDialog.acceptTerms') }}
+              </a>
+              <Button
+                v-else
+                variant="textonly"
+                size="icon"
+                :title="model.url"
+                :aria-label="$t('g.download')"
+                @click="downloadModel(model, paths)"
+              >
+                <i class="icon-[lucide--download] size-4" />
+              </Button>
+            </template>
             <Button
               v-else
               variant="textonly"

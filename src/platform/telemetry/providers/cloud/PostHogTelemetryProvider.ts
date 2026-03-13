@@ -2,6 +2,7 @@ import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
@@ -101,6 +102,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         void import('posthog-js')
           .then((posthogModule) => {
             this.posthog = posthogModule.default
+            const serverConfig = remoteConfig.value?.posthog_config ?? {}
             this.posthog!.init(apiKey, {
               api_host:
                 window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
@@ -109,9 +111,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               capture_pageview: false,
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
-              debug:
-                window.__CONFIG__?.posthog_debug ??
-                import.meta.env.VITE_POSTHOG_DEBUG === 'true'
+              debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
+              ...serverConfig
             })
             this.isInitialized = true
             this.flushEventQueue()
@@ -119,6 +120,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             useCurrentUser().onUserResolved((user) => {
               if (this.posthog && user.id) {
                 this.posthog.identify(user.id)
+                this.setSubscriptionProperties()
               }
             })
           })
@@ -208,6 +210,19 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         }
         return isValid
       })
+    )
+  }
+
+  private setSubscriptionProperties(): void {
+    const { subscriptionTier } = useSubscription()
+    watch(
+      subscriptionTier,
+      (tier) => {
+        if (tier && this.posthog) {
+          this.posthog.people.set({ subscription_tier: tier })
+        }
+      },
+      { immediate: true }
     )
   }
 

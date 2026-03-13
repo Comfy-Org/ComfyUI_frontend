@@ -14,6 +14,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -68,7 +69,7 @@ export function useMediaAssetActions() {
     if (!targetAsset) return
 
     try {
-      const filename = targetAsset.display_name || targetAsset.name
+      const filename = getAssetDisplayName(targetAsset)
       // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
       const downloadUrl = targetAsset.preview_url || getAssetUrl(targetAsset)
 
@@ -109,7 +110,7 @@ export function useMediaAssetActions() {
 
     try {
       assets.forEach((asset) => {
-        const filename = asset.display_name || asset.name
+        const filename = getAssetDisplayName(asset)
         const downloadUrl = asset.preview_url || getAssetUrl(asset)
         downloadFile(downloadUrl, filename)
       })
@@ -145,7 +146,10 @@ export function useMediaAssetActions() {
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
           }
-          if (metadata?.jobId && asset.name) {
+          // Only add name filters when outputCount is unknown.
+          // When outputCount is set, the asset is a job-level selection
+          // from the gallery and the user wants all outputs for that job.
+          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
             if (!jobAssetNameFilters[metadata.jobId]) {
               jobAssetNameFilters[metadata.jobId] = []
             }

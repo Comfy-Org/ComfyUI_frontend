@@ -81,7 +81,6 @@
           ? 'Execution error'
           : null
       "
-      :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
     />
   </TransformPane>
@@ -538,7 +537,7 @@ onMounted(async () => {
 
   // Restore saved workflow and workflow tabs state
   await workflowPersistence.initializeWorkflow()
-  workflowPersistence.restoreWorkflowTabsState()
+  await workflowPersistence.restoreWorkflowTabsState()
 
   const sharedWorkflowLoadStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
