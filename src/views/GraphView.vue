@@ -27,6 +27,7 @@
   <AssetExportProgressDialog />
   <ManagerProgressToast />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
+  <ConcurrentExecutionDialog />
   <MenuHamburger />
 </template>
 
@@ -48,6 +49,7 @@ import { useI18n } from 'vue-i18n'
 
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
+import ConcurrentExecutionDialog from '@/components/dialog/ConcurrentExecutionDialog.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
