@@ -11306,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "背景顏色"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "圖像",
+        "tooltip": "可選的底圖，可在其上繪畫"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Cond Pair 組合",
     "inputs": {

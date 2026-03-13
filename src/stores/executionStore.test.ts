@@ -1,7 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app } from '@/scripts/app'
-import { useExecutionStore } from '@/stores/executionStore'
+import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
@@ -11,6 +11,7 @@ const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -37,6 +38,37 @@ declare global {
 vi.mock('@/composables/node/useNodeProgressText', () => ({
   useNodeProgressText: () => ({
     showTextPreview: vi.fn()
+  })
+}))
+
+/**
+ * Captures event handlers registered via api.addEventListener so tests
+ * can invoke them directly (e.g. to simulate WebSocket progress events).
+ */
+type EventHandler = (...args: unknown[]) => void
+const apiEventHandlers = new Map<string, EventHandler>()
+vi.mock('@/scripts/api', () => ({
+  api: {
+    addEventListener: vi.fn((event: string, handler: EventHandler) => {
+      apiEventHandlers.set(event, handler)
+    }),
+    removeEventListener: vi.fn((event: string) => {
+      apiEventHandlers.delete(event)
+    }),
+    clientId: 'test-client',
+    apiURL: vi.fn((path: string) => `/api${path}`)
+  }
+}))
+
+vi.mock('@/stores/imagePreviewStore', () => ({
+  useNodeOutputStore: () => ({
+    revokePreviewsByExecutionId: vi.fn()
+  })
+}))
+
+vi.mock('@/stores/jobPreviewStore', () => ({
+  useJobPreviewStore: () => ({
+    clearPreview: vi.fn()
   })
 }))
 
@@ -267,6 +299,92 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     // The shared parent "123" should also have a merged state
     expect(result['123']).toBeDefined()
     expect(result['123'].state).toBe('running')
+  })
+})
+
+describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function makeProgressNodes(
+    nodeId: string,
+    jobId: string
+  ): Record<string, NodeProgressState> {
+    return {
+      [nodeId]: {
+        value: 5,
+        max: 10,
+        state: 'running',
+        node_id: nodeId,
+        prompt_id: jobId,
+        display_node_id: nodeId
+      }
+    }
+  }
+
+  function fireProgressState(
+    jobId: string,
+    nodes: Record<string, NodeProgressState>
+  ) {
+    const handler = apiEventHandlers.get('progress_state')
+    if (!handler) throw new Error('progress_state handler not bound')
+    handler(
+      new CustomEvent('progress_state', { detail: { nodes, prompt_id: jobId } })
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('should retain entries below the limit', () => {
+    for (let i = 0; i < 5; i++) {
+      fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
+    }
+
+    expect(Object.keys(store.nodeProgressStatesByJob)).toHaveLength(5)
+  })
+
+  it('should evict oldest entries when exceeding MAX_PROGRESS_JOBS', () => {
+    for (let i = 0; i < MAX_PROGRESS_JOBS + 10; i++) {
+      fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
+    }
+
+    const keys = Object.keys(store.nodeProgressStatesByJob)
+    expect(keys).toHaveLength(MAX_PROGRESS_JOBS)
+    // Oldest jobs (0-9) should be evicted; newest should remain
+    expect(keys).not.toContain('job-0')
+    expect(keys).not.toContain('job-9')
+    expect(keys).toContain(`job-${MAX_PROGRESS_JOBS + 9}`)
+    expect(keys).toContain(`job-${MAX_PROGRESS_JOBS}`)
+  })
+
+  it('should keep the most recently added job after eviction', () => {
+    for (let i = 0; i < MAX_PROGRESS_JOBS + 1; i++) {
+      fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
+    }
+
+    const lastJobId = `job-${MAX_PROGRESS_JOBS}`
+    expect(store.nodeProgressStatesByJob).toHaveProperty(lastJobId)
+  })
+
+  it('should not evict when updating an existing job', () => {
+    for (let i = 0; i < MAX_PROGRESS_JOBS; i++) {
+      fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
+    }
+    expect(Object.keys(store.nodeProgressStatesByJob)).toHaveLength(
+      MAX_PROGRESS_JOBS
+    )
+
+    // Update an existing job — should not trigger eviction
+    fireProgressState('job-0', makeProgressNodes('0', 'job-0'))
+    expect(Object.keys(store.nodeProgressStatesByJob)).toHaveLength(
+      MAX_PROGRESS_JOBS
+    )
+    expect(store.nodeProgressStatesByJob).toHaveProperty('job-0')
   })
 })
 

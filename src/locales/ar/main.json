@@ -862,7 +862,7 @@
     "promptExecutionError": "فشل تنفيذ الطلب"
   },
   "errorOverlay": {
-    "errorCount": "{count} أخطاء | {count} خطأ | {count} أخطاء",
+    "errorCount": "{count} خطأ | {count} أخطاء",
     "seeErrors": "عرض الأخطاء"
   },
   "essentials": {
@@ -909,7 +909,7 @@
     "downloadFailed": "فشل تحميل \"{name}\"",
     "exportCompleted": "تحميل ZIP جاهز",
     "exportError": "فشل التصدير",
-    "exportFailed": "{count} فشل في التصدير | {count} فشل في التصدير | {count} عمليات تصدير فشلت",
+    "exportFailed": "{count} فشل في التصدير | {count} عمليات تصدير فشلت",
     "exportFailedSingle": "فشل إنشاء تصدير ZIP",
     "exportStarted": "يتم تجهيز تحميل ZIP...",
     "exportingAssets": "جاري تصدير العناصر",
@@ -928,7 +928,7 @@
     "amount": "الكمية",
     "apply": "تطبيق",
     "architecture": "الهندسة المعمارية",
-    "asset": "{count} أصل | {count} أصل | {count} أصول",
+    "asset": "{count} أصل | {count} أصول",
     "audioFailedToLoad": "فشل تحميل الصوت",
     "audioProgress": "تقدم الصوت",
     "author": "المؤلف",
@@ -1114,7 +1114,7 @@
     "nodeSlotsError": "خطأ في فتحات العقدة",
     "nodeWidgetsError": "خطأ في عناصر واجهة العقدة",
     "nodes": "العُقَد",
-    "nodesCount": "{count} عقدة | {count} عقدة | {count} عقدة",
+    "nodesCount": "{count} عقدة | {count} عقدة",
     "nodesRunning": "العُقَد قيد التشغيل",
     "none": "لا شيء",
     "nothingToCopy": "لا يوجد ما يمكن نسخه",
@@ -2295,7 +2295,7 @@
   "progressToast": {
     "allDownloadsCompleted": "اكتملت جميع التنزيلات",
     "downloadingModel": "جاري تنزيل النموذج...",
-    "downloadsFailed": "{count} فشل في التنزيل | {count} فشل في التنزيل | {count} فشل في التنزيل",
+    "downloadsFailed": "{count} فشل في التنزيل | {count} فشل في التنزيل",
     "failed": "فشل",
     "filter": {
       "all": "الكل",

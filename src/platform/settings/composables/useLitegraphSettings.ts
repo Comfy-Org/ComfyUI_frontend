@@ -162,4 +162,12 @@ export const useLitegraphSettings = () => {
       'Comfy.EnableWorkflowViewRestore'
     )
   })
+
+  watchEffect(() => {
+    const selectChildren = settingStore.get(
+      'LiteGraph.Group.SelectChildrenOnClick'
+    )
+    if (canvasStore.canvas)
+      canvasStore.canvas.groupSelectChildren = selectChildren
+  })
 }

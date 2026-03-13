@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.42.3",
+  "version": "1.42.4",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -154,6 +154,7 @@
     "eslint-plugin-storybook": "catalog:",
     "eslint-plugin-unused-imports": "catalog:",
     "eslint-plugin-vue": "catalog:",
+    "fast-check": "catalog:",
     "fs-extra": "^11.2.0",
     "globals": "catalog:",
     "happy-dom": "catalog:",

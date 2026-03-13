@@ -11306,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "背景颜色"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "可选的底图用于绘制"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "条件对合并",
     "inputs": {

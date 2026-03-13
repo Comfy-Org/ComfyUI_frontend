@@ -24,17 +24,6 @@
         </div>
       </div>
     </template>
-    <template #tool-buttons>
-      <!-- Normal Tab View -->
-      <TabList v-if="!isInFolderView" v-model="activeTab">
-        <Tab class="font-inter" value="output">{{
-          $t('sideToolbar.labels.generated')
-        }}</Tab>
-        <Tab class="font-inter" value="input">{{
-          $t('sideToolbar.labels.imported')
-        }}</Tab>
-      </TabList>
-    </template>
     <template #header>
       <!-- Job Detail View Header -->
       <div v-if="isInFolderView" class="px-2 2xl:px-4">
@@ -50,15 +39,24 @@
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
-        class="px-2 pb-1 2xl:px-4"
+        bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
       />
-      <Divider type="dashed" class="my-2" />
+      <!-- Tab list -->
+      <div
+        v-if="!isInFolderView"
+        class="border-b border-comfy-input p-2 2xl:px-4"
+      >
+        <TabList v-model="activeTab">
+          <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
+          <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
+        </TabList>
+      </div>
     </template>
     <template #body>
       <div
         v-if="showLoadingState"
-        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 px-2"
+        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 p-2"
       >
         <div
           v-for="n in skeletonCount"
@@ -85,7 +83,11 @@
           :message="$t('sideToolbar.noFilesFoundMessage')"
         />
       </div>
-      <div v-else class="relative size-full" @click="handleEmptySpaceClick">
+      <div
+        v-else
+        class="relative size-full py-2"
+        @click="handleEmptySpaceClick"
+      >
         <AssetsSidebarListView
           v-if="isListView"
           :asset-items="listViewAssetItems"
@@ -93,7 +95,6 @@
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
-          :asset-type="activeTab"
           @select-asset="handleAssetSelect"
           @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
@@ -103,7 +104,6 @@
           v-else
           :assets="displayAssets"
           :is-selected="isSelected"
-          :asset-type="activeTab"
           :show-output-count="shouldShowOutputCount"
           :get-output-count="getOutputCount"
           @select-asset="handleAssetSelect"
@@ -203,7 +203,6 @@ import {
   useStorage,
   useTimeoutFn
 } from '@vueuse/core'
-import Divider from 'primevue/divider'
 import { useToast } from 'primevue/usetoast'
 import {
   computed,

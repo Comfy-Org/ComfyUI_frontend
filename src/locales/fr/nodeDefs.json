@@ -11306,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Peintre",
+    "inputs": {
+      "bg_color": {
+        "name": "couleur de fond"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image de base optionnelle sur laquelle peindre"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Cond Pair Combiner",
     "inputs": {

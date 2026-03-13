@@ -1,5 +1,5 @@
 <template>
-  <TabsContent value="blueprints" class="h-full flex-1 overflow-y-auto">
+  <div class="h-full flex-1 overflow-y-auto">
     <div v-for="(section, index) in sections" :key="section.title ?? index">
       <h3
         v-if="section.title"
@@ -14,12 +14,10 @@
         @node-click="(node) => emit('nodeClick', node)"
       />
     </div>
-  </TabsContent>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { TabsContent } from 'reka-ui'
-
 import TreeExplorerV2 from '@/components/common/TreeExplorerV2.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type {
