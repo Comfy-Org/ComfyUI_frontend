@@ -1,29 +1,57 @@
 <template>
-  <ContextMenu
-    ref="contextMenu"
-    :model="menuItems"
-    @show="onMenuShow"
-    @hide="onMenuHide"
-  >
-    <template #item="{ item, props: itemProps }">
-      <a v-bind="itemProps.action" class="flex items-center gap-2 px-3 py-1.5">
-        <span class="flex-1">{{ item.label }}</span>
-      </a>
-    </template>
-  </ContextMenu>
+  <Teleport to="body">
+    <div
+      v-if="isOpen"
+      ref="menuEl"
+      :style="{
+        left: `${screenPosition.x}px`,
+        top: `${screenPosition.y}px`
+      }"
+      class="fixed z-1000 min-w-40 rounded-lg border border-border-subtle bg-base-background py-1 shadow-interface"
+      role="menu"
+      @keydown.escape="hide"
+    >
+      <button
+        v-if="showDisconnect"
+        class="hover:bg-surface-hover flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm"
+        role="menuitem"
+        @click="handleDisconnect"
+      >
+        {{ t('g.disconnectLinks') }}
+      </button>
+      <button
+        v-if="showRename"
+        class="hover:bg-surface-hover flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm"
+        role="menuitem"
+        @click="handleRename"
+      >
+        {{ t('g.rename') }}
+      </button>
+      <button
+        v-if="showRemove"
+        class="hover:bg-surface-hover flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-error"
+        role="menuitem"
+        @click="handleRemove"
+      >
+        {{ t('g.removeSlot') }}
+      </button>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { useElementBounding, useRafFn } from '@vueuse/core'
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
-import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
+import { onClickOutside, useEventListener } from '@vueuse/core'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasAnchoredPosition } from '@/composables/graph/useCanvasAnchoredPosition'
 import {
+  canDisconnectSlot,
+  canRemoveSlot,
   canRenameSlot,
+  disconnectSlotLinks,
   registerSlotMenuInstance,
+  removeSlot,
   renameSlot
 } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import type { SlotMenuContext } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
@@ -32,79 +60,43 @@ import { useDialogService } from '@/services/dialogService'
 const { t } = useI18n()
 const dialogService = useDialogService()
 
-const contextMenu = ref<InstanceType<typeof ContextMenu>>()
 const isOpen = ref(false)
 const activeContext = ref<SlotMenuContext | null>(null)
+const menuEl = ref<HTMLElement | null>(null)
 
-const canvasStore = useCanvasStore()
-const lgCanvas = canvasStore.getCanvas()
-const { left: canvasLeft, top: canvasTop } = useElementBounding(lgCanvas.canvas)
+const { screenPosition, anchorToEvent } = useCanvasAnchoredPosition(isOpen)
 
-const worldPosition = ref({ x: 0, y: 0 })
-let lastScale = 0
-let lastOffsetX = 0
-let lastOffsetY = 0
+const showDisconnect = computed(
+  () => activeContext.value && canDisconnectSlot(activeContext.value)
+)
+const showRename = computed(
+  () => activeContext.value && canRenameSlot(activeContext.value)
+)
+const showRemove = computed(
+  () => activeContext.value && canRemoveSlot(activeContext.value)
+)
 
-function updateMenuPosition() {
-  if (!isOpen.value) return
-
-  const menuInstance = contextMenu.value as unknown as {
-    container?: HTMLElement
-  }
-  const menuEl = menuInstance?.container
-  if (!menuEl) return
-
-  const { scale, offset } = lgCanvas.ds
-
-  if (
-    scale === lastScale &&
-    offset[0] === lastOffsetX &&
-    offset[1] === lastOffsetY
-  ) {
-    return
-  }
-
-  lastScale = scale
-  lastOffsetX = offset[0]
-  lastOffsetY = offset[1]
-
-  const screenX = (worldPosition.value.x + offset[0]) * scale + canvasLeft.value
-  const screenY = (worldPosition.value.y + offset[1]) * scale + canvasTop.value
-
-  menuEl.style.left = `${screenX}px`
-  menuEl.style.top = `${screenY}px`
+function show(event: MouseEvent, context: SlotMenuContext) {
+  activeContext.value = context
+  anchorToEvent(event)
+  isOpen.value = true
 }
 
-const { resume: startSync, pause: stopSync } = useRafFn(updateMenuPosition, {
-  immediate: false
-})
+function hide() {
+  isOpen.value = false
+  activeContext.value = null
+}
 
-watchEffect(() => {
-  if (isOpen.value) {
-    startSync()
-  } else {
-    stopSync()
-  }
-})
+function handleDisconnect() {
+  if (!activeContext.value) return
+  disconnectSlotLinks(activeContext.value)
+  hide()
+}
 
-const menuItems = computed<MenuItem[]>(() => {
+async function handleRename() {
   const ctx = activeContext.value
-  if (!ctx) return []
-
-  if (!canRenameSlot(ctx)) return []
-
-  return [
-    {
-      label: t('g.rename'),
-      command: () => {
-        hide()
-        void handleRename(ctx)
-      }
-    }
-  ]
-})
-
-async function handleRename(ctx: SlotMenuContext) {
+  if (!ctx) return
+  hide()
   const newLabel = await dialogService.prompt({
     title: t('g.rename'),
     message: t('g.enterNewNamePrompt')
@@ -113,37 +105,19 @@ async function handleRename(ctx: SlotMenuContext) {
   renameSlot(ctx, newLabel)
 }
 
-function show(event: MouseEvent, context: SlotMenuContext) {
-  activeContext.value = context
-
-  const screenX = event.clientX - canvasLeft.value
-  const screenY = event.clientY - canvasTop.value
-  const { scale, offset } = lgCanvas.ds
-  worldPosition.value = {
-    x: screenX / scale - offset[0],
-    y: screenY / scale - offset[1]
-  }
-
-  lastScale = scale
-  lastOffsetX = offset[0]
-  lastOffsetY = offset[1]
-
-  isOpen.value = true
-  contextMenu.value?.show(event)
+function handleRemove() {
+  if (!activeContext.value) return
+  removeSlot(activeContext.value)
+  hide()
 }
 
-function hide() {
-  contextMenu.value?.hide()
-}
+onClickOutside(menuEl, () => {
+  if (isOpen.value) hide()
+})
 
-function onMenuShow() {
-  isOpen.value = true
-}
-
-function onMenuHide() {
-  isOpen.value = false
-  activeContext.value = null
-}
+useEventListener(window, 'keydown', (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && isOpen.value) hide()
+})
 
 defineExpose({ show, hide, isOpen })
 
