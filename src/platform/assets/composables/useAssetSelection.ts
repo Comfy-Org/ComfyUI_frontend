@@ -1,8 +1,70 @@
 import { useKeyModifier } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getOutputKey } from '@/platform/assets/utils/outputAssetUtil'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
+
+type PromptSelection = {
+  expectedOutputCount: number
+  outputKeys: Set<string>
+}
+
+function getPromptSelection(
+  selectionsByPromptId: Map<string, PromptSelection>,
+  promptId: string
+): PromptSelection {
+  const existingSelection = selectionsByPromptId.get(promptId)
+  if (existingSelection) {
+    return existingSelection
+  }
+
+  const selection: PromptSelection = {
+    expectedOutputCount: 0,
+    outputKeys: new Set<string>()
+  }
+  selectionsByPromptId.set(promptId, selection)
+  return selection
+}
+
+function updateExpectedOutputCount(
+  selection: PromptSelection,
+  outputCount: OutputAssetMetadata['outputCount']
+) {
+  if (
+    typeof outputCount === 'number' &&
+    outputCount > selection.expectedOutputCount
+  ) {
+    selection.expectedOutputCount = outputCount
+  }
+}
+
+function resolveOutputKeysForSelection(
+  asset: AssetItem,
+  metadata: OutputAssetMetadata
+): string[] {
+  const allOutputKeys = (metadata.allOutputs ?? [])
+    .map((output) => getOutputKey(output))
+    .filter((key): key is string => key !== null)
+
+  if (allOutputKeys.length > 0) {
+    return allOutputKeys
+  }
+
+  const assetOutputKey = getOutputKey({
+    nodeId: metadata.nodeId,
+    subfolder: metadata.subfolder,
+    filename: asset.name
+  })
+
+  return [assetOutputKey ?? `asset:${asset.id}`]
+}
+
+function getPromptSelectionCount(selection: PromptSelection): number {
+  return Math.max(selection.outputKeys.size, selection.expectedOutputCount)
+}
 
 export function useAssetSelection() {
   const selectionStore = useAssetSelectionStore()
@@ -150,7 +212,38 @@ export function useAssetSelection() {
    * Get the total output count for given assets
    */
   function getTotalOutputCount(assets: AssetItem[]): number {
-    return assets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+    const nonOutputAssetIds = new Set<string>()
+    const promptSelectionsByPromptId = new Map<string, PromptSelection>()
+
+    for (const asset of assets) {
+      const outputMetadata = getOutputAssetMetadata(asset.user_metadata)
+      const promptId = outputMetadata?.promptId
+
+      if (!promptId) {
+        nonOutputAssetIds.add(asset.id)
+        continue
+      }
+
+      const promptSelection = getPromptSelection(
+        promptSelectionsByPromptId,
+        promptId
+      )
+      updateExpectedOutputCount(promptSelection, outputMetadata.outputCount)
+
+      for (const outputKey of resolveOutputKeysForSelection(
+        asset,
+        outputMetadata
+      )) {
+        promptSelection.outputKeys.add(outputKey)
+      }
+    }
+
+    let totalOutputCount = nonOutputAssetIds.size
+    for (const selection of promptSelectionsByPromptId.values()) {
+      totalOutputCount += getPromptSelectionCount(selection)
+    }
+
+    return totalOutputCount
   }
 
   /**
