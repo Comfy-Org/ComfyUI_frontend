@@ -26,6 +26,10 @@ import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
+import {
+  cachedMeasureText,
+  clearTextMeasureCache
+} from './utils/textMeasureCache'
 import type {
   CustomEventDispatcher,
   ICustomEventTarget
@@ -4893,6 +4897,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * draws the front canvas (the one containing all the nodes)
    */
   drawFrontCanvas(): void {
+    clearTextMeasureCache()
     this.dirty_canvas = false
 
     const { ctx, canvas, graph } = this
@@ -5622,8 +5627,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     text = text.substring(0, 30)
 
     ctx.font = '14px Courier New'
-    const info = ctx.measureText(text)
-    const w = info.width + 20
+    const w = cachedMeasureText(ctx, text) + 20
     const h = 24
     ctx.shadowColor = 'black'
     ctx.shadowOffsetX = 2
