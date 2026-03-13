@@ -288,6 +288,34 @@ describe('layoutStore CRDT operations', () => {
     unsubscribeGlobal()
   })
 
+  it('clears node-scoped listeners when reinitializing from LiteGraph', () => {
+    const nodeId = 'reinit-node'
+    const staleListener = vi.fn()
+
+    layoutStore.onNodeChange(nodeId, staleListener)
+
+    layoutStore.initializeFromLiteGraph([
+      {
+        id: nodeId,
+        pos: [0, 0],
+        size: [200, 100]
+      }
+    ])
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId,
+      position: { x: 10, y: 20 },
+      previousPosition: { x: 0, y: 0 },
+      timestamp: Date.now(),
+      source: LayoutSource.Vue,
+      actor: 'test'
+    })
+
+    expect(staleListener).not.toHaveBeenCalled()
+  })
+
   it('defers global listener fan-out until the microtask boundary', async () => {
     const nodeId = 'global-fanout-node'
     const layout = createTestNode(nodeId)

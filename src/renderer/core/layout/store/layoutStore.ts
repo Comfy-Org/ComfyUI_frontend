@@ -1005,6 +1005,7 @@ class LayoutStoreImpl implements LayoutStore {
       // Vue components may already hold references to these refs, and clearing
       // them would break the reactivity chain. The refs will be reused when
       // nodes are recreated, and stale refs will be cleaned up over time.
+      this.nodeChangeListeners.clear()
       this.spatialIndex.clear()
       this.linkSegmentSpatialIndex.clear()
       this.slotSpatialIndex.clear()

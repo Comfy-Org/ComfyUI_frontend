@@ -5,7 +5,7 @@ import {
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import type { Position } from '../fixtures/types'
 
-type NodeSnapshot = { id: number } & Position
+type NodeSnapshot = { id: number; width: number; height: number } & Position
 
 async function getAllNodePositions(
   comfyPage: ComfyPage
@@ -14,7 +14,9 @@ async function getAllNodePositions(
     window.app!.graph.nodes.map((n) => ({
       id: n.id as number,
       x: n.pos[0],
-      y: n.pos[1]
+      y: n.pos[1],
+      width: n.size[0],
+      height: n.size[1]
     }))
   )
 }
@@ -51,6 +53,8 @@ test.describe(
           ).toBeDefined()
           expect(current!.x).toBeCloseTo(initial.x, 1)
           expect(current!.y).toBeCloseTo(initial.y, 1)
+          expect(current!.width).toBeCloseTo(initial.width, 1)
+          expect(current!.height).toBeCloseTo(initial.height, 1)
         }
 
         await setVueMode(comfyPage, false)
@@ -64,6 +68,8 @@ test.describe(
           ).toBeDefined()
           expect(current!.x).toBeCloseTo(initial.x, 1)
           expect(current!.y).toBeCloseTo(initial.y, 1)
+          expect(current!.width).toBeCloseTo(initial.width, 1)
+          expect(current!.height).toBeCloseTo(initial.height, 1)
         }
       }
     })

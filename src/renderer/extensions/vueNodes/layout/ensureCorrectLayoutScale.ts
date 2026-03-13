@@ -95,7 +95,9 @@ export function ensureCorrectLayoutScale(
       graph.inputNode as SubgraphInputNode,
       graph.outputNode as SubgraphOutputNode
     ]) {
-      unprojectPosSize(ioNode, anchor)
+      if (ioNode) {
+        unprojectPosSize(ioNode, anchor)
+      }
     }
   }
 

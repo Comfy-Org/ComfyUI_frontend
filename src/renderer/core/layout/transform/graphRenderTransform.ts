@@ -8,6 +8,13 @@ export const MIN_NODE_WIDTH = 225
 
 const anchorCache = new WeakMap<LGraph, Point>()
 
+/**
+ * Returns a render anchor for a graph.
+ *
+ * @remarks
+ * The anchor is computed once per graph instance and cached for that graph's
+ * lifetime. This is intended for one-shot normalization passes.
+ */
 export function getGraphRenderAnchor(graph: LGraph): Point {
   const cached = anchorCache.get(graph)
   if (cached) return cached

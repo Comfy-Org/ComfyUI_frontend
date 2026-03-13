@@ -170,6 +170,22 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     expect(snapshotGeometry(nodes)).toEqual(before)
   })
 
+  it('skips null subgraph IO nodes', () => {
+    const nodes = twoNodeLayout()
+    const graph = createMockGraph(nodes, {
+      workflowRendererVersion: 'Vue'
+    }) as LGraph & {
+      inputNode: null
+      outputNode: null
+    }
+
+    graph.inputNode = null
+    graph.outputNode = null
+
+    expect(() => ensureCorrectLayoutScale(undefined, graph)).not.toThrow()
+    expect(graph.extra?.workflowRendererVersion).toBe('Vue-corrected')
+  })
+
   it('normalizes reroutes', () => {
     const nodes = twoNodeLayout()
     const graph = createMockGraph(nodes, {
