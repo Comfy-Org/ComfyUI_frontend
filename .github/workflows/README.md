@@ -69,6 +69,7 @@ gh workflow run manual-api-changelog.yaml \
 #### Workflow Artifacts
 
 Every run produces an artifact containing:
+
 - `CHANGELOG-{from}-to-{to}.md` - Human-readable changelog
 - `from.json` - API snapshot of the earlier version
 - `to.json` - API snapshot of the later version
@@ -78,6 +79,7 @@ Every run produces an artifact containing:
 #### Pull Request (Optional)
 
 If `create_pr` is enabled and changes are detected:
+
 - Creates a draft PR with title: `[docs] API Changelog: v{from} → v{to}`
 - Updates `docs/API-CHANGELOG.md` with the new changelog entry
 - Includes detailed metadata and review instructions
@@ -93,9 +95,11 @@ Comparing v1.29.0 → v1.30.2. This changelog documents changes to the public AP
 ### ✨ Additions
 
 **Type Aliases**
+
 - `WorkflowId`
 
 **Interfaces**
+
 - `ExtensionMetadata`
   - Members: `id`, `name`, `version`, `description`
 
@@ -104,12 +108,14 @@ Comparing v1.29.0 → v1.30.2. This changelog documents changes to the public AP
 > **Note**: Some modifications may be breaking changes.
 
 **Interfaces**
+
 - `ComfyApi`
   - ✨ Added member: `queuePromptAsync`
   - ✨ Added member: `cancelPrompt`
   - ⚠️ **Breaking**: Removed member: `queuePrompt`
 
 **Enums**
+
 - `NodeStatus`
   - ✨ Added enum value: `ERROR`
   - ✨ Added enum value: `COMPLETED`
@@ -177,6 +183,7 @@ done
 ### Validation
 
 The workflow validates:
+
 - ✅ Version format matches semantic versioning (X.Y.Z)
 - ✅ Both version tags exist in the repository
 - ✅ Tags reference valid commits with buildable code
@@ -220,6 +227,7 @@ pnpm build:types
 #### No changes detected
 
 If the workflow reports no changes but you expect some:
+
 1. Check the artifact snapshots to verify they're different
 2. Ensure you're comparing the correct versions
 3. Review the comparison script logic in `scripts/compare-api-snapshots.ts`
@@ -227,6 +235,7 @@ If the workflow reports no changes but you expect some:
 #### PR not created
 
 PR creation requires:
+
 - `create_pr` input set to `true`
 - Significant changes detected (more than just headers)
 - `PR_GH_TOKEN` secret configured with appropriate permissions

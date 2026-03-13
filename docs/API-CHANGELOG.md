@@ -18,6 +18,7 @@ This changelog tracks changes to the following public API components exported fr
 ## Migration Guide
 
 When breaking changes occur, refer to the specific version section below for:
+
 - What changed
 - Why it changed (if applicable)
 - How to migrate your code
