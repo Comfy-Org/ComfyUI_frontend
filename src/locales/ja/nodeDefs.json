@@ -11306,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "背景色"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "上から描画するための任意のベース画像"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "ペア条件付け組み合わせ",
     "inputs": {
