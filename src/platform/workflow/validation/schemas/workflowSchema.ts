@@ -3,7 +3,11 @@ import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
 
-const zRendererType = z.enum(['LG', 'Vue']) satisfies z.ZodType<RendererType>
+const zRendererType = z.enum([
+  'LG',
+  'Vue',
+  'Vue-corrected'
+]) satisfies z.ZodType<RendererType>
 
 // GroupNode is hacking node id to be a string, so we need to allow that.
 // innerNode.id = `${this.node.id}:${i}`
