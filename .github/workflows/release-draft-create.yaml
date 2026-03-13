@@ -47,7 +47,6 @@ jobs:
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           SENTRY_DSN_PROD: ${{ secrets.SENTRY_DSN_PROD }}
-          SENTRY_PROJECT_PROD: ${{ secrets.SENTRY_PROJECT_PROD }}
           ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
           ENABLE_MINIFY: 'true'
