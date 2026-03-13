@@ -14,7 +14,7 @@
         'focus-visible:ring-ring/20 outline-hidden focus-visible:ring-1',
         isActive
           ? 'bg-interface-menu-component-surface-hovered text-text-primary'
-          : 'bg-transparent text-text-secondary hover:bg-button-hover-surface',
+          : 'bg-transparent text-text-secondary hover:bg-button-hover-surface focus:bg-button-hover-surface',
         props.class
       )
     "
@@ -69,7 +69,6 @@ function handleKeydown(event: KeyboardEvent) {
   if (targetIndex !== -1) {
     event.preventDefault()
     tabs[targetIndex].focus()
-    tabs[targetIndex].click()
   }
 }
 </script>

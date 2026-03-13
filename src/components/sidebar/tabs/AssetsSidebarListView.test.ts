@@ -50,8 +50,7 @@ const mountListView = (assetItems: OutputStackListItem[] = []) =>
       selectableAssets: [],
       isSelected: () => false,
       isStackExpanded: () => false,
-      toggleStack: async () => {},
-      assetType: 'output'
+      toggleStack: async () => {}
     },
     global: {
       stubs: {

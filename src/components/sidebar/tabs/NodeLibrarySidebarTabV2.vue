@@ -106,19 +106,17 @@
           </DropdownMenuRoot>
         </template>
       </SidebarTopArea>
+      <div class="border-b border-comfy-input p-2 2xl:px-4">
+        <TabList v-model="selectedTab">
+          <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
+            {{ tab.label }}
+          </Tab>
+        </TabList>
+      </div>
     </template>
     <template #body>
       <NodeDragPreview />
       <div class="flex h-full flex-col">
-        <!-- Tab list in header (fixed) -->
-        <div class="border-b border-comfy-input p-2 2xl:px-4">
-          <TabList v-model="selectedTab">
-            <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
-              {{ tab.label }}
-            </Tab>
-          </TabList>
-        </div>
-        <!-- Tab content (scrollable) -->
         <div class="min-h-0 flex-1 overflow-y-auto py-2">
           <TabPanel
             v-if="flags.nodeLibraryEssentialsEnabled"

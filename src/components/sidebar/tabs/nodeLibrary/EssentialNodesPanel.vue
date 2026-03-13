@@ -68,10 +68,10 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
 
+import EssentialNodeCard from './EssentialNodeCard.vue'
+
 const panelEl = ref<HTMLDivElement | null>(null)
 provide('essentialsPanelRef', panelEl)
-
-import EssentialNodeCard from './EssentialNodeCard.vue'
 
 const { root, flatNodes = [] } = defineProps<{
   root: RenderedTreeExplorerNode<ComfyNodeDefImpl>

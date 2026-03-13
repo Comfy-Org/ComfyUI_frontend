@@ -3,6 +3,7 @@
     v-if="isActive"
     :id="`tabpanel-${value}`"
     role="tabpanel"
+    tabindex="0"
     :aria-labelledby="`tab-${value}`"
   >
     <slot />
