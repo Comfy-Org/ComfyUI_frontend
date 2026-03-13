@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { computed, provide, ref, toValue } from 'vue'
+import { computed, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import WidgetItem from '@/components/rightSidePanel/parameters/WidgetItem.vue'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
@@ -30,7 +30,6 @@ import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
@@ -46,18 +45,7 @@ const { isSelectMode, isSelectInputsMode, isSelectOutputsMode, isArrangeMode } =
   useAppMode()
 const hoveringSelectable = ref(false)
 
-provide(HideLayoutFieldKey, true)
-
 workflowStore.activeWorkflow?.changeTracker?.reset()
-
-const arrangeInputs = computed(() =>
-  appModeStore.selectedInputs
-    .map(([nodeId, widgetName]) => {
-      const [node, widget] = resolveNodeWidget(nodeId, widgetName)
-      return node ? { nodeId, widgetName, node, widget } : null
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== null)
-)
 
 const inputsWithState = computed(() =>
   appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
@@ -201,7 +189,9 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 </script>
 <template>
   <div class="flex h-full flex-col">
-    <div class="flex items-center border-b border-border-subtle p-2 font-bold">
+    <div
+      class="flex h-12 items-center border-b border-border-subtle px-4 font-bold"
+    >
       {{
         isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
       }}
@@ -209,34 +199,10 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <DraggableList
         v-if="isArrangeMode"
-        v-slot="{ dragClass }"
         v-model="appModeStore.selectedInputs"
         class="overflow-x-clip"
       >
-        <div
-          v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
-          :key="`${nodeId}: ${widgetName}`"
-          :class="cn(dragClass, 'pointer-events-auto my-2 p-2')"
-          :aria-label="`${widget?.label ?? widgetName} — ${node.title}`"
-        >
-          <div v-if="widget" class="pointer-events-none" inert>
-            <WidgetItem
-              :widget="widget"
-              :node="node"
-              show-node-name
-              hidden-widget-actions
-            />
-          </div>
-          <div
-            v-else
-            class="pointer-events-none p-1 text-sm text-muted-foreground"
-          >
-            {{ widgetName }}
-            <p class="text-xs italic">
-              ({{ t('linearMode.builder.unknownWidget') }})
-            </p>
-          </div>
-        </div>
+        <AppModeWidgetList builder-mode />
       </DraggableList>
       <PropertiesAccordionItem
         v-if="isSelectInputsMode"

@@ -86,6 +86,7 @@ import { computed, onErrorCaptured, ref, toValue } from 'vue'
 import type { Component } from 'vue'
 
 import type {
+  SafeWidgetData,
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
@@ -93,6 +94,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -110,14 +112,18 @@ import {
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
+import type { WidgetState } from '@/stores/widgetValueStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { usePromotionStore } from '@/stores/promotionStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
+import { getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
+import { app } from '@/scripts/app'
 
 import InputSlot from './InputSlot.vue'
 
@@ -134,6 +140,7 @@ const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
 const promotionStore = usePromotionStore()
 const executionErrorStore = useExecutionErrorStore()
+const missingModelStore = useMissingModelStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -179,6 +186,26 @@ const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
 )
 const widgetValueStore = useWidgetValueStore()
 
+function createWidgetUpdateHandler(
+  widgetState: WidgetState | undefined,
+  widget: SafeWidgetData,
+  nodeExecId: string,
+  widgetOptions: IWidgetOptions | Record<string, never>
+): (newValue: WidgetValue) => void {
+  return (newValue: WidgetValue) => {
+    if (widgetState) widgetState.value = newValue
+    widget.callback?.(newValue)
+    const effectiveExecId = widget.sourceExecutionId ?? nodeExecId
+    executionErrorStore.clearWidgetRelatedErrors(
+      effectiveExecId,
+      widget.slotName ?? widget.name,
+      widget.name,
+      newValue,
+      { min: widgetOptions?.min, max: widgetOptions?.max }
+    )
+  }
+}
+
 interface ProcessedWidget {
   advanced: boolean
   handleContextMenu: (e: PointerEvent) => void
@@ -196,9 +223,34 @@ interface ProcessedWidget {
   slotMetadata?: WidgetSlotMetadata
 }
 
+function hasWidgetError(
+  widget: SafeWidgetData,
+  nodeExecId: string,
+  nodeErrors: { errors: { extra_info?: { input_name?: string } }[] } | undefined
+): boolean {
+  const errors = widget.sourceExecutionId
+    ? executionErrorStore.lastNodeErrors?.[widget.sourceExecutionId]?.errors
+    : nodeErrors?.errors
+  const inputName = widget.slotName ?? widget.name
+  return (
+    !!errors?.some((e) => e.extra_info?.input_name === inputName) ||
+    missingModelStore.isWidgetMissingModel(
+      widget.sourceExecutionId ?? nodeExecId,
+      widget.name
+    )
+  )
+}
+
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
-  const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeData.id ?? '']
+
+  // nodeData.id is the local node ID; subgraph nodes need the full execution
+  // path (e.g. "65:63") to match keys in lastNodeErrors.
+  const nodeExecId = app.rootGraph
+    ? getExecutionIdFromNodeData(app.rootGraph, nodeData)
+    : String(nodeData.id ?? '')
+
+  const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
   const graphId = canvasStore.canvas?.graph?.rootGraph.id
 
   const nodeId = nodeData.id
@@ -257,12 +309,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       spec: widget.spec
     }
 
-    function updateHandler(newValue: WidgetValue) {
-      // Update value in store
-      if (widgetState) widgetState.value = newValue
-      // Invoke LiteGraph callback wrapper (handles triggerDraw, etc.)
-      widget.callback?.(newValue)
-    }
+    const updateHandler = createWidgetUpdateHandler(
+      widgetState,
+      widget,
+      nodeExecId,
+      widgetOptions
+    )
 
     const tooltipText = getWidgetTooltip(widget)
     const tooltipConfig = createTooltipConfig(tooltipText)
@@ -283,10 +335,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       advanced: widget.options?.advanced ?? false,
       handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
-      hasError:
-        nodeErrors?.errors?.some(
-          (error) => error.extra_info?.input_name === widget.name
-        ) ?? false,
+      hasError: hasWidgetError(widget, nodeExecId, nodeErrors),
       hidden: widget.options?.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,

@@ -11,18 +11,16 @@ import {
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
-interface NodeWithId {
-  id: string | number
-  subgraphId?: string | null
-}
-
 /**
  * Constructs a locator ID from node data with optional subgraph context.
  *
  * @param nodeData - Node data containing id and optional subgraphId
  * @returns The locator ID string
  */
-export function getLocatorIdFromNodeData(nodeData: NodeWithId): string {
+export function getLocatorIdFromNodeData(nodeData: {
+  id: string | number
+  subgraphId?: string | null
+}): string {
   return nodeData.subgraphId
     ? `${nodeData.subgraphId}:${String(nodeData.id)}`
     : String(nodeData.id)
@@ -227,13 +225,17 @@ export function findSubgraphByUuid(
   graph: LGraph | Subgraph,
   targetUuid: string
 ): Subgraph | null {
-  // Check all nodes in the current graph
+  // Fast O(1) lookup via the root graph's centralized subgraph registry.
+  if ('subgraphs' in graph && graph.subgraphs instanceof Map) {
+    return graph.subgraphs.get(targetUuid) ?? null
+  }
+
+  // Fallback: recursive traversal for non-root graphs without the registry.
   for (const node of graph.nodes) {
     if (node.isSubgraphNode?.() && node.subgraph) {
       if (node.subgraph.id === targetUuid) {
         return node.subgraph
       }
-      // Recursively search in nested subgraphs
       const found = findSubgraphByUuid(node.subgraph, targetUuid)
       if (found) return found
     }
@@ -358,6 +360,26 @@ export function getExecutionIdByNode(
   if (parentPath === undefined) return null
 
   return `${parentPath}:${node.id}`
+}
+
+/**
+ * Returns the execution ID for a node described by plain data (id + subgraphId),
+ * without requiring a pre-existing {@link LGraphNode} reference.
+ * Subgraph nodes return the full colon-separated path (e.g. `"65:70:63"`).
+ * Falls back to `String(nodeData.id)` if the node cannot be resolved.
+ *
+ * @param rootGraph - The root graph to resolve from
+ * @param nodeData  - Object with `id` (local node ID) and optional `subgraphId` (UUID)
+ */
+export function getExecutionIdFromNodeData(
+  rootGraph: LGraph,
+  nodeData: { id: string | number; subgraphId?: string | null }
+): string {
+  const locatorId = getLocatorIdFromNodeData(nodeData)
+  const node = getNodeByLocatorId(rootGraph, locatorId)
+  return node
+    ? (getExecutionIdByNode(rootGraph, node) ?? String(nodeData.id))
+    : String(nodeData.id)
 }
 
 /**
@@ -635,18 +657,40 @@ export function getExecutionIdsForSelectedNodes(
     : findPartialExecutionPathToGraph(startGraph, rootGraph)
   if (parentPath === undefined) return []
 
+  const buildExecId = (node: LGraphNode, parentExecutionId: string) => {
+    const nodeId = String(node.id)
+    return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
+  }
   return collectFromNodes<NodeExecutionId, string>(selectedNodes, {
-    collector: (node, parentExecutionId) => {
-      const nodeId = String(node.id)
-      return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
-    },
-    contextBuilder: (node, parentExecutionId) => {
-      const nodeId = String(node.id)
-      return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
-    },
+    collector: buildExecId,
+    contextBuilder: buildExecId,
     initialContext: parentPath,
     expandSubgraphs: true
   })
+}
+
+/**
+ * Returns the set of local graph node IDs (as strings) for nodes that live in
+ * `activeGraph` and whose execution ID appears in `executionIds`.
+ *
+ * @param rootGraph - The root graph used to resolve execution IDs
+ * @param activeGraph - The currently-visible graph scope
+ * @param executionIds - Set of execution IDs to look up
+ * @returns Set of stringified local node IDs belonging to activeGraph
+ */
+export function getActiveGraphNodeIds(
+  rootGraph: LGraph,
+  activeGraph: LGraph | Subgraph,
+  executionIds: Set<NodeExecutionId>
+): Set<string> {
+  const ids = new Set<string>()
+  for (const executionId of executionIds) {
+    const graphNode = getNodeByExecutionId(rootGraph, executionId)
+    if (graphNode?.graph === activeGraph) {
+      ids.add(String(graphNode.id))
+    }
+  }
+  return ids
 }
 
 function findPartialExecutionPathToGraph(

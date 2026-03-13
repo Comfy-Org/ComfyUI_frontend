@@ -12,3 +12,14 @@ reviews:
       - comfy-pr-bot
       - github-actions
       - github-actions[bot]
+  pre_merge_checks:
+    custom_checks:
+      - name: End-to-end regression coverage for fixes
+        mode: warning
+        instructions: |
+          Pass if at least one of the following is true:
+          1. Neither the PR title nor any commit subject in the PR uses bug-fix language such as `fix`, `fixed`, `fixes`, `fixing`, `bugfix`, or `hotfix`.
+          2. The PR changes at least one file under `browser_tests/`.
+          3. The PR description includes a concrete, non-placeholder explanation of why an end-to-end regression test was not added.
+
+          Fail otherwise. When failing, mention which bug-fix signal you found and ask the author to either add or update a Playwright regression test under `browser_tests/` or add a concrete explanation in the PR description of why an end-to-end regression test is not practical.

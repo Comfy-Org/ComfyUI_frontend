@@ -36,6 +36,7 @@ import type {
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -80,6 +81,13 @@ export interface SafeWidgetData {
    * which differs from the subgraph node's input slot widget name.
    */
   slotName?: string
+  /**
+   * Execution ID of the interior node that owns the source widget.
+   * Only set for promoted widgets where the source node differs from the
+   * host subgraph node. Used for missing-model lookups that key by
+   * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
+   */
+  sourceExecutionId?: string
 }
 
 export interface VueNodeData {
@@ -204,7 +212,7 @@ function safeWidgetMapper(
 
     return {
       canvasOnly: widget.options.canvasOnly,
-      advanced: widget.advanced,
+      advanced: widget.options?.advanced ?? widget.advanced,
       hidden: widget.options.hidden,
       read_only: widget.options.read_only
     }
@@ -324,10 +332,21 @@ function safeWidgetMapper(
             }
           : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
         slotMetadata: slotInfo,
+        // For promoted widgets, name is sourceWidgetName while widget.name
+        // is the subgraph input slot name — store the slot name for lookups.
         slotName: name !== widget.name ? widget.name : undefined,
+        sourceExecutionId:
+          sourceNode && app.rootGraph
+            ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
+            : undefined,
         tooltip: widget.tooltip
       }
     } catch (error) {
+      console.warn(
+        '[safeWidgetMapper] Failed to map widget:',
+        widget.name,
+        error
+      )
       return {
         name: widget.name || 'unknown',
         type: widget.type || 'text'
@@ -377,7 +396,9 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
       },
       set(v) {
         reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
-      }
+      },
+      configurable: true,
+      enumerable: true
     })
   }
   const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
@@ -387,7 +408,20 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     },
     set(v) {
       reactiveInputs.splice(0, reactiveInputs.length, ...v)
-    }
+    },
+    configurable: true,
+    enumerable: true
+  })
+  const reactiveOutputs = shallowReactive<INodeOutputSlot[]>(node.outputs ?? [])
+  Object.defineProperty(node, 'outputs', {
+    get() {
+      return reactiveOutputs
+    },
+    set(v) {
+      reactiveOutputs.splice(0, reactiveOutputs.length, ...v)
+    },
+    configurable: true,
+    enumerable: true
   })
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
@@ -429,7 +463,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     hasErrors: !!node.has_errors,
     widgets: safeWidgets,
     inputs: reactiveInputs,
-    outputs: node.outputs ? [...node.outputs] : undefined,
+    outputs: reactiveOutputs,
     flags: node.flags ? { ...node.flags } : undefined,
     color: node.color || undefined,
     bgcolor: node.bgcolor || undefined,
@@ -642,6 +676,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 title: String(propertyEvent.newValue)
               })
               break
+            case 'has_errors':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                hasErrors: Boolean(propertyEvent.newValue)
+              })
+              break
             case 'flags.collapsed':
               vueNodeData.set(nodeId, {
                 ...currentData,
@@ -721,6 +761,20 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
           refreshNodeSlots(String(slotLinksEvent.nodeId))
         }
+      },
+      'node:slot-label:changed': (slotLabelEvent) => {
+        const nodeId = String(slotLabelEvent.nodeId)
+        const nodeRef = nodeRefs.get(nodeId)
+        if (!nodeRef) return
+
+        // Force shallowReactive to detect the deep property change
+        // by re-assigning the affected array through the defineProperty setter.
+        if (slotLabelEvent.slotType !== NodeSlotType.OUTPUT && nodeRef.inputs) {
+          nodeRef.inputs = [...nodeRef.inputs]
+        }
+        if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
+          nodeRef.outputs = [...nodeRef.outputs]
+        }
       }
     }
 
@@ -734,6 +788,9 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
           break
         case 'node:slot-links:changed':
           triggerHandlers['node:slot-links:changed'](event)
+          break
+        case 'node:slot-label:changed':
+          triggerHandlers['node:slot-label:changed'](event)
           break
       }
 
