@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-6">
     <div class="flex justify-center">
       <SelectButton
         v-model="currentBillingCycle"
@@ -38,7 +38,7 @@
         </template>
       </SelectButton>
     </div>
-    <div class="flex flex-col items-stretch gap-6 xl:flex-row">
+    <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
         v-for="tier in tiers"
         :key="tier.id"
@@ -49,7 +49,7 @@
           )
         "
       >
-        <div class="flex flex-col gap-8 p-8 pb-0">
+        <div class="flex flex-col gap-4 p-6 pb-0">
           <div class="flex flex-row items-center justify-between gap-2">
             <span
               class="font-inter text-base/normal font-bold text-base-foreground"
@@ -67,7 +67,7 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-baseline gap-2">
                 <span
-                  class="font-inter text-[32px] leading-normal font-semibold text-base-foreground"
+                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground"
                 >
                   <span
                     v-show="currentBillingCycle === 'yearly'"
@@ -110,7 +110,7 @@
             </span>
           </div>
 
-          <div class="flex flex-1 flex-col gap-4 pb-0">
+          <div class="flex flex-1 flex-col gap-3 pb-0">
             <div class="flex flex-row items-center justify-between">
               <span
                 class="text-foreground font-inter text-sm/normal font-normal"
@@ -194,7 +194,7 @@
             </div>
           </div>
         </div>
-        <div class="flex flex-col p-8">
+        <div class="flex flex-col p-6">
           <Button
             :variant="getButtonSeverity(tier)"
             :disabled="isLoading || isCurrentPlan(tier.key)"
