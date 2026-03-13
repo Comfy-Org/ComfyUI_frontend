@@ -688,7 +688,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (input._widget) {
           input._widget.label = newName
         }
-        this._invalidatePromotedViewsCache()
         this.graph?.trigger('node:slot-label:changed', {
           nodeId: this.id,
           slotType: NodeSlotType.INPUT
