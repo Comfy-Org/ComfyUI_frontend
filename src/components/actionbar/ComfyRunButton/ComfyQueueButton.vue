@@ -43,9 +43,7 @@
               value: item.tooltip,
               showDelay: 600
             }"
-            :variant="
-              item.key === selectedQueueMode ? 'primary' : 'secondary'
-            "
+            :variant="item.key === selectedQueueMode ? 'primary' : 'secondary'"
             size="sm"
             :class="cn(itemClass, queueMenuItemButtonClass)"
           >
@@ -67,10 +65,7 @@
               <span class="text-sm text-text-primary">{{
                 t('menu.parallelExecution')
               }}</span>
-              <StatusBadge
-                :label="t('g.new')"
-                class="text-[10px]"
-              />
+              <StatusBadge :label="t('g.new')" class="text-[10px]" />
             </div>
             <span class="text-text-muted text-xs">{{
               t('menu.parallelUpTo', { count: maxConcurrentJobs })
