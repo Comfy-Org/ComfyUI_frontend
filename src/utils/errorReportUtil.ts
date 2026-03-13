@@ -66,7 +66,7 @@ ${systemStats.devices
   .join('\n')}
 ## Logs
 \`\`\`
-${error.serverLogs}
+${typeof error.serverLogs === 'string' ? error.serverLogs : JSON.stringify(error.serverLogs, null, 2)}
 \`\`\`
 ## Attached Workflow
 Please make sure that workflow does not contain any sensitive information such as API keys or passwords.

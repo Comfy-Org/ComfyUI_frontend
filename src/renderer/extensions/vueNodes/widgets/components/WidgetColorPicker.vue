@@ -3,22 +3,24 @@
   <WidgetLayoutField :widget="widget">
     <label
       :class="
-        cn(WidgetInputBaseClass, 'flex items-center gap-2 w-full px-4 py-2')
+        cn(WidgetInputBaseClass, 'flex w-full items-center gap-2 px-4 py-2')
       "
     >
       <ColorPicker
         v-model="localValue"
         v-bind="filteredProps"
-        class="h-4 w-8 overflow-hidden !rounded-full border-none"
+        class="h-4 w-8 overflow-hidden rounded-full! border-none"
         :aria-label="widget.name"
         :pt="{
           preview: '!w-full !h-full !border-none'
         }"
         @update:model-value="onPickerUpdate"
       />
-      <span class="text-xs" data-testid="widget-color-text">{{
-        toHexFromFormat(localValue, format)
-      }}</span>
+      <span
+        class="min-w-[4ch] truncate text-xs"
+        data-testid="widget-color-text"
+        >{{ toHexFromFormat(localValue, format) }}</span
+      >
     </label>
   </WidgetLayoutField>
 </template>
@@ -36,10 +38,12 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-type WidgetOptions = { format?: ColorFormat } & Record<string, unknown>
+type WidgetOptions = IWidgetOptions & { format?: ColorFormat }
 
 const props = defineProps<{
   widget: SimplifiedWidget<string, WidgetOptions>

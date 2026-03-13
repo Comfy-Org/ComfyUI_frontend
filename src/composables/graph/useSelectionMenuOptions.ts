@@ -63,30 +63,43 @@ export function useSelectionMenuOptions() {
     }
   ]
 
-  const getSubgraphOptions = (hasSubgraphs: boolean): MenuOption[] => {
+  const getSubgraphOptions = ({
+    hasSubgraphs,
+    hasMultipleSelection
+  }: {
+    hasSubgraphs: boolean
+    hasMultipleSelection: boolean
+  }): MenuOption[] => {
+    const convertOption: MenuOption = {
+      label: t('contextMenu.Convert to Subgraph'),
+      icon: 'icon-[lucide--shrink]',
+      action: convertToSubgraph,
+      badge: BadgeVariant.NEW
+    }
+
+    const options: MenuOption[] = []
+    const showConvertOption = !hasSubgraphs || hasMultipleSelection
+
+    if (showConvertOption) {
+      options.push(convertOption)
+    }
+
     if (hasSubgraphs) {
-      return [
-        {
+      if (!hasMultipleSelection) {
+        options.push({
           label: t('contextMenu.Add Subgraph to Library'),
           icon: 'icon-[lucide--folder-plus]',
           action: addSubgraphToLibrary
-        },
-        {
-          label: t('contextMenu.Unpack Subgraph'),
-          icon: 'icon-[lucide--expand]',
-          action: unpackSubgraph
-        }
-      ]
-    } else {
-      return [
-        {
-          label: t('contextMenu.Convert to Subgraph'),
-          icon: 'icon-[lucide--shrink]',
-          action: convertToSubgraph,
-          badge: BadgeVariant.NEW
-        }
-      ]
+        })
+      }
+      options.push({
+        label: t('contextMenu.Unpack Subgraph'),
+        icon: 'icon-[lucide--expand]',
+        action: unpackSubgraph
+      })
     }
+
+    return options
   }
 
   const getMultipleNodesOptions = (): MenuOption[] => {

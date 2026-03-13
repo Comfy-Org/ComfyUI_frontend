@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import IconTextButton from './IconTextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import MoreButton from './MoreButton.vue'
 
 const meta: Meta<typeof MoreButton> = {
@@ -17,30 +17,26 @@ type Story = StoryObj<typeof MoreButton>
 
 export const Basic: Story = {
   render: () => ({
-    components: { MoreButton, IconTextButton },
+    components: { MoreButton, Button },
     template: `
       <div style="height: 200px; display: flex; align-items: center; justify-content: center;">
         <MoreButton>
           <template #default="{ close }">
-            <IconTextButton
-              type="transparent"
-              label="Settings"
+            <Button
+              variant="textonly"
               @click="() => { close() }"
             >
-              <template #icon>
-                <i class="icon-[lucide--download] size-4" />
-              </template>
-            </IconTextButton>
+              <i class="icon-[lucide--download] size-4" />
+              <span>Settings</span>
+            </Button>
 
-            <IconTextButton
-              type="transparent"
-              label="Profile"
+            <Button
+              variant="textonly"
               @click="() => { close() }"
             >
-              <template #icon>
-                <i class="icon-[lucide--scroll-text] size-4" />
-              </template>
-            </IconTextButton>
+              <i class="icon-[lucide--scroll-text] size-4" />
+              <span>Profile</span>
+            </Button>
           </template>
         </MoreButton>
       </div>

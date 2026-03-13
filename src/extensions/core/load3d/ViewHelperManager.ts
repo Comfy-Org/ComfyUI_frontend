@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 
 import {
-  type NodeStorageInterface,
+  type EventManagerInterface,
   type ViewHelperManagerInterface
 } from './interfaces'
 
@@ -13,20 +13,17 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
 
   private getActiveCamera: () => THREE.Camera
   private getControls: () => OrbitControls
-  private nodeStorage: NodeStorageInterface
-  // @ts-expect-error unused variable
-  private renderer: THREE.WebGLRenderer
+  private eventManager: EventManagerInterface
 
   constructor(
-    renderer: THREE.WebGLRenderer,
+    _renderer: THREE.WebGLRenderer,
     getActiveCamera: () => THREE.Camera,
     getControls: () => OrbitControls,
-    nodeStorage: NodeStorageInterface
+    eventManager: EventManagerInterface
   ) {
-    this.renderer = renderer
     this.getActiveCamera = getActiveCamera
     this.getControls = getControls
-    this.nodeStorage = nodeStorage
+    this.eventManager = eventManager
   }
 
   init(): void {}
@@ -87,18 +84,7 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
               : 'orthographic'
         }
 
-        const cameraConfig = this.nodeStorage.loadNodeProperty(
-          'Camera Config',
-          {
-            cameraType: cameraState.cameraType,
-            fov:
-              this.getActiveCamera() instanceof THREE.PerspectiveCamera
-                ? (this.getActiveCamera() as THREE.PerspectiveCamera).fov
-                : 75
-          }
-        )
-        cameraConfig.state = cameraState
-        this.nodeStorage.storeNodeProperty('Camera Config', cameraConfig)
+        this.eventManager.emitEvent('cameraChanged', cameraState)
       }
     }
   }

@@ -12,6 +12,9 @@
     "declaration-property-value-no-unknown": [
       true,
       {
+        "typesSyntax": {
+          "radial-gradient()": "| <any-value>"
+        },
         "ignoreProperties": {
           "speak": ["none"],
           "app-region": ["drag", "no-drag"],
@@ -37,29 +40,27 @@
     "block-no-empty": true,
     "no-descending-specificity": null,
     "no-duplicate-at-import-rules": true,
+    "at-rule-disallowed-list": ["apply"],
     "at-rule-no-unknown": [
       true,
       {
         "ignoreAtRules": [
           "tailwind",
-          "apply",
           "layer",
           "config",
           "theme",
           "reference",
           "plugin",
           "custom-variant",
-          "utility"
+          "utility",
+          "source"
         ]
       }
     ],
     "function-no-unknown": [
       true,
       {
-        "ignoreFunctions": [
-          "theme",
-          "v-bind"
-        ]
+        "ignoreFunctions": ["theme", "v-bind", "from-folder", "from-json"]
       }
     ]
   },

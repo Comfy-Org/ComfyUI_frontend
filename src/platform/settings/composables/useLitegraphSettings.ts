@@ -94,6 +94,12 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
+    const liveSelection = settingStore.get('Comfy.Graph.LiveSelection')
+    const { canvas } = canvasStore
+    if (canvas) canvas.liveSelection = liveSelection
+  })
+
+  watchEffect(() => {
     CanvasPointer.doubleClickTime = settingStore.get(
       'Comfy.Pointer.DoubleClickTime'
     )

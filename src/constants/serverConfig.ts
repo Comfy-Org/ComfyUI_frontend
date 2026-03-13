@@ -9,7 +9,7 @@ import {
   VramManagement
 } from '@/types/serverArgs'
 
-export type ServerConfigValue = string | number | true | null | undefined
+export type ServerConfigValue = string | number | boolean | null | undefined
 
 export interface ServerConfig<T> extends FormItem {
   id: string
@@ -19,7 +19,7 @@ export interface ServerConfig<T> extends FormItem {
   getValue?: (value: T) => Record<string, ServerConfigValue>
 }
 
-export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
+export const SERVER_CONFIG_ITEMS = [
   // Network settings
   {
     id: 'listen',
@@ -386,6 +386,13 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'disable-metadata',
     name: 'Disable saving prompt metadata in files.',
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
+    id: 'enable-manager-legacy-ui',
+    name: 'Use legacy Manager UI',
+    tooltip: 'Uses the legacy ComfyUI-Manager UI instead of the new UI.',
     type: 'boolean',
     defaultValue: false
   },

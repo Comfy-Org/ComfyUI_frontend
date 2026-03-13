@@ -18,7 +18,7 @@ vi.mock('@/utils/formatUtil', () => ({
 }))
 
 describe('SettingItem', () => {
-  const mountComponent = (props: any, options = {}): any => {
+  const mountComponent = (props: Record<string, unknown>, options = {}) => {
     return mount(SettingItem, {
       global: {
         plugins: [PrimeVue, i18n, createPinia()],
@@ -32,6 +32,7 @@ describe('SettingItem', () => {
           'i-material-symbols:experiment-outline': true
         }
       },
+      // @ts-expect-error - Test utility accepts flexible props for testing edge cases
       props,
       ...options
     })
@@ -48,8 +49,9 @@ describe('SettingItem', () => {
       }
     })
 
-    // Get the options property of the FormItem
-    const options = wrapper.vm.formItem.options
+    // Check the FormItem component's item prop for the options
+    const formItem = wrapper.findComponent({ name: 'FormItem' })
+    const options = formItem.props('item').options
     expect(options).toEqual([
       { text: 'Correctly Translated', value: 'Correctly Translated' }
     ])
@@ -67,7 +69,8 @@ describe('SettingItem', () => {
     })
 
     // Should not throw an error and tooltip should be preserved as-is
-    expect(wrapper.vm.formItem.tooltip).toBe(
+    const formItem = wrapper.findComponent({ name: 'FormItem' })
+    expect(formItem.props('item').tooltip).toBe(
       'This will load a larger version of @mtb/markdown-parser that bundles shiki'
     )
   })

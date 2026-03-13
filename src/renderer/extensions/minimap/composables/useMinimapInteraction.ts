@@ -1,10 +1,10 @@
 import { ref } from 'vue'
-import type { Ref } from 'vue'
+import type { Ref, ShallowRef } from 'vue'
 
 import type { MinimapCanvas } from '../types'
 
 export function useMinimapInteraction(
-  containerRef: Ref<HTMLDivElement | undefined>,
+  containerRef: Readonly<ShallowRef<HTMLDivElement | null>>,
   bounds: Ref<{ minX: number; minY: number; width: number; height: number }>,
   scale: Ref<number>,
   width: number,

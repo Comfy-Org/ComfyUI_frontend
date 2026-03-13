@@ -29,7 +29,6 @@ export const AppleMetalSelected: Story = {
     imagePath: '/assets/images/apple-mps-logo.png',
     placeholderText: 'Apple Metal',
     subtitle: 'Apple Metal',
-    value: 'mps',
     selected: true
   }
 }
@@ -39,7 +38,6 @@ export const AppleMetalUnselected: Story = {
     imagePath: '/assets/images/apple-mps-logo.png',
     placeholderText: 'Apple Metal',
     subtitle: 'Apple Metal',
-    value: 'mps',
     selected: false
   }
 }
@@ -48,7 +46,6 @@ export const CPUOption: Story = {
   args: {
     placeholderText: 'CPU',
     subtitle: 'Subtitle',
-    value: 'cpu',
     selected: false
   }
 }
@@ -57,7 +54,6 @@ export const ManualInstall: Story = {
   args: {
     placeholderText: 'Manual Install',
     subtitle: 'Subtitle',
-    value: 'unsupported',
     selected: false
   }
 }
@@ -67,7 +63,6 @@ export const NvidiaSelected: Story = {
     imagePath: '/assets/images/nvidia-logo-square.jpg',
     placeholderText: 'NVIDIA',
     subtitle: 'NVIDIA',
-    value: 'nvidia',
     selected: true
   }
 }

@@ -1,5 +1,7 @@
 import type { Component } from 'vue'
 
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ExecutionErrorWsMessage, NodeError } from '@/schemas/apiSchema'
 import type { useDialogService } from '@/services/dialogService'
 import type { ComfyCommand } from '@/stores/commandStore'
 
@@ -67,7 +69,7 @@ export interface ToastMessageOptions {
   /**
    * Detail content of the message.
    */
-  detail?: any | undefined
+  detail?: string
   /**
    * Whether the message can be closed manually using the close icon.
    * @defaultValue true
@@ -84,11 +86,12 @@ export interface ToastMessageOptions {
   /**
    * Style class of the message.
    */
-  styleClass?: any
+  styleClass?: string | string[] | Record<string, boolean>
   /**
    * Style class of the content.
+   * Matches PrimeVue Toast API which accepts Vue class bindings.
    */
-  contentStyleClass?: any
+  contentStyleClass?: string | string[] | Record<string, boolean>
 }
 
 export type ToastManager = {
@@ -107,9 +110,13 @@ export interface ExtensionManager {
   dialog: ReturnType<typeof useDialogService>
   command: CommandManager
   setting: {
-    get: (id: string) => any
-    set: (id: string, value: any) => void
+    get: <T = unknown>(id: string) => T | undefined
+    set: <T = unknown>(id: string, value: T) => void
   }
+
+  // Execution error state (read-only)
+  lastNodeErrors: Record<NodeId, NodeError> | null
+  lastExecutionError: ExecutionErrorWsMessage | null
 }
 
 export interface CommandManager {

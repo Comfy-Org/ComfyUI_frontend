@@ -79,7 +79,8 @@ export function useNodeArrangement() {
       return
     }
 
-    alignNodes(selectedNodes, alignOption.value)
+    const newPositions = alignNodes(selectedNodes, alignOption.value)
+    canvasStore.canvas?.repositionNodesVueMode(newPositions)
 
     canvasRefresh.refreshCanvas()
   }
@@ -93,7 +94,8 @@ export function useNodeArrangement() {
       return
     }
 
-    distributeNodes(selectedNodes, distributeOption.value)
+    const newPositions = distributeNodes(selectedNodes, distributeOption.value)
+    canvasStore.canvas?.repositionNodesVueMode(newPositions)
     canvasRefresh.refreshCanvas()
   }
 

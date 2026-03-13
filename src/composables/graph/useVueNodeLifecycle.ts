@@ -1,10 +1,9 @@
-import { createSharedComposable } from '@vueuse/core'
+import { createSharedComposable, whenever } from '@vueuse/core'
 import { shallowRef, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { useVueNodesMigrationDismissed } from '@/composables/useVueNodesMigrationDismissed'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -12,18 +11,13 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { app as comfyApp } from '@/scripts/app'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
   const layoutMutations = useLayoutMutations()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
-
   const { startSync } = useLayoutSync()
-
-  const isVueNodeToastDismissed = useVueNodesMigrationDismissed()
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -79,24 +73,26 @@ function useVueNodeLifecycleIndividual() {
   // Watch for Vue nodes enabled state changes
   watch(
     () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
-    (enabled, wasEnabled) => {
+    (enabled) => {
       if (enabled) {
         initializeNodeManager()
-        ensureCorrectLayoutScale()
-
-        if (!wasEnabled && !isVueNodeToastDismissed.value) {
-          useToastStore().add({
-            group: 'vue-nodes-migration',
-            severity: 'info',
-            life: 0
-          })
-        }
-      } else {
-        comfyApp.canvas?.setDirty(true, true)
-        disposeNodeManagerAndSyncs()
+        ensureCorrectLayoutScale(
+          comfyApp.canvas?.graph?.extra.workflowRendererVersion
+        )
       }
     },
     { immediate: true }
+  )
+
+  whenever(
+    () => !shouldRenderVueNodes.value,
+    () => {
+      ensureCorrectLayoutScale(
+        comfyApp.canvas?.graph?.extra.workflowRendererVersion
+      )
+      disposeNodeManagerAndSyncs()
+      comfyApp.canvas?.setDirty(true, true)
+    }
   )
 
   // Consolidated watch for slot layout sync management

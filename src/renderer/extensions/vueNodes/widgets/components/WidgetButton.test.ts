@@ -1,29 +1,32 @@
 import { mount } from '@vue/test-utils'
-import Button from 'primevue/button'
-import type { ButtonProps } from 'primevue/button'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 
+import Button from '@/components/ui/button/Button.vue'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
+import { createMockWidget } from './widgetTestUtils'
+
+type ButtonWidgetOptions = IWidgetOptions & {
+  variant?: string
+  label?: string
+}
+
+const BUTTON_DEFAULTS = {
+  value: undefined,
+  type: 'button',
+  name: 'test_button'
+} as const
+
 describe('WidgetButton Interactions', () => {
-  const createMockWidget = (
-    options: Partial<ButtonProps> = {},
-    callback?: () => void,
-    name: string = 'test_button'
-  ): SimplifiedWidget<void> => ({
-    name,
-    type: 'button',
-    value: undefined,
-    options,
-    callback
-  })
+  const createButtonWidget = (
+    overrides: Partial<SimplifiedWidget<void, ButtonWidgetOptions>> = {}
+  ) => createMockWidget<void>({ ...BUTTON_DEFAULTS, ...overrides })
 
   const mountComponent = (widget: SimplifiedWidget<void>, readonly = false) => {
     return mount(WidgetButton, {
       global: {
-        plugins: [PrimeVue],
         components: { Button }
       },
       props: {
@@ -42,7 +45,7 @@ describe('WidgetButton Interactions', () => {
   describe('Click Handling', () => {
     it('calls callback when button is clicked', async () => {
       const mockCallback = vi.fn()
-      const widget = createMockWidget({}, mockCallback)
+      const widget = createButtonWidget({ callback: mockCallback })
       const wrapper = mountComponent(widget)
 
       await clickButton(wrapper)
@@ -51,7 +54,7 @@ describe('WidgetButton Interactions', () => {
     })
 
     it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget({}, undefined)
+      const widget = createButtonWidget()
       const wrapper = mountComponent(widget)
 
       // Should not throw error when clicking without callback
@@ -60,7 +63,7 @@ describe('WidgetButton Interactions', () => {
 
     it('calls callback multiple times when clicked multiple times', async () => {
       const mockCallback = vi.fn()
-      const widget = createMockWidget({}, mockCallback)
+      const widget = createButtonWidget({ callback: mockCallback })
       const wrapper = mountComponent(widget)
 
       const numClicks = 8
@@ -75,103 +78,77 @@ describe('WidgetButton Interactions', () => {
 
   describe('Component Rendering', () => {
     it('renders button component', () => {
-      const widget = createMockWidget()
+      const widget = createButtonWidget()
       const wrapper = mountComponent(widget)
 
       const button = wrapper.findComponent({ name: 'Button' })
       expect(button.exists()).toBe(true)
     })
 
-    it('renders widget label when name is provided', () => {
-      const widget = createMockWidget()
+    it('renders widget text when name is provided', () => {
+      const widget = createButtonWidget()
       const wrapper = mountComponent(widget)
 
-      const label = wrapper.find('label')
-      expect(label.exists()).toBe(true)
-      expect(label.text()).toBe('test_button')
+      expect(wrapper.text()).toBe('test_button')
     })
 
-    it('does not render label when widget name is empty', () => {
-      const widget = createMockWidget({}, undefined, '')
-      const wrapper = mountComponent(widget)
-
-      const label = wrapper.find('label')
-      expect(label.exists()).toBe(false)
-    })
-
-    it('sets button size to small', () => {
-      const widget = createMockWidget()
+    it('sets button size to sm', () => {
+      const widget = createButtonWidget()
       const wrapper = mountComponent(widget)
 
       const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('size')).toBe('small')
+      expect(button.props('size')).toBe('sm')
     })
 
     it('passes widget options to button component', () => {
-      const buttonOptions = {
-        label: 'Custom Label',
-        icon: 'pi pi-check',
-        severity: 'success' as const
-      }
-      const widget = createMockWidget(buttonOptions)
-      const wrapper = mountComponent(widget)
-
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('label')).toBe('Custom Label')
-      expect(button.props('icon')).toBe('pi pi-check')
-      expect(button.props('severity')).toBe('success')
-    })
-  })
-
-  describe('Widget Options', () => {
-    it('handles button with text only', () => {
-      const widget = createMockWidget({ label: 'Click Me' })
-      const wrapper = mountComponent(widget)
-
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('label')).toBe('Click Me')
-      expect(button.props('icon')).toBeNull()
-    })
-
-    it('handles button with icon only', () => {
-      const widget = createMockWidget({ icon: 'pi pi-star' })
-      const wrapper = mountComponent(widget)
-
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('icon')).toBe('pi pi-star')
-    })
-
-    it('handles button with both text and icon', () => {
-      const widget = createMockWidget({
-        label: 'Save',
-        icon: 'pi pi-save'
+      const widget = createButtonWidget({
+        options: { variant: 'secondary' }
       })
       const wrapper = mountComponent(widget)
 
       const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('label')).toBe('Save')
-      expect(button.props('icon')).toBe('pi pi-save')
+      expect(button.props('variant')).toBe('secondary')
     })
+  })
 
-    it.for([
-      'secondary',
-      'success',
-      'info',
-      'warning',
-      'danger',
-      'help',
-      'contrast'
-    ] as const)('handles button severity: %s', (severity) => {
-      const widget = createMockWidget({ severity })
+  describe('Widget Options', () => {
+    it('handles button with label', () => {
+      const widget = createButtonWidget({
+        name: 'btn',
+        label: 'Click Me',
+        options: { label: 'Click Me' }
+      })
       const wrapper = mountComponent(widget)
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('severity')).toBe(severity)
+
+      expect(wrapper.text()).toBe('Click Me')
     })
 
-    it.for(['outlined', 'text'] as const)(
+    it('handles button with iconClass', () => {
+      const widget = createButtonWidget({
+        options: { iconClass: 'pi pi-star' }
+      })
+      const wrapper = mountComponent(widget)
+
+      const icon = wrapper.find('i.pi.pi-star')
+      expect(icon.exists()).toBe(true)
+    })
+
+    it('handles button with both label and iconClass', () => {
+      const widget = createButtonWidget({
+        label: 'Save',
+        options: { iconClass: 'pi pi-save' }
+      })
+      const wrapper = mountComponent(widget)
+
+      expect(wrapper.text()).toBe('Save')
+      const icon = wrapper.find('i.pi.pi-save')
+      expect(icon.exists()).toBe(true)
+    })
+
+    it.for(['secondary', 'primary', 'inverted', 'textonly'] as const)(
       'handles button variant: %s',
       (variant) => {
-        const widget = createMockWidget({ variant })
+        const widget = createButtonWidget({ options: { variant } })
         const wrapper = mountComponent(widget)
         const button = wrapper.findComponent({ name: 'Button' })
         expect(button.props('variant')).toBe(variant)
@@ -181,7 +158,7 @@ describe('WidgetButton Interactions', () => {
 
   describe('Edge Cases', () => {
     it('handles widget with no options', () => {
-      const widget = createMockWidget()
+      const widget = createButtonWidget()
       const wrapper = mountComponent(widget)
 
       const button = wrapper.findComponent({ name: 'Button' })
@@ -192,7 +169,7 @@ describe('WidgetButton Interactions', () => {
       const mockCallback = vi.fn(() => {
         throw new Error('Callback error')
       })
-      const widget = createMockWidget({}, mockCallback)
+      const widget = createButtonWidget({ callback: mockCallback })
       const wrapper = mountComponent(widget)
 
       // Should not break the component when callback throws
@@ -202,7 +179,7 @@ describe('WidgetButton Interactions', () => {
 
     it('handles rapid consecutive clicks', async () => {
       const mockCallback = vi.fn()
-      const widget = createMockWidget({}, mockCallback)
+      const widget = createButtonWidget({ callback: mockCallback })
       const wrapper = mountComponent(widget)
 
       // Simulate rapid clicks

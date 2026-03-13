@@ -29,57 +29,58 @@ The following table lists ALL core extensions in the system as of 2025-01-30:
 
 ### Main Extensions
 
-| Extension | Description | Category |
-|-----------|-------------|----------|
-| clipspace.ts | Implements the Clipspace feature for temporary image storage | Image |
-| contextMenuFilter.ts | Provides context menu filtering capabilities | UI |
-| dynamicPrompts.ts | Provides dynamic prompt generation capabilities | Prompts |
-| editAttention.ts | Implements attention editing functionality | Text |
-| electronAdapter.ts | Adapts functionality for Electron environment | Platform |
-| groupNode.ts | Implements the group node functionality to organize workflows | Graph |
-| groupNodeManage.ts | Provides group node management operations | Graph |
-| groupOptions.ts | Handles group node configuration options | Graph |
-| index.ts | Main extension registration and coordination | Core |
-| load3d.ts | Supports 3D model loading and visualization | 3D |
-| maskEditorOld.ts | Legacy mask editor implementation | Image |
-| maskeditor.ts | Implements the mask editor for image masking operations | Image |
-| nodeTemplates.ts | Provides node template functionality | Templates |
-| noteNode.ts | Adds note nodes for documentation within workflows | Graph |
-| previewAny.ts | Universal preview functionality for various data types | Preview |
-| rerouteNode.ts | Implements reroute nodes for cleaner workflow connections | Graph |
-| saveImageExtraOutput.ts | Handles additional image output saving | Image |
-| saveMesh.ts | Implements 3D mesh saving functionality | 3D |
-| simpleTouchSupport.ts | Provides basic touch interaction support | Input |
-| slotDefaults.ts | Manages default values for node slots | Nodes |
-| uploadAudio.ts | Handles audio file upload functionality | Audio |
-| uploadImage.ts | Handles image upload functionality | Image |
-| webcamCapture.ts | Provides webcam capture capabilities | Media |
-| widgetInputs.ts | Implements various widget input types | Widgets |
-
+| Extension               | Description                                                   | Category  |
+| ----------------------- | ------------------------------------------------------------- | --------- |
+| clipspace.ts            | Implements the Clipspace feature for temporary image storage  | Image     |
+| contextMenuFilter.ts    | Provides context menu filtering capabilities                  | UI        |
+| dynamicPrompts.ts       | Provides dynamic prompt generation capabilities               | Prompts   |
+| editAttention.ts        | Implements attention editing functionality                    | Text      |
+| electronAdapter.ts      | Adapts functionality for Electron environment                 | Platform  |
+| groupNode.ts            | Implements the group node functionality to organize workflows | Graph     |
+| groupNodeManage.ts      | Provides group node management operations                     | Graph     |
+| groupOptions.ts         | Handles group node configuration options                      | Graph     |
+| index.ts                | Main extension registration and coordination                  | Core      |
+| load3d.ts               | Supports 3D model loading and visualization                   | 3D        |
+| maskeditor.ts           | Implements the mask editor for image masking operations       | Image     |
+| nodeTemplates.ts        | Provides node template functionality                          | Templates |
+| noteNode.ts             | Adds note nodes for documentation within workflows            | Graph     |
+| previewAny.ts           | Universal preview functionality for various data types        | Preview   |
+| rerouteNode.ts          | Implements reroute nodes for cleaner workflow connections     | Graph     |
+| saveImageExtraOutput.ts | Handles additional image output saving                        | Image     |
+| saveMesh.ts             | Implements 3D mesh saving functionality                       | 3D        |
+| simpleTouchSupport.ts   | Provides basic touch interaction support                      | Input     |
+| slotDefaults.ts         | Manages default values for node slots                         | Nodes     |
+| uploadAudio.ts          | Handles audio file upload functionality                       | Audio     |
+| uploadImage.ts          | Handles image upload functionality                            | Image     |
+| webcamCapture.ts        | Provides webcam capture capabilities                          | Media     |
+| widgetInputs.ts         | Implements various widget input types                         | Widgets   |
 
 ### Conditional Lines Subdirectory
+
 Located in `extensions/core/load3d/conditional-lines/`:
 
-| File | Description |
-|------|-------------|
-| ColoredShadowMaterial.js | Material for colored shadow rendering |
+| File                        | Description                             |
+| --------------------------- | --------------------------------------- |
+| ColoredShadowMaterial.js    | Material for colored shadow rendering   |
 | ConditionalEdgesGeometry.js | Geometry for conditional edge rendering |
-| ConditionalEdgesShader.js | Shader for conditional edges |
-| OutsideEdgesGeometry.js | Geometry for outside edge detection |
+| ConditionalEdgesShader.js   | Shader for conditional edges            |
+| OutsideEdgesGeometry.js     | Geometry for outside edge detection     |
 
-### Lines2 Subdirectory  
+### Lines2 Subdirectory
+
 Located in `extensions/core/load3d/conditional-lines/Lines2/`:
 
-| File | Description |
-|------|-------------|
-| ConditionalLineMaterial.js | Material for conditional line rendering |
-| ConditionalLineSegmentsGeometry.js | Geometry for conditional line segments |
+| File                               | Description                             |
+| ---------------------------------- | --------------------------------------- |
+| ConditionalLineMaterial.js         | Material for conditional line rendering |
+| ConditionalLineSegmentsGeometry.js | Geometry for conditional line segments  |
 
 ### ThreeJS Override Subdirectory
+
 Located in `extensions/core/load3d/threejsOverride/`:
 
-| File | Description |
-|------|-------------|
+| File                 | Description                                   |
+| -------------------- | --------------------------------------------- |
 | OverrideMTLLoader.js | Custom MTL loader with enhanced functionality |
 
 ## Extension Development
@@ -98,19 +99,19 @@ Extensions are registered using the `app.registerExtension()` method:
 
 ```javascript
 app.registerExtension({
-  name: "MyExtension",
-  
+  name: 'MyExtension',
+
   // Hook implementations
   async init() {
     // Implementation
   },
-  
+
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
     // Implementation
   }
-  
+
   // Other hooks as needed
-});
+})
 ```
 
 ## Extension Hooks
@@ -152,18 +153,18 @@ nodeCreated
 
 ### Key Hooks
 
-| Hook | Description |
-|------|-------------|
-| `init` | Called after canvas creation but before nodes are added |
-| `setup` | Called after the application is fully set up and running |
-| `addCustomNodeDefs` | Called before nodes are registered with the graph |
-| `getCustomWidgets` | Allows extensions to add custom widgets |
-| `beforeRegisterNodeDef` | Allows extensions to modify nodes before registration |
-| `registerCustomNodes` | Allows extensions to register additional nodes |
-| `loadedGraphNode` | Called when a node is reloaded onto the graph |
-| `nodeCreated` | Called after a node's constructor |
-| `beforeConfigureGraph` | Called before a graph is configured |
-| `afterConfigureGraph` | Called after a graph is configured |
+| Hook                          | Description                                                |
+| ----------------------------- | ---------------------------------------------------------- |
+| `init`                        | Called after canvas creation but before nodes are added    |
+| `setup`                       | Called after the application is fully set up and running   |
+| `addCustomNodeDefs`           | Called before nodes are registered with the graph          |
+| `getCustomWidgets`            | Allows extensions to add custom widgets                    |
+| `beforeRegisterNodeDef`       | Allows extensions to modify nodes before registration      |
+| `registerCustomNodes`         | Allows extensions to register additional nodes             |
+| `loadedGraphNode`             | Called when a node is reloaded onto the graph              |
+| `nodeCreated`                 | Called after a node's constructor                          |
+| `beforeConfigureGraph`        | Called before a graph is configured                        |
+| `afterConfigureGraph`         | Called after a graph is configured                         |
 | `getSelectionToolboxCommands` | Allows extensions to add commands to the selection toolbox |
 
 For the complete list of available hooks and detailed descriptions, see the [ComfyExtension interface in comfy.ts](https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/types/comfy.ts).

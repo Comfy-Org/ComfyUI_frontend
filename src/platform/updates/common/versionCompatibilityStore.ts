@@ -4,6 +4,7 @@ import { gt, valid } from 'semver'
 import { computed } from 'vue'
 
 import config from '@/config'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -12,6 +13,7 @@ export const useVersionCompatibilityStore = defineStore(
   'versionCompatibility',
   () => {
     const systemStatsStore = useSystemStatsStore()
+    const settingStore = useSettingStore()
 
     const frontendVersion = computed(() => config.app_version)
     const backendVersion = computed(
@@ -86,8 +88,16 @@ export const useVersionCompatibilityStore = defineStore(
       return Date.now() < dismissedUntil
     })
 
+    const warningsDisabled = computed(() =>
+      settingStore.get('Comfy.VersionCompatibility.DisableWarnings')
+    )
+
     const shouldShowWarning = computed(() => {
-      return hasVersionMismatch.value && !isDismissed.value
+      return (
+        hasVersionMismatch.value &&
+        !isDismissed.value &&
+        !warningsDisabled.value
+      )
     })
 
     const warningMessage = computed(() => {

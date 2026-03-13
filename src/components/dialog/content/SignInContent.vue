@@ -8,7 +8,7 @@
     <template v-else>
       <!-- Header -->
       <div class="mb-8 flex flex-col gap-4">
-        <h1 class="my-0 text-2xl leading-normal font-medium">
+        <h1 class="my-0 text-2xl/normal font-medium">
           {{ isSignIn ? t('auth.login.title') : t('auth.signup.title') }}
         </h1>
         <p class="my-0 text-base">
@@ -51,8 +51,7 @@
           <Button
             type="button"
             class="h-10"
-            severity="secondary"
-            outlined
+            variant="secondary"
             @click="signInWithGoogle"
           >
             <i class="pi pi-google mr-2"></i>
@@ -66,8 +65,7 @@
           <Button
             type="button"
             class="h-10"
-            severity="secondary"
-            outlined
+            variant="secondary"
             @click="signInWithGithub"
           >
             <i class="pi pi-github mr-2"></i>
@@ -82,13 +80,12 @@
         <Button
           type="button"
           class="h-10"
-          severity="secondary"
-          outlined
+          variant="secondary"
           @click="showApiKeyForm = true"
         >
           <img
             src="/assets/images/comfy-logo-mono.svg"
-            class="mr-2 h-5 w-5"
+            class="mr-2 size-5"
             :alt="$t('g.comfy')"
           />
           {{ t('auth.login.useApiKey') }}
@@ -142,12 +139,12 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {

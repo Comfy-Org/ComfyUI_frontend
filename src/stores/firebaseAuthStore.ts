@@ -5,7 +5,6 @@ import {
   GoogleAuthProvider,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
-  deleteUser,
   getAdditionalUserInfo,
   onAuthStateChanged,
   onIdTokenChanged,
@@ -23,12 +22,14 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
@@ -42,6 +43,11 @@ type AccessBillingPortalResponse =
   operations['AccessBillingPortal']['responses']['200']['content']['application/json']
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
+export type BillingPortalTargetTier = NonNullable<
+  NonNullable<
+    NonNullable<AccessBillingPortalReqBody>['content']
+  >['application/json']
+>['target_tier']
 
 export class FirebaseAuthStoreError extends Error {
   constructor(message: string) {
@@ -51,6 +57,8 @@ export class FirebaseAuthStoreError extends Error {
 }
 
 export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
+  const { flags } = useFeatureFlags()
+
   // State
   const loading = ref(false)
   const currentUser = ref<User | null>(null)
@@ -102,6 +110,15 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     isInitialized.value = true
     if (user === null) {
       lastTokenUserId.value = null
+
+      // Clear workspace sessionStorage on logout to prevent stale tokens
+      try {
+        sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+        sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
+        sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+      } catch {
+        // Ignore sessionStorage errors (e.g., in private browsing mode)
+      }
     }
 
     // Reset balance when auth state changes
@@ -147,16 +164,34 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   /**
    * Retrieves the appropriate authentication header for API requests.
    * Checks for authentication in the following order:
-   * 1. Firebase authentication token (if user is logged in)
-   * 2. API key (if stored in the browser's credential manager)
+   * 1. Workspace token (if team_workspaces_enabled and user has active workspace context)
+   * 2. Firebase authentication token (if user is logged in)
+   * 3. API key (if stored in the browser's credential manager)
    *
    * @returns {Promise<AuthHeader | null>}
-   *   - A LoggedInAuthHeader with Bearer token if Firebase authenticated
+   *   - A LoggedInAuthHeader with Bearer token (workspace or Firebase)
    *   - An ApiKeyAuthHeader with X-API-KEY if API key exists
-   *   - null if neither authentication method is available
+   *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
-    // If available, set header with JWT used to identify the user to Firebase service
+    if (flags.teamWorkspacesEnabled) {
+      const workspaceToken = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.TOKEN
+      )
+      const expiresAt = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT
+      )
+
+      if (workspaceToken && expiresAt) {
+        const expiryTime = parseInt(expiresAt, 10)
+        if (Date.now() < expiryTime) {
+          return {
+            Authorization: `Bearer ${workspaceToken}`
+          }
+        }
+      }
+    }
+
     const token = await getIdToken()
     if (token) {
       return {
@@ -164,8 +199,41 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       }
     }
 
-    // If not authenticated with Firebase, try falling back to API key if available
     return useApiKeyAuthStore().getAuthHeader()
+  }
+
+  /**
+   * Returns Firebase auth header for user-scoped endpoints (e.g., /customers/*).
+   * Use this for endpoints that need user identity, not workspace context.
+   */
+  const getFirebaseAuthHeader = async (): Promise<AuthHeader | null> => {
+    const token = await getIdToken()
+    return token ? { Authorization: `Bearer ${token}` } : null
+  }
+
+  /**
+   * Returns the raw auth token (not wrapped in a header object).
+   * Priority: workspace token > Firebase token.
+   * Use this for WebSocket connections and backend node auth.
+   */
+  const getAuthToken = async (): Promise<string | undefined> => {
+    if (flags.teamWorkspacesEnabled) {
+      const workspaceToken = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.TOKEN
+      )
+      const expiresAt = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT
+      )
+
+      if (workspaceToken && expiresAt) {
+        const expiryTime = parseInt(expiresAt, 10)
+        if (Date.now() < expiryTime) {
+          return workspaceToken
+        }
+      }
+    }
+
+    return await getIdToken()
   }
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
@@ -281,7 +349,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       useTelemetry()?.trackAuth({
         method: 'email',
-        is_new_user: false
+        is_new_user: false,
+        user_id: result.user.uid
       })
     }
 
@@ -301,7 +370,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       useTelemetry()?.trackAuth({
         method: 'email',
-        is_new_user: true
+        is_new_user: true,
+        user_id: result.user.uid
       })
     }
 
@@ -319,7 +389,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       const isNewUser = additionalUserInfo?.isNewUser ?? false
       useTelemetry()?.trackAuth({
         method: 'google',
-        is_new_user: isNewUser
+        is_new_user: isNewUser,
+        user_id: result.user.uid
       })
     }
 
@@ -337,7 +408,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       const isNewUser = additionalUserInfo?.isNewUser ?? false
       useTelemetry()?.trackAuth({
         method: 'github',
-        is_new_user: isNewUser
+        is_new_user: isNewUser,
+        user_id: result.user.uid
       })
     }
 
@@ -358,14 +430,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
     await updatePassword(currentUser.value, newPassword)
-  }
-
-  /** Delete the current user account */
-  const _deleteAccount = async (): Promise<void> => {
-    if (!currentUser.value) {
-      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
-    await deleteUser(currentUser.value)
   }
 
   const addCredits = async (
@@ -409,7 +473,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     executeAuthAction((_) => addCredits(requestBodyContent))
 
   const accessBillingPortal = async (
-    requestBody?: AccessBillingPortalReqBody
+    targetTier?: BillingPortalTargetTier
   ): Promise<AccessBillingPortalResponse> => {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
@@ -422,8 +486,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         ...authHeader,
         'Content-Type': 'application/json'
       },
-      ...(requestBody && {
-        body: JSON.stringify(requestBody)
+      ...(targetTier && {
+        body: JSON.stringify({ target_tier: targetTier })
       })
     })
 
@@ -467,7 +531,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     accessBillingPortal,
     sendPasswordReset,
     updatePassword: _updatePassword,
-    deleteAccount: _deleteAccount,
-    getAuthHeader
+    getAuthHeader,
+    getFirebaseAuthHeader,
+    getAuthToken
   }
 })

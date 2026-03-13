@@ -36,17 +36,13 @@
 </template>
 
 <script setup lang="ts">
-import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
-
 import { cn } from '@/utils/tailwindUtil'
 
 interface Props {
   imagePath?: string
   placeholderText: string
   subtitle?: string
-  value: TorchDeviceType
   selected?: boolean
-  recommended?: boolean
 }
 
 defineProps<Props>()

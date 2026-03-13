@@ -34,7 +34,7 @@
           </Message>
         </div>
         <footer class="mt-5">
-          <Button :label="$t('userSelect.next')" @click="login" />
+          <Button @click="login">{{ $t('userSelect.next') }}</Button>
         </footer>
       </div>
     </main>
@@ -42,7 +42,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
@@ -50,6 +49,7 @@ import Select from 'primevue/select'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { User } from '@/stores/userStore'
 import { useUserStore } from '@/stores/userStore'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
@@ -87,6 +87,8 @@ const login = async () => {
 }
 
 onMounted(async () => {
+  document.getElementById('splash-loader')?.remove()
+
   if (!userStore.initialized) {
     await userStore.initialize()
   }

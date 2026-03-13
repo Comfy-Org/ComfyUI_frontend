@@ -4,12 +4,12 @@ import {
 } from '../../../../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Vue Node Selection', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
   })
 
@@ -78,7 +78,7 @@ test.describe('Vue Node Selection', () => {
     const initialPos = await checkpointNodeHeader.boundingBox()
     if (!initialPos) throw new Error('Failed to get header position')
 
-    await comfyPage.dragAndDrop(
+    await comfyPage.canvasOps.dragAndDrop(
       { x: initialPos.x + 10, y: initialPos.y + 10 },
       { x: initialPos.x + 100, y: initialPos.y + 100 }
     )

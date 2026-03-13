@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -75,7 +75,7 @@ describe('PackVersionBadge', () => {
 
   const mountComponent = ({
     props = {}
-  }: Record<string, any> = {}): VueWrapper => {
+  }: { props?: Record<string, unknown> } = {}): VueWrapper => {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -89,7 +89,7 @@ describe('PackVersionBadge', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createPinia(), i18n],
+        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
         directives: {
           tooltip: Tooltip
         },

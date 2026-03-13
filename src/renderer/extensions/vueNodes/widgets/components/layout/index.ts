@@ -6,9 +6,6 @@ export const WidgetInputBaseClass = cn([
   'not-disabled:text-component-node-foreground',
   // Outline
   'border-none',
-  'outline outline-offset-[-1px] outline-component-node-border',
   // Rounded
-  'rounded-lg',
-  // Hover
-  'hover:bg-component-node-widget-background-hovered'
+  'rounded-lg'
 ])

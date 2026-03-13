@@ -1,9 +1,11 @@
 import { useRafFn } from '@vueuse/core'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, shallowRef, watch } from 'vue'
+import type { ShallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import type { MinimapCanvas, MinimapSettingsKey } from '../types'
@@ -13,14 +15,20 @@ import { useMinimapRenderer } from './useMinimapRenderer'
 import { useMinimapSettings } from './useMinimapSettings'
 import { useMinimapViewport } from './useMinimapViewport'
 
-export function useMinimap() {
+export function useMinimap({
+  canvasRefMaybe,
+  containerRefMaybe
+}: {
+  canvasRefMaybe?: Readonly<ShallowRef<HTMLCanvasElement | null>>
+  containerRefMaybe?: Readonly<ShallowRef<HTMLDivElement | null>>
+} = {}) {
   const canvasStore = useCanvasStore()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
 
-  const containerRef = ref<HTMLDivElement>()
-  const canvasRef = ref<HTMLCanvasElement>()
   const minimapRef = ref<HTMLElement | null>(null)
+  const canvasRef = canvasRefMaybe ?? shallowRef(null)
+  const containerRef = containerRefMaybe ?? shallowRef(null)
 
   const visible = ref(true)
   const initialized = ref(false)
@@ -194,6 +202,18 @@ export function useMinimap() {
     }
   })
 
+  const executionStore = useExecutionStore()
+  watch(
+    () => executionStore.nodeProgressStates,
+    () => {
+      if (visible.value) {
+        renderer.forceFullRedraw()
+        renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+      }
+    },
+    { deep: true }
+  )
+
   const toggle = async () => {
     visible.value = !visible.value
     await settingStore.set('Comfy.Minimap.Visible', visible.value)
@@ -223,8 +243,6 @@ export function useMinimap() {
     visible: computed(() => visible.value),
     initialized: computed(() => initialized.value),
 
-    containerRef,
-    canvasRef,
     containerStyles,
     viewportStyles,
     panelStyles,

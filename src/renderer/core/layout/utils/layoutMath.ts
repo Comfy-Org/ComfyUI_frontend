@@ -41,13 +41,3 @@ export function calculateBounds(nodes: NodeLayout[]): Bounds {
     height: maxY - minY
   }
 }
-
-/**
- * Calculate combined bounds for Vue nodes selection
- * @param nodes Array of NodeLayout objects to calculate bounds for
- * @returns Bounds of the nodes or null if no nodes provided
- */
-export function selectionBounds(nodes: NodeLayout[]): Bounds | null {
-  if (nodes.length === 0) return null
-  return calculateBounds(nodes)
-}

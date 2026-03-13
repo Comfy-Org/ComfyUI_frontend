@@ -10,7 +10,9 @@
     ></div>
 
     <ButtonGroup
-      class="absolute right-0 bottom-0 z-[1200] flex-row gap-1 border-[1px] border-interface-stroke bg-comfy-menu-bg p-2"
+      role="toolbar"
+      :aria-label="t('graphCanvasMenu.canvasToolbar')"
+      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 border border-interface-stroke bg-comfy-menu-bg p-2"
       :style="{
         ...stringifiedMinimapStyles.buttonGroupStyles
       }"
@@ -20,27 +22,22 @@
         :button-styles="stringifiedMinimapStyles.buttonStyles"
       />
 
-      <div class="h-[27px] w-[1px] self-center bg-node-divider" />
+      <div class="h-[27px] w-px self-center bg-node-divider" />
 
       <Button
         v-tooltip.top="fitViewTooltip"
-        severity="secondary"
-        icon="pi pi-expand"
+        variant="secondary"
         :aria-label="fitViewTooltip"
         :style="stringifiedMinimapStyles.buttonStyles"
-        class="h-8 w-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
+        class="size-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
-        <template #icon>
-          <i class="icon-[lucide--focus] h-4 w-4" />
-        </template>
+        <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
       </Button>
 
       <Button
-        ref="zoomButton"
         v-tooltip.top="t('zoomControls.label')"
-        severity="secondary"
-        :label="t('zoomControls.label')"
+        variant="secondary"
         :class="zoomButtonClass"
         :aria-label="t('zoomControls.label')"
         data-testid="zoom-controls-button"
@@ -49,25 +46,22 @@
       >
         <span class="inline-flex items-center gap-1 px-2 text-xs">
           <span>{{ canvasStore.appScalePercentage }}%</span>
-          <i class="icon-[lucide--chevron-down] h-4 w-4" />
+          <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
         </span>
       </Button>
 
-      <div class="h-[27px] w-[1px] self-center bg-node-divider" />
+      <div class="h-[27px] w-px self-center bg-node-divider" />
 
       <Button
-        ref="minimapButton"
         v-tooltip.top="minimapTooltip"
-        severity="secondary"
+        variant="secondary"
         :aria-label="minimapTooltip"
         data-testid="toggle-minimap-button"
         :style="stringifiedMinimapStyles.buttonStyles"
         :class="minimapButtonClass"
         @click="onMinimapToggleClick"
       >
-        <template #icon>
-          <i class="icon-[lucide--map] h-4 w-4" />
-        </template>
+        <i class="icon-[lucide--map] size-4" aria-hidden="true" />
       </Button>
 
       <Button
@@ -79,27 +73,25 @@
             }
           }
         }"
-        severity="secondary"
+        variant="secondary"
         :class="linkVisibleClass"
         :aria-label="linkVisibilityAriaLabel"
         data-testid="toggle-link-visibility-button"
         :style="stringifiedMinimapStyles.buttonStyles"
         @click="onLinkVisibilityToggleClick"
       >
-        <template #icon>
-          <i class="icon-[lucide--route-off] h-4 w-4" />
-        </template>
+        <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
       </Button>
     </ButtonGroup>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useZoomControls } from '@/composables/useZoomControls'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'

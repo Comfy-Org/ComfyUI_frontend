@@ -1,4 +1,5 @@
-import { type LGraphCanvas, createBounds } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, Rectangle } from '@/lib/litegraph/src/litegraph'
+import { createBounds } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 
 /**
@@ -56,7 +57,7 @@ const ext = {
 
     app.canvas.onDrawForeground = function (
       ctx: CanvasRenderingContext2D,
-      visibleArea: any
+      visibleArea: Rectangle
     ) {
       // Call original if it exists
       originalDrawForeground?.call(this, ctx, visibleArea)

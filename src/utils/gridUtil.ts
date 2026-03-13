@@ -14,6 +14,8 @@ interface GridOptions {
 }
 
 /**
+ * @deprecated Just use tailwind utilities directly.
+ * TODO: Create a common grid layout component if needed.
  * Creates CSS grid styles for responsive grid layouts
  * @param options Grid configuration options
  * @returns CSS properties object for grid styling

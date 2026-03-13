@@ -49,7 +49,7 @@ export const useSubgraphNavigationStore = defineStore(
      */
     const navigationStack = computed(() =>
       idStack.value
-        .map((id) => app.graph.subgraphs.get(id))
+        .map((id) => app.rootGraph.subgraphs.get(id))
         .filter(isNonNullish)
     )
 

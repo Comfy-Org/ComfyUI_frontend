@@ -1,5 +1,5 @@
 <template>
-  <div class="_content">
+  <div class="flex flex-col gap-2">
     <SelectButton
       v-model="selectedFilter"
       class="filter-type-select"
@@ -16,17 +16,17 @@
       auto-filter-focus
     />
   </div>
-  <div class="_footer">
-    <Button type="button" :label="$t('g.add')" @click="submit" />
+  <div class="flex flex-col items-end pt-4">
+    <Button type="button" @click="submit">{{ $t('g.add') }}</Button>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
@@ -67,15 +67,3 @@ const submit = () => {
   })
 }
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-
-._content {
-  @apply flex flex-col space-y-2;
-}
-
-._footer {
-  @apply flex flex-col pt-4 items-end;
-}
-</style>

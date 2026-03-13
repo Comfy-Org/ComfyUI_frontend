@@ -1,5 +1,8 @@
 import * as fs from 'fs'
 
+// Import Vite define shim to make __DISTRIBUTION__ and other define variables available
+import './vite-define-shim'
+
 import { DESKTOP_DIALOGS } from '../apps/desktop-ui/src/constants/desktopDialogs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import {
@@ -8,7 +11,7 @@ import {
 } from '../packages/shared-frontend-utils/src/formatUtil'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
-import type { FormItem, SettingParams } from '../src/platform/settings/types'
+import type { SettingParams } from '../src/platform/settings/types'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
 
 const localePath = './src/locales/en/main.json'
@@ -120,8 +123,8 @@ test('collect-i18n-general', async ({ comfyPage }) => {
     SERVER_CONFIG_ITEMS.map((config) => [
       normalizeI18nKey(config.id),
       {
-        name: (config as unknown as FormItem).name,
-        tooltip: (config as unknown as FormItem).tooltip
+        name: config.name,
+        tooltip: config.tooltip
       }
     ])
   )

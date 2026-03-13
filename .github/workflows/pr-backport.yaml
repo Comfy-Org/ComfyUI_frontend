@@ -16,11 +16,15 @@ on:
         type: boolean
         default: false
 
+concurrency:
+  group: backport-${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
   backport:
     if: >
-      (github.event_name == 'pull_request_target' && 
-       github.event.pull_request.merged == true && 
+      (github.event_name == 'pull_request_target' &&
+       github.event.pull_request.merged == true &&
        contains(github.event.pull_request.labels.*.name, 'needs-backport')) ||
       github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -38,19 +42,19 @@ jobs:
             echo "::error::Invalid PR number format. Must be a positive integer."
             exit 1
           fi
-          
+
           # Validate PR exists and is merged
           if ! gh pr view "${{ inputs.pr_number }}" --json merged >/dev/null 2>&1; then
             echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible."
             exit 1
           fi
-          
+
           MERGED=$(gh pr view "${{ inputs.pr_number }}" --json merged --jq '.merged')
           if [ "$MERGED" != "true" ]; then
             echo "::error::PR #${{ inputs.pr_number }} is not merged. Only merged PRs can be backported."
             exit 1
           fi
-          
+
           # Validate PR has needs-backport label
           if ! gh pr view "${{ inputs.pr_number }}" --json labels --jq '.labels[].name' | grep -q "needs-backport"; then
             echo "::error::PR #${{ inputs.pr_number }} does not have 'needs-backport' label."
@@ -60,7 +64,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -78,8 +82,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             LABELS=$(gh pr view ${{ inputs.pr_number }} --json labels | jq -r '.labels[].name')
           else
-            LABELS='${{ toJSON(github.event.pull_request.labels) }}'
-            LABELS=$(echo "$LABELS" | jq -r '.[].name')
+            LABELS=$(jq -r '.pull_request.labels[].name' "$GITHUB_EVENT_PATH")
           fi
 
           add_target() {
@@ -164,6 +167,7 @@ jobs:
 
           PENDING=()
           SKIPPED=()
+          REUSED=()
 
           for target in $REQUESTED_TARGETS; do
             SAFE_TARGET=$(echo "$target" | tr '/' '-')
@@ -176,10 +180,22 @@ jobs:
 
             if printf '%s\n' "${EXISTING_BRANCHES[@]:-}" |
               grep -Fq "refs/heads/${BACKPORT_BRANCH}"; then
-              SKIPPED+=("$target")
-            else
-              PENDING+=("$target")
+              OPEN_PR=$(
+                gh pr list \
+                  --state open \
+                  --head "${BACKPORT_BRANCH}" \
+                  --json number \
+                  --jq 'if length > 0 then .[0].number else "" end'
+              )
+              if [ -n "$OPEN_PR" ]; then
+                SKIPPED+=("${target} (PR #${OPEN_PR})")
+                continue
+              fi
+
+              REUSED+=("$BACKPORT_BRANCH")
             fi
+
+            PENDING+=("$target")
           done
 
           SKIPPED_JOINED="${SKIPPED[*]:-}"
@@ -187,16 +203,20 @@ jobs:
 
           echo "already-exists=${SKIPPED_JOINED}" >> $GITHUB_OUTPUT
           echo "pending-targets=${PENDING_JOINED}" >> $GITHUB_OUTPUT
+          echo "reused-branches=${REUSED[*]:-}" >> $GITHUB_OUTPUT
 
           if [ -z "$PENDING_JOINED" ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             if [ -n "$SKIPPED_JOINED" ]; then
-              echo "::warning::Backport branches already exist for: ${SKIPPED_JOINED}"
+              echo "::warning::Backport branches exist: ${SKIPPED_JOINED}"
             fi
           else
             echo "skip=false" >> $GITHUB_OUTPUT
             if [ -n "$SKIPPED_JOINED" ]; then
-              echo "::notice::Skipping already backported targets: ${SKIPPED_JOINED}"
+              echo "::notice::Skipping backport targets: ${SKIPPED_JOINED}"
+            fi
+            if [ "${#REUSED[@]}" -gt 0 ]; then
+              echo "::notice::Reusing backport branches: ${REUSED[*]}"
             fi
           fi
 
@@ -208,21 +228,32 @@ jobs:
         run: |
           FAILED=""
           SUCCESS=""
-          
+
+          CREATED_BRANCHES_FILE="$(
+            mktemp "$RUNNER_TEMP/backport-branches-XXXXXX"
+          )"
+          echo "CREATED_BRANCHES_FILE=$CREATED_BRANCHES_FILE" >> "$GITHUB_ENV"
+
           # Get PR data for manual triggers
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json title,mergeCommit)
             PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
             MERGE_COMMIT=$(echo "$PR_DATA" | jq -r '.mergeCommit.oid')
           else
-            PR_TITLE="${{ github.event.pull_request.title }}"
-            MERGE_COMMIT="${{ github.event.pull_request.merge_commit_sha }}"
+            PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
+            MERGE_COMMIT=$(jq -r '.pull_request.merge_commit_sha' "$GITHUB_EVENT_PATH")
           fi
 
           for target in ${{ steps.filter-targets.outputs.pending-targets }}; do
             TARGET_BRANCH="${target}"
             SAFE_TARGET=$(echo "$TARGET_BRANCH" | tr '/' '-')
             BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
+            REMOTE_BACKPORT_EXISTS=false
+
+            if git ls-remote --exit-code origin "${BACKPORT_BRANCH}" >/dev/null 2>&1; then
+              REMOTE_BACKPORT_EXISTS=true
+              echo "::notice::Updating existing branch ${BACKPORT_BRANCH}"
+            fi
 
             echo "::group::Backporting to ${TARGET_BRANCH}"
 
@@ -247,7 +278,12 @@ jobs:
 
             # Try cherry-pick
             if git cherry-pick "${MERGE_COMMIT}"; then
-              git push origin "${BACKPORT_BRANCH}"
+              if [ "$REMOTE_BACKPORT_EXISTS" = true ]; then
+                git push --force-with-lease origin "${BACKPORT_BRANCH}"
+              else
+                git push origin "${BACKPORT_BRANCH}"
+              fi
+              echo "${BACKPORT_BRANCH}" >> "$CREATED_BRANCHES_FILE"
               SUCCESS="${SUCCESS}${TARGET_BRANCH}:${BACKPORT_BRANCH} "
               echo "Successfully created backport branch: ${BACKPORT_BRANCH}"
               # Return to main (keep the branch, we need it for PR)
@@ -271,6 +307,13 @@ jobs:
           echo "success=${SUCCESS}" >> $GITHUB_OUTPUT
           echo "failed=${FAILED}" >> $GITHUB_OUTPUT
 
+          if [ -s "$CREATED_BRANCHES_FILE" ]; then
+            CREATED_LIST=$(paste -sd' ' "$CREATED_BRANCHES_FILE")
+            echo "created-branches=${CREATED_LIST}" >> $GITHUB_OUTPUT
+          else
+            echo "created-branches=" >> $GITHUB_OUTPUT
+          fi
+
           if [ -n "${FAILED}" ]; then
             exit 1
           fi
@@ -287,10 +330,10 @@ jobs:
             PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
             PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.author.login')
           else
-            PR_TITLE="${{ github.event.pull_request.title }}"
-            PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+            PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
+            PR_AUTHOR=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
           fi
-          
+
           for backport in ${{ steps.backport.outputs.success }}; do
             IFS=':' read -r target branch <<< "${backport}"
 
@@ -318,6 +361,42 @@ jobs:
         if: steps.filter-targets.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
         env:
           GH_TOKEN: ${{ github.token }}
+          BACKPORT_AGENT_PROMPT_TEMPLATE: |
+            Backport PR #${PR_NUMBER} (${PR_URL}) to ${target}.
+            Cherry-pick merge commit ${MERGE_COMMIT} onto new branch
+            ${BACKPORT_BRANCH} from origin/${target}.
+            Resolve conflicts in: ${CONFLICTS_INLINE}.
+            For test snapshots (browser_tests/**/*-snapshots/), accept PR version if
+            changed in original PR, else keep target. For package.json versions, keep
+            target branch. For pnpm-lock.yaml, regenerate with pnpm install.
+            Ask user for non-obvious conflicts.
+            Create PR titled "[backport ${target}] <original title>" with label "backport".
+            See .github/workflows/pr-backport.yaml for workflow details.
+          COMMENT_BODY_TEMPLATE: |
+            ### ⚠️ Backport to `${target}` failed
+
+            **Reason:** Merge conflicts detected during cherry-pick of `${MERGE_COMMIT_SHORT}`
+
+            <details>
+            <summary>📄 Conflicting files</summary>
+
+            ```
+            ${CONFLICTS_BLOCK}
+            ```
+
+            </details>
+
+            <details>
+            <summary>🤖 Prompt for AI Agents</summary>
+
+            ```
+            ${AGENT_PROMPT}
+            ```
+
+            </details>
+
+            ---
+            cc @${PR_AUTHOR}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json author,mergeCommit)
@@ -325,9 +404,9 @@ jobs:
             PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.author.login')
             MERGE_COMMIT=$(echo "$PR_DATA" | jq -r '.mergeCommit.oid')
           else
-            PR_NUMBER="${{ github.event.pull_request.number }}"
-            PR_AUTHOR="${{ github.event.pull_request.user.login }}"
-            MERGE_COMMIT="${{ github.event.pull_request.merge_commit_sha }}"
+            PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
+            PR_AUTHOR=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
+            MERGE_COMMIT=$(jq -r '.pull_request.merge_commit_sha' "$GITHUB_EVENT_PATH")
           fi
 
           for failure in ${{ steps.backport.outputs.failed }}; do
@@ -340,13 +419,48 @@ jobs:
               gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed."
 
             elif [ "${reason}" = "conflicts" ]; then
-              # Convert comma-separated conflicts back to newlines for display
-              CONFLICTS_LIST=$(echo "${conflicts}" | tr ',' '\n' | sed 's/^/- /')
+              CONFLICTS_INLINE=$(echo "${conflicts}" | tr ',' ' ')
+              SAFE_TARGET=$(echo "$target" | tr '/' '-')
+              BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
+              PR_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
 
-              COMMENT_BODY="@${PR_AUTHOR} Backport to \`${target}\` failed: Merge conflicts detected."$'\n\n'"Please manually cherry-pick commit \`${MERGE_COMMIT}\` to the \`${target}\` branch."$'\n\n'"<details><summary>Conflicting files</summary>"$'\n\n'"${CONFLICTS_LIST}"$'\n\n'"</details>"
+              export PR_NUMBER PR_URL MERGE_COMMIT target BACKPORT_BRANCH CONFLICTS_INLINE
+
+              # envsubst is provided by gettext-base
+              if ! command -v envsubst >/dev/null 2>&1; then
+                sudo apt-get update && sudo apt-get install -y gettext-base
+              fi
+
+              AGENT_PROMPT=$(envsubst '${PR_NUMBER} ${PR_URL} ${target} ${MERGE_COMMIT} ${BACKPORT_BRANCH} ${CONFLICTS_INLINE}' <<<"$BACKPORT_AGENT_PROMPT_TEMPLATE")
+
+              # Use fenced code block for conflicts to handle special chars in filenames
+              CONFLICTS_BLOCK=$(echo "${conflicts}" | tr ',' '\n')
+              MERGE_COMMIT_SHORT="${MERGE_COMMIT:0:7}"
+
+              export target MERGE_COMMIT_SHORT CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR
+              COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR}' <<<"$COMMENT_BODY_TEMPLATE")
+
               gh pr comment "${PR_NUMBER}" --body "${COMMENT_BODY}"
             fi
           done
+
+      - name: Cleanup stranded backport branches
+        if: steps.filter-targets.outputs.skip != 'true' && failure()
+        run: |
+          FILE="${CREATED_BRANCHES_FILE:-}"
+
+          if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
+            echo "No backport branches recorded for cleanup"
+            exit 0
+          fi
+
+          while IFS= read -r branch; do
+            [ -z "$branch" ] && continue
+            printf 'Deleting branch %s\n' "${branch}"
+            if ! git push origin --delete "$branch"; then
+              echo "::warning::Failed to delete ${branch}"
+            fi
+          done < "$FILE"
 
       - name: Remove needs-backport label
         if: steps.filter-targets.outputs.skip != 'true' && success()

@@ -7,20 +7,24 @@
     />
     <Button
       v-tooltip="$t('g.upload')"
-      :icon="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
-      size="small"
+      variant="secondary"
+      size="sm"
+      :aria-label="$t('g.upload')"
       :disabled="isUploading"
       @click="triggerFileInput"
-    />
+    >
+      <i :class="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'" />
+    </Button>
     <Button
       v-tooltip="$t('g.clear')"
-      outlined
-      icon="pi pi-trash"
-      severity="danger"
-      size="small"
+      variant="destructive"
+      size="sm"
+      :aria-label="$t('g.clear')"
       :disabled="!modelValue"
       @click="clearImage"
-    />
+    >
+      <i class="pi pi-trash" />
+    </Button>
     <input
       ref="fileInput"
       type="file"
@@ -32,10 +36,11 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 
@@ -84,6 +89,7 @@ const handleFileUpload = async (event: Event) => {
           type: 'input',
           subfolder: 'backgrounds'
         })
+        appendCloudResParam(params, file.name)
         modelValue.value = `/api/view?${params.toString()}`
       }
     } catch (error) {

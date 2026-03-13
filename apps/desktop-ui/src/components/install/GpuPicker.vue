@@ -11,29 +11,32 @@
       <!-- Apple Metal / NVIDIA -->
       <HardwareOption
         v-if="platform === 'darwin'"
-        :image-path="'./assets/images/apple-mps-logo.png'"
+        image-path="./assets/images/apple-mps-logo.png"
         placeholder-text="Apple Metal"
         subtitle="Apple Metal"
-        :value="'mps'"
         :selected="selected === 'mps'"
-        :recommended="true"
         @click="pickGpu('mps')"
       />
-      <HardwareOption
-        v-else
-        :image-path="'./assets/images/nvidia-logo-square.jpg'"
-        placeholder-text="NVIDIA"
-        :subtitle="$t('install.gpuPicker.nvidiaSubtitle')"
-        :value="'nvidia'"
-        :selected="selected === 'nvidia'"
-        :recommended="true"
-        @click="pickGpu('nvidia')"
-      />
+      <template v-else>
+        <HardwareOption
+          image-path="./assets/images/nvidia-logo-square.jpg"
+          placeholder-text="NVIDIA"
+          :subtitle="$t('install.gpuPicker.nvidiaSubtitle')"
+          :selected="selected === 'nvidia'"
+          @click="pickGpu('nvidia')"
+        />
+        <HardwareOption
+          image-path="./assets/images/amd-rocm-logo.png"
+          placeholder-text="AMD"
+          :subtitle="$t('install.gpuPicker.amdSubtitle')"
+          :selected="selected === 'amd'"
+          @click="pickGpu('amd')"
+        />
+      </template>
       <!-- CPU -->
       <HardwareOption
         placeholder-text="CPU"
         :subtitle="$t('install.gpuPicker.cpuSubtitle')"
-        :value="'cpu'"
         :selected="selected === 'cpu'"
         @click="pickGpu('cpu')"
       />
@@ -41,7 +44,6 @@
       <HardwareOption
         placeholder-text="Manual Install"
         :subtitle="$t('install.gpuPicker.manualSubtitle')"
-        :value="'unsupported'"
         :selected="selected === 'unsupported'"
         @click="pickGpu('unsupported')"
       />
@@ -81,13 +83,15 @@ const selected = defineModel<TorchDeviceType | null>('device', {
 const electron = electronAPI()
 const platform = electron.getPlatform()
 
-const showRecommendedBadge = computed(
-  () => selected.value === 'mps' || selected.value === 'nvidia'
+const recommendedDevices: TorchDeviceType[] = ['mps', 'nvidia', 'amd']
+const showRecommendedBadge = computed(() =>
+  selected.value ? recommendedDevices.includes(selected.value) : false
 )
 
 const descriptionKeys = {
   mps: 'appleMetal',
   nvidia: 'nvidia',
+  amd: 'amd',
   cpu: 'cpu',
   unsupported: 'manual'
 } as const
@@ -97,7 +101,7 @@ const descriptionText = computed(() => {
   return st(`install.gpuPicker.${key}Description`, '')
 })
 
-const pickGpu = (value: TorchDeviceType) => {
+function pickGpu(value: TorchDeviceType) {
   selected.value = value
 }
 </script>

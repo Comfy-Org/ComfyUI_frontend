@@ -146,9 +146,15 @@ export function createAssetWithoutUserMetadata() {
   return asset
 }
 
-export function createAssetWithSpecificExtension(extension: string) {
+export function createAssetWithSpecificExtension(
+  extension: string,
+  isImmutable?: boolean
+) {
   const asset = createMockAssets(1)[0]
   asset.name = `test-model.${extension}`
+  if (isImmutable !== undefined) {
+    asset.is_immutable = isImmutable
+  }
   return asset
 }
 

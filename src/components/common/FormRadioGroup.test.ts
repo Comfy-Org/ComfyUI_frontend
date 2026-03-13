@@ -7,6 +7,7 @@ import { createApp } from 'vue'
 import type { SettingOption } from '@/platform/settings/types'
 
 import FormRadioGroup from './FormRadioGroup.vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 describe('FormRadioGroup', () => {
   beforeAll(() => {
@@ -14,7 +15,8 @@ describe('FormRadioGroup', () => {
     app.use(PrimeVue)
   })
 
-  const mountComponent = (props: any, options = {}) => {
+  type FormRadioGroupProps = ComponentProps<typeof FormRadioGroup>
+  const mountComponent = (props: FormRadioGroupProps, options = {}) => {
     return mount(FormRadioGroup, {
       global: {
         plugins: [PrimeVue],
@@ -92,9 +94,9 @@ describe('FormRadioGroup', () => {
 
     it('handles custom object with optionLabel and optionValue', () => {
       const options = [
-        { name: 'First Option', id: 1 },
-        { name: 'Second Option', id: 2 },
-        { name: 'Third Option', id: 3 }
+        { name: 'First Option', id: '1' },
+        { name: 'Second Option', id: '2' },
+        { name: 'Third Option', id: '3' }
       ]
 
       const wrapper = mountComponent({
@@ -108,9 +110,9 @@ describe('FormRadioGroup', () => {
       const radioButtons = wrapper.findAllComponents(RadioButton)
       expect(radioButtons).toHaveLength(3)
 
-      expect(radioButtons[0].props('value')).toBe(1)
-      expect(radioButtons[1].props('value')).toBe(2)
-      expect(radioButtons[2].props('value')).toBe(3)
+      expect(radioButtons[0].props('value')).toBe('1')
+      expect(radioButtons[1].props('value')).toBe('2')
+      expect(radioButtons[2].props('value')).toBe('3')
 
       const labels = wrapper.findAll('label')
       expect(labels[0].text()).toBe('First Option')
@@ -167,10 +169,7 @@ describe('FormRadioGroup', () => {
     })
 
     it('handles object with missing properties gracefully', () => {
-      const options = [
-        { label: 'Option 1', val: 'opt1' },
-        { text: 'Option 2', value: 'opt2' }
-      ]
+      const options = [{ label: 'Option 1', val: 'opt1' }]
 
       const wrapper = mountComponent({
         modelValue: 'opt1',
@@ -179,11 +178,10 @@ describe('FormRadioGroup', () => {
       })
 
       const radioButtons = wrapper.findAllComponents(RadioButton)
-      expect(radioButtons).toHaveLength(2)
+      expect(radioButtons).toHaveLength(1)
 
       const labels = wrapper.findAll('label')
       expect(labels[0].text()).toBe('Unknown')
-      expect(labels[1].text()).toBe('Option 2')
     })
   })
 

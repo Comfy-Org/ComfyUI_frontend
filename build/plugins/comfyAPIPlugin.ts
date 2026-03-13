@@ -11,8 +11,8 @@ const SKIP_WARNING_FILES = new Set(['scripts/app', 'scripts/api'])
 /** Files that will be removed in v1.34 */
 const DEPRECATED_FILES = [
   'scripts/ui',
-  'extensions/core/maskEditorOld',
-  'extensions/core/groupNode'
+  'extensions/core/groupNode',
+  'extensions/core/nodeTemplates'
 ] as const
 
 function getWarningMessage(
@@ -80,6 +80,7 @@ function getModuleName(id: string): string {
 export function comfyAPIPlugin(isDev: boolean): Plugin {
   return {
     name: 'comfy-api-plugin',
+    apply: 'build',
     transform(code: string, id: string) {
       if (isDev) return null
 
@@ -88,12 +89,14 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
 
         if (result.exports.length > 0) {
           const projectRoot = process.cwd()
-          const relativePath = path.relative(path.join(projectRoot, 'src'), id)
+          const relativePath = path
+            .relative(path.join(projectRoot, 'src'), id)
+            .replace(/\\/g, '/')
           const shimFileName = relativePath.replace(/\.ts$/, '.js')
 
           let shimContent = `// Shim for ${relativePath}\n`
 
-          const fileKey = relativePath.replace(/\.ts$/, '').replace(/\\/g, '/')
+          const fileKey = relativePath.replace(/\.ts$/, '')
           const warningMessage = getWarningMessage(fileKey, shimFileName)
 
           if (warningMessage) {

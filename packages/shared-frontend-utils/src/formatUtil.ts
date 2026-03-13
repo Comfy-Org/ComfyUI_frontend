@@ -1,3 +1,4 @@
+import { default as DOMPurify } from 'dompurify'
 import type { operations } from '@comfyorg/registry-types'
 
 export function formatCamelCase(str: string): string {
@@ -25,15 +26,53 @@ export function formatCamelCase(str: string): string {
   return processedWords.join(' ')
 }
 
+// Metadata cannot be associated with workflows, so extension encodes the mode.
+const JSON_SUFFIX = 'json'
+const APP_JSON_SUFFIX = `app.${JSON_SUFFIX}`
+const JSON_EXT = `.${JSON_SUFFIX}`
+const APP_JSON_EXT = `.${APP_JSON_SUFFIX}`
+
 export function appendJsonExt(path: string) {
-  if (!path.toLowerCase().endsWith('.json')) {
-    path += '.json'
+  if (!path.toLowerCase().endsWith(JSON_EXT)) {
+    path += JSON_EXT
   }
   return path
 }
 
-export function highlightQuery(text: string, query: string) {
+export type WorkflowSuffix = typeof JSON_SUFFIX | typeof APP_JSON_SUFFIX
+
+export function getWorkflowSuffix(
+  suffix: string | null | undefined
+): WorkflowSuffix {
+  return suffix === APP_JSON_SUFFIX ? APP_JSON_SUFFIX : JSON_SUFFIX
+}
+
+export function appendWorkflowJsonExt(path: string, isApp: boolean): string {
+  return ensureWorkflowSuffix(path, isApp ? APP_JSON_SUFFIX : JSON_SUFFIX)
+}
+
+export function ensureWorkflowSuffix(
+  name: string,
+  suffix: WorkflowSuffix
+): string {
+  const lower = name.toLowerCase()
+  if (lower.endsWith(APP_JSON_EXT)) {
+    name = name.slice(0, -APP_JSON_EXT.length)
+  } else if (lower.endsWith(JSON_EXT)) {
+    name = name.slice(0, -JSON_EXT.length)
+  }
+  return name + '.' + suffix
+}
+
+export function highlightQuery(
+  text: string,
+  query: string,
+  sanitize: boolean = true
+) {
   if (!query) return text
+  if (sanitize) {
+    text = DOMPurify.sanitize(text)
+  }
 
   // Escape special regex characters in the query string
   const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -76,20 +115,39 @@ export function formatSize(value?: number) {
 }
 
 /**
+ * Formats a commit hash by truncating long (40-char) hashes to 7 chars.
+ * Returns the original string if not a valid full commit hash.
+ */
+export function formatCommitHash(value: string): string {
+  if (/^[a-f0-9]{40}$/i.test(value)) {
+    return value.slice(0, 7)
+  }
+  return value
+}
+
+/**
  * Returns various filename components.
+ * Recognises compound extensions like `.app.json`.
  * Example:
- * - fullFilename: 'file.txt'
- * - filename: 'file'
- * - suffix: 'txt'
+ * - fullFilename: 'file.txt'       → { filename: 'file',  suffix: 'txt' }
+ * - fullFilename: 'file.app.json'  → { filename: 'file',  suffix: 'app.json' }
  */
 export function getFilenameDetails(fullFilename: string) {
-  if (fullFilename.includes('.')) {
+  const lower = fullFilename.toLowerCase()
+  if (
+    lower.endsWith(APP_JSON_EXT) &&
+    fullFilename.length > APP_JSON_EXT.length
+  ) {
     return {
-      filename: fullFilename.split('.').slice(0, -1).join('.'),
-      suffix: fullFilename.split('.').pop() ?? null
+      filename: fullFilename.slice(0, -APP_JSON_EXT.length),
+      suffix: APP_JSON_SUFFIX
     }
-  } else {
-    return { filename: fullFilename, suffix: null }
+  }
+  const dotIndex = fullFilename.lastIndexOf('.')
+  if (dotIndex <= 0) return { filename: fullFilename, suffix: null }
+  return {
+    filename: fullFilename.slice(0, dotIndex),
+    suffix: fullFilename.slice(dotIndex + 1)
   }
 }
 
@@ -475,19 +533,41 @@ export function formatDuration(milliseconds: number): string {
   return parts.join(' ')
 }
 
-const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] as const
+const IMAGE_EXTENSIONS = [
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'bmp',
+  'avif',
+  'tif',
+  'tiff'
+] as const
 const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'avi'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const
-const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb'] as const
+const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb', 'usdz'] as const
+const TEXT_EXTENSIONS = [
+  'txt',
+  'md',
+  'markdown',
+  'json',
+  'csv',
+  'yaml',
+  'yml',
+  'xml',
+  'log'
+] as const
 
-const MEDIA_TYPES = ['image', 'video', 'audio', '3D'] as const
-type MediaType = (typeof MEDIA_TYPES)[number]
+const MEDIA_TYPES = ['image', 'video', 'audio', '3D', 'text', 'other'] as const
+export type MediaType = (typeof MEDIA_TYPES)[number]
 
 // Type guard helper for checking array membership
 type ImageExtension = (typeof IMAGE_EXTENSIONS)[number]
 type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
 type AudioExtension = (typeof AUDIO_EXTENSIONS)[number]
 type ThreeDExtension = (typeof THREE_D_EXTENSIONS)[number]
+type TextExtension = (typeof TEXT_EXTENSIONS)[number]
 
 /**
  * Truncates a filename while preserving the extension
@@ -524,18 +604,30 @@ export function truncateFilename(
 /**
  * Determines the media type from a filename's extension (singular form)
  * @param filename The filename to analyze
- * @returns The media type: 'image', 'video', 'audio', or '3D'
+ * @returns The media type: 'image', 'video', 'audio', '3D', 'text', or 'other'
  */
-export function getMediaTypeFromFilename(filename: string): MediaType {
-  if (!filename) return 'image'
+export function getMediaTypeFromFilename(
+  filename: string | null | undefined
+): MediaType {
+  if (!filename) return 'other'
   const ext = filename.split('.').pop()?.toLowerCase()
-  if (!ext) return 'image'
+  if (!ext) return 'other'
 
   // Type-safe array includes check using type assertion
   if (IMAGE_EXTENSIONS.includes(ext as ImageExtension)) return 'image'
   if (VIDEO_EXTENSIONS.includes(ext as VideoExtension)) return 'video'
   if (AUDIO_EXTENSIONS.includes(ext as AudioExtension)) return 'audio'
   if (THREE_D_EXTENSIONS.includes(ext as ThreeDExtension)) return '3D'
+  if (TEXT_EXTENSIONS.includes(ext as TextExtension)) return 'text'
 
-  return 'image'
+  return 'other'
+}
+
+export function isPreviewableMediaType(mediaType: MediaType): boolean {
+  return (
+    mediaType === 'image' ||
+    mediaType === 'video' ||
+    mediaType === 'audio' ||
+    mediaType === '3D'
+  )
 }

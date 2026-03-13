@@ -2,22 +2,20 @@
   <div
     :class="
       cn(
-        'flex items-center justify-between m-0 px-3 py-0 pt-5',
+        'm-0 flex items-center justify-between px-3 py-0 pt-5',
         collapsible && 'cursor-pointer select-none'
       )
     "
     @click="collapsible && toggleCollapse()"
   >
-    <h3
-      class="text-xs font-bold text-neutral-400 uppercase dark-theme:text-neutral-400"
-    >
+    <h3 class="text-xs font-bold text-text-secondary uppercase">
       {{ title }}
     </h3>
     <i
       v-if="collapsible"
       :class="
         cn(
-          'pi transition-transform duration-200 text-xs text-neutral-400 dark-theme:text-neutral-400',
+          'pi text-xs text-text-secondary transition-transform duration-200',
           isCollapsed ? 'pi-chevron-right' : 'pi-chevron-down'
         )
       "

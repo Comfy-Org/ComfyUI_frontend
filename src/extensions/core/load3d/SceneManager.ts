@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import Load3dUtils from './Load3dUtils'
 import {
+  type BackgroundRenderModeType,
   type EventManagerInterface,
   type SceneManagerInterface
 } from './interfaces'
@@ -16,6 +17,8 @@ export class SceneManager implements SceneManagerInterface {
   backgroundMesh: THREE.Mesh | null = null
   backgroundTexture: THREE.Texture | null = null
 
+  backgroundRenderMode: 'tiled' | 'panorama' = 'tiled'
+
   backgroundColorMaterial: THREE.MeshBasicMaterial | null = null
   currentBackgroundType: 'color' | 'image' = 'color'
   currentBackgroundColor: string = '#282828'
@@ -24,13 +27,11 @@ export class SceneManager implements SceneManagerInterface {
   private renderer: THREE.WebGLRenderer
 
   private getActiveCamera: () => THREE.Camera
-  // @ts-expect-error unused variable
-  private getControls: () => OrbitControls
 
   constructor(
     renderer: THREE.WebGLRenderer,
     getActiveCamera: () => THREE.Camera,
-    getControls: () => OrbitControls,
+    _getControls: () => OrbitControls,
     eventManager: EventManagerInterface
   ) {
     this.renderer = renderer
@@ -38,7 +39,6 @@ export class SceneManager implements SceneManagerInterface {
     this.scene = new THREE.Scene()
 
     this.getActiveCamera = getActiveCamera
-    this.getControls = getControls
 
     this.gridHelper = new THREE.GridHelper(20, 20)
     this.gridHelper.position.set(0, 0, 0)
@@ -89,6 +89,10 @@ export class SceneManager implements SceneManagerInterface {
       }
     }
 
+    if (this.scene.background) {
+      this.scene.background = null
+    }
+
     this.scene.clear()
   }
 
@@ -103,6 +107,15 @@ export class SceneManager implements SceneManagerInterface {
   setBackgroundColor(color: string): void {
     this.currentBackgroundColor = color
     this.currentBackgroundType = 'color'
+
+    if (this.scene.background instanceof THREE.Texture) {
+      this.scene.background = null
+    }
+
+    if (this.backgroundRenderMode === 'panorama') {
+      this.backgroundRenderMode = 'tiled'
+      this.eventManager.emitEvent('backgroundRenderModeChange', 'tiled')
+    }
 
     if (!this.backgroundMesh || !this.backgroundColorMaterial) {
       this.initBackgroundScene()
@@ -168,36 +181,41 @@ export class SceneManager implements SceneManagerInterface {
       this.backgroundTexture = texture
       this.currentBackgroundType = 'image'
 
-      if (!this.backgroundMesh) {
-        this.initBackgroundScene()
-      }
-
-      const imageMaterial = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        depthWrite: false,
-        depthTest: false,
-        side: THREE.DoubleSide
-      })
-
-      if (this.backgroundMesh) {
-        if (
-          this.backgroundMesh.material !== this.backgroundColorMaterial &&
-          this.backgroundMesh.material instanceof THREE.Material
-        ) {
-          this.backgroundMesh.material.dispose()
+      if (this.backgroundRenderMode === 'panorama') {
+        texture.mapping = THREE.EquirectangularReflectionMapping
+        this.scene.background = texture
+      } else {
+        if (!this.backgroundMesh) {
+          this.initBackgroundScene()
         }
 
-        this.backgroundMesh.material = imageMaterial
-        this.backgroundMesh.position.set(0, 0, 0)
-      }
+        const imageMaterial = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          depthWrite: false,
+          depthTest: false,
+          side: THREE.DoubleSide
+        })
 
-      this.updateBackgroundSize(
-        this.backgroundTexture,
-        this.backgroundMesh,
-        this.renderer.domElement.clientWidth,
-        this.renderer.domElement.clientHeight
-      )
+        if (this.backgroundMesh) {
+          if (
+            this.backgroundMesh.material !== this.backgroundColorMaterial &&
+            this.backgroundMesh.material instanceof THREE.Material
+          ) {
+            this.backgroundMesh.material.dispose()
+          }
+
+          this.backgroundMesh.material = imageMaterial
+          this.backgroundMesh.position.set(0, 0, 0)
+        }
+
+        this.updateBackgroundSize(
+          this.backgroundTexture,
+          this.backgroundMesh,
+          this.renderer.domElement.clientWidth,
+          this.renderer.domElement.clientHeight
+        )
+      }
 
       this.eventManager.emitEvent('backgroundImageChange', uploadPath)
       this.eventManager.emitEvent('backgroundImageLoadingEnd', null)
@@ -211,6 +229,35 @@ export class SceneManager implements SceneManagerInterface {
   removeBackgroundImage(): void {
     this.setBackgroundColor(this.currentBackgroundColor)
     this.eventManager.emitEvent('backgroundImageLoadingEnd', null)
+  }
+
+  setBackgroundRenderMode(mode: BackgroundRenderModeType): void {
+    if (this.backgroundRenderMode === mode) return
+
+    this.backgroundRenderMode = mode
+
+    if (this.currentBackgroundType === 'image' && this.backgroundTexture) {
+      try {
+        if (mode === 'panorama') {
+          this.backgroundTexture.mapping =
+            THREE.EquirectangularReflectionMapping
+          this.scene.background = this.backgroundTexture
+        } else {
+          this.scene.background = null
+          if (
+            this.backgroundMesh &&
+            this.backgroundMesh.material instanceof THREE.MeshBasicMaterial
+          ) {
+            this.backgroundMesh.material.map = this.backgroundTexture
+            this.backgroundMesh.material.needsUpdate = true
+          }
+        }
+      } catch (error) {
+        console.error('Error set background render mode:', error)
+      }
+    }
+
+    this.eventManager.emitEvent('backgroundRenderModeChange', mode)
   }
 
   updateBackgroundSize(
@@ -254,7 +301,11 @@ export class SceneManager implements SceneManagerInterface {
   }
 
   renderBackground(): void {
-    if (this.backgroundMesh) {
+    if (
+      (this.backgroundRenderMode === 'tiled' ||
+        this.currentBackgroundType === 'color') &&
+      this.backgroundMesh
+    ) {
       const currentToneMapping = this.renderer.toneMapping
       const currentExposure = this.renderer.toneMappingExposure
 

@@ -1,3 +1,4 @@
+import { valid } from 'semver'
 import { computed } from 'vue'
 import type { Ref } from 'vue'
 
@@ -41,12 +42,30 @@ export function usePacksSelection(nodePacks: Ref<NodePack[]>) {
     return 'mixed'
   })
 
+  /**
+   * Nightly packs are installed packs with a non-semver version (git hash)
+   * that are also enabled
+   */
+  const nightlyPacks = computed(() =>
+    installedPacks.value.filter((pack) => {
+      if (!pack.id) return false
+      const version = managerStore.getInstalledPackVersion(pack.id)
+      const isNightly = !!version && !valid(version)
+      const isEnabled = managerStore.isPackEnabled(pack.id)
+      return isNightly && isEnabled
+    })
+  )
+
+  const hasNightlyPacks = computed(() => nightlyPacks.value.length > 0)
+
   return {
     installedPacks,
     notInstalledPacks,
     isAllInstalled,
     isNoneInstalled,
     isMixed,
-    selectionState
+    selectionState,
+    nightlyPacks,
+    hasNightlyPacks
   }
 }

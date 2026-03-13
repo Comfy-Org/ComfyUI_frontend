@@ -8,7 +8,8 @@ const config: KnipConfig = {
         'src/assets/css/style.css',
         'src/main.ts',
         'src/scripts/ui/menu/index.ts',
-        'src/types/index.ts'
+        'src/types/index.ts',
+        'src/storybook/mocks/**/*.ts'
       ],
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
     },
@@ -19,22 +20,25 @@ const config: KnipConfig = {
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
-    'packages/design-system': {
-      entry: ['src/**/*.ts'],
-      project: ['src/**/*.{js,ts}', '*.{js,ts,mts}']
+    'packages/shared-frontend-utils': {
+      project: ['src/**/*.{js,ts}'],
+      entry: ['src/formatUtil.ts', 'src/networkUtil.ts']
     },
     'packages/registry-types': {
       project: ['src/**/*.{js,ts}']
     }
   },
-  ignoreBinaries: ['python3'],
+  ignoreBinaries: ['python3', 'gh'],
   ignoreDependencies: [
     // Weird importmap things
+    '@iconify-json/lucide',
     '@iconify/json',
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons'
+    '@primevue/icons',
+    // Used by lucideStrokePlugin.js (CSS @plugin)
+    '@iconify/utils'
   ],
   ignore: [
     // Auto generated manager types
@@ -43,7 +47,17 @@ const config: KnipConfig = {
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts',
     // Demo snapshots for API changelog system
-    'demo-snapshots/**'
+    'demo-snapshots/**',
+    // Used by stacked PR (feat/glsl-live-preview)
+    'src/renderer/glsl/useGLSLRenderer.ts',
+    // Workflow files contain license names that knip misinterprets as binaries
+    '.github/workflows/ci-oss-assets-validation.yaml',
+    // Pending integration in stacked PR
+    'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
+    // Agent review check config, not part of the build
+    '.agents/checks/eslint.strict.config.js',
+    // Loaded via @plugin directive in CSS, not detected by knip
+    'packages/design-system/src/css/lucideStrokePlugin.js'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
@@ -68,7 +82,8 @@ const config: KnipConfig = {
   },
   tags: [
     '-knipIgnoreUnusedButUsedByCustomNodes',
-    '-knipIgnoreUnusedButUsedByVueNodesBranch'
+    '-knipIgnoreUnusedButUsedByVueNodesBranch',
+    '-knipIgnoreUsedByStackedPR'
   ]
 }
 

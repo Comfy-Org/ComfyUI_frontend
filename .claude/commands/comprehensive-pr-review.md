@@ -15,6 +15,7 @@ To post inline comments, you will use the GitHub API via the `gh` command. Here'
    - Run: `gh pr view $PR_NUMBER --json commits --jq '.commits[-1].oid'` to get the latest commit SHA
 
 2. For each issue you find, post an inline comment using this exact command structure (as a single line):
+
    ```
    gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/OWNER/REPO/pulls/$PR_NUMBER/comments -f body="YOUR_COMMENT_BODY" -f commit_id="COMMIT_SHA" -f path="FILE_PATH" -F line=LINE_NUMBER -f side="RIGHT"
    ```
@@ -22,13 +23,15 @@ To post inline comments, you will use the GitHub API via the `gh` command. Here'
 3. Format your comment body using actual newlines in the command. Use a heredoc or construct the body with proper line breaks:
    ```
    COMMENT_BODY="**[category] severity Priority**
+   ```
 
 **Issue**: Brief description of the problem
 **Context**: Why this matters  
 **Suggestion**: How to fix it"
-   ```
-   
-   Then use: `-f body="$COMMENT_BODY"`
+
+```
+
+Then use: `-f body="$COMMENT_BODY"`
 
 ## Phase 1: Environment Setup and PR Context
 
@@ -58,10 +61,12 @@ This is critical for better file inspection:
 1. Get PR metadata: `gh pr view $PR_NUMBER --json files,title,body,additions,deletions,baseRefName,headRefName > pr_info.json`
 2. Extract branch names from pr_info.json using jq
 3. Fetch and checkout the PR branch:
-   ```
-   git fetch origin "pull/$PR_NUMBER/head:pr-$PR_NUMBER"
-   git checkout "pr-$PR_NUMBER"
-   ```
+```
+
+git fetch origin "pull/$PR_NUMBER/head:pr-$PR_NUMBER"
+git checkout "pr-$PR_NUMBER"
+
+```
 
 ### Step 1.4: Get Changed Files and Diffs
 
@@ -100,9 +105,9 @@ Intelligently load only relevant knowledge:
 
 1. Use GitHub API to discover available knowledge folders: `https://api.github.com/repos/Comfy-Org/comfy-claude-prompt-library/contents/.claude/knowledge`
 2. For each knowledge folder, check if it's relevant by searching for the folder name in:
-   - Changed file paths
-   - PR title
-   - PR body
+- Changed file paths
+- PR title
+- PR body
 3. If relevant, download all files from that knowledge folder
 
 ### Step 2.4: Load Validation Rules
@@ -193,12 +198,14 @@ Consider:
 For each issue found, create a concise inline comment with this structure:
 
 ```
+
 **[category] severity Priority**
 
 **Issue**: Brief description of the problem
 **Context**: Why this matters
 **Suggestion**: How to fix it
-```
+
+````
 
 Categories: architecture/security/performance/quality
 Severities: critical/high/medium/low
@@ -214,7 +221,7 @@ For EACH issue:
 
 ```bash
 gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/OWNER/REPO/pulls/$PR_NUMBER/comments -f body="$COMMENT_BODY" -f commit_id="COMMIT_SHA" -f path="FILE_PATH" -F line=LINE_NUMBER -f side="RIGHT"
-```
+````
 
 CRITICAL: The entire command must be on one line. Use actual values, not placeholders.
 
@@ -223,12 +230,14 @@ CRITICAL: The entire command must be on one line. Use actual values, not placeho
 Here's an example of how to review a file with a security issue:
 
 1. First, get the repository info:
+
    ```bash
    gh repo view --json owner,name
    # Output: {"owner":{"login":"Comfy-Org"},"name":"ComfyUI_frontend"}
    ```
 
 2. Get the commit SHA:
+
    ```bash
    gh pr view $PR_NUMBER --json commits --jq '.commits[-1].oid'
    # Output: abc123def456
@@ -240,14 +249,17 @@ Here's an example of how to review a file with a security issue:
    ```bash
    # First, create the comment body with proper newlines
    COMMENT_BODY="**[security] critical Priority**
+   ```
 
 **Issue**: SQL injection vulnerability - user input directly concatenated into query
 **Context**: Allows attackers to execute arbitrary SQL commands
 **Suggestion**: Use parameterized queries or prepared statements"
-   
-   # Then post the comment (as a single line)
-   gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/Comfy-Org/ComfyUI_frontend/pulls/$PR_NUMBER/comments -f body="$COMMENT_BODY" -f commit_id="abc123def456" -f path="src/db/queries.js" -F line=42 -f side="RIGHT"
-   ```
+
+# Then post the comment (as a single line)
+
+gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/Comfy-Org/ComfyUI_frontend/pulls/$PR_NUMBER/comments -f body="$COMMENT_BODY" -f commit_id="abc123def456" -f path="src/db/queries.js" -F line=42 -f side="RIGHT"
+
+```
 
 Repeat this process for every issue you find in the PR.
 
@@ -282,9 +294,9 @@ Analyze the PR to determine its type:
 1. Extract PR title and body from pr_info.json
 2. Count files, additions, and deletions
 3. Determine PR type:
-   - Feature: Check for tests, documentation, backward compatibility
-   - Bug fix: Verify root cause addressed, includes regression tests
-   - Refactor: Ensure behavior preservation, tests still pass
+- Feature: Check for tests, documentation, backward compatibility
+- Bug fix: Verify root cause addressed, includes regression tests
+- Refactor: Ensure behavior preservation, tests still pass
 
 ## Phase 7: Generate Comprehensive Summary
 
@@ -292,16 +304,17 @@ After ALL inline comments are posted, create a summary:
 
 1. Calculate total issues by category and severity
 2. Use `gh pr review $PR_NUMBER --comment` to post a summary with:
-   - Review disclaimer
-   - Issue distribution (counts by severity)
-   - Category breakdown
-   - Key findings for each category
-   - Positive observations
-   - References to guidelines
-   - Next steps
+- Review disclaimer
+- Issue distribution (counts by severity)
+- Category breakdown
+- Key findings for each category
+- Positive observations
+- References to guidelines
+- Next steps
 
 Include in the summary:
 ```
+
 # Comprehensive PR Review
 
 This review is generated by Claude. It may not always be accurate, as with human reviewers. If you believe that any of the comments are invalid or incorrect, please state why for each. For others, please implement the changes in one way or another.
@@ -312,12 +325,14 @@ This review is generated by Claude. It may not always be accurate, as with human
 **Impact**: [X] additions, [Y] deletions across [Z] files
 
 ### Issue Distribution
+
 - Critical: [CRITICAL_COUNT]
 - High: [HIGH_COUNT]
 - Medium: [MEDIUM_COUNT]
 - Low: [LOW_COUNT]
 
 ### Category Breakdown
+
 - Architecture: [ARCHITECTURE_ISSUES] issues
 - Security: [SECURITY_ISSUES] issues
 - Performance: [PERFORMANCE_ISSUES] issues
@@ -326,33 +341,42 @@ This review is generated by Claude. It may not always be accurate, as with human
 ## Key Findings
 
 ### Architecture & Design
+
 [Detailed architectural analysis based on repository patterns]
 
 ### Security Considerations
+
 [Security implications beyond basic vulnerabilities]
 
 ### Performance Impact
+
 [Performance analysis including bundle size, render impact]
 
 ### Integration Points
+
 [How this affects other systems, extensions, etc.]
 
 ## Positive Observations
+
 [What was done well, good patterns followed]
 
 ## References
+
 - [Repository Architecture Guide](https://github.com/Comfy-Org/comfy-claude-prompt-library/blob/master/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md)
 - [Frontend Standards](https://github.com/Comfy-Org/comfy-claude-prompt-library/blob/master/.claude/commands/validation/frontend-code-standards.md)
 - [Security Guidelines](https://github.com/Comfy-Org/comfy-claude-prompt-library/blob/master/.claude/commands/validation/security-audit.md)
 
 ## Next Steps
+
 1. Address critical issues before merge
 2. Consider architectural feedback for long-term maintainability
 3. Add tests for uncovered scenarios
 4. Update documentation if needed
 
 ---
-*This is a comprehensive automated review. For architectural decisions requiring human judgment, please request additional manual review.*
+
+_This is a comprehensive automated review. For architectural decisions requiring human judgment, please request additional manual review._
+
 ```
 
 ## Important Guidelines
@@ -376,3 +400,4 @@ This is a COMPREHENSIVE review, not a linting pass. Provide the same quality fee
 6. Phase 7: Post comprehensive summary ONLY after all inline comments
 
 Remember: Individual inline comments for each issue, then one final summary. Never batch issues into a single comment.
+```

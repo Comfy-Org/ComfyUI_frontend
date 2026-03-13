@@ -1,5 +1,5 @@
 import { whenever } from '@vueuse/core'
-import { computed, onMounted } from 'vue'
+import { computed, nextTick, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from './toastStore'
@@ -65,9 +65,12 @@ export function useFrontendVersionMismatchWarning(
     versionCompatibilityStore.dismissWarning()
   }
 
-  onMounted(() => {
+  onMounted(async () => {
     // Only set up the watcher if immediate is true
     if (immediate) {
+      // Wait for next tick to ensure reactive updates from settings load have propagated
+      await nextTick()
+
       whenever(
         () => versionCompatibilityStore.shouldShowWarning,
         () => {

@@ -15,8 +15,6 @@ import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput
 import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
-  #node: LGraphNode
-
   links: LinkId[] | null
   _data?: unknown
   slot_index?: number
@@ -27,7 +25,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
 
   get collapsedPos(): Readonly<Point> {
     return [
-      this.#node._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH,
+      this._node._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH,
       LiteGraph.NODE_TITLE_HEIGHT * -0.5
     ]
   }
@@ -40,7 +38,6 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     this.links = slot.links
     this._data = slot._data
     this.slot_index = slot.slot_index
-    this.#node = node
   }
 
   override isValidTarget(
@@ -77,5 +74,13 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
 
     ctx.textAlign = textAlign
     ctx.strokeStyle = strokeStyle
+  }
+
+  override toJSON(): INodeOutputSlot {
+    return {
+      ...super.toJSON(),
+      links: this.links,
+      slot_index: this.slot_index
+    }
   }
 }

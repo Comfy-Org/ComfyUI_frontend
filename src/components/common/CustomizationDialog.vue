@@ -27,24 +27,19 @@
       </div>
     </div>
     <template #footer>
-      <Button
-        :label="$t('g.reset')"
-        icon="pi pi-refresh"
-        class="p-button-text"
-        @click="resetCustomization"
-      />
-      <Button
-        :label="$t('g.confirm')"
-        icon="pi pi-check"
-        autofocus
-        @click="confirmCustomization"
-      />
+      <Button variant="textonly" @click="resetCustomization">
+        <i class="pi pi-refresh" />
+        {{ $t('g.reset') }}
+      </Button>
+      <Button autofocus @click="confirmCustomization">
+        <i class="pi pi-check" />
+        {{ $t('g.confirm') }}
+      </Button>
     </template>
   </Dialog>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Divider from 'primevue/divider'
 import SelectButton from 'primevue/selectbutton'
@@ -52,6 +47,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const { t } = useI18n()

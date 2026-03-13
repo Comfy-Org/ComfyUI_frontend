@@ -1,4 +1,4 @@
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isNightly } from '@/platform/distribution/types'
 
 /**
  * Zendesk ticket form field IDs.
@@ -14,7 +14,29 @@ const ZENDESK_FIELDS = {
   USER_ID: 'tf_42515251051412'
 } as const
 
+/**
+ * Gets the distribution identifier for Zendesk tracking.
+ * Helps distinguish feedback from different build types.
+ */
+function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
+  if (isCloud) return 'ccloud'
+  if (isNightly) return 'oss-nightly'
+  return 'oss'
+}
+
 const SUPPORT_BASE_URL = 'https://support.comfy.org/hc/en-us/requests/new'
+const ZENDESK_FEEDBACK_FORM_ID = '43066738713236'
+
+/**
+ * Builds the feedback form URL with the appropriate distribution tag.
+ */
+export function buildFeedbackUrl(): string {
+  const params = new URLSearchParams({
+    ticket_form_id: ZENDESK_FEEDBACK_FORM_ID,
+    [ZENDESK_FIELDS.DISTRIBUTION]: getDistribution()
+  })
+  return `${SUPPORT_BASE_URL}?${params.toString()}`
+}
 
 /**
  * Builds the support URL with optional user information for pre-filling.
@@ -28,7 +50,7 @@ export function buildSupportUrl(params?: {
   userId?: string | null
 }): string {
   const searchParams = new URLSearchParams({
-    [ZENDESK_FIELDS.DISTRIBUTION]: isCloud ? 'ccloud' : 'oss'
+    [ZENDESK_FIELDS.DISTRIBUTION]: getDistribution()
   })
 
   if (params?.userEmail) {

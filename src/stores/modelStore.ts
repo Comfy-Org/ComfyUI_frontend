@@ -7,14 +7,19 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
-function _findInMetadata(metadata: any, ...keys: string[]): string | null {
+function _findInMetadata(
+  metadata: Record<string, string | null>,
+  ...keys: string[]
+): string | null {
   for (const key of keys) {
     if (key in metadata) {
-      return metadata[key]
+      const value = metadata[key]
+      return value || null
     }
     for (const k in metadata) {
       if (k.endsWith(key)) {
-        return metadata[k]
+        const value = metadata[k]
+        return value || null
       }
     }
   }

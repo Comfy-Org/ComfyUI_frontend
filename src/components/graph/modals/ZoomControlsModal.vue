@@ -10,7 +10,7 @@
     >
       <div class="flex flex-col gap-1">
         <div
-          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
           @mousedown="startRepeat('Comfy.Canvas.ZoomIn')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
@@ -22,7 +22,7 @@
         </div>
 
         <div
-          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
           @mousedown="startRepeat('Comfy.Canvas.ZoomOut')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
@@ -34,7 +34,7 @@
         </div>
 
         <div
-          class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
           @click="executeCommand('Comfy.Canvas.FitView')"
         >
           <span class="font-medium">{{ $t('zoomControls.zoomToFit') }}</span>
@@ -45,10 +45,9 @@
 
         <div
           ref="zoomInputContainer"
-          class="zoomInputContainer flex items-center gap-1 rounded bg-input-surface p-2"
+          class="zoomInputContainer flex items-center gap-1 rounded-sm bg-input-surface p-2"
         >
           <InputNumber
-            ref="zoomInput"
             :default-value="canvasStore.appScalePercentage"
             :min="1"
             :max="1000"
@@ -60,7 +59,7 @@
             @input="applyZoom"
             @keyup.enter="applyZoom"
           />
-          <span class="flex-shrink-0 text-sm text-text-primary">%</span>
+          <span class="shrink-0 text-sm text-text-primary">%</span>
         </div>
       </div>
     </div>
@@ -130,7 +129,6 @@ const zoomOutCommandText = computed(() =>
 const zoomToFitCommandText = computed(() =>
   formatKeySequence(commandStore.getCommand('Comfy.Canvas.FitView'))
 )
-const zoomInput = ref<InstanceType<typeof InputNumber> | null>(null)
 const zoomInputContainer = ref<HTMLDivElement | null>(null)
 
 watch(

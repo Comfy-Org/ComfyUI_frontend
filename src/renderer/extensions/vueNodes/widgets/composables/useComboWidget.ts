@@ -3,26 +3,21 @@ import { ref } from 'vue'
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { isAssetWidget, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
-import {
-  assetFilenameSchema,
-  assetItemSchema
-} from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type {
   ComboInputSpec,
   InputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
-import { addValueControlWidgets } from '@/scripts/widgets'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { addValueControlWidgets } from '@/scripts/widgets'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -49,6 +44,29 @@ const NODE_PLACEHOLDER_MAP: Record<string, string> = {
   LoadAudio: 'widgets.uploadSelect.placeholderAudio'
 }
 
+const bindDynamicValuesOption = (
+  widget: IBaseWidget,
+  getValues: () => unknown
+) => {
+  const options = widget.options
+  let fallbackValues = Array.isArray(options.values)
+    ? options.values
+    : ([] as unknown[])
+
+  Object.defineProperty(options, 'values', {
+    configurable: true,
+    enumerable: true,
+    get: () => {
+      const values = getValues()
+      if (values === undefined || values === null) return fallbackValues
+      return values
+    },
+    set: (values: unknown[]) => {
+      fallbackValues = Array.isArray(values) ? values : fallbackValues
+    }
+  })
+}
+
 const addMultiSelectWidget = (
   node: LGraphNode,
   inputSpec: ComboInputSpec
@@ -69,70 +87,38 @@ const addMultiSelectWidget = (
   addWidget(node, widget as BaseDOMWidget<object | string>)
   // TODO: Add remote support to multi-select widget
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3003
+  if (inputSpec.control_after_generate) {
+    const defaultType =
+      typeof inputSpec.control_after_generate === 'string'
+        ? inputSpec.control_after_generate
+        : 'fixed'
+    widget.linkedWidgets = addValueControlWidgets(
+      node,
+      widget,
+      defaultType,
+      undefined,
+      transformInputSpecV2ToV1(inputSpec)
+    )
+  }
+
   return widget
 }
 
-const createAssetBrowserWidget = (
+function createAssetBrowserWidget(
   node: LGraphNode,
   inputSpec: ComboInputSpec,
   defaultValue: string | undefined
-): IBaseWidget => {
-  const currentValue = defaultValue
-  const displayLabel = currentValue ?? t('widgets.selectModel')
-  const assetBrowserDialog = useAssetBrowserDialog()
-
-  const widget = node.addWidget(
-    'asset',
-    inputSpec.name,
-    displayLabel,
-    async function (this: IBaseWidget) {
-      if (!isAssetWidget(widget)) {
-        throw new Error(`Expected asset widget but received ${widget.type}`)
-      }
-      await assetBrowserDialog.show({
-        nodeType: node.comfyClass || '',
-        inputName: inputSpec.name,
-        currentValue: widget.value,
-        onAssetSelected: (asset) => {
-          const validatedAsset = assetItemSchema.safeParse(asset)
-
-          if (!validatedAsset.success) {
-            console.error(
-              'Invalid asset item:',
-              validatedAsset.error.errors,
-              'Received:',
-              asset
-            )
-            return
-          }
-
-          const filename = validatedAsset.data.user_metadata?.filename
-          const validatedFilename = assetFilenameSchema.safeParse(filename)
-
-          if (!validatedFilename.success) {
-            console.error(
-              'Invalid asset filename:',
-              validatedFilename.error.errors,
-              'for asset:',
-              validatedAsset.data.id
-            )
-            return
-          }
-
-          const oldValue = widget.value
-          this.value = validatedFilename.data
-          node.onWidgetChanged?.(
-            widget.name,
-            validatedFilename.data,
-            oldValue,
-            widget
-          )
-        }
-      })
+): IBaseWidget {
+  return createAssetWidget({
+    node,
+    widgetName: inputSpec.name,
+    nodeTypeForBrowser: node.comfyClass ?? '',
+    inputNameForBrowser: inputSpec.name,
+    defaultValue,
+    onValueChange: (widget, newValue, oldValue) => {
+      node.onWidgetChanged?.(widget.name, newValue, oldValue, widget)
     }
-  )
-
-  return widget
+  })
 }
 
 const createInputMappingWidget = (
@@ -170,31 +156,29 @@ const createInputMappingWidget = (
     })
   }
 
-  const origOptions = widget.options
-  widget.options = new Proxy(origOptions, {
-    get(target, prop) {
-      if (prop !== 'values') {
-        return target[prop as keyof typeof target]
-      }
-      return assetsStore.inputAssets
-        .filter(
-          (asset) =>
-            getMediaTypeFromFilename(asset.name) ===
-            NODE_MEDIA_TYPE_MAP[node.comfyClass ?? '']
-        )
-        .map((asset) => asset.asset_hash)
-        .filter((hash): hash is string => !!hash)
-    }
-  })
+  bindDynamicValuesOption(widget, () =>
+    assetsStore.inputAssets
+      .filter(
+        (asset) =>
+          getMediaTypeFromFilename(asset.name) ===
+          NODE_MEDIA_TYPE_MAP[node.comfyClass ?? '']
+      )
+      .map((asset) => asset.asset_hash)
+      .filter((hash): hash is string => !!hash)
+  )
 
   if (inputSpec.control_after_generate) {
     if (!isComboWidget(widget)) {
       throw new Error(`Expected combo widget but received ${widget.type}`)
     }
+    const defaultType =
+      typeof inputSpec.control_after_generate === 'string'
+        ? inputSpec.control_after_generate
+        : 'randomize'
     widget.linkedWidgets = addValueControlWidgets(
       node,
       widget,
-      undefined,
+      defaultType,
       undefined,
       transformInputSpecV2ToV1(inputSpec)
     )
@@ -210,14 +194,7 @@ const addComboWidget = (
   const defaultValue = getDefaultValue(inputSpec)
 
   if (isCloud) {
-    const settingStore = useSettingStore()
-    const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
-    const isEligible = assetService.isAssetBrowserEligible(
-      node.comfyClass,
-      inputSpec.name
-    )
-
-    if (isUsingAssetAPI && isEligible) {
+    if (assetService.shouldUseAssetBrowser(node.comfyClass, inputSpec.name)) {
       return createAssetBrowserWidget(node, inputSpec, defaultValue)
     }
 
@@ -250,15 +227,7 @@ const addComboWidget = (
     })
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
-    const origOptions = widget.options
-    widget.options = new Proxy(origOptions, {
-      get(target, prop) {
-        // Assertion: Proxy handler passthrough
-        return prop !== 'values'
-          ? target[prop as keyof typeof target]
-          : remoteWidget.getValue()
-      }
-    })
+    bindDynamicValuesOption(widget, () => remoteWidget.getValue())
   }
 
   if (inputSpec.control_after_generate) {
@@ -266,10 +235,14 @@ const addComboWidget = (
       throw new Error(`Expected combo widget but received ${widget.type}`)
     }
 
+    const defaultType =
+      typeof inputSpec.control_after_generate === 'string'
+        ? inputSpec.control_after_generate
+        : 'randomize'
     widget.linkedWidgets = addValueControlWidgets(
       node,
       widget,
-      undefined,
+      defaultType,
       undefined,
       transformInputSpecV2ToV1(inputSpec)
     )

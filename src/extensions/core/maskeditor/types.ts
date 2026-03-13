@@ -19,7 +19,8 @@ export const allTools = [
   Tools.MaskColorFill
 ]
 
-export const allImageLayers = ['mask', 'rgb'] as const
+const allImageLayers = ['mask', 'rgb'] as const
+
 export type ImageLayer = (typeof allImageLayers)[number]
 
 export interface ToolInternalSettings {
@@ -60,16 +61,5 @@ export interface Brush {
   size: number
   opacity: number
   hardness: number
-  smoothingPrecision: number
-}
-
-export type Callback = (data?: any) => void
-
-export type Ref = { filename: string; subfolder?: string; type?: string }
-
-// Forward declaration for MaskEditorDialog
-export interface MaskEditorDialog {
-  getMessageBroker(): any // Will be MessageBroker, but avoiding circular dependency
-  save(): void
-  destroy(): void
+  stepSize: number
 }

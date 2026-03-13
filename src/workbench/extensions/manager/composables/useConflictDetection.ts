@@ -7,6 +7,7 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
@@ -18,6 +19,7 @@ import type {
   ConflictDetail,
   ConflictDetectionResponse,
   ConflictDetectionResult,
+  ImportFailureMap,
   Node,
   NodeRequirements,
   SystemEnvironment
@@ -87,9 +89,11 @@ export function useConflictDetection() {
     try {
       // Get system stats from store (primary source of system information)
       // Wait for systemStats to be initialized if not already
-      const { systemStats, isInitialized: systemStatsInitialized } =
-        useSystemStatsStore()
-      await until(systemStatsInitialized)
+      const systemStatsStore = useSystemStatsStore()
+      const { systemStats } = systemStatsStore
+
+      // Wait for initialization using the store's isInitialized property (correct reactive way)
+      await until(() => systemStatsStore.isInitialized).toBe(true)
 
       const frontendVersion = getFrontendVersion()
 
@@ -333,7 +337,7 @@ export function useConflictDetection() {
    * Gets installed packages and checks each one for import failures using bulk API.
    * @returns Promise that resolves to import failure data
    */
-  async function fetchImportFailInfo(): Promise<Record<string, any>> {
+  async function fetchImportFailInfo(): Promise<ImportFailureMap> {
     try {
       const comfyManagerService = useComfyManagerService()
 
@@ -359,7 +363,7 @@ export function useConflictDetection() {
 
       if (bulkResult) {
         // Filter out null values (packages without import failures)
-        const importFailures: Record<string, any> = {}
+        const importFailures: ImportFailureMap = {}
 
         Object.entries(bulkResult).forEach(([packageId, failInfo]) => {
           if (failInfo !== null) {
@@ -386,7 +390,7 @@ export function useConflictDetection() {
    * @returns Array of conflict detection results for failed imports
    */
   function detectImportFailConflicts(
-    importFailInfo: Record<string, { msg: string; name: string; path: string }>
+    importFailInfo: ImportFailureMap
   ): ConflictDetectionResult[] {
     const results: ConflictDetectionResult[] = []
     if (!importFailInfo || typeof importFailInfo !== 'object') {
@@ -395,33 +399,29 @@ export function useConflictDetection() {
 
     // Process import failures
     for (const [packageId, failureInfo] of Object.entries(importFailInfo)) {
-      if (failureInfo && typeof failureInfo === 'object') {
-        // Extract error information from Manager API response
-        const errorMsg = failureInfo.msg || 'Unknown import error'
-        const modulePath = failureInfo.path || ''
+      if (!failureInfo || typeof failureInfo !== 'object') continue
 
-        results.push({
-          package_id: packageId,
-          package_name: packageId,
-          has_conflict: true,
-          conflicts: [
-            {
-              type: 'import_failed',
-              current_value: 'installed',
-              required_value: failureInfo.msg
-            }
-          ],
-          is_compatible: false
-        })
+      const errorMsg = failureInfo.error || 'Unknown import error'
+      const fullErrorInfo = failureInfo.traceback || errorMsg
 
-        console.warn(
-          `[ConflictDetection] Python import failure detected for ${packageId}:`,
+      results.push({
+        package_id: packageId,
+        package_name: packageId,
+        has_conflict: true,
+        conflicts: [
           {
-            path: modulePath,
-            error: errorMsg
+            type: 'import_failed',
+            current_value: errorMsg,
+            required_value: fullErrorInfo
           }
-        )
-      }
+        ],
+        is_compatible: false
+      })
+
+      console.warn(
+        `[ConflictDetection] Python import failure detected for ${packageId}:`,
+        errorMsg
+      )
     }
 
     return results
@@ -548,10 +548,11 @@ export function useConflictDetection() {
    */
   async function initializeConflictDetection(): Promise<void> {
     try {
-      // Check if manager is new Manager before proceeding
-      const { useManagerState } = await import(
-        '@/workbench/extensions/manager/composables/useManagerState'
-      )
+      // First, wait for systemStats to be initialized
+      const systemStatsStore = useSystemStatsStore()
+      await until(() => systemStatsStore.isInitialized).toBe(true)
+
+      // Now check if manager is new Manager
       const managerState = useManagerState()
 
       if (!managerState.isNewManagerUI.value) {

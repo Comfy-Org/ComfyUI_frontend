@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { Ref } from 'vue'
+import type { Ref, ShallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -7,7 +7,7 @@ import { renderMinimapToCanvas } from '../minimapCanvasRenderer'
 import type { UpdateFlags } from '../types'
 
 export function useMinimapRenderer(
-  canvasRef: Ref<HTMLCanvasElement | undefined>,
+  canvasRef: Readonly<ShallowRef<HTMLCanvasElement | null>>,
   graph: Ref<LGraph | null>,
   bounds: Ref<{ minX: number; minY: number; width: number; height: number }>,
   scale: Ref<number>,

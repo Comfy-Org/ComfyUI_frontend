@@ -8,12 +8,15 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import { getCurrentInstance, onMounted, onUnmounted, toValue } from 'vue'
+import { getCurrentInstance, onMounted, onUnmounted, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
+
+import { useDocumentVisibility } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -58,8 +61,37 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
   ]
 ])
 
+// Elements whose ResizeObserver fired while the tab was hidden
+const deferredElements = new Set<HTMLElement>()
+const visibility = useDocumentVisibility()
+
+watch(visibility, (state) => {
+  if (state !== 'visible' || deferredElements.size === 0) return
+
+  // Re-observe deferred elements to trigger fresh measurements
+  for (const element of deferredElements) {
+    if (element.isConnected) {
+      resizeObserver.observe(element)
+    }
+  }
+  deferredElements.clear()
+})
+
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
+  if (useCanvasStore().linearMode) return
+
+  // Skip measurements when tab is hidden — bounding rects are unreliable
+  if (visibility.value === 'hidden') {
+    for (const entry of entries) {
+      if (entry.target instanceof HTMLElement) {
+        deferredElements.add(entry.target)
+        resizeObserver.unobserve(entry.target)
+      }
+    }
+    return
+  }
+
   // Canvas is ready when this code runs; no defensive guards needed.
   const conv = useSharedCanvasPositionConversion()
   // Group updates by type, then flush via each config's handler
@@ -86,15 +118,16 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
 
-    // Use contentBoxSize when available; fall back to contentRect for older engines/tests
-    const contentBox = Array.isArray(entry.contentBoxSize)
-      ? entry.contentBoxSize[0]
+    // Use borderBoxSize when available; fall back to contentRect for older engines/tests
+    // Border box is the border included FULL wxh DOM value.
+    const borderBox = Array.isArray(entry.borderBoxSize)
+      ? entry.borderBoxSize[0]
       : {
           inlineSize: entry.contentRect.width,
           blockSize: entry.contentRect.height
         }
-    const width = contentBox.inlineSize
-    const height = contentBox.blockSize
+    const width = borderBox.inlineSize
+    const height = borderBox.blockSize
 
     // Screen-space rect
     const rect = element.getBoundingClientRect()
@@ -104,7 +137,7 @@ const resizeObserver = new ResizeObserver((entries) => {
       x: topLeftCanvas.x,
       y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
       width: Math.max(0, width),
-      height: Math.max(0, height - LiteGraph.NODE_TITLE_HEIGHT)
+      height: Math.max(0, height)
     }
 
     let updates = updatesByType.get(elementType)
@@ -120,8 +153,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
   }
 
-  // Set source to Vue before processing DOM-driven updates
-  layoutStore.setSource(LayoutSource.Vue)
+  layoutStore.setSource(LayoutSource.DOM)
 
   // Flush per-type
   for (const [type, updates] of updatesByType) {

@@ -1,5 +1,5 @@
 <template>
-  <i :class="icon" class="text-neutral text-sm" />
+  <i :class="icon" class="text-neutral shrink-0 text-sm" />
 </template>
 
 <script setup lang="ts">

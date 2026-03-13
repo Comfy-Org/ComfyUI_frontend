@@ -1,11 +1,9 @@
 <template>
-  <PanelTemplate value="Keybinding" class="keybinding-panel">
-    <template #header>
-      <SearchBox
-        v-model="filters['global'].value"
-        :placeholder="$t('g.searchKeybindings') + '...'"
-      />
-    </template>
+  <div class="keybinding-panel flex flex-col gap-2">
+    <SearchInput
+      v-model="filters['global'].value"
+      :placeholder="$t('g.searchPlaceholder', { subject: $t('g.keybindings') })"
+    />
 
     <DataTable
       v-model:selection="selectedCommandData"
@@ -19,28 +17,37 @@
       }"
       @row-dblclick="editKeybinding($event.data)"
     >
-      <Column field="actions" header="">
+      <Column field="actions" header="" :pt="{ bodyCell: 'p-1 min-h-8' }">
         <template #body="slotProps">
-          <div class="actions invisible flex flex-row">
+          <div class="actions flex flex-row">
             <Button
-              icon="pi pi-pencil"
-              class="p-button-text"
+              variant="textonly"
+              size="icon"
+              :aria-label="$t('g.edit')"
               @click="editKeybinding(slotProps.data)"
-            />
+            >
+              <i class="pi pi-pencil" />
+            </Button>
             <Button
-              icon="pi pi-replay"
-              class="p-button-text p-button-warn"
+              variant="textonly"
+              size="icon"
+              :aria-label="$t('g.reset')"
               :disabled="
                 !keybindingStore.isCommandKeybindingModified(slotProps.data.id)
               "
               @click="resetKeybinding(slotProps.data)"
-            />
+            >
+              <i class="pi pi-replay" />
+            </Button>
             <Button
-              icon="pi pi-trash"
-              class="p-button-text p-button-danger"
+              variant="textonly"
+              size="icon"
+              :aria-label="$t('g.delete')"
               :disabled="!slotProps.data.keybinding"
               @click="removeKeybinding(slotProps.data)"
-            />
+            >
+              <i class="pi pi-trash" />
+            </Button>
           </div>
         </template>
       </Column>
@@ -49,14 +56,27 @@
         :header="$t('g.command')"
         sortable
         class="max-w-64 2xl:max-w-full"
+        :pt="{ bodyCell: 'p-1 min-h-8' }"
       >
         <template #body="slotProps">
-          <div class="truncate" :title="slotProps.data.id">
+          <div
+            class="flex items-center gap-1.5 truncate"
+            :title="slotProps.data.id"
+          >
+            <i
+              v-if="slotProps.data.keybinding?.combo.isBrowserReserved"
+              v-tooltip="$t('g.browserReservedKeybindingTooltip')"
+              class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
+            />
             {{ slotProps.data.label }}
           </div>
         </template>
       </Column>
-      <Column field="keybinding" :header="$t('g.keybinding')">
+      <Column
+        field="keybinding"
+        :header="$t('g.keybinding')"
+        :pt="{ bodyCell: 'p-1 min-h-8' }"
+      >
         <template #body="slotProps">
           <KeyComboDisplay
             v-if="slotProps.data.keybinding"
@@ -68,7 +88,11 @@
           <span v-else>-</span>
         </template>
       </Column>
-      <Column field="source" :header="$t('g.source')">
+      <Column
+        field="source"
+        :header="$t('g.source')"
+        :pt="{ bodyCell: 'p-1 min-h-8' }"
+      >
         <template #body="slotProps">
           <span class="overflow-hidden text-ellipsis">{{
             slotProps.data.source || '-'
@@ -77,78 +101,35 @@
       </Column>
     </DataTable>
 
-    <Dialog
-      v-model:visible="editDialogVisible"
-      class="min-w-96"
-      modal
-      :header="currentEditingCommand?.label"
-      @hide="cancelEdit"
-    >
-      <div>
-        <InputText
-          ref="keybindingInput"
-          class="mb-2 text-center"
-          :model-value="newBindingKeyCombo?.toString() ?? ''"
-          :placeholder="$t('g.pressKeysForNewBinding')"
-          autocomplete="off"
-          fluid
-          @keydown.stop.prevent="captureKeybinding"
-        />
-        <Message v-if="existingKeybindingOnCombo" severity="warn">
-          {{ $t('g.keybindingAlreadyExists') }}
-          <Tag
-            severity="secondary"
-            :value="existingKeybindingOnCombo.commandId"
-          />
-        </Message>
-      </div>
-      <template #footer>
-        <Button
-          :label="existingKeybindingOnCombo ? 'Overwrite' : 'Save'"
-          :icon="existingKeybindingOnCombo ? 'pi pi-pencil' : 'pi pi-check'"
-          :severity="existingKeybindingOnCombo ? 'warn' : undefined"
-          autofocus
-          @click="saveKeybinding"
-        />
-      </template>
-    </Dialog>
     <Button
       v-tooltip="$t('g.resetAllKeybindingsTooltip')"
-      class="mt-4"
-      :label="$t('g.resetAll')"
-      icon="pi pi-replay"
-      severity="danger"
-      fluid
-      text
+      class="mt-4 w-full"
+      variant="destructive-textonly"
       @click="resetAllKeybindings"
-    />
-  </PanelTemplate>
+    >
+      <i class="pi pi-replay" />
+      {{ $t('g.resetAll') }}
+    </Button>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { FilterMatchMode } from '@primevue/core/api'
-import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
-import { useKeybindingService } from '@/services/keybindingService'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
+import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import {
-  KeyComboImpl,
-  KeybindingImpl,
-  useKeybindingStore
-} from '@/stores/keybindingStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import PanelTemplate from './PanelTemplate.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
 
 const filters = ref({
@@ -180,92 +161,21 @@ const commandsData = computed<ICommandData[]>(() => {
 })
 
 const selectedCommandData = ref<ICommandData | null>(null)
-const editDialogVisible = ref(false)
-const newBindingKeyCombo = ref<KeyComboImpl | null>(null)
-const currentEditingCommand = ref<ICommandData | null>(null)
-const keybindingInput = ref<InstanceType<typeof InputText> | null>(null)
-
-const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
-  if (!currentEditingCommand.value) {
-    return null
-  }
-
-  // If the new keybinding is the same as the current editing command, then don't show the error
-  if (
-    currentEditingCommand.value.keybinding?.combo?.equals(
-      newBindingKeyCombo.value
-    )
-  ) {
-    return null
-  }
-
-  if (!newBindingKeyCombo.value) {
-    return null
-  }
-
-  return keybindingStore.getKeybinding(newBindingKeyCombo.value)
-})
+const editKeybindingDialog = useEditKeybindingDialog()
 
 function editKeybinding(commandData: ICommandData) {
-  currentEditingCommand.value = commandData
-  newBindingKeyCombo.value = commandData.keybinding
-    ? commandData.keybinding.combo
-    : null
-  editDialogVisible.value = true
+  editKeybindingDialog.show({
+    commandId: commandData.id,
+    commandLabel: commandData.label,
+    currentCombo: commandData.keybinding?.combo ?? null
+  })
 }
-
-watchEffect(() => {
-  if (editDialogVisible.value) {
-    // nextTick doesn't work here, so we use a timeout instead
-    setTimeout(() => {
-      // @ts-expect-error - $el is an internal property of the InputText component
-      keybindingInput.value?.$el?.focus()
-    }, 300)
-  }
-})
 
 async function removeKeybinding(commandData: ICommandData) {
   if (commandData.keybinding) {
     keybindingStore.unsetKeybinding(commandData.keybinding)
     await keybindingService.persistUserKeybindings()
   }
-}
-
-async function captureKeybinding(event: KeyboardEvent) {
-  // Allow the use of keyboard shortcuts when adding keyboard shortcuts
-  if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
-    switch (event.key) {
-      case 'Escape':
-        cancelEdit()
-        return
-      case 'Enter':
-        await saveKeybinding()
-        return
-    }
-  }
-  const keyCombo = KeyComboImpl.fromEvent(event)
-  newBindingKeyCombo.value = keyCombo
-}
-
-function cancelEdit() {
-  editDialogVisible.value = false
-  currentEditingCommand.value = null
-  newBindingKeyCombo.value = null
-}
-
-async function saveKeybinding() {
-  if (currentEditingCommand.value && newBindingKeyCombo.value) {
-    const updated = keybindingStore.updateKeybindingOnCommand(
-      new KeybindingImpl({
-        commandId: currentEditingCommand.value.id,
-        combo: newBindingKeyCombo.value
-      })
-    )
-    if (updated) {
-      await keybindingService.persistUserKeybindings()
-    }
-  }
-  cancelEdit()
 }
 
 async function resetKeybinding(commandData: ICommandData) {
@@ -290,17 +200,3 @@ async function resetAllKeybindings() {
   })
 }
 </script>
-
-<style scoped>
-@reference '../../../../assets/css/style.css';
-
-:deep(.p-datatable-tbody) > tr > td {
-  @apply p-1;
-  min-height: 2rem;
-}
-
-:deep(.p-datatable-row-selected) .actions,
-:deep(.p-datatable-selectable-row:hover) .actions {
-  @apply visible;
-}
-</style>

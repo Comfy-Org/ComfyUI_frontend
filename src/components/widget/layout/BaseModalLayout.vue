@@ -1,74 +1,133 @@
 <template>
-  <div :class="layoutClasses">
-    <IconButton
-      v-show="!isRightPanelOpen && hasRightPanel"
-      :class="rightPanelButtonClasses"
-      @click="toggleRightPanel"
+  <div
+    :class="cn('relative overflow-hidden rounded-2xl', sizeClasses)"
+    @keydown.esc.capture="handleEscape"
+  >
+    <div
+      class="grid size-full transition-[grid-template-columns] duration-300 ease-out"
+      :style="gridStyle"
     >
-      <i class="icon-[lucide--panel-right] text-sm" />
-    </IconButton>
-    <IconButton :class="closeButtonClasses" @click="closeDialog">
-      <i class="pi pi-times text-sm"></i>
-    </IconButton>
-    <div class="flex h-full w-full">
-      <Transition name="slide-panel">
-        <nav
-          v-if="$slots.leftPanel && showLeftPanel"
-          :class="[
-            PANEL_SIZES.width,
-            PANEL_SIZES.minWidth,
-            PANEL_SIZES.maxWidth
-          ]"
+      <nav
+        class="flex h-full flex-col overflow-hidden bg-modal-panel-background"
+        :inert="!showLeftPanel"
+        :aria-hidden="!showLeftPanel"
+      >
+        <header
+          data-component-id="LeftPanelHeader"
+          class="flex h-18 w-full shrink-0 items-center-safe gap-2 pr-3 pl-6"
         >
-          <slot name="leftPanel"></slot>
-        </nav>
-      </Transition>
+          <slot name="leftPanelHeaderTitle" />
+          <Button
+            v-if="!notMobile && showLeftPanel"
+            size="lg"
+            class="ml-auto w-10 p-0"
+            :aria-label="t('g.hideLeftPanel')"
+            @click="toggleLeftPanel"
+          >
+            <i class="icon-[lucide--panel-left-close]" />
+          </Button>
+        </header>
+        <slot name="leftPanel" />
+      </nav>
 
-      <div :class="mainContainerClasses">
-        <div class="flex h-full w-full flex-col">
-          <header v-if="$slots.header" :class="headerClasses">
-            <div class="flex flex-1 shrink-0 gap-2">
-              <IconButton v-if="!notMobile" @click="toggleLeftPanel">
-                <i
-                  v-if="!showLeftPanel"
-                  class="icon-[lucide--panel-left] text-sm"
-                />
-                <i v-else class="icon-[lucide--panel-left-close] text-sm" />
-              </IconButton>
-              <slot name="header"></slot>
-            </div>
-            <slot name="header-right-area"></slot>
-            <div :class="rightAreaClasses">
-              <IconButton
-                v-if="isRightPanelOpen && hasRightPanel"
-                @click="toggleRightPanel"
-              >
-                <i class="icon-[lucide--panel-right-close] text-sm" />
-              </IconButton>
-            </div>
-          </header>
-
-          <main class="flex min-h-0 flex-1 flex-col">
-            <!-- Fallback title bar when no leftPanel is provided -->
-            <slot name="contentFilter"></slot>
-            <h2
-              v-if="!$slots.leftPanel"
-              class="text-xxl m-0 px-6 pt-2 pb-6 capitalize"
+      <div class="flex flex-col overflow-hidden bg-base-background">
+        <header
+          v-if="$slots.header"
+          class="flex h-18 w-full items-center justify-between gap-2 px-6"
+        >
+          <div class="flex flex-1 shrink-0 gap-2">
+            <Button
+              v-if="!notMobile && !showLeftPanel"
+              size="lg"
+              class="w-10 p-0"
+              :aria-label="t('g.showLeftPanel')"
+              @click="toggleLeftPanel"
             >
-              {{ contentTitle }}
-            </h2>
-            <div :class="contentContainerClasses">
-              <slot name="content"></slot>
-            </div>
-          </main>
-        </div>
-        <aside
-          v-if="hasRightPanel && isRightPanelOpen"
-          :class="rightPanelClasses"
-        >
-          <slot name="rightPanel"></slot>
-        </aside>
+              <i class="icon-[lucide--panel-left]" />
+            </Button>
+            <slot name="header" />
+          </div>
+          <slot name="header-right-area" />
+          <template v-if="!isRightPanelOpen">
+            <Button
+              v-if="hasRightPanel"
+              size="lg"
+              class="w-10 p-0"
+              :aria-label="t('g.showRightPanel')"
+              @click="toggleRightPanel"
+            >
+              <i class="icon-[lucide--panel-right] size-4" />
+            </Button>
+            <Button
+              size="lg"
+              class="w-10"
+              :aria-label="t('g.closeDialog')"
+              @click="closeDialog"
+            >
+              <i class="pi pi-times" />
+            </Button>
+          </template>
+        </header>
+
+        <main class="flex min-h-0 flex-1 flex-col">
+          <slot name="contentFilter" />
+          <h2
+            v-if="!hasLeftPanel"
+            class="text-xxl m-0 px-6 pt-2 pb-6 capitalize select-none"
+          >
+            {{ contentTitle }}
+          </h2>
+          <div :class="contentContainerClass">
+            <slot name="content" />
+          </div>
+        </main>
       </div>
+
+      <aside
+        v-if="hasRightPanel"
+        class="overflow-hidden"
+        :inert="!isRightPanelOpen"
+        :aria-hidden="!isRightPanelOpen"
+      >
+        <div
+          class="flex h-full w-72 min-w-72 flex-col bg-modal-panel-background"
+        >
+          <header
+            data-component-id="RightPanelHeader"
+            class="flex h-18 shrink-0 items-center gap-2 px-6"
+          >
+            <h2
+              v-if="rightPanelTitle"
+              class="flex-1 text-base font-semibold select-none"
+            >
+              {{ rightPanelTitle }}
+            </h2>
+            <div v-else class="flex-1">
+              <slot name="rightPanelHeaderTitle" />
+            </div>
+            <slot name="rightPanelHeaderActions" />
+            <Button
+              size="lg"
+              class="w-10 p-0"
+              :aria-label="t('g.hideRightPanel')"
+              @click="toggleRightPanel"
+            >
+              <i class="icon-[lucide--panel-right-close] size-4" />
+            </Button>
+            <Button
+              size="lg"
+              class="w-10 p-0"
+              :aria-label="t('g.closeDialog')"
+              @click="closeDialog"
+            >
+              <i class="pi pi-times" />
+            </Button>
+          </header>
+          <div class="min-h-0 flex-1 overflow-y-auto">
+            <slot name="rightPanel" />
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
@@ -76,33 +135,57 @@
 <script setup lang="ts">
 import { useBreakpoints } from '@vueuse/core'
 import { computed, inject, ref, useSlots, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-const { contentTitle } = defineProps<{
+const { t } = useI18n()
+
+const SIZE_CLASSES = {
+  sm: 'h-[80vh] w-[90vw] max-w-[960px]',
+  md: 'h-[80vh] w-[90vw] max-w-[1400px]',
+  lg: 'h-[80vh] w-[90vw] max-w-[1280px] aspect-[20/13] min-[1450px]:max-w-[1724px]',
+  full: 'h-full w-full max-w-[1400px] 2xl:max-w-[1600px]'
+} as const
+
+type ModalSize = keyof typeof SIZE_CLASSES
+type ContentPadding = 'default' | 'compact' | 'none'
+
+const {
+  contentTitle,
+  rightPanelTitle,
+  size = 'lg',
+  leftPanelWidth = '14rem',
+  contentPadding = 'default'
+} = defineProps<{
   contentTitle: string
+  rightPanelTitle?: string
+  size?: ModalSize
+  leftPanelWidth?: string
+  contentPadding?: ContentPadding
 }>()
 
-const BREAKPOINTS = { md: 880 }
-const PANEL_SIZES = {
-  width: 'w-1/3',
-  minWidth: 'min-w-40',
-  maxWidth: 'max-w-56'
-}
+const sizeClasses = computed(() => SIZE_CLASSES[size])
+
+const isRightPanelOpen = defineModel<boolean>('rightPanelOpen', {
+  default: false
+})
 
 const slots = useSlots()
+const hasLeftPanel = computed(() => !!slots.leftPanel)
+const hasRightPanel = computed(() => !!slots.rightPanel)
+
+const BREAKPOINTS = { md: 880 }
+
 const closeDialog = inject(OnCloseKey, () => {})
 
 const breakpoints = useBreakpoints(BREAKPOINTS)
 const notMobile = breakpoints.greater('md')
 
 const isLeftPanelOpen = ref<boolean>(true)
-const isRightPanelOpen = ref<boolean>(false)
 const mobileMenuOpen = ref<boolean>(false)
-
-const hasRightPanel = computed(() => !!slots.rightPanel)
 
 watch(notMobile, (isDesktop) => {
   if (!isDesktop) {
@@ -117,6 +200,20 @@ const showLeftPanel = computed(() => {
   return shouldShow
 })
 
+const contentContainerClass = computed(() =>
+  cn(
+    'flex scrollbar-custom min-h-0 flex-1 flex-col overflow-y-auto',
+    contentPadding === 'default' && 'px-6 pt-0 pb-10',
+    contentPadding === 'compact' && 'px-6 pt-0 pb-2'
+  )
+)
+
+const gridStyle = computed(() => ({
+  gridTemplateColumns: hasRightPanel.value
+    ? `${hasLeftPanel.value && showLeftPanel.value ? leftPanelWidth : '0rem'} 1fr ${isRightPanelOpen.value ? '18rem' : '0rem'}`
+    : `${hasLeftPanel.value && showLeftPanel.value ? leftPanelWidth : '0rem'} 1fr`
+}))
+
 const toggleLeftPanel = () => {
   if (notMobile.value) {
     isLeftPanelOpen.value = !isLeftPanelOpen.value
@@ -129,85 +226,20 @@ const toggleRightPanel = () => {
   isRightPanelOpen.value = !isRightPanelOpen.value
 }
 
-// Computed classes for better readability
-const layoutClasses = cn(
-  'base-widget-layout',
-  'rounded-2xl overflow-hidden relative',
-  'bg-gray-50 dark-theme:bg-smoke-800'
-)
-
-const rightPanelButtonClasses = computed(() => {
-  return cn('absolute top-4 right-18 z-10', 'transition-opacity duration-200', {
-    'opacity-0 pointer-events-none':
-      isRightPanelOpen.value || !hasRightPanel.value
-  })
-})
-
-const closeButtonClasses = cn(
-  'absolute top-4 right-6 z-10',
-  'transition-opacity duration-200'
-)
-
-const mainContainerClasses = cn(
-  'flex-1 flex',
-  'bg-smoke-100 dark-theme:bg-neutral-900'
-)
-
-const headerClasses = cn(
-  'w-full h-18 px-6',
-  'flex items-center justify-between gap-2'
-)
-
-const rightAreaClasses = computed(() => {
-  return cn(
-    'flex justify-end gap-2 w-0',
-    hasRightPanel.value && !isRightPanelOpen.value ? 'min-w-22' : 'min-w-10'
-  )
-})
-
-const contentContainerClasses = computed(() => {
-  return cn('min-h-0 px-6 pt-0 pb-10', 'overflow-y-auto scrollbar-hide')
-})
-
-const rightPanelClasses = computed(() => {
-  return cn('w-1/4 min-w-40 max-w-80')
-})
-</script>
-<style scoped>
-.base-widget-layout {
-  height: 80vh;
-  width: 90vw;
-  max-width: 1280px;
-  aspect-ratio: 20/13;
-}
-
-@media (min-width: 1450px) {
-  .base-widget-layout {
-    max-width: 1724px;
+function handleEscape(event: KeyboardEvent) {
+  const target = event.target
+  if (!(target instanceof HTMLElement)) return
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable
+  ) {
+    return
+  }
+  if (isRightPanelOpen.value) {
+    event.stopPropagation()
+    isRightPanelOpen.value = false
   }
 }
-
-/* Fade transition for buttons */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* Slide transition for left panel */
-.slide-panel-enter-active,
-.slide-panel-leave-active {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-  backface-visibility: hidden;
-}
-
-.slide-panel-enter-from,
-.slide-panel-leave-to {
-  transform: translateX(-100%);
-}
-</style>
+</script>

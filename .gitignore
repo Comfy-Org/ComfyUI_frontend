@@ -26,6 +26,7 @@ dist-ssr
 .claude/*.local.json
 .claude/*.local.md
 .claude/*.local.txt
+.claude/worktrees
 CLAUDE.local.md
 
 # Editor directories and files
@@ -64,6 +65,7 @@ browser_tests/local/
 dist.zip
 
 /temp/
+/tmp/
 
 # Generated JSON Schemas
 /schemas/
@@ -96,3 +98,5 @@ vitest.config.*.timestamp*
 
 # Weekly docs check output
 /output.txt
+
+.amp

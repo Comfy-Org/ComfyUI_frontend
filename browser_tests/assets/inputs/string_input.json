@@ -5,14 +5,8 @@
     {
       "id": 1,
       "type": "DevToolsNodeWithStringInput",
-      "pos": [
-        15,
-        48
-      ],
-      "size": [
-        315,
-        58
-      ],
+      "pos": [15, 48],
+      "size": [315, 58],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -21,9 +15,7 @@
       "properties": {
         "Node name for S&R": "DevToolsNodeWithStringInput"
       },
-      "widgets_values": [
-        ""
-      ]
+      "widgets_values": [""]
     }
   ],
   "links": [],
@@ -32,10 +24,7 @@
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        0,
-        0
-      ]
+      "offset": [0, 0]
     }
   },
   "version": 0.4

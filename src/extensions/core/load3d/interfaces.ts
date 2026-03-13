@@ -1,18 +1,23 @@
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
-import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
+// Use type-only imports to avoid pulling THREE.js into the main bundle
+// These imports are erased at compile time and don't create runtime dependencies
+import type * as THREE from 'three'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import type { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
+import type { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
+import type { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import type { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
+import type { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
+import type { OBJLoader2Parallel } from 'wwobjloader2'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-
-export type MaterialMode = 'original' | 'normal' | 'wireframe' | 'depth'
+export type MaterialMode =
+  | 'original'
+  | 'pointCloud'
+  | 'normal'
+  | 'wireframe'
+  | 'depth'
 export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
+export type BackgroundRenderModeType = 'tiled' | 'panorama'
 
 export interface CameraState {
   position: THREE.Vector3
@@ -25,11 +30,13 @@ export interface SceneConfig {
   showGrid: boolean
   backgroundColor: string
   backgroundImage?: string
+  backgroundRenderMode?: BackgroundRenderModeType
 }
 
 export interface ModelConfig {
   upDirection: UpDirection
   materialMode: MaterialMode
+  showSkeleton: boolean
 }
 
 export interface CameraConfig {
@@ -42,15 +49,24 @@ export interface LightConfig {
   intensity: number
 }
 
-export interface EventCallback {
-  (data?: any): void
+export interface EventCallback<T = unknown> {
+  (data: T): void
 }
 
 export interface Load3DOptions {
-  node?: LGraphNode
-  inputSpec?: CustomInputSpec
-  disablePreview?: boolean
+  // Optional target dimensions for aspect ratio control
+  width?: number
+  height?: number
+
+  // Dynamic dimension provider (called on every render)
+  // Use this for reactive dimensions that change over time
+  getDimensions?: () => { width: number; height: number } | null
+
+  // Viewer mode flag (affects aspect ratio behavior)
   isViewerMode?: boolean
+
+  // Optional context menu callback
+  onContextMenu?: (event: MouseEvent) => void
 }
 
 export interface CaptureResult {
@@ -77,6 +93,7 @@ export interface SceneManagerInterface extends BaseManager {
   setBackgroundColor(color: string): void
   setBackgroundImage(uploadPath: string): Promise<void>
   removeBackgroundImage(): void
+  setBackgroundRenderMode(mode: BackgroundRenderModeType): void
   handleResize(width: number, height: number): void
   captureScene(width: number, height: number): Promise<CaptureResult>
 }
@@ -113,14 +130,9 @@ export interface ViewHelperManagerInterface extends BaseManager {
 }
 
 export interface EventManagerInterface {
-  addEventListener(event: string, callback: EventCallback): void
-  removeEventListener(event: string, callback: EventCallback): void
-  emitEvent(event: string, data?: any): void
-}
-
-export interface NodeStorageInterface {
-  storeNodeProperty(name: string, value: any): void
-  loadNodeProperty(name: string, defaultValue: any): any
+  addEventListener<T>(event: string, callback: EventCallback<T>): void
+  removeEventListener<T>(event: string, callback: EventCallback<T>): void
+  emitEvent<T>(event: string, data: T): void
 }
 
 export interface AnimationManagerInterface extends BaseManager {
@@ -131,12 +143,18 @@ export interface AnimationManagerInterface extends BaseManager {
   isAnimationPlaying: boolean
   animationSpeed: number
 
-  setupModelAnimations(model: THREE.Object3D, originalModel: any): void
+  setupModelAnimations(
+    model: THREE.Object3D,
+    originalModel: THREE.Object3D | THREE.BufferGeometry | GLTF | null
+  ): void
   updateAnimationList(): void
   setAnimationSpeed(speed: number): void
   updateSelectedAnimation(index: number): void
   toggleAnimation(play?: boolean): void
   update(delta: number): void
+  getAnimationTime(): number
+  getAnimationDuration(): number
+  setAnimationTime(time: number): void
 }
 
 export interface ModelManagerInterface {
@@ -167,7 +185,7 @@ export interface ModelManagerInterface {
 
 export interface LoaderManagerInterface {
   gltfLoader: GLTFLoader
-  objLoader: OBJLoader
+  objLoader: OBJLoader2Parallel
   mtlLoader: MTLLoader
   fbxLoader: FBXLoader
   stlLoader: STLLoader
@@ -176,11 +194,3 @@ export interface LoaderManagerInterface {
   dispose(): void
   loadModel(url: string, originalFileName?: string): Promise<void>
 }
-
-export const SUPPORTED_EXTENSIONS = new Set([
-  '.gltf',
-  '.glb',
-  '.obj',
-  '.fbx',
-  '.stl'
-])

@@ -7,10 +7,14 @@ import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { useMediaAssetGalleryStore } from './useMediaAssetGalleryStore'
 
 vi.mock('@/stores/queueStore', () => ({
-  ResultItemImpl: vi.fn().mockImplementation((data) => ({
-    ...data,
-    url: ''
-  }))
+  ResultItemImpl: vi
+    .fn<typeof ResultItemImpl>()
+    .mockImplementation(function (data) {
+      Object.assign(this, {
+        ...data,
+        url: ''
+      })
+    })
 }))
 
 describe('useMediaAssetGalleryStore', () => {

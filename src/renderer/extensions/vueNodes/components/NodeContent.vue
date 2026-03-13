@@ -1,21 +1,26 @@
 <template>
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
-    {{ $t('Node Content Error') }}
+    {{ st('nodeErrors.content', 'Node Content Error') }}
   </div>
-  <div v-else class="lg-node-content flex grow flex-col">
+  <div v-else class="lg-node-content flex flex-auto grow flex-col">
     <!-- Default slot for custom content -->
     <slot>
       <VideoPreview
         v-if="hasMedia && media?.type === 'video'"
         :image-urls="media.urls"
         :node-id="nodeId"
-        class="mt-2"
+        class="mt-2 flex-auto"
+      />
+      <AudioPreview
+        v-else-if="hasMedia && media?.type === 'audio'"
+        :audio-urls="media.urls"
+        class="mt-2 flex-auto"
       />
       <ImagePreview
         v-else-if="hasMedia && media?.type === 'image'"
         :image-urls="media.urls"
         :node-id="nodeId"
-        class="mt-2"
+        class="mt-2 flex-auto"
       />
     </slot>
   </div>
@@ -26,14 +31,16 @@ import { computed, onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { st } from '@/i18n'
 
 import VideoPreview from '../VideoPreview.vue'
+import AudioPreview from './AudioPreview.vue'
 import ImagePreview from './ImagePreview.vue'
 
 interface NodeContentProps {
   nodeData?: VueNodeData
   media?: {
-    type: 'image' | 'video'
+    type: 'image' | 'video' | 'audio'
     urls: string[]
   }
 }

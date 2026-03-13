@@ -5,6 +5,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
   // State
   const selectedAssetIds = ref<Set<string>>(new Set())
   const lastSelectedIndex = ref<number>(-1)
+  const lastSelectedAssetId = ref<string | null>(null)
 
   // Getters
   const selectedCount = computed(() => selectedAssetIds.value.size)
@@ -21,19 +22,13 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
   }
 
   function setSelection(assetIds: string[]) {
-    // Only update if there's an actual change to prevent unnecessary re-renders
-    const newSet = new Set(assetIds)
-    if (
-      newSet.size !== selectedAssetIds.value.size ||
-      !assetIds.every((id) => selectedAssetIds.value.has(id))
-    ) {
-      selectedAssetIds.value = newSet
-    }
+    selectedAssetIds.value = new Set(assetIds)
   }
 
   function clearSelection() {
     selectedAssetIds.value.clear()
     lastSelectedIndex.value = -1
+    lastSelectedAssetId.value = null
   }
 
   function toggleSelection(assetId: string) {
@@ -52,16 +47,15 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     lastSelectedIndex.value = index
   }
 
-  // Reset function for cleanup
-  function reset() {
-    selectedAssetIds.value.clear()
-    lastSelectedIndex.value = -1
+  function setLastSelectedAssetId(assetId: string | null) {
+    lastSelectedAssetId.value = assetId
   }
 
   return {
     // State
     selectedAssetIds: computed(() => selectedAssetIds.value),
     lastSelectedIndex: computed(() => lastSelectedIndex.value),
+    lastSelectedAssetId: computed(() => lastSelectedAssetId.value),
 
     // Getters
     selectedCount,
@@ -76,6 +70,6 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     toggleSelection,
     isSelected,
     setLastSelectedIndex,
-    reset
+    setLastSelectedAssetId
   }
 })

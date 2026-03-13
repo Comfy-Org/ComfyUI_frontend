@@ -21,6 +21,15 @@ export interface ColorAdjustOptions {
   opacity?: number
 }
 
+export function isTransparent(color: string) {
+  if (color === 'transparent') return true
+  if (color[0] === '#') {
+    if (color.length === 5) return color[4] === '0'
+    if (color.length === 9) return color.substring(7) === '00'
+  }
+  return false
+}
+
 function rgbToHsl({ r, g, b }: RGB): HSL {
   r /= 255
   g /= 255

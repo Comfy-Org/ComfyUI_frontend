@@ -5,6 +5,7 @@ import { getDataFromJSON } from '@/scripts/metadata/json'
 import { getMp3Metadata } from '@/scripts/metadata/mp3'
 import { getOggMetadata } from '@/scripts/metadata/ogg'
 import { getSvgMetadata } from '@/scripts/metadata/svg'
+import type { ComfyMetadata } from '@/types/metadataTypes'
 import {
   getAvifMetadata,
   getWebpMetadata,
@@ -15,7 +16,7 @@ import {
 
 export async function getWorkflowDataFromFile(
   file: File
-): Promise<Record<string, string | object> | undefined> {
+): Promise<ComfyMetadata | Record<string, string | object> | undefined> {
   if (file.type === 'image/png') {
     return await getPngMetadata(file)
   }
@@ -43,7 +44,7 @@ export async function getWorkflowDataFromFile(
     return { workflow, prompt }
   }
   if (file.type === 'video/webm') {
-    return (await getFromWebmFile(file)) as unknown as Record<string, object>
+    return await getFromWebmFile(file)
   }
   if (
     file.name?.endsWith('.mp4') ||
@@ -53,16 +54,13 @@ export async function getWorkflowDataFromFile(
     file.type === 'video/quicktime' ||
     file.type === 'video/x-m4v'
   ) {
-    return (await getFromIsobmffFile(file)) as unknown as Record<string, object>
+    return await getFromIsobmffFile(file)
   }
   if (file.type === 'image/svg+xml' || file.name?.endsWith('.svg')) {
-    return (await getSvgMetadata(file)) as unknown as Record<string, object>
+    return await getSvgMetadata(file)
   }
   if (file.type === 'model/gltf-binary' || file.name?.endsWith('.glb')) {
-    return (await getGltfBinaryMetadata(file)) as unknown as Record<
-      string,
-      object
-    >
+    return await getGltfBinaryMetadata(file)
   }
   if (file.name?.endsWith('.latent') || file.name?.endsWith('.safetensors')) {
     return await getLatentMetadata(file)
