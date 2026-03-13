@@ -11306,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "arka_plan_rengi"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Üzerine boyanacak isteğe bağlı temel görüntü"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Koşul Çifti Birleştir",
     "inputs": {

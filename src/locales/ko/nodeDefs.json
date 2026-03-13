@@ -11306,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "배경색"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "덧칠할 선택적 기본 이미지"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "조건 쌍 (결합)",
     "inputs": {
