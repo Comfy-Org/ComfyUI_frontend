@@ -1,0 +1,68 @@
+import { useRoute, useRouter } from 'vue-router'
+
+import {
+  clearPreservedQuery,
+  hydratePreservedQuery,
+  mergePreservedQueryIntoQuery
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useDialogService } from '@/services/dialogService'
+
+const NAMESPACE = PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE
+
+/**
+ * Composable for opening the create workspace dialog via URL query parameter.
+ *
+ * Supports URLs like:
+ * - /?create_workspace=1 (opens the create workspace dialog)
+ *
+ * The parameter is preserved through login redirects via the
+ * preserved query system (sessionStorage), following the same pattern
+ * as the invite URL loader.
+ */
+export function useCreateWorkspaceUrlLoader() {
+  const route = useRoute()
+  const router = useRouter()
+  const dialogService = useDialogService()
+
+  const ensureQueryFromIntent = async () => {
+    hydratePreservedQuery(NAMESPACE)
+    const mergedQuery = mergePreservedQueryIntoQuery(NAMESPACE, route.query)
+
+    if (mergedQuery) {
+      await router.replace({ query: mergedQuery })
+    }
+
+    return mergedQuery ?? route.query
+  }
+
+  const cleanupUrlParams = () => {
+    const newQuery = { ...route.query }
+    delete newQuery.create_workspace
+    void router.replace({ query: newQuery })
+  }
+
+  /**
+   * Opens the create workspace dialog if `?create_workspace=1` is present.
+   *
+   * Flow:
+   * 1. Restore preserved query (for post-login redirect)
+   * 2. Check for create_workspace param in route.query
+   * 3. Open the create workspace dialog
+   * 4. Clean up URL and preserved query
+   */
+  async function loadCreateWorkspaceFromUrl() {
+    const query = await ensureQueryFromIntent()
+    const param = query.create_workspace
+    if (!param || typeof param !== 'string') return
+
+    cleanupUrlParams()
+    clearPreservedQuery(NAMESPACE)
+
+    dialogService.showCreateWorkspaceDialog()
+  }
+
+  return {
+    loadCreateWorkspaceFromUrl
+  }
+}

@@ -191,6 +191,7 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 import SelectionRectangle from './SelectionRectangle.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
 import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 
 const { t } = useI18n()
@@ -427,8 +428,9 @@ useEventListener(
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
 const { flags } = useFeatureFlags()
-// Set up invite loader during setup phase so useRoute/useRouter work correctly
+// Set up URL loaders during setup phase so useRoute/useRouter work correctly
 const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
+const createWorkspaceUrlLoader = isCloud ? useCreateWorkspaceUrlLoader() : null
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
@@ -546,6 +548,11 @@ onMounted(async () => {
   // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts
   if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
     await inviteUrlLoader.loadInviteFromUrl()
+  }
+
+  // Open create workspace dialog from URL if present (e.g., ?create_workspace=1)
+  if (createWorkspaceUrlLoader && flags.teamWorkspacesEnabled) {
+    await createWorkspaceUrlLoader.loadCreateWorkspaceFromUrl()
   }
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
