@@ -36,14 +36,20 @@ const CURRENT_PATH = 'test-results/perf-metrics.json'
 const BASELINE_PATH = 'temp/perf-baseline/perf-metrics.json'
 const HISTORY_DIR = 'temp/perf-history'
 
-type MetricKey = 'styleRecalcs' | 'layouts' | 'taskDurationMs' | 'domNodes' | 'scriptDurationMs' | 'eventListeners'
+type MetricKey =
+  | 'styleRecalcs'
+  | 'layouts'
+  | 'taskDurationMs'
+  | 'domNodes'
+  | 'scriptDurationMs'
+  | 'eventListeners'
 const REPORTED_METRICS: { key: MetricKey; label: string; unit: string }[] = [
   { key: 'styleRecalcs', label: 'style recalcs', unit: '' },
   { key: 'layouts', label: 'layouts', unit: '' },
   { key: 'taskDurationMs', label: 'task duration', unit: 'ms' },
   { key: 'domNodes', label: 'DOM nodes', unit: '' },
   { key: 'scriptDurationMs', label: 'script duration', unit: 'ms' },
-  { key: 'eventListeners', label: 'event listeners', unit: '' },
+  { key: 'eventListeners', label: 'event listeners', unit: '' }
 ]
 
 function groupByName(
