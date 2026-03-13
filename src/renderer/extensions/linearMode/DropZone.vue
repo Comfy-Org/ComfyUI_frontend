@@ -110,7 +110,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
       >
         <img
           v-if="dropIndicator?.imageUrl"
-          class="max-h-full rounded-md object-contain"
+          class="max-h-full max-w-full rounded-md object-contain"
           :alt="dropIndicator?.label ?? ''"
           :src="dropIndicator?.imageUrl"
         />
