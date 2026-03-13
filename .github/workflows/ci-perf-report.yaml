@@ -88,6 +88,7 @@ jobs:
             git add README.md baselines
             git commit -m "Initialize perf-data branch"
             git push origin perf-data
+            git fetch origin perf-data
           }
 
           git worktree add /tmp/perf-data origin/perf-data
