@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -19,12 +19,6 @@ const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: { graph: mockGraph, setDirty: vi.fn() } }
-}))
-
-vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
-  useSharedCanvasPositionConversion: () => ({
-    clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
-  })
 }))
 
 const NODE_ID = 'test-node'
@@ -48,18 +42,59 @@ function createWrapperComponent(type: 'input' | 'output') {
   })
 }
 
+function createSlotElement(): HTMLElement {
+  const container = document.createElement('div')
+  container.dataset.nodeId = NODE_ID
+  container.getBoundingClientRect = () =>
+    ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 100,
+      width: 200,
+      height: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({})
+    }) as DOMRect
+  document.body.appendChild(container)
+
+  const el = document.createElement('div')
+  el.getBoundingClientRect = () =>
+    ({
+      left: 10,
+      top: 30,
+      right: 20,
+      bottom: 40,
+      width: 10,
+      height: 10,
+      x: 10,
+      y: 30,
+      toJSON: () => ({})
+    }) as DOMRect
+  container.appendChild(el)
+
+  return el
+}
+
 /**
  * Mount the wrapper, set the element ref, and wait for slot registration.
  */
 async function mountAndRegisterSlot(type: 'input' | 'output') {
   const wrapper = mount(createWrapperComponent(type))
-  wrapper.vm.el = document.createElement('div')
+  wrapper.vm.el = createSlotElement()
   await nextTick()
   flushScheduledSlotLayoutSync()
   return wrapper
 }
 
 describe('useSlotElementTracking', () => {
+  afterEach(() => {
+    document.body.querySelectorAll('[data-node-id]').forEach((el) => {
+      el.remove()
+    })
+  })
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.initializeFromLiteGraph([])
