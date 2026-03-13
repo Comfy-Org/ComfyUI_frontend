@@ -71,6 +71,13 @@ test.describe(
     test('Load workflow from URL dropped onto Vue node', async ({
       comfyPage
     }) => {
+      const fakeUrl = 'https://example.com/workflow.png'
+      await comfyPage.page.route(fakeUrl, (route) =>
+        route.fulfill({
+          path: comfyPage.assetPath('workflowInMedia/workflow_itxt.png')
+        })
+      )
+
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.vueNodes.waitForNodes()
 
@@ -85,10 +92,10 @@ test.describe(
         y: box!.y + box!.height / 2
       }
 
-      await comfyPage.dragDrop.dragAndDropURL(
-        'https://comfyanonymous.github.io/ComfyUI_examples/hidream/hidream_dev_example.png',
-        { dropPosition, preserveNativePropagation: true }
-      )
+      await comfyPage.dragDrop.dragAndDropURL(fakeUrl, {
+        dropPosition,
+        preserveNativePropagation: true
+      })
 
       await comfyPage.page.waitForFunction(
         (prevCount) => window.app!.graph.nodes.length !== prevCount,
