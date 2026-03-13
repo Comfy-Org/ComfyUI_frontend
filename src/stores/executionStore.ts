@@ -517,11 +517,16 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
-    const { nodeId, text } = e.detail
+    const { nodeId, text, prompt_id } = e.detail
     if (!text || !nodeId) return
+
+    // Filter: only accept progress for the active prompt
+    if (prompt_id && activeJobId.value && prompt_id !== activeJobId.value)
+      return
 
     // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
+    if (!currentId) return
     const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
     if (!node) return
 

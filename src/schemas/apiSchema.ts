@@ -112,7 +112,8 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
 
 const zProgressTextWsMessage = z.object({
   nodeId: zNodeId,
-  text: z.string()
+  text: z.string(),
+  prompt_id: z.string().optional()
 })
 
 const zNotificationWsMessage = z.object({
