@@ -5,9 +5,6 @@ on:
     workflows: ['Release NPM Types']
     types:
       - completed
-  push:
-    branches:
-      - sno-api-changelog
 
 concurrency:
   group: release-api-changelogs-${{ github.workflow }}
@@ -17,8 +14,8 @@ jobs:
   generate_changelog:
     name: Generate API Changelog
     runs-on: ubuntu-latest
-    # Only run on successful completion of the Release NPM Types workflow or on push to sno-api-changelog
-    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    # Only run on successful completion of the Release NPM Types workflow
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: write
       pull-requests: write
@@ -195,7 +192,7 @@ jobs:
             ---
             🤖 Generated with [Claude Code](https://claude.com/claude-code)
           branch: api-changelog-v${{ steps.current_version.outputs.version }}
-          base: ${{ github.event_name == 'push' && github.ref_name || 'main' }}
+          base: main
           labels: documentation
           delete-branch: true
           draft: true
