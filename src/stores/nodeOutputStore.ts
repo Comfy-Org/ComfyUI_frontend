@@ -14,6 +14,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { useNodeImageStore } from '@/stores/nodeImageStore'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isAnimatedOutput, isVideoNode } from '@/utils/litegraphUtil'
 import {
@@ -395,6 +396,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       delete nodePreviewImages.value[nodeLocatorId]
     }
 
+    useNodeImageStore().clearState(nodeLocatorId)
+
     return hadOutputs
   }
 
@@ -443,6 +446,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     app.nodeOutputs = {}
     nodeOutputs.value = {}
     revokeAllPreviews()
+    useNodeImageStore().clearAll()
   }
 
   /**
