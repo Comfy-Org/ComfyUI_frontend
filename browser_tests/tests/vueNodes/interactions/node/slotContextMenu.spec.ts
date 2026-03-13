@@ -57,8 +57,7 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
   test('Right-clicking an output slot dot shows the slot context menu', async ({
     comfyPage
   }) => {
-    const checkpointNode =
-      comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+    const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
     const outputSlot = checkpointNode.locator('.lg-slot--output').first()
     await expect(outputSlot).toBeVisible()
 
@@ -130,22 +129,17 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
       slotMenu.getByRole('menuitem', { name: 'Disconnect Links' })
     ).toBeVisible()
 
-    await slotMenu
-      .getByRole('menuitem', { name: 'Disconnect Links' })
-      .click()
+    await slotMenu.getByRole('menuitem', { name: 'Disconnect Links' }).click()
 
     // Menu should close
     await expect(slotMenu).not.toBeVisible()
 
     // Verify the link was removed in the graph
-    const linkRemoved = await comfyPage.page.evaluate(
-      (idx) => {
-        const graph = window.app!.graph!
-        const node = graph.findNodesByType('KSampler', [])[0]
-        return node?.inputs?.[idx]?.link == null
-      },
-      slotIndex
-    )
+    const linkRemoved = await comfyPage.page.evaluate((idx) => {
+      const graph = window.app!.graph!
+      const node = graph.findNodesByType('KSampler', [])[0]
+      return node?.inputs?.[idx]?.link == null
+    }, slotIndex)
     expect(linkRemoved).toBe(true)
   })
 })
