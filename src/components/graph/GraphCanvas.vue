@@ -186,7 +186,7 @@ import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
-import { forEachNode, getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 import { isCloud } from '@/platform/distribution/types'
@@ -386,40 +386,12 @@ watch(
   { deep: true }
 )
 
-// Update node slot errors for LiteGraph nodes
-// (Vue nodes read from store directly)
+// Repaint canvas when node errors change.
+// Slot error flags are reconciled by reconcileNodeErrorFlags in executionErrorStore.
 watch(
   () => executionErrorStore.lastNodeErrors,
-  (lastNodeErrors) => {
-    if (!comfyApp.graph) return
-
-    forEachNode(comfyApp.rootGraph, (node) => {
-      // Clear existing errors
-      for (const slot of node.inputs) {
-        delete slot.hasErrors
-      }
-      for (const slot of node.outputs) {
-        delete slot.hasErrors
-      }
-
-      const execId = getExecutionIdByNode(comfyApp.rootGraph, node)
-      const nodeErrors = execId ? lastNodeErrors?.[execId] : undefined
-      if (!nodeErrors) return
-
-      const validErrors = nodeErrors.errors.filter(
-        (error) => error.extra_info?.input_name !== undefined
-      )
-
-      validErrors.forEach((error) => {
-        const inputName = error.extra_info!.input_name!
-        const inputIndex = node.findInputSlot(inputName)
-        if (inputIndex !== -1) {
-          node.inputs[inputIndex].hasErrors = true
-        }
-      })
-    })
-
-    comfyApp.canvas.setDirty(true, true)
+  () => {
+    comfyApp.canvas?.setDirty(true, true)
   }
 )
 
