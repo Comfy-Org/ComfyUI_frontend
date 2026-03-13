@@ -274,9 +274,10 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
-    if (!activeJob.value) return
+    const job = queuedJobs.value[e.detail.prompt_id]
+    if (!job) return
     for (const n of e.detail.nodes) {
-      activeJob.value.nodes[n] = true
+      job.nodes[n] = true
     }
   }
 
@@ -289,8 +290,9 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
-    if (!activeJob.value) return
-    activeJob.value.nodes[e.detail.node] = true
+    const job = queuedJobs.value[e.detail.prompt_id]
+    if (!job) return
+    job.nodes[e.detail.node] = true
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
