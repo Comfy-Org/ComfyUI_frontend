@@ -405,6 +405,41 @@ test.describe(
       })
     })
 
+    test.describe('Textarea Widget Context Menu in Subgraph', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+      })
+
+      test('Right-click on textarea widget inside subgraph shows Promote Widget option', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-text-widget'
+        )
+
+        // Navigate into the subgraph (node id 11)
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
+        await subgraphNode.navigateIntoSubgraph()
+        await comfyPage.nextFrame()
+
+        // Find the CLIPTextEncode node (id 10) which has a textarea widget
+        const nodeLocator = comfyPage.vueNodes.getNodeLocator('10')
+
+        // Right-click directly on the textarea DOM element
+        const textarea = nodeLocator.locator('textarea')
+        await expect(textarea).toBeVisible()
+        await textarea.click({ button: 'right' })
+        await comfyPage.nextFrame()
+
+        // The ComfyUI context menu should appear with Promote Widget option
+        const promoteEntry = comfyPage.page
+          .locator('.p-contextmenu .p-menuitem-text, .litemenu-entry')
+          .filter({ hasText: /Promote Widget/ })
+
+        await expect(promoteEntry.first()).toBeVisible({ timeout: 5000 })
+      })
+    })
+
     test.describe('Pseudo-Widget Promotion', () => {
       test('Promotion store tracks pseudo-widget entries for subgraph with preview node', async ({
         comfyPage
