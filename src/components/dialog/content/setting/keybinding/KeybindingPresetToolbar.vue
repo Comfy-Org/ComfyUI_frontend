@@ -9,10 +9,7 @@
           {{ displayLabel }}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent
-        disable-portal
-        class="max-w-64 min-w-0 **:[[role=listbox]]:gap-1"
-      >
+      <SelectContent class="max-w-64 min-w-0 **:[[role=listbox]]:gap-1">
         <div class="max-w-60">
           <SelectItem
             value="default"
