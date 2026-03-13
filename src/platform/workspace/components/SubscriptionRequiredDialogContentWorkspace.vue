@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex h-full flex-col gap-8 overflow-y-auto! p-4 pt-8 md:p-16"
+    class="relative flex h-full flex-col gap-6 overflow-y-auto! p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
       v-if="checkoutStep === 'preview'"
@@ -23,9 +23,9 @@
       <i class="pi pi-times text-xl" />
     </Button>
 
-    <div class="flex flex-col items-center gap-4">
+    <div class="flex flex-col items-center gap-3">
       <WorkspaceProfilePic
-        class="size-12 rounded-xl text-lg"
+        class="size-10 rounded-xl text-lg"
         :workspace-name="workspaceName"
       />
       <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
