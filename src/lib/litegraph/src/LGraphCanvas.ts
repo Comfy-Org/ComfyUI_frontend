@@ -2951,6 +2951,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
             // Enforce minimum size
             const min = node.computeSize()
+            if (this._snapToGrid) {
+              // Previously newBounds.size is snapped with 'round'
+              // Now the minimum size is snapped with 'ceil' to avoid clipping
+              snapPoint(min, this._snapToGrid, 'ceil')
+            }
             if (newBounds.width < min[0]) {
               // If resizing from left, adjust position to maintain right edge
               if (resizeDirection.includes('W')) {
