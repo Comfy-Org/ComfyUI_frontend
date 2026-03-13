@@ -1,20 +1,24 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
+import { isEqual } from 'es-toolkit'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import Button from '@/components/ui/button/Button.vue'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import {
   demoteWidget,
   promoteWidget
-} from '@/core/graph/subgraph/proxyWidgetUtils'
+} from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useDialogService } from '@/services/dialogService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
+import type { WidgetValue } from '@/utils/widgetUtil'
 
 const {
   widget,
@@ -28,11 +32,15 @@ const {
   isShownOnParents?: boolean
 }>()
 
+const emit = defineEmits<{
+  resetToDefault: [value: WidgetValue]
+}>()
+
 const label = defineModel<string>('label', { required: true })
 
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
-const dialogService = useDialogService()
+const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
 
 const hasParents = computed(() => parents?.length > 0)
@@ -43,41 +51,35 @@ const isFavorited = computed(() =>
   favoritedWidgetsStore.isFavorited(favoriteNode.value, widget.name)
 )
 
-async function handleRename() {
-  const newLabel = await dialogService.prompt({
-    title: t('g.rename'),
-    message: t('g.enterNewNamePrompt'),
-    defaultValue: widget.label,
-    placeholder: widget.name
-  })
+const inputSpec = computed(() =>
+  nodeDefStore.getInputSpecForWidget(node, widget.name)
+)
 
-  if (newLabel === null) return
-  label.value = newLabel
+const defaultValue = computed(() => getWidgetDefaultValue(inputSpec.value))
+
+const hasDefault = computed(() => defaultValue.value !== undefined)
+
+const isCurrentValueDefault = computed(() => {
+  if (!hasDefault.value) return true
+  return isEqual(widget.value, defaultValue.value)
+})
+
+async function handleRename() {
+  const newLabel = await promptWidgetLabel(widget, t)
+  if (newLabel !== null) label.value = newLabel
 }
 
 function handleHideInput() {
   if (!parents?.length) return
 
-  // For proxy widgets (already promoted), we need to find the original interior node and widget
-  if (isProxyWidget(widget)) {
-    const subgraph = parents[0].subgraph
-    const interiorNode = subgraph.getNodeById(parseInt(widget._overlay.nodeId))
-
-    if (!interiorNode) {
-      console.error('Could not find interior node for proxy widget')
+  if (isPromotedWidgetView(widget)) {
+    const sourceWidget = resolvePromotedWidgetSource(node, widget)
+    if (!sourceWidget) {
+      console.error('Could not resolve source widget for promoted widget')
       return
     }
 
-    const originalWidget = interiorNode.widgets?.find(
-      (w) => w.name === widget._overlay.widgetName
-    )
-
-    if (!originalWidget) {
-      console.error('Could not find original widget for proxy widget')
-      return
-    }
-
-    demoteWidget(interiorNode, originalWidget, parents)
+    demoteWidget(sourceWidget.node, sourceWidget.widget, parents)
   } else {
     // For regular widgets (not yet promoted), use them directly
     demoteWidget(node, widget, parents)
@@ -97,21 +99,22 @@ function handleToggleFavorite() {
   favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
 }
 
-const buttonClasses = cn([
-  'border-none bg-transparent',
-  'w-full flex items-center gap-2 rounded px-3 py-2 text-sm',
-  'cursor-pointer transition-all hover:bg-secondary-background-hover active:scale-95'
-])
+function handleResetToDefault() {
+  if (!hasDefault.value) return
+  emit('resetToDefault', defaultValue.value)
+}
 </script>
 
 <template>
   <MoreButton
     is-vertical
-    class="text-muted-foreground bg-transparent hover:text-base-foreground hover:bg-secondary-background-hover active:scale-95 transition-all"
+    class="bg-transparent text-muted-foreground transition-all hover:bg-secondary-background-hover hover:text-base-foreground active:scale-95"
   >
     <template #default="{ close }">
-      <button
-        :class="buttonClasses"
+      <Button
+        variant="textonly"
+        size="unset"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleRename()
@@ -121,11 +124,13 @@ const buttonClasses = cn([
       >
         <i class="icon-[lucide--edit] size-4" />
         <span>{{ t('g.rename') }}</span>
-      </button>
+      </Button>
 
-      <button
+      <Button
         v-if="hasParents"
-        :class="buttonClasses"
+        variant="textonly"
+        size="unset"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             if (isShownOnParents) handleHideInput()
@@ -142,10 +147,12 @@ const buttonClasses = cn([
           <i class="icon-[lucide--eye] size-4" />
           <span>{{ t('rightSidePanel.showInput') }}</span>
         </template>
-      </button>
+      </Button>
 
-      <button
-        :class="buttonClasses"
+      <Button
+        variant="textonly"
+        size="unset"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleToggleFavorite()
@@ -154,14 +161,31 @@ const buttonClasses = cn([
         "
       >
         <template v-if="isFavorited">
-          <i class="icon-[lucide--star]" />
+          <i class="icon-[lucide--star] size-4" />
           <span>{{ t('rightSidePanel.removeFavorite') }}</span>
         </template>
         <template v-else>
-          <i class="icon-[lucide--star]" />
+          <i class="icon-[lucide--star] size-4" />
           <span>{{ t('rightSidePanel.addFavorite') }}</span>
         </template>
-      </button>
+      </Button>
+
+      <Button
+        v-if="hasDefault"
+        variant="textonly"
+        size="unset"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        :disabled="isCurrentValueDefault"
+        @click="
+          () => {
+            handleResetToDefault()
+            close()
+          }
+        "
+      >
+        <i class="icon-[lucide--rotate-ccw] size-4" />
+        <span>{{ t('rightSidePanel.resetToDefault') }}</span>
+      </Button>
     </template>
   </MoreButton>
 </template>

@@ -72,6 +72,8 @@ vi.mock('@/stores/modelToNodeStore', () => ({
 }))
 
 // Mock TaskItemImpl
+const PREVIEWABLE_MEDIA_TYPES = new Set(['images', 'video', 'audio'])
+
 vi.mock('@/stores/queueStore', () => ({
   TaskItemImpl: class {
     public flatOutputs: Array<{
@@ -90,20 +92,29 @@ vi.mock('@/stores/queueStore', () => ({
           url: string
         }
       | undefined
-    public promptId: string
+    public jobId: string
+    public outputsCount: number | null
 
     constructor(public job: JobListItem) {
-      this.promptId = job.id
-      this.flatOutputs = [
-        {
+      this.jobId = job.id
+      this.outputsCount = job.outputs_count ?? null
+      const preview = job.preview_output
+      const isPreviewable =
+        !!preview?.filename && PREVIEWABLE_MEDIA_TYPES.has(preview.mediaType)
+      if (preview && isPreviewable) {
+        const item = {
           supportsPreview: true,
-          filename: 'test.png',
-          subfolder: '',
-          type: 'output',
-          url: 'http://test.com/test.png'
+          filename: preview.filename!,
+          subfolder: preview.subfolder ?? '',
+          type: preview.type ?? 'output',
+          url: `http://test.com/${preview.filename}`
         }
-      ]
-      this.previewOutput = this.flatOutputs[0]
+        this.flatOutputs = [item]
+        this.previewOutput = item
+      } else {
+        this.flatOutputs = []
+        this.previewOutput = undefined
+      }
     }
 
     get previewableOutputs() {
@@ -123,9 +134,9 @@ vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
     preview_url: `http://test.com/${name}`
   })),
   mapTaskOutputToAssetItem: vi.fn((task, output) => {
-    const index = parseInt(task.promptId.split('_')[1]) || 0
+    const index = parseInt(task.jobId.split('_')[1]) || 0
     return {
-      id: task.promptId,
+      id: task.jobId,
       name: output.filename,
       size: 0,
       created_at: new Date(Date.now() - index * 1000).toISOString(),
@@ -199,6 +210,33 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(store.historyAssets).toHaveLength(0)
       expect(store.historyError).toBe(error)
       expect(store.historyLoading).toBe(false)
+    })
+
+    it('should skip text-only jobs without breaking sibling image jobs', async () => {
+      const mockHistory: JobListItem[] = [
+        createMockJobItem(0),
+        {
+          id: 'text-only-job',
+          status: 'completed',
+          create_time: 2000,
+          priority: 2000,
+          preview_output: {
+            content: 'some generated text',
+            nodeId: '5',
+            mediaType: 'text'
+          } satisfies JobListItem['preview_output']
+        },
+        createMockJobItem(2)
+      ]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(2)
+      expect(store.historyAssets.map((a) => a.id)).toEqual([
+        'prompt_0',
+        'prompt_2'
+      ])
     })
   })
 
@@ -507,12 +545,12 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     mockIsCloud.value = false
   })
 
-  const createMockAsset = (id: string) => ({
+  const createMockAsset = (id: string, tags: string[] = ['models']) => ({
     id,
     name: `asset-${id}`,
     size: 100,
     created_at: new Date().toISOString(),
-    tags: ['models'],
+    tags,
     preview_url: `http://test.com/${id}`
   })
 
@@ -749,6 +787,105 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       store.invalidateCategory('tag:models')
 
       expect(store.getAssets('tag:models')).toEqual([])
+    })
+  })
+
+  describe('hasCategory', () => {
+    it('should return true for loaded categories', async () => {
+      const store = useAssetsStore()
+      const assets = [createMockAsset('asset-1')]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      expect(store.hasCategory('checkpoints')).toBe(true)
+    })
+
+    it('should return true for tag-based category when tag: prefix is not used', async () => {
+      const store = useAssetsStore()
+      const assets = [createMockAsset('asset-1')]
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue(assets)
+      await store.updateModelsForTag('models')
+
+      // hasCategory('models') checks for both 'models' and 'tag:models'
+      expect(store.hasCategory('models')).toBe(true)
+    })
+
+    it('should return false for unloaded categories', () => {
+      const store = useAssetsStore()
+
+      expect(store.hasCategory('checkpoints')).toBe(false)
+      expect(store.hasCategory('unknown-category')).toBe(false)
+    })
+
+    it('should return false after category is invalidated', async () => {
+      const store = useAssetsStore()
+      const assets = [createMockAsset('asset-1')]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      expect(store.hasCategory('checkpoints')).toBe(true)
+
+      store.invalidateCategory('checkpoints')
+
+      expect(store.hasCategory('checkpoints')).toBe(false)
+    })
+  })
+
+  describe('invalidateModelsForCategory', () => {
+    it('should clear cache for category and trigger refetch on next access', async () => {
+      const store = useAssetsStore()
+      const initialAssets = [createMockAsset('initial-1')]
+      const refreshedAssets = [
+        createMockAsset('refreshed-1'),
+        createMockAsset('refreshed-2')
+      ]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
+        initialAssets
+      )
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(1)
+
+      store.invalidateModelsForCategory('checkpoints')
+
+      // Cache should be cleared
+      expect(store.hasCategory('checkpoints')).toBe(false)
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
+
+      // Next fetch should get fresh data
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
+        refreshedAssets
+      )
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(2)
+    })
+
+    it('should clear tag-based caches', async () => {
+      const store = useAssetsStore()
+      const tagAssets = [createMockAsset('tag-1'), createMockAsset('tag-2')]
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue(tagAssets)
+      await store.updateModelsForTag('checkpoints')
+      await store.updateModelsForTag('models')
+
+      expect(store.getAssets('tag:checkpoints')).toHaveLength(2)
+      expect(store.getAssets('tag:models')).toHaveLength(2)
+
+      store.invalidateModelsForCategory('checkpoints')
+
+      expect(store.getAssets('tag:checkpoints')).toEqual([])
+      expect(store.getAssets('tag:models')).toEqual([])
+    })
+
+    it('should handle unknown categories gracefully', () => {
+      const store = useAssetsStore()
+
+      expect(() =>
+        store.invalidateModelsForCategory('unknown-category')
+      ).not.toThrow()
     })
   })
 })

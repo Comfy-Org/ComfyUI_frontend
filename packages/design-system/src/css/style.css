@@ -12,6 +12,14 @@
   icon-sets: from-folder(comfy, './packages/design-system/src/icons');
 }
 
+@plugin "./lucideStrokePlugin.js";
+
+/* Safelist dynamic comfy icons for node library folders */
+@source inline("icon-[comfy--{ai-model,bfl,bria,bytedance,credits,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow}]");
+
+/* Safelist dynamic comfy icons for essential nodes (kebab-case of node names) */
+@source inline("icon-[comfy--{save-image,load-video,save-video,load-3-d,save-glb,image-batch,batch-images-node,image-crop,image-scale,image-rotate,image-blur,image-invert,canny,recraft-remove-background-node,kling-lip-sync-audio-to-video-node,load-audio,save-audio,stability-text-to-audio,lora-loader,lora-loader-model-only,primitive-string-multiline,get-video-components,video-slice,tencent-text-to-model-node,tencent-image-to-model-node,open-ai-chat-node,subgraph-blueprint-canny-to-video-ltx-2-0,subgraph-blueprint-pose-to-video-ltx-2-0,preview-image,image-and-mask-preview,layer-mask-mask-preview,mask-preview,image-preview-from-latent}]");
+
 @custom-variant touch (@media (hover: none));
 
 @theme {
@@ -93,6 +101,10 @@
   --color-magenta-300: #ceaac9;
   --color-magenta-700: #6a246a;
 
+  --color-ocean-300: #badde8;
+  --color-ocean-600: #2f687a;
+  --color-ocean-900: #253236;
+
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
 
@@ -107,6 +119,7 @@
   --color-interface-panel-job-progress-secondary: var(
     --color-alpha-azure-600-30
   );
+  --color-interface-panel-job-progress-border: var(--base-foreground);
 
   --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
   --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
@@ -145,9 +158,11 @@
 :root {
   --fg-color: #000;
   --bg-color: #fff;
+  --default-transition-duration: 0.1s;
   --comfy-menu-bg: #353535;
   --comfy-menu-secondary-bg: #292929;
   --comfy-topbar-height: 2.5rem;
+  --workflow-tabs-height: 2.375rem;
   --comfy-input-bg: #222;
   --input-text: #ddd;
   --descrip-text: #999;
@@ -186,7 +201,7 @@
       #3e1ffc 65.17%,
       #009dff 103.86%
     ),
-    var(--color-button-surface, #2d2e32);
+    linear-gradient(var(--color-button-surface, #2d2e32));
 
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
@@ -211,6 +226,10 @@
   --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
+
+  --interface-builder-mode-background: var(--color-ocean-300);
+  --interface-builder-mode-button-background: var(--color-ocean-600);
+  --interface-builder-mode-button-foreground: var(--color-white);
 
   --nav-background: var(--color-white);
 
@@ -341,26 +360,6 @@
   --button-active-surface: var(--color-charcoal-600);
   --button-icon: var(--color-smoke-800);
 
-  --subscription-button-gradient:
-    linear-gradient(
-      315deg,
-      rgb(105 230 255 / 0.15) 0%,
-      rgb(99 73 233 / 0.5) 100%
-    ),
-    radial-gradient(
-      70.71% 70.71% at 50% 50%,
-      rgb(62 99 222 / 0.15) 0.01%,
-      rgb(66 0 123 / 0.5) 100%
-    ),
-    linear-gradient(
-      92deg,
-      #d000ff 0.38%,
-      #b009fe 37.07%,
-      #3e1ffc 65.17%,
-      #009dff 103.86%
-    ),
-    var(--color-button-surface, #2d2e32);
-
   --dialog-surface: var(--color-neutral-700);
 
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
@@ -370,6 +369,10 @@
   --interface-menu-stroke: var(--color-ash-800);
   --interface-panel-surface: var(--color-charcoal-800);
   --interface-stroke: var(--color-charcoal-400);
+
+  --interface-builder-mode-background: var(--color-ocean-900);
+  --interface-builder-mode-button-background: var(--color-ocean-600);
+  --interface-builder-mode-button-foreground: var(--color-white);
 
   --nav-background: var(--color-charcoal-800);
 
@@ -406,6 +409,7 @@
   --color-interface-panel-job-progress-secondary: var(
     --color-alpha-azure-600-30
   );
+  --color-interface-panel-job-progress-border: var(--base-foreground);
 
   --text-secondary: var(--color-slate-100);
   --text-primary: var(--color-white);
@@ -468,7 +472,6 @@
   --color-button-icon: var(--button-icon);
   --color-button-surface: var(--button-surface);
   --color-button-surface-contrast: var(--button-surface-contrast);
-  --color-subscription-button-gradient: var(--subscription-button-gradient);
 
   --color-modal-card-background: var(--modal-card-background);
   --color-modal-card-background-hovered: var(--modal-card-background-hovered);
@@ -504,6 +507,15 @@
   --color-comfy-menu-bg: var(--comfy-menu-bg);
   --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
 
+  --color-interface-builder-mode-background: var(
+    --interface-builder-mode-background
+  );
+  --color-interface-builder-mode-button-background: var(
+    --interface-builder-mode-button-background
+  );
+  --color-interface-builder-mode-button-foreground: var(
+    --interface-builder-mode-button-foreground
+  );
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);
   --color-node-border: var(--node-border);
@@ -601,6 +613,14 @@
   .dark-theme & {
     @slot;
   }
+}
+
+@utility highlight {
+  background-color: color-mix(in srgb, currentColor 20%, transparent);
+  font-weight: 700;
+  border-radius: 0.25rem;
+  padding: 0 0.125rem;
+  margin: -0.125rem 0.125rem;
 }
 
 @utility scrollbar-hide {
@@ -1186,7 +1206,7 @@ button.comfy-queue-btn {
 .graphdialog {
   min-height: 1em;
   background-color: var(--comfy-menu-bg);
-  z-index: 41; /* z-index is set to 41 here in order to appear over selection-overlay-container which should have a z-index of 40 */
+  z-index: 1500;
 }
 
 .graphdialog .name {
@@ -1398,15 +1418,6 @@ audio.comfy-audio.empty-audio-widget {
   transition:
     opacity 0.1s ease,
     font-size 0.1s ease;
-}
-
-/* Performance optimization during canvas interaction */
-.transform-pane--interacting .lg-node * {
-  transition: none !important;
-}
-
-.transform-pane--interacting .lg-node {
-  will-change: transform;
 }
 
 /* ===================== Mask Editor Styles ===================== */
@@ -1871,3 +1882,22 @@ audio.comfy-audio.empty-audio-widget {
   margin-left: 15px;
 }
 /* ===================== End of Mask Editor Styles ===================== */
+
+/* ===================== Skeleton Shimmer ===================== */
+.skeleton-shimmer {
+  background:
+    linear-gradient(135deg, rgb(188 188 188 / 0.5) 0%, rgb(0 0 0 / 0.5) 100%) 0
+      0 / 200% 200%,
+    #000;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0%,
+  100% {
+    background-position: 100% 100%;
+  }
+  50% {
+    background-position: 0 0;
+  }
+}

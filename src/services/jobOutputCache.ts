@@ -46,7 +46,7 @@ export function findActiveIndex(
 export async function getOutputsForTask(
   task: TaskItemImpl
 ): Promise<ResultItemImpl[] | null> {
-  const requestId = String(task.promptId)
+  const requestId = String(task.jobId)
   latestTaskRequestId = requestId
 
   const outputsCount = task.outputsCount ?? 0

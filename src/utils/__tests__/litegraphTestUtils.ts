@@ -82,14 +82,14 @@ export function createMockSubgraphNode(
  * Creates a mock LGraphCanvas with minimal required properties for testing
  */
 export function createMockCanvas(
-  overrides: Partial<LGraphCanvas> = {}
+  overrides: Partial<LGraphCanvas> | Record<string, unknown> = {}
 ): LGraphCanvas {
   return {
     setDirty: vi.fn(),
     state: {
       selectionChanged: false
     },
-    ...overrides
+    ...(overrides as Partial<LGraphCanvas>)
   } as LGraphCanvas
 }
 
@@ -226,7 +226,10 @@ export function createMockChangeTracker(
     undoQueue: [],
     redoQueue: [],
     changeCount: 0,
+    checkState: vi.fn(),
     reset: vi.fn(),
+    restore: vi.fn(),
+    store: vi.fn(),
     ...overrides
   }
   return partial as Partial<ChangeTracker> as ChangeTracker
@@ -273,6 +276,8 @@ export function createMockCanvas2DContext(
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
+    save: vi.fn(),
+    restore: vi.fn(),
     ...overrides
   }
   return partial as CanvasRenderingContext2D

@@ -279,6 +279,58 @@ describe('useNodeDefStore', () => {
     })
   })
 
+  describe('allNodeDefsByName', () => {
+    it('should include all node defs by name', () => {
+      const node1 = createMockNodeDef({ name: 'Node1' })
+      const node2 = createMockNodeDef({ name: 'Node2' })
+
+      store.updateNodeDefs([node1, node2])
+
+      expect(store.allNodeDefsByName).toHaveProperty('Node1')
+      expect(store.allNodeDefsByName).toHaveProperty('Node2')
+      expect(store.allNodeDefsByName['Node1'].name).toBe('Node1')
+      expect(store.allNodeDefsByName['Node2'].name).toBe('Node2')
+    })
+
+    it('should include deprecated and experimental nodes', () => {
+      const normal = createMockNodeDef({ name: 'Normal' })
+      const deprecated = createMockNodeDef({
+        name: 'Deprecated',
+        deprecated: true
+      })
+      const experimental = createMockNodeDef({
+        name: 'Experimental',
+        experimental: true
+      })
+
+      store.updateNodeDefs([normal, deprecated, experimental])
+
+      expect(store.allNodeDefsByName).toHaveProperty('Normal')
+      expect(store.allNodeDefsByName).toHaveProperty('Deprecated')
+      expect(store.allNodeDefsByName).toHaveProperty('Experimental')
+    })
+
+    it('should include nodes filtered out of visibleNodeDefs', () => {
+      const normal = createMockNodeDef({
+        name: 'Normal',
+        deprecated: false
+      })
+      const deprecated = createMockNodeDef({
+        name: 'Deprecated',
+        deprecated: true
+      })
+
+      store.updateNodeDefs([normal, deprecated])
+
+      // visibleNodeDefs filters out deprecated by default
+      expect(store.visibleNodeDefs).toHaveLength(1)
+
+      // allNodeDefsByName includes all
+      expect(store.allNodeDefsByName).toHaveProperty('Normal')
+      expect(store.allNodeDefsByName).toHaveProperty('Deprecated')
+    })
+  })
+
   describe('performance', () => {
     it('should perform single traversal for multiple filters', () => {
       let filterCallCount = 0

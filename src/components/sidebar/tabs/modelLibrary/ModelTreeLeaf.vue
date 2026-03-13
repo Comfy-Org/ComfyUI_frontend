@@ -1,5 +1,5 @@
 <template>
-  <div ref="container" class="model-lib-node-container h-full w-full">
+  <div ref="container" class="model-lib-node-container size-full">
     <TreeExplorerTreeNode :node="node">
       <template #before-label>
         <span v-if="modelPreviewUrl" class="model-lib-model-icon-container">

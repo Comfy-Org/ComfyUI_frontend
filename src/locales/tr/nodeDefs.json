@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "Ses Ekolayzır (3-Bant)",
+    "inputs": {
+      "audio": {
+        "name": "ses"
+      },
+      "high_freq": {
+        "name": "yüksek_frekans",
+        "tooltip": "Yüksek raf için kesme frekansı"
+      },
+      "high_gain_dB": {
+        "name": "yüksek_kazanç_dB",
+        "tooltip": "Yüksek frekanslar (Tiz) için kazanç"
+      },
+      "low_freq": {
+        "name": "düşük_frekans",
+        "tooltip": "Düşük raf için kesme frekansı"
+      },
+      "low_gain_dB": {
+        "name": "düşük_kazanç_dB",
+        "tooltip": "Düşük frekanslar (Bas) için kazanç"
+      },
+      "mid_freq": {
+        "name": "orta_frekans",
+        "tooltip": "Orta frekanslar için merkez frekansı"
+      },
+      "mid_gain_dB": {
+        "name": "orta_kazanç_dB",
+        "tooltip": "Orta frekanslar için kazanç"
+      },
+      "mid_q": {
+        "name": "orta_q",
+        "tooltip": "Orta frekanslar için Q faktörü (bant genişliği)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "İki ses parçasını dalga formlarını üst üste bindirerek birleştirir.",
     "display_name": "Ses Birleştir",
@@ -353,15 +394,6 @@
         "name": "denetleme",
         "tooltip": "Denetleme ayarları"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "istem_içeriği_denetleme"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "görsel_girdi_denetleme"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "görsel_çıktı_denetleme"
-      },
       "negative_prompt": {
         "name": "negatif_istem"
       },
@@ -386,6 +418,56 @@
       },
       "1": {
         "name": "yapılandırılmış_istem",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Bria RMBG 2.0 kullanarak bir görselin arka planını kaldırın.",
+    "display_name": "Bria Görsel Arka Planı Kaldır",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Bria kullanarak bir videonun arka planını kaldırın.",
+    "display_name": "Bria Video Arka Planı Kaldır",
+    "inputs": {
+      "background_color": {
+        "name": "arka plan rengi",
+        "tooltip": "Çıktı video için arka plan rengi."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -614,8 +696,7 @@
         "tooltip": "sequential_image_generation='auto' olduğunda oluşturulacak maksimum resim sayısı. Toplam resim sayısı (girdi + oluşturulan) 15'i geçemez."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -1338,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Matematiksel İfade",
+    "inputs": {
+      "expression": {
+        "name": "ifade"
+      },
+      "values": {
+        "name": "değerler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Anahtar",
     "inputs": {
@@ -1590,14 +1690,16 @@
         "name": "saniye_toplam"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "pozitif",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "negatif",
         "tooltip": null
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "Zaman Adımları Aralığı",
@@ -2054,6 +2156,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "Sağlanan sınırlayıcı kutulara göre giriş görüntü grubundan bölgeleri kırp ve yeniden boyutlandır.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "sınırlayıcı_kutular"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "output_height": {
+        "name": "çıktı_yüksekliği",
+        "tooltip": "Her kırpmanın yeniden boyutlandırılacağı yükseklik."
+      },
+      "output_width": {
+        "name": "çıktı_genişliği",
+        "tooltip": "Her kırpmanın yeniden boyutlandırılacağı genişlik."
+      },
+      "padding": {
+        "name": "dolgu",
+        "tooltip": "Kırpmadan önce sınırlayıcı kutunun her bir kenarına piksel cinsinden eklenen ekstra dolgu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Tüm kırpmalar tek bir görüntü grubunda birleştirilir."
+      }
+    }
+  },
   "CropMask": {
     "display_name": "Maskeyi Kırp",
     "inputs": {
@@ -2088,13 +2219,15 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "name": "INDEX",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "ControlNet Modelini Yükle (fark)",
@@ -2216,6 +2349,304 @@
     "outputs": {
       "0": {
         "tooltip": "KolayÖnbellek ile model."
+      }
+    }
+  },
+  "ElevenLabsAudioIsolation": {
+    "description": "Sesten arka plan gürültüsünü kaldırarak vokalleri veya konuşmayı izole edin.",
+    "display_name": "ElevenLabs Ses İzolasyonu",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Arka plan gürültüsünü kaldırmak için işlenecek ses."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsInstantVoiceClone": {
+    "description": "Ses örneklerinden klonlanmış bir ses oluşturun. Klonlanacak sesin 1-8 adet ses kaydını sağlayın.",
+    "display_name": "ElevenLabs Anında Ses Klonlama",
+    "inputs": {
+      "files": {
+        "name": "dosyalar",
+        "tooltip": "Ses klonlama için ses kayıtları."
+      },
+      "remove_background_noise": {
+        "name": "arka_plan_gürültüsünü_kaldır",
+        "tooltip": "Ses örneklerinden arka plan gürültüsünü ses izolasyonu ile kaldırın."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ses",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToSpeech": {
+    "description": "Bir sesi başka bir sese dönüştürün, orijinal içeriği ve duyguyu koruyun.",
+    "display_name": "ElevenLabs Sesten Sese",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Dönüştürülecek kaynak ses."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Sesten sese dönüşüm için kullanılacak model."
+      },
+      "model_similarity_boost": {
+        "name": "benzerlik_arttırıcı"
+      },
+      "model_speed": {
+        "name": "hız"
+      },
+      "model_style": {
+        "name": "stil"
+      },
+      "model_use_speaker_boost": {
+        "name": "konuşmacı_arttırıcı_kullan"
+      },
+      "output_format": {
+        "name": "çıktı_formatı",
+        "tooltip": "Ses çıktı formatı."
+      },
+      "remove_background_noise": {
+        "name": "arka_plan_gürültüsünü_kaldır",
+        "tooltip": "Girdi sesinden arka plan gürültüsünü ses izolasyonu ile kaldırın."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tekrarlanabilirlik için tohum."
+      },
+      "stability": {
+        "name": "kararlılık",
+        "tooltip": "Ses kararlılığı. Düşük değerler daha geniş duygusal aralık sunar, yüksek değerler daha tutarlı ama muhtemelen tekdüze konuşma üretir."
+      },
+      "voice": {
+        "name": "ses",
+        "tooltip": "Dönüşüm için hedef ses. Ses Seçici veya Anında Ses Klonlama'dan bağlayın."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToText": {
+    "description": "Sesi metne dönüştürür. Otomatik dil algılama, konuşmacı ayrımı ve ses olayı etiketleme desteklenir.",
+    "display_name": "ElevenLabs Konuşmadan Metne",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Dönüştürülecek ses."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "language_code": {
+        "name": "dil_kodu",
+        "tooltip": "ISO-639-1 veya ISO-639-3 dil kodu (örn. 'en', 'es', 'fra'). Otomatik algılama için boş bırakın."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Dönüştürme için kullanılacak model."
+      },
+      "model_diarization_threshold": {
+        "name": "ayrım eşiği"
+      },
+      "model_diarize": {
+        "name": "ayrım yap"
+      },
+      "model_tag_audio_events": {
+        "name": "ses olaylarını etiketle"
+      },
+      "model_temperature": {
+        "name": "sıcaklık"
+      },
+      "model_timestamps_granularity": {
+        "name": "zaman damgası hassasiyeti"
+      },
+      "num_speakers": {
+        "name": "konuşmacı_sayısı",
+        "tooltip": "Tahmin edilecek maksimum konuşmacı sayısı. Otomatik algılama için 0 olarak ayarlayın."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tekrarlanabilirlik için tohum (deterministik olması garanti edilmez)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "metin",
+        "tooltip": null
+      },
+      "1": {
+        "name": "dil_kodu",
+        "tooltip": null
+      },
+      "2": {
+        "name": "kelimeler_json",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToDialogue": {
+    "description": "Metinden çok konuşmacılı diyalog oluşturur. Her diyalog girdisinin kendi metni ve sesi vardır.",
+    "display_name": "ElevenLabs Metinden Diyaloğa",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "metin normalizasyonunu uygula",
+        "tooltip": "Metin normalizasyon modu. 'auto' sistemin karar vermesini sağlar, 'on' her zaman normalizasyon uygular, 'off' ise atlar."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "inputs": {
+        "name": "girdiler",
+        "tooltip": "Diyalog girdisi sayısı."
+      },
+      "inputs_text1": {
+        "name": "metin1"
+      },
+      "language_code": {
+        "name": "dil_kodu",
+        "tooltip": "ISO-639-1 veya ISO-639-3 dil kodu (örn. 'en', 'es', 'fra'). Otomatik algılama için boş bırakın."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Diyalog üretimi için kullanılacak model."
+      },
+      "output_format": {
+        "name": "çıktı_formatı",
+        "tooltip": "Ses çıktısı formatı."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tekrarlanabilirlik için tohum."
+      },
+      "stability": {
+        "name": "kararlılık",
+        "tooltip": "Ses kararlılığı. Düşük değerler daha geniş duygusal aralık sunar, yüksek değerler daha tutarlı ama muhtemelen tekdüze konuşma üretir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSoundEffects": {
+    "description": "Metin açıklamalarından ses efektleri oluşturur.",
+    "display_name": "ElevenLabs Metinden Ses Efektine",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Ses efekti üretimi için kullanılacak model."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_loop": {
+        "name": "döngü"
+      },
+      "model_prompt_influence": {
+        "name": "istem etkisi"
+      },
+      "output_format": {
+        "name": "çıktı_formatı",
+        "tooltip": "Ses çıktısı formatı."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Oluşturulacak ses efektinin metin açıklaması."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSpeech": {
+    "description": "Metni konuşmaya dönüştür.",
+    "display_name": "ElevenLabs Metinden Konuşmaya",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "metin normalizasyonunu uygula",
+        "tooltip": "Metin normalizasyon modu. 'auto' sistemin karar vermesine izin verir, 'on' her zaman normalizasyon uygular, 'off' ise atlar."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "language_code": {
+        "name": "dil_kodu",
+        "tooltip": "ISO-639-1 veya ISO-639-3 dil kodu (örn. 'en', 'es', 'fra'). Otomatik algılama için boş bırakın."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Metinden konuşmaya için kullanılacak model."
+      },
+      "model_similarity_boost": {
+        "name": "benzerlik_arttırıcı"
+      },
+      "model_speed": {
+        "name": "hız"
+      },
+      "model_style": {
+        "name": "stil"
+      },
+      "model_use_speaker_boost": {
+        "name": "konuşmacı_arttırıcıyı_kullan"
+      },
+      "output_format": {
+        "name": "çıktı_formatı",
+        "tooltip": "Ses çıktısı formatı."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tekrarlanabilirlik için tohum (deterministik olması garanti edilmez)."
+      },
+      "stability": {
+        "name": "kararlılık",
+        "tooltip": "Ses kararlılığı. Düşük değerler daha geniş duygusal aralık sunar, yüksek değerler ise daha tutarlı fakat potansiyel olarak tekdüze konuşma üretir."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Konuşmaya dönüştürülecek metin."
+      },
+      "voice": {
+        "name": "ses",
+        "tooltip": "Konuşma sentezi için kullanılacak ses. Ses Seçici veya Anında Ses Klonlama'dan bağlayın."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsVoiceSelector": {
+    "description": "Metinden konuşma üretimi için önceden tanımlanmış bir ElevenLabs sesi seçin.",
+    "display_name": "ElevenLabs Ses Seçici",
+    "inputs": {
+      "voice": {
+        "name": "ses",
+        "tooltip": "Önceden tanımlanmış ElevenLabs seslerinden birini seçin."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ses",
+        "tooltip": null
       }
     }
   },
@@ -2776,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Flux ailesi modellerinde referans görselleri için KV Cache optimizasyonunu etkinleştirir.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "KV Cache uygulanacak model."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KV Cache etkinleştirilmiş yamalı model."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Bu düğüm, görüntüyü flux kontext için daha uygun bir boyuta yeniden boyutlandırır.",
     "display_name": "FluxKontext Görüntü Ölçeği",
@@ -3154,6 +3600,50 @@
       }
     }
   },
+  "GLSLShader": {
+    "description": "Görüntülere GLSL ES fragment shader'ları uygula. u_resolution (vec2) her zaman kullanılabilir.",
+    "display_name": "GLSL Shader",
+    "inputs": {
+      "floats": {
+        "name": "floats",
+        "tooltip": "Floats shader kodunda u_float0-4 olarak kullanılabilir"
+      },
+      "fragment_shader": {
+        "name": "fragment_shader",
+        "tooltip": "GLSL fragment shader kaynak kodu (GLSL ES 3.00 / WebGL 2.0 uyumlu)"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Görüntüler shader kodunda u_image0-4 (sampler2D) olarak kullanılabilir"
+      },
+      "ints": {
+        "name": "ints",
+        "tooltip": "Ints shader kodunda u_int0-4 olarak kullanılabilir"
+      },
+      "size_mode": {
+        "name": "size_mode",
+        "tooltip": "Çıktı boyutu: 'from_input' ilk giriş görüntüsünün boyutlarını kullanır, 'custom' elle boyut ayarlamaya izin verir"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "IMAGE0",
+        "tooltip": "Shader kodunda layout(location = 0) out vec4 fragColor0 ile kullanılabilir"
+      },
+      "1": {
+        "name": "IMAGE1",
+        "tooltip": "Shader kodunda layout(location = 1) out vec4 fragColor1 ile kullanılabilir"
+      },
+      "2": {
+        "name": "IMAGE2",
+        "tooltip": "Shader kodunda layout(location = 2) out vec4 fragColor2 ile kullanılabilir"
+      },
+      "3": {
+        "name": "IMAGE3",
+        "tooltip": "Shader kodunda layout(location = 3) out vec4 fragColor3 ile kullanılabilir"
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Google Vertex API üzerinden senkron olarak görsel oluşturun veya düzenleyin.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -3270,6 +3760,60 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNanoBanana2": {
+    "description": "Google Vertex API üzerinden senkron olarak görseller oluşturun veya düzenleyin.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' olarak ayarlanırsa, giriş görselinizin en-boy oranı kullanılır; görsel yoksa genellikle 16:9 kare oluşturulur."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı dosya(lar). Gemini Generate Content Input Files düğümünden gelen girdileri kabul eder."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "İsteğe bağlı referans görsel(ler)i. Birden fazla görsel eklemek için Batch Images düğümünü kullanın (en fazla 14)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Oluşturulacak görseli veya uygulanacak düzenlemeleri tanımlayan metin istemi. Modelin uyması gereken kısıtlamalar, stiller veya detayları ekleyin."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Hedef çıktı çözünürlüğü. 2K/4K için yerel Gemini yükselticisi kullanılır."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed belirli bir değere sabitlendiğinde, model tekrarlanan isteklerde aynı yanıtı vermeye çalışır. Deterministik çıktı garanti edilmez. Ayrıca, model veya parametre ayarlarını (ör. sıcaklık) değiştirmek, aynı seed değeriyle bile yanıtın farklı olmasına neden olabilir. Varsayılan olarak rastgele bir seed değeri kullanılır."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Bir yapay zekanın davranışını belirleyen temel talimatlar."
+      },
+      "thinking_level": {
+        "name": "thinking_level"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -3394,17 +3938,20 @@
         "name": "image"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "genişlik",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "yükseklik",
         "tooltip": null
       },
-      {
+      "2": {
+        "name": "toplu_boyut",
         "tooltip": null
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "Bir videodan tüm bileşenleri çıkarır: kareler, ses ve kare hızı.",
@@ -3434,6 +3981,10 @@
     "description": "Mevcut bir görüntüyü metin istemine göre değiştir",
     "display_name": "Grok Görüntü Düzenle",
     "inputs": {
+      "aspect_ratio": {
+        "name": "en-boy oranı",
+        "tooltip": "Yalnızca birden fazla görsel, görsel girişine bağlandığında kullanılabilir."
+      },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
@@ -3485,6 +4036,9 @@
       "prompt": {
         "name": "istem",
         "tooltip": "Görüntüyü oluşturmak için kullanılan metin istemi"
+      },
+      "resolution": {
+        "name": "çözünürlük"
       },
       "seed": {
         "name": "tohum",
@@ -3636,14 +4190,16 @@
         "name": "clip_görü_çıktısı"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ÇokluGörünümKoşullandırma",
@@ -3661,14 +4217,16 @@
         "name": "sağ"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanGörüntüdenVideoya",
@@ -4201,6 +4759,26 @@
       }
     }
   },
+  "ImageCropV2": {
+    "display_name": "Görüntü Kırpma",
+    "inputs": {
+      "crop_region": {
+        "name": "kırpma_bölgesi"
+      },
+      "height": {},
+      "image": {
+        "name": "görüntü"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageDeduplication": {
     "display_name": "Görsel Çoğaltma Kaldırma",
     "inputs": {
@@ -4291,6 +4869,28 @@
     "inputs": {
       "image": {
         "name": "görüntü"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "Döşeme Listesini Görüntüye Birleştir",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4872,6 +5472,39 @@
       }
     }
   },
+  "KlingAvatarNode": {
+    "description": "Tek bir fotoğraf ve bir ses dosyasından yayın tarzı dijital insan videoları oluşturun.",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Avatar referans görseli. Genişlik ve yükseklik en az 300px olmalıdır. En-boy oranı 1:2.5 ile 2.5:1 arasında olmalıdır."
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Avatarın hareketlerini, duygularını ve kamera hareketlerini tanımlamak için isteğe bağlı komut."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "Ses girişi. Süresi 2 ile 300 saniye arasında olmalıdır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingCameraControlI2VNode": {
     "description": "Gerçek dünya sinematografisini simüle eden profesyonel kamera hareketleriyle durağan görüntüleri sinematik videolara dönüştürün. Orijinal görüntünüze odaklanırken yakınlaştırma, döndürme, kaydırma, eğme ve birinci şahıs görünümü dahil olmak üzere sanal kamera eylemlerini kontrol edin.",
     "display_name": "Kling Görüntüden Videoya (Kamera Kontrolü)",
@@ -5261,6 +5894,9 @@
       },
       "mode": {
         "name": "mod"
+      },
+      "model": {
+        "name": "model"
       },
       "prompt": {
         "name": "istem"
@@ -6612,26 +7248,36 @@
         "name": "genişlik"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "mask",
         "tooltip": null
       },
-      {
+      "2": {
+        "name": "mesh_path",
         "tooltip": null
       },
-      {
+      "3": {
+        "name": "normal",
         "tooltip": null
       },
-      {
+      "4": {
+        "name": "camera_info",
         "tooltip": null
       },
-      {
+      "5": {
+        "name": "recording_video",
+        "tooltip": null
+      },
+      "6": {
+        "name": "model_3d",
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "Ses Yükle",
@@ -6896,11 +7542,12 @@
         "tooltip": "Difüzyon modelinin ne kadar güçlü bir şekilde değiştirileceği. Bu değer negatif olabilir."
       }
     },
-    "outputs": [
-      {
-        "name": "model"
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Değiştirilmiş diffusion modeli."
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "Lora'yı Çıkar ve Kaydet",
@@ -7577,17 +8224,20 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: Görüntüden Modele",
@@ -7633,18 +8283,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Çoklu Görüntüden Modele",
@@ -7690,18 +8346,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "Önceden oluşturulmuş bir taslak modeli iyileştirir.",
@@ -7726,18 +8388,24 @@
         "tooltip": "Kaplama sürecini yönlendirmek için bir metin istemi girin. Maksimum 600 karakter. 'texture_image' ile aynı anda kullanılamaz."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "Standart formatlarda riglenmiş bir karakter sağlar. Otomatik rigleme, şu anda dokusuz meshler, insan olmayan varlıklar veya uzuv ve vücut yapısı belirsiz olan insan benzeri varlıklar için uygun değildir.",
@@ -7755,18 +8423,24 @@
         "tooltip": "Modelin UV-unwrap edilmiş temel renk doku görseli."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: Metinden Modele",
@@ -7805,18 +8479,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_görev_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: Doku Modeli",
@@ -7843,18 +8523,24 @@
         "tooltip": "Nesnenin istediğiniz doku stilini metinle tanımlayın. En fazla 600 karakter. 'image_style' ile aynı anda kullanılamaz."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_görev_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "Yeni MiniMax Hailuo-02 modelini kullanarak prompt'tan video oluşturur, isteğe bağlı başlangıç karesi ile.",
@@ -10297,6 +10983,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "Modellere Normalize Edilmiş Dikkat Yönlendirmesi uygular, distilled/schnell modellerde negatif istemlere olanak tanır.",
+    "display_name": "Normalize Edilmiş Dikkat Yönlendirmesi",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "NAG uygulanacak model."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "Normalize edilmiş dikkat için karıştırma faktörü. 1.0 tam değişim, 0.0 hiçbir etki yok."
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "Yönlendirme ölçek faktörü. Daha yüksek değerler, negatif istemden daha fazla uzaklaştırır."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "NAG etkinleştirilmiş yamalı model."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Görüntüleri Normalleştir",
     "inputs": {
@@ -10590,6 +11302,35 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "arka_plan_rengi"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Üzerine boyanacak isteğe bağlı temel görüntü"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -11100,6 +11841,28 @@
     "inputs": {
       "value": {
         "name": "değer"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrimitiveBoundingBox": {
+    "display_name": "Sınır Kutusu",
+    "inputs": {
+      "height": {
+        "name": "yükseklik"
+      },
+      "width": {
+        "name": "genişlik"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
       }
     },
     "outputs": {
@@ -11671,6 +12434,88 @@
       }
     }
   },
+  "RecraftV4TextToImageNode": {
+    "description": "Recraft V4 veya V4 Pro modelleriyle görseller üretir.",
+    "display_name": "Recraft V4 Metinden Görsele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "üretimden sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Üretim için kullanılacak model."
+      },
+      "model_size": {
+        "name": "boyut"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Üretilecek görsel sayısı."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Bir görselde istenmeyen ögelerin isteğe bağlı metin açıklaması."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Görsel üretimi için istem. En fazla 10.000 karakter."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controls düğümüyle üretim üzerinde isteğe bağlı ek kontroller."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Recraft V4 veya V4 Pro modelleriyle SVG üretir.",
+    "display_name": "Recraft V4 Metinden Vektöre",
+    "inputs": {
+      "control_after_generate": {
+        "name": "üretimden sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Üretim için kullanılacak model."
+      },
+      "model_size": {
+        "name": "boyut"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Üretilecek görsel sayısı."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Bir görselde istenmeyen ögelerin isteğe bağlı metin açıklaması."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Görsel üretimi için istem. En fazla 10.000 karakter."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controls düğümüyle üretim üzerinde isteğe bağlı ek kontroller."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RecraftVectorizeImageNode": {
     "description": "Bir giriş görüntüsünden eşzamanlı olarak SVG oluşturur.",
     "display_name": "Recraft Görüntüyü Vektörleştir",
@@ -12030,6 +12875,157 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "En-boy oranı ve megapiksel hedefinden genişlik ve yükseklik hesaplayın. Boş Latent Görüntü boyutlarını ayarlamak için kullanışlıdır.",
+    "display_name": "Çözünürlük Seçici",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en_boy_orani",
+        "tooltip": "Çıktı boyutları için en-boy oranı."
+      },
+      "megapixels": {
+        "name": "megapiksel",
+        "tooltip": "Hedef toplam megapiksel. 1,0 MP ≈ 1024×1024 (kare için)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "genislik",
+        "tooltip": "Piksel cinsinden hesaplanan genişlik (8'in katı)."
+      },
+      "1": {
+        "name": "yukseklik",
+        "tooltip": "Piksel cinsinden hesaplanan yükseklik (8'in katı)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Reve kullanarak metin açıklamalarından görseller oluşturun.",
+    "display_name": "Reve Görsel Oluştur",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Oluşturma için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenen görselin metin açıklaması. En fazla 2560 karakter."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Reve ile doğal dil talimatları kullanarak görselleri düzenleyin.",
+    "display_name": "Reve Görsel Düzenle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "edit_instruction": {
+        "name": "düzenleme_talimatı",
+        "tooltip": "Görselin nasıl düzenleneceğine dair metin açıklaması. En fazla 2560 karakter."
+      },
+      "image": {
+        "name": "görsel",
+        "tooltip": "Düzenlenecek görsel."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Düzenleme için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Referans görselleri ve metin istemlerini birleştirerek Reve ile yeni görseller oluşturun.",
+    "display_name": "Reve Görsel Remix",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Remix için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenen görselin metin açıklaması. Belirli görselleri indeks ile referans göstermek için XML img etiketleri ekleyebilirsiniz, örn. <img>0</img>, <img>1</img> vb."
+      },
+      "reference_images": {
+        "name": "referans_görseller"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
     "display_name": "Rodin 3D Oluştur - Detay Oluştur",
@@ -12047,13 +13043,16 @@
         "name": "Tohum"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3B Model Yolu",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
@@ -12075,13 +13074,16 @@
         "name": "TAPoz"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3B Model Yolu",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
@@ -12100,13 +13102,16 @@
         "name": "Tohum"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3B Model Yolu",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
@@ -12119,13 +13124,16 @@
         "name": "Tohum"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3B Model Yolu",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
@@ -12144,13 +13152,16 @@
         "name": "Tohum"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3B Model Yolu",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "İlk ve son anahtar kareleri yükleyin, bir prompt taslağı oluşturun ve video üretin. Son karenin İlk kareden tamamen farklı olduğu durumlar gibi daha karmaşık geçişler, daha uzun 10 saniyelik süreden faydalanabilir. Bu, üretimin iki girdi arasında daha pürüzsüz geçiş yapması için daha fazla zaman tanır. Başlamadan önce, girdi seçimlerinizin üretiminizi başarıya ulaştıracağından emin olmak için bu en iyi uygulamaları gözden geçirin: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12271,6 +13282,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "gövde_çiz"
+      },
+      "draw_face": {
+        "name": "yüzü_çiz"
+      },
+      "draw_feet": {
+        "name": "ayakları_çiz"
+      },
+      "draw_hands": {
+        "name": "elleri_çiz"
+      },
+      "face_point_size": {
+        "name": "yüz_nokta_boyutu"
+      },
+      "keypoints": {
+        "name": "anahtar_noktalar"
+      },
+      "score_threshold": {
+        "name": "puan_eşiği"
+      },
+      "stick_width": {
+        "name": "çizgi_genişliği"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "kare_zorla",
+        "tooltip": "Kırpma bölgesinin her zaman kare olması için kısa olan kutu eksenini genişlet."
+      },
+      "keypoints": {
+        "name": "anahtar_noktalar"
+      },
+      "scale": {
+        "name": "ölçek",
+        "tooltip": "Her tespit edilen yüzün etrafındaki sınırlayıcı kutu alanı için çarpan."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "Her kare için yüz sınırlayıcı kutuları, SDPoseKeypointExtractor bboxes girişiyle uyumlu."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "SDPose modeli ile görüntülerden poz anahtar noktalarını çıkar: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "toplu_boyut"
+      },
+      "bboxes": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "Daha doğru tespitler için isteğe bağlı sınırlayıcı kutular. Çoklu kişi tespiti için gereklidir."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "anahtar_noktalar",
+        "tooltip": "OpenPose çerçeve formatında anahtar noktalar (canvas_genişliği, canvas_yüksekliği, kişiler)"
       }
     }
   },
@@ -12444,14 +13539,16 @@
         "name": "sigmalar"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "çıktı",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "gürültüsüz_çıktı",
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "GelişmişÖzelÖrnekleyici",
@@ -12472,14 +13569,16 @@
         "name": "sigmalar"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "çıktı",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "gürültüsüz_çıktı",
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "UyarlanabilirDPMÖrnekleyici",
@@ -12777,11 +13876,12 @@
         "name": "örnekleme_yüzdesi"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "sigma_değeri",
         "tooltip": null
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "Animasyonlu PNG Kaydet",
@@ -13336,14 +14436,39 @@
         "name": "ses"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "sol",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "sağ",
         "tooltip": null
       }
-    ]
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "Bir görüntüyü, belirtilen örtüşme ile toplu bir döşeme listesine böler.",
+    "display_name": "Görüntüyü Döşeme Listesine Böl",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "Görüntüyü Alfa ile Böl",
@@ -13371,14 +14496,16 @@
         "name": "adım"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "yüksek_sigma",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "düşük_sigma",
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "SigmalarıGürültüAzaltmaBöl",
@@ -13390,14 +14517,16 @@
         "name": "sigmalar"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "yüksek_sigma",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "düşük_sigma",
         "tooltip": null
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "Mevcut ses örneğinin bir bölümünü metin talimatları kullanarak dönüştürür.",
@@ -14099,6 +15228,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Model yapısına göre otomatik olarak bileşen tanımlama ve oluşturma işlemlerini gerçekleştirir.",
+    "display_name": "Hunyuan3D: 3D Parça",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX formatında 3D model. Model 30000'den az yüzeye sahip olmalıdır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
     "inputs": {
@@ -14135,17 +15287,78 @@
         "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Bir 3D model üzerinde UV açılımı yaparak UV doku oluşturur. Girdi modelinin 30000'den az yüzü olmalıdır.",
+    "display_name": "Hunyuan3D: Modelden UV'ye",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model girişi (GLB, OBJ veya FBX)"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Bir 3D model üzerinde akıllı retopoloji uygular. GLB/OBJ formatlarını destekler; maksimum 200MB; yüksek poligonlu modeller için önerilir.",
+    "display_name": "Hunyuan3D: Akıllı Topoloji",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "face_level": {
+        "name": "yüz seviyesi",
+        "tooltip": "Poligon azaltma seviyesi."
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model girişi (GLB veya OBJ)"
+      },
+      "polygon_type": {
+        "name": "poligon_tipi",
+        "tooltip": "Yüzey bileşimi tipi."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: Metinden Modele (Pro)",
@@ -14175,17 +15388,20 @@
         "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -14239,6 +15455,9 @@
       },
       "lyrics": {
         "name": "şarkı sözleri"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "seed": {
         "name": "tohum"
@@ -14368,6 +15587,94 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerate": {
+    "display_name": "TextGenerate",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "max_length": {
+        "name": "maks_uzunluk"
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "sampling_mode": {
+        "name": "örnekleme_modu"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "tekrar_cezası"
+      },
+      "sampling_mode_seed": {
+        "name": "tohum"
+      },
+      "sampling_mode_temperature": {
+        "name": "sıcaklık"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "oluşturulan_metin",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateLTX2Prompt": {
+    "display_name": "TextGenerateLTX2Prompt",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "max_length": {
+        "name": "maksimum_uzunluk"
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "sampling_mode": {
+        "name": "örnekleme_modu"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "tekrar_cezası"
+      },
+      "sampling_mode_seed": {
+        "name": "tohum"
+      },
+      "sampling_mode_temperature": {
+        "name": "sıcaklık"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "üretilen_metin",
         "tooltip": null
       }
     }
@@ -14649,20 +15956,20 @@
         "tooltip": "Eğitim için kullanılacak veri tipi."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "lora",
         "tooltip": "LoRA uygulanmış model"
       },
-      {
+      "1": {
+        "name": "kayıp_haritası",
         "tooltip": "LoRA ağırlıkları"
       },
-      {
+      "2": {
+        "name": "adımlar",
         "tooltip": "Kayıp geçmişi"
-      },
-      {
-        "tooltip": "Toplam eğitim adımı"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "Ses tensörünü seçilen zaman aralığına kırp.",
@@ -14828,14 +16135,20 @@
         "name": "doku_tohumu"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_görev_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Çok Bakışlıdan Modele",
@@ -14887,14 +16200,20 @@
         "name": "doku_tohumu"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_görev_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "Sadece v1.4 Tripo modelleri tarafından oluşturulan taslak bir modeli iyileştirir.",
@@ -14905,14 +16224,20 @@
         "tooltip": "Bir v1.4 Tripo modeli olmalı"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_görev_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: Riglenmiş Modeli Yeniden Hedefle",
@@ -14924,14 +16249,20 @@
         "name": "orijinal_model_görev_id"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "retarget_görev_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "yeniden hedefleme task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo: Modeli Rigle",
@@ -14940,14 +16271,20 @@
         "name": "orijinal_model_görev_id"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_görev_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Metinden Modele",
@@ -14992,14 +16329,20 @@
         "name": "doku_tohumu"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_görev_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo: Doku modeli",
@@ -15023,14 +16366,20 @@
         "name": "doku_tohumu"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_görev_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "Metni Kısalt",
@@ -15771,6 +17120,46 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "Bir başlangıç karesi, bir bitiş karesi ve bir komut istemi ile video oluşturun.",
+    "display_name": "Vidu Q3 Başlangıç/Bitiş Kareden Videoya Oluşturma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "end_frame": {
+        "name": "bitiş karesi"
+      },
+      "first_frame": {
+        "name": "ilk kare"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video oluşturmak için kullanılacak model."
+      },
+      "model_audio": {
+        "name": "ses"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "komut istemi",
+        "tooltip": "Komut istemi açıklaması (en fazla 2000 karakter)."
+      },
+      "seed": {
+        "name": "tohum"
       }
     },
     "outputs": {
@@ -17023,6 +18412,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "toplu_boyutu"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "pose_end": {
+        "name": "poz_bitişi",
+        "tooltip": "Poz koşullandırmasının biteceği adım."
+      },
+      "pose_start": {
+        "name": "poz_başlangıcı",
+        "tooltip": "Poz koşullandırmasının başlayacağı adım."
+      },
+      "pose_strength": {
+        "name": "poz_gücü",
+        "tooltip": "Poz latentinin gücü."
+      },
+      "pose_video": {
+        "name": "poz_videosu",
+        "tooltip": "Poz koşullandırması için kullanılan video. Ana videonun çözünürlüğünün yarısına düşürülecek."
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "reference_image": {
+        "name": "referans_görsel"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Üretim boyutunda boş latent."
       }
     }
   },

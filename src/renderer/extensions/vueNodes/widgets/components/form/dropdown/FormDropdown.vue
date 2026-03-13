@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computedAsync, refDebounced } from '@vueuse/core'
 import Popover from 'primevue/popover'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -18,6 +19,8 @@ import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
   items: FormDropdownItem[]
+  /** Items used for display in the input field. Falls back to items if not provided. */
+  displayItems?: FormDropdownItem[]
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -87,11 +90,11 @@ const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
 const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
   default: () => new Set()
 })
+const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
-const isOpen = ref(false)
 
 const maxSelectable = computed(() => {
   if (multiple === true) return Infinity
@@ -99,9 +102,16 @@ const maxSelectable = computed(() => {
   return 1
 })
 
-const itemsKey = computed(() => items.map((item) => item.id).join('|'))
+const debouncedSearchQuery = refDebounced(searchQuery, 250, { maxWait: 1000 })
 
-const filteredItems = ref<FormDropdownItem[]>([])
+const filteredItems = computedAsync(async (onCancel) => {
+  let cleanupFn: (() => void) | undefined
+  onCancel(() => cleanupFn?.())
+  const result = await searcher(debouncedSearchQuery.value, items, (cb) => {
+    cleanupFn = cb
+  })
+  return result
+}, [])
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
   const sorter = sortOptions.find((option) => option.id === 'default')?.sorter
@@ -159,7 +169,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
       sel.clear()
       sel.add(item.id)
     } else {
-      toastStore.addAlert(`Maximum selection limit reached`)
+      toastStore.addAlert(t('widgets.uploadSelect.maxSelectionReached'))
       return
     }
   }
@@ -168,21 +178,6 @@ function handleSelection(item: FormDropdownItem, index: number) {
   if (maxSelectable.value === 1) {
     closeDropdown()
   }
-}
-
-async function customSearcher(
-  query: string,
-  onCleanup: (cleanupFn: () => void) => void
-) {
-  let isCleanup = false
-  let cleanupFn: undefined | (() => void)
-  onCleanup(() => {
-    isCleanup = true
-    cleanupFn?.()
-  })
-  await searcher(query, items, (cb) => (cleanupFn = cb)).then((results) => {
-    if (!isCleanup) filteredItems.value = results
-  })
 }
 </script>
 
@@ -193,6 +188,7 @@ async function customSearcher(
       :is-open
       :placeholder="placeholderText"
       :items
+      :display-items
       :max-selectable
       :selected
       :uploadable
@@ -230,11 +226,9 @@ async function customSearcher(
         :show-base-model-filter
         :base-model-options
         :disabled
-        :searcher="customSearcher"
         :items="sortedItems"
         :is-selected="internalIsSelected"
         :max-selectable
-        :update-key="itemsKey"
         @close="closeDropdown"
         @item-click="handleSelection"
       />

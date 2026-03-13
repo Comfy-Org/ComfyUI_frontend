@@ -1,6 +1,13 @@
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { CurvePoint } from '@/components/curve/types'
 
-import type { CanvasColour, Point, RequiredProps, Size } from '../interfaces'
+import type {
+  CanvasColour,
+  ColorStop,
+  Point,
+  RequiredProps,
+  Size
+} from '../interfaces'
 import type {
   CanvasPointer,
   LGraphCanvas,
@@ -41,6 +48,19 @@ export interface IWidgetOptions<TValues = unknown> {
   /** Used as a temporary override for determining the asset type in vue mode*/
   nodeType?: string
 
+  /**
+   * Whether the widget value should be included in the API prompt sent to
+   * the backend for execution. Checked by {@link executionUtil} when
+   * building the prompt payload.
+   *
+   * This is distinct from {@link IBaseWidget.serialize}, which controls
+   * whether the value is persisted in the workflow JSON file.
+   *
+   * @default true
+   * @see IBaseWidget.serialize — workflow persistence
+   */
+  serialize?: boolean
+
   values?: TValues
   /** Optional function to format values for display (e.g., hash → human-readable name) */
   getOptionLabel?: (value?: string | null) => string
@@ -62,6 +82,13 @@ interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
   step2: number
   slider_color?: CanvasColour
   marker_color?: CanvasColour
+}
+
+export interface IWidgetGradientSliderOptions extends IWidgetOptions<number[]> {
+  min: number
+  max: number
+  step2: number
+  gradient_stops?: ColorStop[]
 }
 
 interface IWidgetKnobOptions extends IWidgetOptions<number[]> {
@@ -93,6 +120,7 @@ export type IWidget =
   | IStringComboWidget
   | ICustomWidget
   | ISliderWidget
+  | IGradientSliderWidget
   | IButtonWidget
   | IKnobWidget
   | IFileUploadWidget
@@ -109,6 +137,8 @@ export type IWidget =
   | IAssetWidget
   | IImageCropWidget
   | IBoundingBoxWidget
+  | ICurveWidget
+  | IPainterWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -129,6 +159,15 @@ export interface ISliderWidget extends IBaseWidget<
   type: 'slider'
   value: number
   marker?: number
+}
+
+export interface IGradientSliderWidget extends IBaseWidget<
+  number,
+  'gradientslider',
+  IWidgetGradientSliderOptions
+> {
+  type: 'gradientslider'
+  value: number
 }
 
 export interface IKnobWidget extends IBaseWidget<
@@ -292,6 +331,16 @@ export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   value: Bounds
 }
 
+export interface ICurveWidget extends IBaseWidget<CurvePoint[], 'curve'> {
+  type: 'curve'
+  value: CurvePoint[]
+}
+
+export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
+  type: 'painter'
+  value: string
+}
+
 /**
  * Valid widget types.  TS cannot provide easily extensible type safety for this at present.
  * Override linkedWidgets[]
@@ -323,11 +372,17 @@ export interface IBaseWidget<
   /** Widget type (see {@link TWidgetType}) */
   type: TType
   value?: TValue
-  vueTrack?: () => void
 
   /**
-   * Whether the widget value should be serialized on node serialization.
+   * Whether the widget value is persisted in the workflow JSON
+   * (`widgets_values`). Checked by {@link LGraphNode.serialize} and
+   * {@link LGraphNode.configure}.
+   *
+   * This is distinct from {@link IWidgetOptions.serialize}, which controls
+   * whether the value is included in the API prompt sent for execution.
+   *
    * @default true
+   * @see IWidgetOptions.serialize — API prompt inclusion
    */
   serialize?: boolean
 
@@ -368,14 +423,6 @@ export interface IBaseWidget<
 
   hidden?: boolean
   advanced?: boolean
-  /**
-   * This property is automatically computed on graph change
-   * and should not be changed.
-   * Promoted widgets have a colored border
-   * @see /core/graph/subgraph/proxyWidget.registerProxyWidgets
-   */
-  promoted?: boolean
-
   tooltip?: string
 
   // TODO: Confirm this format

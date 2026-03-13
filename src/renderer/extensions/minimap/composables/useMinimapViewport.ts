@@ -90,12 +90,16 @@ export function useMinimapViewport(
     const centerOffsetX = (width - bounds.value.width * scale.value) / 2
     const centerOffsetY = (height - bounds.value.height * scale.value) / 2
 
-    viewportTransform.value = {
-      x: (worldX - bounds.value.minX) * scale.value + centerOffsetX,
-      y: (worldY - bounds.value.minY) * scale.value + centerOffsetY,
-      width: viewportWidth * scale.value,
-      height: viewportHeight * scale.value
-    }
+    const x = (worldX - bounds.value.minX) * scale.value + centerOffsetX
+    const y = (worldY - bounds.value.minY) * scale.value + centerOffsetY
+    const w = viewportWidth * scale.value
+    const h = viewportHeight * scale.value
+
+    const curr = viewportTransform.value
+    if (curr.x === x && curr.y === y && curr.width === w && curr.height === h)
+      return
+
+    viewportTransform.value = { x, y, width: w, height: h }
   }
 
   const updateBounds = () => {

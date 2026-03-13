@@ -8,6 +8,7 @@ import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import {
   FirebaseAuthStoreError,
@@ -40,7 +41,7 @@ function useSubscriptionInternal() {
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const firebaseAuthStore = useFirebaseAuthStore()
-  const { getFirebaseAuthHeader } = firebaseAuthStore
+  const { getAuthHeader } = firebaseAuthStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -76,6 +77,8 @@ function useSubscriptionInternal() {
   const subscriptionTier = computed(
     () => subscriptionStatus.value?.subscription_tier ?? null
   )
+
+  const isFreeTier = computed(() => subscriptionTier.value === 'FREE')
 
   const subscriptionDuration = computed(
     () => subscriptionStatus.value?.subscription_duration ?? null
@@ -130,12 +133,17 @@ function useSubscriptionInternal() {
     window.open(response.checkout_url, '_blank')
   }, reportError)
 
-  const showSubscriptionDialog = () => {
+  const showSubscriptionDialog = (options?: {
+    reason?: SubscriptionDialogReason
+  }) => {
     if (isCloud) {
-      useTelemetry()?.trackSubscription('modal_opened')
+      useTelemetry()?.trackSubscription('modal_opened', {
+        current_tier: subscriptionTier.value?.toLowerCase(),
+        reason: options?.reason
+      })
     }
 
-    void showSubscriptionRequiredDialog()
+    void showSubscriptionRequiredDialog(options)
   }
 
   /**
@@ -184,7 +192,7 @@ function useSubscriptionInternal() {
    * @returns Subscription status or null if no subscription exists
    */
   async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
-    const authHeader = await getFirebaseAuthHeader()
+    const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -217,7 +225,7 @@ function useSubscriptionInternal() {
   watch(
     () => isLoggedIn.value,
     async (loggedIn) => {
-      if (loggedIn) {
+      if (loggedIn && isCloud) {
         try {
           await fetchSubscriptionStatus()
         } catch (error) {
@@ -238,7 +246,7 @@ function useSubscriptionInternal() {
 
   const initiateSubscriptionCheckout =
     async (): Promise<CloudSubscriptionCheckoutResponse> => {
-      const authHeader = await getFirebaseAuthHeader()
+      const authHeader = await getAuthHeader()
       if (!authHeader) {
         throw new FirebaseAuthStoreError(
           t('toastMessages.userNotAuthenticated')
@@ -278,6 +286,7 @@ function useSubscriptionInternal() {
     formattedRenewalDate,
     formattedEndDate,
     subscriptionTier,
+    isFreeTier,
     subscriptionDuration,
     isYearlySubscription,
     subscriptionTierName,

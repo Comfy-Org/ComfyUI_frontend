@@ -1,17 +1,27 @@
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { NodeId, Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphNode,
   LiteGraph,
   LLink
 } from '@/lib/litegraph/src/litegraph'
+import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { usePromotionStore } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
   createTestSubgraphData,
   createTestSubgraphNode
 } from './subgraph/__fixtures__/subgraphHelpers'
 
+import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
+import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWidgets'
+import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
+import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
 function swapNodes(nodes: LGraphNode[]) {
@@ -225,9 +235,48 @@ describe('Graph Clearing and Callbacks', () => {
     // Verify nodes were actually removed
     expect(graph.nodes.length).toBe(0)
   })
+
+  test('clear() removes graph-scoped promotion and widget-value state', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const graph = new LGraph()
+    const graphId = 'graph-clear-cleanup' as UUID
+    graph.id = graphId
+
+    const promotionStore = usePromotionStore()
+    promotionStore.promote(graphId, 1 as NodeId, '10', 'seed')
+
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.registerWidget(graphId, {
+      nodeId: '10' as NodeId,
+      name: 'seed',
+      type: 'number',
+      value: 1,
+      options: {},
+      label: undefined,
+      serialize: undefined,
+      disabled: undefined
+    })
+
+    expect(promotionStore.isPromotedByAny(graphId, '10', 'seed')).toBe(true)
+    expect(widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')).toEqual(
+      expect.objectContaining({ value: 1 })
+    )
+
+    graph.clear()
+
+    expect(promotionStore.isPromotedByAny(graphId, '10', 'seed')).toBe(false)
+    expect(
+      widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')
+    ).toBeUndefined()
+  })
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
   function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
     const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
 
@@ -482,5 +531,251 @@ describe('ensureGlobalIdUniqueness', () => {
 
     expect(rootNode.id).toBe(rootId)
     expect(subNode.id).toBe(subId)
+  })
+})
+
+describe('Subgraph Unpacking', () => {
+  class TestNode extends LGraphNode {
+    constructor(title?: string) {
+      super(title ?? 'TestNode')
+      this.addInput('input_0', 'number')
+      this.addOutput('output_0', 'number')
+    }
+  }
+
+  class MultiInputNode extends LGraphNode {
+    constructor(title?: string) {
+      super(title ?? 'MultiInputNode')
+      this.addInput('input_0', 'number')
+      this.addInput('input_1', 'number')
+      this.addOutput('output_0', 'number')
+    }
+  }
+
+  function registerTestNodes() {
+    LiteGraph.registerNodeType('test/TestNode', TestNode)
+    LiteGraph.registerNodeType('test/MultiInputNode', MultiInputNode)
+  }
+
+  function createSubgraphOnGraph(rootGraph: LGraph) {
+    return rootGraph.createSubgraph(createTestSubgraphData())
+  }
+
+  it('deduplicates links when unpacking subgraph with duplicate links', () => {
+    registerTestNodes()
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const sourceNode = LiteGraph.createNode('test/TestNode', 'Source')!
+    const targetNode = LiteGraph.createNode('test/TestNode', 'Target')!
+    subgraph.add(sourceNode)
+    subgraph.add(targetNode)
+
+    // Create a legitimate link
+    sourceNode.connect(0, targetNode, 0)
+    expect(subgraph._links.size).toBe(1)
+
+    // Manually add duplicate links (simulating the bug)
+    const existingLink = subgraph._links.values().next().value!
+    for (let i = 0; i < 3; i++) {
+      const dupLink = new LLink(
+        ++subgraph.state.lastLinkId,
+        existingLink.type,
+        existingLink.origin_id,
+        existingLink.origin_slot,
+        existingLink.target_id,
+        existingLink.target_slot
+      )
+      subgraph._links.set(dupLink.id, dupLink)
+      sourceNode.outputs[0].links!.push(dupLink.id)
+    }
+    expect(subgraph._links.size).toBe(4)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    rootGraph.unpackSubgraph(subgraphNode)
+
+    // After unpacking, there should be exactly 1 link (not 4)
+    expect(rootGraph.links.size).toBe(1)
+  })
+
+  it('preserves correct link connections when unpacking with duplicate links', () => {
+    registerTestNodes()
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const sourceNode = LiteGraph.createNode('test/MultiInputNode', 'Source')!
+    const targetNode = LiteGraph.createNode('test/MultiInputNode', 'Target')!
+    subgraph.add(sourceNode)
+    subgraph.add(targetNode)
+
+    // Connect source output 0 → target input 0
+    sourceNode.connect(0, targetNode, 0)
+
+    // Add duplicate links to the same connection
+    const existingLink = subgraph._links.values().next().value!
+    const dupLink = new LLink(
+      ++subgraph.state.lastLinkId,
+      existingLink.type,
+      existingLink.origin_id,
+      existingLink.origin_slot,
+      existingLink.target_id,
+      existingLink.target_slot
+    )
+    subgraph._links.set(dupLink.id, dupLink)
+    sourceNode.outputs[0].links!.push(dupLink.id)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    rootGraph.unpackSubgraph(subgraphNode)
+
+    // Verify only 1 link exists
+    expect(rootGraph.links.size).toBe(1)
+
+    // Verify target input 1 does NOT have a link (no spurious connection)
+    const unpackedTarget = rootGraph.nodes.find((n) => n.title === 'Target')!
+    expect(unpackedTarget.inputs[0].link).not.toBeNull()
+    expect(unpackedTarget.inputs[1].link).toBeNull()
+  })
+
+  it('keeps subgraph definition when unpacking one instance while another remains', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const firstInstance = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    const secondInstance = createTestSubgraphNode(subgraph, { pos: [300, 100] })
+    secondInstance.id = 2
+    rootGraph.add(firstInstance)
+    rootGraph.add(secondInstance)
+
+    rootGraph.unpackSubgraph(firstInstance)
+
+    expect(rootGraph.subgraphs.has(subgraph.id)).toBe(true)
+
+    const serialized = rootGraph.serialize()
+    const definitionIds =
+      serialized.definitions?.subgraphs?.map((definition) => definition.id) ??
+      []
+    expect(definitionIds).toContain(subgraph.id)
+  })
+})
+
+describe('deduplicateSubgraphNodeIds (via configure)', () => {
+  const SUBGRAPH_A = '11111111-1111-4111-8111-111111111111' as UUID
+  const SUBGRAPH_B = '22222222-2222-4222-8222-222222222222' as UUID
+  const SHARED_NODE_IDS = [3, 8, 37]
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    LiteGraph.registerNodeType('dummy', DummyNode)
+  })
+
+  function loadFixture(): SerialisableGraph {
+    return structuredClone(duplicateSubgraphNodeIds)
+  }
+
+  function configureFromFixture() {
+    const graphData = loadFixture()
+    const graph = new LGraph()
+    graph.configure(graphData)
+    return { graph, graphData }
+  }
+
+  function nodeIdSet(graph: LGraph, subgraphId: UUID) {
+    return new Set(graph.subgraphs.get(subgraphId)!.nodes.map((n) => n.id))
+  }
+
+  it('remaps duplicate node IDs so subgraphs have no overlap', () => {
+    const { graph } = configureFromFixture()
+
+    const idsA = nodeIdSet(graph, SUBGRAPH_A)
+    const idsB = nodeIdSet(graph, SUBGRAPH_B)
+
+    for (const id of SHARED_NODE_IDS) {
+      expect(idsA.has(id as NodeId)).toBe(true)
+    }
+    for (const id of idsA) {
+      expect(idsB.has(id)).toBe(false)
+    }
+  })
+
+  it('patches link references in remapped subgraph', () => {
+    const { graph } = configureFromFixture()
+    const idsB = nodeIdSet(graph, SUBGRAPH_B)
+
+    for (const link of graph.subgraphs.get(SUBGRAPH_B)!.links.values()) {
+      expect(idsB.has(link.origin_id)).toBe(true)
+      expect(idsB.has(link.target_id)).toBe(true)
+    }
+  })
+
+  it('patches promoted widget references in remapped subgraph', () => {
+    const { graph } = configureFromFixture()
+    const idsB = nodeIdSet(graph, SUBGRAPH_B)
+
+    for (const widget of graph.subgraphs.get(SUBGRAPH_B)!.widgets) {
+      expect(idsB.has(widget.id)).toBe(true)
+    }
+  })
+
+  it('patches proxyWidgets in root-level nodes referencing remapped IDs', () => {
+    const { graph } = configureFromFixture()
+
+    const idsA = new Set(
+      graph.subgraphs.get(SUBGRAPH_A)!.nodes.map((n) => String(n.id))
+    )
+    const idsB = new Set(
+      graph.subgraphs.get(SUBGRAPH_B)!.nodes.map((n) => String(n.id))
+    )
+
+    const pw102 = graph.getNodeById(102 as NodeId)?.properties?.proxyWidgets
+    expect(Array.isArray(pw102)).toBe(true)
+    for (const entry of pw102 as unknown[][]) {
+      expect(Array.isArray(entry)).toBe(true)
+      expect(idsA.has(String(entry[0]))).toBe(true)
+    }
+
+    const pw103 = graph.getNodeById(103 as NodeId)?.properties?.proxyWidgets
+    expect(Array.isArray(pw103)).toBe(true)
+    for (const entry of pw103 as unknown[][]) {
+      expect(Array.isArray(entry)).toBe(true)
+      expect(idsB.has(String(entry[0]))).toBe(true)
+    }
+  })
+
+  it('patches proxyWidgets inside nested subgraph nodes', () => {
+    const graph = new LGraph()
+    graph.configure(structuredClone(nestedSubgraphProxyWidgets))
+
+    const idsB = new Set(
+      graph.subgraphs.get(SUBGRAPH_B)!.nodes.map((n) => String(n.id))
+    )
+
+    const innerNode = graph.subgraphs
+      .get(SUBGRAPH_A)!
+      .nodes.find((n) => n.id === (50 as NodeId))
+    const pw = innerNode?.properties?.proxyWidgets
+    expect(Array.isArray(pw)).toBe(true)
+    for (const entry of pw as unknown[][]) {
+      expect(Array.isArray(entry)).toBe(true)
+      expect(idsB.has(String(entry[0]))).toBe(true)
+    }
+  })
+
+  it('throws when node ID space is exhausted', () => {
+    expect(() => {
+      const graph = new LGraph()
+      graph.configure(structuredClone(nodeIdSpaceExhausted))
+    }).toThrow('Node ID space exhausted')
+  })
+
+  it('is a no-op when subgraph node IDs are already unique', () => {
+    const graph = new LGraph()
+    graph.configure(structuredClone(uniqueSubgraphNodeIds))
+
+    expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(new Set([10, 11, 12]))
+    expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(new Set([20, 21, 22]))
   })
 })

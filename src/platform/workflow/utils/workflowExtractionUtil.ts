@@ -19,7 +19,7 @@ import { getJobWorkflow } from '@/services/jobOutputCache'
  * @returns WorkflowSource with workflow and generated filename
  *
  * @example
- * const asset = { name: 'output.png', user_metadata: { promptId: '123' } }
+ * const asset = { name: 'output.png', user_metadata: { jobId: '123' } }
  * const { workflow, filename } = await extractWorkflowFromAsset(asset)
  */
 export async function extractWorkflowFromAsset(asset: AssetItem): Promise<{
@@ -30,8 +30,8 @@ export async function extractWorkflowFromAsset(asset: AssetItem): Promise<{
 
   // For output assets: use jobs API (with caching and validation)
   const metadata = getOutputAssetMetadata(asset.user_metadata)
-  if (metadata?.promptId) {
-    const workflow = await getJobWorkflow(metadata.promptId)
+  if (metadata?.jobId) {
+    const workflow = await getJobWorkflow(metadata.jobId)
     return { workflow: workflow ?? null, filename: baseFilename }
   }
 

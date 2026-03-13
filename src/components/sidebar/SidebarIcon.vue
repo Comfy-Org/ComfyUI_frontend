@@ -15,7 +15,7 @@
     :aria-label="computedTooltip"
     @click="emit('click', $event)"
   >
-    <div class="side-bar-button-content">
+    <div class="side-bar-button-content flex flex-col items-center gap-2">
       <slot name="icon">
         <div class="sidebar-icon-wrapper relative">
           <i
@@ -31,7 +31,7 @@
             v-if="shouldShowBadge"
             :class="
               cn(
-                'sidebar-icon-badge absolute min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-base-foreground',
+                'sidebar-icon-badge absolute min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] leading-[14px] font-medium text-base-foreground',
                 badgeClass || '-top-1 -right-1'
               )
             "
@@ -40,9 +40,11 @@
           </span>
         </div>
       </slot>
-      <span v-if="label && !isSmall" class="side-bar-button-label">{{
-        t(label)
-      }}</span>
+      <span
+        v-if="label && !isSmall"
+        class="side-bar-button-label text-center text-[10px]"
+        >{{ st(label, label) }}</span
+      >
     </div>
   </Button>
 </template>
@@ -50,12 +52,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Component } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { st } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
-
-const { t } = useI18n()
 const {
   icon = '',
   selected = false,
@@ -83,7 +83,7 @@ const overlayValue = computed(() =>
   typeof iconBadge === 'function' ? (iconBadge() ?? '') : iconBadge
 )
 const shouldShowBadge = computed(() => !!overlayValue.value)
-const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
+const computedTooltip = computed(() => st(tooltip, tooltip) + tooltipSuffix)
 </script>
 
 <style>
@@ -106,8 +106,6 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 </style>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .side-bar-button {
   width: var(--sidebar-width);
   height: var(--sidebar-item-height);
@@ -119,12 +117,7 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
   height: var(--sidebar-width);
 }
 
-.side-bar-button-content {
-  @apply flex flex-col items-center gap-2;
-}
-
 .side-bar-button-label {
-  @apply text-[10px] text-center;
   line-height: 1;
 }
 

@@ -15,50 +15,22 @@
 
     <template #header>
       <div class="flex w-full items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
+        <div class="flex w-full items-center gap-2">
           <SingleSelect
             v-model="searchMode"
             class="min-w-34"
             :options="filterOptions"
           />
-          <AutoCompletePlus
-            v-model.lazy="searchQuery"
+          <SearchAutocomplete
+            v-model="searchQuery"
             :suggestions="suggestions"
             :placeholder="$t('manager.searchPlaceholder')"
-            :complete-on-focus="false"
-            :delay="8"
             option-label="query"
-            class="w-full min-w-md max-w-lg"
-            :pt="{
-              root: { class: 'relative' },
-              pcInputText: {
-                root: {
-                  autofocus: true,
-                  class:
-                    'w-full h-10 rounded-lg bg-comfy-input text-comfy-input-foreground border-none outline-none text-sm'
-                }
-              },
-              overlay: {
-                class:
-                  'bg-comfy-input rounded-lg mt-1 shadow-lg border border-border-default'
-              },
-              list: { class: 'p-1' },
-              option: {
-                class:
-                  'px-3 py-2 rounded hover:bg-button-hover-surface cursor-pointer text-sm'
-              },
-              loader: { style: 'display: none' }
-            }"
-            :show-empty-message="false"
-            @complete="stubTrue"
-            @option-select="onOptionSelect"
-          >
-            <template #dropdownicon>
-              <i
-                class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              />
-            </template>
-          </AutoCompletePlus>
+            autofocus
+            size="lg"
+            class="max-w-96 flex-1"
+            @select="onOptionSelect"
+          />
         </div>
         <PackInstallButton
           v-if="isMissingTab && missingNodePacks.length > 0"
@@ -125,15 +97,19 @@
     </template>
 
     <template #content>
-      <div v-if="isLoading" class="scrollbar-hide h-full w-full overflow-auto">
+      <div v-if="isLoading" class="size-full scrollbar-hide overflow-auto">
         <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
       </div>
+      <UnresolvedNodesMessage
+        v-else-if="isUnresolvedTab"
+        :node-names="unresolvedNodeNames"
+      />
       <NoResultsPlaceholder
         v-else-if="displayPacks.length === 0"
         :title="emptyStateTitle"
         :message="emptyStateMessage"
       />
-      <div v-else class="h-full w-full" @click="handleGridContainerClick">
+      <div v-else class="size-full" @click="handleGridContainerClick">
         <VirtualGrid
           id="results-grid"
           :items="resultsWithKeys"
@@ -165,9 +141,8 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
-import { merge, stubTrue } from 'es-toolkit/compat'
-import type { AutoCompleteOptionSelectEvent } from 'primevue/autocomplete'
+import { until, whenever } from '@vueuse/core'
+import { merge } from 'es-toolkit/compat'
 import {
   computed,
   onBeforeUnmount,
@@ -183,7 +158,7 @@ import { useI18n } from 'vue-i18n'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
-import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
+import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
@@ -192,6 +167,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
+import type { QuerySuggestion } from '@/types/searchServiceTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue'
@@ -199,6 +175,7 @@ import InfoPanel from '@/workbench/extensions/manager/components/manager/infoPan
 import InfoPanelMultiItem from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelMultiItem.vue'
 import PackCard from '@/workbench/extensions/manager/components/manager/packCard/PackCard.vue'
 import GridSkeleton from '@/workbench/extensions/manager/components/manager/skeleton/GridSkeleton.vue'
+import UnresolvedNodesMessage from '@/workbench/extensions/manager/components/manager/UnresolvedNodesMessage.vue'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useUpdateAvailableNodes } from '@/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
@@ -211,8 +188,9 @@ import { useManagerState } from '@/workbench/extensions/manager/composables/useM
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-const { initialTab, onClose } = defineProps<{
+const { initialTab, initialPackId, onClose } = defineProps<{
   initialTab?: ManagerTab
+  initialPackId?: string
   onClose: () => void
 }>()
 
@@ -245,6 +223,7 @@ const {
 // Missing nodes composable
 const {
   missingNodePacks,
+  unresolvedNodeNames,
   isLoading: isMissingLoading,
   error: missingError
 } = useMissingNodes()
@@ -308,7 +287,17 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => [
         id: ManagerTab.Missing,
         label: t('manager.nav.missingNodes'),
         icon: 'icon-[lucide--triangle-alert]'
-      }
+      },
+      ...(unresolvedNodeNames.value.length > 0
+        ? [
+            {
+              id: ManagerTab.Unresolved,
+              label: t('manager.nav.unresolvedNodes'),
+              icon: 'icon-[lucide--help-circle]',
+              badge: unresolvedNodeNames.value.length
+            }
+          ]
+        : [])
     ]
   }
 ])
@@ -336,6 +325,12 @@ const selectedTab = computed(() =>
   findNavItemById(navItems.value, selectedNavId.value)
 )
 
+watch(navItems, (items) => {
+  if (selectedNavId.value && !findNavItemById(items, selectedNavId.value)) {
+    selectedNavId.value = ManagerTab.Missing
+  }
+})
+
 const {
   searchQuery,
   pageNumber,
@@ -347,8 +342,14 @@ const {
   sortOptions
 } = useRegistrySearch({
   initialSortField: initialState.sortField,
-  initialSearchMode: initialState.searchMode,
-  initialSearchQuery: initialState.searchQuery
+  initialSearchMode:
+    initialPackId && initialTabId !== ManagerTab.Missing
+      ? 'packs'
+      : initialState.searchMode,
+  initialSearchQuery:
+    initialTabId === ManagerTab.Missing
+      ? ''
+      : (initialPackId ?? initialState.searchQuery)
 })
 pageNumber.value = 0
 
@@ -370,8 +371,8 @@ const availableSortOptions = computed(() => {
   }))
 })
 
-const onOptionSelect = (event: AutoCompleteOptionSelectEvent) => {
-  searchQuery.value = event.value.query
+const onOptionSelect = (suggestion: QuerySuggestion) => {
+  searchQuery.value = suggestion.query
 }
 
 const onApproachEnd = () => {
@@ -396,9 +397,12 @@ const isUpdateAvailableTab = computed(
 const isMissingTab = computed(
   () => selectedTab.value?.id === ManagerTab.Missing
 )
+const isUnresolvedTab = computed(
+  () => selectedTab.value?.id === ManagerTab.Unresolved
+)
 
 // Map of tab IDs to their empty state i18n key suffixes
-const tabEmptyStateKeys: Partial<Record<ManagerTab, string>> = {
+const tabEmptyStateKeys: Record<string, string> = {
   [ManagerTab.AllInstalled]: 'allInstalled',
   [ManagerTab.UpdateAvailable]: 'updateAvailable',
   [ManagerTab.Conflicting]: 'conflicting',
@@ -406,12 +410,27 @@ const tabEmptyStateKeys: Partial<Record<ManagerTab, string>> = {
   [ManagerTab.Missing]: 'missing'
 }
 
+const managerApiDependentTabs = new Set<string>([
+  ManagerTab.AllInstalled,
+  ManagerTab.UpdateAvailable,
+  ManagerTab.Conflicting,
+  ManagerTab.NotInstalled,
+  ManagerTab.Missing
+])
+
+const isManagerErrorRelevant = computed(() => {
+  const tabId = selectedTab.value?.id
+  return (
+    !!comfyManagerStore.error && !!tabId && managerApiDependentTabs.has(tabId)
+  )
+})
+
 // Empty state messages based on current tab and search state
 const emptyStateTitle = computed(() => {
-  if (comfyManagerStore.error) return t('manager.errorConnecting')
+  if (isManagerErrorRelevant.value) return t('manager.errorConnecting')
   if (searchQuery.value) return t('manager.noResultsFound')
 
-  const tabId = selectedTab.value?.id as ManagerTab | undefined
+  const tabId = selectedTab.value?.id
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
 
   return emptyStateKey
@@ -420,7 +439,7 @@ const emptyStateTitle = computed(() => {
 })
 
 const emptyStateMessage = computed(() => {
-  if (comfyManagerStore.error) return t('manager.tryAgainLater')
+  if (isManagerErrorRelevant.value) return t('manager.tryAgainLater')
   if (searchQuery.value) {
     const baseMessage = t('manager.tryDifferentSearch')
     if (isLegacyManagerSearch.value) {
@@ -429,7 +448,7 @@ const emptyStateMessage = computed(() => {
     return baseMessage
   }
 
-  const tabId = selectedTab.value?.id as ManagerTab | undefined
+  const tabId = selectedTab.value?.id
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
 
   return emptyStateKey
@@ -474,6 +493,19 @@ watch(
     }
   }
 )
+
+// Auto-select the pack matching initialPackId once
+if (initialPackId) {
+  until(resultsWithKeys)
+    .toMatch((packs) => packs.some((p) => p.id === initialPackId))
+    .then((packs) => {
+      const target = packs.find((p) => p.id === initialPackId)
+      if (target && selectedNodePacks.value.length === 0) {
+        selectedNodePacks.value = [target]
+        isRightPanelOpen.value = true
+      }
+    })
+}
 
 const getLoadingCount = () => {
   switch (selectedTab.value?.id) {

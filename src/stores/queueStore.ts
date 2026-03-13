@@ -14,11 +14,12 @@ import type {
   StatusWsMessageStatus,
   TaskOutput
 } from '@/schemas/apiSchema'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -36,6 +37,7 @@ interface ResultItemInit extends ResultItem {
   mediaType: string
   format?: string
   frame_rate?: number
+  display_name?: string
 }
 
 export class ResultItemImpl {
@@ -46,6 +48,8 @@ export class ResultItemImpl {
   nodeId: NodeId
   // 'audio' | 'images' | ...
   mediaType: string
+
+  display_name?: string
 
   // VHS output specific fields
   format?: string
@@ -58,6 +62,8 @@ export class ResultItemImpl {
 
     this.nodeId = obj.nodeId
     this.mediaType = obj.mediaType
+
+    this.display_name = obj.display_name
 
     this.format = obj.format
     this.frame_rate = obj.frame_rate
@@ -91,6 +97,13 @@ export class ResultItemImpl {
     return api.apiURL('/view?' + this.urlParams)
   }
 
+  get previewUrl(): string {
+    if (!this.isImage) return this.url
+    const params = new URLSearchParams(this.urlParams)
+    appendCloudResParam(params, this.filename)
+    return api.apiURL('/view?' + params)
+  }
+
   get urlWithTimestamp(): string {
     return `${this.url}&t=${+new Date()}`
   }
@@ -105,6 +118,9 @@ export class ResultItemImpl {
     }
     if (this.isMp4) {
       return 'video/mp4'
+    }
+    if (this.filename.endsWith('.mov')) {
+      return 'video/quicktime'
     }
 
     if (this.isVhsFormat) {
@@ -134,14 +150,6 @@ export class ResultItemImpl {
     return undefined
   }
 
-  get isGif(): boolean {
-    return this.filename.endsWith('.gif')
-  }
-
-  get isWebp(): boolean {
-    return this.filename.endsWith('.webp')
-  }
-
   get isWebm(): boolean {
     return this.filename.endsWith('.webm')
   }
@@ -151,11 +159,11 @@ export class ResultItemImpl {
   }
 
   get isVideoBySuffix(): boolean {
-    return this.isWebm || this.isMp4
+    return getMediaTypeFromFilename(this.filename) === 'video'
   }
 
   get isImageBySuffix(): boolean {
-    return this.isGif || this.isWebp
+    return getMediaTypeFromFilename(this.filename) === 'image'
   }
 
   get isMp3(): boolean {
@@ -175,7 +183,7 @@ export class ResultItemImpl {
   }
 
   get isAudioBySuffix(): boolean {
-    return this.isMp3 || this.isWav || this.isOgg || this.isFlac
+    return getMediaTypeFromFilename(this.filename) === 'audio'
   }
 
   get isVideo(): boolean {
@@ -309,14 +317,10 @@ export class TaskItemImpl {
   }
 
   get key() {
-    return this.promptId + this.displayStatus
+    return this.jobId + this.displayStatus
   }
 
-  get queueIndex() {
-    return this.job.priority
-  }
-
-  get promptId() {
+  get jobId() {
     return this.job.id
   }
 
@@ -405,7 +409,7 @@ export class TaskItemImpl {
     if (!this.isHistory) {
       return this
     }
-    const jobDetail = await getJobDetail(this.promptId)
+    const jobDetail = await getJobDetail(this.jobId)
 
     if (!jobDetail?.outputs) {
       return this
@@ -421,7 +425,7 @@ export class TaskItemImpl {
     }
 
     // Single fetch for both workflow and outputs (with caching)
-    const jobDetail = await getJobDetail(this.promptId)
+    const jobDetail = await getJobDetail(this.jobId)
 
     const workflowData = await extractWorkflow(jobDetail)
     if (!workflowData) {
@@ -460,7 +464,7 @@ export class TaskItemImpl {
         new TaskItemImpl(
           {
             ...this.job,
-            id: `${this.promptId}-${i}`
+            id: `${this.jobId}-${i}`
           },
           {
             [output.nodeId]: {
@@ -479,6 +483,7 @@ export const useQueueStore = defineStore('queue', () => {
   const runningTasks = shallowRef<TaskItemImpl[]>([])
   const pendingTasks = shallowRef<TaskItemImpl[]>([])
   const historyTasks = shallowRef<TaskItemImpl[]>([])
+  const hasFetchedHistorySnapshot = ref(false)
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
@@ -498,8 +503,8 @@ export const useQueueStore = defineStore('queue', () => {
     tasks.value.flatMap((task: TaskItemImpl) => task.flatten())
   )
 
-  const lastHistoryQueueIndex = computed<number>(() =>
-    historyTasks.value.length ? historyTasks.value[0].queueIndex : -1
+  const lastJobHistoryPriority = computed<number>(() =>
+    historyTasks.value.length ? historyTasks.value[0].job.priority : -1
   )
 
   const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
@@ -527,15 +532,24 @@ export const useQueueStore = defineStore('queue', () => {
       const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
       const executionStore = useExecutionStore()
       appearedTasks.forEach((task) => {
-        const promptIdString = String(task.promptId)
+        const jobIdString = String(task.jobId)
         const workflowId = task.workflowId
-        if (workflowId && promptIdString) {
-          executionStore.registerPromptWorkflowIdMapping(
-            promptIdString,
-            workflowId
-          )
+        if (workflowId && jobIdString) {
+          executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
         }
       })
+
+      // Only reconcile when the queue fetch returned data. api.getQueue()
+      // returns empty Running/Pending on transient errors, which would
+      // incorrectly clear all initializing prompts.
+      const queueHasData = queue.Running.length > 0 || queue.Pending.length > 0
+      if (queueHasData) {
+        const activeJobIds = new Set([
+          ...queue.Running.map((j) => j.id),
+          ...queue.Pending.map((j) => j.id)
+        ])
+        executionStore.reconcileInitializingJobs(activeJobIds)
+      }
 
       // Sort by create_time descending and limit to maxItems
       const sortedHistory = [...history]
@@ -544,12 +558,12 @@ export const useQueueStore = defineStore('queue', () => {
 
       // Reuse existing TaskItemImpl instances or create new
       // Must recreate if outputs_count changed (e.g., API started returning it)
-      const existingByPromptId = new Map(
-        currentHistory.map((impl) => [impl.promptId, impl])
+      const existingByJobId = new Map(
+        currentHistory.map((impl) => [impl.jobId, impl])
       )
 
-      historyTasks.value = sortedHistory.map((job) => {
-        const existing = existingByPromptId.get(job.id)
+      const nextHistoryTasks = sortedHistory.map((job) => {
+        const existing = existingByJobId.get(job.id)
         if (!existing) return new TaskItemImpl(job)
         // Recreate if outputs_count changed to ensure lazy loading works
         if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
@@ -557,6 +571,15 @@ export const useQueueStore = defineStore('queue', () => {
         }
         return existing
       })
+
+      const isHistoryUnchanged =
+        nextHistoryTasks.length === currentHistory.length &&
+        nextHistoryTasks.every((task, index) => task === currentHistory[index])
+
+      if (!isHistoryUnchanged) {
+        historyTasks.value = nextHistoryTasks
+      }
+      hasFetchedHistorySnapshot.value = true
     } finally {
       // Only clear loading if this is the latest request.
       // A stale request completing (success or error) should not touch loading state
@@ -578,7 +601,7 @@ export const useQueueStore = defineStore('queue', () => {
   }
 
   const deleteTask = async (task: TaskItemImpl) => {
-    await api.deleteItem(task.apiTaskType, task.promptId)
+    await api.deleteItem(task.apiTaskType, task.jobId)
     await update()
   }
 
@@ -586,12 +609,13 @@ export const useQueueStore = defineStore('queue', () => {
     runningTasks,
     pendingTasks,
     historyTasks,
+    hasFetchedHistorySnapshot,
     maxHistoryItems,
     isLoading,
 
     tasks,
     flatTasks,
-    lastHistoryQueueIndex,
+    lastJobHistoryPriority,
     hasPendingTasks,
     activeJobsCount,
 
@@ -615,7 +639,20 @@ export const useQueuePendingTaskCountStore = defineStore(
   }
 )
 
-export type AutoQueueMode = 'disabled' | 'instant' | 'change'
+export type AutoQueueMode =
+  | 'disabled'
+  | 'change'
+  | 'instant-idle'
+  | 'instant-running'
+
+export const isInstantMode = (
+  mode: AutoQueueMode
+): mode is 'instant-idle' | 'instant-running' =>
+  mode === 'instant-idle' || mode === 'instant-running'
+
+export const isInstantRunningMode = (
+  mode: AutoQueueMode
+): mode is 'instant-running' => mode === 'instant-running'
 
 export const useQueueSettingsStore = defineStore('queueSettingsStore', {
   state: () => ({

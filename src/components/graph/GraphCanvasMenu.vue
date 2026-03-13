@@ -10,7 +10,9 @@
     ></div>
 
     <ButtonGroup
-      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 border-[1px] border-interface-stroke bg-comfy-menu-bg p-2"
+      role="toolbar"
+      :aria-label="t('graphCanvasMenu.canvasToolbar')"
+      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 border border-interface-stroke bg-comfy-menu-bg p-2"
       :style="{
         ...stringifiedMinimapStyles.buttonGroupStyles
       }"
@@ -20,17 +22,17 @@
         :button-styles="stringifiedMinimapStyles.buttonStyles"
       />
 
-      <div class="h-[27px] w-[1px] self-center bg-node-divider" />
+      <div class="h-[27px] w-px self-center bg-node-divider" />
 
       <Button
         v-tooltip.top="fitViewTooltip"
         variant="secondary"
         :aria-label="fitViewTooltip"
         :style="stringifiedMinimapStyles.buttonStyles"
-        class="h-8 w-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
+        class="size-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
-        <i class="icon-[lucide--focus] h-4 w-4" />
+        <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
       </Button>
 
       <Button
@@ -44,11 +46,11 @@
       >
         <span class="inline-flex items-center gap-1 px-2 text-xs">
           <span>{{ canvasStore.appScalePercentage }}%</span>
-          <i class="icon-[lucide--chevron-down] h-4 w-4" />
+          <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
         </span>
       </Button>
 
-      <div class="h-[27px] w-[1px] self-center bg-node-divider" />
+      <div class="h-[27px] w-px self-center bg-node-divider" />
 
       <Button
         v-tooltip.top="minimapTooltip"
@@ -59,7 +61,7 @@
         :class="minimapButtonClass"
         @click="onMinimapToggleClick"
       >
-        <i class="icon-[lucide--map] h-4 w-4" />
+        <i class="icon-[lucide--map] size-4" aria-hidden="true" />
       </Button>
 
       <Button
@@ -78,7 +80,7 @@
         :style="stringifiedMinimapStyles.buttonStyles"
         @click="onLinkVisibilityToggleClick"
       >
-        <i class="icon-[lucide--route-off] h-4 w-4" />
+        <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
       </Button>
     </ButtonGroup>
   </div>

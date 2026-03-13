@@ -57,6 +57,12 @@ const WidgetImageCrop = defineAsyncComponent(
 const WidgetBoundingBox = defineAsyncComponent(
   () => import('@/components/boundingbox/WidgetBoundingBox.vue')
 )
+const WidgetCurve = defineAsyncComponent(
+  () => import('@/components/curve/WidgetCurve.vue')
+)
+const WidgetPainter = defineAsyncComponent(
+  () => import('@/components/painter/WidgetPainter.vue')
+)
 
 export const FOR_TESTING = {
   WidgetButton,
@@ -93,7 +99,7 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     'float',
     {
       component: WidgetInputNumber,
-      aliases: ['FLOAT', 'number', 'slider'],
+      aliases: ['FLOAT', 'number', 'slider', 'gradientslider'],
       essential: true
     }
   ],
@@ -175,6 +181,22 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['BOUNDING_BOX'],
       essential: false
     }
+  ],
+  [
+    'curve',
+    {
+      component: WidgetCurve,
+      aliases: ['CURVE'],
+      essential: false
+    }
+  ],
+  [
+    'painter',
+    {
+      component: WidgetPainter,
+      aliases: ['PAINTER'],
+      essential: false
+    }
   ]
 ]
 
@@ -206,7 +228,13 @@ export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
   return !widget.options?.canvasOnly && !!widget.type
 }
 
-const EXPANDING_TYPES = ['textarea', 'markdown', 'load3D'] as const
+const EXPANDING_TYPES = [
+  'textarea',
+  'markdown',
+  'load3D',
+  'curve',
+  'painter'
+] as const
 
 export function shouldExpand(type: string): boolean {
   const canonicalType = getCanonicalType(type)

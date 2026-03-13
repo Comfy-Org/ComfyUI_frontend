@@ -49,7 +49,7 @@ export const useSubgraphService = () => {
       output_tooltips: [],
       name: id,
       display_name: name,
-      description: `Subgraph node for ${name}`,
+      description: exportedSubgraph.description || `Subgraph node for ${name}`,
       category: 'subgraph',
       output_node: false,
       python_module: 'nodes'

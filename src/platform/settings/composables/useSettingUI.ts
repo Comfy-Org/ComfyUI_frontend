@@ -177,7 +177,7 @@ export function useSettingUI(
     },
     component: defineAsyncComponent(
       () =>
-        import('@/components/dialog/content/setting/WorkspacePanelContent.vue')
+        import('@/platform/workspace/components/dialogs/settings/WorkspacePanelContent.vue')
     )
   }
 

@@ -284,14 +284,19 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "Show API node pricing badge"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "New Node Library Design",
+    "tooltip": "Enable the redesigned node library sidebar with tabs (Essential, All, Custom), improved search, and hover previews."
+  },
   "Comfy_NodeReplacement_Enabled": {
-    "name": "Enable automatic node replacement",
-    "tooltip": "When enabled, missing nodes can be automatically replaced with their newer equivalents if a replacement mapping exists."
+    "name": "Enable node replacement suggestions",
+    "tooltip": "When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements."
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Node search box implementation",
     "options": {
       "default": "default",
+      "v1 (legacy)": "v1 (legacy)",
       "litegraph (legacy)": "litegraph (legacy)"
     }
   },
@@ -301,15 +306,15 @@
   },
   "Comfy_NodeSearchBoxImpl_ShowCategory": {
     "name": "Show node category in search results",
-    "tooltip": "Only applies to the default implementation"
+    "tooltip": "Only applies to v1 (legacy)"
   },
   "Comfy_NodeSearchBoxImpl_ShowIdName": {
     "name": "Show node id name in search results",
-    "tooltip": "Only applies to the default implementation"
+    "tooltip": "Does not apply to litegraph (legacy)"
   },
   "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
     "name": "Show node frequency in search results",
-    "tooltip": "Only applies to the default implementation"
+    "tooltip": "Only applies to v1 (legacy)"
   },
   "Comfy_NodeSuggestions_number": {
     "name": "Number of nodes suggestions",
@@ -343,12 +348,16 @@
     "tooltip": "The maximum number of tasks that show in the queue history."
   },
   "Comfy_Queue_QPOV2": {
-    "name": "Use the unified job queue in the Assets side panel",
-    "tooltip": "Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout."
+    "name": "Docked job history/queue panel",
+    "tooltip": "Replaces the floating job queue panel with an equivalent job queue embedded in the job history side panel. You can disable this to return to the floating panel layout."
   },
   "Comfy_QueueButton_BatchCountLimit": {
     "name": "Batch count limit",
     "tooltip": "The maximum number of tasks added to the queue at one button click"
+  },
+  "Comfy_RightSidePanel_ShowErrorsTab": {
+    "name": "Show errors tab in side panel",
+    "tooltip": "When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance."
   },
   "Comfy_Sidebar_Location": {
     "name": "Sidebar location",
@@ -389,10 +398,10 @@
   },
   "Comfy_UI_TabBarLayout": {
     "name": "Tab Bar Layout",
-    "tooltip": "Controls the layout of the tab bar. \"Integrated\" moves Help and User controls into the tab bar area.",
+    "tooltip": "Controls the elements contained in the integrated tab bar.",
     "options": {
       "Default": "Default",
-      "Integrated": "Integrated"
+      "Legacy": "Legacy"
     }
   },
   "Comfy_UseNewMenu": {

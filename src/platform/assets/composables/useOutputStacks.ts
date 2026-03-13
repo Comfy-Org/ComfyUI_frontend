@@ -19,25 +19,25 @@ type UseOutputStacksOptions = {
 }
 
 export function useOutputStacks({ assets }: UseOutputStacksOptions) {
-  const expandedStackPromptIds = ref<Set<string>>(new Set())
-  const stackChildrenByPromptId = ref<Record<string, AssetItem[]>>({})
-  const loadingStackPromptIds = ref<Set<string>>(new Set())
+  const expandedStackJobIds = ref<Set<string>>(new Set())
+  const stackChildrenByJobId = ref<Record<string, AssetItem[]>>({})
+  const loadingStackJobIds = ref<Set<string>>(new Set())
 
   const assetItems = computed<OutputStackListItem[]>(() => {
     const items: OutputStackListItem[] = []
 
     for (const asset of assets.value) {
-      const promptId = getStackPromptId(asset)
+      const jobId = getStackJobId(asset)
       items.push({
         key: `asset-${asset.id}`,
         asset
       })
 
-      if (!promptId || !expandedStackPromptIds.value.has(promptId)) {
+      if (!jobId || !expandedStackJobIds.value.has(jobId)) {
         continue
       }
 
-      const children = stackChildrenByPromptId.value[promptId] ?? []
+      const children = stackChildrenByJobId.value[jobId] ?? []
       for (const child of children) {
         items.push({
           key: `asset-${child.id}`,
@@ -54,55 +54,55 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
     assetItems.value.map((item) => item.asset)
   )
 
-  function getStackPromptId(asset: AssetItem): string | null {
+  function getStackJobId(asset: AssetItem): string | null {
     const metadata = getOutputAssetMetadata(asset.user_metadata)
-    return metadata?.promptId ?? null
+    return metadata?.jobId ?? null
   }
 
   function isStackExpanded(asset: AssetItem): boolean {
-    const promptId = getStackPromptId(asset)
-    if (!promptId) return false
-    return expandedStackPromptIds.value.has(promptId)
+    const jobId = getStackJobId(asset)
+    if (!jobId) return false
+    return expandedStackJobIds.value.has(jobId)
   }
 
   async function toggleStack(asset: AssetItem) {
-    const promptId = getStackPromptId(asset)
-    if (!promptId) return
+    const jobId = getStackJobId(asset)
+    if (!jobId) return
 
-    if (expandedStackPromptIds.value.has(promptId)) {
-      const next = new Set(expandedStackPromptIds.value)
-      next.delete(promptId)
-      expandedStackPromptIds.value = next
+    if (expandedStackJobIds.value.has(jobId)) {
+      const next = new Set(expandedStackJobIds.value)
+      next.delete(jobId)
+      expandedStackJobIds.value = next
       return
     }
 
-    if (!stackChildrenByPromptId.value[promptId]?.length) {
-      if (loadingStackPromptIds.value.has(promptId)) {
+    if (!stackChildrenByJobId.value[jobId]?.length) {
+      if (loadingStackJobIds.value.has(jobId)) {
         return
       }
-      const nextLoading = new Set(loadingStackPromptIds.value)
-      nextLoading.add(promptId)
-      loadingStackPromptIds.value = nextLoading
+      const nextLoading = new Set(loadingStackJobIds.value)
+      nextLoading.add(jobId)
+      loadingStackJobIds.value = nextLoading
 
       const children = await resolveStackChildren(asset)
 
-      const afterLoading = new Set(loadingStackPromptIds.value)
-      afterLoading.delete(promptId)
-      loadingStackPromptIds.value = afterLoading
+      const afterLoading = new Set(loadingStackJobIds.value)
+      afterLoading.delete(jobId)
+      loadingStackJobIds.value = afterLoading
 
       if (!children.length) {
         return
       }
 
-      stackChildrenByPromptId.value = {
-        ...stackChildrenByPromptId.value,
-        [promptId]: children
+      stackChildrenByJobId.value = {
+        ...stackChildrenByJobId.value,
+        [jobId]: children
       }
     }
 
-    const nextExpanded = new Set(expandedStackPromptIds.value)
-    nextExpanded.add(promptId)
-    expandedStackPromptIds.value = nextExpanded
+    const nextExpanded = new Set(expandedStackJobIds.value)
+    nextExpanded.add(jobId)
+    expandedStackJobIds.value = nextExpanded
   }
 
   async function resolveStackChildren(asset: AssetItem): Promise<AssetItem[]> {

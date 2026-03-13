@@ -14,7 +14,9 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
         return (window.app!.extensionManager as WorkspaceStore).workflow
           .activeWorkflow?.filename
       })
-      expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
+      await expect
+        .poll(() => comfyPage.page.title())
+        .toBe(`*${workflowName} - ComfyUI`)
     })
 
     // Failing on CI
@@ -51,7 +53,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
     })
 
     test('Can display default title', async ({ comfyPage }) => {
-      expect(await comfyPage.page.title()).toBe('ComfyUI')
+      await expect.poll(() => comfyPage.page.title()).toBe('ComfyUI')
     })
   })
 })

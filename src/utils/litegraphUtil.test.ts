@@ -9,16 +9,25 @@ import type {
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
   compressWidgetInputSlots,
   createNode,
-  migrateWidgetsValues
+  isAnimatedOutput,
+  isVideoOutput,
+  migrateWidgetsValues,
+  resolveNode
 } from '@/utils/litegraphUtil'
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
+vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => ({
+  ...(await importOriginal()),
   LiteGraph: {
     createNode: vi.fn()
   }
+}))
+
+vi.mock('@/scripts/app', () => ({
+  app: { rootGraph: null }
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -37,7 +46,7 @@ function createMockCanvas(overrides: Partial<LGraphCanvas> = {}): LGraphCanvas {
   const mockGraph = {
     add: vi.fn((node) => node),
     change: vi.fn()
-  } satisfies Partial<LGraph> as unknown as LGraph
+  } as Partial<LGraph> as LGraph
   const mockCanvas: Partial<LGraphCanvas> = {
     graph_mouse: [100, 200],
     graph: mockGraph,
@@ -199,6 +208,106 @@ describe('migrateWidgetsValues', () => {
   })
 })
 
+function createOutput(
+  overrides: Partial<ExecutedWsMessage['output']> = {}
+): ExecutedWsMessage['output'] {
+  return { ...overrides }
+}
+
+describe('isAnimatedOutput', () => {
+  it('returns false for undefined output', () => {
+    expect(isAnimatedOutput(undefined)).toBe(false)
+  })
+
+  it('returns false when animated array is missing', () => {
+    expect(isAnimatedOutput(createOutput())).toBe(false)
+  })
+
+  it('returns false when all animated values are false', () => {
+    expect(isAnimatedOutput(createOutput({ animated: [false, false] }))).toBe(
+      false
+    )
+  })
+
+  it('returns true when any animated value is true', () => {
+    expect(isAnimatedOutput(createOutput({ animated: [false, true] }))).toBe(
+      true
+    )
+  })
+})
+
+describe('isVideoOutput', () => {
+  it('returns false for non-animated output', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [false],
+          images: [{ filename: 'video.webm' }]
+        })
+      )
+    ).toBe(false)
+  })
+
+  it('returns false for animated webp output', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [true],
+          images: [{ filename: 'anim.webp' }]
+        })
+      )
+    ).toBe(false)
+  })
+
+  it('returns false for animated png output', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [true],
+          images: [{ filename: 'anim.png' }]
+        })
+      )
+    ).toBe(false)
+  })
+
+  it('returns true for animated webm output', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [true],
+          images: [{ filename: 'output.webm' }]
+        })
+      )
+    ).toBe(true)
+  })
+
+  it('returns true for animated mp4 output', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [true],
+          images: [{ filename: 'output.mp4' }]
+        })
+      )
+    ).toBe(true)
+  })
+
+  it('returns true for animated output with no images array', () => {
+    expect(isVideoOutput(createOutput({ animated: [true] }))).toBe(true)
+  })
+
+  it('does not false-positive on filenames containing webp as substring', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [true],
+          images: [{ filename: 'my_webp_file.mp4' }]
+        })
+      )
+    ).toBe(true)
+  })
+})
+
 describe('compressWidgetInputSlots', () => {
   it('should remove unconnected widget input slots', () => {
     // Using partial mock - only including properties needed for test
@@ -279,5 +388,55 @@ describe('compressWidgetInputSlots', () => {
 
     expect(graph.nodes).toEqual([])
     expect(graph.links).toEqual([])
+  })
+})
+
+describe('resolveNode', () => {
+  function mockGraph(
+    nodeList: Partial<LGraphNode>[],
+    subgraphs?: Map<string, LGraph>
+  ) {
+    const nodesById: Record<string, LGraphNode> = {}
+    for (const n of nodeList) {
+      nodesById[String(n.id)] = n as LGraphNode
+    }
+    return {
+      nodes: nodeList as LGraphNode[],
+      getNodeById(id: unknown) {
+        return id != null ? (nodesById[String(id)] ?? null) : null
+      },
+      subgraphs: subgraphs ?? new Map()
+    } as unknown as LGraph
+  }
+
+  it('returns undefined when graph is nullish', () => {
+    expect(resolveNode(1, null)).toBeUndefined()
+    expect(resolveNode(1, undefined)).toBeUndefined()
+  })
+
+  it('finds a node in the main graph', () => {
+    const node = { id: 5 } as LGraphNode
+    const graph = mockGraph([node])
+    expect(resolveNode(5, graph)).toBe(node)
+  })
+
+  it('finds a node in a subgraph', () => {
+    const subNode = { id: 10 } as LGraphNode
+    const subgraph = mockGraph([subNode])
+    const graph = mockGraph([], new Map([['sg-1', subgraph]]))
+    expect(resolveNode(10, graph)).toBe(subNode)
+  })
+
+  it('returns undefined when node is not found anywhere', () => {
+    const graph = mockGraph([{ id: 1 } as LGraphNode])
+    expect(resolveNode(999, graph)).toBeUndefined()
+  })
+
+  it('prefers main graph over subgraph', () => {
+    const mainNode = { id: 1, title: 'main' } as LGraphNode
+    const subNode = { id: 1, title: 'sub' } as LGraphNode
+    const subgraph = mockGraph([subNode])
+    const graph = mockGraph([mainNode], new Map([['sg-1', subgraph]]))
+    expect(resolveNode(1, graph)).toBe(mainNode)
   })
 })

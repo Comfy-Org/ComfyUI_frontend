@@ -10,6 +10,7 @@ import type {
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
   filterByBaseModels,
   filterByCategory,
@@ -20,6 +21,7 @@ import {
   getAssetBaseModels,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -122,9 +124,10 @@ export function useAssetBrowser(
 
   const typeCategories = computed<NavItemData[]>(() => {
     const categories = assets.value
-      .filter((asset) => asset.tags[0] === 'models')
-      .map((asset) => asset.tags[1])
-      .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
+      .filter((asset) => asset.tags.includes(MODELS_TAG))
+      .flatMap((asset) =>
+        asset.tags.filter((tag) => tag !== MODELS_TAG && tag.length > 0)
+      )
       .map((tag) => tag.split('/')[0])
 
     return Array.from(new Set(categories))
@@ -192,6 +195,22 @@ export function useAssetBrowser(
     return assets.value.filter(filterByCategory(selectedCategory.value))
   })
 
+  const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
+    categoryFilteredAssets
+  )
+
+  const activeFileFormats = computed(() =>
+    filters.value.fileFormats.filter((f) =>
+      availableFileFormats.value.some((opt) => opt.value === f)
+    )
+  )
+
+  const activeBaseModels = computed(() =>
+    filters.value.baseModels.filter((m) =>
+      availableBaseModels.value.some((opt) => opt.value === m)
+    )
+  )
+
   const fuseOptions: UseFuseOptions<AssetItem> = {
     fuseOptions: {
       keys: [
@@ -223,8 +242,8 @@ export function useAssetBrowser(
 
   const filteredAssets = computed(() => {
     const filtered = searchFiltered.value
-      .filter(filterByFileFormats(filters.value.fileFormats))
-      .filter(filterByBaseModels(filters.value.baseModels))
+      .filter(filterByFileFormats(activeFileFormats.value))
+      .filter(filterByBaseModels(activeBaseModels.value))
       .filter(filterByOwnership(selectedOwnership.value))
 
     const sortedAssets = sortAssets(filtered, filters.value.sortBy)

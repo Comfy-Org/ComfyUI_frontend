@@ -1,7 +1,7 @@
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import type { ImageRef, ImageLayer } from '@/stores/maskEditorDataStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'

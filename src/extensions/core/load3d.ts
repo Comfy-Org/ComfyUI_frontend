@@ -17,6 +17,7 @@ import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { NodeOutputWith } from '@/schemas/apiSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 type Load3dPreviewOutput = NodeOutputWith<{
   result?: [string?, CameraState?, string?]
@@ -327,7 +328,7 @@ useExtensionService().registerExtension({
     return createExportMenuItems(load3d)
   },
 
-  async nodeCreated(node) {
+  async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'Load3D') return
 
     const [oldWidth, oldHeight] = node.size
@@ -423,7 +424,10 @@ useExtensionService().registerExtension({
 useExtensionService().registerExtension({
   name: 'Comfy.Preview3D',
 
-  async beforeRegisterNodeDef(_nodeType, nodeData) {
+  async beforeRegisterNodeDef(
+    _nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if ('Preview3D' === nodeData.name) {
       // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D']
@@ -462,7 +466,7 @@ useExtensionService().registerExtension({
     }
   },
 
-  async nodeCreated(node) {
+  async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'Preview3D') return
 
     const [oldWidth, oldHeight] = node.size

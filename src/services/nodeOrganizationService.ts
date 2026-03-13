@@ -1,18 +1,37 @@
+import type { EssentialsCategory } from '@/constants/essentialsNodes'
+import { ESSENTIALS_NODES } from '@/constants/essentialsNodes'
+import { t } from '@/i18n'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { buildNodeDefTree } from '@/stores/nodeDefStore'
 import type {
   NodeGroupingStrategy,
   NodeOrganizationOptions,
-  NodeSortStrategy
+  NodeSection,
+  NodeSortStrategy,
+  TabId
 } from '@/types/nodeOrganizationTypes'
 import { NodeSourceType } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import { sortedTree } from '@/utils/treeUtil'
+import { sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 
 const DEFAULT_ICON = 'pi pi-sort'
 
+function categoryPathExtractor(nodeDef: ComfyNodeDefImpl): string[] {
+  const category = nodeDef.category || ''
+  const categoryParts = category ? category.split('/') : []
+  return [...categoryParts, nodeDef.name]
+}
+
+function isBlueprint(node: ComfyNodeDefImpl): boolean {
+  return (
+    node.nodeSource.type === NodeSourceType.Blueprint ||
+    !!node.python_module?.startsWith('blueprint')
+  )
+}
+
 export const DEFAULT_GROUPING_ID = 'category' as const
 export const DEFAULT_SORTING_ID = 'original' as const
+export const DEFAULT_TAB_ID = 'all' as const
 
 class NodeOrganizationService {
   private readonly groupingStrategies: NodeGroupingStrategy[] = [
@@ -21,11 +40,7 @@ class NodeOrganizationService {
       label: 'sideToolbar.nodeLibraryTab.groupStrategies.category',
       icon: 'pi pi-folder',
       description: 'sideToolbar.nodeLibraryTab.groupStrategies.categoryDesc',
-      getNodePath: (nodeDef: ComfyNodeDefImpl) => {
-        const category = nodeDef.category || ''
-        const categoryParts = category ? category.split('/') : []
-        return [...categoryParts, nodeDef.name]
-      }
+      getNodePath: categoryPathExtractor
     },
     {
       id: 'module',
@@ -112,6 +127,203 @@ class NodeOrganizationService {
     return this.sortingStrategies.find((strategy) => strategy.id === id)
   }
 
+  organizeNodesByTab(
+    nodes: ComfyNodeDefImpl[],
+    tabId: TabId = DEFAULT_TAB_ID
+  ): NodeSection[] {
+    switch (tabId) {
+      case 'essentials':
+        return this.organizeEssentials(nodes)
+      case 'blueprints':
+        return this.organizeBlueprints(nodes)
+      case 'all':
+      default:
+        return this.organizeAll(nodes)
+    }
+  }
+
+  private organizeEssentials(nodes: ComfyNodeDefImpl[]): NodeSection[] {
+    const essentialNodes = nodes.filter(
+      (nodeDef) => !!nodeDef.essentials_category
+    )
+    const tree = buildNodeDefTree(essentialNodes, {
+      pathExtractor: (nodeDef) => {
+        const folder = nodeDef.essentials_category || ''
+        return folder ? [folder, nodeDef.name] : [nodeDef.name]
+      }
+    })
+    this.sortEssentialsFolders(tree)
+    return [{ tree }]
+  }
+
+  private sortEssentialsFolders(tree: TreeNode): void {
+    if (!tree.children) return
+    for (const folder of tree.children) {
+      if (!folder.children) continue
+      const order = ESSENTIALS_NODES[folder.label as EssentialsCategory]
+      if (!order) continue
+      const orderLen = order.length
+      folder.children.sort((a, b) => {
+        const ai = order.indexOf(a.data?.name ?? a.label ?? '')
+        const bi = order.indexOf(b.data?.name ?? b.label ?? '')
+        return (ai === -1 ? orderLen : ai) - (bi === -1 ? orderLen : bi)
+      })
+    }
+  }
+
+  private organizeBlueprints(nodes: ComfyNodeDefImpl[]): NodeSection[] {
+    const { myBlueprints, comfyBlueprints } = this.partitionBlueprints(nodes)
+    return [
+      {
+        title: 'sideToolbar.nodeLibraryTab.sections.myBlueprints',
+        tree: unwrapTreeRoot(
+          buildNodeDefTree(myBlueprints, {
+            pathExtractor: categoryPathExtractor
+          })
+        )
+      },
+      {
+        title: 'sideToolbar.nodeLibraryTab.sections.comfyBlueprints',
+        tree: unwrapTreeRoot(
+          buildNodeDefTree(comfyBlueprints, {
+            pathExtractor: categoryPathExtractor
+          })
+        )
+      }
+    ]
+  }
+
+  private organizeAll(nodes: ComfyNodeDefImpl[]): NodeSection[] {
+    const {
+      myBlueprints,
+      comfyBlueprints,
+      partnerNodes,
+      comfyNodes,
+      extensions
+    } = this.classifyNodes(nodes)
+
+    const blueprintTree = this.buildBlueprintTree(
+      myBlueprints,
+      comfyBlueprints,
+      categoryPathExtractor
+    )
+
+    const sections: NodeSection[] = []
+
+    if (blueprintTree.children?.length) {
+      sections.push({ category: 'blueprints', tree: blueprintTree })
+    }
+    if (partnerNodes.length > 0) {
+      sections.push({
+        category: 'partnerNodes',
+        tree: unwrapTreeRoot(
+          buildNodeDefTree(partnerNodes, {
+            pathExtractor: categoryPathExtractor
+          })
+        )
+      })
+    }
+    if (comfyNodes.length > 0) {
+      sections.push({
+        category: 'comfyNodes',
+        tree: buildNodeDefTree(comfyNodes, {
+          pathExtractor: categoryPathExtractor
+        })
+      })
+    }
+    if (extensions.length > 0) {
+      sections.push({
+        category: 'extensions',
+        tree: buildNodeDefTree(extensions, {
+          pathExtractor: categoryPathExtractor
+        })
+      })
+    }
+
+    return sections
+  }
+
+  private partitionBlueprints(nodes: ComfyNodeDefImpl[]): {
+    myBlueprints: ComfyNodeDefImpl[]
+    comfyBlueprints: ComfyNodeDefImpl[]
+  } {
+    const myBlueprints: ComfyNodeDefImpl[] = []
+    const comfyBlueprints: ComfyNodeDefImpl[] = []
+    for (const node of nodes) {
+      if (!isBlueprint(node)) continue
+      if (node.isGlobal) comfyBlueprints.push(node)
+      else myBlueprints.push(node)
+    }
+    return { myBlueprints, comfyBlueprints }
+  }
+
+  private classifyNodes(nodes: ComfyNodeDefImpl[]): {
+    myBlueprints: ComfyNodeDefImpl[]
+    comfyBlueprints: ComfyNodeDefImpl[]
+    partnerNodes: ComfyNodeDefImpl[]
+    comfyNodes: ComfyNodeDefImpl[]
+    extensions: ComfyNodeDefImpl[]
+  } {
+    const myBlueprints: ComfyNodeDefImpl[] = []
+    const comfyBlueprints: ComfyNodeDefImpl[] = []
+    const partnerNodes: ComfyNodeDefImpl[] = []
+    const comfyNodes: ComfyNodeDefImpl[] = []
+    const extensions: ComfyNodeDefImpl[] = []
+
+    for (const node of nodes) {
+      if (isBlueprint(node)) {
+        if (node.isGlobal) comfyBlueprints.push(node)
+        else myBlueprints.push(node)
+      } else if (node.api_node || node.category?.startsWith('api node')) {
+        partnerNodes.push(node)
+      } else if (
+        node.nodeSource.type === NodeSourceType.Core ||
+        node.nodeSource.type === NodeSourceType.Essentials
+      ) {
+        comfyNodes.push(node)
+      } else {
+        extensions.push(node)
+      }
+    }
+
+    return {
+      myBlueprints,
+      comfyBlueprints,
+      partnerNodes,
+      comfyNodes,
+      extensions
+    }
+  }
+
+  private buildBlueprintTree(
+    myBlueprints: ComfyNodeDefImpl[],
+    comfyBlueprints: ComfyNodeDefImpl[],
+    pathExtractor: (nodeDef: ComfyNodeDefImpl) => string[]
+  ): TreeNode {
+    const children: TreeNode[] = []
+    if (myBlueprints.length > 0) {
+      const tree = unwrapTreeRoot(
+        buildNodeDefTree(myBlueprints, { pathExtractor })
+      )
+      children.push({
+        key: 'root/my-blueprints',
+        label: t('sideToolbar.nodeLibraryTab.sections.myBlueprints'),
+        children: tree.children
+      })
+    }
+    if (comfyBlueprints.length > 0) {
+      const tree = unwrapTreeRoot(
+        buildNodeDefTree(comfyBlueprints, { pathExtractor })
+      )
+      children.push({
+        key: 'root/comfy-blueprints',
+        label: t('sideToolbar.nodeLibraryTab.sections.comfyBlueprints'),
+        children: tree.children
+      })
+    }
+    return { key: 'root', label: '', children }
+  }
+
   organizeNodes(
     nodes: ComfyNodeDefImpl[],
     options: NodeOrganizationOptions = {}
@@ -131,9 +343,9 @@ class NodeOrganizationService {
     }
 
     const sortedNodes =
-      sortingStrategy.id !== 'original'
-        ? [...nodes].sort(sortingStrategy.compare)
-        : nodes
+      sortingStrategy.id === 'original'
+        ? nodes
+        : [...nodes].sort(sortingStrategy.compare)
 
     const tree = buildNodeDefTree(sortedNodes, {
       pathExtractor: groupingStrategy.getNodePath

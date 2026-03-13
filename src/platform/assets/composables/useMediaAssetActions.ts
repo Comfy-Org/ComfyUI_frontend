@@ -14,15 +14,20 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
+import { useAssetExportStore } from '@/stores/assetExportStore'
+
 import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
+
+const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
 export function useMediaAssetActions() {
   const { t } = useI18n()
@@ -44,12 +49,12 @@ export function useMediaAssetActions() {
     assetType: string
   ): Promise<void> => {
     if (assetType === 'output') {
-      const promptId =
-        getOutputAssetMetadata(asset.user_metadata)?.promptId || asset.id
-      if (!promptId) {
-        throw new Error('Unable to extract prompt ID from asset')
+      const jobId =
+        getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
+      if (!jobId) {
+        throw new Error('Unable to extract job ID from asset')
       }
-      await api.deleteItem('history', promptId)
+      await api.deleteItem('history', jobId)
     } else {
       // Input assets can only be deleted in cloud environment
       if (!isCloud) {
@@ -64,7 +69,7 @@ export function useMediaAssetActions() {
     if (!targetAsset) return
 
     try {
-      const filename = targetAsset.name
+      const filename = getAssetDisplayName(targetAsset)
       // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
       const downloadUrl = targetAsset.preview_url || getAssetUrl(targetAsset)
 
@@ -73,30 +78,39 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'success',
         summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', { count: 1 }),
+        detail: t('mediaAsset.selection.downloadsStarted', 1),
         life: 2000
       })
     } catch (error) {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('g.failedToDownloadImage'),
-        life: 3000
+        detail: t('g.failedToDownloadImage')
       })
     }
   }
 
   /**
-   * Download multiple assets at once
-   * @param assets Array of assets to download
+   * Download multiple assets at once.
+   * In cloud mode with 2+ assets, creates a ZIP export via the backend.
+   * Falls back to individual downloads in OSS mode or for single assets.
    */
   const downloadMultipleAssets = (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
 
+    const hasMultiOutputJobs = assets.some((a) => {
+      const count = getOutputAssetMetadata(a.user_metadata)?.outputCount
+      return typeof count === 'number' && count > 1
+    })
+
+    if (isCloud && (assets.length > 1 || hasMultiOutputJobs)) {
+      void downloadMultipleAssetsAsZip(assets)
+      return
+    }
+
     try {
       assets.forEach((asset) => {
-        const filename = asset.name
-        // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
+        const filename = getAssetDisplayName(asset)
         const downloadUrl = asset.preview_url || getAssetUrl(asset)
         downloadFile(downloadUrl, filename)
       })
@@ -104,9 +118,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'success',
         summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', {
-          count: assets.length
-        }),
+        detail: t('mediaAsset.selection.downloadsStarted', assets.length),
         life: 2000
       })
     } catch (error) {
@@ -114,8 +126,65 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('g.failedToDownloadImage'),
+        detail: t('g.failedToDownloadImage')
+      })
+    }
+  }
+
+  async function downloadMultipleAssetsAsZip(assets: AssetItem[]) {
+    const assetExportStore = useAssetExportStore()
+
+    try {
+      const jobIds: string[] = []
+      const assetIds: string[] = []
+      const jobAssetNameFilters: Record<string, string[]> = {}
+
+      for (const asset of assets) {
+        if (getAssetType(asset) === 'output') {
+          const metadata = getOutputAssetMetadata(asset.user_metadata)
+          const jobId = metadata?.jobId || asset.id
+          if (!jobIds.includes(jobId)) {
+            jobIds.push(jobId)
+          }
+          // Only add name filters when outputCount is unknown.
+          // When outputCount is set, the asset is a job-level selection
+          // from the gallery and the user wants all outputs for that job.
+          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
+            if (!jobAssetNameFilters[metadata.jobId]) {
+              jobAssetNameFilters[metadata.jobId] = []
+            }
+            if (!jobAssetNameFilters[metadata.jobId].includes(asset.name)) {
+              jobAssetNameFilters[metadata.jobId].push(asset.name)
+            }
+          }
+        } else {
+          assetIds.push(asset.id)
+        }
+      }
+
+      const result = await assetService.createAssetExport({
+        ...(jobIds.length > 0 ? { job_ids: jobIds } : {}),
+        ...(assetIds.length > 0 ? { asset_ids: assetIds } : {}),
+        ...(Object.keys(jobAssetNameFilters).length > 0
+          ? { job_asset_name_filters: jobAssetNameFilters }
+          : {}),
+        naming_strategy: 'preserve'
+      })
+
+      assetExportStore.trackExport(result.task_id)
+
+      toast.add({
+        severity: 'info',
+        summary: t('exportToast.exportStarted'),
+        detail: t('mediaAsset.selection.exportStarted', assets.length),
         life: 3000
+      })
+    } catch (error) {
+      console.error('Failed to create asset export:', error)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('exportToast.exportFailedSingle')
       })
     }
   }
@@ -125,11 +194,11 @@ export function useMediaAssetActions() {
     if (!targetAsset) return
 
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
-    const promptId =
-      metadata?.promptId ||
+    const jobId =
+      metadata?.jobId ||
       (getAssetType(targetAsset) === 'output' ? targetAsset.id : undefined)
 
-    if (!promptId) {
+    if (!jobId) {
       toast.add({
         severity: 'warn',
         summary: t('g.warning'),
@@ -139,7 +208,7 @@ export function useMediaAssetActions() {
       return
     }
 
-    await copyToClipboard(promptId)
+    await copyToClipboard(jobId)
   }
 
   /**
@@ -170,8 +239,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('mediaAsset.nodeTypeNotFound', { nodeType }),
-        life: 3000
+        detail: t('mediaAsset.nodeTypeNotFound', { nodeType })
       })
       return
     }
@@ -184,8 +252,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('mediaAsset.failedToCreateNode'),
-        life: 3000
+        detail: t('mediaAsset.failedToCreateNode')
       })
       return
     }
@@ -375,8 +442,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('mediaAsset.selection.failedToAddNodes'),
-        life: 3000
+        detail: t('mediaAsset.selection.failedToAddNodes')
       })
     } else {
       toast.add({
@@ -573,6 +639,22 @@ export function useMediaAssetActions() {
                 await assetsStore.updateInputs()
               }
 
+              // Invalidate model caches for affected categories
+              const modelCategories = new Set<string>()
+
+              for (const asset of assetArray) {
+                for (const tag of asset.tags ?? []) {
+                  if (EXCLUDED_TAGS.has(tag)) continue
+                  if (assetsStore.hasCategory(tag)) {
+                    modelCategories.add(tag)
+                  }
+                }
+              }
+
+              for (const category of modelCategories) {
+                assetsStore.invalidateModelsForCategory(category)
+              }
+
               // Show appropriate feedback based on results
               if (failed.length === 0) {
                 toast.add({
@@ -580,9 +662,10 @@ export function useMediaAssetActions() {
                   summary: t('g.success'),
                   detail: isSingle
                     ? t('mediaAsset.assetDeletedSuccessfully')
-                    : t('mediaAsset.selection.assetsDeletedSuccessfully', {
-                        count: succeeded
-                      }),
+                    : t(
+                        'mediaAsset.selection.assetsDeletedSuccessfully',
+                        succeeded
+                      ),
                   life: 2000
                 })
               } else if (succeeded === 0) {
@@ -591,8 +674,7 @@ export function useMediaAssetActions() {
                   summary: t('g.error'),
                   detail: isSingle
                     ? t('mediaAsset.failedToDeleteAsset')
-                    : t('mediaAsset.selection.failedToDeleteAssets'),
-                  life: 3000
+                    : t('mediaAsset.selection.failedToDeleteAssets')
                 })
               } else {
                 // Partial success (only possible with multiple assets)
@@ -613,8 +695,7 @@ export function useMediaAssetActions() {
                 summary: t('g.error'),
                 detail: isSingle
                   ? t('mediaAsset.failedToDeleteAsset')
-                  : t('mediaAsset.selection.failedToDeleteAssets'),
-                life: 3000
+                  : t('mediaAsset.selection.failedToDeleteAssets')
               })
             } finally {
               // Hide loading overlay for all assets
