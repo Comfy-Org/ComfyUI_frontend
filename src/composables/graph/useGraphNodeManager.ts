@@ -204,7 +204,7 @@ function safeWidgetMapper(
 
     return {
       canvasOnly: widget.options.canvasOnly,
-      advanced: widget.advanced,
+      advanced: widget.options?.advanced,
       hidden: widget.options.hidden,
       read_only: widget.options.read_only
     }
