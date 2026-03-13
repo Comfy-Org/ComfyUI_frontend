@@ -11306,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "نقاش",
+    "inputs": {
+      "bg_color": {
+        "name": "رنگ پس‌زمینه"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر پایه اختیاری برای نقاشی روی آن"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "ترکیب جفت شرطی",
     "inputs": {
