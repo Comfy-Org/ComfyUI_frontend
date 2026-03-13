@@ -326,6 +326,8 @@
     "nightly": "NIGHTLY",
     "profile": "Profile",
     "noItems": "No items",
+    "preloadError": "A required resource failed to load. Please reload the page.",
+    "preloadErrorTitle": "Loading Error",
     "recents": "Recents",
     "partner": "Partner",
     "collapseAll": "Collapse all",
