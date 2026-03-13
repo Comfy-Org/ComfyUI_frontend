@@ -90,6 +90,7 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -133,10 +134,6 @@ const listGridStyle = {
   gridTemplateColumns: 'minmax(0, 1fr)',
   padding: '0 0.5rem',
   gap: '0.5rem'
-}
-
-function getAssetDisplayName(asset: AssetItem): string {
-  return asset.display_name || asset.name
 }
 
 function getAssetPrimaryText(asset: AssetItem): string {
