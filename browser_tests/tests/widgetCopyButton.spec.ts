@@ -42,9 +42,7 @@ test.describe('Widget copy button', { tag: '@ui' }, () => {
   })
 
   test('Widget container has group class for hover', async ({ comfyPage }) => {
-    const textarea = comfyPage.page
-      .locator('[data-node-id] textarea')
-      .first()
+    const textarea = comfyPage.page.locator('[data-node-id] textarea').first()
     await expect(textarea).toBeVisible()
     const container = textarea.locator('..')
     await expect(container).toHaveClass(/group/)
