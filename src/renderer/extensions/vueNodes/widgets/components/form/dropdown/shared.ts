@@ -12,7 +12,8 @@ export async function defaultSearcher(
   const words = query.trim().toLowerCase().split(' ')
   return items.filter((item) => {
     const name = item.name.toLowerCase()
-    return words.every((word) => name.includes(word))
+    const label = item.label?.toLowerCase() ?? ''
+    return words.every((word) => name.includes(word) || label.includes(word))
   })
 }
 

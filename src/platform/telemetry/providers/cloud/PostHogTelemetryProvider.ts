@@ -2,11 +2,13 @@ import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
   AuthMetadata,
+  DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
   ExecutionContext,
@@ -34,7 +36,8 @@ import type {
   TemplateMetadata,
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
-  WorkflowImportMetadata
+  WorkflowImportMetadata,
+  WorkflowSavedMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { getExecutionContext } from '../../utils/getExecutionContext'
@@ -99,14 +102,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         void import('posthog-js')
           .then((posthogModule) => {
             this.posthog = posthogModule.default
+            const serverConfig = remoteConfig.value?.posthog_config ?? {}
             this.posthog!.init(apiKey, {
               api_host:
-                window.__CONFIG__?.posthog_api_host || 'https://ph.comfy.org',
+                window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
+              ui_host: 'https://us.posthog.com',
               autocapture: false,
               capture_pageview: false,
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
-              debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true'
+              debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
+              ...serverConfig
             })
             this.isInitialized = true
             this.flushEventQueue()
@@ -114,6 +120,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             useCurrentUser().onUserResolved((user) => {
               if (this.posthog && user.id) {
                 this.posthog.identify(user.id)
+                this.setSubscriptionProperties()
               }
             })
           })
@@ -203,6 +210,19 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         }
         return isValid
       })
+    )
+  }
+
+  private setSubscriptionProperties(): void {
+    const { subscriptionTier } = useSubscription()
+    watch(
+      subscriptionTier,
+      (tier) => {
+        if (tier && this.posthog) {
+          this.posthog.people.set({ subscription_tier: tier })
+        }
+      },
+      { immediate: true }
     )
   }
 
@@ -342,6 +362,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
+  }
+
+  trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_SAVED, metadata)
+  }
+
+  trackDefaultViewSet(metadata: DefaultViewSetMetadata): void {
+    this.trackEvent(TelemetryEvents.DEFAULT_VIEW_SET, metadata)
   }
 
   trackEnterLinear(metadata: EnterLinearMetadata): void {

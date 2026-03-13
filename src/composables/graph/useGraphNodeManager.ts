@@ -204,7 +204,7 @@ function safeWidgetMapper(
 
     return {
       canvasOnly: widget.options.canvasOnly,
-      advanced: widget.advanced,
+      advanced: widget.options?.advanced ?? widget.advanced,
       hidden: widget.options.hidden,
       read_only: widget.options.read_only
     }
@@ -324,7 +324,8 @@ function safeWidgetMapper(
             }
           : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
         slotMetadata: slotInfo,
-        slotName: name !== widget.name ? widget.name : undefined
+        slotName: name !== widget.name ? widget.name : undefined,
+        tooltip: widget.tooltip
       }
     } catch (error) {
       return {

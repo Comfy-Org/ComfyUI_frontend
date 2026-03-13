@@ -11,7 +11,7 @@ const config: KnipConfig = {
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts'
       ],
-      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
+      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}', '!.claude/**']
     },
     'apps/desktop-ui': {
       entry: ['src/main.ts', 'src/i18n.ts'],

@@ -81,7 +81,6 @@
           ? 'Execution error'
           : null
       "
-      :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
     />
   </TransformPane>
@@ -364,7 +363,14 @@ watch(
   }
 )
 
-// Update the progress of executing nodes
+/**
+ * Propagates execution progress from the store to LiteGraph node objects
+ * and triggers a canvas redraw.
+ *
+ * No `deep: true` needed — `nodeLocationProgressStates` is a computed that
+ * returns a new `Record` object on every progress event (the underlying
+ * `nodeProgressStates` ref is replaced wholesale by the WebSocket handler).
+ */
 watch(
   () =>
     [executionStore.nodeLocationProgressStates, canvasStore.canvas] as const,
@@ -382,8 +388,7 @@ watch(
 
     // Force canvas redraw to ensure progress updates are visible
     canvas.setDirty(true, false)
-  },
-  { deep: true }
+  }
 )
 
 // Update node slot errors for LiteGraph nodes
@@ -538,7 +543,7 @@ onMounted(async () => {
 
   // Restore saved workflow and workflow tabs state
   await workflowPersistence.initializeWorkflow()
-  workflowPersistence.restoreWorkflowTabsState()
+  await workflowPersistence.restoreWorkflowTabsState()
 
   const sharedWorkflowLoadStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
