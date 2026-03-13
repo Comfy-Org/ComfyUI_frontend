@@ -114,6 +114,7 @@
                 <div class="actions flex flex-row justify-end">
                   <Button
                     v-if="slotProps.data.keybindings.length === 1"
+                    v-tooltip="$t('g.edit')"
                     variant="textonly"
                     size="icon"
                     :aria-label="$t('g.edit')"
@@ -127,6 +128,7 @@
                     <i class="icon-[lucide--pencil]" />
                   </Button>
                   <Button
+                    v-tooltip="$t('g.addNewKeybinding')"
                     variant="textonly"
                     size="icon"
                     :aria-label="$t('g.addNewKeybinding')"
@@ -135,7 +137,7 @@
                     <i class="icon-[lucide--plus]" />
                   </Button>
                   <Button
-                    v-if="slotProps.data.keybindings.length <= 1"
+                    v-tooltip="$t('g.reset')"
                     variant="textonly"
                     size="icon"
                     :aria-label="$t('g.reset')"
@@ -149,6 +151,7 @@
                     <i class="icon-[lucide--rotate-ccw]" />
                   </Button>
                   <Button
+                    v-tooltip="$t('g.delete')"
                     variant="textonly"
                     size="icon"
                     :aria-label="$t('g.delete')"
@@ -183,6 +186,7 @@
                   </div>
                   <div class="flex flex-row">
                     <Button
+                      v-tooltip="$t('g.edit')"
                       variant="textonly"
                       size="icon"
                       :aria-label="$t('g.edit')"
@@ -191,20 +195,7 @@
                       <i class="icon-[lucide--pencil]" />
                     </Button>
                     <Button
-                      v-if="idx === 0"
-                      variant="textonly"
-                      size="icon"
-                      :aria-label="$t('g.reset')"
-                      :disabled="
-                        !keybindingStore.isCommandKeybindingModified(
-                          slotProps.data.id
-                        )
-                      "
-                      @click="resetKeybinding(slotProps.data)"
-                    >
-                      <i class="icon-[lucide--rotate-ccw]" />
-                    </Button>
-                    <Button
+                      v-tooltip="$t('g.removeKeybinding')"
                       variant="textonly"
                       size="icon"
                       :aria-label="$t('g.removeKeybinding')"
@@ -423,6 +414,9 @@ async function removeSingleKeybinding(
   const binding = commandData.keybindings[index]
   if (binding) {
     keybindingStore.unsetKeybinding(binding)
+    if (commandData.keybindings.length <= 2) {
+      expandedCommandIds.value.delete(commandData.id)
+    }
     await keybindingService.persistUserKeybindings()
   }
 }
@@ -487,6 +481,7 @@ function ctxRemoveKeybinding() {
 
 async function resetKeybinding(commandData: ICommandData) {
   if (keybindingStore.resetKeybindingForCommand(commandData.id)) {
+    expandedCommandIds.value.delete(commandData.id)
     await keybindingService.persistUserKeybindings()
   } else {
     console.warn(
