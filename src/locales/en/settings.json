@@ -120,6 +120,10 @@
     "name": "Live selection",
     "tooltip": "When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools."
   },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "Auto-pan speed",
+    "tooltip": "Maximum speed when auto-panning by dragging to the canvas edge. Set to 0 to disable auto-panning."
+  },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Canvas zoom speed"
   },
