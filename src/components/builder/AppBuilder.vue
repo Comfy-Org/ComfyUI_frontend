@@ -23,6 +23,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
+import { usePaneBounds } from '@/renderer/core/layout/transform/usePaneBounds'
 import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { promptRenameWidget } from '@/utils/widgetUtil'
@@ -40,6 +41,7 @@ const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
 const workflowStore = useWorkflowStore()
 const { t } = useI18n()
+const { offset: paneBoundsOffset } = usePaneBounds()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
 const { isSelectMode, isSelectInputsMode, isSelectOutputsMode, isArrangeMode } =
@@ -116,8 +118,8 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
     return {
       width: `${node.size[0]}px`,
       height: `${node.size[1] + titleOffset}px`,
-      left: `${node.pos[0]}px`,
-      top: `${node.pos[1] - titleOffset}px`
+      left: `${node.pos[0] + paneBoundsOffset.x}px`,
+      top: `${node.pos[1] - titleOffset + paneBoundsOffset.y}px`
     }
   if (!widget) return
 
@@ -130,8 +132,8 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
   return {
     width: `${node.size[0] - marginX * 2}px`,
     height: `${height}px`,
-    left: `${node.pos[0] + marginX}px`,
-    top: `${node.pos[1] + widget.y + (margin ?? 0)}px`
+    left: `${node.pos[0] + marginX + paneBoundsOffset.x}px`,
+    top: `${node.pos[1] + widget.y + (margin ?? 0) + paneBoundsOffset.y}px`
   }
 }
 

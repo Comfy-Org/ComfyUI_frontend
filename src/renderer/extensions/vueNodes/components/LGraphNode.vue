@@ -21,7 +21,7 @@
     "
     :style="[
       {
-        transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+        transform: `translate(${(position.x ?? 0) + paneBoundsOffset.x}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT + paneBoundsOffset.y}px)`,
         zIndex: zIndex,
         opacity: nodeOpacity
       }
@@ -265,6 +265,7 @@ import {
   LiteGraph,
   RenderShape
 } from '@/lib/litegraph/src/litegraph'
+import { usePaneBounds } from '@/renderer/core/layout/transform/usePaneBounds'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -322,6 +323,7 @@ interface LGraphNodeProps {
 const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
+const { offset: paneBoundsOffset } = usePaneBounds()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
