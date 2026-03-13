@@ -1,5 +1,18 @@
 import type { LGraphNode } from '../LGraphNode'
-import type { Direction, IBoundaryNodes, NewNodePosition } from '../interfaces'
+import type {
+  ArrangementDirection,
+  IBoundaryNodes,
+  NewNodePosition
+} from '../interfaces'
+
+interface NodeSelectionBounds {
+  top: number
+  right: number
+  bottom: number
+  left: number
+  centerX: number
+  centerY: number
+}
 
 /**
  * Finds the nodes that are farthest in all four directions, representing the boundary of the nodes.
@@ -45,7 +58,7 @@ export function distributeNodes(
   horizontal?: boolean
 ): NewNodePosition[] {
   const nodeCount = nodes?.length
-  if (!(nodeCount > 1)) return []
+  if (!(nodeCount > 2)) return []
 
   const index = horizontal ? 0 : 1
 
@@ -88,7 +101,7 @@ export function distributeNodes(
  */
 export function alignNodes(
   nodes: LGraphNode[],
-  direction: Direction,
+  direction: ArrangementDirection,
   align_to?: LGraphNode
 ): NewNodePosition[] {
   if (!nodes) return []
@@ -99,6 +112,16 @@ export function alignNodes(
       : { top: align_to, right: align_to, bottom: align_to, left: align_to }
 
   if (boundary === null) return []
+
+  const selectionBounds = getNodeSelectionBounds(nodes)
+  const alignToCenterX =
+    align_to === undefined
+      ? selectionBounds.centerX
+      : align_to.pos[0] + align_to.size[0] * 0.5
+  const alignToCenterY =
+    align_to === undefined
+      ? selectionBounds.centerY
+      : align_to.pos[1] + align_to.size[1] * 0.5
 
   const nodePositions = nodes.map((node): NewNodePosition => {
     switch (direction) {
@@ -134,6 +157,22 @@ export function alignNodes(
             y: boundary.bottom.pos[1] + boundary.bottom.size[1] - node.size[1]
           }
         }
+      case 'horizontal-center':
+        return {
+          node,
+          newPos: {
+            x: node.pos[0],
+            y: alignToCenterY - node.size[1] * 0.5
+          }
+        }
+      case 'vertical-center':
+        return {
+          node,
+          newPos: {
+            x: alignToCenterX - node.size[0] * 0.5,
+            y: node.pos[1]
+          }
+        }
     }
   })
 
@@ -141,4 +180,25 @@ export function alignNodes(
     node.setPos(newPos.x, newPos.y)
   }
   return nodePositions
+}
+
+function getNodeSelectionBounds(nodes: LGraphNode[]): NodeSelectionBounds {
+  const boundary = getBoundaryNodes(nodes)
+  if (!boundary) {
+    throw new TypeError('Cannot calculate selection bounds without nodes.')
+  }
+
+  const top = boundary.top.pos[1]
+  const left = boundary.left.pos[0]
+  const right = boundary.right.pos[0] + boundary.right.size[0]
+  const bottom = boundary.bottom.pos[1] + boundary.bottom.size[1]
+
+  return {
+    top,
+    right,
+    bottom,
+    left,
+    centerX: left + (right - left) * 0.5,
+    centerY: top + (bottom - top) * 0.5
+  }
 }

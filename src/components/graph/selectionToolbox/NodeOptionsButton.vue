@@ -18,6 +18,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 
 const handleClick = (event: Event) => {
-  toggleNodeOptions(event)
+  toggleNodeOptions(event, 'toolbar')
 }
 </script>

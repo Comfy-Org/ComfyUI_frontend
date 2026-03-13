@@ -9,6 +9,7 @@ import { computed, customRef, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
+import type { NodeAlignmentGuide } from '@/renderer/extensions/vueNodes/layout/nodeAlignmentSnap'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
@@ -138,6 +139,7 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Vue dragging state for selection toolbox (public ref for direct mutation)
   public isDraggingVueNodes = ref(false)
+  public vueDragSnapGuides = ref<NodeAlignmentGuide[]>([])
   // Vue resizing state to prevent drag from activating during resize
   public isResizingVueNodes = ref(false)
 
