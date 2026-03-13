@@ -24,11 +24,12 @@
     </Button>
 
     <div class="flex flex-col items-center gap-3">
-      <WorkspaceProfilePic
-        class="size-10 rounded-xl text-lg"
-        :workspace-name="workspaceName"
-      />
-      <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
+      <div
+        class="flex size-10 items-center justify-center rounded-xl bg-primary-background text-lg font-semibold text-white"
+      >
+        T
+      </div>
+      <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
         {{ $t('subscription.plansFor') }}
         <span class="text-emerald-400">
           {{ $t('subscription.teamWorkspace') }}
@@ -97,13 +98,11 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
-import WorkspaceProfilePic from './WorkspaceProfilePic.vue'
 
 type CheckoutStep = 'pricing' | 'preview'
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
@@ -121,11 +120,6 @@ const { t } = useI18n()
 const toast = useToast()
 const { subscribe, previewSubscribe, plans, fetchStatus, fetchBalance } =
   useBillingContext()
-const workspaceStore = useTeamWorkspaceStore()
-const workspaceName = computed(
-  () => workspaceStore.workspaceName || t('subscription.teamWorkspace')
-)
-
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.hasPendingOperations)
 
