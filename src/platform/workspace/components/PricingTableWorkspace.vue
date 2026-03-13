@@ -45,7 +45,7 @@
         :class="
           cn(
             'flex flex-1 flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)]',
-            tier.isPopular ? 'border-muted-foreground' : ''
+            tier.isPopular ? 'border-emerald-500' : ''
           )
         "
       >

@@ -46,7 +46,9 @@ export const useSubscriptionDialog = () => {
       props: {
         onClose: hide,
         reason: options?.reason,
-        onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
+        ...(useWorkspaceVariant
+          ? {}
+          : { onChooseTeam: () => startTeamWorkspaceUpgradeFlow() })
       },
       dialogComponentProps: {
         style: 'width: min(1328px, 95vw); max-height: 958px;',
