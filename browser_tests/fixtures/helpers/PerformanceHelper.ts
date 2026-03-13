@@ -8,6 +8,10 @@ interface PerfSnapshot {
   TaskDuration: number
   JSHeapUsedSize: number
   Timestamp: number
+  Nodes: number
+  JSHeapTotalSize: number
+  ScriptDuration: number
+  JSEventListeners: number
 }
 
 export interface PerfMeasurement {
@@ -19,6 +23,10 @@ export interface PerfMeasurement {
   layoutDurationMs: number
   taskDurationMs: number
   heapDeltaBytes: number
+  domNodes: number
+  jsHeapTotalBytes: number
+  scriptDurationMs: number
+  eventListeners: number
 }
 
 export class PerformanceHelper {
@@ -59,7 +67,11 @@ export class PerformanceHelper {
       LayoutDuration: get('LayoutDuration'),
       TaskDuration: get('TaskDuration'),
       JSHeapUsedSize: get('JSHeapUsedSize'),
-      Timestamp: get('Timestamp')
+      Timestamp: get('Timestamp'),
+      Nodes: get('Nodes'),
+      JSHeapTotalSize: get('JSHeapTotalSize'),
+      ScriptDuration: get('ScriptDuration'),
+      JSEventListeners: get('JSEventListeners')
     }
   }
 
@@ -90,7 +102,11 @@ export class PerformanceHelper {
       layouts: delta('LayoutCount'),
       layoutDurationMs: delta('LayoutDuration') * 1000,
       taskDurationMs: delta('TaskDuration') * 1000,
-      heapDeltaBytes: delta('JSHeapUsedSize')
+      heapDeltaBytes: delta('JSHeapUsedSize'),
+      domNodes: delta('Nodes'),
+      jsHeapTotalBytes: delta('JSHeapTotalSize'),
+      scriptDurationMs: delta('ScriptDuration') * 1000,
+      eventListeners: delta('JSEventListeners')
     }
   }
 }
