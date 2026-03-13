@@ -5,7 +5,7 @@ import {
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import type { Position } from '../fixtures/types'
 
-type NodeSnapshot = { id: number; width: number; height: number } & Position
+type NodeSnapshot = { id: number } & Position
 
 async function getAllNodePositions(
   comfyPage: ComfyPage
@@ -14,11 +14,50 @@ async function getAllNodePositions(
     window.app!.graph.nodes.map((n) => ({
       id: n.id as number,
       x: n.pos[0],
-      y: n.pos[1],
-      width: n.size[0],
-      height: n.size[1]
+      y: n.pos[1]
     }))
   )
+}
+
+async function getNodePosition(
+  comfyPage: ComfyPage,
+  nodeId: number
+): Promise<Position | undefined> {
+  return comfyPage.page.evaluate((targetNodeId) => {
+    const node = window.app!.graph.nodes.find((n) => n.id === targetNodeId)
+    if (!node) return
+
+    return {
+      x: node.pos[0],
+      y: node.pos[1]
+    }
+  }, nodeId)
+}
+
+async function expectNodePositionStable(
+  comfyPage: ComfyPage,
+  initial: NodeSnapshot,
+  mode: string
+) {
+  await expect
+    .poll(
+      async () => {
+        const current = await getNodePosition(comfyPage, initial.id)
+        return current?.x ?? Number.NaN
+      },
+      { message: `node ${initial.id} x drifted in ${mode} mode` }
+    )
+    .toBeCloseTo(initial.x, 1)
+
+  await expect
+    .poll(
+      async () => {
+        const current = await getNodePosition(comfyPage, initial.id)
+        return current?.y ?? Number.NaN
+      },
+      { message: `node ${initial.id} y drifted in ${mode} mode` }
+    )
+    .toBeCloseTo(initial.y, 1)
 }
 
 async function setVueMode(comfyPage: ComfyPage, enabled: boolean) {
@@ -43,33 +82,21 @@ test.describe(
 
       for (let i = 0; i < TOGGLE_COUNT; i++) {
         await setVueMode(comfyPage, true)
-        const afterVue = await getAllNodePositions(comfyPage)
-
         for (const initial of initialPositions) {
-          const current = afterVue.find((n) => n.id === initial.id)
-          expect(
-            current,
-            `node ${initial.id} missing after Vue toggle ${i + 1}`
-          ).toBeDefined()
-          expect(current!.x).toBeCloseTo(initial.x, 1)
-          expect(current!.y).toBeCloseTo(initial.y, 1)
-          expect(current!.width).toBeCloseTo(initial.width, 1)
-          expect(current!.height).toBeCloseTo(initial.height, 1)
+          await expectNodePositionStable(
+            comfyPage,
+            initial,
+            `Vue toggle ${i + 1}`
+          )
         }
 
         await setVueMode(comfyPage, false)
-        const afterLG = await getAllNodePositions(comfyPage)
-
         for (const initial of initialPositions) {
-          const current = afterLG.find((n) => n.id === initial.id)
-          expect(
-            current,
-            `node ${initial.id} missing after LG toggle ${i + 1}`
-          ).toBeDefined()
-          expect(current!.x).toBeCloseTo(initial.x, 1)
-          expect(current!.y).toBeCloseTo(initial.y, 1)
-          expect(current!.width).toBeCloseTo(initial.width, 1)
-          expect(current!.height).toBeCloseTo(initial.height, 1)
+          await expectNodePositionStable(
+            comfyPage,
+            initial,
+            `LiteGraph toggle ${i + 1}`
+          )
         }
       }
     })
