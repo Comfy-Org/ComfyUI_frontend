@@ -89,11 +89,11 @@ function createWrapper() {
       },
       stubs: {
         BatchCountEdit: BatchCountEditStub,
-        DropdownMenuRoot: { template: '<div><slot /></div>' },
-        DropdownMenuTrigger: { template: '<div><slot /></div>' },
-        DropdownMenuPortal: { template: '<div><slot /></div>' },
-        DropdownMenuContent: { template: '<div><slot /></div>' },
-        DropdownMenuItem: { template: '<div><slot /></div>' }
+        DropdownMenu: {
+          template: '<div><slot name="button" /><slot :item-class="\'\'" /></div>'
+        },
+        DropdownMenuItem: { template: '<div><slot /></div>' },
+        DropdownMenuSeparator: { template: '<div />' }
       }
     }
   })
