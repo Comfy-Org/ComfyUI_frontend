@@ -32,7 +32,7 @@ export function useLayoutSync() {
       const layout = layoutStore.getNodeLayoutRef(nodeId).value
       if (!layout) continue
 
-      const liteNode = canvas.graph.getNodeById(Number.parseInt(nodeId, 10))
+      const liteNode = canvas.graph.getNodeById(nodeId)
       if (!liteNode) continue
 
       if (
@@ -109,7 +109,9 @@ export function useLayoutSync() {
       // node writeback — link rendering reads from the store directly.
       if (change.nodeIds.length === 0) return
 
-      change.nodeIds.forEach((nodeId) => pendingNodeIds.add(nodeId))
+      for (const nodeId of change.nodeIds) {
+        pendingNodeIds.add(nodeId)
+      }
       scheduleFlush(change.source, canvas)
     })
   }

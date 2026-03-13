@@ -1,18 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
+import type { NodeLayout } from '@/renderer/core/layout/types'
 
 const testState = vi.hoisted(() => {
   return {
     selectedNodeIds: null as unknown as Ref<Set<string>>,
     selectedItems: null as unknown as Ref<unknown[]>,
-    nodeLayouts: new Map<
-      string,
-      {
-        position: { x: number; y: number }
-        size: { width: number; height: number }
-      }
-    >(),
+    nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
     mutationFns: {
       setSource: vi.fn(),
       moveNode: vi.fn(),
