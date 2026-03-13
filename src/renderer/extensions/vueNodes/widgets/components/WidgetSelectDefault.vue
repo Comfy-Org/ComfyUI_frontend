@@ -70,10 +70,14 @@ const modelValue = defineModel<string | undefined>({
 // Transform compatibility props for overlay positioning
 const transformCompatProps = useTransformCompatOverlayProps()
 
-const selectOptions = ref(resolveValues(props.widget.options?.values))
+const refreshTrigger = ref(0)
 function refreshOptions() {
-  selectOptions.value = resolveValues(props.widget.options?.values)
+  refreshTrigger.value++
 }
+const selectOptions = computed(() => {
+  void refreshTrigger.value
+  return resolveValues(props.widget.options?.values)
+})
 const invalid = computed(
   () => !!modelValue.value && !selectOptions.value.includes(modelValue.value)
 )

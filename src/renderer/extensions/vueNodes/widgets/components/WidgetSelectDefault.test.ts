@@ -27,6 +27,41 @@ describe('WidgetSelectDefault', () => {
       }
     })
 
+  describe('array-valued options', () => {
+    it('resolves options from a plain array', () => {
+      const widget = createWidget(['a', 'b', 'c'])
+      const wrapper = mountComponent(widget)
+
+      expect(wrapper.findComponent(SelectPlus).props('options')).toEqual([
+        'a',
+        'b',
+        'c'
+      ])
+    })
+
+    it('reactively updates when widget prop changes', async () => {
+      const widget = createWidget(['x', 'y'])
+      const wrapper = mountComponent(widget)
+
+      await wrapper.setProps({ widget: createWidget(['x', 'y', 'z']) })
+
+      expect(wrapper.findComponent(SelectPlus).props('options')).toEqual([
+        'x',
+        'y',
+        'z'
+      ])
+    })
+  })
+
+  describe('undefined/empty options', () => {
+    it('returns empty array when values is undefined', () => {
+      const widget = createWidget(undefined)
+      const wrapper = mountComponent(widget)
+
+      expect(wrapper.findComponent(SelectPlus).props('options')).toEqual([])
+    })
+  })
+
   describe('function-valued options', () => {
     it('resolves options from a function', () => {
       const widget = createWidget(() => ['a', 'b', 'c'])
