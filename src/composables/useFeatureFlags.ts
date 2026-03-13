@@ -160,6 +160,11 @@ export function useFeatureFlags() {
       )
     },
     get concurrentExecutionEnabled() {
+      const override = getDevOverride<boolean>(
+        ServerFeatureFlag.CONCURRENT_EXECUTION_ENABLED
+      )
+      if (override !== undefined) return override
+
       if (!isCloud) return false
       if (!isAuthenticatedConfigLoaded.value) return false
 
@@ -172,10 +177,15 @@ export function useFeatureFlags() {
       )
     },
     get maxConcurrentJobs() {
-      return (
+      const override = getDevOverride<number>(
+        ServerFeatureFlag.MAX_CONCURRENT_JOBS
+      )
+      if (override !== undefined) return Math.max(1, override)
+
+      const configured =
         remoteConfig.value.max_concurrent_jobs ??
         api.getServerFeature(ServerFeatureFlag.MAX_CONCURRENT_JOBS, 1)
-      )
+      return Math.max(1, configured)
     }
   })
 
