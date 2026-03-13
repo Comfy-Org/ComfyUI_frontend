@@ -14,7 +14,8 @@
         v-else
         variant="primary"
         size="lg"
-        :disabled="isPublishDisabled"
+        :disabled="isPublishDisabled || isPublishing"
+        :loading="isPublishing"
         @click="$emit('publish')"
       >
         <i class="icon-[lucide--upload] size-4" />
@@ -31,6 +32,7 @@ defineProps<{
   isFirstStep: boolean
   isLastStep: boolean
   isPublishDisabled?: boolean
+  isPublishing?: boolean
 }>()
 
 defineEmits<{

@@ -53,6 +53,7 @@
         :is-first-step
         :is-last-step
         :is-publish-disabled
+        :is-publishing="isPublishInFlight"
         @back="onGoBack"
         @next="onGoNext"
         @publish="handlePublish"
@@ -81,6 +82,7 @@ const {
   formData,
   isFirstStep,
   isLastStep,
+  isPublishing = false,
   onGoNext,
   onGoBack,
   onUpdateFormData,
@@ -93,10 +95,11 @@ const {
   formData: ComfyHubPublishFormData
   isFirstStep: boolean
   isLastStep: boolean
+  isPublishing?: boolean
   onGoNext: () => void
   onGoBack: () => void
   onUpdateFormData: (patch: Partial<ComfyHubPublishFormData>) => void
-  onPublish: () => void
+  onPublish: () => Promise<void>
   onRequireProfile: () => void
   onGateComplete?: () => void
   onGateClose?: () => void
@@ -106,22 +109,27 @@ const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const { checkProfile, hasProfile } = useComfyHubProfileGate()
 const isResolvingPublishAccess = ref(false)
+const isPublishInFlight = computed(
+  () => isPublishing || isResolvingPublishAccess.value
+)
 const isPublishDisabled = computed(
-  () => flags.comfyHubProfileGateEnabled && hasProfile.value !== true
+  () =>
+    isPublishInFlight.value ||
+    (flags.comfyHubProfileGateEnabled && hasProfile.value !== true)
 )
 
 async function handlePublish() {
-  if (isResolvingPublishAccess.value) {
-    return
-  }
-
-  if (!flags.comfyHubProfileGateEnabled) {
-    onPublish()
+  if (isResolvingPublishAccess.value || isPublishing) {
     return
   }
 
   isResolvingPublishAccess.value = true
   try {
+    if (!flags.comfyHubProfileGateEnabled) {
+      await onPublish()
+      return
+    }
+
     let profileExists: boolean
     try {
       profileExists = await checkProfile()
@@ -131,11 +139,13 @@ async function handlePublish() {
     }
 
     if (profileExists) {
-      onPublish()
+      await onPublish()
       return
     }
 
     onRequireProfile()
+  } catch (error) {
+    toastErrorHandler(error)
   } finally {
     isResolvingPublishAccess.value = false
   }

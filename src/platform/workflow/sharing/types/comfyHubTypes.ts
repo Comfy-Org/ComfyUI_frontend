@@ -1,5 +1,7 @@
 export type ThumbnailType = 'image' | 'video' | 'imageComparison'
 
+export type ComfyHubApiThumbnailType = 'image' | 'video' | 'image_comparison'
+
 export type ComfyHubWorkflowType =
   | 'imageGeneration'
   | 'videoGeneration'

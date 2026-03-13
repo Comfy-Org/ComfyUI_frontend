@@ -10,6 +10,7 @@ const mockGoNext = vi.hoisted(() => vi.fn())
 const mockGoBack = vi.hoisted(() => vi.fn())
 const mockOpenProfileCreationStep = vi.hoisted(() => vi.fn())
 const mockCloseProfileCreationStep = vi.hoisted(() => vi.fn())
+const mockSubmitToComfyHub = vi.hoisted(() => vi.fn())
 
 vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
@@ -48,12 +49,22 @@ vi.mock(
   })
 )
 
+vi.mock(
+  '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission',
+  () => ({
+    useComfyHubPublishSubmission: () => ({
+      submitToComfyHub: mockSubmitToComfyHub
+    })
+  })
+)
+
 describe('ComfyHubPublishDialog', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
     mockFetchProfile.mockResolvedValue(null)
+    mockSubmitToComfyHub.mockResolvedValue(undefined)
   })
 
   function createWrapper() {
@@ -78,14 +89,16 @@ describe('ComfyHubPublishDialog', () => {
           },
           ComfyHubPublishWizardContent: {
             template:
-              '<div><button data-testid="require-profile" @click="$props.onRequireProfile()" /><button data-testid="gate-complete" @click="$props.onGateComplete()" /><button data-testid="gate-close" @click="$props.onGateClose()" /></div>',
+              '<div :data-is-publishing="$props.isPublishing"><button data-testid="require-profile" @click="$props.onRequireProfile()" /><button data-testid="gate-complete" @click="$props.onGateComplete()" /><button data-testid="gate-close" @click="$props.onGateClose()" /><button data-testid="publish" @click="$props.onPublish()" /></div>',
             props: [
               'currentStep',
               'formData',
               'isFirstStep',
               'isLastStep',
+              'isPublishing',
               'onGoNext',
               'onGoBack',
+              'onPublish',
               'onRequireProfile',
               'onGateComplete',
               'onGateClose'
@@ -135,5 +148,16 @@ describe('ComfyHubPublishDialog', () => {
     expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
     expect(mockCloseProfileCreationStep).toHaveBeenCalledOnce()
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('closes dialog after successful publish', async () => {
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="publish"]').trigger('click')
+    await flushPromises()
+
+    expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 })

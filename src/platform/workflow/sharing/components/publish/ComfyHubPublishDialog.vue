@@ -22,24 +22,26 @@
         :form-data
         :is-first-step
         :is-last-step
+        :is-publishing
         :on-update-form-data="updateFormData"
         :on-go-next="goNext"
         :on-go-back="goBack"
         :on-require-profile="handleRequireProfile"
         :on-gate-complete="handlePublishGateComplete"
         :on-gate-close="handlePublishGateClose"
-        :on-publish="onClose"
+        :on-publish="handlePublish"
       />
     </template>
   </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, provide } from 'vue'
+import { onBeforeUnmount, onMounted, provide, ref } from 'vue'
 
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import ComfyHubPublishNav from '@/platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue'
 import ComfyHubPublishWizardContent from '@/platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue'
+import { useComfyHubPublishSubmission } from '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission'
 import { useComfyHubPublishWizard } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
@@ -50,6 +52,7 @@ const { onClose } = defineProps<{
 }>()
 
 const { fetchProfile } = useComfyHubProfileGate()
+const { submitToComfyHub } = useComfyHubPublishSubmission()
 const {
   currentStep,
   formData,
@@ -61,6 +64,7 @@ const {
   openProfileCreationStep,
   closeProfileCreationStep
 } = useComfyHubPublishWizard()
+const isPublishing = ref(false)
 
 function handlePublishGateComplete() {
   closeProfileCreationStep()
@@ -73,6 +77,20 @@ function handlePublishGateClose() {
 
 function handleRequireProfile() {
   openProfileCreationStep()
+}
+
+async function handlePublish(): Promise<void> {
+  if (isPublishing.value) {
+    return
+  }
+
+  isPublishing.value = true
+  try {
+    await submitToComfyHub(formData.value)
+    onClose()
+  } finally {
+    isPublishing.value = false
+  }
 }
 
 function updateFormData(patch: Partial<ComfyHubPublishFormData>) {

@@ -61,6 +61,7 @@ describe('ComfyHubPublishWizardContent', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    onPublish.mockResolvedValue(undefined)
     mockCheckProfile.mockResolvedValue(true)
     mockHasProfile.value = true
     mockFlags.comfyHubProfileGateEnabled = true
@@ -115,8 +116,13 @@ describe('ComfyHubPublishWizardContent', () => {
           },
           ComfyHubPublishFooter: {
             template:
-              '<div data-testid="publish-footer" :data-publish-disabled="isPublishDisabled"><button data-testid="publish-btn" @click="$emit(\'publish\')" /><button data-testid="next-btn" @click="$emit(\'next\')" /><button data-testid="back-btn" @click="$emit(\'back\')" /></div>',
-            props: ['isFirstStep', 'isLastStep', 'isPublishDisabled'],
+              '<div data-testid="publish-footer" :data-publish-disabled="isPublishDisabled" :data-is-publishing="isPublishing"><button data-testid="publish-btn" @click="$emit(\'publish\')" /><button data-testid="next-btn" @click="$emit(\'next\')" /><button data-testid="back-btn" @click="$emit(\'back\')" /></div>',
+            props: [
+              'isFirstStep',
+              'isLastStep',
+              'isPublishDisabled',
+              'isPublishing'
+            ],
             emits: ['publish', 'next', 'back']
           }
         }
@@ -124,43 +130,19 @@ describe('ComfyHubPublishWizardContent', () => {
     })
   }
 
-  describe('handlePublish — double-click guard', () => {
-    it('prevents concurrent publish calls', async () => {
-      let resolveCheck!: (v: boolean) => void
-      mockCheckProfile.mockReturnValue(
-        new Promise<boolean>((resolve) => {
-          resolveCheck = resolve
-        })
-      )
+  function createDeferred<T>() {
+    let resolve: (value: T) => void = () => {}
+    let reject: (error: unknown) => void = () => {}
 
-      const wrapper = createWrapper()
-
-      const publishBtn = wrapper.find('[data-testid="publish-btn"]')
-      await publishBtn.trigger('click')
-      await publishBtn.trigger('click')
-
-      resolveCheck(true)
-      await flushPromises()
-
-      expect(mockCheckProfile).toHaveBeenCalledTimes(1)
-      expect(onPublish).toHaveBeenCalledTimes(1)
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res
+      reject = rej
     })
-  })
 
-  describe('handlePublish — feature flag bypass', () => {
-    it('calls onPublish directly when profile gate is disabled', async () => {
-      mockFlags.comfyHubProfileGateEnabled = false
+    return { promise, resolve, reject }
+  }
 
-      const wrapper = createWrapper()
-      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
-      await flushPromises()
-
-      expect(mockCheckProfile).not.toHaveBeenCalled()
-      expect(onPublish).toHaveBeenCalledOnce()
-    })
-  })
-
-  describe('handlePublish — profile check routing', () => {
+  describe('handlePublish - profile check routing', () => {
     it('calls onPublish when profile exists', async () => {
       mockCheckProfile.mockResolvedValue(true)
 
@@ -197,20 +179,83 @@ describe('ComfyHubPublishWizardContent', () => {
       expect(onRequireProfile).not.toHaveBeenCalled()
     })
 
-    it('resets guard after checkProfile error so retry is possible', async () => {
-      mockCheckProfile.mockRejectedValueOnce(new Error('Network error'))
+    it('calls onPublish directly when profile gate is disabled', async () => {
+      mockFlags.comfyHubProfileGateEnabled = false
+
+      const wrapper = createWrapper()
+      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
+      await flushPromises()
+
+      expect(mockCheckProfile).not.toHaveBeenCalled()
+      expect(onPublish).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('handlePublish - async submission', () => {
+    it('prevents duplicate publish submissions while in-flight', async () => {
+      const publishDeferred = createDeferred<void>()
+      onPublish.mockReturnValue(publishDeferred.promise)
+
+      const wrapper = createWrapper()
+      const publishBtn = wrapper.find('[data-testid="publish-btn"]')
+
+      await publishBtn.trigger('click')
+      await publishBtn.trigger('click')
+      await flushPromises()
+
+      expect(onPublish).toHaveBeenCalledTimes(1)
+
+      publishDeferred.resolve(undefined)
+      await flushPromises()
+    })
+
+    it('calls onPublish and does not close when publish request fails', async () => {
+      const publishError = new Error('Publish failed')
+      onPublish.mockRejectedValueOnce(publishError)
+
+      const wrapper = createWrapper()
+      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
+      await flushPromises()
+
+      expect(onPublish).toHaveBeenCalledOnce()
+      expect(mockToastErrorHandler).toHaveBeenCalledWith(publishError)
+      expect(onGateClose).not.toHaveBeenCalled()
+    })
+
+    it('shows publish disabled while submitting', async () => {
+      const publishDeferred = createDeferred<void>()
+      onPublish.mockReturnValue(publishDeferred.promise)
 
       const wrapper = createWrapper()
       const publishBtn = wrapper.find('[data-testid="publish-btn"]')
 
       await publishBtn.trigger('click')
       await flushPromises()
-      expect(onPublish).not.toHaveBeenCalled()
 
-      mockCheckProfile.mockResolvedValue(true)
+      const footer = wrapper.find('[data-testid="publish-footer"]')
+      expect(footer.attributes('data-publish-disabled')).toBe('true')
+      expect(footer.attributes('data-is-publishing')).toBe('true')
+
+      publishDeferred.resolve(undefined)
+      await flushPromises()
+
+      expect(footer.attributes('data-is-publishing')).toBe('false')
+    })
+
+    it('resets guard after publish error so retry is possible', async () => {
+      onPublish.mockRejectedValueOnce(new Error('Publish failed'))
+
+      const wrapper = createWrapper()
+      const publishBtn = wrapper.find('[data-testid="publish-btn"]')
+
       await publishBtn.trigger('click')
       await flushPromises()
-      expect(onPublish).toHaveBeenCalledOnce()
+
+      onPublish.mockResolvedValueOnce(undefined)
+      await publishBtn.trigger('click')
+      await flushPromises()
+
+      expect(onPublish).toHaveBeenCalledTimes(2)
     })
   })
 
