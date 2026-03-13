@@ -16,7 +16,7 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
 }))
 
 vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
-  isNodeOptionsOpen: () => mockIsNodeOptionsOpen()
+  isNodeOptionsOpen: mockIsNodeOptionsOpen
 }))
 
 function createTextareaWidget(
