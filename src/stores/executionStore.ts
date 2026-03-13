@@ -521,11 +521,12 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!text || !nodeId) return
 
     // Filter: only accept progress for the active prompt
-    if (prompt_id && activePromptId.value && prompt_id !== activePromptId.value)
+    if (prompt_id && activeJobId.value && prompt_id !== activeJobId.value)
       return
 
     // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
+    if (!currentId) return
     const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
     if (!node) return
 
