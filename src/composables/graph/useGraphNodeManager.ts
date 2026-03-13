@@ -36,7 +36,6 @@ import type {
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 export interface WidgetSlotMetadata {
@@ -577,45 +576,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // This handles individual node additions during normal operation
       initializeVueNodeLayout()
     }
-
-    // Clear required_input_missing errors when any input slot gets connected.
-    // onConnectionsChange fires for ALL inputs (unlike node:slot-links:changed
-    // which only fires for widget-converted inputs).
-    node.onConnectionsChange = useChainCallback(
-      node.onConnectionsChange,
-      function (type, slotIndex, isConnected) {
-        if (type !== NodeSlotType.INPUT || !isConnected) return
-        if (!app.rootGraph) return
-        const slotName = node.inputs?.[slotIndex]?.name
-        if (!slotName) return
-        const execId = getExecutionIdByNode(app.rootGraph, node)
-        if (!execId) return
-        useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
-      }
-    )
-
-    // Clear simple validation errors and missing model state when a widget
-    // value changes via the canvas interaction path (BaseWidget.setValue).
-    // Vue-rendered widgets set value via the store (BaseWidget.set value),
-    // which does NOT trigger onWidgetChanged, so there is no double-fire.
-    node.onWidgetChanged = useChainCallback(
-      node.onWidgetChanged,
-      function (_name, newValue, _oldValue, widget) {
-        if (!app.rootGraph) return
-        const execId = getExecutionIdByNode(app.rootGraph, node)
-        if (!execId) return
-        const widgetName = isPromotedWidgetView(widget)
-          ? widget.sourceWidgetName
-          : widget.name
-        useExecutionErrorStore().clearWidgetRelatedErrors(
-          execId,
-          widget.name,
-          widgetName,
-          newValue,
-          { min: widget.options?.min, max: widget.options?.max }
-        )
-      }
-    )
 
     // Call original callback if provided
     if (originalCallback) {

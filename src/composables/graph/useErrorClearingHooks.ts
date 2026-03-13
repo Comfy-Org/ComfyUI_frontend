@@ -1,0 +1,64 @@
+/**
+ * Installs per-node error-clearing callbacks (onConnectionsChange,
+ * onWidgetChanged) on all current and future nodes in a graph.
+ *
+ * Decoupled from the Vue rendering lifecycle so that error auto-clearing
+ * works in legacy canvas mode as well.
+ */
+import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+
+function installNodeHooks(node: LGraphNode): void {
+  node.onConnectionsChange = useChainCallback(
+    node.onConnectionsChange,
+    function (type, slotIndex, isConnected) {
+      if (type !== NodeSlotType.INPUT || !isConnected) return
+      if (!app.rootGraph) return
+      const slotName = node.inputs?.[slotIndex]?.name
+      if (!slotName) return
+      const execId = getExecutionIdByNode(app.rootGraph, node)
+      if (!execId) return
+      useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
+    }
+  )
+
+  node.onWidgetChanged = useChainCallback(
+    node.onWidgetChanged,
+    function (_name, newValue, _oldValue, widget) {
+      if (!app.rootGraph) return
+      const execId = getExecutionIdByNode(app.rootGraph, node)
+      if (!execId) return
+      const widgetName = isPromotedWidgetView(widget)
+        ? widget.sourceWidgetName
+        : widget.name
+      useExecutionErrorStore().clearWidgetRelatedErrors(
+        execId,
+        widget.name,
+        widgetName,
+        newValue,
+        { min: widget.options?.min, max: widget.options?.max }
+      )
+    }
+  )
+}
+
+export function installErrorClearingHooks(graph: LGraph): () => void {
+  for (const node of graph._nodes) {
+    installNodeHooks(node)
+  }
+
+  const originalOnNodeAdded = graph.onNodeAdded
+  graph.onNodeAdded = function (node: LGraphNode) {
+    installNodeHooks(node)
+    originalOnNodeAdded?.call(this, node)
+  }
+
+  return () => {
+    graph.onNodeAdded = originalOnNodeAdded || undefined
+  }
+}

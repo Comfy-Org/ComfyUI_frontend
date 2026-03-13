@@ -144,6 +144,7 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
@@ -245,6 +246,16 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle()
+
+// Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
+let cleanupErrorHooks: (() => void) | null = null
+watch(
+  () => canvasStore.currentGraph,
+  (graph) => {
+    cleanupErrorHooks?.()
+    cleanupErrorHooks = graph ? installErrorClearingHooks(graph) : null
+  }
+)
 
 const handleVueNodeLifecycleReset = async () => {
   if (shouldRenderVueNodes.value) {
@@ -493,6 +504,11 @@ onMounted(async () => {
     window.graph = comfyApp.graph
 
     comfyAppReady.value = true
+
+    // Install error-clearing hooks on the initial graph
+    if (comfyApp.canvas?.graph) {
+      cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
+    }
 
     vueNodeLifecycle.setupEmptyGraphListener()
   } finally {

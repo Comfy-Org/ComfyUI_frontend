@@ -3,6 +3,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
+import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -419,7 +420,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
 
   it('clears simple node error when INPUT is connected', () => {
     const { graph, node } = createGraphWithInput()
-    useGraphNodeManager(graph)
+    installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
@@ -432,7 +433,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
 
   it('does not clear errors on disconnection', () => {
     const { graph, node } = createGraphWithInput()
-    useGraphNodeManager(graph)
+    installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
     seedSimpleError(store, String(node.id), 'clip')
@@ -451,7 +452,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
   it('does not clear errors on OUTPUT connection', () => {
     const { graph, node } = createGraphWithInput()
     node.addOutput('out', 'CLIP')
-    useGraphNodeManager(graph)
+    installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
     seedSimpleError(store, String(node.id), 'clip')
@@ -472,7 +473,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
     const node = new LGraphNode('test')
     node.addInput('model', 'MODEL')
     graph.add(node)
-    useGraphNodeManager(graph)
+    installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
@@ -639,7 +640,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
       max: 100
     })
     graph.add(node)
-    useGraphNodeManager(graph)
+    installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
@@ -671,7 +672,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
       max: 100
     })
     graph.add(node)
-    useGraphNodeManager(graph)
+    installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
@@ -700,7 +701,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     const node = new LGraphNode('test')
     node.addWidget('number', 'steps', 20, () => undefined, {})
     graph.add(node)
-    useGraphNodeManager(graph)
+    installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
