@@ -146,7 +146,10 @@ export function useMediaAssetActions() {
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
           }
-          if (metadata?.jobId && asset.name) {
+          // Only add name filters when outputCount is unknown.
+          // When outputCount is set, the asset is a job-level selection
+          // from the gallery and the user wants all outputs for that job.
+          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
             if (!jobAssetNameFilters[metadata.jobId]) {
               jobAssetNameFilters[metadata.jobId] = []
             }
