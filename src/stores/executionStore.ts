@@ -46,6 +46,13 @@ interface QueuedJob {
   workflow?: ComfyWorkflow
 }
 
+/**
+ * Maximum number of job entries retained in {@link nodeProgressStatesByJob}.
+ * When exceeded, the oldest entries (by insertion order) are evicted to
+ * prevent unbounded memory growth in long-running sessions.
+ */
+export const MAX_PROGRESS_JOBS = 1000
+
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
@@ -297,6 +304,34 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  /**
+   * Evicts the oldest entries from {@link nodeProgressStatesByJob} when the
+   * map exceeds {@link MAX_PROGRESS_JOBS}, preventing unbounded memory
+   * growth in long-running sessions.
+   *
+   * Relies on ES2015+ object key insertion order: the first keys returned
+   * by `Object.keys` are the oldest entries.
+   *
+   * @example
+   * ```ts
+   * // Given 105 entries, evicts the 5 oldest:
+   * evictOldProgressJobs()
+   * Object.keys(nodeProgressStatesByJob.value).length // => 100
+   * ```
+   */
+  function evictOldProgressJobs() {
+    const current = nodeProgressStatesByJob.value
+    const keys = Object.keys(current)
+    if (keys.length <= MAX_PROGRESS_JOBS) return
+
+    const pruned: Record<string, Record<string, NodeProgressState>> = {}
+    const keysToKeep = keys.slice(keys.length - MAX_PROGRESS_JOBS)
+    for (const key of keysToKeep) {
+      pruned[key] = current[key]
+    }
+    nodeProgressStatesByJob.value = pruned
+  }
+
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
     const { nodes, prompt_id: jobId } = e.detail
 
@@ -319,6 +354,7 @@ export const useExecutionStore = defineStore('execution', () => {
       ...nodeProgressStatesByJob.value,
       [jobId]: nodes
     }
+    evictOldProgressJobs()
     nodeProgressStates.value = nodes
 
     // If we have progress for the currently executing node, update it for backwards compatibility
