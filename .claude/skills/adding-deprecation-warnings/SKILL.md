@@ -22,7 +22,7 @@ properties using the `defineDeprecatedProperty` helper in
 Before implementing, assess impact by searching for usage of the
 deprecated property across ComfyUI custom nodes:
 
-```
+```text
 Use the comfy_codesearch tool to search for the old property name.
 Search for both `widget.oldProp` and just `oldProp` to catch all patterns.
 ```
