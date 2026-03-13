@@ -61,7 +61,8 @@ function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
  */
 function reconcileNodeErrorFlags(
   rootGraph: LGraph,
-  nodeErrors: Record<string, NodeError> | null
+  nodeErrors: Record<string, NodeError> | null,
+  missingModelExecIds: Set<string>
 ): void {
   // Collect nodes and slot info that should be flagged
   // Includes both error-owning nodes and their ancestor containers
@@ -86,6 +87,11 @@ function reconcileNodeErrorFlags(
         if (parentNode) flaggedNodes.add(parentNode)
       }
     }
+  }
+
+  for (const execId of missingModelExecIds) {
+    const node = getNodeByExecutionId(rootGraph, execId)
+    if (node) flaggedNodes.add(node)
   }
 
   forEachNode(rootGraph, (node) => {
@@ -496,10 +502,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   }
 
   watch(
-    lastNodeErrors,
+    [lastNodeErrors, () => missingModelStore.missingModelNodeIds],
     () => {
       if (!app.isGraphReady) return
-      reconcileNodeErrorFlags(app.rootGraph, lastNodeErrors.value)
+      reconcileNodeErrorFlags(
+        app.rootGraph,
+        lastNodeErrors.value,
+        missingModelStore.missingModelAncestorExecutionIds
+      )
     },
     { flush: 'post' }
   )

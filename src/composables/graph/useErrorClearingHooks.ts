@@ -33,7 +33,12 @@ function resolvePromotedExecId(
   return hostExecId
 }
 
+const hookedNodes = new WeakSet<LGraphNode>()
+
 function installNodeHooks(node: LGraphNode): void {
+  if (hookedNodes.has(node)) return
+  hookedNodes.add(node)
+
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
     function (type, slotIndex, isConnected) {
@@ -65,6 +70,7 @@ function installNodeHooks(node: LGraphNode): void {
       const widgetName = isPromotedWidgetView(widget)
         ? widget.sourceWidgetName
         : widget.name
+
       useExecutionErrorStore().clearWidgetRelatedErrors(
         execId,
         widget.name,
@@ -76,14 +82,23 @@ function installNodeHooks(node: LGraphNode): void {
   )
 }
 
+function installNodeHooksRecursive(node: LGraphNode): void {
+  installNodeHooks(node)
+  if (node.isSubgraphNode?.()) {
+    for (const innerNode of node.subgraph._nodes ?? []) {
+      installNodeHooksRecursive(innerNode)
+    }
+  }
+}
+
 export function installErrorClearingHooks(graph: LGraph): () => void {
   for (const node of graph._nodes ?? []) {
-    installNodeHooks(node)
+    installNodeHooksRecursive(node)
   }
 
   const originalOnNodeAdded = graph.onNodeAdded
   graph.onNodeAdded = function (node: LGraphNode) {
-    installNodeHooks(node)
+    installNodeHooksRecursive(node)
     originalOnNodeAdded?.call(this, node)
   }
 

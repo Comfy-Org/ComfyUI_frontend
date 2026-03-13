@@ -13,6 +13,7 @@ import {
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -518,6 +519,80 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(interiorNode.has_errors).toBe(true)
     expect(interiorNode.inputs[0].hasErrors).toBe(true)
     // Parent subgraph node should also be flagged
+    expect(subgraphNode.has_errors).toBe(true)
+  })
+
+  it('sets has_errors on nodes with missing models', async () => {
+    const { nodeA, nodeB } = setupGraphWithStore()
+    const missingModelStore = useMissingModelStore()
+
+    missingModelStore.setMissingModels([
+      {
+        nodeId: String(nodeA.id),
+        nodeType: 'CheckpointLoader',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'missing.safetensors',
+        isMissing: true
+      }
+    ])
+    await nextTick()
+
+    expect(nodeA.has_errors).toBe(true)
+    expect(nodeB.has_errors).toBeFalsy()
+  })
+
+  it('clears has_errors when missing models are removed', async () => {
+    const { nodeA } = setupGraphWithStore()
+    const missingModelStore = useMissingModelStore()
+
+    missingModelStore.setMissingModels([
+      {
+        nodeId: String(nodeA.id),
+        nodeType: 'CheckpointLoader',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'missing.safetensors',
+        isMissing: true
+      }
+    ])
+    await nextTick()
+    expect(nodeA.has_errors).toBe(true)
+
+    missingModelStore.clearMissingModels()
+    await nextTick()
+    expect(nodeA.has_errors).toBeFalsy()
+  })
+
+  it('flags parent subgraph node when interior node has missing model', async () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('CheckpointLoader')
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 50 })
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+
+    useGraphNodeManager(graph)
+    useExecutionErrorStore()
+    const missingModelStore = useMissingModelStore()
+
+    missingModelStore.setMissingModels([
+      {
+        nodeId: `${subgraphNode.id}:${interiorNode.id}`,
+        nodeType: 'CheckpointLoader',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'missing.safetensors',
+        isMissing: true
+      }
+    ])
+    await nextTick()
+
+    expect(interiorNode.has_errors).toBe(true)
     expect(subgraphNode.has_errors).toBe(true)
   })
 })

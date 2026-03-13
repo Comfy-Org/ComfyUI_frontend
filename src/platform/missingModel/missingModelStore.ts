@@ -184,6 +184,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     missingModelCount,
     missingModelNodeIds,
     activeMissingModelGraphIds,
+    missingModelAncestorExecutionIds,
 
     setMissingModels,
     removeMissingModelByNameOnNodes,
