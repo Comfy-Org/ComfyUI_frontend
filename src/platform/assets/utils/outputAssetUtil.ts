@@ -101,9 +101,10 @@ export async function resolveOutputAssetItems(
     }
   }
 
+  // Reverse so the most recent outputs appear first
   return mapOutputsToAssetItems({
     jobId: metadata.jobId,
-    outputs: outputsToDisplay,
+    outputs: outputsToDisplay.toReversed(),
     createdAt,
     executionTimeInSeconds: metadata.executionTimeInSeconds,
     workflow: metadata.workflow,
