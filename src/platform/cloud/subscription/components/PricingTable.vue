@@ -96,7 +96,7 @@
           </div>
 
           <div
-            class="flex h-10 items-center rounded-lg bg-secondary-background px-3"
+            class="flex h-10 items-center rounded-lg bg-muted-foreground/30 px-3"
           >
             <span class="text-sm text-muted-foreground">
               {{ t('subscription.soloUseOnly') }}

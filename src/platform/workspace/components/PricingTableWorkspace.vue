@@ -96,17 +96,24 @@
           </div>
 
           <div
-            class="flex h-10 items-center justify-between rounded-lg bg-emerald-950/40 px-3"
+            :class="
+              cn(
+                'flex h-10 items-center justify-between rounded-lg px-3',
+                getMaxMembers(tier) > 1 ? 'bg-[rgba(0,205,114,0.20)]' : ''
+              )
+            "
           >
-            <div class="flex items-center gap-2">
-              <i class="pi pi-users text-xs text-emerald-400" />
-              <span class="text-sm text-emerald-400">
-                {{ t('subscription.inviteUpTo') }}
+            <template v-if="getMaxMembers(tier) > 1">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-users text-xs text-emerald-400" />
+                <span class="text-sm text-emerald-400">
+                  {{ t('subscription.inviteUpTo') }}
+                </span>
+              </div>
+              <span class="text-sm font-bold text-base-foreground">
+                {{ t('subscription.memberCount', getMaxMembers(tier)) }}
               </span>
-            </div>
-            <span class="text-sm font-bold text-base-foreground">
-              {{ t('subscription.memberCount', getMaxMembers(tier)) }}
-            </span>
+            </template>
           </div>
 
           <div class="flex flex-1 flex-col gap-3 pb-0">
@@ -208,7 +215,7 @@
                 'h-10 w-full',
                 getButtonTextClass(tier),
                 tier.key === 'creator'
-                  ? 'border-transparent bg-base-foreground hover:bg-inverted-background-hover'
+                  ? 'border-transparent bg-success-background hover:bg-success-background/80'
                   : 'border-transparent bg-secondary-background hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
               )
             "

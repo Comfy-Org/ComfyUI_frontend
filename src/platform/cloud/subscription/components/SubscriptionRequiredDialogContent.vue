@@ -13,13 +13,14 @@
       <i class="pi pi-times text-xl" />
     </Button>
     <div class="flex flex-col items-center gap-3">
-      <WorkspaceProfilePic
-        class="size-10 rounded-xl text-lg"
-        workspace-name="Personal"
-      />
-      <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
+      <div
+        class="flex size-10 items-center justify-center rounded-xl bg-muted-foreground/30 text-lg font-semibold text-white"
+      >
+        P
+      </div>
+      <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
         {{ $t('subscription.plansFor') }}
-        <span class="text-primary-foreground">
+        <span class="text-muted-foreground">
           {{ $t('subscription.personalWorkspace') }}
         </span>
       </h2>
@@ -150,7 +151,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 
 const { onClose, reason, onChooseTeam } = defineProps<{
   onClose: () => void
