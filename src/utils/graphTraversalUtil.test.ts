@@ -31,7 +31,6 @@ import {
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
 
-import type { NodeWithId } from '@/utils/graphTraversalUtil'
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
 // Mock node factory
@@ -650,10 +649,7 @@ describe('graphTraversalUtil', () => {
         node.graph = graph
         const nodeData = { id: 123 }
 
-        const execId = getExecutionIdFromNodeData(
-          graph,
-          nodeData as unknown as NodeWithId
-        )
+        const execId = getExecutionIdFromNodeData(graph, nodeData)
         expect(execId).toBe('123')
       })
 
@@ -661,10 +657,7 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph([])
         const nodeData = { id: 777 }
 
-        const execId = getExecutionIdFromNodeData(
-          graph,
-          nodeData as unknown as NodeWithId
-        )
+        const execId = getExecutionIdFromNodeData(graph, nodeData)
         expect(execId).toBe('777')
       })
 
@@ -683,10 +676,7 @@ describe('graphTraversalUtil', () => {
         topNode.graph = rootGraph
 
         const nodeData = { id: 999, subgraphId: subgraphUuid }
-        const execId = getExecutionIdFromNodeData(
-          rootGraph,
-          nodeData as unknown as NodeWithId
-        )
+        const execId = getExecutionIdFromNodeData(rootGraph, nodeData)
 
         expect(execId).toBe('123:999')
       })

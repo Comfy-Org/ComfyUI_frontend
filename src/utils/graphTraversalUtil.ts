@@ -11,18 +11,16 @@ import {
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
-export interface NodeWithId {
-  id: string | number
-  subgraphId?: string | null
-}
-
 /**
  * Constructs a locator ID from node data with optional subgraph context.
  *
  * @param nodeData - Node data containing id and optional subgraphId
  * @returns The locator ID string
  */
-export function getLocatorIdFromNodeData(nodeData: NodeWithId): string {
+export function getLocatorIdFromNodeData(nodeData: {
+  id: string | number
+  subgraphId?: string | null
+}): string {
   return nodeData.subgraphId
     ? `${nodeData.subgraphId}:${String(nodeData.id)}`
     : String(nodeData.id)
@@ -371,7 +369,7 @@ export function getExecutionIdByNode(
  */
 export function getExecutionIdFromNodeData(
   rootGraph: LGraph,
-  nodeData: NodeWithId
+  nodeData: { id: string | number; subgraphId?: string | null }
 ): string {
   const locatorId = getLocatorIdFromNodeData(nodeData)
   const node = getNodeByLocatorId(rootGraph, locatorId)
