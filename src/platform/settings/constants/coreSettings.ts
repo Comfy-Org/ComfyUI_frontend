@@ -1004,7 +1004,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       'When enabled in Nodes 2.0, dragging a node selection near another node will snap matching edges and centers together.',
     type: 'boolean',
     defaultValue: false,
-    versionAdded: '1.31.0'
+    versionAdded: '1.42.0'
   },
   {
     id: 'LiteGraph.Reroute.SplineOffset',
