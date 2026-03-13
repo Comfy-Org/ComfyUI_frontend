@@ -225,13 +225,17 @@ export function findSubgraphByUuid(
   graph: LGraph | Subgraph,
   targetUuid: string
 ): Subgraph | null {
-  // Check all nodes in the current graph
+  // Fast O(1) lookup via the root graph's centralized subgraph registry.
+  if ('subgraphs' in graph && graph.subgraphs instanceof Map) {
+    return graph.subgraphs.get(targetUuid) ?? null
+  }
+
+  // Fallback: recursive traversal for non-root graphs without the registry.
   for (const node of graph.nodes) {
     if (node.isSubgraphNode?.() && node.subgraph) {
       if (node.subgraph.id === targetUuid) {
         return node.subgraph
       }
-      // Recursively search in nested subgraphs
       const found = findSubgraphByUuid(node.subgraph, targetUuid)
       if (found) return found
     }

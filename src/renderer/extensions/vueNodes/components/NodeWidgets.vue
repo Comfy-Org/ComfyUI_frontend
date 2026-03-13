@@ -195,8 +195,9 @@ function createWidgetUpdateHandler(
   return (newValue: WidgetValue) => {
     if (widgetState) widgetState.value = newValue
     widget.callback?.(newValue)
+    const effectiveExecId = widget.sourceExecutionId ?? nodeExecId
     executionErrorStore.clearWidgetRelatedErrors(
-      nodeExecId,
+      effectiveExecId,
       widget.slotName ?? widget.name,
       widget.name,
       newValue,
@@ -317,12 +318,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError:
-        (nodeErrors?.errors?.some(
-          (error) =>
-            error.extra_info?.input_name === (widget.slotName ?? widget.name)
-        ) ??
-          false) ||
-        missingModelStore.isWidgetMissingModel(nodeExecId, widget.name),
+        nodeErrors?.errors?.some(
+          (e) => e.extra_info?.input_name === (widget.slotName ?? widget.name)
+        ) ||
+        missingModelStore.isWidgetMissingModel(
+          widget.sourceExecutionId ?? nodeExecId,
+          widget.name
+        ),
       hidden: widget.options?.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,

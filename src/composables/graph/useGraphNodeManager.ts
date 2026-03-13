@@ -82,6 +82,13 @@ export interface SafeWidgetData {
    * which differs from the subgraph node's input slot widget name.
    */
   slotName?: string
+  /**
+   * Execution ID of the interior node that owns the source widget.
+   * Only set for promoted widgets where the source node differs from the
+   * host subgraph node. Used for missing-model lookups that key by
+   * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
+   */
+  sourceExecutionId?: string
 }
 
 export interface VueNodeData {
@@ -327,9 +334,18 @@ function safeWidgetMapper(
           : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
         slotMetadata: slotInfo,
         slotName: name !== widget.name ? widget.name : undefined,
+        sourceExecutionId:
+          sourceNode && app.rootGraph
+            ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
+            : undefined,
         tooltip: widget.tooltip
       }
     } catch (error) {
+      console.warn(
+        '[safeWidgetMapper] Failed to map widget:',
+        widget.name,
+        error
+      )
       return {
         name: widget.name || 'unknown',
         type: widget.type || 'text'
@@ -588,10 +604,13 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         if (!app.rootGraph) return
         const execId = getExecutionIdByNode(app.rootGraph, node)
         if (!execId) return
+        const widgetName = isPromotedWidgetView(widget)
+          ? widget.sourceWidgetName
+          : widget.name
         useExecutionErrorStore().clearWidgetRelatedErrors(
           execId,
           widget.name,
-          widget.name,
+          widgetName,
           newValue,
           { min: widget.options?.min, max: widget.options?.max }
         )

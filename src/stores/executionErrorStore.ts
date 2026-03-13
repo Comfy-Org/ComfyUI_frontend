@@ -147,9 +147,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const nodeError = lastNodeErrors.value[executionId]
     if (!nodeError) return
 
-    const hasTargetName = slotName !== undefined
+    const isSlotScoped = slotName !== undefined
 
-    const relevantErrors = hasTargetName
+    const relevantErrors = isSlotScoped
       ? nodeError.errors.filter((e) => e.extra_info?.input_name === slotName)
       : nodeError.errors
 
@@ -162,7 +162,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     const updated = { ...lastNodeErrors.value }
 
-    if (hasTargetName) {
+    if (isSlotScoped) {
       // Remove only the target slot's errors if they were all simple
       const remainingErrors = nodeError.errors.filter(
         (e) => e.extra_info?.input_name !== slotName
@@ -498,12 +498,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return missingAncestorExecutionIds.value.has(execId)
   }
 
-  watch(lastNodeErrors, () => {
-    if (!app.isGraphReady) return
-    const rootGraph = app.rootGraph
-
-    reconcileNodeErrorFlags(rootGraph, lastNodeErrors.value)
-  })
+  watch(
+    lastNodeErrors,
+    () => {
+      if (!app.isGraphReady) return
+      reconcileNodeErrorFlags(app.rootGraph, lastNodeErrors.value)
+    },
+    { flush: 'post' }
+  )
 
   return {
     // Raw state

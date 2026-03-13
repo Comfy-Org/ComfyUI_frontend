@@ -94,6 +94,9 @@ export function classifyCloudValidationError(
 /**
  * Error types that can be resolved automatically when the user changes a
  * widget value or establishes a connection, without requiring a re-run.
+ *
+ * When adding new types, review {@link isValueStillOutOfRange} to ensure
+ * the new type does not require range validation before auto-clearing.
  */
 export const SIMPLE_ERROR_TYPES = new Set([
   'value_bigger_than_max',

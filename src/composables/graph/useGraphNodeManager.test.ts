@@ -319,9 +319,72 @@ describe('Nested promoted widget mapping', () => {
   })
 })
 
+describe('Promoted widget sourceExecutionId', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('sets sourceExecutionId to the interior node execution ID for promoted widgets', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'ckpt_input', type: '*' }]
+    })
+    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
+    const interiorInput = interiorNode.addInput('ckpt_input', '*')
+    interiorNode.addWidget(
+      'combo',
+      'ckpt_name',
+      'model.safetensors',
+      () => undefined,
+      {
+        values: ['model.safetensors']
+      }
+    )
+    interiorInput.widget = { name: 'ckpt_name' }
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    subgraphNode._internalConfigureAfterSlots()
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const promotedWidget = nodeData?.widgets?.find(
+      (w) => w.name === 'ckpt_name'
+    )
+
+    expect(promotedWidget).toBeDefined()
+    // The interior node is inside subgraphNode (id=65),
+    // so its execution ID should be "65:<interiorNodeId>"
+    expect(promotedWidget?.sourceExecutionId).toBe(
+      `${subgraphNode.id}:${interiorNode.id}`
+    )
+  })
+
+  it('does not set sourceExecutionId for non-promoted widgets', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'steps', 20, () => undefined, {})
+    graph.add(node)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(node.id))
+    const widget = nodeData?.widgets?.find((w) => w.name === 'steps')
+
+    expect(widget).toBeDefined()
+    expect(widget?.sourceExecutionId).toBeUndefined()
+  })
+})
+
 describe('Connection error clearing via onConnectionsChange', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
   function createGraphWithInput() {
@@ -333,17 +396,38 @@ describe('Connection error clearing via onConnectionsChange', () => {
     return { graph, node }
   }
 
-  it('calls clearSimpleNodeErrors on INPUT connection', () => {
+  function seedSimpleError(
+    store: ReturnType<typeof useExecutionErrorStore>,
+    executionId: string,
+    inputName: string
+  ) {
+    store.lastNodeErrors = {
+      [executionId]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing',
+            details: '',
+            extra_info: { input_name: inputName }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'TestNode'
+      }
+    }
+  }
+
+  it('clears simple node error when INPUT is connected', () => {
     const { graph, node } = createGraphWithInput()
     useGraphNodeManager(graph)
 
     const store = useExecutionErrorStore()
-    const clearSpy = vi.spyOn(store, 'clearSimpleNodeErrors')
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    seedSimpleError(store, String(node.id), 'clip')
 
     node.onConnectionsChange!(NodeSlotType.INPUT, 0, true, null, node.inputs[0])
 
-    expect(clearSpy).toHaveBeenCalledWith(String(node.id), 'clip')
+    expect(store.lastNodeErrors).toBeNull()
   })
 
   it('does not clear errors on disconnection', () => {
@@ -351,7 +435,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
     useGraphNodeManager(graph)
 
     const store = useExecutionErrorStore()
-    const clearSpy = vi.spyOn(store, 'clearSimpleNodeErrors')
+    seedSimpleError(store, String(node.id), 'clip')
 
     node.onConnectionsChange!(
       NodeSlotType.INPUT,
@@ -361,7 +445,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
       node.inputs[0]
     )
 
-    expect(clearSpy).not.toHaveBeenCalled()
+    expect(store.lastNodeErrors).not.toBeNull()
   })
 
   it('does not clear errors on OUTPUT connection', () => {
@@ -370,7 +454,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
     useGraphNodeManager(graph)
 
     const store = useExecutionErrorStore()
-    const clearSpy = vi.spyOn(store, 'clearSimpleNodeErrors')
+    seedSimpleError(store, String(node.id), 'clip')
 
     node.onConnectionsChange!(
       NodeSlotType.OUTPUT,
@@ -380,33 +464,174 @@ describe('Connection error clearing via onConnectionsChange', () => {
       node.outputs[0]
     )
 
-    expect(clearSpy).not.toHaveBeenCalled()
+    expect(store.lastNodeErrors).not.toBeNull()
   })
 
   it('clears errors for pure input slots without widget property', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
-    // Pure input slot (no widget) - like MODEL, CLIP, etc.
     node.addInput('model', 'MODEL')
     graph.add(node)
     useGraphNodeManager(graph)
 
     const store = useExecutionErrorStore()
-    const clearSpy = vi.spyOn(store, 'clearSimpleNodeErrors')
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    seedSimpleError(store, String(node.id), 'model')
 
     node.onConnectionsChange!(NodeSlotType.INPUT, 0, true, null, node.inputs[0])
 
-    expect(clearSpy).toHaveBeenCalledWith(String(node.id), 'model')
+    expect(store.lastNodeErrors).toBeNull()
+  })
+})
+
+describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  function setupGraphWithStore() {
+    const graph = new LGraph()
+    const nodeA = new LGraphNode('KSampler')
+    nodeA.addInput('model', 'MODEL')
+    nodeA.addInput('steps', 'INT')
+    graph.add(nodeA)
+
+    const nodeB = new LGraphNode('LoadCheckpoint')
+    nodeB.addInput('ckpt_name', 'STRING')
+    graph.add(nodeB)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+
+    // Initialize store (triggers watcher registration)
+    useGraphNodeManager(graph)
+    const store = useExecutionErrorStore()
+    return { graph, nodeA, nodeB, store }
+  }
+
+  it('sets has_errors on nodes referenced in lastNodeErrors', async () => {
+    const { nodeA, nodeB, store } = setupGraphWithStore()
+
+    store.lastNodeErrors = {
+      [String(nodeA.id)]: {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Too big',
+            details: '',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'KSampler'
+      }
+    }
+    await nextTick()
+
+    expect(nodeA.has_errors).toBe(true)
+    expect(nodeB.has_errors).toBeFalsy()
+  })
+
+  it('sets slot hasErrors for inputs matching error input_name', async () => {
+    const { nodeA, store } = setupGraphWithStore()
+
+    store.lastNodeErrors = {
+      [String(nodeA.id)]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing',
+            details: '',
+            extra_info: { input_name: 'model' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'KSampler'
+      }
+    }
+    await nextTick()
+
+    expect(nodeA.inputs[0].hasErrors).toBe(true)
+    expect(nodeA.inputs[1].hasErrors).toBe(false)
+  })
+
+  it('clears has_errors and slot hasErrors when errors are removed', async () => {
+    const { nodeA, store } = setupGraphWithStore()
+
+    store.lastNodeErrors = {
+      [String(nodeA.id)]: {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Too big',
+            details: '',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'KSampler'
+      }
+    }
+    await nextTick()
+    expect(nodeA.has_errors).toBe(true)
+    expect(nodeA.inputs[1].hasErrors).toBe(true)
+
+    store.lastNodeErrors = null
+    await nextTick()
+
+    expect(nodeA.has_errors).toBeFalsy()
+    expect(nodeA.inputs[1].hasErrors).toBe(false)
+  })
+
+  it('propagates has_errors to parent subgraph node', async () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('InnerNode')
+    interiorNode.addInput('value', 'INT')
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 50 })
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+
+    useGraphNodeManager(graph)
+    const store = useExecutionErrorStore()
+
+    // Error on interior node: execution ID = "50:<interiorNodeId>"
+    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
+    store.lastNodeErrors = {
+      [interiorExecId]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing',
+            details: '',
+            extra_info: { input_name: 'value' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'InnerNode'
+      }
+    }
+    await nextTick()
+
+    // Interior node should have the error
+    expect(interiorNode.has_errors).toBe(true)
+    expect(interiorNode.inputs[0].hasErrors).toBe(true)
+    // Parent subgraph node should also be flagged
+    expect(subgraphNode.has_errors).toBe(true)
   })
 })
 
 describe('Widget change error clearing via onWidgetChanged', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
-  it('clears errors when widget value changes via canvas interaction', () => {
+  it('clears simple error when widget value changes to valid range', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.addWidget('number', 'steps', 20, () => undefined, {
@@ -417,18 +642,57 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     useGraphNodeManager(graph)
 
     const store = useExecutionErrorStore()
-    const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    store.lastNodeErrors = {
+      [String(node.id)]: {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Too big',
+            details: '',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'TestNode'
+      }
+    }
 
     node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
 
-    expect(clearSpy).toHaveBeenCalledWith(
-      String(node.id),
-      'steps',
-      'steps',
-      50,
-      { min: 1, max: 100 }
-    )
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('retains error when widget value is still out of range', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'steps', 20, () => undefined, {
+      min: 1,
+      max: 100
+    })
+    graph.add(node)
+    useGraphNodeManager(graph)
+
+    const store = useExecutionErrorStore()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    store.lastNodeErrors = {
+      [String(node.id)]: {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Too big',
+            details: '',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'TestNode'
+      }
+    }
+
+    node.onWidgetChanged!.call(node, 'steps', 150, 20, node.widgets![0])
+
+    expect(store.lastNodeErrors).not.toBeNull()
   })
 
   it('does not clear errors when rootGraph is unavailable', () => {
@@ -439,13 +703,26 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     useGraphNodeManager(graph)
 
     const store = useExecutionErrorStore()
-    const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
       undefined as unknown as LGraph
     )
+    store.lastNodeErrors = {
+      [String(node.id)]: {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Too big',
+            details: '',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'TestNode'
+      }
+    }
 
     node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
 
-    expect(clearSpy).not.toHaveBeenCalled()
+    expect(store.lastNodeErrors).not.toBeNull()
   })
 })
