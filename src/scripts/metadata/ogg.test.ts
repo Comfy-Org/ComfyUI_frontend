@@ -39,6 +39,20 @@ function createOggWithOpusTags(comments: {
 
   // Construct Ogg Pages for Metadata
   const pages: Uint8Array[] = []
+
+  // Prepend minimal OpusHead as Page 0 (BOS)
+  const headPageSize = OGG_HEADER_SIZE + 1 + 19
+  const headPage = new Uint8Array(headPageSize)
+  headPage.set(new TextEncoder().encode('OggS'), 0)
+  headPage[5] = 0x02 // 0x02 indicates Beginning of Stream (BOS)
+  headPage[26] = 1 // 1 segment
+  headPage[OGG_HEADER_SIZE] = 19 // segment length
+  // 'OpusHead' signature (8 bytes) + version (1) + channels (1) + pre-skip (2) + sample rate (4) + gain (2) + mapping (1)
+  headPage.set(new TextEncoder().encode('OpusHead'), OGG_HEADER_SIZE + 1)
+  headPage[OGG_HEADER_SIZE + 1 + 8] = 1 // version
+  headPage[OGG_HEADER_SIZE + 1 + 9] = 2 // channels
+  pages.push(headPage)
+
   let packetPos = 0
   let packetEnded = false
 

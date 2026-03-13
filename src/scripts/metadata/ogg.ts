@@ -13,15 +13,16 @@ import type { ComfyMetadata } from '@/types/metadataTypes'
  *   not found or if parsing fails.
  */
 export async function getOggMetadata(file: File): Promise<ComfyMetadata> {
-  // Read the entire file into memory (Opus files are generally small enough)
-  const arrayBuffer = await file.arrayBuffer()
+  // Read the beginning of the file (Opus files metadata is usually in the first couple of pages)
+  const MAX_READ_BYTES = 2 * 1024 * 1024
+  const arrayBuffer = await file.slice(0, MAX_READ_BYTES).arrayBuffer()
   const data = new Uint8Array(arrayBuffer)
   const decoder = new TextDecoder('utf-8')
 
   // Sequentially trace Ogg pages to extract segments of the 'OpusTags' packet containing metadata
   const segments = extractOpusTags(data, decoder)
   if (segments.length === 0) {
-    console.error(
+    console.warn(
       'Ogg metadata parsing failed: No OpusTags found or invalid Ogg file'
     )
     return { prompt: undefined, workflow: undefined }
@@ -86,9 +87,11 @@ function extractOpusTags(data: Uint8Array, decoder: TextDecoder): Uint8Array[] {
       dataOffset += segmentLength
 
       if (!inOpusTags) {
-        const segmentMagic = decoder.decode(segment.subarray(0, 8))
-        if (segmentMagic === 'OpusTags') {
-          inOpusTags = true
+        if (segmentLength >= 8) {
+          const segmentMagic = decoder.decode(segment.subarray(0, 8))
+          if (segmentMagic === 'OpusTags') {
+            inOpusTags = true
+          }
         }
       }
 
@@ -177,7 +180,7 @@ function parseVorbisComments(
 
     const separatorIndex = text.indexOf('=')
     if (separatorIndex !== -1) {
-      const key = text.substring(0, separatorIndex)
+      const key = text.substring(0, separatorIndex).toLowerCase()
       const value = text.substring(separatorIndex + 1)
       if (key === 'prompt') {
         try {
