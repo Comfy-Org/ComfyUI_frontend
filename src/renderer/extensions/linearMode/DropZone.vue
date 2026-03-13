@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { useDropZone } from '@vueuse/core'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@/utils/tailwindUtil'
+
+const { t } = useI18n()
 
 const {
   onDragOver,
@@ -17,6 +20,7 @@ const {
     imageUrl?: string
     label?: string
     onClick?: (e: MouseEvent) => void
+    onMaskEdit?: () => void
   }
   forceHovered?: boolean
 }>()
@@ -91,7 +95,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
       data-slot="drop-zone-indicator"
       :class="
         cn(
-          'm-3 block h-42 min-h-32 w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
+          'group/dropzone m-3 block h-42 min-h-32 w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
           dropIndicator?.onClick && 'cursor-pointer'
         )
       "
@@ -108,12 +112,26 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
           )
         "
       >
-        <img
+        <div
           v-if="dropIndicator?.imageUrl"
-          class="max-h-full max-w-full rounded-md object-contain"
-          :alt="dropIndicator?.label ?? ''"
-          :src="dropIndicator?.imageUrl"
-        />
+          class="relative max-h-full max-w-full"
+        >
+          <img
+            class="max-h-full max-w-full rounded-md object-contain"
+            :alt="dropIndicator?.label ?? ''"
+            :src="dropIndicator?.imageUrl"
+          />
+          <button
+            v-if="dropIndicator?.onMaskEdit"
+            type="button"
+            :aria-label="t('maskEditor.openMaskEditor')"
+            :title="t('maskEditor.openMaskEditor')"
+            class="absolute top-2 right-2 flex cursor-pointer items-center justify-center rounded-lg bg-base-foreground p-2 text-base-background opacity-0 transition-colors duration-200 group-hover/dropzone:opacity-100 hover:bg-base-foreground/90"
+            @click.stop="dropIndicator?.onMaskEdit?.()"
+          >
+            <i class="icon-[comfy--mask] size-4" />
+          </button>
+        </div>
         <template v-else>
           <span v-if="dropIndicator.label" v-text="dropIndicator.label" />
           <i

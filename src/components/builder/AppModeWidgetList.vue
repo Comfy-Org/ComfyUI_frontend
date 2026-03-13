@@ -10,6 +10,7 @@ import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
@@ -17,6 +18,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -38,6 +40,7 @@ const { mobile = false, builderMode = false } = defineProps<{
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
+const maskEditor = useMaskEditor()
 
 provide(HideLayoutFieldKey, true)
 
@@ -97,21 +100,24 @@ const mappedSelections = computed((): WidgetEntry[] => {
 function getDropIndicator(node: LGraphNode) {
   if (node.type !== 'LoadImage') return undefined
 
-  const filename = node.widgets?.[0]?.value
-  const resultItem = { type: 'input', filename: `${filename}` }
+  const rawValue = node.widgets?.[0]?.value
+  const { filename, subfolder, type } = parseImageWidgetValue(`${rawValue}`)
 
   const buildImageUrl = () => {
     if (!filename) return undefined
-    const params = new URLSearchParams(resultItem)
-    appendCloudResParam(params, resultItem.filename)
+    const params = new URLSearchParams({ filename, subfolder, type })
+    appendCloudResParam(params, filename)
     return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
   }
 
+  const imageUrl = buildImageUrl()
+
   return {
     iconClass: 'icon-[lucide--image]',
-    imageUrl: buildImageUrl(),
+    imageUrl,
     label: mobile ? undefined : t('linearMode.dragAndDropImage'),
-    onClick: () => node.widgets?.[1]?.callback?.(undefined)
+    onClick: () => node.widgets?.[1]?.callback?.(undefined),
+    onMaskEdit: imageUrl ? () => maskEditor.openMaskEditor(node) : undefined
   }
 }
 
