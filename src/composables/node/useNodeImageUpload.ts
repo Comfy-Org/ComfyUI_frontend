@@ -9,6 +9,7 @@ import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 
 const PASTED_IMAGE_EXPIRY_MS = 2000
+const UPLOAD_TIMEOUT_MS = 120_000
 
 interface ImageUploadFormFields {
   /**
@@ -28,10 +29,16 @@ const uploadFile = async (
   if (isPasted) body.append('subfolder', 'pasted')
   if (formFields.type) body.append('type', formFields.type)
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS)
+
   const resp = await api.fetchApi('/upload/image', {
     method: 'POST',
-    body
+    body,
+    signal: controller.signal
   })
+
+  clearTimeout(timeoutId)
 
   if (resp.status !== 200) {
     useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
@@ -88,7 +95,11 @@ export const useNodeImageUpload = (
       if (!path) return
       return path
     } catch (error) {
-      useToastStore().addAlert(String(error))
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        useToastStore().addAlert(t('g.uploadTimedOut'))
+      } else {
+        useToastStore().addAlert(String(error))
+      }
     }
   }
 
