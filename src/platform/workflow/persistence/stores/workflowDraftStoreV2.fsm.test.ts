@@ -89,6 +89,14 @@ function assertModelMatchesReal(
   }
   const index = JSON.parse(indexJson!)
   expect(Object.keys(index.entries)).toHaveLength(model.drafts.size)
+
+  // Reverse check: every real store entry exists in the model
+  for (const entry of Object.values(index.entries) as { path: string }[]) {
+    expect(
+      model.drafts.has(entry.path),
+      `Real store has extra entry ${entry.path} not in model`
+    ).toBe(true)
+  }
 }
 
 // ── Commands ────────────────────────────────────────────────────────
@@ -265,6 +273,31 @@ class ResetCommand implements Command<PersistenceModel, PersistenceReal> {
   }
 }
 
+class StoreResetCommand implements Command<PersistenceModel, PersistenceReal> {
+  check() {
+    return true
+  }
+
+  run(model: PersistenceModel, real: PersistenceReal) {
+    // Call reset() directly to clear in-memory cache without recreating Pinia.
+    // This exercises the orphan cleanup path in loadIndex() on next access.
+    real.draftStore.reset()
+
+    for (const [path, expected] of model.drafts) {
+      const draft = real.draftStore.getDraft(path)
+      expect(draft, `Draft lost after store reset: ${path}`).not.toBeNull()
+      expect(draft!.data).toBe(expected.data)
+      expect(draft!.name).toBe(expected.name)
+      expect(draft!.isTemporary).toBe(expected.isTemporary)
+    }
+    assertIndexPayloadConsistency()
+  }
+
+  toString() {
+    return 'StoreReset()'
+  }
+}
+
 // ── Test Suite ──────────────────────────────────────────────────────
 
 describe('workflowDraftStoreV2 FSM', () => {
@@ -310,7 +343,8 @@ describe('workflowDraftStoreV2 FSM', () => {
       .tuple(pathPool, pathPool, namePool)
       .map(([old, nw, name]) => new MoveDraftCommand(old, nw, name)),
     fc.constant(new GetMostRecentPathCommand()),
-    fc.constant(new ResetCommand())
+    fc.constant(new ResetCommand()),
+    fc.constant(new StoreResetCommand())
   ]
 
   it(

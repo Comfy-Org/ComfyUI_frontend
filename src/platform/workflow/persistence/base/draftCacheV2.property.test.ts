@@ -136,4 +136,53 @@ describe('draftCacheV2 properties', () => {
       )
     )
   })
+
+  it('evicted entries are the oldest in LRU order and current key is never evicted', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.tuple(arbPath, arbMeta), {
+          minLength: 1,
+          maxLength: 50
+        }),
+        fc.integer({ min: 1, max: 10 }),
+        (operations, limit) => {
+          let index = createEmptyIndex()
+          for (const [path, meta] of operations) {
+            const orderBefore = [...index.order]
+            const { index: newIndex, evicted } = upsertEntry(
+              index,
+              path,
+              meta,
+              limit
+            )
+
+            // Current key must never be evicted
+            const currentKey = newIndex.order[newIndex.order.length - 1]
+            for (const key of evicted) {
+              expect(key).not.toBe(currentKey)
+            }
+
+            // Evicted keys must come from the old order
+            if (evicted.length > 0) {
+              const evictedSet = new Set(evicted)
+              for (const key of evicted) {
+                expect(orderBefore).toContain(key)
+              }
+              // Non-evicted keys preserve their relative order
+              const remaining = orderBefore.filter((k) => !evictedSet.has(k))
+              const newOrderWithoutCurrent = newIndex.order.filter(
+                (k) => k !== currentKey
+              )
+              const remainingWithoutCurrent = remaining.filter(
+                (k) => k !== currentKey
+              )
+              expect(newOrderWithoutCurrent).toEqual(remainingWithoutCurrent)
+            }
+
+            index = newIndex
+          }
+        }
+      )
+    )
+  })
 })

@@ -100,7 +100,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   /**
    * Saves a draft (data + metadata).
-   * Writes payload first, then updates index.
+   * Primes index cache, writes payload, then persists updated index.
    */
   function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
     if (!isStorageAvailable()) return false
@@ -114,7 +114,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     // delete a payload written before the index is updated.
     const index = loadIndex()
 
-    // Write payload first (before index update)
+    // Write payload before persisting the updated index
     const payloadWritten = writePayload(workspaceId, draftKey, {
       data,
       updatedAt: now
