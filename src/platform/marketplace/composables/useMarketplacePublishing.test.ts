@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   CategoriesResponse,
   CreateTemplateResponse,
+  MarketplaceTemplate,
   MediaUploadResponse,
   SubmitTemplateResponse,
   TagSuggestResponse
@@ -199,6 +200,80 @@ describe('useMarketplacePublishing', () => {
       expect(currentStep.value).toBe(1)
       prevStep()
       expect(currentStep.value).toBe(1)
+    })
+  })
+
+  describe('loadForEdit', () => {
+    function makeTemplate(
+      overrides: Partial<MarketplaceTemplate> = {}
+    ): MarketplaceTemplate {
+      return {
+        id: 'tpl_edit',
+        title: 'Edit Me',
+        description: 'Desc',
+        shortDescription: 'Short',
+        author: {
+          id: 'a1',
+          name: 'Author',
+          isVerified: false,
+          profileUrl: ''
+        },
+        categories: [],
+        tags: [],
+        difficulty: 'beginner',
+        requiredModels: [],
+        requiredNodes: [],
+        vramRequirement: 0,
+        thumbnail: '',
+        gallery: [],
+        workflowPreview: '',
+        license: 'mit',
+        version: '1.0.0',
+        status: 'draft',
+        updatedAt: new Date().toISOString(),
+        stats: {
+          downloads: 0,
+          favorites: 0,
+          rating: 0,
+          reviewCount: 0,
+          weeklyTrend: 0
+        },
+        ...overrides
+      }
+    }
+
+    it('sets draftId and resets to step 1', () => {
+      const template = makeTemplate({ id: 'tpl_99' })
+      const { loadForEdit, draftId, currentStep } = useMarketplacePublishing()
+
+      loadForEdit(template)
+
+      expect(draftId.value).toBe('tpl_99')
+      expect(currentStep.value).toBe(1)
+    })
+
+    it('clears prior state via reset', async () => {
+      mockService.createTemplate.mockResolvedValue({
+        id: 'tpl_1',
+        status: 'draft'
+      })
+      const template = makeTemplate({ id: 'tpl_99' })
+      const { createDraft, loadForEdit, draftId, currentStep, error } =
+        useMarketplacePublishing()
+
+      await createDraft({
+        title: 'T',
+        description: 'd',
+        shortDescription: 's'
+      })
+      mockService.createTemplate.mockRejectedValue(new Error('Prior error'))
+      error.value = 'Prior error'
+
+      loadForEdit(template)
+
+      expect(draftId.value).toBe('tpl_99')
+      expect(currentStep.value).toBe(1)
+      expect(error.value).toBeNull()
     })
   })
 

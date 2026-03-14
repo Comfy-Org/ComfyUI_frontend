@@ -122,7 +122,7 @@ export const useDialogStore = defineStore('dialog', () => {
       : dialogStack.value.find((d) => d.key === activeKey.value)
     if (!targetDialog) return
 
-    targetDialog.dialogComponentProps?.onClose?.()
+    const onClose = targetDialog.dialogComponentProps?.onClose
     const index = dialogStack.value.indexOf(targetDialog)
     dialogStack.value.splice(index, 1)
 
@@ -132,6 +132,7 @@ export const useDialogStore = defineStore('dialog', () => {
         : null
 
     updateCloseOnEscapeStates()
+    onClose?.()
   }
 
   function createDialog<

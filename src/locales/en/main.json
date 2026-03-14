@@ -3630,6 +3630,8 @@
     "previewTitle": "Preview",
     "previewDescription": "This is how your template will appear in the marketplace.",
     "authorDashboard": "My Templates",
+    "edit": "Edit",
+    "done": "Done",
     "status": {
       "draft": "Draft",
       "pending_review": "Pending Review",

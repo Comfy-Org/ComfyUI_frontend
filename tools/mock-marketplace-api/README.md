@@ -25,21 +25,21 @@ pnpm dev:marketplace   # terminal 2
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/marketplace/templates` | Create a draft template |
-| PUT | `/api/marketplace/templates/:id` | Update a template |
-| POST | `/api/marketplace/templates/:id/submit` | Submit draft for review |
-| POST | `/api/marketplace/templates/:id/approve` | Approve (reviewer) |
-| POST | `/api/marketplace/templates/:id/reject` | Reject (reviewer) |
-| POST | `/api/marketplace/templates/:id/unpublish` | Unpublish approved template |
-| POST | `/api/marketplace/templates/:id/media` | Upload media (FormData) |
-| GET | `/api/marketplace/author/templates` | List author's templates |
-| GET | `/api/marketplace/author/stats?period=week` | Author stats |
-| GET | `/api/marketplace/categories` | List categories |
-| GET | `/api/marketplace/tags/suggest?query=...` | Tag suggestions |
-| POST | `/api/marketplace/_reset` | Reset DB to seed state |
-| GET | `/review` | Temp UI for testing approve/reject flow |
+| Method | Path                                        | Description                             |
+| ------ | ------------------------------------------- | --------------------------------------- |
+| POST   | `/api/marketplace/templates`                | Create a draft template                 |
+| PUT    | `/api/marketplace/templates/:id`            | Update a template                       |
+| POST   | `/api/marketplace/templates/:id/submit`     | Submit draft for review                 |
+| POST   | `/api/marketplace/templates/:id/approve`    | Approve (reviewer)                      |
+| POST   | `/api/marketplace/templates/:id/reject`     | Reject (reviewer)                       |
+| POST   | `/api/marketplace/templates/:id/unpublish`  | Unpublish approved template             |
+| POST   | `/api/marketplace/templates/:id/media`      | Upload media (FormData)                 |
+| GET    | `/api/marketplace/author/templates`         | List author's templates                 |
+| GET    | `/api/marketplace/author/stats?period=week` | Author stats                            |
+| GET    | `/api/marketplace/categories`               | List categories                         |
+| GET    | `/api/marketplace/tags/suggest?query=...`   | Tag suggestions                         |
+| POST   | `/api/marketplace/_reset`                   | Reset DB to seed state                  |
+| GET    | `/review`                                   | Temp UI for testing approve/reject flow |
 
 ## Review UI
 

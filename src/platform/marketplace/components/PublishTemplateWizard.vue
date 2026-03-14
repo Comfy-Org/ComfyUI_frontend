@@ -143,7 +143,14 @@
           {{ $t('marketplace.next') }}
         </Button>
         <Button
-          v-if="currentStep === 3 && !submitted"
+          v-if="currentStep === 3 && !submitted && isPendingReview"
+          data-testid="btn-done"
+          @click="handleDone"
+        >
+          {{ $t('marketplace.done') }}
+        </Button>
+        <Button
+          v-if="currentStep === 3 && !submitted && !isPendingReview"
           data-testid="btn-submit"
           :disabled="isPublishing"
           @click="handleSubmit"
@@ -160,15 +167,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { MarketplaceTemplate } from '@/platform/marketplace/apiTypes'
 import { useMarketplacePublishing } from '@/platform/marketplace/composables/useMarketplacePublishing'
 import { cn } from '@/utils/tailwindUtil'
 
-const { onClose } = defineProps<{
+const { onClose, initialTemplate } = defineProps<{
   onClose?: () => void
+  initialTemplate?: MarketplaceTemplate
 }>()
 
 const { t } = useI18n()
@@ -183,6 +192,7 @@ const {
   submit,
   nextStep,
   prevStep,
+  loadForEdit,
   loadCategories
 } = useMarketplacePublishing()
 
@@ -193,6 +203,10 @@ const form = reactive({
 })
 
 const submitted = ref(false)
+
+const isPendingReview = computed(
+  () => initialTemplate?.status === 'pending_review'
+)
 
 const steps = computed(() => [
   { id: 'details', label: t('marketplace.steps.details') },
@@ -210,6 +224,21 @@ const canAdvance = computed(() => {
   }
   return true
 })
+
+function initFromTemplate(template: MarketplaceTemplate) {
+  loadForEdit(template)
+  form.title = template.title
+  form.description = template.description
+  form.shortDescription = template.shortDescription
+}
+
+watch(
+  () => initialTemplate,
+  (template) => {
+    if (template) initFromTemplate(template)
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   void loadCategories()
@@ -231,6 +260,13 @@ async function handleNext() {
       })
       nextStep()
     }
+  } else if (currentStep.value === 2 && draftId.value) {
+    await saveDraft({
+      title: form.title,
+      description: form.description,
+      shortDescription: form.shortDescription
+    })
+    nextStep()
   } else {
     nextStep()
   }
@@ -246,5 +282,9 @@ async function handleSubmit() {
     submitted.value = true
     onClose?.()
   }
+}
+
+function handleDone() {
+  onClose?.()
 }
 </script>

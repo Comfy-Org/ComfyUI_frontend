@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 import type {
   CategoriesResponse,
   CreateTemplateResponse,
+  MarketplaceTemplate,
   SubmitTemplateResponse
 } from '@/platform/marketplace/apiTypes'
 
@@ -58,7 +59,8 @@ const i18n = createI18n({
         uploadThumbnail: 'Upload Thumbnail',
         previewTitle: 'Preview',
         previewDescription:
-          'This is how your template will appear in the marketplace.'
+          'This is how your template will appear in the marketplace.',
+        done: 'Done'
       },
       g: {
         upload: 'Upload',
@@ -225,6 +227,147 @@ describe('PublishTemplateWizard', () => {
       await vi.dynamicImportSettled()
 
       expect(mockService.submitTemplate).toHaveBeenCalledWith('tpl_1')
+    })
+  })
+
+  describe('edit mode (initialTemplate)', () => {
+    function makeSeedTemplate(
+      overrides: Partial<MarketplaceTemplate>
+    ): MarketplaceTemplate {
+      return {
+        id: 'tpl_99',
+        title: 'Existing',
+        description: 'Desc',
+        shortDescription: 'Short',
+        author: {
+          id: 'a1',
+          name: 'Author',
+          isVerified: false,
+          profileUrl: ''
+        },
+        categories: [],
+        tags: [],
+        difficulty: 'beginner',
+        requiredModels: [],
+        requiredNodes: [],
+        vramRequirement: 0,
+        thumbnail: '',
+        gallery: [],
+        workflowPreview: '',
+        license: 'mit',
+        version: '1.0.0',
+        status: 'draft',
+        updatedAt: new Date().toISOString(),
+        stats: {
+          downloads: 0,
+          favorites: 0,
+          rating: 0,
+          reviewCount: 0,
+          weeklyTrend: 0
+        },
+        ...overrides
+      }
+    }
+
+    it('pre-fills form when initialTemplate prop is provided', async () => {
+      const template = makeSeedTemplate({
+        id: 'tpl_99',
+        title: 'Existing',
+        description: 'Desc',
+        shortDescription: 'Short'
+      })
+      const wrapper = createWrapper({ initialTemplate: template })
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        (
+          wrapper.find('input[data-testid="input-title"]')
+            .element as HTMLInputElement
+        ).value
+      ).toBe('Existing')
+      expect(
+        (
+          wrapper.find('textarea[data-testid="input-description"]')
+            .element as HTMLTextAreaElement
+        ).value
+      ).toBe('Desc')
+      expect(
+        (
+          wrapper.find('input[data-testid="input-short-description"]')
+            .element as HTMLInputElement
+        ).value
+      ).toBe('Short')
+    })
+
+    it('calls updateTemplate (not createTemplate) when Next clicked with initialTemplate', async () => {
+      const template = makeSeedTemplate({
+        id: 'tpl_99',
+        title: 'Existing',
+        description: 'Desc',
+        shortDescription: 'Short'
+      })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_99' })
+
+      const wrapper = createWrapper({ initialTemplate: template })
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      await vi.dynamicImportSettled()
+
+      expect(mockService.updateTemplate).toHaveBeenCalledWith(
+        'tpl_99',
+        expect.objectContaining({
+          title: 'Existing',
+          description: 'Desc',
+          shortDescription: 'Short'
+        })
+      )
+      expect(mockService.createTemplate).not.toHaveBeenCalled()
+    })
+
+    it('advances to step 2 on Next when editing existing draft', async () => {
+      const template = makeSeedTemplate({
+        id: 'tpl_99',
+        title: 'Existing',
+        description: 'Desc',
+        shortDescription: 'Short'
+      })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_99' })
+
+      const wrapper = createWrapper({ initialTemplate: template })
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      await vi.dynamicImportSettled()
+
+      expect(wrapper.find('[data-testid="step-preview"]').exists()).toBe(true)
+    })
+
+    it('shows Done (not Submit) on step 3 when editing pending_review template', async () => {
+      const template = makeSeedTemplate({
+        id: 'tpl_99',
+        title: 'Existing',
+        description: 'Desc',
+        shortDescription: 'Short',
+        status: 'pending_review'
+      })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_99' })
+
+      const wrapper = createWrapper({ initialTemplate: template })
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      await vi.dynamicImportSettled()
+
+      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      await vi.dynamicImportSettled()
+
+      expect(wrapper.find('[data-testid="btn-done"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="btn-submit"]').exists()).toBe(false)
     })
   })
 })

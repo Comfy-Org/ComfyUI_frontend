@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type {
   Category,
   CreateTemplateRequest,
+  MarketplaceTemplate,
   MediaUploadResponse,
   SubmitTemplateResponse,
   UpdateTemplateRequest
@@ -91,6 +92,12 @@ export function useMarketplacePublishing() {
     tagSuggestions.value = []
   }
 
+  function loadForEdit(template: MarketplaceTemplate): void {
+    reset()
+    draftId.value = template.id
+    currentStep.value = 1
+  }
+
   async function loadCategories(): Promise<void> {
     try {
       const result = await marketplaceService.getCategories()
@@ -127,6 +134,7 @@ export function useMarketplacePublishing() {
     nextStep,
     prevStep,
     reset,
+    loadForEdit,
     loadCategories,
     loadTagSuggestions
   }

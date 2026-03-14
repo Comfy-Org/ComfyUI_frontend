@@ -89,9 +89,19 @@
                       {{ template.shortDescription }}
                     </div>
                   </div>
-                  <div class="text-sm text-muted">
-                    {{ template.stats.downloads }}
-                    {{ $t('marketplace.stats.downloads').toLowerCase() }}
+                  <div class="flex items-center gap-2">
+                    <button
+                      v-if="isEditable(statusGroup.status)"
+                      :data-testid="`btn-edit-template-${template.id}`"
+                      class="rounded-sm px-2 py-1 text-sm font-medium text-highlight hover:text-highlight/80"
+                      @click="handleEditTemplate(template)"
+                    >
+                      {{ $t('marketplace.edit') }}
+                    </button>
+                    <span class="text-sm text-muted">
+                      {{ template.stats.downloads }}
+                      {{ $t('marketplace.stats.downloads').toLowerCase() }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -108,10 +118,17 @@ import { computed, onMounted, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
+import type {
+  MarketplaceTemplate,
+  TemplateStatus
+} from '@/platform/marketplace/apiTypes'
 import { TEMPLATE_STATUSES } from '@/platform/marketplace/apiTypes'
 import { useAuthorDashboard } from '@/platform/marketplace/composables/useAuthorDashboard'
+import { usePublishDialog } from '@/platform/marketplace/composables/usePublishDialog'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
+
+const EDITABLE_STATUSES: TemplateStatus[] = ['draft', 'pending_review']
 
 const props = defineProps<{
   onClose?: () => void
@@ -130,6 +147,19 @@ const {
   loadTemplates,
   loadStats
 } = useAuthorDashboard()
+
+const { show: showPublishDialog } = usePublishDialog()
+
+function isEditable(status: TemplateStatus): boolean {
+  return EDITABLE_STATUSES.includes(status)
+}
+
+function handleEditTemplate(template: MarketplaceTemplate) {
+  showPublishDialog({
+    initialTemplate: template,
+    onClose: () => void loadTemplates()
+  })
+}
 
 const periods = computed(() => [
   { value: 'day' as const, label: t('marketplace.period.day') },
