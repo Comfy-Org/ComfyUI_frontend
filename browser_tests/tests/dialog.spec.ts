@@ -1,4 +1,3 @@
-import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { Keybinding } from '../../src/platform/keybindings/types'
