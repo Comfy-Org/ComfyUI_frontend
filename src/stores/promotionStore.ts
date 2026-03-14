@@ -9,6 +9,8 @@ interface PromotionEntry {
   widgetName: string
 }
 
+const EMPTY_PROMOTIONS: PromotionEntry[] = []
+
 export const usePromotionStore = defineStore('promotion', () => {
   const graphPromotions = ref(new Map<UUID, Map<NodeId, PromotionEntry[]>>())
   const graphRefCounts = ref(new Map<UUID, Map<string, number>>())
@@ -62,7 +64,9 @@ export const usePromotionStore = defineStore('promotion', () => {
     graphId: UUID,
     subgraphNodeId: NodeId
   ): PromotionEntry[] {
-    return _getPromotionsForGraph(graphId).get(subgraphNodeId) ?? []
+    return (
+      _getPromotionsForGraph(graphId).get(subgraphNodeId) ?? EMPTY_PROMOTIONS
+    )
   }
 
   function getPromotions(

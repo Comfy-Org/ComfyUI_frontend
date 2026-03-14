@@ -54,4 +54,24 @@ describe(matchPromotedInput, () => {
 
     expect(matched).toBe(aliasInput)
   })
+
+  it('does not guess when multiple same-name inputs exist without an exact match', () => {
+    const targetWidget = createWidget('seed')
+    const firstAliasInput: MockInput = {
+      name: 'seed'
+    }
+    const secondAliasInput: MockInput = {
+      name: 'seed'
+    }
+
+    const matched = matchPromotedInput(
+      [firstAliasInput, secondAliasInput] as unknown as Array<{
+        name: string
+        _widget?: IBaseWidget
+      }>,
+      targetWidget
+    )
+
+    expect(matched).toBeUndefined()
+  })
 })

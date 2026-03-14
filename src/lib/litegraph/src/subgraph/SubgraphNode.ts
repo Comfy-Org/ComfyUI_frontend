@@ -553,7 +553,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     widgetName: string,
     inputName = ''
   ): string {
-    return `${inputKey}:${interiorNodeId}:${widgetName}:${inputName}`
+    return JSON.stringify([inputKey, interiorNodeId, widgetName, inputName])
   }
 
   private _resolveLegacyEntry(

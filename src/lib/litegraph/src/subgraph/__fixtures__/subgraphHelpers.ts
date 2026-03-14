@@ -38,6 +38,11 @@ class FixtureStringConcatenateNode extends LGraphNode {
   }
 }
 
+export function cleanupComplexPromotionFixtureNodeType(): void {
+  if (!LiteGraph.registered_node_types[FIXTURE_STRING_CONCAT_TYPE]) return
+  LiteGraph.unregisterNodeType(FIXTURE_STRING_CONCAT_TYPE)
+}
+
 interface TestSubgraphOptions {
   id?: UUID
   name?: string
@@ -240,6 +245,7 @@ export function setupComplexPromotionFixture(): {
   if (!subgraphData)
     throw new Error('Expected fixture to contain one subgraph definition')
 
+  cleanupComplexPromotionFixtureNodeType()
   LiteGraph.registerNodeType(
     FIXTURE_STRING_CONCAT_TYPE,
     FixtureStringConcatenateNode

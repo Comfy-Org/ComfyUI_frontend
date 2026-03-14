@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 // Barrel import must come first to avoid circular dependency
 // (promotedWidgetView → widgetMap → BaseWidget → LegacyWidget → barrel)
@@ -27,6 +27,7 @@ import {
 } from '@/stores/widgetValueStore'
 
 import {
+  cleanupComplexPromotionFixtureNodeType,
   createTestSubgraph,
   createTestSubgraphNode,
   setupComplexPromotionFixture
@@ -101,6 +102,10 @@ describe(createPromotedWidgetView, () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     mockDomWidgetStore.widgetStates.clear()
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    cleanupComplexPromotionFixtureNodeType()
   })
 
   test('exposes sourceNodeId and sourceWidgetName', () => {

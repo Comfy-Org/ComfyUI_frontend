@@ -11,8 +11,9 @@ export function matchPromotedInput(
 ): PromotedInputLike | undefined {
   if (!inputs) return undefined
 
-  return (
-    inputs.find((input) => input._widget === widget) ??
-    inputs.find((input) => input.name === widget.name)
-  )
+  const exactMatch = inputs.find((input) => input._widget === widget)
+  if (exactMatch) return exactMatch
+
+  const sameNameMatches = inputs.filter((input) => input.name === widget.name)
+  return sameNameMatches.length === 1 ? sameNameMatches[0] : undefined
 }
