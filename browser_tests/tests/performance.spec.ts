@@ -174,4 +174,61 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     recordMeasurement(m)
     console.log(`Subgraph clipping: ${m.layouts} forced layouts`)
   })
+
+  test('canvas zoom sweep', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.perf.startMeasuring()
+
+    // Zoom in 10 steps, then zoom out 10 steps
+    for (let i = 0; i < 10; i++) {
+      await comfyPage.canvasOps.zoom(-100)
+      await comfyPage.nextFrame()
+    }
+    for (let i = 0; i < 10; i++) {
+      await comfyPage.canvasOps.zoom(100)
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('canvas-zoom-sweep')
+    recordMeasurement(m)
+    console.log(
+      `Zoom sweep: ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+    )
+  })
+
+  test('canvas pan with many nodes', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('perf/many_nodes_100')
+    await comfyPage.perf.startMeasuring()
+
+    // Pan across the canvas in 10 sweeps
+    for (let i = 0; i < 10; i++) {
+      await comfyPage.canvasOps.pan(
+        { x: 200 * (i % 2 === 0 ? 1 : -1), y: 100 },
+        { x: 400, y: 300 }
+      )
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('canvas-pan-many-nodes')
+    recordMeasurement(m)
+    console.log(
+      `Pan many nodes: ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+    )
+  })
+
+  test('canvas many nodes idle', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('perf/many_nodes_100')
+    await comfyPage.perf.startMeasuring()
+
+    // Idle for 2 seconds with 100 nodes rendered
+    for (let i = 0; i < 120; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('canvas-many-nodes-idle')
+    recordMeasurement(m)
+    console.log(
+      `Many nodes idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+    )
+  })
 })

@@ -27,6 +27,8 @@ export interface PerfMeasurement {
   jsHeapTotalBytes: number
   scriptDurationMs: number
   eventListeners: number
+  totalBlockingTimeMs: number
+  frameDurationMs: number
 }
 
 export class PerformanceHelper {
@@ -75,12 +77,72 @@ export class PerformanceHelper {
     }
   }
 
+  /**
+   * Collect longtask entries from PerformanceObserver and compute TBT.
+   * TBT = sum of (duration - 50ms) for every task longer than 50ms.
+   */
+  private async collectTBT(): Promise<number> {
+    return this.page.evaluate(() => {
+      const entries = performance.getEntriesByType(
+        'longtask'
+      ) as PerformanceEntry[]
+      let tbt = 0
+      for (const entry of entries) {
+        if (entry.duration > 50) {
+          tbt += entry.duration - 50
+        }
+      }
+      return tbt
+    })
+  }
+
+  /**
+   * Measure average frame duration via rAF timing over a sample window.
+   * Returns average ms per frame (lower = better, 16.67 = 60fps).
+   */
+  private async measureFrameDuration(sampleFrames = 10): Promise<number> {
+    return this.page.evaluate((frames) => {
+      return new Promise<number>((resolve) => {
+        const timestamps: number[] = []
+        let count = 0
+        function tick(ts: number) {
+          timestamps.push(ts)
+          count++
+          if (count <= frames) {
+            requestAnimationFrame(tick)
+          } else {
+            if (timestamps.length < 2) {
+              resolve(0)
+              return
+            }
+            const total =
+              timestamps[timestamps.length - 1] - timestamps[0]
+            resolve(total / (timestamps.length - 1))
+          }
+        }
+        requestAnimationFrame(tick)
+      })
+    }, sampleFrames)
+  }
+
   async startMeasuring(): Promise<void> {
     if (this.snapshot) {
       throw new Error(
         'Measurement already in progress — call stopMeasuring() first'
       )
     }
+    // Clear longtask entries before measurement window
+    await this.page.evaluate(() => {
+      performance.clearResourceTimings()
+      // Install longtask observer if not already present
+      if (!(window as Record<string, unknown>).__perfLongtaskObserver) {
+        const observer = new PerformanceObserver(() => {
+          // entries buffered automatically
+        })
+        observer.observe({ type: 'longtask', buffered: true })
+        ;(window as Record<string, unknown>).__perfLongtaskObserver = observer
+      }
+    })
     this.snapshot = await this.getSnapshot()
   }
 
@@ -94,6 +156,11 @@ export class PerformanceHelper {
       return after[key] - before[key]
     }
 
+    const [totalBlockingTimeMs, frameDurationMs] = await Promise.all([
+      this.collectTBT(),
+      this.measureFrameDuration()
+    ])
+
     return {
       name,
       durationMs: delta('Timestamp') * 1000,
@@ -106,7 +173,9 @@ export class PerformanceHelper {
       domNodes: delta('Nodes'),
       jsHeapTotalBytes: delta('JSHeapTotalSize'),
       scriptDurationMs: delta('ScriptDuration') * 1000,
-      eventListeners: delta('JSEventListeners')
+      eventListeners: delta('JSEventListeners'),
+      totalBlockingTimeMs,
+      frameDurationMs
     }
   }
 }

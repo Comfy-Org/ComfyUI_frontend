@@ -23,6 +23,8 @@ interface PerfMeasurement {
   jsHeapTotalBytes: number
   scriptDurationMs: number
   eventListeners: number
+  totalBlockingTimeMs: number
+  frameDurationMs: number
 }
 
 interface PerfReport {
@@ -43,13 +45,17 @@ type MetricKey =
   | 'domNodes'
   | 'scriptDurationMs'
   | 'eventListeners'
+  | 'totalBlockingTimeMs'
+  | 'frameDurationMs'
 const REPORTED_METRICS: { key: MetricKey; label: string; unit: string }[] = [
   { key: 'styleRecalcs', label: 'style recalcs', unit: '' },
   { key: 'layouts', label: 'layouts', unit: '' },
   { key: 'taskDurationMs', label: 'task duration', unit: 'ms' },
   { key: 'domNodes', label: 'DOM nodes', unit: '' },
   { key: 'scriptDurationMs', label: 'script duration', unit: 'ms' },
-  { key: 'eventListeners', label: 'event listeners', unit: '' }
+  { key: 'eventListeners', label: 'event listeners', unit: '' },
+  { key: 'totalBlockingTimeMs', label: 'TBT', unit: 'ms' },
+  { key: 'frameDurationMs', label: 'frame duration', unit: 'ms' }
 ]
 
 function groupByName(
@@ -292,7 +298,6 @@ function renderNoBaselineReport(
   for (const [testName, prSamples] of prGroups) {
     for (const { key, label, unit } of REPORTED_METRICS) {
       const prMean = meanMetric(prSamples, key)
-      if (prMean === null) continue
       lines.push(`| ${testName}: ${label} | ${formatValue(prMean, unit)} |`)
     }
     const heapMean =
