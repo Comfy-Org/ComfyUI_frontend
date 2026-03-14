@@ -56,6 +56,7 @@ export class DragDropHelper {
         if (fileName.endsWith('.json')) return 'application/json'
         if (fileName.endsWith('.glb')) return 'model/gltf-binary'
         if (fileName.endsWith('.avif')) return 'image/avif'
+        if (fileName.endsWith('.ogg')) return 'audio/ogg'
         return 'application/octet-stream'
       }
 
