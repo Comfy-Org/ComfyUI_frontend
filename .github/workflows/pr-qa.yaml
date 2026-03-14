@@ -368,6 +368,14 @@ jobs:
           </div></body></html>
           INDEXEOF
 
+          # 404 page so Cloudflare Pages returns proper 404 for missing files
+          # (instead of SPA fallback serving index.html)
+          cat > "$DEPLOY_DIR/404.html" <<'ERROREOF'
+          <!DOCTYPE html><html><head><meta charset=utf-8><title>404</title>
+          <style>body{background:#0d1117;color:#8b949e;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}div{text-align:center}h1{color:#f85149;font-size:3rem;margin-bottom:.5rem}p{font-size:1rem}</style>
+          </head><body><div><h1>404</h1><p>File not found. The QA recording may have failed or been cancelled.</p></div></body></html>
+          ERROREOF
+
           BRANCH="run-${{ github.run_id }}"
           URL=$(wrangler pages deploy "$DEPLOY_DIR" \
             --project-name="comfyui-qa-videos" \
