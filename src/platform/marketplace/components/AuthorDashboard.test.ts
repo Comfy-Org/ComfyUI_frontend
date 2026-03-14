@@ -239,14 +239,14 @@ describe('AuthorDashboard', () => {
       ).toBe(false)
     })
 
-    it('does not show Edit button for rejected templates', async () => {
+    it('shows Edit button for rejected templates', async () => {
       const wrapper = createWrapper()
       await vi.dynamicImportSettled()
       await wrapper.vm.$nextTick()
 
       expect(
         wrapper.find('[data-testid="btn-edit-template-tpl_4"]').exists()
-      ).toBe(false)
+      ).toBe(true)
     })
 
     it('does not show Edit button for unpublished templates', async () => {

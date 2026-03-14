@@ -123,6 +123,41 @@ const seed: MockDb = {
         reviewCount: 0,
         weeklyTrend: 0
       }
+    },
+    {
+      id: 'tpl_seed_4',
+      title: 'Style Transfer',
+      description: 'Transfer artistic styles between images',
+      shortDescription: 'Artistic style transfer workflow',
+      author: {
+        id: 'author_1',
+        name: 'ComfyCreator',
+        isVerified: true,
+        profileUrl: 'https://example.com/comfycreator'
+      },
+      categories: ['image-generation'],
+      tags: ['style-transfer', 'art', 'img2img'],
+      difficulty: 'intermediate',
+      requiredModels: [],
+      requiredNodes: [],
+      vramRequirement: 6144,
+      thumbnail: 'https://mock-cdn.example.com/thumbs/style-transfer.png',
+      gallery: [],
+      workflowPreview:
+        'https://mock-cdn.example.com/previews/style-transfer.png',
+      license: 'cc-by',
+      version: '1.0.0',
+      status: 'rejected' as TemplateStatus,
+      reviewFeedback:
+        'Workflow needs clearer documentation and example outputs.',
+      updatedAt: '2025-02-12T09:30:00Z',
+      stats: {
+        downloads: 0,
+        favorites: 0,
+        rating: 0,
+        reviewCount: 0,
+        weeklyTrend: 0
+      }
     }
   ],
   mediaByTemplateId: {
@@ -134,7 +169,7 @@ const seed: MockDb = {
     ]
   },
   authorStats: {
-    templatesCount: 3,
+    templatesCount: 4,
     totalDownloads: 1250,
     totalFavorites: 89,
     averageRating: 4.5,

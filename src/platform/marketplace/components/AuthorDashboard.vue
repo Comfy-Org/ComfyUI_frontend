@@ -128,7 +128,11 @@ import { usePublishDialog } from '@/platform/marketplace/composables/usePublishD
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-const EDITABLE_STATUSES: TemplateStatus[] = ['draft', 'pending_review']
+const EDITABLE_STATUSES: TemplateStatus[] = [
+  'draft',
+  'pending_review',
+  'rejected'
+]
 
 const props = defineProps<{
   onClose?: () => void
