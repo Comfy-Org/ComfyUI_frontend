@@ -58,6 +58,10 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
       'Comfy.NodeSearchBoxImpl',
       'v1 (legacy)'
     )
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      false
+    )
   })
 
   test('Can set search aliases on subgraph and find via search', async ({

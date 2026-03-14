@@ -8,6 +8,10 @@ test.describe('Vue Node Collapse', () => {
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
     await comfyPage.settings.setSetting('Comfy.EnableTooltips', true)
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      false
+    )
     await comfyPage.setup()
     await comfyPage.vueNodes.waitForNodes()
   })

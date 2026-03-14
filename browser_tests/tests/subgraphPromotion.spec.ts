@@ -36,6 +36,13 @@ test.describe(
   'Subgraph Widget Promotion',
   { tag: ['@subgraph', '@widget'] },
   () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.RightSidePanel.ShowErrorsTab',
+        false
+      )
+    })
+
     test.describe('Auto-promotion on Convert to Subgraph', () => {
       test('Recommended widgets are auto-promoted when creating a subgraph', async ({
         comfyPage
