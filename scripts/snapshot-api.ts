@@ -310,6 +310,5 @@ const sourceFile = ts.createSourceFile(
 
 const apiSurface = extractApiSurface(sourceFile)
 
-// Output as JSON
- 
-console.log(JSON.stringify(apiSurface, null, 2))
+// Output as JSON to stdout
+process.stdout.write(JSON.stringify(apiSurface, null, 2) + '\n')

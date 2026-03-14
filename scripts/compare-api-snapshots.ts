@@ -413,5 +413,4 @@ function formatChange(change) {
 const changes = compareApis(previousApi, currentApi)
 const changelog = formatChangelog(changes, previousVersion, currentVersion)
 
- 
-console.log(changelog)
+process.stdout.write(changelog)
