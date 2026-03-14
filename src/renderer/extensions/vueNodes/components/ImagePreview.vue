@@ -66,6 +66,19 @@
           <i-comfy:mask class="size-4" />
         </button>
 
+        <!-- Clear Mask Button -->
+        <button
+          v-if="!hasMultipleImages"
+          :class="actionButtonClass"
+          :title="$t('g.clearMask')"
+          :aria-label="$t('g.clearMask')"
+          :disabled="isClearingMask"
+          @click.stop="handleClearMask"
+        >
+          <i v-if="isClearingMask" class="pi pi-spinner pi-spin h-4 w-4" />
+          <i v-else class="icon-[lucide--eraser] h-4 w-4" />
+        </button>
+
         <!-- Download Button -->
         <button
           :class="actionButtonClass"
@@ -159,6 +172,7 @@ const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
+const isClearingMask = ref(false)
 
 const imageWrapperEl = ref<HTMLDivElement>()
 
@@ -230,6 +244,28 @@ const handleEditMask = () => {
   const node = app.rootGraph?.getNodeById(Number(props.nodeId))
   if (!node) return
   maskEditor.openMaskEditor(node)
+}
+
+const handleClearMask = async () => {
+  if (!props.nodeId || isClearingMask.value) return
+  const node = app.rootGraph?.getNodeById(Number(props.nodeId))
+  if (!node) return
+
+  isClearingMask.value = true
+
+  try {
+    await maskEditor.clearMask(node)
+  } catch (error) {
+    useToast().add({
+      severity: 'error',
+      summary: 'Error',
+      detail: t('g.errorLoadingImage'),
+      life: 3000,
+      group: 'image-preview'
+    })
+  } finally {
+    isClearingMask.value = false
+  }
 }
 
 const handleDownload = () => {

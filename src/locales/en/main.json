@@ -12,6 +12,7 @@
     "downloadVideo": "Download video",
     "downloadAudio": "Download audio",
     "editOrMaskImage": "Edit or mask image",
+    "clearMask": "Clear mask",
     "editImage": "Edit image",
     "decrement": "Decrement",
     "deleteImage": "Delete image",
@@ -1155,6 +1156,8 @@
   },
   "maskEditor": {
     "title": "Mask Editor",
+    "cannotClearWhenOpenSummary": "Warning",
+    "cannotClearWhenOpenDetail": "Please close the mask editor before clearing masks.",
     "invert": "Invert",
     "clear": "Clear",
     "undo": "Undo",

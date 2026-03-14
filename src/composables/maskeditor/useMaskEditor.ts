@@ -2,8 +2,20 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useDialogStore } from '@/stores/dialogStore'
 import TopBarHeader from '@/components/maskeditor/dialog/TopBarHeader.vue'
 import MaskEditorContent from '@/components/maskeditor/MaskEditorContent.vue'
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useMaskEditorLoader } from '@/composables/maskeditor/useMaskEditorLoader'
+import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
+import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
+import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
+import { ref } from 'vue'
+
+const isClearingMask = ref(false)
 
 export function useMaskEditor() {
+  const toast = useToast()
+  const { t } = useI18n()
   const openMaskEditor = (node: LGraphNode) => {
     if (!node) {
       console.error('[MaskEditor] No node provided')
@@ -42,7 +54,55 @@ export function useMaskEditor() {
     })
   }
 
+  const clearMask = async (node: LGraphNode) => {
+    if (!node) {
+      return
+    }
+
+    if (isClearingMask.value) {
+      return
+    }
+
+    const dialogStore = useDialogStore()
+    if (dialogStore.isDialogOpen('global-mask-editor')) {
+      console.warn(
+        '[MaskEditor] Cannot clear mask while the mask editor is open'
+      )
+      toast.add({
+        severity: 'warn',
+        summary: t('maskEditor.cannotClearWhenOpenSummary'),
+        detail: t('maskEditor.cannotClearWhenOpenDetail'),
+        life: 3000
+      })
+      return
+    }
+
+    isClearingMask.value = true
+
+    const dataStore = useMaskEditorDataStore()
+    const editorStore = useMaskEditorStore()
+    const loader = useMaskEditorLoader()
+    const saver = useMaskEditorSaver()
+    const canvasTools = useCanvasTools()
+
+    try {
+      await loader.loadFromNode(node)
+
+      if (!dataStore.inputData) throw new Error('Failed to load image data')
+
+      canvasTools.clearMask()
+      await saver.save()
+    } catch (error) {
+      throw error
+    } finally {
+      dataStore.reset()
+      editorStore.resetState()
+      isClearingMask.value = false
+    }
+  }
+
   return {
-    openMaskEditor
+    openMaskEditor,
+    clearMask
   }
 }
