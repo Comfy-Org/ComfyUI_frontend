@@ -22,121 +22,115 @@
       </div>
     </div>
 
-    <!-- Step 1: Details -->
+    <!-- Step 1: Details + Preview split view -->
     <div
       v-if="currentStep === 1"
       data-testid="step-details"
-      class="flex flex-col gap-4"
+      class="grid grid-cols-1 gap-6 lg:grid-cols-2"
     >
-      <div class="flex flex-col gap-1">
-        <label for="publish-title" class="text-sm font-medium">
-          {{ $t('marketplace.title') }}
-        </label>
-        <input
-          id="publish-title"
-          v-model="form.title"
-          data-testid="input-title"
-          type="text"
-          :placeholder="$t('marketplace.titlePlaceholder')"
-          class="border-border rounded-md border bg-base-background px-3 py-2 text-sm"
-        />
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <label for="publish-title" class="text-sm font-medium">
+            {{ $t('marketplace.title') }}
+          </label>
+          <input
+            id="publish-title"
+            v-model="form.title"
+            data-testid="input-title"
+            type="text"
+            class="border-border rounded-md border bg-base-background px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label for="publish-description" class="text-sm font-medium">
+            {{ $t('marketplace.description') }}
+          </label>
+          <textarea
+            id="publish-description"
+            v-model="form.description"
+            data-testid="input-description"
+            rows="4"
+            class="border-border rounded-md border bg-base-background px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label for="publish-short-description" class="text-sm font-medium">
+            {{ $t('marketplace.shortDescription') }}
+          </label>
+          <input
+            id="publish-short-description"
+            v-model="form.shortDescription"
+            data-testid="input-short-description"
+            type="text"
+            class="border-border rounded-md border bg-base-background px-3 py-2 text-sm"
+          />
+        </div>
       </div>
 
-      <div class="flex flex-col gap-1">
-        <label for="publish-description" class="text-sm font-medium">
-          {{ $t('marketplace.description') }}
-        </label>
-        <textarea
-          id="publish-description"
-          v-model="form.description"
-          data-testid="input-description"
-          rows="4"
-          :placeholder="$t('marketplace.descriptionPlaceholder')"
-          class="border-border rounded-md border bg-base-background px-3 py-2 text-sm"
-        />
-      </div>
-
-      <div class="flex flex-col gap-1">
-        <label for="publish-short-description" class="text-sm font-medium">
-          {{ $t('marketplace.shortDescription') }}
-        </label>
-        <input
-          id="publish-short-description"
-          v-model="form.shortDescription"
-          data-testid="input-short-description"
-          type="text"
-          :placeholder="$t('marketplace.shortDescriptionPlaceholder')"
-          class="border-border rounded-md border bg-base-background px-3 py-2 text-sm"
-        />
+      <div class="flex flex-col gap-2">
+        <p class="text-sm text-muted">
+          {{ $t('marketplace.previewDescription') }}
+        </p>
+        <div class="max-w-72">
+          <CardContainer
+            size="tall"
+            variant="ghost"
+            rounded="lg"
+            :has-cursor="false"
+            data-testid="preview-card"
+          >
+            <template #top>
+              <CardTop ratio="square">
+                <template #default>
+                  <div
+                    v-if="initialTemplate?.thumbnail"
+                    class="relative size-full overflow-hidden rounded-lg"
+                  >
+                    <DefaultThumbnail
+                      :src="initialTemplate.thumbnail"
+                      :alt="form.title"
+                      :hover-zoom="0"
+                      :is-hovered="false"
+                    />
+                  </div>
+                  <div
+                    v-else
+                    class="flex size-full flex-col items-center justify-center gap-2 rounded-lg bg-dialog-surface"
+                    data-testid="preview-thumbnail-placeholder"
+                  >
+                    <i class="icon-[lucide--image] size-10 text-muted" />
+                    <span class="text-xs text-muted">
+                      {{ $t('marketplace.noThumbnailYet') }}
+                    </span>
+                  </div>
+                </template>
+              </CardTop>
+            </template>
+            <template #bottom>
+              <CardBottom>
+                <div class="flex flex-col gap-2 pt-3">
+                  <h3 class="m-0 line-clamp-1 text-sm" :title="form.title">
+                    {{ form.title }}
+                  </h3>
+                  <p class="m-0 line-clamp-2 text-sm text-muted">
+                    {{ form.shortDescription }}
+                  </p>
+                  <p class="m-0 text-sm">
+                    {{ form.description }}
+                  </p>
+                </div>
+              </CardBottom>
+            </template>
+          </CardContainer>
+        </div>
       </div>
     </div>
 
-    <!-- Step 2: Preview -->
+    <!-- Step 2: Submit -->
     <div
       v-if="currentStep === 2"
-      data-testid="step-preview"
-      class="flex flex-col gap-4"
-    >
-      <p class="text-sm text-muted">
-        {{ $t('marketplace.previewDescription') }}
-      </p>
-      <div class="max-w-72">
-        <CardContainer
-          size="tall"
-          variant="ghost"
-          rounded="lg"
-          :has-cursor="false"
-          data-testid="preview-card"
-        >
-          <template #top>
-            <CardTop ratio="square">
-              <template #default>
-                <div
-                  v-if="initialTemplate?.thumbnail"
-                  class="relative size-full overflow-hidden rounded-lg"
-                >
-                  <DefaultThumbnail
-                    :src="initialTemplate.thumbnail"
-                    :alt="form.title"
-                    :hover-zoom="0"
-                    :is-hovered="false"
-                  />
-                </div>
-                <div
-                  v-else
-                  class="flex size-full flex-col items-center justify-center gap-2 rounded-lg bg-dialog-surface"
-                  data-testid="preview-thumbnail-placeholder"
-                >
-                  <i class="icon-[lucide--image] size-10 text-muted" />
-                  <span class="text-xs text-muted">
-                    {{ $t('marketplace.noThumbnailYet') }}
-                  </span>
-                </div>
-              </template>
-            </CardTop>
-          </template>
-          <template #bottom>
-            <CardBottom>
-              <div class="flex flex-col gap-2 pt-3">
-                <h3 class="m-0 line-clamp-1 text-sm" :title="form.title">
-                  {{ form.title }}
-                </h3>
-                <p class="m-0 line-clamp-2 text-sm text-muted">
-                  {{ form.shortDescription }}
-                </p>
-                <p class="m-0 text-sm">
-                  {{ form.description }}
-                </p>
-              </div>
-            </CardBottom>
-          </template>
-        </CardContainer>
-      </div>
-    </div>
-
-    <!-- Step 3: Submit -->
-    <div
-      v-if="currentStep === 3"
       data-testid="step-submit"
       class="flex flex-col gap-4"
     >
@@ -182,7 +176,7 @@
 
       <div class="flex gap-2">
         <Button
-          v-if="currentStep < 3"
+          v-if="currentStep < 2"
           data-testid="btn-next"
           :disabled="!canAdvance"
           @click="handleNext"
@@ -190,14 +184,14 @@
           {{ $t('marketplace.next') }}
         </Button>
         <Button
-          v-if="currentStep === 3 && !submitted && isPendingReview"
+          v-if="currentStep === 2 && !submitted && isPendingReview"
           data-testid="btn-done"
           @click="handleDone"
         >
           {{ $t('marketplace.done') }}
         </Button>
         <Button
-          v-if="currentStep === 3 && !submitted && !isPendingReview"
+          v-if="currentStep === 2 && !submitted && !isPendingReview"
           data-testid="btn-submit"
           :disabled="isPublishing"
           @click="handleSubmit"
@@ -233,6 +227,12 @@ const { onClose, initialTemplate } = defineProps<{
 
 const { t } = useI18n()
 
+const defaultPlaceholders = {
+  title: t('marketplace.titlePlaceholder'),
+  description: t('marketplace.descriptionPlaceholder'),
+  shortDescription: t('marketplace.shortDescriptionPlaceholder')
+}
+
 const {
   currentStep,
   draftId,
@@ -248,9 +248,9 @@ const {
 } = useMarketplacePublishing()
 
 const form = reactive({
-  title: '',
-  description: '',
-  shortDescription: ''
+  title: defaultPlaceholders.title,
+  description: defaultPlaceholders.description,
+  shortDescription: defaultPlaceholders.shortDescription
 })
 
 const submitted = ref(false)
@@ -261,7 +261,6 @@ const isPendingReview = computed(
 
 const steps = computed(() => [
   { id: 'details', label: t('marketplace.steps.details') },
-  { id: 'preview', label: t('marketplace.steps.preview') },
   { id: 'submit', label: t('marketplace.steps.submit') }
 ])
 
@@ -269,8 +268,11 @@ const canAdvance = computed(() => {
   if (currentStep.value === 1) {
     return (
       form.title.trim() !== '' &&
+      form.title !== defaultPlaceholders.title &&
       form.description.trim() !== '' &&
-      form.shortDescription.trim() !== ''
+      form.description !== defaultPlaceholders.description &&
+      form.shortDescription.trim() !== '' &&
+      form.shortDescription !== defaultPlaceholders.shortDescription
     )
   }
   return true
@@ -311,13 +313,6 @@ async function handleNext() {
       })
       nextStep()
     }
-  } else if (currentStep.value === 2 && draftId.value) {
-    await saveDraft({
-      title: form.title,
-      description: form.description,
-      shortDescription: form.shortDescription
-    })
-    nextStep()
   } else {
     nextStep()
   }

@@ -117,6 +117,14 @@ describe('PublishTemplateWizard', () => {
       ).toBe(true)
     })
 
+    it('disables Next when form has only default placeholder text', () => {
+      const wrapper = createWrapper()
+      expect(
+        (wrapper.find('[data-testid="btn-next"]').element as HTMLButtonElement)
+          .disabled
+      ).toBe(true)
+    })
+
     it('creates draft and advances to step 2 on Next', async () => {
       const createResponse: CreateTemplateResponse = {
         id: 'tpl_1',
@@ -147,14 +155,12 @@ describe('PublishTemplateWizard', () => {
     })
   })
 
-  describe('step 2: preview', () => {
-    async function advanceToStep2() {
-      mockService.createTemplate.mockResolvedValue({
-        id: 'tpl_1',
-        status: 'draft'
-      })
-
+  describe('step 1: details + preview split view', () => {
+    it('shows preview card with template details that update with form', async () => {
       const wrapper = createWrapper()
+      expect(wrapper.find('[data-testid="step-details"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="preview-card"]').exists()).toBe(true)
+
       await wrapper
         .find('input[data-testid="input-title"]')
         .setValue('My Workflow')
@@ -165,23 +171,13 @@ describe('PublishTemplateWizard', () => {
         .find('input[data-testid="input-short-description"]')
         .setValue('Short')
 
-      await wrapper.find('[data-testid="btn-next"]').trigger('click')
-      await vi.dynamicImportSettled()
-
-      return wrapper
-    }
-
-    it('shows preview step with template details', async () => {
-      const wrapper = await advanceToStep2()
-      expect(wrapper.find('[data-testid="step-preview"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="preview-card"]').exists()).toBe(true)
       expect(wrapper.text()).toContain('My Workflow')
       expect(wrapper.text()).toContain('Short')
       expect(wrapper.text()).toContain('Description')
     })
 
-    it('shows thumbnail placeholder when initialTemplate has no thumbnail', async () => {
-      const wrapper = await advanceToStep2()
+    it('shows thumbnail placeholder when initialTemplate has no thumbnail', () => {
+      const wrapper = createWrapper()
       expect(
         wrapper.find('[data-testid="preview-thumbnail-placeholder"]').exists()
       ).toBe(true)
@@ -189,7 +185,6 @@ describe('PublishTemplateWizard', () => {
     })
 
     it('shows thumbnail (not placeholder) when initialTemplate has thumbnail', async () => {
-      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_99' })
       const template: MarketplaceTemplate = {
         id: 'tpl_99',
         title: 'Existing',
@@ -226,31 +221,17 @@ describe('PublishTemplateWizard', () => {
       await vi.dynamicImportSettled()
       await wrapper.vm.$nextTick()
 
-      await wrapper.find('[data-testid="btn-next"]').trigger('click')
-      await vi.dynamicImportSettled()
-
       expect(
         wrapper.find('[data-testid="preview-thumbnail-placeholder"]').exists()
       ).toBe(false)
     })
 
-    it('has a back button to return to step 1', async () => {
-      const wrapper = await advanceToStep2()
-      expect(wrapper.find('[data-testid="btn-back"]').exists()).toBe(true)
-    })
-  })
-
-  describe('step 3: submit', () => {
-    async function advanceToStep3() {
+    it('has back button on submit step to return to details', async () => {
       mockService.createTemplate.mockResolvedValue({
         id: 'tpl_1',
         status: 'draft'
       })
-      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
-
       const wrapper = createWrapper()
-
-      // Step 1
       await wrapper
         .find('input[data-testid="input-title"]')
         .setValue('My Workflow')
@@ -263,7 +244,27 @@ describe('PublishTemplateWizard', () => {
       await wrapper.find('[data-testid="btn-next"]').trigger('click')
       await vi.dynamicImportSettled()
 
-      // Step 2 → Step 3
+      expect(wrapper.find('[data-testid="btn-back"]').exists()).toBe(true)
+    })
+  })
+
+  describe('step 2: submit', () => {
+    async function advanceToSubmitStep() {
+      mockService.createTemplate.mockResolvedValue({
+        id: 'tpl_1',
+        status: 'draft'
+      })
+
+      const wrapper = createWrapper()
+      await wrapper
+        .find('input[data-testid="input-title"]')
+        .setValue('My Workflow')
+      await wrapper
+        .find('textarea[data-testid="input-description"]')
+        .setValue('Description')
+      await wrapper
+        .find('input[data-testid="input-short-description"]')
+        .setValue('Short')
       await wrapper.find('[data-testid="btn-next"]').trigger('click')
       await vi.dynamicImportSettled()
 
@@ -271,7 +272,7 @@ describe('PublishTemplateWizard', () => {
     }
 
     it('shows submit step', async () => {
-      const wrapper = await advanceToStep3()
+      const wrapper = await advanceToSubmitStep()
       expect(wrapper.find('[data-testid="step-submit"]').exists()).toBe(true)
     })
 
@@ -281,7 +282,7 @@ describe('PublishTemplateWizard', () => {
       }
       mockService.submitTemplate.mockResolvedValue(submitResponse)
 
-      const wrapper = await advanceToStep3()
+      const wrapper = await advanceToSubmitStep()
       await wrapper.find('[data-testid="btn-submit"]').trigger('click')
       await vi.dynamicImportSettled()
 
@@ -386,7 +387,7 @@ describe('PublishTemplateWizard', () => {
       expect(mockService.createTemplate).not.toHaveBeenCalled()
     })
 
-    it('advances to step 2 on Next when editing existing draft', async () => {
+    it('advances to submit step on Next when editing existing draft', async () => {
       const template = makeSeedTemplate({
         id: 'tpl_99',
         title: 'Existing',
@@ -402,10 +403,10 @@ describe('PublishTemplateWizard', () => {
       await wrapper.find('[data-testid="btn-next"]').trigger('click')
       await vi.dynamicImportSettled()
 
-      expect(wrapper.find('[data-testid="step-preview"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="step-submit"]').exists()).toBe(true)
     })
 
-    it('shows Done (not Submit) on step 3 when editing pending_review template', async () => {
+    it('shows Done (not Submit) on submit step when editing pending_review template', async () => {
       const template = makeSeedTemplate({
         id: 'tpl_99',
         title: 'Existing',
@@ -418,9 +419,6 @@ describe('PublishTemplateWizard', () => {
       const wrapper = createWrapper({ initialTemplate: template })
       await vi.dynamicImportSettled()
       await wrapper.vm.$nextTick()
-
-      await wrapper.find('[data-testid="btn-next"]').trigger('click')
-      await vi.dynamicImportSettled()
 
       await wrapper.find('[data-testid="btn-next"]').trigger('click')
       await vi.dynamicImportSettled()
