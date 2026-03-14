@@ -33,7 +33,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
-          node-version: 'lts/*'
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -99,8 +99,8 @@ jobs:
       - name: Checkout previous version
         if: steps.previous_version.outputs.tag != ''
         run: |
-          # Stash current changes
-          git stash
+          # Stash current changes (may be empty)
+          git stash || true
 
           # Checkout previous version
           git checkout ${{ steps.previous_version.outputs.tag }}

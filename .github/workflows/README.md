@@ -147,22 +147,22 @@ gh workflow run manual-api-changelog.yaml \
 
 #### 3. Test Upcoming Changes
 
-Compare current `main` branch against the latest release (requires creating a temporary tag):
+Compare current `main` branch against the latest release (requires creating a temporary tag with valid semver format):
 
 ```bash
 # Create temporary tag for current main
-git tag v1.31.0-preview
-git push origin v1.31.0-preview
+git tag v1.31.0
+git push origin v1.31.0
 
 # Run comparison
 gh workflow run manual-api-changelog.yaml \
   -f from_version=1.30.2 \
-  -f to_version=1.31.0-preview \
+  -f to_version=1.31.0 \
   -f create_pr=false
 
 # Clean up temporary tag
-git tag -d v1.31.0-preview
-git push origin :refs/tags/v1.31.0-preview
+git tag -d v1.31.0
+git push origin :refs/tags/v1.31.0
 ```
 
 #### 4. Audit Historical Changes
@@ -199,8 +199,8 @@ If validation fails, the workflow exits early with a clear error message.
 
 ### Related Workflows
 
-- **[Release API Changelogs](.github/workflows/release-api-changelogs.yaml)**: Automatic changelog generation triggered by NPM releases
-- **[Release NPM Types](.github/workflows/release-npm-types.yaml)**: Publishes type definitions and triggers automatic changelog
+- **[Release API Changelogs](./release-api-changelogs.yaml)**: Automatic changelog generation triggered by NPM releases
+- **[Release NPM Types](./release-npm-types.yaml)**: Publishes type definitions and triggers automatic changelog
 
 ### Troubleshooting
 
