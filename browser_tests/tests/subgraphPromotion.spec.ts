@@ -437,8 +437,12 @@ test.describe(
         })
         await comfyPage.nextFrame()
 
-        const promoteEntry = comfyPage.page
-          .locator('.litemenu-entry, .p-contextmenu .p-menuitem-text')
+        const contextMenu = comfyPage.page.getByTestId(
+          TestIds.canvas.contextMenu
+        )
+        await expect(contextMenu).toBeVisible()
+        const promoteEntry = contextMenu
+          .locator('.p-menuitem-text, .litemenu-entry')
           .filter({ hasText: /Promote Widget/ })
 
         await expect(promoteEntry.first()).toBeVisible({ timeout: 5000 })
