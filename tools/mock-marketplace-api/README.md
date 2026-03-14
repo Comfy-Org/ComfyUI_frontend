@@ -73,3 +73,11 @@ Replace the default 1×1 pixel placeholders with real images as needed. Seed dat
 ## Shared types
 
 API types are defined in `src/platform/marketplace/apiTypes.ts` and imported by both the frontend and this mock server. Edit that file to change the contract.
+
+## Diagrams
+
+Diagrams are in [docs/diagrams.md](docs/diagrams.md):
+
+- Endpoint summary table
+- Template status flow
+- Media upload sequence
