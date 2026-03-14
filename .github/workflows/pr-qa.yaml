@@ -346,11 +346,26 @@ jobs:
             fi
           done
 
-          cat > "$DEPLOY_DIR/index.html" <<'INDEXEOF'
-          <!DOCTYPE html><html><body style="background:#111;color:#eee;font-family:sans-serif;padding:2em">
-          <h1>QA Session Recordings</h1>
-          <p><a href="qa-Linux.mp4">Linux</a> · <a href="qa-macOS.mp4">macOS</a> · <a href="qa-Windows.mp4">Windows</a></p>
-          </body></html>
+          # Build video cards HTML
+          CARDS=""
+          ICONS_Linux="&#x1F427;" ICONS_macOS="&#x1F34E;" ICONS_Windows="&#x1FA9F;"
+          for os in Linux macOS Windows; do
+            eval "ICON=\$ICONS_${os}"
+            if [ -f "$DEPLOY_DIR/qa-${os}.mp4" ]; then
+              CARDS="${CARDS}<div class=card><video controls preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video><div class=card-body><span class=platform><span class=icon>${ICON}</span> ${os}</span><a class=download href=qa-${os}.mp4 download>Download</a></div></div>"
+            else
+              CARDS="${CARDS}<div class=card><div class=empty-card>No recording available</div><div class=card-body><span class=platform><span class=icon>${ICON}</span> ${os}</span><span class='badge missing'>Missing</span></div></div>"
+            fi
+          done
+
+          cat > "$DEPLOY_DIR/index.html" <<INDEXEOF
+          <!DOCTYPE html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>QA Session Recordings</title>
+          <style>
+          *{margin:0;padding:0;box-sizing:border-box}body{background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;min-height:100vh;padding:2rem 1rem}.container{max-width:1200px;margin:0 auto}header{display:flex;align-items:center;gap:.75rem;margin-bottom:2rem;padding-bottom:1rem;border-bottom:1px solid #30363d}h1{font-size:1.5rem;font-weight:600}.meta{color:#8b949e;font-size:.875rem;margin-top:.25rem}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.25rem}.card{background:#161b22;border:1px solid #30363d;border-radius:.5rem;overflow:hidden;transition:border-color .15s}.card:hover{border-color:#58a6ff}.card video{width:100%;display:block;background:#010409;aspect-ratio:16/9;object-fit:contain}.card-body{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between}.platform{display:flex;align-items:center;gap:.5rem;font-weight:500}.icon{font-size:1.25rem}.badge{font-size:.75rem;padding:.125rem .5rem;border-radius:999px;background:#1f6feb33;color:#58a6ff;border:1px solid #1f6feb55}.badge.missing{background:#da363333;color:#f85149;border-color:#da363355}.empty-card{display:flex;align-items:center;justify-content:center;min-height:200px;color:#484f58;font-size:.875rem}a.download{color:#58a6ff;text-decoration:none;font-size:.8125rem}a.download:hover{text-decoration:underline}
+          </style></head><body><div class=container>
+          <header><svg width=28 height=28 viewBox="0 0 24 24" fill=none stroke=#58a6ff stroke-width=2 stroke-linecap=round stroke-linejoin=round><polygon points="23 7 16 12 23 17 23 7"/><rect x=1 y=5 width=15 height=14 rx=2 ry=2/></svg><div><h1>QA Session Recordings</h1><div class=meta>ComfyUI Frontend &middot; Automated QA</div></div></header>
+          <div class=grid>${CARDS}</div>
+          </div></body></html>
           INDEXEOF
 
           BRANCH="run-${{ github.run_id }}"
