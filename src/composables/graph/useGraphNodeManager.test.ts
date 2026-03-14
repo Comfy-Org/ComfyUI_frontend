@@ -239,6 +239,32 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     expect(widgetData?.slotMetadata?.linked).toBe(false)
   })
 
+  it('clears stale slotMetadata when input no longer matches widget', async () => {
+    const { graph, node } = createWidgetInputGraph()
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    const nodeData = vueNodeData.get(String(node.id))!
+    const widgetData = nodeData.widgets!.find((w) => w.name === 'prompt')!
+
+    expect(widgetData.slotMetadata?.linked).toBe(true)
+
+    node.inputs[0].name = 'other'
+    node.inputs[0].widget = { name: 'other' }
+    node.inputs[0].link = null
+
+    graph.trigger('node:slot-links:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: 0,
+      connected: false,
+      linkId: 42
+    })
+
+    await nextTick()
+
+    expect(widgetData.slotMetadata).toBeUndefined()
+  })
+
   it('prefers exact _widget input matches before same-name fallbacks for promoted widgets', () => {
     const subgraph = createTestSubgraph({
       inputs: [
