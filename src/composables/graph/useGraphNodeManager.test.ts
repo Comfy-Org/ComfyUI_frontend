@@ -264,6 +264,134 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 
     expect(widgetData.slotMetadata).toBeUndefined()
   })
+
+  it('prefers exact _widget input matches before same-name fallbacks for promoted widgets', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'seed', type: '*' },
+        { name: 'seed', type: '*' }
+      ]
+    })
+
+    const firstNode = new LGraphNode('FirstNode')
+    const firstInput = firstNode.addInput('seed', '*')
+    firstNode.addWidget('number', 'seed', 1, () => undefined, {})
+    firstInput.widget = { name: 'seed' }
+    subgraph.add(firstNode)
+
+    const secondNode = new LGraphNode('SecondNode')
+    const secondInput = secondNode.addInput('seed', '*')
+    secondNode.addWidget('number', 'seed', 2, () => undefined, {})
+    secondInput.widget = { name: 'seed' }
+    subgraph.add(secondNode)
+
+    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
+    subgraph.inputNode.slots[1].connect(secondInput, secondNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 124 })
+    const graph = subgraphNode.graph
+    if (!graph) throw new Error('Expected subgraph node graph')
+    graph.add(subgraphNode)
+
+    const promotedViews = subgraphNode.widgets
+    const secondPromotedView = promotedViews[1]
+    if (!secondPromotedView) throw new Error('Expected second promoted view')
+
+    ;(
+      secondPromotedView as unknown as {
+        sourceNodeId: string
+        sourceWidgetName: string
+      }
+    ).sourceNodeId = '9999'
+    ;(
+      secondPromotedView as unknown as {
+        sourceNodeId: string
+        sourceWidgetName: string
+      }
+    ).sourceWidgetName = 'stale_widget'
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const secondMappedWidget = nodeData?.widgets?.find(
+      (widget) => widget.slotMetadata?.index === 1
+    )
+    if (!secondMappedWidget)
+      throw new Error('Expected mapped widget for slot 1')
+
+    expect(secondMappedWidget.name).not.toBe('stale_widget')
+  })
+})
+
+describe('Subgraph output slot label reactivity', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('updates output slot labels when node:slot-label:changed is triggered', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addOutput('original_name', 'STRING')
+    node.addOutput('other_name', 'STRING')
+    graph.add(node)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeId = String(node.id)
+    const nodeData = vueNodeData.get(nodeId)
+    if (!nodeData?.outputs) throw new Error('Expected output data to exist')
+
+    expect(nodeData.outputs[0].label).toBeUndefined()
+    expect(nodeData.outputs[1].label).toBeUndefined()
+
+    // Simulate what SubgraphNode does: set the label, then fire the trigger
+    node.outputs[0].label = 'custom_label'
+    graph.trigger('node:slot-label:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.OUTPUT
+    })
+
+    await nextTick()
+
+    const updatedData = vueNodeData.get(nodeId)
+    expect(updatedData?.outputs?.[0]?.label).toBe('custom_label')
+    expect(updatedData?.outputs?.[1]?.label).toBeUndefined()
+  })
+
+  it('updates input slot labels when node:slot-label:changed is triggered', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('original_name', 'STRING')
+    graph.add(node)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeId = String(node.id)
+    const nodeData = vueNodeData.get(nodeId)
+    if (!nodeData?.inputs) throw new Error('Expected input data to exist')
+
+    expect(nodeData.inputs[0].label).toBeUndefined()
+
+    node.inputs[0].label = 'custom_label'
+    graph.trigger('node:slot-label:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.INPUT
+    })
+
+    await nextTick()
+
+    const updatedData = vueNodeData.get(nodeId)
+    expect(updatedData?.inputs?.[0]?.label).toBe('custom_label')
+  })
+
+  it('ignores node:slot-label:changed for unknown node ids', () => {
+    const graph = new LGraph()
+    useGraphNodeManager(graph)
+
+    expect(() =>
+      graph.trigger('node:slot-label:changed', {
+        nodeId: 'missing-node',
+        slotType: NodeSlotType.OUTPUT
+      })
+    ).not.toThrow()
+  })
 })
 
 describe('Subgraph Promoted Pseudo Widgets', () => {
@@ -339,6 +467,56 @@ describe('Nested promoted widget mapping', () => {
     expect(mappedWidget?.storeName).toBe('picker')
     expect(mappedWidget?.storeNodeId).toBe(
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
+    )
+  })
+
+  it('keeps linked and independent same-name promotions as distinct sources', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'string_a', type: '*' }]
+    })
+
+    const linkedNode = new LGraphNode('LinkedNode')
+    const linkedInput = linkedNode.addInput('string_a', '*')
+    linkedNode.addWidget('text', 'string_a', 'linked', () => undefined, {})
+    linkedInput.widget = { name: 'string_a' }
+    subgraph.add(linkedNode)
+    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+
+    const independentNode = new LGraphNode('IndependentNode')
+    independentNode.addWidget(
+      'text',
+      'string_a',
+      'independent',
+      () => undefined,
+      {}
+    )
+    subgraph.add(independentNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 109 })
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+
+    usePromotionStore().promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      String(independentNode.id),
+      'string_a'
+    )
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const promotedWidgets = nodeData?.widgets?.filter(
+      (widget) => widget.name === 'string_a'
+    )
+
+    expect(promotedWidgets).toHaveLength(2)
+    expect(
+      new Set(promotedWidgets?.map((widget) => widget.storeNodeId))
+    ).toEqual(
+      new Set([
+        `${subgraph.id}:${linkedNode.id}`,
+        `${subgraph.id}:${independentNode.id}`
+      ])
     )
   })
 })

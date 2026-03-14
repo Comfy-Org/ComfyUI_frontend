@@ -23,6 +23,13 @@ describe(usePromotionStore, () => {
       expect(store.getPromotions(graphA, nodeId)).toEqual([])
     })
 
+    it('returns a stable empty ref for unknown node', () => {
+      const first = store.getPromotionsRef(graphA, nodeId)
+      const second = store.getPromotionsRef(graphA, nodeId)
+
+      expect(second).toBe(first)
+    })
+
     it('returns entries after setPromotions', () => {
       const entries = [
         { interiorNodeId: '10', widgetName: 'seed' },
