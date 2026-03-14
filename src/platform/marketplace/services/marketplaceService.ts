@@ -6,8 +6,10 @@ import type {
   CreateTemplateResponse,
   MarketplaceTemplate,
   MediaUploadResponse,
+  PublishTemplateResponse,
   SubmitTemplateResponse,
   TagSuggestResponse,
+  UnpublishTemplateResponse,
   UpdateTemplateRequest
 } from '@/platform/marketplace/apiTypes'
 import { st } from '@/i18n'
@@ -59,6 +61,24 @@ function createMarketplaceService() {
 
   async function submitTemplate(id: string): Promise<SubmitTemplateResponse> {
     const res = await api.fetchApi(`/marketplace/templates/${id}/submit`, {
+      method: 'POST'
+    })
+    await assertOk(res)
+    return res.json()
+  }
+
+  async function publishTemplate(id: string): Promise<PublishTemplateResponse> {
+    const res = await api.fetchApi(`/marketplace/templates/${id}/publish`, {
+      method: 'POST'
+    })
+    await assertOk(res)
+    return res.json()
+  }
+
+  async function unpublishTemplate(
+    id: string
+  ): Promise<UnpublishTemplateResponse> {
+    const res = await api.fetchApi(`/marketplace/templates/${id}/unpublish`, {
       method: 'POST'
     })
     await assertOk(res)
@@ -128,6 +148,8 @@ function createMarketplaceService() {
     createTemplate,
     updateTemplate,
     submitTemplate,
+    publishTemplate,
+    unpublishTemplate,
     uploadTemplateMedia,
     getAuthorTemplates,
     getAuthorStats,

@@ -189,6 +189,17 @@ export async function handleRequest(req: Request): Promise<Response> {
     return handleTransition(id, 'rejected')
   }
 
+  // POST /api/marketplace/templates/:id/publish
+  if (
+    method === 'POST' &&
+    pathname.match(/^\/api\/marketplace\/templates\/[^/]+\/publish$/)
+  ) {
+    const id = extractIdFromPath(pathname, '/api/marketplace/templates/')
+    if (!id) return json({ error: 'Missing template id' }, 400)
+
+    return handleTransition(id, 'published')
+  }
+
   // POST /api/marketplace/templates/:id/unpublish
   if (
     method === 'POST' &&

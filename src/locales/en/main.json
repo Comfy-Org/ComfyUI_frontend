@@ -3632,11 +3632,16 @@
     "authorDashboard": "My Templates",
     "edit": "Edit",
     "done": "Done",
+    "publish": "Publish",
+    "publishing": "Publishing...",
+    "unpublish": "Unpublish",
+    "unpublishing": "Unpublishing...",
     "status": {
       "draft": "Draft",
       "pending_review": "Pending Review",
       "approved": "Approved",
       "rejected": "Rejected",
+      "published": "Published",
       "unpublished": "Unpublished"
     },
     "stats": {

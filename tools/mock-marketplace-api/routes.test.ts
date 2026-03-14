@@ -179,8 +179,8 @@ describe('mock marketplace routes', () => {
     })
   })
 
-  describe('POST /api/marketplace/templates/:id/unpublish', () => {
-    it('transitions approved to unpublished', async () => {
+  describe('POST /api/marketplace/templates/:id/publish', () => {
+    it('transitions approved to published', async () => {
       const createRes = await handleRequest(
         jsonRequest('/api/marketplace/templates', 'POST', {
           title: 'T',
@@ -195,6 +195,36 @@ describe('mock marketplace routes', () => {
       )
       await handleRequest(
         jsonRequest(`/api/marketplace/templates/${id}/approve`, 'POST')
+      )
+      const publishRes = await handleRequest(
+        jsonRequest(`/api/marketplace/templates/${id}/publish`, 'POST')
+      )
+      expect(publishRes.status).toBe(200)
+
+      const body = await publishRes.json()
+      expect(body.status).toBe('published')
+    })
+  })
+
+  describe('POST /api/marketplace/templates/:id/unpublish', () => {
+    it('transitions published to unpublished', async () => {
+      const createRes = await handleRequest(
+        jsonRequest('/api/marketplace/templates', 'POST', {
+          title: 'T',
+          description: 'd',
+          shortDescription: 's'
+        })
+      )
+      const { id } = (await createRes.json()) as CreateTemplateResponse
+
+      await handleRequest(
+        jsonRequest(`/api/marketplace/templates/${id}/submit`, 'POST')
+      )
+      await handleRequest(
+        jsonRequest(`/api/marketplace/templates/${id}/approve`, 'POST')
+      )
+      await handleRequest(
+        jsonRequest(`/api/marketplace/templates/${id}/publish`, 'POST')
       )
       const unpubRes = await handleRequest(
         jsonRequest(`/api/marketplace/templates/${id}/unpublish`, 'POST')

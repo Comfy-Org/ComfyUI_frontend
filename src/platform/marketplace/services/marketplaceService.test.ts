@@ -110,6 +110,36 @@ describe('marketplaceService', () => {
     })
   })
 
+  describe('publishTemplate', () => {
+    it('sends POST to /marketplace/templates/:id/publish', async () => {
+      const response = { status: 'published' }
+      mockFetchApi.mockResolvedValue(mockJsonResponse(response))
+
+      const result = await marketplaceService.publishTemplate('tpl_1')
+
+      expect(mockFetchApi).toHaveBeenCalledWith(
+        '/marketplace/templates/tpl_1/publish',
+        { method: 'POST' }
+      )
+      expect(result.status).toBe('published')
+    })
+  })
+
+  describe('unpublishTemplate', () => {
+    it('sends POST to /marketplace/templates/:id/unpublish', async () => {
+      const response = { status: 'unpublished' }
+      mockFetchApi.mockResolvedValue(mockJsonResponse(response))
+
+      const result = await marketplaceService.unpublishTemplate('tpl_1')
+
+      expect(mockFetchApi).toHaveBeenCalledWith(
+        '/marketplace/templates/tpl_1/unpublish',
+        { method: 'POST' }
+      )
+      expect(result.status).toBe('unpublished')
+    })
+  })
+
   describe('uploadTemplateMedia', () => {
     it('sends POST with FormData to /marketplace/templates/:id/media', async () => {
       const response: MediaUploadResponse = {

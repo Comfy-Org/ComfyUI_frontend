@@ -91,6 +91,32 @@
                   </div>
                   <div class="flex items-center gap-2">
                     <button
+                      v-if="isPublishable(statusGroup.status)"
+                      :data-testid="`btn-publish-template-${template.id}`"
+                      :disabled="isPublishingTemplate === template.id"
+                      class="rounded-sm px-2 py-1 text-sm font-medium text-highlight hover:text-highlight/80 disabled:opacity-50"
+                      @click="handlePublishTemplate(template)"
+                    >
+                      {{
+                        isPublishingTemplate === template.id
+                          ? $t('marketplace.publishing')
+                          : $t('marketplace.publish')
+                      }}
+                    </button>
+                    <button
+                      v-if="isUnpublishable(statusGroup.status)"
+                      :data-testid="`btn-unpublish-template-${template.id}`"
+                      :disabled="isUnpublishingTemplate === template.id"
+                      class="rounded-sm px-2 py-1 text-sm font-medium text-muted hover:text-muted/80 disabled:opacity-50"
+                      @click="handleUnpublishTemplate(template)"
+                    >
+                      {{
+                        isUnpublishingTemplate === template.id
+                          ? $t('marketplace.unpublishing')
+                          : $t('marketplace.unpublish')
+                      }}
+                    </button>
+                    <button
                       v-if="isEditable(statusGroup.status)"
                       :data-testid="`btn-edit-template-${template.id}`"
                       class="rounded-sm px-2 py-1 text-sm font-medium text-highlight hover:text-highlight/80"
@@ -146,10 +172,14 @@ const {
   stats,
   selectedPeriod,
   isLoading,
+  isPublishingTemplate,
+  isUnpublishingTemplate,
   error,
   templatesByStatus,
   loadTemplates,
-  loadStats
+  loadStats,
+  publishTemplate,
+  unpublishTemplate
 } = useAuthorDashboard()
 
 const { show: showPublishDialog } = usePublishDialog()
@@ -158,11 +188,27 @@ function isEditable(status: TemplateStatus): boolean {
   return EDITABLE_STATUSES.includes(status)
 }
 
+function isPublishable(status: TemplateStatus): boolean {
+  return status === 'approved' || status === 'unpublished'
+}
+
+function isUnpublishable(status: TemplateStatus): boolean {
+  return status === 'published'
+}
+
 function handleEditTemplate(template: MarketplaceTemplate) {
   showPublishDialog({
     initialTemplate: template,
     onClose: () => void loadTemplates()
   })
+}
+
+function handlePublishTemplate(template: MarketplaceTemplate) {
+  void publishTemplate(template.id)
+}
+
+function handleUnpublishTemplate(template: MarketplaceTemplate) {
+  void unpublishTemplate(template.id)
 }
 
 const periods = computed(() => [

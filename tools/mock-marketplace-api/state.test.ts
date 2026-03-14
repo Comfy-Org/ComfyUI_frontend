@@ -160,7 +160,7 @@ describe('mock marketplace state', () => {
       expect(findTemplate(t.id)!.status).toBe('rejected')
     })
 
-    it('transitions approved → unpublished', () => {
+    it('transitions approved → published → unpublished', () => {
       const t = createTemplate({
         title: 'T',
         description: 'd',
@@ -168,9 +168,18 @@ describe('mock marketplace state', () => {
       })
       transitionStatus(t.id, 'pending_review')
       transitionStatus(t.id, 'approved')
-      const result = transitionStatus(t.id, 'unpublished')
-      expect(result.ok).toBe(true)
+      const publishResult = transitionStatus(t.id, 'published')
+      expect(publishResult.ok).toBe(true)
+      expect(findTemplate(t.id)!.status).toBe('published')
+      expect(findTemplate(t.id)!.publishedAt).toBeDefined()
+
+      const unpubResult = transitionStatus(t.id, 'unpublished')
+      expect(unpubResult.ok).toBe(true)
       expect(findTemplate(t.id)!.status).toBe('unpublished')
+
+      const repubResult = transitionStatus(t.id, 'published')
+      expect(repubResult.ok).toBe(true)
+      expect(findTemplate(t.id)!.status).toBe('published')
     })
 
     it('transitions rejected → pending_review via resubmit', () => {

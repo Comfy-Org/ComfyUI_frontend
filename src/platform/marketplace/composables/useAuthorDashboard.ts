@@ -13,6 +13,8 @@ export function useAuthorDashboard() {
   const stats = ref<AuthorStats | null>(null)
   const selectedPeriod = ref<'day' | 'week' | 'month'>('week')
   const isLoading = ref(false)
+  const isPublishingTemplate = ref<string | null>(null)
+  const isUnpublishingTemplate = ref<string | null>(null)
   const error = ref<string | null>(null)
 
   const templatesByStatus = computed(() => {
@@ -51,14 +53,44 @@ export function useAuthorDashboard() {
     }
   }
 
+  async function publishTemplate(id: string): Promise<void> {
+    error.value = null
+    isPublishingTemplate.value = id
+    try {
+      await marketplaceService.publishTemplate(id)
+      await loadTemplates()
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    } finally {
+      isPublishingTemplate.value = null
+    }
+  }
+
+  async function unpublishTemplate(id: string): Promise<void> {
+    error.value = null
+    isUnpublishingTemplate.value = id
+    try {
+      await marketplaceService.unpublishTemplate(id)
+      await loadTemplates()
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    } finally {
+      isUnpublishingTemplate.value = null
+    }
+  }
+
   return {
     templates,
     stats,
     selectedPeriod,
     isLoading,
+    isPublishingTemplate,
+    isUnpublishingTemplate,
     error,
     templatesByStatus,
     loadTemplates,
-    loadStats
+    loadStats,
+    publishTemplate,
+    unpublishTemplate
   }
 }

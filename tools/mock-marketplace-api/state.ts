@@ -50,7 +50,6 @@ const seed: MockDb = {
       license: 'cc-by',
       version: '1.0.0',
       status: 'approved' as TemplateStatus,
-      publishedAt: '2025-01-15T10:00:00Z',
       updatedAt: '2025-01-15T10:00:00Z',
       stats: {
         downloads: 1250,
@@ -126,6 +125,39 @@ const seed: MockDb = {
     },
     {
       id: 'tpl_seed_4',
+      title: 'Upscale Pro',
+      description: 'High-quality image upscaling with ESRGAN',
+      shortDescription: 'Professional image upscaling',
+      author: {
+        id: 'author_1',
+        name: 'ComfyCreator',
+        isVerified: true,
+        profileUrl: 'https://example.com/comfycreator'
+      },
+      categories: ['upscaling'],
+      tags: ['upscale', 'esrgan', 'image-quality'],
+      difficulty: 'beginner',
+      requiredModels: [],
+      requiredNodes: [],
+      vramRequirement: 4096,
+      thumbnail: 'https://mock-cdn.example.com/thumbs/upscale.png',
+      gallery: [],
+      workflowPreview: 'https://mock-cdn.example.com/previews/upscale.png',
+      license: 'mit',
+      version: '1.0.0',
+      status: 'published' as TemplateStatus,
+      publishedAt: '2025-01-20T12:00:00Z',
+      updatedAt: '2025-01-20T12:00:00Z',
+      stats: {
+        downloads: 500,
+        favorites: 42,
+        rating: 4.8,
+        reviewCount: 15,
+        weeklyTrend: 12.5
+      }
+    },
+    {
+      id: 'tpl_seed_5',
       title: 'Style Transfer',
       description: 'Transfer artistic styles between images',
       shortDescription: 'Artistic style transfer workflow',
@@ -169,7 +201,7 @@ const seed: MockDb = {
     ]
   },
   authorStats: {
-    templatesCount: 4,
+    templatesCount: 5,
     totalDownloads: 1250,
     totalFavorites: 89,
     averageRating: 4.5,
@@ -303,7 +335,7 @@ export function transitionStatus(
   template.status = to
   template.updatedAt = new Date().toISOString()
 
-  if (to === 'approved') {
+  if (to === 'published') {
     template.publishedAt = template.updatedAt
   }
 

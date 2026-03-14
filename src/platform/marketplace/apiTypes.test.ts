@@ -21,6 +21,7 @@ describe('marketplace API types', () => {
         'pending_review',
         'approved',
         'rejected',
+        'published',
         'unpublished'
       ])
     })
@@ -39,8 +40,16 @@ describe('marketplace API types', () => {
       expect(isValidTransition('pending_review', 'rejected')).toBe(true)
     })
 
-    it('allows approved → unpublished', () => {
-      expect(isValidTransition('approved', 'unpublished')).toBe(true)
+    it('allows approved → published', () => {
+      expect(isValidTransition('approved', 'published')).toBe(true)
+    })
+
+    it('allows published → unpublished', () => {
+      expect(isValidTransition('published', 'unpublished')).toBe(true)
+    })
+
+    it('allows unpublished → published (re-publish)', () => {
+      expect(isValidTransition('unpublished', 'published')).toBe(true)
     })
 
     it('allows rejected → pending_review via resubmit', () => {
@@ -65,9 +74,10 @@ describe('marketplace API types', () => {
         'approved',
         'rejected'
       ])
-      expect(getNextStatuses('approved')).toEqual(['unpublished'])
+      expect(getNextStatuses('approved')).toEqual(['published'])
       expect(getNextStatuses('rejected')).toEqual(['pending_review'])
-      expect(getNextStatuses('unpublished')).toEqual([])
+      expect(getNextStatuses('published')).toEqual(['unpublished'])
+      expect(getNextStatuses('unpublished')).toEqual(['published'])
     })
   })
 

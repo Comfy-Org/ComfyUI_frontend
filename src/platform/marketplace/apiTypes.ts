@@ -3,6 +3,7 @@ export const TEMPLATE_STATUSES = [
   'pending_review',
   'approved',
   'rejected',
+  'published',
   'unpublished'
 ] as const
 
@@ -11,9 +12,10 @@ export type TemplateStatus = (typeof TEMPLATE_STATUSES)[number]
 export const VALID_TRANSITIONS: Record<TemplateStatus, TemplateStatus[]> = {
   draft: ['pending_review'],
   pending_review: ['approved', 'rejected'],
-  approved: ['unpublished'],
+  approved: ['published'],
   rejected: ['pending_review'],
-  unpublished: []
+  published: ['unpublished'],
+  unpublished: ['published']
 }
 
 export function isValidTransition(
@@ -164,6 +166,14 @@ export interface CreateTemplateResponse {
 
 export interface SubmitTemplateResponse {
   status: 'pending_review'
+}
+
+export interface PublishTemplateResponse {
+  status: 'published'
+}
+
+export interface UnpublishTemplateResponse {
+  status: 'unpublished'
 }
 
 export interface MediaUploadResponse {
