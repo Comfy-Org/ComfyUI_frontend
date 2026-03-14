@@ -17,6 +17,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isCloud } from '@/platform/distribution/types'
@@ -1309,10 +1310,14 @@ export class ComfyApp {
         console.error(error)
         return
       }
+      const snapTo = LiteGraph.alwaysSnapToGrid
+        ? this.rootGraph.getSnapToGridSize()
+        : 0
       forEachNode(this.rootGraph, (node) => {
         const size = node.computeSize()
         size[0] = Math.max(node.size[0], size[0])
         size[1] = Math.max(node.size[1], size[1])
+        snapPoint(size, snapTo, 'ceil')
         node.setSize(size)
         if (node.widgets) {
           // If you break something in the backend and want to patch workflows in the frontend
