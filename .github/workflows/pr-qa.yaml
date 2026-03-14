@@ -1,12 +1,12 @@
 # Automated QA of ComfyUI frontend using Claude CLI + Playwright MCP.
 # Two modes:
-#   Focused (default): Linux-only, tests areas affected by PR changes
-#   Full (qa-full label / qa-* branch): 3-OS matrix, full test plan
+#   Focused (claude-qa label): Linux-only, tests areas affected by PR changes
+#   Full (claude-qa-full label): 3-OS matrix, full test plan
 name: 'PR: QA'
 
 on:
   pull_request:
-    types: [opened, synchronize, labeled]
+    types: [labeled]
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -26,25 +26,29 @@ jobs:
     outputs:
       os: ${{ steps.set.outputs.os }}
       mode: ${{ steps.set.outputs.mode }}
+      skip: ${{ steps.set.outputs.skip }}
     steps:
       - name: Determine QA mode
         id: set
         run: |
           FULL=false
 
+          LABEL="${{ github.event.label.name }}"
+
+          # Only run on label events if it's one of our labels
+          if [ "${{ github.event.action }}" = "labeled" ] && \
+             [ "$LABEL" != "claude-qa" ] && [ "$LABEL" != "claude-qa-full" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
           # Full QA triggers
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
              [ "${{ inputs.mode }}" = "full" ]; then
             FULL=true
           fi
-          if [ "${{ github.event.label.name }}" = "qa-full" ]; then
+          if [ "$LABEL" = "claude-qa-full" ]; then
             FULL=true
           fi
-
-          BRANCH="${{ github.head_ref || github.ref_name }}"
-          case "$BRANCH" in
-            sno-skills*|qa-*) FULL=true ;;
-          esac
 
           if [ "$FULL" = "true" ]; then
             echo 'os=["ubuntu-latest","macos-latest","windows-latest"]' >> "$GITHUB_OUTPUT"
@@ -57,6 +61,7 @@ jobs:
 
   qa:
     needs: resolve-matrix
+    if: needs.resolve-matrix.outputs.skip != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -433,11 +438,13 @@ jobs:
               --repo ${{ github.repository }} --body "$BODY"
           fi
 
-      - name: Remove qa-full label
-        if: github.event.label.name == 'qa-full'
+      - name: Remove QA label
+        if: >-
+          github.event.label.name == 'claude-qa' ||
+          github.event.label.name == 'claude-qa-full'
         run: |
           gh pr edit ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} --remove-label "qa-full"
+            --repo ${{ github.repository }} --remove-label "${{ github.event.label.name }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
