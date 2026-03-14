@@ -315,6 +315,9 @@ jobs:
           path: qa-artifacts
           pattern: qa-report-*
 
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1
+
       - name: Deploy videos to Cloudflare Pages
         id: deploy-videos
         env:
@@ -331,6 +334,15 @@ jobs:
             if [ -f "$VID" ]; then
               cp "$VID" "$DEPLOY_DIR/qa-${os}.mp4"
               echo "Found ${os} video ($(du -h "$VID" | cut -f1))"
+
+              # Generate GIF thumbnail: 8s starting at 10s, 480px wide, 8fps
+              ffmpeg -y -ss 10 -i "$VID" -t 8 \
+                -vf "fps=8,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer" \
+                -loop 0 "$DEPLOY_DIR/qa-${os}-thumb.gif" 2>/dev/null \
+                || ffmpeg -y -i "$VID" -t 8 \
+                  -vf "fps=8,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer" \
+                  -loop 0 "$DEPLOY_DIR/qa-${os}-thumb.gif" 2>/dev/null \
+                || echo "GIF generation failed for ${os} (non-fatal)"
             fi
           done
 
@@ -362,15 +374,17 @@ jobs:
           MODE_BADGE="🔍 Focused"
           if [ "$QA_MODE" = "full" ]; then MODE_BADGE="🔬 Full (3-OS)"; fi
 
-          # Build video section — show all available videos
-          VIDEO_ROWS=""
-          HEADER_CELLS=""
-          VIDEO_CELLS=""
+          # Build video section with GIF thumbnails linking to full videos
+          VIDEO_SECTION=""
           for os in Linux macOS Windows; do
+            GIF_URL="${VIDEO_BASE}/qa-${os}-thumb.gif"
             VID_URL="${VIDEO_BASE}/qa-${os}.mp4"
             if curl -sf --head "$VID_URL" >/dev/null 2>&1; then
-              HEADER_CELLS="${HEADER_CELLS}<th>${os}</th>"
-              VIDEO_CELLS="${VIDEO_CELLS}<td><video src=\"${VID_URL}\" controls width=\"320\"></video></td>"
+              if curl -sf --head "$GIF_URL" >/dev/null 2>&1; then
+                VIDEO_SECTION="${VIDEO_SECTION}[![${os} QA](${GIF_URL})](${VID_URL})"$'\n'
+              else
+                VIDEO_SECTION="${VIDEO_SECTION}[${os} video](${VID_URL})"$'\n'
+              fi
             fi
           done
 
@@ -378,11 +392,7 @@ jobs:
           ${COMMENT_MARKER}
           ## QA ${MODE_BADGE}
 
-          <table>
-          <tr>${HEADER_CELLS}</tr>
-          <tr>${VIDEO_CELLS}</tr>
-          </table>
-
+          ${VIDEO_SECTION}
           **Run**: [${RUN}](${RUN}) · [Download artifacts](${RUN}#artifacts) · [All videos](${VIDEO_BASE})
           EOF
           )
@@ -405,3 +415,87 @@ jobs:
             --repo ${{ github.repository }} --remove-label "qa-full"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  video-review:
+    needs: [qa, report]
+    if: always() && github.event.pull_request.number
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1
+
+      - name: Download QA artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: qa-artifacts
+          pattern: qa-report-*
+
+      - name: Run video review
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          mkdir -p video-reviews
+          for vid in qa-artifacts/qa-report-*/qa-session.mp4; do
+            [ -f "$vid" ] || continue
+            echo "::group::Reviewing $vid"
+            pnpm exec tsx scripts/qa-video-review.ts \
+              --artifacts-dir qa-artifacts \
+              --output-dir video-reviews \
+              --video-file "$vid" \
+              --model gpt-5.4 || true
+            echo "::endgroup::"
+          done
+
+      - name: Post video review comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          MARKER="<!-- QA_VIDEO_REVIEW_COMMENT -->"
+          RUN="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Combine per-platform reports
+          REPORT=""
+          for f in video-reviews/*-qa-video-report.md; do
+            [ -f "$f" ] || continue
+            [ -n "$REPORT" ] && REPORT="${REPORT}
+          ---
+          "
+            REPORT="${REPORT}$(cat "$f")"
+          done
+
+          [ -z "$REPORT" ] && REPORT="No video reports were generated."
+
+          BODY="${MARKER}
+          ## QA Video Report
+
+          ${REPORT}
+
+          ---
+          **Run**: [${RUN}](${RUN})"
+
+          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq ".[] | select(.body | contains(\"${MARKER}\")) | .id" | head -1)
+
+          if [ -n "$EXISTING" ]; then
+            gh api --method PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
+              --field body="$BODY"
+          else
+            gh pr comment ${{ github.event.pull_request.number }} \
+              --repo ${{ github.repository }} --body "$BODY"
+          fi
