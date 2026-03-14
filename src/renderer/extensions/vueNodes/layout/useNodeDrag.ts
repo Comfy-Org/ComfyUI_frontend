@@ -28,6 +28,8 @@ import { resolveNodeAlignmentSnap } from './nodeAlignmentSnap'
 
 export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
 
+const SNAP_SEARCH_RADIUS_PX = 96
+
 function useNodeDragIndividual() {
   const canvasStore = useCanvasStore()
   const mutations = useLayoutMutations()
@@ -54,7 +56,7 @@ function useNodeDragIndividual() {
   let lastCanvasDelta: Point | null = null
   let selectedGroups: LGraphGroup[] | null = null
   let draggedSelectionBounds: Bounds | null = null
-  let alignmentCandidateBounds: Bounds[] = []
+  let draggedSelectionNodeIds: Set<NodeId> | null = null
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
     const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
@@ -68,12 +70,9 @@ function useNodeDragIndividual() {
     dragStartMouse = { x: event.clientX, y: event.clientY }
 
     const selectedNodes = toValue(selectedNodeIds)
-    const draggedSelectionNodeIds = new Set(selectedNodes)
+    draggedSelectionNodeIds = new Set(selectedNodes)
     draggedSelectionNodeIds.add(nodeId)
     draggedSelectionBounds = getDraggedSelectionBounds(draggedSelectionNodeIds)
-    alignmentCandidateBounds = getAlignmentCandidateBounds(
-      draggedSelectionNodeIds
-    )
     updateDragSnapGuides([])
 
     // capture the starting positions of all other selected nodes
@@ -255,7 +254,7 @@ function useNodeDragIndividual() {
     selectedGroups = null
     lastCanvasDelta = null
     draggedSelectionBounds = null
-    alignmentCandidateBounds = []
+    draggedSelectionNodeIds = null
     updateDragSnapGuides([])
 
     // Stop tracking shift key state
@@ -284,14 +283,29 @@ function useNodeDragIndividual() {
       return canvasDelta
     }
 
-    if (shouldSnap(event) || !draggedSelectionBounds) {
+    if (
+      shouldSnap(event) ||
+      !draggedSelectionBounds ||
+      !draggedSelectionNodeIds
+    ) {
       updateDragSnapGuides([])
       return canvasDelta
     }
 
+    const translatedSelectionBounds = translateBounds(
+      draggedSelectionBounds,
+      canvasDelta
+    )
+    const searchRadius = SNAP_SEARCH_RADIUS_PX / transformState.camera.z
+    const candidateBounds = getNearbyAlignmentCandidateBounds(
+      translatedSelectionBounds,
+      draggedSelectionNodeIds,
+      searchRadius
+    )
+
     const snapResult: NodeAlignmentSnapResult = resolveNodeAlignmentSnap({
       selectionBounds: draggedSelectionBounds,
-      candidateBounds: alignmentCandidateBounds,
+      candidateBounds,
       delta: canvasDelta,
       zoomScale: transformState.camera.z
     })
@@ -309,12 +323,23 @@ function useNodeDragIndividual() {
     return mergeBounds(bounds)
   }
 
-  function getAlignmentCandidateBounds(selectedNodeSet: Set<NodeId>): Bounds[] {
-    const allNodes = layoutStore.getAllNodes().value
+  function getNearbyAlignmentCandidateBounds(
+    translatedSelectionBounds: Bounds,
+    selectedNodeSet: Set<NodeId>,
+    searchRadius: number
+  ): Bounds[] {
+    const candidateIds = layoutStore.queryNodesInBounds(
+      expandBounds(translatedSelectionBounds, searchRadius)
+    )
     const candidates: Bounds[] = []
 
-    for (const [nodeId, layout] of allNodes) {
+    for (const nodeId of candidateIds) {
       if (selectedNodeSet.has(nodeId)) {
+        continue
+      }
+
+      const layout = layoutStore.getNodeLayoutRef(nodeId).value
+      if (!layout) {
         continue
       }
 
@@ -367,5 +392,22 @@ function mergeBounds(boundsList: Bounds[]): Bounds | null {
     y: top,
     width: right - left,
     height: bottom - top
+  }
+}
+
+function expandBounds(bounds: Bounds, padding: number): Bounds {
+  return {
+    x: bounds.x - padding,
+    y: bounds.y - padding,
+    width: bounds.width + padding * 2,
+    height: bounds.height + padding * 2
+  }
+}
+
+function translateBounds(bounds: Bounds, delta: Point): Bounds {
+  return {
+    ...bounds,
+    x: bounds.x + delta.x,
+    y: bounds.y + delta.y
   }
 }

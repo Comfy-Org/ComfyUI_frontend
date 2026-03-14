@@ -3,7 +3,27 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 import type * as VueUseModule from '@vueuse/core'
 
-import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { Bounds, NodeLayout } from '@/renderer/core/layout/types'
+
+function getStoredNodeBounds(
+  layout: Pick<NodeLayout, 'position' | 'size'>
+): Bounds {
+  return {
+    x: layout.position.x,
+    y: layout.position.y,
+    width: layout.size.width,
+    height: layout.size.height
+  }
+}
+
+function boundsIntersect(a: Bounds, b: Bounds): boolean {
+  return !(
+    a.x + a.width < b.x ||
+    b.x + b.width < a.x ||
+    a.y + a.height < b.y ||
+    b.y + b.height < a.y
+  )
+}
 
 const testState = vi.hoisted(() => {
   return {
@@ -63,14 +83,12 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     getNodeLayoutRef: (nodeId: string) =>
       ref(testState.nodeLayouts.get(nodeId) ?? null),
-    getAllNodes: () =>
-      ref(
-        new Map(
-          Array.from(testState.nodeLayouts.entries()).map(
-            ([nodeId, layout]) => [nodeId, layout]
-          )
+    queryNodesInBounds: (bounds: Bounds) =>
+      Array.from(testState.nodeLayouts.entries())
+        .filter(([, layout]) =>
+          boundsIntersect(getStoredNodeBounds(layout), bounds)
         )
-      ),
+        .map(([nodeId]) => nodeId),
     batchUpdateNodeBounds: testState.batchUpdateNodeBounds,
     vueDragSnapGuides: testState.vueDragSnapGuides
   }
@@ -327,7 +345,7 @@ describe('useNodeDrag', () => {
       start: 10,
       end: 100
     })
-    expect(testState.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    expect(testState.canvas.setDirty).toHaveBeenCalledWith(true)
   })
 
   it('excludes selected nodes from alignment candidates', () => {
@@ -365,6 +383,44 @@ describe('useNodeDrag', () => {
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
       { nodeId: '1', position: { x: 63, y: 40 } },
       { nodeId: '2', position: { x: 123, y: 40 } }
+    ])
+    expect(testState.vueDragSnapGuides.value).toEqual([])
+  })
+
+  it('only snaps against nearby nodes returned by the spatial query', () => {
+    testState.settingValues['Comfy.Canvas.AlignNodesWhileDragging'] = true
+    testState.selectedNodeIds.value = new Set(['1'])
+    testState.nodeLayouts.set('1', {
+      position: { x: 0, y: 40 },
+      size: { width: 100, height: 60 }
+    })
+    testState.nodeLayouts.set('2', {
+      position: { x: 200, y: 320 },
+      size: { width: 100, height: 60 }
+    })
+
+    const { startDrag, handleDrag } = useNodeDrag()
+
+    startDrag({ clientX: 0, clientY: 0 } as PointerEvent, '1')
+
+    const target = document.createElement('div')
+    target.hasPointerCapture = vi.fn(() => false)
+    target.setPointerCapture = vi.fn()
+
+    handleDrag(
+      {
+        clientX: 193,
+        clientY: 0,
+        target,
+        pointerId: 1
+      } as unknown as PointerEvent,
+      '1'
+    )
+
+    testState.requestAnimationFrameCallback?.(0)
+
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
+      { nodeId: '1', position: { x: 193, y: 40 } }
     ])
     expect(testState.vueDragSnapGuides.value).toEqual([])
   })
