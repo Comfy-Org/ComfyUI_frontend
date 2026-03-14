@@ -1504,8 +1504,7 @@ export class ComfyApp {
             })
           })
       } else {
-        const controller =
-          missingModelStore.createVerificationAbortController()
+        const controller = missingModelStore.createVerificationAbortController()
         const confirmed = enrichedCandidates.filter((c) => c.isMissing === true)
         if (confirmed.length) {
           api
@@ -1529,9 +1528,8 @@ export class ComfyApp {
             confirmed
               .filter((c) => c.url)
               .map(async (c) => {
-                const { fetchModelMetadata } = await import(
-                  '@/platform/missingModel/missingModelDownload'
-                )
+                const { fetchModelMetadata } =
+                  await import('@/platform/missingModel/missingModelDownload')
                 const metadata = await fetchModelMetadata(c.url!)
                 if (!controller.signal.aborted && metadata.fileSize !== null) {
                   missingModelStore.setFileSize(c.url!, metadata.fileSize)

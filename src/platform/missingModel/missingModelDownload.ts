@@ -40,7 +40,6 @@ export function isModelDownloadable(model: ModelWithUrl): boolean {
   return true
 }
 
-
 export function downloadModel(
   model: ModelWithUrl,
   paths: Record<string, string[]>
