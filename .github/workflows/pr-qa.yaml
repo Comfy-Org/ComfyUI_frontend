@@ -352,7 +352,7 @@ jobs:
           for os in Linux macOS Windows; do
             eval "ICON=\$ICONS_${os}"
             if [ -f "$DEPLOY_DIR/qa-${os}.mp4" ]; then
-              CARDS="${CARDS}<div class=card><video controls preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video><div class=card-body><span class=platform><span class=icon>${ICON}</span> ${os}</span><a class=download href=qa-${os}.mp4 download>Download</a></div></div>"
+              CARDS="${CARDS}<div class=card><video controls autoplay muted loop preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video><div class=card-body><span class=platform><span class=icon>${ICON}</span> ${os}</span><a class=download href=qa-${os}.mp4 download>Download</a></div></div>"
             else
               CARDS="${CARDS}<div class=card><div class=empty-card>No recording available</div><div class=card-body><span class=platform><span class=icon>${ICON}</span> ${os}</span><span class='badge missing'>Missing</span></div></div>"
             fi
