@@ -170,11 +170,11 @@ function renderToBlob(model: THREE.Object3D): Promise<Blob> {
 
 const blobCache = new Map<string, Blob>()
 
-export async function generate3DThumbnail(modelUrl: string) {
+export async function generate3DThumbnail(
+  modelUrl: string
+): Promise<Blob | null> {
   const cached = blobCache.get(modelUrl)
-  if (cached) {
-    return { objectUrl: URL.createObjectURL(cached), blob: cached }
-  }
+  if (cached) return cached
 
   await acquireSlot()
   try {
@@ -183,7 +183,7 @@ export async function generate3DThumbnail(modelUrl: string) {
 
     const blob = await renderToBlob(model)
     blobCache.set(modelUrl, blob)
-    return { objectUrl: URL.createObjectURL(blob), blob }
+    return blob
   } finally {
     releaseSlot()
   }

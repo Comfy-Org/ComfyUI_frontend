@@ -535,7 +535,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
           type: folderType,
           subfolder
         })
-        void generate3DThumbnail(api.apiURL(`/view?${params}`))
+        generate3DThumbnail(api.apiURL(`/view?${params}`)).catch(() => {})
       }
     },
     skeletonVisibilityChange: (value: boolean) => {

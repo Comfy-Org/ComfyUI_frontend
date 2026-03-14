@@ -109,7 +109,7 @@ useExtensionService().registerExtension({
             type: loadFolder,
             subfolder: fileInfo.subfolder ?? ''
           })
-          void generate3DThumbnail(api.apiURL(`/view?${params}`))
+          generate3DThumbnail(api.apiURL(`/view?${params}`)).catch(() => {})
         }
       })
     }

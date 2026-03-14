@@ -61,13 +61,13 @@ async function loadThumbnail() {
 
   loading.value = true
   try {
-    const result = await generate3DThumbnail(asset.src)
-    if (!result) return
+    const blob = await generate3DThumbnail(asset.src)
+    if (!blob) return
 
-    thumbnailSrc.value = result.objectUrl
+    thumbnailSrc.value = URL.createObjectURL(blob)
 
     if (asset.id && assetService.isAssetAPIEnabled()) {
-      void persistThumbnail(asset.id, asset.name, result.blob)
+      void persistThumbnail(asset.id, asset.name, blob)
     }
   } catch {
     thumbnailSrc.value = null
