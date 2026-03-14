@@ -35,7 +35,6 @@ describe('useComfyHubPublishWizard', () => {
     it('initialises all other form fields to defaults', () => {
       const { formData } = useComfyHubPublishWizard()
       expect(formData.value.description).toBe('')
-      expect(formData.value.workflowType).toBe('')
       expect(formData.value.tags).toEqual([])
       expect(formData.value.thumbnailType).toBe('image')
       expect(formData.value.thumbnailFile).toBeNull()

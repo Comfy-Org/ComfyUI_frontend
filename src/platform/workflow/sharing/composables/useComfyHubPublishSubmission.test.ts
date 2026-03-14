@@ -53,7 +53,6 @@ function createFormData(
   return {
     name: 'Demo workflow',
     description: 'A demo workflow',
-    workflowType: 'imageGeneration',
     tags: ['demo'],
     thumbnailType: 'image',
     thumbnailFile: null,

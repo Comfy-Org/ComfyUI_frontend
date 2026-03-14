@@ -1,9 +1,9 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-6">
-    <fieldset class="flex flex-col gap-2">
-      <legend class="text-sm text-base-foreground">
+    <div class="flex flex-col gap-2">
+      <span class="text-sm text-base-foreground select-none">
         {{ $t('comfyHubPublish.selectAThumbnail') }}
-      </legend>
+      </span>
       <ToggleGroup
         type="single"
         :model-value="thumbnailType"
@@ -21,11 +21,11 @@
           </span>
         </ToggleGroupItem>
       </ToggleGroup>
-    </fieldset>
+    </div>
 
     <div class="flex min-h-0 flex-1 flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-base-foreground">
+        <span class="text-sm text-base-foreground select-none">
           {{ uploadSectionLabel }}
         </span>
         <Button
@@ -80,7 +80,7 @@
               :ref="(el) => (comparisonDropRefs[slot.key] = el as HTMLElement)"
               :class="
                 cn(
-                  'flex max-w-1/2 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors',
+                  'flex aspect-square max-w-1/2 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors',
                   comparisonPreviewUrls[slot.key] ? 'self-start' : 'flex-1',
                   comparisonOverStates[slot.key]
                     ? 'border-muted-foreground'
@@ -123,7 +123,7 @@
           ref="singleDropRef"
           :class="
             cn(
-              'flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors',
+              'm-auto flex aspect-square min-h-0 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors',
               thumbnailPreviewUrl ? 'self-center p-1' : 'flex-1',
               isOverSingleDrop
                 ? 'border-muted-foreground'

@@ -29,7 +29,6 @@ vi.mock(
       formData: ref({
         name: '',
         description: '',
-        workflowType: '',
         tags: [],
         thumbnailType: 'image',
         thumbnailFile: null,
@@ -89,7 +88,7 @@ describe('ComfyHubPublishDialog', () => {
           },
           ComfyHubPublishWizardContent: {
             template:
-              '<div :data-is-publishing="$props.isPublishing"><button data-testid="require-profile" @click="$props.onRequireProfile()" /><button data-testid="gate-complete" @click="$props.onGateComplete()" /><button data-testid="gate-close" @click="$props.onGateClose()" /><button data-testid="publish" @click="$props.onPublish()" /></div>',
+              '<div :data-is-publishing="$props.isPublishing"><button data-testid="require-profile" @click="$props.onRequireProfile()" /><button data-testid="gate-complete" @click="$props.onGateComplete()" /><button data-testid="gate-close" @click="$props.onGateClose()" /><button data-testid="publish" @click="$props.onPublish()" /><button data-testid="cancel" @click="$props.onCancel()" /></div>',
             props: [
               'currentStep',
               'formData',
@@ -98,6 +97,7 @@ describe('ComfyHubPublishDialog', () => {
               'isPublishing',
               'onGoNext',
               'onGoBack',
+              'onCancel',
               'onPublish',
               'onRequireProfile',
               'onGateComplete',

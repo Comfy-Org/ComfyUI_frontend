@@ -7,17 +7,15 @@
       :on-close="onGateClose"
       :show-close-button="false"
     />
-    <div v-else class="flex min-h-0 flex-1 flex-col px-6 pt-4 pb-2">
+    <div v-else class="flex min-h-0 flex-1 flex-col">
       <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <ComfyHubDescribeStep
           v-if="currentStep === 'describe'"
           :name="formData.name"
           :description="formData.description"
-          :workflow-type="formData.workflowType"
           :tags="formData.tags"
           @update:name="onUpdateFormData({ name: $event })"
           @update:description="onUpdateFormData({ description: $event })"
-          @update:workflow-type="onUpdateFormData({ workflowType: $event })"
           @update:tags="onUpdateFormData({ tags: $event })"
         />
         <div
@@ -55,6 +53,7 @@
         :is-publish-disabled
         :is-publishing="isPublishInFlight"
         @back="onGoBack"
+        @cancel="onCancel"
         @next="onGoNext"
         @publish="handlePublish"
       />
@@ -85,6 +84,7 @@ const {
   isPublishing = false,
   onGoNext,
   onGoBack,
+  onCancel,
   onUpdateFormData,
   onPublish,
   onRequireProfile,
@@ -98,6 +98,7 @@ const {
   isPublishing?: boolean
   onGoNext: () => void
   onGoBack: () => void
+  onCancel: () => void
   onUpdateFormData: (patch: Partial<ComfyHubPublishFormData>) => void
   onPublish: () => Promise<void>
   onRequireProfile: () => void

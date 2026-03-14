@@ -1,6 +1,6 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-6">
-    <p class="text-sm">
+  <div class="flex min-h-0 flex-1 flex-col">
+    <p class="text-sm select-none">
       {{
         $t('comfyHubPublish.examplesDescription', {
           selected: selectedExampleIds.length,
@@ -9,13 +9,17 @@
       }}
     </p>
 
-    <div class="grid grid-cols-4 gap-2.5 overflow-y-auto">
-      <!-- Upload tile -->
+    <div
+      class="grid gap-2"
+      :style="{ gridTemplateColumns: `repeat(${gridColumns}, 1fr)` }"
+    >
+      <!-- Upload tile (hidden when max images reached) -->
       <label
+        v-if="showUploadTile"
         tabindex="0"
         role="button"
         :aria-label="$t('comfyHubPublish.uploadExampleImage')"
-        class="focus-visible:outline-ring flex aspect-square h-25 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default text-center transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
+        class="focus-visible:outline-ring flex aspect-square max-w-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default text-center transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
         @dragenter.stop
         @dragleave.stop
         @dragover.prevent.stop
@@ -48,7 +52,7 @@
         size="unset"
         :class="
           cn(
-            'relative h-25 cursor-pointer overflow-hidden rounded-sm p-0',
+            'relative aspect-square cursor-pointer overflow-hidden rounded-sm p-0',
             isSelected(image.id) ? 'ring-ring ring-2' : 'ring-0'
           )
         "
@@ -72,7 +76,7 @@
 
 <script setup lang="ts">
 import { v4 as uuidv4 } from 'uuid'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'
@@ -90,6 +94,19 @@ const { exampleImages, selectedExampleIds } = defineProps<{
   exampleImages: ExampleImage[]
   selectedExampleIds: string[]
 }>()
+
+const showUploadTile = computed(() => exampleImages.length < MAX_EXAMPLES)
+
+const gridColumns = computed(() => {
+  const total = exampleImages.length + (showUploadTile.value ? 1 : 0)
+  if (total <= 5) return total
+  for (const cols of [5, 4, 3]) {
+    if (total % cols === 0) return cols
+  }
+  return [3, 4, 5].reduce((best, cols) =>
+    total % cols > total % best ? cols : best
+  )
+})
 
 const emit = defineEmits<{
   'update:exampleImages': [value: ExampleImage[]]
