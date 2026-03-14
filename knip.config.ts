@@ -46,8 +46,6 @@ const config: KnipConfig = {
     'packages/registry-types/src/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts',
-    // Demo snapshots for API changelog system
-    'demo-snapshots/**',
     // Used by stacked PR (feat/glsl-live-preview)
     'src/renderer/glsl/useGLSLRenderer.ts',
     // Workflow files contain license names that knip misinterprets as binaries
