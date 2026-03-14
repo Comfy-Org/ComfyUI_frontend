@@ -7,7 +7,7 @@
         'transform-gpu transition-transform duration-300 ease-out',
         isVideoType
           ? 'w-full h-full object-cover'
-          : 'max-w-full max-h-64 object-contain'
+          : `w-full h-full object-${objectFit ?? 'contain'}`
       ]"
       :image-style="
         isHovered ? { transform: `scale(${1 + hoverZoom / 100})` } : undefined
@@ -20,12 +20,13 @@
 import LazyImage from '@/components/common/LazyImage.vue'
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 
-const { src, isVideo } = defineProps<{
+const { src, isVideo, objectFit } = defineProps<{
   src: string
   alt: string
   hoverZoom: number
   isHovered?: boolean
   isVideo?: boolean
+  objectFit?: 'contain' | 'cover' | 'fill'
 }>()
 
 const isVideoType = isVideo ?? (src?.toLowerCase().endsWith('.webp') || false)

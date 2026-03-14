@@ -1,0 +1,545 @@
+import { mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import type {
+  AuthorStats,
+  AuthorTemplatesResponse,
+  MarketplaceTemplate
+} from '@/platform/marketplace/apiTypes'
+import { OnCloseKey } from '@/types/widgetTypes'
+
+const mockService = vi.hoisted(() => ({
+  getAuthorTemplates: vi.fn(),
+  getAuthorStats: vi.fn(),
+  createTemplate: vi.fn(),
+  updateTemplate: vi.fn(),
+  submitTemplate: vi.fn(),
+  publishTemplate: vi.fn(),
+  unpublishTemplate: vi.fn(),
+  uploadTemplateMedia: vi.fn(),
+  getCategories: vi.fn(),
+  suggestTags: vi.fn()
+}))
+
+const mockPublishDialog = vi.hoisted(() => ({
+  show: vi.fn()
+}))
+
+vi.mock('@/platform/marketplace/services/marketplaceService', () => ({
+  marketplaceService: mockService
+}))
+
+vi.mock('@/platform/marketplace/composables/usePublishDialog', () => ({
+  usePublishDialog: () => mockPublishDialog
+}))
+
+const { default: AuthorDashboard } =
+  await import('@/platform/marketplace/components/AuthorDashboard.vue')
+
+function makeSeedTemplate(
+  overrides: Partial<MarketplaceTemplate>
+): MarketplaceTemplate {
+  return {
+    id: 'tpl_1',
+    title: 'Test',
+    description: 'desc',
+    shortDescription: 'short',
+    author: {
+      id: 'a1',
+      name: 'Author',
+      isVerified: false,
+      profileUrl: ''
+    },
+    categories: [],
+    tags: [],
+    difficulty: 'beginner',
+    requiredModels: [],
+    requiredNodes: [],
+    vramRequirement: 0,
+    thumbnail: '',
+    gallery: [],
+    workflowPreview: '',
+    license: 'mit',
+    version: '1.0.0',
+    status: 'draft',
+    updatedAt: new Date().toISOString(),
+    stats: {
+      downloads: 0,
+      favorites: 0,
+      rating: 0,
+      reviewCount: 0,
+      weeklyTrend: 0
+    },
+    ...overrides
+  }
+}
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      g: {
+        closeDialog: 'Close',
+        showLeftPanel: 'Show left panel',
+        hideLeftPanel: 'Hide left panel',
+        showRightPanel: 'Show right panel',
+        hideRightPanel: 'Hide right panel'
+      },
+      marketplace: {
+        authorDashboard: 'Author Dashboard',
+        myTemplates: 'My Templates',
+        myDrafts: 'My Drafts',
+        mySubmissions: 'My Submissions',
+        noDrafts: 'No drafts yet.',
+        submissionsInReview: 'In review',
+        noSubmissionsInReview: 'No templates in review.',
+        submissionsLive: 'Live',
+        noSubmissionsLive: 'No live templates.',
+        refresh: 'Refresh templates',
+        edit: 'Edit',
+        view: 'View',
+        status: {
+          draft: 'Draft',
+          pending_review: 'Pending Review',
+          approved: 'Approved',
+          rejected: 'Rejected',
+          published: 'Published',
+          unpublished: 'Unpublished'
+        },
+        publish: 'Publish',
+        publishing: 'Publishing...',
+        unpublish: 'Unpublish',
+        unpublishing: 'Unpublishing...',
+        stats: {
+          downloads: 'Downloads',
+          favorites: 'Favorites',
+          rating: 'Rating',
+          trend: 'Trend'
+        },
+        period: {
+          day: 'Today',
+          week: 'This Week',
+          month: 'This Month'
+        }
+      }
+    }
+  }
+})
+
+function createWrapper(
+  templates: AuthorTemplatesResponse['templates'] = [
+    makeSeedTemplate({ id: 'tpl_1', title: 'Draft WF', status: 'draft' }),
+    makeSeedTemplate({
+      id: 'tpl_2',
+      title: 'Published WF',
+      status: 'approved'
+    }),
+    makeSeedTemplate({
+      id: 'tpl_3',
+      title: 'Pending WF',
+      status: 'pending_review'
+    }),
+    makeSeedTemplate({
+      id: 'tpl_4',
+      title: 'Rejected WF',
+      status: 'rejected'
+    }),
+    makeSeedTemplate({
+      id: 'tpl_5',
+      title: 'Unpublished WF',
+      status: 'unpublished'
+    }),
+    makeSeedTemplate({
+      id: 'tpl_6',
+      title: 'Published WF',
+      status: 'published'
+    })
+  ]
+) {
+  const templatesResponse: AuthorTemplatesResponse = {
+    templates
+  }
+  const statsResponse: AuthorStats = {
+    templatesCount: templates.length,
+    totalDownloads: 500,
+    totalFavorites: 30,
+    averageRating: 4.1,
+    periodDownloads: 50,
+    periodFavorites: 5,
+    trend: 3.2
+  }
+
+  mockService.getAuthorTemplates.mockResolvedValue(templatesResponse)
+  mockService.getAuthorStats.mockResolvedValue(statsResponse)
+
+  return mount(AuthorDashboard, {
+    global: {
+      plugins: [createPinia(), i18n],
+      provide: { [OnCloseKey as symbol]: () => {} },
+      stubs: { teleport: true }
+    }
+  })
+}
+
+describe('AuthorDashboard', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('renders the dashboard title', () => {
+    const wrapper = createWrapper()
+    expect(wrapper.text()).toContain('Author Dashboard')
+  })
+
+  it('renders the My Templates section title', () => {
+    const wrapper = createWrapper()
+    expect(wrapper.text()).toContain('My Templates')
+  })
+
+  it('calls loadTemplates and loadStats when refresh button clicked', async () => {
+    const wrapper = createWrapper()
+    await vi.dynamicImportSettled()
+
+    mockService.getAuthorTemplates.mockClear()
+    mockService.getAuthorStats.mockClear()
+
+    await wrapper.find('[data-testid="btn-refresh-templates"]').trigger('click')
+    await vi.dynamicImportSettled()
+
+    expect(mockService.getAuthorTemplates).toHaveBeenCalled()
+    expect(mockService.getAuthorStats).toHaveBeenCalled()
+  })
+
+  it('loads templates and stats on mount', async () => {
+    createWrapper()
+    await vi.dynamicImportSettled()
+
+    expect(mockService.getAuthorTemplates).toHaveBeenCalled()
+    expect(mockService.getAuthorStats).toHaveBeenCalled()
+  })
+
+  it('shows all three columns: drafts, in review, and live', async () => {
+    const wrapper = createWrapper()
+    await vi.dynamicImportSettled()
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('My Drafts')
+    expect(wrapper.text()).toContain('In review')
+    expect(wrapper.text()).toContain('Live')
+    expect(wrapper.text()).toContain('Draft WF')
+    expect(wrapper.text()).toContain('Approved')
+    expect(wrapper.text()).toContain('Pending Review')
+    expect(wrapper.text()).toContain('Published')
+  })
+
+  it('displays stats summary', async () => {
+    const wrapper = createWrapper()
+    await vi.dynamicImportSettled()
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('500')
+    expect(wrapper.text()).toContain('30')
+  })
+
+  describe('Edit button', () => {
+    it('shows Edit button for draft templates', async () => {
+      const wrapper = createWrapper()
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        wrapper.find('[data-testid="btn-edit-template-tpl_1"]').exists()
+      ).toBe(true)
+    })
+
+    it('shows Edit button for pending_review templates', async () => {
+      const wrapper = createWrapper()
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        wrapper.find('[data-testid="btn-edit-template-tpl_3"]').exists()
+      ).toBe(true)
+    })
+
+    it('does not show Edit button for approved templates', async () => {
+      const wrapper = createWrapper()
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        wrapper.find('[data-testid="btn-edit-template-tpl_2"]').exists()
+      ).toBe(false)
+    })
+
+    it('shows Edit button for rejected templates', async () => {
+      const wrapper = createWrapper()
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        wrapper.find('[data-testid="btn-edit-template-tpl_4"]').exists()
+      ).toBe(true)
+    })
+
+    it('does not show Edit button for unpublished templates', async () => {
+      const wrapper = createWrapper()
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        wrapper.find('[data-testid="btn-edit-template-tpl_5"]').exists()
+      ).toBe(false)
+    })
+
+    it('calls usePublishDialog.show with initialTemplate when Edit clicked on draft', async () => {
+      const draftTemplate = makeSeedTemplate({
+        id: 'tpl_draft',
+        title: 'Draft WF',
+        status: 'draft'
+      })
+      const wrapper = createWrapper([
+        draftTemplate,
+        makeSeedTemplate({ id: 'tpl_2', status: 'approved' })
+      ])
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      await wrapper
+        .find('[data-testid="btn-edit-template-tpl_draft"]')
+        .trigger('click')
+
+      expect(mockPublishDialog.show).toHaveBeenCalledWith({
+        initialTemplate: draftTemplate,
+        onClose: expect.any(Function)
+      })
+    })
+
+    it('calls usePublishDialog.show with initialTemplate when Edit clicked on pending_review', async () => {
+      const pendingTemplate = makeSeedTemplate({
+        id: 'tpl_pending',
+        title: 'Pending WF',
+        status: 'pending_review'
+      })
+      const wrapper = createWrapper([
+        makeSeedTemplate({ id: 'tpl_1', status: 'draft' }),
+        pendingTemplate
+      ])
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      await wrapper
+        .find('[data-testid="btn-edit-template-tpl_pending"]')
+        .trigger('click')
+
+      expect(mockPublishDialog.show).toHaveBeenCalledWith({
+        initialTemplate: pendingTemplate,
+        onClose: expect.any(Function)
+      })
+    })
+
+    it('calls usePublishDialog.show with readOnly when View clicked on approved template', async () => {
+      const approvedTemplate = makeSeedTemplate({
+        id: 'tpl_approved',
+        title: 'Approved WF',
+        status: 'approved'
+      })
+      const wrapper = createWrapper([
+        makeSeedTemplate({ id: 'tpl_1', status: 'draft' }),
+        approvedTemplate
+      ])
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      await wrapper
+        .find('[data-testid="btn-view-template-tpl_approved"]')
+        .trigger('click')
+
+      expect(mockPublishDialog.show).toHaveBeenCalledWith({
+        initialTemplate: approvedTemplate,
+        readOnly: true
+      })
+    })
+
+    it('refreshes templates when publish wizard closes', async () => {
+      const draftTemplate = makeSeedTemplate({
+        id: 'tpl_draft',
+        title: 'Draft WF',
+        status: 'draft'
+      })
+      const wrapper = createWrapper([draftTemplate])
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      await wrapper
+        .find('[data-testid="btn-edit-template-tpl_draft"]')
+        .trigger('click')
+
+      const onClose = mockPublishDialog.show.mock.calls[0][0].onClose
+      onClose()
+
+      expect(mockService.getAuthorTemplates).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('Publish button', () => {
+    it('shows Publish button for approved templates', async () => {
+      const approvedTemplate = makeSeedTemplate({
+        id: 'tpl_approved',
+        title: 'Approved WF',
+        status: 'approved'
+      })
+      const wrapper = createWrapper([
+        makeSeedTemplate({ id: 'tpl_1', status: 'draft' }),
+        approvedTemplate
+      ])
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        wrapper
+          .find('[data-testid="btn-publish-template-tpl_approved"]')
+          .exists()
+      ).toBe(true)
+    })
+
+    it('does not show Publish button for draft templates', async () => {
+      const wrapper = createWrapper()
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        wrapper.find('[data-testid="btn-publish-template-tpl_1"]').exists()
+      ).toBe(false)
+    })
+
+    it('shows Publish button for unpublished templates', async () => {
+      const unpublishedTemplate = makeSeedTemplate({
+        id: 'tpl_unpublished',
+        title: 'Unpublished WF',
+        status: 'unpublished'
+      })
+      const wrapper = createWrapper([
+        makeSeedTemplate({ id: 'tpl_1', status: 'draft' }),
+        unpublishedTemplate
+      ])
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        wrapper
+          .find('[data-testid="btn-publish-template-tpl_unpublished"]')
+          .exists()
+      ).toBe(true)
+    })
+
+    it('does not show Publish button for published templates', async () => {
+      const publishedTemplate = makeSeedTemplate({
+        id: 'tpl_published',
+        title: 'Published WF',
+        status: 'published'
+      })
+      const wrapper = createWrapper([
+        makeSeedTemplate({ id: 'tpl_1', status: 'draft' }),
+        publishedTemplate
+      ])
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        wrapper
+          .find('[data-testid="btn-publish-template-tpl_published"]')
+          .exists()
+      ).toBe(false)
+    })
+
+    it('calls publishTemplate when Publish clicked on approved template', async () => {
+      mockService.publishTemplate.mockResolvedValue(undefined)
+      mockService.getAuthorTemplates.mockResolvedValue({
+        templates: [
+          makeSeedTemplate({ id: 'tpl_approved', status: 'published' })
+        ]
+      })
+
+      const approvedTemplate = makeSeedTemplate({
+        id: 'tpl_approved',
+        title: 'Approved WF',
+        status: 'approved'
+      })
+      const wrapper = createWrapper([approvedTemplate])
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      await wrapper
+        .find('[data-testid="btn-publish-template-tpl_approved"]')
+        .trigger('click')
+      await vi.dynamicImportSettled()
+
+      expect(mockService.publishTemplate).toHaveBeenCalledWith('tpl_approved')
+      expect(mockService.getAuthorTemplates).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('Unpublish button', () => {
+    it('shows Unpublish button for published templates', async () => {
+      const publishedTemplate = makeSeedTemplate({
+        id: 'tpl_published',
+        title: 'Published WF',
+        status: 'published'
+      })
+      const wrapper = createWrapper([
+        makeSeedTemplate({ id: 'tpl_1', status: 'draft' }),
+        publishedTemplate
+      ])
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        wrapper
+          .find('[data-testid="btn-unpublish-template-tpl_published"]')
+          .exists()
+      ).toBe(true)
+    })
+
+    it('does not show Unpublish button for approved templates', async () => {
+      const wrapper = createWrapper()
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      expect(
+        wrapper.find('[data-testid="btn-unpublish-template-tpl_2"]').exists()
+      ).toBe(false)
+    })
+
+    it('calls unpublishTemplate when Unpublish clicked on published template', async () => {
+      mockService.unpublishTemplate.mockResolvedValue(undefined)
+      mockService.getAuthorTemplates.mockResolvedValue({
+        templates: [
+          makeSeedTemplate({ id: 'tpl_published', status: 'unpublished' })
+        ]
+      })
+
+      const publishedTemplate = makeSeedTemplate({
+        id: 'tpl_published',
+        title: 'Published WF',
+        status: 'published'
+      })
+      const wrapper = createWrapper([publishedTemplate])
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      await wrapper
+        .find('[data-testid="btn-unpublish-template-tpl_published"]')
+        .trigger('click')
+      await vi.dynamicImportSettled()
+
+      expect(mockService.unpublishTemplate).toHaveBeenCalledWith(
+        'tpl_published'
+      )
+      expect(mockService.getAuthorTemplates).toHaveBeenCalledTimes(2)
+    })
+  })
+})

@@ -2647,7 +2647,9 @@
     "graph": "Graph",
     "app": "App",
     "enterNodeGraph": "Enter node graph",
-    "share": "Share"
+    "share": "Share",
+    "publishToMarketplace": "Publish to Marketplace",
+    "myTemplates": "My Marketplace Templates"
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",
@@ -3619,5 +3621,96 @@
   "builderMenu": {
     "enterAppMode": "Enter app mode",
     "exitAppBuilder": "Exit app builder"
+  },
+  "marketplace": {
+    "publishToMarketplace": "Publish to Marketplace",
+    "steps": {
+      "details": "Details",
+      "preview": "Preview",
+      "submit": "Submit"
+    },
+    "title": "Title",
+    "titlePlaceholder": "Enter workflow title",
+    "description": "Description",
+    "descriptionTooltip": "This description is used for the workflow detail page on Comfy Hub.",
+    "descriptionPlaceholder": "Describe your workflow",
+    "shortDescription": "Short Description",
+    "shortDescriptionTooltip": "Shown on the workflow preview card and on the Comfy Hub workflow detail page.",
+    "shortDescriptionPlaceholder": "Brief summary",
+    "thumbnail": "Thumbnail",
+    "categories": "Categories",
+    "tags": "Tags",
+    "tagsPlaceholder": "Add tags...",
+    "requiredFieldTooltip": "You must provide your own copy for this field. Placeholder text cannot be used.",
+    "difficulty": "Difficulty",
+    "difficultyTooltip": "Consider the number of inputs users must configure and how difficult it is for a relatively experienced user to get the workflow running.",
+    "difficultyLevels": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    },
+    "license": "License",
+    "licenseTypes": {
+      "cc-by": "CC BY",
+      "cc-by-sa": "CC BY-SA",
+      "cc-by-nc": "CC BY-NC",
+      "mit": "MIT",
+      "apache": "Apache 2.0",
+      "custom": "Custom"
+    },
+    "next": "Next",
+    "back": "Back",
+    "saveDraft": "Save Draft",
+    "submitForReview": "Submit for Review",
+    "submitting": "Submitting...",
+    "submitted": "Submitted for review!",
+    "uploadThumbnail": "Upload Thumbnail",
+    "previewTitle": "Preview",
+    "previewDescription": "This is how your template will appear in the marketplace.",
+    "noThumbnailYet": "No thumbnail yet",
+    "dropThumbnailHere": "Drop image here",
+    "thumbnailUploadError": "Please drop an image file",
+    "uploadProgress": "Uploading thumbnail: {percent}%",
+    "uploadComplete": "Thumbnail uploaded",
+    "thumbnailRequired": "Thumbnail is required",
+    "authorDashboard": "Author Dashboard",
+    "myTemplates": "My Templates",
+    "myDrafts": "My Drafts",
+    "mySubmissions": "My Submissions",
+    "noDrafts": "No drafts yet.",
+    "submissionsInReview": "In review",
+    "noSubmissionsInReview": "No templates in review.",
+    "submissionsLive": "Live",
+    "noSubmissionsLive": "No live templates.",
+    "refresh": "Refresh templates",
+    "edit": "Edit",
+    "view": "View",
+    "templateDetails": "Template Details",
+    "preview": "Preview",
+    "done": "Done",
+    "publish": "Publish",
+    "publishing": "Publishing...",
+    "unpublish": "Unpublish",
+    "unpublishing": "Unpublishing...",
+    "status": {
+      "draft": "Draft",
+      "pending_review": "Pending Review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "published": "Published",
+      "unpublished": "Unpublished"
+    },
+    "stats": {
+      "downloads": "Downloads",
+      "favorites": "Favorites",
+      "rating": "Rating",
+      "trend": "Trend"
+    },
+    "period": {
+      "day": "Today",
+      "week": "This Week",
+      "month": "This Month"
+    },
+    "errorUnavailable": "Marketplace is unavailable. Start the mock server (pnpm mock:marketplace) and run the app with pnpm dev:marketplace to use this feature."
   }
 }

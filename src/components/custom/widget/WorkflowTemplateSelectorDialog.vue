@@ -136,237 +136,18 @@
           class="inline-block h-8 w-48 animate-pulse rounded-sm bg-dialog-surface"
         ></span>
 
-        <!-- Template Cards Grid -->
-        <div
-          :key="templateListKey"
-          :style="gridStyle"
-          data-testid="template-workflows-content"
-        >
-          <!-- Loading Skeletons (show while loading initial data) -->
-          <CardContainer
-            v-for="n in isLoading ? 12 : 0"
-            :key="`initial-skeleton-${n}`"
-            size="compact"
-            variant="ghost"
-            rounded="lg"
-            class="hover:bg-base-background"
-          >
-            <template #top>
-              <CardTop ratio="landscape">
-                <template #default>
-                  <div class="size-full animate-pulse bg-dialog-surface"></div>
-                </template>
-              </CardTop>
-            </template>
-            <template #bottom>
-              <CardBottom>
-                <div class="px-4 py-3">
-                  <div
-                    class="mb-2 h-6 animate-pulse rounded-sm bg-dialog-surface"
-                  ></div>
-                  <div
-                    class="h-4 animate-pulse rounded-sm bg-dialog-surface"
-                  ></div>
-                </div>
-              </CardBottom>
-            </template>
-          </CardContainer>
-
-          <!-- Actual Template Cards -->
-          <CardContainer
-            v-for="template in isLoading ? [] : displayTemplates"
-            v-show="isTemplateVisibleOnDistribution(template)"
-            :key="template.name"
-            ref="cardRefs"
-            size="tall"
-            variant="ghost"
-            rounded="lg"
-            :data-testid="`template-workflow-${template.name}`"
-            class="hover:bg-base-background"
-            @mouseenter="hoveredTemplate = template.name"
-            @mouseleave="hoveredTemplate = null"
-            @click="onLoadWorkflow(template)"
-          >
-            <template #top>
-              <CardTop ratio="square">
-                <template #default>
-                  <!-- Template Thumbnail -->
-                  <div class="relative size-full overflow-hidden rounded-lg">
-                    <template v-if="template.mediaType === 'audio'">
-                      <AudioThumbnail :src="getBaseThumbnailSrc(template)" />
-                    </template>
-                    <template
-                      v-else-if="template.thumbnailVariant === 'compareSlider'"
-                    >
-                      <CompareSliderThumbnail
-                        :base-image-src="getBaseThumbnailSrc(template)"
-                        :overlay-image-src="getOverlayThumbnailSrc(template)"
-                        :alt="
-                          getTemplateTitle(
-                            template,
-                            getEffectiveSourceModule(template)
-                          )
-                        "
-                        :is-hovered="hoveredTemplate === template.name"
-                        :is-video="
-                          template.mediaType === 'video' ||
-                          template.mediaSubtype === 'webp'
-                        "
-                      />
-                    </template>
-                    <template
-                      v-else-if="template.thumbnailVariant === 'hoverDissolve'"
-                    >
-                      <HoverDissolveThumbnail
-                        :base-image-src="getBaseThumbnailSrc(template)"
-                        :overlay-image-src="getOverlayThumbnailSrc(template)"
-                        :alt="
-                          getTemplateTitle(
-                            template,
-                            getEffectiveSourceModule(template)
-                          )
-                        "
-                        :is-hovered="hoveredTemplate === template.name"
-                        :is-video="
-                          template.mediaType === 'video' ||
-                          template.mediaSubtype === 'webp'
-                        "
-                      />
-                    </template>
-                    <template v-else>
-                      <DefaultThumbnail
-                        :src="getBaseThumbnailSrc(template)"
-                        :alt="
-                          getTemplateTitle(
-                            template,
-                            getEffectiveSourceModule(template)
-                          )
-                        "
-                        :is-hovered="hoveredTemplate === template.name"
-                        :is-video="
-                          template.mediaType === 'video' ||
-                          template.mediaSubtype === 'webp'
-                        "
-                        :hover-zoom="
-                          template.thumbnailVariant === 'zoomHover' ? 16 : 5
-                        "
-                      />
-                    </template>
-                    <LogoOverlay
-                      v-if="template.logos?.length"
-                      :logos="template.logos"
-                      :get-logo-url="workflowTemplatesStore.getLogoUrl"
-                    />
-                    <ProgressSpinner
-                      v-if="loadingTemplate === template.name"
-                      class="absolute inset-0 z-10 m-auto size-12"
-                    />
-                  </div>
-                </template>
-                <template #bottom-right>
-                  <template v-if="template.tags && template.tags.length > 0">
-                    <SquareChip
-                      v-for="tag in template.tags"
-                      :key="tag"
-                      :label="tag"
-                    />
-                  </template>
-                </template>
-              </CardTop>
-            </template>
-            <template #bottom>
-              <CardBottom>
-                <div class="flex flex-col gap-2 pt-3">
-                  <h3
-                    class="m-0 line-clamp-1 text-sm"
-                    :title="
-                      getTemplateTitle(
-                        template,
-                        getEffectiveSourceModule(template)
-                      )
-                    "
-                  >
-                    {{
-                      getTemplateTitle(
-                        template,
-                        getEffectiveSourceModule(template)
-                      )
-                    }}
-                  </h3>
-                  <div class="flex justify-between gap-2">
-                    <div class="flex-1">
-                      <p
-                        class="m-0 line-clamp-2 text-sm text-muted"
-                        :title="getTemplateDescription(template)"
-                      >
-                        {{ getTemplateDescription(template) }}
-                      </p>
-                    </div>
-                    <div
-                      v-if="template.tutorialUrl"
-                      class="flex flex-col-reverse justify-center"
-                    >
-                      <Button
-                        v-if="hoveredTemplate === template.name"
-                        v-tooltip.bottom="$t('g.seeTutorial')"
-                        v-bind="$attrs"
-                        variant="inverted"
-                        size="icon"
-                        @click.stop="openTutorial(template)"
-                      >
-                        <i class="icon-[lucide--info] size-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div class="flex">
-                    <span
-                      class="text-neutral flex items-center gap-1.5 text-xs font-bold"
-                    >
-                      <template v-if="isAppTemplate(template)">
-                        <i class="icon-[lucide--panels-top-left]" />
-                        {{ $t('builderToolbar.app', 'App') }}
-                      </template>
-                      <template v-else>
-                        <i class="icon-[lucide--workflow]" />
-                        {{ $t('builderToolbar.nodeGraph', 'Node Graph') }}
-                      </template>
-                    </span>
-                  </div>
-                </div>
-              </CardBottom>
-            </template>
-          </CardContainer>
-
-          <!-- Loading More Skeletons -->
-          <CardContainer
-            v-for="n in isLoadingMore ? 6 : 0"
-            :key="`skeleton-${n}`"
-            size="compact"
-            variant="ghost"
-            rounded="lg"
-            class="hover:bg-base-background"
-          >
-            <template #top>
-              <CardTop ratio="square">
-                <template #default>
-                  <div class="size-full animate-pulse bg-dialog-surface"></div>
-                </template>
-              </CardTop>
-            </template>
-            <template #bottom>
-              <CardBottom>
-                <div class="px-4 py-3">
-                  <div
-                    class="mb-2 h-6 animate-pulse rounded-sm bg-dialog-surface"
-                  ></div>
-                  <div
-                    class="h-4 animate-pulse rounded-sm bg-dialog-surface"
-                  ></div>
-                </div>
-              </CardBottom>
-            </template>
-          </CardContainer>
-        </div>
+        <TemplateCardGrid
+          :templates="displayTemplates"
+          :is-loading="isLoading"
+          :is-loading-more="isLoadingMore"
+          :loading-template-name="loadingTemplate"
+          :hovered-template-name="hoveredTemplate"
+          :list-key="templateListKey"
+          :distributions="distributions"
+          @select="onLoadWorkflow"
+          @mouseenter="(t) => (hoveredTemplate = t.name)"
+          @mouseleave="hoveredTemplate = null"
+        />
       </div>
 
       <!-- Load More Trigger -->
@@ -395,22 +176,13 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import { computed, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
-import SquareChip from '@/components/chip/SquareChip.vue'
+import TemplateCardGrid from '@/platform/workflow/templates/components/TemplateCardGrid.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
-import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
-import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
-import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
-import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
-import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
@@ -426,7 +198,6 @@ import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
-import { createGridStyle } from '@/utils/gridUtil'
 
 const { t } = useI18n()
 
@@ -486,34 +257,10 @@ provide(OnCloseKey, onClose)
 
 // Workflow templates store and composable
 const workflowTemplatesStore = useWorkflowTemplatesStore()
-const {
-  loadTemplates,
-  loadWorkflowTemplate,
-  getTemplateThumbnailUrl,
-  getTemplateTitle,
-  getTemplateDescription
-} = useTemplateWorkflows()
+const { loadTemplates, loadWorkflowTemplate } = useTemplateWorkflows()
 
-const getEffectiveSourceModule = (template: TemplateInfo) =>
-  template.sourceModule || 'default'
-
-const isAppTemplate = (template: TemplateInfo) => template.name.endsWith('.app')
-
-const getBaseThumbnailSrc = (template: TemplateInfo) => {
-  const sm = getEffectiveSourceModule(template)
-  return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
-}
-
-const getOverlayThumbnailSrc = (template: TemplateInfo) => {
-  const sm = getEffectiveSourceModule(template)
-  return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
-}
-
-// Open tutorial in new tab
-const openTutorial = (template: TemplateInfo) => {
-  if (template.tutorialUrl) {
-    window.open(template.tutorialUrl, '_blank')
-  }
+function getEffectiveSourceModule(template: TemplateInfo) {
+  return template.sourceModule || 'default'
 }
 
 // Get navigation items from the store, with skeleton items while loading
@@ -548,8 +295,6 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
   }
   return workflowTemplatesStore.navGroupedTemplates
 })
-
-const gridStyle = computed(() => createGridStyle())
 
 // Get enhanced templates for better filtering
 const allTemplates = computed(() => {
@@ -656,7 +401,6 @@ const selectedRunsOnObjects = computed({
 // Loading states
 const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
-const cardRefs = ref<HTMLElement[]>([])
 
 // Force re-render key for templates when sorting changes
 const templateListKey = ref(0)
@@ -850,16 +594,4 @@ const { isLoading } = useAsyncState(
     immediate: true // Start loading immediately
   }
 )
-
-const isTemplateVisibleOnDistribution = (template: TemplateInfo) => {
-  return (template.includeOnDistributions?.length ?? 0) > 0
-    ? distributions.value.some((d) =>
-        template.includeOnDistributions?.includes(d)
-      )
-    : true
-}
-
-onBeforeUnmount(() => {
-  cardRefs.value = [] // Release DOM refs
-})
 </script>

@@ -9,6 +9,9 @@ import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
 vi.mock('vue-i18n', () => ({
   useI18n: vi.fn(() => ({
     t: (key: string) => key
+  })),
+  createI18n: vi.fn(() => ({
+    global: { t: (key: string) => key }
   }))
 }))
 
@@ -18,7 +21,11 @@ const mockBookmarkStore = vi.hoisted(() => ({
 }))
 
 const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: { path: 'test.json', isPersisted: true } as ComfyWorkflow
+  activeWorkflow: {
+    path: 'test.json',
+    isPersisted: true,
+    isTemporary: false
+  } as ComfyWorkflow
 }))
 
 const mockWorkflowService = vi.hoisted(() => ({
@@ -122,7 +129,8 @@ describe('useWorkflowActionsMenu', () => {
     mockAppModeStore.selectedOutputs.length = 0
     mockWorkflowStore.activeWorkflow = {
       path: 'test.json',
-      isPersisted: true
+      isPersisted: true,
+      isTemporary: false
     } as ComfyWorkflow
   })
 
@@ -373,6 +381,32 @@ describe('useWorkflowActionsMenu', () => {
     const bookmark = findItem(menuItems.value, 'tabMenu.addToBookmarks')
 
     expect(bookmark.disabled).toBe(true)
+  })
+
+  it('publish to marketplace is disabled for unsaved workflows', () => {
+    mockWorkflowStore.activeWorkflow = {
+      path: 'test.json',
+      isPersisted: false,
+      isTemporary: true
+    } as ComfyWorkflow
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const publish = findItem(
+      menuItems.value,
+      'breadcrumbsMenu.publishToMarketplace'
+    )
+
+    expect(publish.disabled).toBe(true)
+  })
+
+  it('publish to marketplace is enabled for saved workflows', () => {
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const publish = findItem(
+      menuItems.value,
+      'breadcrumbsMenu.publishToMarketplace'
+    )
+
+    expect(publish.disabled).toBe(false)
   })
 
   it('switches to custom workflow before executing rename', async () => {

@@ -72,7 +72,7 @@
         <main class="flex min-h-0 flex-1 flex-col">
           <slot name="contentFilter" />
           <h2
-            v-if="!hasLeftPanel"
+            v-if="!hasLeftPanel && contentTitle"
             class="text-xxl m-0 px-6 pt-2 pb-6 capitalize select-none"
           >
             {{ contentTitle }}
@@ -160,7 +160,7 @@ const {
   leftPanelWidth = '14rem',
   contentPadding = 'default'
 } = defineProps<{
-  contentTitle: string
+  contentTitle?: string
   rightPanelTitle?: string
   size?: ModalSize
   leftPanelWidth?: string

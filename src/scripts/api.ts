@@ -459,6 +459,32 @@ export class ComfyApi extends EventTarget {
     })
   }
 
+  /**
+   * Returns headers for outgoing requests (auth + Comfy-User).
+   * Use when building custom requests (e.g. XHR for upload progress).
+   */
+  async getRequestHeaders(): Promise<Record<string, string>> {
+    const headers: Record<string, string> = {}
+    if (isCloud) {
+      await this.waitForAuthInitialization()
+      const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
+        try {
+          const authStore = await this.getAuthStore()
+          return authStore ? await authStore.getAuthHeader() : null
+        } catch (error) {
+          console.warn('Failed to get auth header:', error)
+          return null
+        }
+      }
+      const authHeader = await getAuthHeaderIfAvailable()
+      if (authHeader) {
+        Object.assign(headers, authHeader)
+      }
+    }
+    headers['Comfy-User'] = this.user
+    return headers
+  }
+
   override addEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
     callback: ((event: ApiEvents[TEvent]) => void) | null,
