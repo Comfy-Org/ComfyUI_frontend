@@ -42,6 +42,8 @@ import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 export interface WidgetSlotMetadata {
   index: number
   linked: boolean
+  originNodeId?: string
+  originOutputName?: string
 }
 
 /**
@@ -357,6 +359,36 @@ function safeWidgetMapper(
   }
 }
 
+function buildSlotMetadata(
+  inputs: INodeInputSlot[] | undefined,
+  graphRef: LGraph | null | undefined
+): Map<string, WidgetSlotMetadata> {
+  const metadata = new Map<string, WidgetSlotMetadata>()
+  inputs?.forEach((input, index) => {
+    let originNodeId: string | undefined
+    let originOutputName: string | undefined
+
+    if (input.link != null && graphRef) {
+      const link = graphRef.getLink(input.link)
+      if (link) {
+        originNodeId = String(link.origin_id)
+        const originNode = graphRef.getNodeById(link.origin_id)
+        originOutputName = originNode?.outputs?.[link.origin_slot]?.name
+      }
+    }
+
+    const slotInfo: WidgetSlotMetadata = {
+      index,
+      linked: input.link != null,
+      originNodeId,
+      originOutputName
+    }
+    if (input.name) metadata.set(input.name, slotInfo)
+    if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
+  })
+  return metadata
+}
+
 // Extract safe data from LiteGraph node for Vue consumption
 export function extractVueNodeData(node: LGraphNode): VueNodeData {
   // Determine subgraph ID - null for root graph, string for subgraphs
@@ -429,15 +461,11 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
     const widgetsSnapshot = node.widgets ?? []
 
+    const freshMetadata = buildSlotMetadata(node.inputs, node.graph)
     slotMetadata.clear()
-    node.inputs?.forEach((input, index) => {
-      const slotInfo = {
-        index,
-        linked: input.link != null
-      }
-      if (input.name) slotMetadata.set(input.name, slotInfo)
-      if (input.widget?.name) slotMetadata.set(input.widget.name, slotInfo)
-    })
+    for (const [key, value] of freshMetadata) {
+      slotMetadata.set(key, value)
+    }
     return widgetsSnapshot.map(safeWidgetMapper(node, slotMetadata))
   })
 
@@ -490,22 +518,11 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     if (!nodeRef || !currentData) return
 
-    // Only extract slot-related data instead of full node re-extraction
-    const slotMetadata = new Map<string, WidgetSlotMetadata>()
-
-    nodeRef.inputs?.forEach((input, index) => {
-      const slotInfo = {
-        index,
-        linked: input.link != null
-      }
-      if (input.name) slotMetadata.set(input.name, slotInfo)
-      if (input.widget?.name) slotMetadata.set(input.widget.name, slotInfo)
-    })
+    const slotMetadata = buildSlotMetadata(nodeRef.inputs, graph)
 
     // Update only widgets with new slot metadata, keeping other widget data intact
     for (const widget of currentData.widgets ?? []) {
-      const slotInfo = slotMetadata.get(widget.slotName ?? widget.name)
-      if (slotInfo) widget.slotMetadata = slotInfo
+      widget.slotMetadata = slotMetadata.get(widget.slotName ?? widget.name)
     }
   }
 
