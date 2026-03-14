@@ -1233,7 +1233,9 @@
     "baseLayerPreview": "Base layer preview",
     "black": "Black",
     "white": "White",
-    "negative": "Negative"
+    "negative": "Negative",
+    "clearMaskError": "Clear Mask Error",
+    "clearMaskFailed": "Failed to clear mask. Please try again."
   },
   "commands": {
     "runWorkflow": "Run workflow",
