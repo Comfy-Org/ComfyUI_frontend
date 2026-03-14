@@ -170,9 +170,9 @@
       </div>
     </template>
   </SidebarTabTemplate>
-  <ResultGallery
+  <MediaViewer
     v-model:active-index="galleryActiveIndex"
-    :all-gallery-items="galleryItems"
+    :items="previewableVisibleAssets"
   />
   <MediaAssetContextMenu
     v-if="contextMenuAsset"
@@ -220,12 +220,12 @@ import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridVi
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
+import MediaViewer from '@/platform/assets/components/MediaViewer.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
@@ -240,7 +240,6 @@ import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
-import { ResultItemImpl } from '@/stores/queueStore'
 import {
   formatDuration,
   getMediaTypeFromFilename,
@@ -452,28 +451,6 @@ watch(galleryActiveIndex, (index) => {
   if (index === -1) {
     currentGalleryAssetId.value = null
   }
-})
-
-const galleryItems = computed(() => {
-  return previewableVisibleAssets.value.map((asset) => {
-    const mediaType = getMediaTypeFromFilename(asset.name)
-    const resultItem = new ResultItemImpl({
-      filename: asset.name,
-      subfolder: '',
-      type: 'output',
-      nodeId: '0',
-      mediaType: mediaType === 'image' ? 'images' : mediaType
-    })
-
-    Object.defineProperty(resultItem, 'url', {
-      get() {
-        return asset.preview_url || ''
-      },
-      configurable: true
-    })
-
-    return resultItem
-  })
 })
 
 const refreshAssets = async () => {

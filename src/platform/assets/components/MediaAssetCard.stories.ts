@@ -1,17 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
-
 import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
 import type { AssetItem } from '../schemas/assetSchema'
 import MediaAssetCard from './MediaAssetCard.vue'
+import MediaViewer from './MediaViewer.vue'
 
 const meta: Meta<typeof MediaAssetCard> = {
   title: 'Platform/Assets/MediaAssetCard',
   component: MediaAssetCard,
   decorators: [
     () => ({
-      components: { ResultGallery },
+      components: { MediaViewer },
       setup() {
         const galleryStore = useMediaAssetGalleryStore()
         return { galleryStore }
@@ -19,9 +18,9 @@ const meta: Meta<typeof MediaAssetCard> = {
       template: `
         <div>
           <story />
-          <ResultGallery 
+          <MediaViewer
             v-model:active-index="galleryStore.activeIndex"
-            :all-gallery-items="galleryStore.items"
+            :items="galleryStore.items"
           />
         </div>
       `
