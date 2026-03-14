@@ -1,8 +1,8 @@
 import { computed } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore';
-import type { WidgetState } from '@/stores/widgetValueStore';
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetState } from '@/stores/widgetValueStore'
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { LinkedUpstreamInfo } from '@/types/simplifiedWidget'
 
