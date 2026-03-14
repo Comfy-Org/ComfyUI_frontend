@@ -46,10 +46,7 @@ export const MODEL_FILE_EXTENSIONS = new Set([
 
 export function isModelFileName(name: string): boolean {
   const lower = name.toLowerCase()
-  for (const ext of MODEL_FILE_EXTENSIONS) {
-    if (lower.endsWith(ext)) return true
-  }
-  return false
+  return Array.from(MODEL_FILE_EXTENSIONS).some((ext) => lower.endsWith(ext))
 }
 
 function resolveComboOptions(widget: IComboWidget): string[] {

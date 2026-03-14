@@ -86,6 +86,26 @@ function makeMissingNodeType(
   }
 }
 
+function makeModel(
+  name: string,
+  opts: {
+    nodeId?: string | number
+    widgetName?: string
+    directory?: string
+    isAssetSupported?: boolean
+  } = {}
+) {
+  return {
+    name,
+    nodeId: opts.nodeId ?? '1',
+    nodeType: 'CheckpointLoaderSimple',
+    widgetName: opts.widgetName ?? 'ckpt_name',
+    isAssetSupported: opts.isAssetSupported ?? false,
+    isMissing: true as const,
+    directory: opts.directory
+  }
+}
+
 function createErrorGroups() {
   const store = useExecutionErrorStore()
   const searchQuery = ref('')
@@ -524,26 +544,6 @@ describe('useErrorGroups', () => {
   })
 
   describe('missingModelGroups', () => {
-    function makeModel(
-      name: string,
-      opts: {
-        nodeId?: string | number
-        widgetName?: string
-        directory?: string
-        isAssetSupported?: boolean
-      } = {}
-    ) {
-      return {
-        name,
-        nodeId: opts.nodeId ?? '1',
-        nodeType: 'CheckpointLoaderSimple',
-        widgetName: opts.widgetName ?? 'ckpt_name',
-        isAssetSupported: opts.isAssetSupported ?? false,
-        isMissing: true as const,
-        directory: opts.directory
-      }
-    }
-
     it('returns empty array when no missing models', () => {
       const { groups } = createErrorGroups()
       expect(groups.missingModelGroups.value).toEqual([])
@@ -695,26 +695,6 @@ describe('useErrorGroups', () => {
     afterEach(() => {
       mockIsCloud.value = false
     })
-
-    function makeModel(
-      name: string,
-      opts: {
-        nodeId?: string | number
-        widgetName?: string
-        directory?: string
-        isAssetSupported?: boolean
-      } = {}
-    ) {
-      return {
-        name,
-        nodeId: opts.nodeId ?? '1',
-        nodeType: 'CheckpointLoaderSimple',
-        widgetName: opts.widgetName ?? 'ckpt_name',
-        isAssetSupported: opts.isAssetSupported ?? false,
-        isMissing: true as const,
-        directory: opts.directory
-      }
-    }
 
     it('puts unsupported models into UNSUPPORTED group in Cloud', async () => {
       const { store, groups } = createErrorGroups()

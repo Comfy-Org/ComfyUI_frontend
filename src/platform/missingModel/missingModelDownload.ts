@@ -25,7 +25,7 @@ const WHITE_LISTED_URLS: ReadonlySet<string> = new Set([
   'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
 ])
 
-export interface ModelWithUrl {
+interface ModelWithUrl {
   name: string
   url: string
   directory: string
@@ -40,12 +40,6 @@ export function isModelDownloadable(model: ModelWithUrl): boolean {
   return true
 }
 
-export function hasValidDirectory(
-  model: ModelWithUrl,
-  paths: Record<string, string[]>
-): boolean {
-  return !!paths[model.directory]
-}
 
 export function downloadModel(
   model: ModelWithUrl,
@@ -104,7 +98,7 @@ async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
 
     const data: CivitaiModelVersionResponse = await res.json()
     const matchingFile = data.files?.find(
-      (file) => file.downloadUrl && file.downloadUrl.startsWith(url)
+      (file) => file.downloadUrl.startsWith(url) && file.downloadUrl
     )
     const fileSize = matchingFile?.sizeKB ? matchingFile.sizeKB * 1024 : null
     return { fileSize, gatedRepoUrl: null }
@@ -128,8 +122,10 @@ async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
       return { fileSize: null, gatedRepoUrl: null }
     }
     const size = response.headers.get('content-length')
+    const parsedSize = size ? parseInt(size, 10) : null
     return {
-      fileSize: size ? parseInt(size, 10) : null,
+      fileSize:
+        parsedSize !== null && !Number.isNaN(parsedSize) ? parsedSize : null,
       gatedRepoUrl: null
     }
   } catch {

@@ -98,6 +98,10 @@ function mountCard(
 }
 
 describe('MissingModelCard', () => {
+  beforeEach(() => {
+    mockIsCloud.value = true
+  })
+
   describe('Rendering & Props', () => {
     it('renders directory name in category header', () => {
       const wrapper = mountCard({

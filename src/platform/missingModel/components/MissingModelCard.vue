@@ -16,10 +16,7 @@
               : 'text-destructive-background-hover'
           "
         >
-          <span
-            v-if="isCloud && !group.isAssetSupported"
-            class="text-warning-background"
-          >
+          <span v-if="isCloud && !group.isAssetSupported">
             {{ t('rightSidePanel.missingModels.importNotSupported') }}
             ({{ group.models.length }})
           </span>

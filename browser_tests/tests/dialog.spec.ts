@@ -135,6 +135,9 @@ test.describe('Missing models in Error Tab', () => {
 
     const missingModelsTitle = comfyPage.page.getByText(/Missing Models/)
     await expect(missingModelsTitle).not.toBeVisible()
+
+    const errorOverlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    await expect(errorOverlay).not.toBeVisible()
   })
 
   // Flaky test after parallelization
