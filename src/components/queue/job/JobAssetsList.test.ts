@@ -92,11 +92,11 @@ const mountJobAssetsList = (jobs: JobListItem[]) => {
   })
 }
 
-afterEach(() => {
-  vi.useRealTimers()
-})
-
 describe('JobAssetsList', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('emits viewItem on preview-click for completed jobs with preview', async () => {
     const job = buildJob()
     const wrapper = mountJobAssetsList([job])
