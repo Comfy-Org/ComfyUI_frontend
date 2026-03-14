@@ -90,11 +90,41 @@ export function useMaskEditor() {
 
       if (!dataStore.inputData) throw new Error('Failed to load image data')
 
+      if (!editorStore.maskCanvas) {
+        // Headless mode: programmatically initialize canvases in the store
+        // so that useMaskEditorSaver can proceed with the standard flow.
+        const { image } = dataStore.inputData.baseLayer
+        const width = image.naturalWidth || image.width || 1
+        const height = image.naturalHeight || image.height || 1
+
+        const imgCanvas = document.createElement('canvas')
+        imgCanvas.width = width
+        imgCanvas.height = height
+        imgCanvas.getContext('2d')!.drawImage(image, 0, 0)
+
+        const maskCanvas = document.createElement('canvas')
+        maskCanvas.width = width
+        maskCanvas.height = height
+
+        const rgbCanvas = document.createElement('canvas')
+        rgbCanvas.width = width
+        rgbCanvas.height = height
+
+        // Set canvases in the store
+        editorStore.imgCanvas = imgCanvas
+        editorStore.maskCanvas = maskCanvas
+        editorStore.rgbCanvas = rgbCanvas
+      }
+
       canvasTools.clearMask()
       await saver.save()
-    } catch (error) {
-      throw error
     } finally {
+      const dialogStore = useDialogStore()
+      if (!dialogStore.isDialogOpen('global-mask-editor')) {
+        editorStore.imgCanvas = null
+        editorStore.maskCanvas = null
+        editorStore.rgbCanvas = null
+      }
       dataStore.reset()
       editorStore.resetState()
       isClearingMask.value = false

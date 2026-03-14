@@ -160,6 +160,7 @@ const actionButtonClass =
   'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'
 
 // Component state
+const toast = useToast()
 const currentIndex = ref(0)
 const isHovered = ref(false)
 const isFocused = ref(false)
@@ -247,10 +248,10 @@ const handleClearMask = async () => {
   try {
     await clearMask(node)
   } catch (error) {
-    useToast().add({
+    toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: t('g.errorLoadingImage'),
+      summary: t('maskEditor.clearMaskError'),
+      detail: t('maskEditor.clearMaskFailed'),
       life: 3000,
       group: 'image-preview'
     })
@@ -261,9 +262,9 @@ const handleDownload = () => {
   try {
     downloadFile(currentImageUrl.value)
   } catch (error) {
-    useToast().add({
+    toast.add({
       severity: 'error',
-      summary: 'Error',
+      summary: t('g.error'),
       detail: t('g.failedToDownloadImage'),
       life: 3000,
       group: 'image-preview'
