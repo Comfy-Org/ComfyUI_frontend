@@ -9,7 +9,7 @@ export const TEMPLATE_STATUSES = [
 
 export type TemplateStatus = (typeof TEMPLATE_STATUSES)[number]
 
-export const VALID_TRANSITIONS: Record<TemplateStatus, TemplateStatus[]> = {
+const VALID_TRANSITIONS: Record<TemplateStatus, TemplateStatus[]> = {
   draft: ['pending_review'],
   pending_review: ['approved', 'rejected'],
   approved: ['published'],
@@ -48,7 +48,7 @@ export const LICENSE_TYPES = [
 
 export type LicenseType = (typeof LICENSE_TYPES)[number]
 
-export interface AuthorInfo {
+interface AuthorInfo {
   id: string
   name: string
   avatarUrl?: string
@@ -56,7 +56,7 @@ export interface AuthorInfo {
   profileUrl: string
 }
 
-export interface TemplateStats {
+interface TemplateStats {
   downloads: number
   favorites: number
   rating: number
@@ -64,14 +64,14 @@ export interface TemplateStats {
   weeklyTrend: number
 }
 
-export interface GalleryItem {
+interface GalleryItem {
   type: 'image' | 'video'
   url: string
   caption?: string
   isBefore?: boolean
 }
 
-export interface ModelRequirement {
+interface ModelRequirement {
   name: string
   type: 'checkpoint' | 'lora' | 'controlnet' | 'vae'
   url?: string
