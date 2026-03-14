@@ -20,7 +20,6 @@
           <MarketplaceTemplatePreviewCard
             :title="form.title"
             :short-description="form.shortDescription"
-            :description="form.description"
             :license-label="licenseLabel"
             :tags="form.tags"
             :thumbnail-url="thumbnailUrl"
@@ -43,6 +42,7 @@ const props = defineProps<{
     title: string
     description: string
     shortDescription: string
+    difficulty: string
     tags: string[]
   }
   submitted: boolean

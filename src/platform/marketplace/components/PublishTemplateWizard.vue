@@ -20,11 +20,14 @@
               v-model:description="form.description"
               v-model:short-description="form.shortDescription"
               v-model:license="form.license"
+              v-model:difficulty="form.difficulty"
               v-model:tags="form.tags"
               :read-only="readOnly"
               :thumbnail-url="thumbnailUrl"
               :license-options="licenseOptions"
               :license-label="licenseLabel"
+              :difficulty-options="difficultyOptions"
+              :difficulty-label="difficultyLabel"
               :is-uploading-thumbnail="isUploadingThumbnail"
               @thumbnail-selected="(file) => void processThumbnailFile(file)"
             />
@@ -70,10 +73,14 @@ import PublishTemplateWizardStepDetails from '@/platform/marketplace/components/
 import PublishTemplateWizardStepSubmit from '@/platform/marketplace/components/PublishTemplateWizardStepSubmit.vue'
 import { createGraphThumbnail } from '@/renderer/core/thumbnail/graphThumbnailRenderer'
 import type {
+  DifficultyLevel,
   LicenseType,
   MarketplaceTemplate
 } from '@/platform/marketplace/apiTypes'
-import { LICENSE_TYPES } from '@/platform/marketplace/apiTypes'
+import {
+  DIFFICULTY_LEVELS,
+  LICENSE_TYPES
+} from '@/platform/marketplace/apiTypes'
 import { useMarketplacePublishing } from '@/platform/marketplace/composables/useMarketplacePublishing'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { OnCloseKey } from '@/types/widgetTypes'
@@ -118,6 +125,7 @@ const form = reactive({
   description: defaultPlaceholders.description,
   shortDescription: defaultPlaceholders.shortDescription,
   license: 'mit' as LicenseType,
+  difficulty: 'beginner' as DifficultyLevel,
   tags: [] as string[]
 })
 
@@ -130,6 +138,17 @@ const licenseOptions = computed(() =>
 
 const licenseLabel = computed(() =>
   t(`marketplace.licenseTypes.${form.license}`)
+)
+
+const difficultyOptions = computed(() =>
+  DIFFICULTY_LEVELS.map((value) => ({
+    name: t(`marketplace.difficultyLevels.${value}`),
+    value
+  }))
+)
+
+const difficultyLabel = computed(() =>
+  t(`marketplace.difficultyLevels.${form.difficulty}`)
 )
 
 const submitted = ref(false)
@@ -154,7 +173,8 @@ const canAdvance = computed(() => {
       form.description.trim() !== '' &&
       form.description !== defaultPlaceholders.description &&
       form.shortDescription.trim() !== '' &&
-      form.shortDescription !== defaultPlaceholders.shortDescription
+      form.shortDescription !== defaultPlaceholders.shortDescription &&
+      !!form.difficulty
     )
   }
   return true
@@ -166,6 +186,7 @@ function initFromTemplate(template: MarketplaceTemplate) {
   form.description = template.description
   form.shortDescription = template.shortDescription
   form.license = template.license
+  form.difficulty = template.difficulty
   form.tags = template.tags ? [...template.tags] : []
   thumbnailUrl.value = template.thumbnail ?? null
 }
@@ -190,6 +211,7 @@ async function handleNext() {
         description: form.description,
         shortDescription: form.shortDescription,
         license: form.license,
+        difficulty: form.difficulty,
         tags: form.tags
       })
       const file = pendingThumbnailFile.value
@@ -216,6 +238,7 @@ async function handleNext() {
         description: form.description,
         shortDescription: form.shortDescription,
         license: form.license,
+        difficulty: form.difficulty,
         tags: form.tags,
         ...(thumbnailUrl.value?.startsWith('http') && {
           thumbnail: thumbnailUrl.value

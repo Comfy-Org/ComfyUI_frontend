@@ -25,8 +25,16 @@
       </div>
 
       <div class="flex flex-col gap-1">
-        <label for="publish-description" class="text-sm font-medium">
+        <label
+          for="publish-description"
+          class="flex items-center gap-1.5 text-sm font-medium"
+        >
           {{ $t('marketplace.description') }}
+          <i
+            v-tooltip.bottom="$t('marketplace.descriptionTooltip')"
+            class="icon-[lucide--info] size-4 text-muted"
+            aria-hidden
+          />
         </label>
         <textarea
           v-if="readOnly"
@@ -48,8 +56,16 @@
       </div>
 
       <div class="flex flex-col gap-1">
-        <label for="publish-short-description" class="text-sm font-medium">
+        <label
+          for="publish-short-description"
+          class="flex items-center gap-1.5 text-sm font-medium"
+        >
           {{ $t('marketplace.shortDescription') }}
+          <i
+            v-tooltip.bottom="$t('marketplace.shortDescriptionTooltip')"
+            class="icon-[lucide--info] size-4 text-muted"
+            aria-hidden
+          />
         </label>
         <input
           v-if="readOnly"
@@ -95,6 +111,38 @@
       </div>
 
       <div class="flex flex-col gap-1">
+        <label
+          for="publish-difficulty"
+          class="flex items-center gap-1.5 text-sm font-medium"
+        >
+          {{ $t('marketplace.difficulty') }}
+          <i
+            v-tooltip.bottom="$t('marketplace.difficultyTooltip')"
+            class="icon-[lucide--info] size-4 text-muted"
+            aria-hidden
+          />
+        </label>
+        <SingleSelect
+          v-if="!readOnly"
+          id="publish-difficulty"
+          v-model="difficulty"
+          :label="$t('marketplace.difficulty')"
+          :options="difficultyOptions"
+          data-testid="input-difficulty"
+          size="md"
+        />
+        <input
+          v-else
+          id="publish-difficulty"
+          :value="difficultyLabel"
+          data-testid="input-difficulty"
+          type="text"
+          readonly
+          class="border-border rounded-md border bg-muted/30 px-3 py-2 text-sm"
+        />
+      </div>
+
+      <div class="flex flex-col gap-1">
         <label class="text-sm font-medium">
           {{ $t('marketplace.tags') }}
         </label>
@@ -130,7 +178,6 @@
           <MarketplaceTemplatePreviewCard
             :title="title"
             :short-description="shortDescription"
-            :description="description"
             :license-label="licenseLabel"
             :tags="tags"
             :thumbnail-url="thumbnailUrl"
@@ -188,7 +235,10 @@ import { useI18n } from 'vue-i18n'
 import TagInputWithAutocomplete from '@/components/input/TagInputWithAutocomplete.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import MarketplaceTemplatePreviewCard from '@/platform/marketplace/components/MarketplaceTemplatePreviewCard.vue'
-import type { LicenseType } from '@/platform/marketplace/apiTypes'
+import type {
+  DifficultyLevel,
+  LicenseType
+} from '@/platform/marketplace/apiTypes'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { extractFilesFromDragEvent, hasImageType } from '@/utils/eventUtils'
 import { cn } from '@/utils/tailwindUtil'
@@ -199,6 +249,9 @@ const shortDescription = defineModel<string>('shortDescription', {
   required: true
 })
 const license = defineModel<LicenseType>('license', { required: true })
+const difficulty = defineModel<DifficultyLevel>('difficulty', {
+  required: true
+})
 const tags = defineModel<string[]>('tags', { required: true })
 
 defineProps<{
@@ -206,6 +259,8 @@ defineProps<{
   thumbnailUrl: string | null
   licenseOptions: { name: string; value: string }[]
   licenseLabel: string
+  difficultyOptions: { name: string; value: string }[]
+  difficultyLabel: string
   isUploadingThumbnail: boolean
 }>()
 

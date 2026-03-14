@@ -3612,14 +3612,22 @@
     "title": "Title",
     "titlePlaceholder": "Enter workflow title",
     "description": "Description",
+    "descriptionTooltip": "This description is used for the workflow detail page on Comfy Hub.",
     "descriptionPlaceholder": "Describe your workflow",
     "shortDescription": "Short Description",
+    "shortDescriptionTooltip": "Shown on the workflow preview card and on the Comfy Hub workflow detail page.",
     "shortDescriptionPlaceholder": "Brief summary",
     "thumbnail": "Thumbnail",
     "categories": "Categories",
     "tags": "Tags",
     "tagsPlaceholder": "Add tags...",
     "difficulty": "Difficulty",
+    "difficultyTooltip": "Consider the number of inputs users must configure and how difficult it is for a relatively experienced user to get the workflow running.",
+    "difficultyLevels": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    },
     "license": "License",
     "licenseTypes": {
       "cc-by": "CC BY",

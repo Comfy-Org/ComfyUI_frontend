@@ -55,6 +55,13 @@ const i18n = createI18n({
         tags: 'Tags',
         tagsPlaceholder: 'Add tags...',
         difficulty: 'Difficulty',
+        difficultyTooltip:
+          'Consider the number of inputs users must configure and how difficult it is for a relatively experienced user to get the workflow running.',
+        difficultyLevels: {
+          beginner: 'Beginner',
+          intermediate: 'Intermediate',
+          advanced: 'Advanced'
+        },
         license: 'License',
         next: 'Next',
         back: 'Back',
@@ -138,6 +145,13 @@ describe('PublishTemplateWizard', () => {
       expect(wrapper.find('[data-testid="input-license"]').exists()).toBe(true)
     })
 
+    it('has difficulty dropdown', () => {
+      const wrapper = createWrapper()
+      expect(wrapper.find('[data-testid="input-difficulty"]').exists()).toBe(
+        true
+      )
+    })
+
     it('has tags input', () => {
       const wrapper = createWrapper()
       expect(wrapper.find('[data-testid="input-tags"]').exists()).toBe(true)
@@ -178,6 +192,7 @@ describe('PublishTemplateWizard', () => {
         description: 'A great workflow',
         shortDescription: 'Great',
         license: 'mit',
+        difficulty: 'beginner',
         tags: []
       })
       expect(wrapper.find('[data-testid="step-submit"]').exists()).toBe(true)
@@ -212,6 +227,7 @@ describe('PublishTemplateWizard', () => {
         description: 'A great workflow',
         shortDescription: 'Great',
         license: 'mit',
+        difficulty: 'beginner',
         tags: ['Image', 'Video']
       })
     })

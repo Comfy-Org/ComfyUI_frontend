@@ -49,9 +49,6 @@
           <p class="m-0 line-clamp-2 text-sm text-muted">
             {{ shortDescription }}
           </p>
-          <p class="m-0 text-sm">
-            {{ description }}
-          </p>
           <span class="text-xs text-muted">
             {{ licenseLabel }}
           </span>
@@ -71,7 +68,6 @@ import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail
 defineProps<{
   title: string
   shortDescription: string
-  description: string
   licenseLabel: string
   tags?: string[]
   thumbnailUrl?: string | null
