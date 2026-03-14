@@ -94,92 +94,96 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <p class="text-sm text-muted">
+        <p class="text-xs text-muted">
           {{ $t('marketplace.previewDescription') }}
         </p>
-        <div class="max-w-72">
-          <CardContainer
-            size="tall"
-            variant="ghost"
-            rounded="lg"
-            :has-cursor="false"
-            data-testid="preview-card"
-          >
-            <template #top>
-              <CardTop ratio="square">
-                <template #default>
-                  <div
-                    v-if="thumbnailUrl"
-                    class="relative size-full overflow-hidden rounded-lg"
-                  >
-                    <DefaultThumbnail
-                      :src="thumbnailUrl"
-                      :alt="form.title"
-                      :hover-zoom="0"
-                      :is-hovered="false"
-                      object-fit="cover"
-                    />
-                  </div>
-                  <div
-                    v-else
-                    class="relative flex size-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors"
-                    :class="
-                      cn(
-                        'cursor-pointer border-border-default bg-dialog-surface hover:border-muted-foreground',
-                        isOverThumbnailDrop && 'border-muted-foreground'
-                      )
-                    "
-                    data-testid="preview-thumbnail-placeholder"
-                    data-handles-file-drop
-                    @dragover.prevent="handleThumbnailDragOver"
-                    @dragleave="handleThumbnailDragLeave"
-                    @drop.prevent="handleThumbnailDrop"
-                  >
+        <div
+          class="flex w-full justify-center rounded-lg border border-border-default bg-base-background py-5"
+        >
+          <div class="w-full max-w-72">
+            <CardContainer
+              size="tall"
+              variant="ghost"
+              rounded="lg"
+              :has-cursor="false"
+              data-testid="preview-card"
+            >
+              <template #top>
+                <CardTop ratio="square">
+                  <template #default>
                     <div
-                      v-if="isUploadingThumbnail"
-                      class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-base-background/80"
+                      v-if="thumbnailUrl"
+                      class="relative size-full overflow-hidden rounded-lg"
                     >
-                      <i
-                        class="icon-[lucide--loader-circle] size-10 animate-spin text-muted"
-                        aria-hidden
+                      <DefaultThumbnail
+                        :src="thumbnailUrl"
+                        :alt="form.title"
+                        :hover-zoom="0"
+                        :is-hovered="false"
+                        object-fit="cover"
                       />
                     </div>
-                    <i class="icon-[lucide--image] size-10 text-muted" />
+                    <div
+                      v-else
+                      class="relative flex size-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors"
+                      :class="
+                        cn(
+                          'cursor-pointer border-border-default bg-dialog-surface hover:border-muted-foreground',
+                          isOverThumbnailDrop && 'border-muted-foreground'
+                        )
+                      "
+                      data-testid="preview-thumbnail-placeholder"
+                      data-handles-file-drop
+                      @dragover.prevent="handleThumbnailDragOver"
+                      @dragleave="handleThumbnailDragLeave"
+                      @drop.prevent="handleThumbnailDrop"
+                    >
+                      <div
+                        v-if="isUploadingThumbnail"
+                        class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-base-background/80"
+                      >
+                        <i
+                          class="icon-[lucide--loader-circle] size-10 animate-spin text-muted"
+                          aria-hidden
+                        />
+                      </div>
+                      <i class="icon-[lucide--image] size-10 text-muted" />
+                      <span class="text-xs text-muted">
+                        {{ $t('marketplace.dropThumbnailHere') }}
+                      </span>
+                    </div>
+                  </template>
+                  <template #bottom-right>
+                    <template v-if="form.tags?.length">
+                      <SquareChip
+                        v-for="tag in form.tags"
+                        :key="tag"
+                        :label="tag"
+                      />
+                    </template>
+                  </template>
+                </CardTop>
+              </template>
+              <template #bottom>
+                <CardBottom>
+                  <div class="flex flex-col gap-2 pt-3">
+                    <h3 class="m-0 line-clamp-1 text-sm" :title="form.title">
+                      {{ form.title }}
+                    </h3>
+                    <p class="m-0 line-clamp-2 text-sm text-muted">
+                      {{ form.shortDescription }}
+                    </p>
+                    <p class="m-0 text-sm">
+                      {{ form.description }}
+                    </p>
                     <span class="text-xs text-muted">
-                      {{ $t('marketplace.dropThumbnailHere') }}
+                      {{ licenseLabel }}
                     </span>
                   </div>
-                </template>
-                <template #bottom-right>
-                  <template v-if="form.tags?.length">
-                    <SquareChip
-                      v-for="tag in form.tags"
-                      :key="tag"
-                      :label="tag"
-                    />
-                  </template>
-                </template>
-              </CardTop>
-            </template>
-            <template #bottom>
-              <CardBottom>
-                <div class="flex flex-col gap-2 pt-3">
-                  <h3 class="m-0 line-clamp-1 text-sm" :title="form.title">
-                    {{ form.title }}
-                  </h3>
-                  <p class="m-0 line-clamp-2 text-sm text-muted">
-                    {{ form.shortDescription }}
-                  </p>
-                  <p class="m-0 text-sm">
-                    {{ form.description }}
-                  </p>
-                  <span class="text-xs text-muted">
-                    {{ licenseLabel }}
-                  </span>
-                </div>
-              </CardBottom>
-            </template>
-          </CardContainer>
+                </CardBottom>
+              </template>
+            </CardContainer>
+          </div>
         </div>
       </div>
     </div>
