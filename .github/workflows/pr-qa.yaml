@@ -376,7 +376,9 @@ jobs:
           </head><body><div><h1>404</h1><p>File not found. The QA recording may have failed or been cancelled.</p></div></body></html>
           ERROREOF
 
-          BRANCH="run-${{ github.run_id }}"
+          # Sanitize branch name for Cloudflare Pages URL (same rules CF uses)
+          RAW_BRANCH="${{ github.head_ref || github.ref_name }}"
+          BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
           URL=$(wrangler pages deploy "$DEPLOY_DIR" \
             --project-name="comfyui-qa-videos" \
             --branch="$BRANCH" 2>&1 \
