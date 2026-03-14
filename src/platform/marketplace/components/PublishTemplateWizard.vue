@@ -171,10 +171,19 @@
                   "
                   data-testid="preview-thumbnail-placeholder"
                   data-handles-file-drop
+                  @click="thumbnailFileInputRef?.click()"
                   @dragover.prevent="handleThumbnailDragOver"
                   @dragleave="handleThumbnailDragLeave"
                   @drop.prevent="handleThumbnailDrop"
                 >
+                  <input
+                    ref="thumbnailFileInputRef"
+                    type="file"
+                    accept="image/*"
+                    class="hidden"
+                    data-testid="input-thumbnail-file"
+                    @change="handleThumbnailFileSelect"
+                  />
                   <div
                     v-if="isUploadingThumbnail"
                     class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-base-background/80"
@@ -359,6 +368,7 @@ const thumbnailUrl = ref<string | null>(null)
 const pendingThumbnailFile = ref<File | null>(null)
 const isUploadingThumbnail = ref(false)
 const isOverThumbnailDrop = ref(false)
+const thumbnailFileInputRef = ref<HTMLInputElement | null>(null)
 
 const isPendingReview = computed(
   () => initialTemplate?.status === 'pending_review'
@@ -536,16 +546,7 @@ function fileToDataUrl(file: File): Promise<string> {
   })
 }
 
-async function handleThumbnailDrop(e: DragEvent) {
-  isOverThumbnailDrop.value = false
-  e.preventDefault()
-  e.stopPropagation()
-  const files = await extractFilesFromDragEvent(e)
-  const imageFile = files.find(hasImageType)
-  if (!imageFile) {
-    useToastStore().addAlert(t('marketplace.thumbnailUploadError'))
-    return
-  }
+async function processThumbnailFile(imageFile: File) {
   try {
     thumbnailUrl.value = await fileToDataUrl(imageFile)
   } catch {
@@ -566,5 +567,30 @@ async function handleThumbnailDrop(e: DragEvent) {
   } else {
     pendingThumbnailFile.value = imageFile
   }
+}
+
+async function handleThumbnailDrop(e: DragEvent) {
+  isOverThumbnailDrop.value = false
+  e.preventDefault()
+  e.stopPropagation()
+  const files = await extractFilesFromDragEvent(e)
+  const imageFile = files.find(hasImageType)
+  if (!imageFile) {
+    useToastStore().addAlert(t('marketplace.thumbnailUploadError'))
+    return
+  }
+  await processThumbnailFile(imageFile)
+}
+
+function handleThumbnailFileSelect(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  if (!hasImageType(file)) {
+    useToastStore().addAlert(t('marketplace.thumbnailUploadError'))
+    return
+  }
+  void processThumbnailFile(file)
+  input.value = ''
 }
 </script>
