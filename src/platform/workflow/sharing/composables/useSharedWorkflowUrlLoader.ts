@@ -2,6 +2,7 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import {
@@ -35,6 +36,7 @@ export function useSharedWorkflowUrlLoader() {
   const workflowShareService = useWorkflowShareService()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
+  const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
 
   function isValidParameter(param: string): boolean {
@@ -132,6 +134,8 @@ export function useSharedWorkflowUrlLoader() {
       clearPreservedQuery(SHARE_NAMESPACE)
       return 'cancelled'
     }
+
+    templateSelectorDialog.hide()
 
     const { payload } = result
     const workflowName = payload.name || t('openSharedWorkflow.dialogTitle')
