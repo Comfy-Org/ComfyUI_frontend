@@ -5007,7 +5007,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       if (!LiteGraph.vueNodesMode || !this.overlayCtx) {
         this._drawConnectingLinks(ctx)
-        this._drawVueDragAlignmentGuides(ctx)
+        if (LiteGraph.vueNodesMode) {
+          this._drawVueDragAlignmentGuides(ctx)
+        }
       } else {
         this._drawOverlayLinks()
       }
