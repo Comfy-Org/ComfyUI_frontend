@@ -89,7 +89,9 @@ const i18n = createI18n({
         hideRightPanel: 'Hide right panel'
       },
       marketplace: {
-        authorDashboard: 'My Templates',
+        authorDashboard: 'Author Dashboard',
+        myTemplates: 'My Templates',
+        refresh: 'Refresh templates',
         edit: 'Edit',
         status: {
           draft: 'Draft',
@@ -181,7 +183,26 @@ describe('AuthorDashboard', () => {
 
   it('renders the dashboard title', () => {
     const wrapper = createWrapper()
+    expect(wrapper.text()).toContain('Author Dashboard')
+  })
+
+  it('renders the My Templates section title', () => {
+    const wrapper = createWrapper()
     expect(wrapper.text()).toContain('My Templates')
+  })
+
+  it('calls loadTemplates and loadStats when refresh button clicked', async () => {
+    const wrapper = createWrapper()
+    await vi.dynamicImportSettled()
+
+    mockService.getAuthorTemplates.mockClear()
+    mockService.getAuthorStats.mockClear()
+
+    await wrapper.find('[data-testid="btn-refresh-templates"]').trigger('click')
+    await vi.dynamicImportSettled()
+
+    expect(mockService.getAuthorTemplates).toHaveBeenCalled()
+    expect(mockService.getAuthorStats).toHaveBeenCalled()
   })
 
   it('loads templates and stats on mount', async () => {

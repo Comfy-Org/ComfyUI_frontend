@@ -49,26 +49,29 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
-          <button
-            v-for="period in periods"
-            :key="period.value"
-            :data-testid="`period-${period.value}`"
-            :class="
-              cn(
-                'rounded-md px-3 py-1.5 text-sm',
-                selectedPeriod === period.value
-                  ? 'text-highlight-foreground bg-highlight'
-                  : 'bg-base-background text-muted hover:bg-base-background/80'
-              )
-            "
-            @click="handlePeriodChange(period.value)"
-          >
-            {{ period.label }}
-          </button>
-        </div>
-
         <div class="flex flex-col gap-4">
+          <div class="flex items-center gap-2">
+            <h3 class="m-0 text-base font-semibold">
+              {{ $t('marketplace.myTemplates') }}
+            </h3>
+            <button
+              :aria-label="$t('marketplace.refresh')"
+              :disabled="isLoading"
+              class="focus-visible:ring-ring text-secondary-foreground relative ml-auto inline-flex h-8 cursor-pointer touch-manipulation appearance-none items-center justify-center gap-2 rounded-lg border-none bg-secondary-background p-2 px-3 font-inter text-xs font-medium whitespace-nowrap transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([width]):not([height])]:size-4"
+              data-testid="btn-refresh-templates"
+              @click="handleRefresh"
+            >
+              <i
+                :class="[
+                  'icon-[lucide--refresh-cw] size-4',
+                  isLoading && 'animate-spin'
+                ]"
+              />
+              <span class="p-button-label" data-pc-section="label">{{
+                $t('marketplace.refresh')
+              }}</span>
+            </button>
+          </div>
           <div v-for="statusGroup in statusGroups" :key="statusGroup.status">
             <template v-if="statusGroup.templates.length > 0">
               <h3 class="mb-2 text-sm font-semibold">
@@ -188,7 +191,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, provide, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import type {
@@ -199,7 +201,6 @@ import { TEMPLATE_STATUSES } from '@/platform/marketplace/apiTypes'
 import { useAuthorDashboard } from '@/platform/marketplace/composables/useAuthorDashboard'
 import { usePublishDialog } from '@/platform/marketplace/composables/usePublishDialog'
 import { OnCloseKey } from '@/types/widgetTypes'
-import { cn } from '@/utils/tailwindUtil'
 
 const EDITABLE_STATUSES: TemplateStatus[] = [
   'draft',
@@ -213,21 +214,24 @@ const props = defineProps<{
 
 provide(OnCloseKey, props.onClose ?? (() => {}))
 
-const { t } = useI18n()
-
 const {
   stats,
-  selectedPeriod,
   isLoading,
   isPublishingTemplate,
   isUnpublishingTemplate,
   error,
   templatesByStatus,
+  selectedPeriod,
   loadTemplates,
   loadStats,
   publishTemplate,
   unpublishTemplate
 } = useAuthorDashboard()
+
+function handleRefresh() {
+  void loadTemplates()
+  void loadStats(selectedPeriod.value)
+}
 
 const { show: showPublishDialog } = usePublishDialog()
 
@@ -261,22 +265,12 @@ function handleUnpublishTemplate(template: MarketplaceTemplate) {
   void unpublishTemplate(template.id)
 }
 
-const periods = computed(() => [
-  { value: 'day' as const, label: t('marketplace.period.day') },
-  { value: 'week' as const, label: t('marketplace.period.week') },
-  { value: 'month' as const, label: t('marketplace.period.month') }
-])
-
 const statusGroups = computed(() =>
   TEMPLATE_STATUSES.map((status) => ({
     status,
     templates: templatesByStatus.value[status]
   }))
 )
-
-function handlePeriodChange(period: 'day' | 'week' | 'month') {
-  void loadStats(period)
-}
 
 onMounted(() => {
   void loadTemplates()
