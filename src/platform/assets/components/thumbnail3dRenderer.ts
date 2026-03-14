@@ -6,7 +6,6 @@ import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
 const THUMBNAIL_SIZE = 256
-const CACHE_NAME = 'comfyui-3d-thumbnails'
 const MAX_CONCURRENT = 2
 
 let renderer: THREE.WebGLRenderer | null = null
@@ -169,31 +168,10 @@ function renderToBlob(model: THREE.Object3D): Promise<Blob> {
   })
 }
 
-async function getCachedBlob(url: string): Promise<Blob | null> {
-  try {
-    const store = await caches.open(CACHE_NAME)
-    const response = await store.match(url)
-    if (!response) return null
-    return await response.blob()
-  } catch {
-    return null
-  }
-}
-
-async function setCache(url: string, blob: Blob): Promise<void> {
-  try {
-    const store = await caches.open(CACHE_NAME)
-    await store.put(
-      url,
-      new Response(blob, { headers: { 'Content-Type': 'image/png' } })
-    )
-  } catch {
-    // Cache write failures are non-critical; silently ignore
-  }
-}
+const blobCache = new Map<string, Blob>()
 
 export async function generate3DThumbnail(modelUrl: string) {
-  const cached = await getCachedBlob(modelUrl)
+  const cached = blobCache.get(modelUrl)
   if (cached) {
     return { objectUrl: URL.createObjectURL(cached), blob: cached }
   }
@@ -204,7 +182,7 @@ export async function generate3DThumbnail(modelUrl: string) {
     if (!model) return null
 
     const blob = await renderToBlob(model)
-    await setCache(modelUrl, blob)
+    blobCache.set(modelUrl, blob)
     return { objectUrl: URL.createObjectURL(blob), blob }
   } finally {
     releaseSlot()

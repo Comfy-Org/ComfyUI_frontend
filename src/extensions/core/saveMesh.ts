@@ -6,7 +6,9 @@ import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import { generate3DThumbnail } from '@/platform/assets/components/thumbnail3dRenderer'
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import { api } from '@/scripts/api'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 type SaveMeshOutput = NodeOutputWith<{
@@ -100,6 +102,14 @@ useExtensionService().registerExtension({
           const loadFolder = fileInfo.type as 'input' | 'output'
 
           config.configureForSaveMesh(loadFolder, filePath)
+
+          // Pre-generate thumbnail for asset browser cache
+          const params = new URLSearchParams({
+            filename: fileInfo.filename ?? '',
+            type: loadFolder,
+            subfolder: fileInfo.subfolder ?? ''
+          })
+          void generate3DThumbnail(api.apiURL(`/view?${params}`))
         }
       })
     }

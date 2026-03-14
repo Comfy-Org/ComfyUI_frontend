@@ -5,6 +5,7 @@ import { nextTick, ref, toRaw, watch } from 'vue'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { generate3DThumbnail } from '@/platform/assets/components/thumbnail3dRenderer'
 import type {
   AnimationItem,
   CameraConfig,
@@ -513,6 +514,29 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       hasSkeleton.value = load3d?.hasSkeleton() ?? false
       // Reset skeleton visibility when loading new model
       modelConfig.value.showSkeleton = false
+
+      // Pre-generate thumbnail for asset browser cache
+      const node = nodeRef.value
+      const modelWidget = node?.widgets?.find(
+        (w) => w.name === 'model_file' || w.name === 'image'
+      )
+      const widgetValue = modelWidget?.value
+      if (typeof widgetValue === 'string' && widgetValue) {
+        const trimmed = widgetValue.trim()
+        const hasOutputSuffix = trimmed.endsWith('[output]')
+        const cleanPath = hasOutputSuffix
+          ? trimmed.replace(/\s*\[output\]$/, '')
+          : trimmed
+        const folderType =
+          hasOutputSuffix || isPreview.value ? 'output' : 'input'
+        const [subfolder, filename] = Load3dUtils.splitFilePath(cleanPath)
+        const params = new URLSearchParams({
+          filename,
+          type: folderType,
+          subfolder
+        })
+        void generate3DThumbnail(api.apiURL(`/view?${params}`))
+      }
     },
     skeletonVisibilityChange: (value: boolean) => {
       modelConfig.value.showSkeleton = value
