@@ -94,6 +94,7 @@
                     :is-publishing-template="isPublishingTemplate"
                     :is-unpublishing-template="isUnpublishingTemplate"
                     @edit="handleEditTemplate"
+                    @view="handleViewTemplate"
                     @publish="handlePublishTemplate"
                     @unpublish="handleUnpublishTemplate"
                     @thumb-error="(id) => (thumbErrors[id] = true)"
@@ -129,6 +130,7 @@
                       :is-publishing-template="isPublishingTemplate"
                       :is-unpublishing-template="isUnpublishingTemplate"
                       @edit="handleEditTemplate"
+                      @view="handleViewTemplate"
                       @publish="handlePublishTemplate"
                       @unpublish="handleUnpublishTemplate"
                       @thumb-error="(id) => (thumbErrors[id] = true)"
@@ -165,6 +167,7 @@
                       :is-publishing-template="isPublishingTemplate"
                       :is-unpublishing-template="isUnpublishingTemplate"
                       @edit="handleEditTemplate"
+                      @view="handleViewTemplate"
                       @publish="handlePublishTemplate"
                       @unpublish="handleUnpublishTemplate"
                       @thumb-error="(id) => (thumbErrors[id] = true)"
@@ -231,6 +234,13 @@ function handleEditTemplate(template: MarketplaceTemplate) {
   showPublishDialog({
     initialTemplate: template,
     onClose: () => void loadTemplates()
+  })
+}
+
+function handleViewTemplate(template: MarketplaceTemplate) {
+  showPublishDialog({
+    initialTemplate: template,
+    readOnly: true
   })
 }
 

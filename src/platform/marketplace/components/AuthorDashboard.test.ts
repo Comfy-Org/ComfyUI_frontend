@@ -100,6 +100,7 @@ const i18n = createI18n({
         noSubmissionsLive: 'No live templates.',
         refresh: 'Refresh templates',
         edit: 'Edit',
+        view: 'View',
         status: {
           draft: 'Draft',
           pending_review: 'Pending Review',
@@ -337,6 +338,29 @@ describe('AuthorDashboard', () => {
       expect(mockPublishDialog.show).toHaveBeenCalledWith({
         initialTemplate: pendingTemplate,
         onClose: expect.any(Function)
+      })
+    })
+
+    it('calls usePublishDialog.show with readOnly when View clicked on approved template', async () => {
+      const approvedTemplate = makeSeedTemplate({
+        id: 'tpl_approved',
+        title: 'Approved WF',
+        status: 'approved'
+      })
+      const wrapper = createWrapper([
+        makeSeedTemplate({ id: 'tpl_1', status: 'draft' }),
+        approvedTemplate
+      ])
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      await wrapper
+        .find('[data-testid="btn-view-template-tpl_approved"]')
+        .trigger('click')
+
+      expect(mockPublishDialog.show).toHaveBeenCalledWith({
+        initialTemplate: approvedTemplate,
+        readOnly: true
       })
     })
 

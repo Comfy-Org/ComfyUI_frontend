@@ -100,6 +100,24 @@ describe('usePublishDialog', () => {
     )
   })
 
+  it('show({ initialTemplate, readOnly: true }) passes readOnly to wizard', () => {
+    const { mockShowDialog } = setupDialogMocks()
+    const dialog = usePublishDialog()
+    const mockTemplate = makeMockTemplate()
+
+    dialog.show({ initialTemplate: mockTemplate, readOnly: true })
+
+    expect(mockShowDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Template Details',
+        props: expect.objectContaining({
+          initialTemplate: mockTemplate,
+          readOnly: true
+        })
+      })
+    )
+  })
+
   it('hide() closes dialog with correct key', () => {
     const { mockCloseDialog } = setupDialogMocks()
     const dialog = usePublishDialog()

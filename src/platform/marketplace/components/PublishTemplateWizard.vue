@@ -1,9 +1,6 @@
 <template>
   <div class="flex flex-col gap-4">
-    <div class="flex items-center gap-2">
-      <!-- <h2 class="text-lg font-semibold">
-        {{ $t('marketplace.publishToMarketplace') }}
-      </h2> -->
+    <div v-if="!readOnly" class="flex items-center gap-2">
       <div class="ml-auto flex gap-2 text-sm text-muted">
         <span
           v-for="(step, idx) in steps"
@@ -34,6 +31,16 @@
             {{ $t('marketplace.title') }}
           </label>
           <input
+            v-if="readOnly"
+            id="publish-title"
+            :value="form.title"
+            data-testid="input-title"
+            type="text"
+            readonly
+            class="border-border rounded-md border bg-muted/30 px-3 py-2 text-sm"
+          />
+          <input
+            v-else
             id="publish-title"
             v-model="form.title"
             data-testid="input-title"
@@ -47,6 +54,16 @@
             {{ $t('marketplace.description') }}
           </label>
           <textarea
+            v-if="readOnly"
+            id="publish-description"
+            :value="form.description"
+            data-testid="input-description"
+            rows="4"
+            readonly
+            class="border-border rounded-md border bg-muted/30 px-3 py-2 text-sm"
+          />
+          <textarea
+            v-else
             id="publish-description"
             v-model="form.description"
             data-testid="input-description"
@@ -60,6 +77,16 @@
             {{ $t('marketplace.shortDescription') }}
           </label>
           <input
+            v-if="readOnly"
+            id="publish-short-description"
+            :value="form.shortDescription"
+            data-testid="input-short-description"
+            type="text"
+            readonly
+            class="border-border rounded-md border bg-muted/30 px-3 py-2 text-sm"
+          />
+          <input
+            v-else
             id="publish-short-description"
             v-model="form.shortDescription"
             data-testid="input-short-description"
@@ -73,12 +100,22 @@
             {{ $t('marketplace.license') }}
           </label>
           <SingleSelect
+            v-if="!readOnly"
             id="publish-license"
             v-model="form.license"
             :label="$t('marketplace.license')"
             :options="licenseOptions"
             data-testid="input-license"
             size="md"
+          />
+          <input
+            v-else
+            id="publish-license"
+            :value="licenseLabel"
+            data-testid="input-license"
+            type="text"
+            readonly
+            class="border-border rounded-md border bg-muted/30 px-3 py-2 text-sm"
           />
         </div>
 
@@ -87,9 +124,23 @@
             {{ $t('marketplace.tags') }}
           </label>
           <TagInputWithAutocomplete
+            v-if="!readOnly"
             v-model="form.tags"
             :placeholder="$t('marketplace.tagsPlaceholder')"
           />
+          <div
+            v-else
+            class="flex flex-wrap gap-1"
+            data-testid="input-tags-readonly"
+          >
+            <span
+              v-for="tag in form.tags"
+              :key="tag"
+              class="rounded-full bg-muted/50 px-2 py-0.5 text-xs"
+            >
+              {{ tag }}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -109,7 +160,7 @@
               :tags="form.tags"
               :thumbnail-url="thumbnailUrl"
             >
-              <template #thumbnail-placeholder>
+              <template v-if="!readOnly" #thumbnail-placeholder>
                 <div
                   class="relative flex size-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors"
                   :class="
@@ -183,7 +234,12 @@
     </div>
 
     <!-- Navigation buttons -->
-    <div class="flex justify-between pt-2">
+    <div v-if="readOnly" class="flex justify-end pt-2">
+      <Button data-testid="btn-done" @click="onClose?.()">
+        {{ $t('marketplace.done') }}
+      </Button>
+    </div>
+    <div v-else class="flex justify-between pt-2">
       <Button
         v-if="currentStep > 1"
         data-testid="btn-back"
@@ -246,9 +302,14 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { extractFilesFromDragEvent, hasImageType } from '@/utils/eventUtils'
 import { cn } from '@/utils/tailwindUtil'
 
-const { onClose, initialTemplate } = defineProps<{
+const {
+  onClose,
+  initialTemplate,
+  readOnly = false
+} = defineProps<{
   onClose?: () => void
   initialTemplate?: MarketplaceTemplate
+  readOnly?: boolean
 }>()
 
 const { t } = useI18n()

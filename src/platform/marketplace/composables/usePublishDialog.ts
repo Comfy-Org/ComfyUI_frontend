@@ -10,6 +10,7 @@ export function usePublishDialog() {
 
   function show(options?: {
     initialTemplate?: MarketplaceTemplate
+    readOnly?: boolean
     onClose?: () => void
   }) {
     const handleClose = () => {
@@ -18,11 +19,12 @@ export function usePublishDialog() {
     }
     dialogStore.showDialog({
       key: DIALOG_KEY,
-      title: 'Publish to Marketplace',
+      title: options?.readOnly ? 'Template Details' : 'Publish to Marketplace',
       component: PublishTemplateWizard,
       props: {
         onClose: handleClose,
-        initialTemplate: options?.initialTemplate
+        initialTemplate: options?.initialTemplate,
+        readOnly: options?.readOnly
       },
       dialogComponentProps: {
         class: 'min-w-[600px]',

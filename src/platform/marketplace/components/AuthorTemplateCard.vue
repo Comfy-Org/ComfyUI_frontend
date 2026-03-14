@@ -87,6 +87,14 @@
         >
           {{ $t('marketplace.edit') }}
         </button>
+        <button
+          v-if="!isEditable"
+          :data-testid="`btn-view-template-${template.id}`"
+          class="focus-visible:ring-ring text-secondary-foreground relative inline-flex h-8 cursor-pointer touch-manipulation appearance-none items-center justify-center gap-2 rounded-lg border-none bg-secondary-background p-2 px-3 font-inter text-xs font-medium whitespace-nowrap transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([width]):not([height])]:size-4"
+          @click="$emit('view', template)"
+        >
+          {{ $t('marketplace.view') }}
+        </button>
       </div>
     </div>
   </div>
@@ -115,6 +123,7 @@ const props = defineProps<{
 
 defineEmits<{
   (e: 'edit', template: MarketplaceTemplate): void
+  (e: 'view', template: MarketplaceTemplate): void
   (e: 'publish', template: MarketplaceTemplate): void
   (e: 'unpublish', template: MarketplaceTemplate): void
   (e: 'thumbError', templateId: string): void

@@ -3652,6 +3652,8 @@
     "noSubmissionsLive": "No live templates.",
     "refresh": "Refresh templates",
     "edit": "Edit",
+    "view": "View",
+    "templateDetails": "Template Details",
     "done": "Done",
     "publish": "Publish",
     "publishing": "Publishing...",
