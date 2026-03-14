@@ -93,11 +93,12 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
+import { useJobDetailsHover } from '@/composables/queue/useJobDetailsHover'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
@@ -113,29 +114,26 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const hoveredJobId = ref<string | null>(null)
-const activeDetails = ref<{ jobId: string; workflowId?: string } | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
 const popoverPosition = ref<{ top: number; right: number } | null>(null)
-const hideTimer = ref<number | null>(null)
-const hideTimerJobId = ref<string | null>(null)
-const showTimer = ref<number | null>(null)
+const {
+  activeDetails,
+  clearHoverTimers,
+  resetActiveDetails,
+  scheduleDetailsHide,
+  scheduleDetailsShow
+} = useJobDetailsHover<{ jobId: string; workflowId?: string }>({
+  getActiveId: (details) => details.jobId,
+  getDisplayedJobGroups: () => displayedJobGroups,
+  onReset: clearPopoverAnchor
+})
 
-const clearHideTimer = () => {
-  if (hideTimer.value !== null) {
-    clearTimeout(hideTimer.value)
-    hideTimer.value = null
-  }
-  hideTimerJobId.value = null
+function clearPopoverAnchor() {
+  activeRowElement.value = null
+  popoverPosition.value = null
 }
 
-const clearShowTimer = () => {
-  if (showTimer.value !== null) {
-    clearTimeout(showTimer.value)
-    showTimer.value = null
-  }
-}
-
-const updatePopoverPosition = () => {
+function updatePopoverPosition() {
   const rowElement = activeRowElement.value
   if (!rowElement) return
 
@@ -147,56 +145,14 @@ const updatePopoverPosition = () => {
   }
 }
 
-const resetActiveDetails = () => {
-  clearHideTimer()
-  clearShowTimer()
-  activeDetails.value = null
-  activeRowElement.value = null
-  popoverPosition.value = null
-}
-
-const scheduleDetailsShow = (job: JobListItem, rowElement: HTMLElement) => {
-  clearShowTimer()
-  showTimer.value = window.setTimeout(() => {
-    activeRowElement.value = rowElement
-    activeDetails.value = {
-      jobId: job.id,
-      workflowId: job.taskRef?.workflowId
-    }
-    showTimer.value = null
-    void nextTick(updatePopoverPosition)
-  }, 200)
-}
-
-const scheduleDetailsHide = (jobId?: string) => {
-  if (!jobId) return
-
-  clearShowTimer()
-  if (hideTimerJobId.value && hideTimerJobId.value !== jobId) {
-    return
-  }
-
-  clearHideTimer()
-  hideTimerJobId.value = jobId
-  hideTimer.value = window.setTimeout(() => {
-    if (activeDetails.value?.jobId === jobId) {
-      activeDetails.value = null
-      activeRowElement.value = null
-      popoverPosition.value = null
-    }
-    hideTimer.value = null
-    hideTimerJobId.value = null
-  }, 150)
-}
-
-const onJobLeave = (jobId: string) => {
+function onJobLeave(jobId: string) {
   if (hoveredJobId.value === jobId) {
     hoveredJobId.value = null
   }
-  scheduleDetailsHide(jobId)
+  scheduleDetailsHide(jobId, clearPopoverAnchor)
 }
 
-const onJobEnter = (job: JobListItem, event: MouseEvent) => {
+function onJobEnter(job: JobListItem, event: MouseEvent) {
   hoveredJobId.value = job.id
 
   const rowElement = event.currentTarget
@@ -204,24 +160,36 @@ const onJobEnter = (job: JobListItem, event: MouseEvent) => {
 
   activeRowElement.value = rowElement
   if (activeDetails.value?.jobId === job.id) {
-    clearHideTimer()
-    clearShowTimer()
+    clearHoverTimers()
     void nextTick(updatePopoverPosition)
     return
   }
 
-  scheduleDetailsShow(job, rowElement)
+  scheduleDetailsShow(
+    {
+      jobId: job.id,
+      workflowId: job.taskRef?.workflowId
+    },
+    () => {
+      activeRowElement.value = rowElement
+      void nextTick(updatePopoverPosition)
+    }
+  )
 }
 
-const isCancelable = (job: JobListItem) =>
-  job.showClear !== false && isActiveJobState(job.state)
+function isCancelable(job: JobListItem) {
+  return job.showClear !== false && isActiveJobState(job.state)
+}
 
-const isFailedDeletable = (job: JobListItem) =>
-  job.showClear !== false && job.state === 'failed'
+function isFailedDeletable(job: JobListItem) {
+  return job.showClear !== false && job.state === 'failed'
+}
 
-const getPreviewOutput = (job: JobListItem) => job.taskRef?.previewOutput
+function getPreviewOutput(job: JobListItem) {
+  return job.taskRef?.previewOutput
+}
 
-const getJobPreviewUrl = (job: JobListItem) => {
+function getJobPreviewUrl(job: JobListItem) {
   const preview = getPreviewOutput(job)
   if (preview?.isImage || preview?.isVideo) {
     return preview.url
@@ -229,66 +197,49 @@ const getJobPreviewUrl = (job: JobListItem) => {
   return job.iconImageUrl
 }
 
-const isVideoPreviewJob = (job: JobListItem) =>
-  job.state === 'completed' && !!getPreviewOutput(job)?.isVideo
+function isVideoPreviewJob(job: JobListItem) {
+  return job.state === 'completed' && !!getPreviewOutput(job)?.isVideo
+}
 
-const isPreviewableCompletedJob = (job: JobListItem) =>
-  job.state === 'completed' && !!getPreviewOutput(job)
+function isPreviewableCompletedJob(job: JobListItem) {
+  return job.state === 'completed' && !!getPreviewOutput(job)
+}
 
-const emitViewItem = (job: JobListItem) => {
+function emitViewItem(job: JobListItem) {
   if (isPreviewableCompletedJob(job)) {
     resetActiveDetails()
     emit('viewItem', job)
   }
 }
 
-const emitCompletedViewItem = (job: JobListItem) => {
+function emitCompletedViewItem(job: JobListItem) {
   resetActiveDetails()
   emit('viewItem', job)
 }
 
-const emitCancelItem = (job: JobListItem) => {
+function emitCancelItem(job: JobListItem) {
   resetActiveDetails()
   emit('cancelItem', job)
 }
 
-const emitDeleteItem = (job: JobListItem) => {
+function emitDeleteItem(job: JobListItem) {
   resetActiveDetails()
   emit('deleteItem', job)
 }
 
-const onPopoverEnter = () => {
-  clearHideTimer()
-  clearShowTimer()
+function onPopoverEnter() {
+  clearHoverTimers()
 }
 
-const onPopoverLeave = () => {
-  scheduleDetailsHide(activeDetails.value?.jobId)
+function onPopoverLeave() {
+  scheduleDetailsHide(activeDetails.value?.jobId, clearPopoverAnchor)
 }
 
-const getJobIconClass = (job: JobListItem): string | undefined => {
+function getJobIconClass(job: JobListItem): string | undefined {
   const iconName = job.iconName ?? iconForJobState(job.state)
   if (!job.iconImageUrl && iconName === iconForJobState('pending')) {
     return 'animate-spin'
   }
   return undefined
 }
-
-watch(
-  () => displayedJobGroups,
-  (groups) => {
-    const activeJobId = activeDetails.value?.jobId
-    if (!activeJobId) return
-
-    const hasActiveJob = groups.some((group) =>
-      group.items.some((item) => item.id === activeJobId)
-    )
-
-    if (!hasActiveJob) {
-      resetActiveDetails()
-    }
-  }
-)
-
-onBeforeUnmount(resetActiveDetails)
 </script>
