@@ -405,9 +405,10 @@ test.describe(
       })
     })
 
-    test.describe('Textarea Widget Context Menu in Subgraph', () => {
+    test.describe('Textarea Widget Context Menu in Subgraph (Vue Mode)', () => {
       test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       })
 
       test('Right-click on textarea widget inside subgraph shows Promote Widget option', async ({
@@ -416,33 +417,28 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-text-widget'
         )
-        await fitToViewInstant(comfyPage)
+        await comfyPage.vueNodes.waitForNodes()
 
         // Navigate into the subgraph (node id 11)
-        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-        await subgraphNode.navigateIntoSubgraph()
+        await comfyPage.vueNodes.enterSubgraph('11')
+        await comfyPage.nextFrame()
+        await comfyPage.vueNodes.waitForNodes()
 
-        // Find the interior CLIPTextEncode node and right-click its text
-        // widget position on the canvas. The textarea DOM widget overlays
-        // this area, so this tests that the contextmenu event propagates
-        // correctly (fix from PR #9840).
-        const interiorNode = await comfyPage.nodeOps.getNodeRefById('10')
-        const textWidget = await interiorNode.getWidget(0)
-        const widgetPos = await textWidget.getPosition()
-
-        await comfyPage.canvas.click({
-          position: widgetPos,
-          button: 'right',
-          force: true
-        })
+        // The interior CLIPTextEncode node should render a textarea widget
+        // in Vue mode. Right-click it to verify the contextmenu event
+        // propagates correctly (fix from PR #9840) and shows the ComfyUI
+        // context menu with "Promote Widget".
+        const clipNode = comfyPage.vueNodes
+          .getNodeByTitle('CLIPTextEncode')
+          .first()
+        await expect(clipNode).toBeVisible()
+        const textarea = clipNode.getByRole('textbox', { name: 'text' })
+        await expect(textarea).toBeVisible()
+        await textarea.click({ button: 'right' })
         await comfyPage.nextFrame()
 
-        const contextMenu = comfyPage.page.getByTestId(
-          TestIds.canvas.contextMenu
-        )
-        await expect(contextMenu).toBeVisible()
-        const promoteEntry = contextMenu
-          .locator('.p-menuitem-text, .litemenu-entry')
+        const promoteEntry = comfyPage.page
+          .locator('.p-contextmenu .p-menuitem-text')
           .filter({ hasText: /Promote Widget/ })
 
         await expect(promoteEntry.first()).toBeVisible({ timeout: 5000 })
