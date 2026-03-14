@@ -234,7 +234,7 @@ describe('useKeybindingPresetService', () => {
       await expect(service.importPreset()).rejects.toThrow()
     })
 
-    it('applies valid preset and sets current to default', async () => {
+    it('saves preset to storage and switches to it', async () => {
       const validPreset: KeybindingPreset = {
         name: 'imported',
         newBindings: [
@@ -247,11 +247,20 @@ describe('useKeybindingPresetService', () => {
           type: 'application/json'
         })
       )
+      mockApi.storeUserData.mockResolvedValue(new Response())
+      mockApi.getUserData.mockResolvedValue(
+        new Response(JSON.stringify(validPreset), { status: 200 })
+      )
 
       const service = await getPresetService()
       await service.importPreset()
 
-      expect(store.currentPresetName).toBe('default')
+      expect(mockApi.storeUserData).toHaveBeenCalledWith(
+        'keybindings/imported.json',
+        JSON.stringify(validPreset),
+        { overwrite: true, stringify: false }
+      )
+      expect(store.currentPresetName).toBe('imported')
       expect(Object.keys(store.getUserKeybindings())).toHaveLength(1)
     })
   })

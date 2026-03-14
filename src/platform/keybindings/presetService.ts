@@ -213,8 +213,17 @@ export function useKeybindingPresetService() {
       )
     }
     const preset = result.data
-    applyPreset(preset)
-    await switchToDefaultPreset({ resetBindings: false })
+
+    // Save the imported preset file to storage
+    await api.storeUserData(
+      presetFilePath(preset.name),
+      JSON.stringify(preset),
+      { overwrite: true, stringify: false }
+    )
+
+    // Switch to the imported preset (handles dirty check)
+    await switchPreset(preset.name)
+
     toast.add({
       severity: 'success',
       summary: t('g.keybindingPresets.presetImported')
