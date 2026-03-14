@@ -6,6 +6,5 @@ Bun.serve({
   port: PORT,
   fetch: handleRequest
 })
-
  
 console.log(`Mock marketplace API running on http://localhost:${PORT}`)

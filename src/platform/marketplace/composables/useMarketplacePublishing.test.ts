@@ -126,7 +126,8 @@ describe('useMarketplacePublishing', () => {
       expect(result).toEqual(mediaResponse)
       expect(mockService.uploadTemplateMedia).toHaveBeenCalledWith(
         'tpl_1',
-        file
+        file,
+        undefined
       )
     })
   })

@@ -41,7 +41,10 @@ export function useMarketplacePublishing() {
 
   async function uploadMedia(
     file: File,
-    options?: { type?: 'thumbnail' | 'preview' }
+    options?: {
+      type?: 'thumbnail' | 'preview'
+      onProgress?: (percent: number) => void
+    }
   ): Promise<MediaUploadResponse | undefined> {
     if (!draftId.value) return undefined
 

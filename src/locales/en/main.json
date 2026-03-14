@@ -3650,6 +3650,8 @@
     "noThumbnailYet": "No thumbnail yet",
     "dropThumbnailHere": "Drop image here",
     "thumbnailUploadError": "Please drop an image file",
+    "uploadProgress": "Uploading thumbnail: {percent}%",
+    "uploadComplete": "Thumbnail uploaded",
     "authorDashboard": "Author Dashboard",
     "myTemplates": "My Templates",
     "myDrafts": "My Drafts",

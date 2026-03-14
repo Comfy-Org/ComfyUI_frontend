@@ -78,6 +78,8 @@ const i18n = createI18n({
         noThumbnailYet: 'No thumbnail yet',
         dropThumbnailHere: 'Drop image here',
         thumbnailUploadError: 'Please drop an image file',
+        uploadProgress: 'Uploading thumbnail: {percent}%',
+        uploadComplete: 'Thumbnail uploaded',
         licenseTypes: {
           'cc-by': 'CC BY',
           'cc-by-sa': 'CC BY-SA',
@@ -286,7 +288,7 @@ describe('PublishTemplateWizard', () => {
       expect(wrapper.text()).toContain('Drop image here')
     })
 
-    it('shows preview when image dropped before Next, uploads on Next', async () => {
+    it('creates draft and uploads thumbnail immediately when image dropped', async () => {
       vi.stubGlobal(
         'FileReader',
         class {
@@ -334,15 +336,11 @@ describe('PublishTemplateWizard', () => {
       expect(
         wrapper.find('[data-testid="preview-thumbnail-placeholder"]').exists()
       ).toBe(false)
-      expect(mockService.uploadTemplateMedia).not.toHaveBeenCalled()
-
-      await wrapper.find('[data-testid="btn-next"]').trigger('click')
-      await flushPromises()
-
+      expect(mockService.createTemplate).toHaveBeenCalled()
       expect(mockService.uploadTemplateMedia).toHaveBeenCalledWith(
         'tpl_1',
         expect.any(File),
-        undefined
+        expect.objectContaining({ onProgress: expect.any(Function) })
       )
       vi.unstubAllGlobals()
     })
@@ -416,7 +414,7 @@ describe('PublishTemplateWizard', () => {
       expect(mockService.uploadTemplateMedia).toHaveBeenCalledWith(
         'tpl_99',
         expect.any(File),
-        undefined
+        expect.objectContaining({ onProgress: expect.any(Function) })
       )
       expect(
         wrapper.find('[data-testid="preview-thumbnail-placeholder"]').exists()

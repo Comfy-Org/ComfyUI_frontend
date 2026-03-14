@@ -194,9 +194,13 @@
         {{ $t('marketplace.previewDescription') }}
       </p>
       <div
-        class="flex w-full justify-center rounded-lg border border-border-default bg-base-background py-5"
+        class="relative flex w-full justify-center rounded-lg border border-border-default bg-base-background py-5"
       >
-        <div class="w-full max-w-72">
+        <ThumbnailUploadBadge
+          :progress="thumbnailUploadProgress"
+          :complete="thumbnailUploadComplete"
+        />
+        <div class="relative w-full max-w-72">
           <MarketplaceTemplatePreviewCard
             :title="title"
             :short-description="shortDescription"
@@ -258,6 +262,7 @@ import { useI18n } from 'vue-i18n'
 import TagInputWithAutocomplete from '@/components/input/TagInputWithAutocomplete.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import MarketplaceTemplatePreviewCard from '@/platform/marketplace/components/MarketplaceTemplatePreviewCard.vue'
+import ThumbnailUploadBadge from '@/platform/marketplace/components/ThumbnailUploadBadge.vue'
 import type {
   DifficultyLevel,
   LicenseType
@@ -285,6 +290,8 @@ defineProps<{
   difficultyOptions: { name: string; value: string }[]
   difficultyLabel: string
   isUploadingThumbnail: boolean
+  thumbnailUploadProgress?: number | null
+  thumbnailUploadComplete?: boolean
 }>()
 
 const emit = defineEmits<{

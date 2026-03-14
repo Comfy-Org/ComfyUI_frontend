@@ -12,6 +12,7 @@ import type {
   UnpublishTemplateResponse,
   UpdateTemplateRequest
 } from '@/platform/marketplace/apiTypes'
+import { uploadMarketplaceMediaWithProgress } from '@/platform/marketplace/utils/uploadMarketplaceMedia'
 import { st } from '@/i18n'
 import { api } from '@/scripts/api'
 
@@ -88,7 +89,10 @@ function createMarketplaceService() {
   async function uploadTemplateMedia(
     id: string,
     file: File,
-    options?: { type?: 'thumbnail' | 'preview' }
+    options?: {
+      type?: 'thumbnail' | 'preview'
+      onProgress?: (percent: number) => void
+    }
   ): Promise<MediaUploadResponse> {
     const formData = new FormData()
     formData.append('file', file)
@@ -96,10 +100,16 @@ function createMarketplaceService() {
       formData.append('type', options.type)
     }
 
-    const res = await api.fetchApi(`/marketplace/templates/${id}/media`, {
-      method: 'POST',
-      body: formData
-    })
+    const res = options?.onProgress
+      ? await uploadMarketplaceMediaWithProgress(
+          `/marketplace/templates/${id}/media`,
+          formData,
+          options.onProgress
+        )
+      : await api.fetchApi(`/marketplace/templates/${id}/media`, {
+          method: 'POST',
+          body: formData
+        })
     await assertOk(res)
     return res.json()
   }

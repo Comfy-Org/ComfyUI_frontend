@@ -29,6 +29,8 @@
               :difficulty-options="difficultyOptions"
               :difficulty-label="difficultyLabel"
               :is-uploading-thumbnail="isUploadingThumbnail"
+              :thumbnail-upload-progress="thumbnailUploadProgress"
+              :thumbnail-upload-complete="thumbnailUploadComplete"
               @thumbnail-selected="(file) => void processThumbnailFile(file)"
             />
 
@@ -45,7 +47,7 @@
 
         <PublishTemplateWizardFooter
           class="shrink-0"
-          :error="error"
+          :error="publishingError"
           :read-only="readOnly"
           :steps="steps"
           :current-step="currentStep"
@@ -110,7 +112,7 @@ const {
   currentStep,
   draftId,
   isPublishing,
-  error,
+  error: publishingError,
   createDraft,
   saveDraft,
   submit,
@@ -156,6 +158,8 @@ const submitted = ref(false)
 const thumbnailUrl = ref<string | null>(null)
 const pendingThumbnailFile = ref<File | null>(null)
 const isUploadingThumbnail = ref(false)
+const thumbnailUploadProgress = ref<number | null>(null)
+const thumbnailUploadComplete = ref(false)
 
 const isPendingReview = computed(
   () => initialTemplate?.status === 'pending_review'
@@ -219,8 +223,13 @@ async function handleNext() {
       if (file) {
         pendingThumbnailFile.value = null
         isUploadingThumbnail.value = true
+        thumbnailUploadProgress.value = 0
         try {
-          const media = await uploadMedia(file)
+          const media = await uploadMedia(file, {
+            onProgress: (p) => {
+              thumbnailUploadProgress.value = p
+            }
+          })
           if (media) {
             await saveDraft({ thumbnail: media.url })
             thumbnailUrl.value = media.url
@@ -230,6 +239,7 @@ async function handleNext() {
           useToastStore().addAlert(t('marketplace.thumbnailUploadError'))
         } finally {
           isUploadingThumbnail.value = false
+          thumbnailUploadProgress.value = null
         }
       }
       nextStep()
@@ -326,20 +336,45 @@ async function processThumbnailFile(imageFile: File) {
   } catch {
     thumbnailUrl.value = URL.createObjectURL(imageFile)
   }
-  if (draftId.value) {
-    pendingThumbnailFile.value = null
-    isUploadingThumbnail.value = true
-    try {
-      const media = await uploadMedia(imageFile)
-      if (media) {
-        await saveDraft({ thumbnail: media.url })
-        thumbnailUrl.value = media.url
-      }
-    } finally {
-      isUploadingThumbnail.value = false
+
+  if (!draftId.value) {
+    await createDraft({
+      title: form.title,
+      description: form.description,
+      shortDescription: form.shortDescription,
+      license: form.license,
+      difficulty: form.difficulty,
+      tags: form.tags
+    })
+    if (!draftId.value) {
+      pendingThumbnailFile.value = imageFile
+      useToastStore().addAlert(
+        publishingError.value ?? t('marketplace.thumbnailUploadError')
+      )
+      return
     }
-  } else {
-    pendingThumbnailFile.value = imageFile
+  }
+
+  pendingThumbnailFile.value = null
+  isUploadingThumbnail.value = true
+  thumbnailUploadProgress.value = 0
+  try {
+    const media = await uploadMedia(imageFile, {
+      onProgress: (p) => {
+        thumbnailUploadProgress.value = p
+      }
+    })
+    if (media) {
+      await saveDraft({ thumbnail: media.url })
+      thumbnailUrl.value = media.url
+      thumbnailUploadComplete.value = true
+    }
+  } catch (err) {
+    console.error('uploading thumbnail failed', err)
+    useToastStore().addAlert(t('marketplace.thumbnailUploadError'))
+  } finally {
+    isUploadingThumbnail.value = false
+    thumbnailUploadProgress.value = null
   }
 }
 </script>
