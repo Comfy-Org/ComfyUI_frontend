@@ -11,12 +11,15 @@
         <p
           class="min-w-0 flex-1 truncate text-sm font-medium"
           :class="
-            !group.isAssetSupported || group.directory === null
+            (isCloud && !group.isAssetSupported) || group.directory === null
               ? 'text-warning-background'
               : 'text-destructive-background-hover'
           "
         >
-          <span v-if="!group.isAssetSupported" class="text-warning-background">
+          <span
+            v-if="isCloud && !group.isAssetSupported"
+            class="text-warning-background"
+          >
             {{ t('rightSidePanel.missingModels.importNotSupported') }}
             ({{ group.models.length }})
           </span>
@@ -32,7 +35,7 @@
 
       <!-- Asset unsupported group notice -->
       <div
-        v-if="!group.isAssetSupported"
+        v-if="isCloud && !group.isAssetSupported"
         class="flex items-start gap-1.5 px-0.5 py-1 pl-2"
       >
         <i
@@ -63,6 +66,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
+import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 
 const { missingModelGroups, showNodeIdBadge } = defineProps<{

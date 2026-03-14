@@ -627,6 +627,59 @@ describe('useErrorGroups', () => {
       expect(model.referencingNodes).toHaveLength(2)
     })
 
+    it('groups non-asset-supported models by directory in OSS', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model_a.safetensors', {
+          directory: 'checkpoints',
+          isAssetSupported: false
+        }),
+        makeModel('model_b.safetensors', {
+          nodeId: '2',
+          directory: 'checkpoints',
+          isAssetSupported: false
+        }),
+        makeModel('lora_a.safetensors', {
+          nodeId: '3',
+          directory: 'loras',
+          isAssetSupported: false
+        })
+      ])
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toHaveLength(2)
+      const ckptGroup = groups.missingModelGroups.value.find(
+        (g) => g.directory === 'checkpoints'
+      )
+      expect(ckptGroup?.models).toHaveLength(2)
+      expect(ckptGroup?.isAssetSupported).toBe(false)
+      const loraGroup = groups.missingModelGroups.value.find(
+        (g) => g.directory === 'loras'
+      )
+      expect(loraGroup?.models).toHaveLength(1)
+    })
+
+    it('does not lump non-asset-supported models into UNSUPPORTED group in OSS', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model_a.safetensors', {
+          directory: 'checkpoints',
+          isAssetSupported: false
+        }),
+        makeModel('lora_a.safetensors', {
+          nodeId: '2',
+          directory: 'loras',
+          isAssetSupported: false
+        })
+      ])
+      await nextTick()
+
+      const unsupported = groups.missingModelGroups.value.find(
+        (g) => g.directory === null && !g.isAssetSupported
+      )
+      expect(unsupported).toBeUndefined()
+    })
+
     it('includes missing_model group in allErrorGroups', async () => {
       const { store, groups } = createErrorGroups()
       store.surfaceMissingModels([makeModel('model_a.safetensors')])

@@ -84,6 +84,8 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const urlFetching = ref<Record<string, boolean>>({})
   const urlErrors = ref<Record<string, string>>({})
   const urlImporting = ref<Record<string, boolean>>({})
+  const folderPaths = ref<Record<string, string[]>>({})
+  const fileSizes = ref<Record<string, number>>({})
 
   const _urlDebounceTimers: Record<string, ReturnType<typeof setTimeout>> = {}
 
@@ -162,6 +164,14 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     }
   }
 
+  function setFolderPaths(paths: Record<string, string[]>) {
+    folderPaths.value = paths
+  }
+
+  function setFileSize(url: string, size: number) {
+    fileSizes.value[url] = size
+  }
+
   function clearMissingModels() {
     _verificationAbortController?.abort()
     _verificationAbortController = null
@@ -176,6 +186,8 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     urlFetching.value = {}
     urlErrors.value = {}
     urlImporting.value = {}
+    folderPaths.value = {}
+    fileSizes.value = {}
   }
 
   return {
@@ -205,6 +217,11 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     urlFetching,
     urlErrors,
     urlImporting,
+    folderPaths,
+    fileSizes,
+
+    setFolderPaths,
+    setFileSize,
 
     setDebounceTimer,
     clearDebounceTimer
