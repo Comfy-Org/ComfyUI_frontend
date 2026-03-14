@@ -12,10 +12,11 @@ export function usePublishDialog() {
       title: 'Publish to Marketplace',
       component: PublishTemplateWizard,
       dialogComponentProps: {
+        class: 'min-w-[600px]',
         onClose: hide,
         pt: {
-          header: 'py-0! pl-0!',
-          content: 'p-0! overflow-y-hidden!'
+          header: 'p-5!',
+          content: 'p-5! overflow-y-hidden!'
         }
       }
     })

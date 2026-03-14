@@ -1,16 +1,16 @@
 <template>
-  <div class="flex flex-col gap-6 p-6">
-    <div class="border-border flex items-center gap-2 border-b pb-4">
-      <h2 class="text-lg font-semibold">
+  <div class="flex flex-col gap-4">
+    <div class="flex items-center gap-2">
+      <!-- <h2 class="text-lg font-semibold">
         {{ $t('marketplace.publishToMarketplace') }}
-      </h2>
+      </h2> -->
       <div class="ml-auto flex gap-2 text-sm text-muted">
         <span
           v-for="(step, idx) in steps"
           :key="step.id"
           :class="
             cn(
-              'rounded-full px-3 py-1',
+              'rounded-full px-3 py-1 select-none',
               currentStep === idx + 1
                 ? 'text-highlight-foreground bg-highlight'
                 : 'bg-base-background'
@@ -28,7 +28,7 @@
       data-testid="step-details"
       class="flex flex-col gap-4"
     >
-      <div class="flex flex-col gap-1.5">
+      <div class="flex flex-col gap-1">
         <label for="publish-title" class="text-sm font-medium">
           {{ $t('marketplace.title') }}
         </label>
@@ -42,7 +42,7 @@
         />
       </div>
 
-      <div class="flex flex-col gap-1.5">
+      <div class="flex flex-col gap-1">
         <label for="publish-description" class="text-sm font-medium">
           {{ $t('marketplace.description') }}
         </label>
@@ -56,7 +56,7 @@
         />
       </div>
 
-      <div class="flex flex-col gap-1.5">
+      <div class="flex flex-col gap-1">
         <label for="publish-short-description" class="text-sm font-medium">
           {{ $t('marketplace.shortDescription') }}
         </label>
@@ -122,7 +122,7 @@
     </div>
 
     <!-- Navigation buttons -->
-    <div class="border-border flex justify-between border-t pt-4">
+    <div class="flex justify-between pt-2">
       <Button
         v-if="currentStep > 1"
         data-testid="btn-back"
