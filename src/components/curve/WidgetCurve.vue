@@ -39,7 +39,7 @@ const upstreamValue = useUpstreamValue(
 
 const effectivePoints = computed(() =>
   isDisabled.value && upstreamValue.value
-    ? (upstreamValue.value as CurvePoint[])
+    ? upstreamValue.value
     : modelValue.value
 )
 </script>

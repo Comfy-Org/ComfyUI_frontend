@@ -1,23 +1,19 @@
 import { computed } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore';
+import type { WidgetState } from '@/stores/widgetValueStore';
+import type { Bounds } from '@/renderer/core/layout/types'
 import type { LinkedUpstreamInfo } from '@/types/simplifiedWidget'
 
-interface UpstreamWidget {
-  name: string
-  type: string
-  value?: unknown
-}
-
-type ValueExtractor = (
-  widgets: UpstreamWidget[],
+type ValueExtractor<T = unknown> = (
+  widgets: WidgetState[],
   outputName: string | undefined
-) => unknown | undefined
+) => T | undefined
 
-export function useUpstreamValue(
+export function useUpstreamValue<T>(
   getLinkedUpstream: () => LinkedUpstreamInfo | undefined,
-  extractValue: ValueExtractor
+  extractValue: ValueExtractor<T>
 ) {
   const canvasStore = useCanvasStore()
   const widgetValueStore = useWidgetValueStore()
@@ -32,20 +28,20 @@ export function useUpstreamValue(
   })
 }
 
-export function singleValueExtractor(
-  isValid: (value: unknown) => boolean
-): ValueExtractor {
+export function singleValueExtractor<T>(
+  isValid: (value: unknown) => value is T
+): ValueExtractor<T> {
   return (widgets, outputName) => {
     if (outputName) {
       const matched = widgets.find((w) => w.name === outputName)
       if (matched && isValid(matched.value)) return matched.value
     }
-    const valid = widgets.filter((w) => isValid(w.value))
-    return valid.length === 1 ? valid[0].value : undefined
+    const validValues = widgets.map((w) => w.value).filter(isValid)
+    return validValues.length === 1 ? validValues[0] : undefined
   }
 }
 
-function isBoundsObject(value: unknown): boolean {
+function isBoundsObject(value: unknown): value is Bounds {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
   return (
@@ -56,12 +52,13 @@ function isBoundsObject(value: unknown): boolean {
   )
 }
 
-export function boundsExtractor(): ValueExtractor {
+export function boundsExtractor(): ValueExtractor<Bounds> {
   const single = singleValueExtractor(isBoundsObject)
   return (widgets, outputName) => {
     const singleResult = single(widgets, outputName)
     if (singleResult) return singleResult
 
+    // Fallback: assemble from individual widgets matching BoundingBoxInputSpec field names
     const getNum = (name: string): number | undefined => {
       const w = widgets.find((w) => w.name === name)
       return typeof w?.value === 'number' ? w.value : undefined
