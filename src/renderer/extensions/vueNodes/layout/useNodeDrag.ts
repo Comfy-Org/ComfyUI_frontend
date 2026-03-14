@@ -326,7 +326,7 @@ function useNodeDragIndividual() {
 
   function updateDragSnapGuides(guides: NodeAlignmentGuide[]) {
     layoutStore.vueDragSnapGuides.value = guides
-    canvasStore.canvas?.setDirty(true, true)
+    canvasStore.canvas?.setDirty(true)
   }
 }
 
