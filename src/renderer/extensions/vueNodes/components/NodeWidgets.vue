@@ -21,10 +21,7 @@
     @pointermove="handleWidgetPointerEvent"
     @pointerup="handleWidgetPointerEvent"
   >
-    <template
-      v-for="(widget, index) in processedWidgets"
-      :key="`widget-${index}-${widget.name}`"
-    >
+    <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
@@ -86,6 +83,7 @@ import { computed, onErrorCaptured, ref, toValue } from 'vue'
 import type { Component } from 'vue'
 
 import type {
+  SafeWidgetData,
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
@@ -93,6 +91,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -110,6 +109,7 @@ import {
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
+import type { WidgetState } from '@/stores/widgetValueStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -187,6 +187,7 @@ interface ProcessedWidget {
   hidden: boolean
   id: string
   name: string
+  renderKey: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
   type: string
@@ -194,6 +195,49 @@ interface ProcessedWidget {
   value: WidgetValue
   vueComponent: Component
   slotMetadata?: WidgetSlotMetadata
+}
+
+function hasWidgetError(
+  widget: SafeWidgetData,
+  nodeErrors: { errors: { extra_info?: { input_name?: string } }[] } | undefined
+): boolean {
+  const errors = nodeErrors?.errors
+  const inputName = widget.slotName ?? widget.name
+  return !!errors?.some((e) => e.extra_info?.input_name === inputName)
+}
+
+function getWidgetIdentity(
+  widget: SafeWidgetData,
+  nodeId: string | number | undefined,
+  index: number
+): {
+  dedupeIdentity?: string
+  renderKey: string
+} {
+  const rawWidgetId = widget.storeNodeId ?? widget.nodeId
+  const storeWidgetName = widget.storeName ?? widget.name
+  const slotNameForIdentity = widget.slotName ?? widget.name
+  const stableIdentityRoot = rawWidgetId
+    ? `node:${String(stripGraphPrefix(rawWidgetId))}`
+    : undefined
+
+  const dedupeIdentity = stableIdentityRoot
+    ? `${stableIdentityRoot}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}`
+    : undefined
+  const renderKey =
+    dedupeIdentity ??
+    `transient:${String(nodeId ?? '')}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}:${index}`
+
+  return {
+    dedupeIdentity,
+    renderKey
+  }
+}
+
+function isWidgetVisible(options: IWidgetOptions): boolean {
+  const hidden = options.hidden ?? false
+  const advanced = options.advanced ?? false
+  return !hidden && (!advanced || showAdvanced.value)
 }
 
 const processedWidgets = computed((): ProcessedWidget[] => {
@@ -204,10 +248,76 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const nodeId = nodeData.id
   const { widgets } = nodeData
   const result: ProcessedWidget[] = []
+  const uniqueWidgets: Array<{
+    widget: SafeWidgetData
+    identity: ReturnType<typeof getWidgetIdentity>
+    mergedOptions: IWidgetOptions
+    widgetState: WidgetState | undefined
+    isVisible: boolean
+  }> = []
+  const dedupeIndexByIdentity = new Map<string, number>()
 
-  for (const widget of widgets) {
+  for (const [index, widget] of widgets.entries()) {
     if (!shouldRenderAsVue(widget)) continue
 
+    const identity = getWidgetIdentity(widget, nodeId, index)
+    const storeWidgetName = widget.storeName ?? widget.name
+    const bareWidgetId = String(
+      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
+    )
+    const widgetState = graphId
+      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
+      : undefined
+    const mergedOptions: IWidgetOptions = {
+      ...(widget.options ?? {}),
+      ...(widgetState?.options ?? {})
+    }
+    const visible = isWidgetVisible(mergedOptions)
+    if (!identity.dedupeIdentity) {
+      uniqueWidgets.push({
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: visible
+      })
+      continue
+    }
+
+    const existingIndex = dedupeIndexByIdentity.get(identity.dedupeIdentity)
+    if (existingIndex === undefined) {
+      dedupeIndexByIdentity.set(identity.dedupeIdentity, uniqueWidgets.length)
+      uniqueWidgets.push({
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: visible
+      })
+      continue
+    }
+
+    const existingWidget = uniqueWidgets[existingIndex]
+    if (existingWidget && !existingWidget.isVisible && visible) {
+      uniqueWidgets[existingIndex] = {
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: true
+      }
+    }
+  }
+
+  for (const {
+    widget,
+    mergedOptions,
+    widgetState,
+    identity: { renderKey }
+  } of uniqueWidgets) {
+    const bareWidgetId = String(
+      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
+    )
     const isPromotedView = !!widget.nodeId
 
     const vueComponent =
@@ -216,32 +326,22 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const { slotMetadata } = widget
 
-    // Get metadata from store (registered during BaseWidget.setNodeId)
-    const bareWidgetId = stripGraphPrefix(
-      widget.storeNodeId ?? widget.nodeId ?? nodeId
-    )
-    const storeWidgetName = widget.storeName ?? widget.name
-    const widgetState = graphId
-      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
-      : undefined
-
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
 
     // Build options from store state, with disabled override for
     // slot-linked widgets or widgets with disabled state (e.g. display-only)
-    const storeOptions = widgetState?.options ?? {}
     const isDisabled = slotMetadata?.linked || widgetState?.disabled
     const widgetOptions = isDisabled
-      ? { ...storeOptions, disabled: true }
-      : storeOptions
+      ? { ...mergedOptions, disabled: true }
+      : mergedOptions
 
     const borderStyle =
       graphId &&
       !isPromotedView &&
       promotionStore.isPromotedByAny(graphId, String(bareWidgetId), widget.name)
         ? 'ring ring-component-node-widget-promoted'
-        : widget.options?.advanced
+        : mergedOptions.advanced
           ? 'ring ring-component-node-widget-advanced'
           : undefined
 
@@ -258,9 +358,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     }
 
     function updateHandler(newValue: WidgetValue) {
-      // Update value in store
       if (widgetState) widgetState.value = newValue
-      // Invoke LiteGraph callback wrapper (handles triggerDraw, etc.)
       widget.callback?.(newValue)
     }
 
@@ -280,16 +378,14 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     }
 
     result.push({
-      advanced: widget.options?.advanced ?? false,
+      advanced: mergedOptions.advanced ?? false,
       handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
-      hasError:
-        nodeErrors?.errors?.some(
-          (error) => error.extra_info?.input_name === widget.name
-        ) ?? false,
-      hidden: widget.options?.hidden ?? false,
+      hasError: hasWidgetError(widget, nodeErrors),
+      hidden: mergedOptions.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,
+      renderKey,
       type: widget.type,
       vueComponent,
       simplified,
