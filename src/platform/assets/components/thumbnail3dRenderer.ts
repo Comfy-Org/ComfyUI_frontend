@@ -7,8 +7,28 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
 const THUMBNAIL_SIZE = 256
 const CACHE_NAME = 'comfyui-3d-thumbnails'
+const MAX_CONCURRENT = 2
 
 let renderer: THREE.WebGLRenderer | null = null
+let activeCount = 0
+const pendingQueue: Array<() => void> = []
+
+function acquireSlot(): Promise<void> {
+  if (activeCount < MAX_CONCURRENT) {
+    activeCount++
+    return Promise.resolve()
+  }
+  return new Promise((resolve) => pendingQueue.push(resolve))
+}
+
+function releaseSlot() {
+  activeCount--
+  const next = pendingQueue.shift()
+  if (next) {
+    activeCount++
+    next()
+  }
+}
 
 function getRenderer(): THREE.WebGLRenderer {
   if (!renderer) {
@@ -149,13 +169,12 @@ function renderToBlob(model: THREE.Object3D): Promise<Blob> {
   })
 }
 
-async function getCached(url: string): Promise<string | null> {
+async function getCachedBlob(url: string): Promise<Blob | null> {
   try {
     const store = await caches.open(CACHE_NAME)
     const response = await store.match(url)
     if (!response) return null
-    const blob = await response.blob()
-    return URL.createObjectURL(blob)
+    return await response.blob()
   } catch {
     return null
   }
@@ -173,16 +192,21 @@ async function setCache(url: string, blob: Blob): Promise<void> {
   }
 }
 
-export async function generate3DThumbnail(
-  modelUrl: string
-): Promise<string | null> {
-  const cached = await getCached(modelUrl)
-  if (cached) return cached
+export async function generate3DThumbnail(modelUrl: string) {
+  const cached = await getCachedBlob(modelUrl)
+  if (cached) {
+    return { objectUrl: URL.createObjectURL(cached), blob: cached }
+  }
 
-  const model = await loadModel(modelUrl)
-  if (!model) return null
+  await acquireSlot()
+  try {
+    const model = await loadModel(modelUrl)
+    if (!model) return null
 
-  const blob = await renderToBlob(model)
-  await setCache(modelUrl, blob)
-  return URL.createObjectURL(blob)
+    const blob = await renderToBlob(model)
+    await setCache(modelUrl, blob)
+    return { objectUrl: URL.createObjectURL(blob), blob }
+  } finally {
+    releaseSlot()
+  }
 }

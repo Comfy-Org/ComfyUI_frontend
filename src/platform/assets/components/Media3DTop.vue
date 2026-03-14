@@ -34,6 +34,7 @@ import { onBeforeUnmount, ref, watch } from 'vue'
 import { cn } from '@/utils/tailwindUtil'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import { assetService } from '../services/assetService'
 import { generate3DThumbnail } from './thumbnail3dRenderer'
 
 const { asset } = defineProps<{ asset: AssetMeta }>()
@@ -44,16 +45,30 @@ const loading = ref(false)
 const hasAttempted = ref(false)
 
 useIntersectionObserver(containerRef, ([entry]) => {
-  if (entry?.isIntersecting && !hasAttempted.value && asset?.src) {
+  if (entry?.isIntersecting && !hasAttempted.value) {
     hasAttempted.value = true
-    void renderThumbnail(asset.src)
+    void loadThumbnail()
   }
 })
 
-async function renderThumbnail(src: string) {
+async function loadThumbnail() {
+  if (asset?.preview_id && asset?.preview_url) {
+    thumbnailSrc.value = asset.preview_url
+    return
+  }
+
+  if (!asset?.src) return
+
   loading.value = true
   try {
-    thumbnailSrc.value = await generate3DThumbnail(src)
+    const result = await generate3DThumbnail(asset.src)
+    if (!result) return
+
+    thumbnailSrc.value = result.objectUrl
+
+    if (asset.id && assetService.isAssetAPIEnabled()) {
+      void persistThumbnail(asset.id, asset.name, result.blob)
+    }
   } catch {
     thumbnailSrc.value = null
   } finally {
@@ -61,11 +76,40 @@ async function renderThumbnail(src: string) {
   }
 }
 
-function revokeThumbnail() {
-  if (thumbnailSrc.value) {
-    URL.revokeObjectURL(thumbnailSrc.value)
-    thumbnailSrc.value = null
+async function persistThumbnail(
+  assetId: string,
+  modelName: string,
+  blob: Blob
+) {
+  try {
+    const dataUrl = await blobToDataUrl(blob)
+    const uploaded = await assetService.uploadAssetFromBase64({
+      data: dataUrl,
+      name: `${modelName}_preview.png`
+    })
+
+    await assetService.updateAsset(assetId, {
+      preview_id: uploaded.id
+    })
+  } catch {
+    // Non-critical — client still shows the rendered thumbnail
   }
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+function revokeThumbnail() {
+  if (thumbnailSrc.value?.startsWith('blob:')) {
+    URL.revokeObjectURL(thumbnailSrc.value)
+  }
+  thumbnailSrc.value = null
 }
 
 watch(
