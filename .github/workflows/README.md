@@ -59,8 +59,7 @@ gh workflow run manual-api-changelog.yaml \
 3. **Generates Snapshots**: Creates structured JSON snapshots of the public API surface for each version
 4. **Compares APIs**: Analyzes differences and categorizes as:
    - ⚠️ **Breaking changes** (removals, signature changes)
-   - ✨ **Additions** (new interfaces, methods, properties)
-   - 🔄 **Modifications** (non-breaking changes)
+   - 🔄 **Modifications** (member additions, type changes)
 5. **Uploads Artifact**: Saves the changelog and snapshots as a workflow artifact (90-day retention)
 6. **Creates PR** (optional): Generates a draft PR to update `docs/API-CHANGELOG.md`
 
@@ -90,18 +89,14 @@ If `create_pr` is enabled and changes are detected:
 ```markdown
 ## v1.30.2 (2025-11-04)
 
-Comparing v1.29.0 → v1.30.2. This changelog documents changes to the public API surface.
+Comparing v1.29.0 → v1.30.2. This changelog documents changes to the public
+API surface that third-party extensions and custom nodes depend on.
 
-### ✨ Additions
-
-**Type Aliases**
-
-- `WorkflowId`
+### ⚠️ Breaking Changes
 
 **Interfaces**
 
-- `ExtensionMetadata`
-  - Members: `id`, `name`, `version`, `description`
+- **Removed**: `ComfyApi.queuePrompt`
 
 ### 🔄 Modifications
 
@@ -112,7 +107,6 @@ Comparing v1.29.0 → v1.30.2. This changelog documents changes to the public AP
 - `ComfyApi`
   - ✨ Added member: `queuePromptAsync`
   - ✨ Added member: `cancelPrompt`
-  - ⚠️ **Breaking**: Removed member: `queuePrompt`
 
 **Enums**
 

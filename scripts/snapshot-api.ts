@@ -90,8 +90,12 @@ function extractApiSurface(sourceFile) {
   }
 
   function visit(node) {
-    // Extract type aliases
-    if (ts.isTypeAliasDeclaration(node) && node.name) {
+    // Only capture exported declarations (the public API surface)
+    if (
+      ts.isTypeAliasDeclaration(node) &&
+      node.name &&
+      hasExportModifier(node)
+    ) {
       const name = node.name.text
       const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       const sourceLocation = findInSourceFiles(name, 'type')
@@ -99,15 +103,17 @@ function extractApiSurface(sourceFile) {
         kind: 'type',
         name,
         text: node.getText(sourceFile),
-        exported: hasExportModifier(node),
-        line: line + 1, // Convert to 1-indexed
+        line: line + 1,
         sourceFile: sourceLocation?.file,
         sourceLine: sourceLocation?.line
       }
     }
 
-    // Extract interfaces
-    if (ts.isInterfaceDeclaration(node) && node.name) {
+    if (
+      ts.isInterfaceDeclaration(node) &&
+      node.name &&
+      hasExportModifier(node)
+    ) {
       const name = node.name.text
       const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       const members = []
@@ -138,7 +144,6 @@ function extractApiSurface(sourceFile) {
         kind: 'interface',
         name,
         members,
-        exported: hasExportModifier(node),
         heritage: node.heritageClauses
           ? node.heritageClauses
               .map((clause) =>
@@ -152,8 +157,7 @@ function extractApiSurface(sourceFile) {
       }
     }
 
-    // Extract enums
-    if (ts.isEnumDeclaration(node) && node.name) {
+    if (ts.isEnumDeclaration(node) && node.name && hasExportModifier(node)) {
       const name = node.name.text
       const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       const members = node.members.map((member) => ({
@@ -168,15 +172,17 @@ function extractApiSurface(sourceFile) {
         kind: 'enum',
         name,
         members,
-        exported: hasExportModifier(node),
-        line: line + 1, // Convert to 1-indexed
+        line: line + 1,
         sourceFile: sourceLocation?.file,
         sourceLine: sourceLocation?.line
       }
     }
 
-    // Extract functions
-    if (ts.isFunctionDeclaration(node) && node.name) {
+    if (
+      ts.isFunctionDeclaration(node) &&
+      node.name &&
+      hasExportModifier(node)
+    ) {
       const name = node.name.text
       const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       const sourceLocation = findInSourceFiles(name, 'function')
@@ -189,15 +195,13 @@ function extractApiSurface(sourceFile) {
           optional: !!p.questionToken
         })),
         returnType: node.type ? node.type.getText(sourceFile) : 'any',
-        exported: hasExportModifier(node),
-        line: line + 1, // Convert to 1-indexed
+        line: line + 1,
         sourceFile: sourceLocation?.file,
         sourceLine: sourceLocation?.line
       }
     }
 
-    // Extract classes
-    if (ts.isClassDeclaration(node) && node.name) {
+    if (ts.isClassDeclaration(node) && node.name && hasExportModifier(node)) {
       const name = node.name.text
       const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       const members = []
@@ -232,7 +236,6 @@ function extractApiSurface(sourceFile) {
         name,
         members,
         methods,
-        exported: hasExportModifier(node),
         heritage: node.heritageClauses
           ? node.heritageClauses
               .map((clause) =>
@@ -240,14 +243,13 @@ function extractApiSurface(sourceFile) {
               )
               .flat()
           : [],
-        line: line + 1, // Convert to 1-indexed
+        line: line + 1,
         sourceFile: sourceLocation?.file,
         sourceLine: sourceLocation?.line
       }
     }
 
-    // Extract variable declarations (constants)
-    if (ts.isVariableStatement(node)) {
+    if (ts.isVariableStatement(node) && hasExportModifier(node)) {
       const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart())
       node.declarationList.declarations.forEach((decl) => {
         if (decl.name && ts.isIdentifier(decl.name)) {
@@ -257,8 +259,7 @@ function extractApiSurface(sourceFile) {
             kind: 'constant',
             name,
             type: decl.type ? decl.type.getText(sourceFile) : 'unknown',
-            exported: hasExportModifier(node),
-            line: line + 1, // Convert to 1-indexed
+            line: line + 1,
             sourceFile: sourceLocation?.file,
             sourceLine: sourceLocation?.line
           }
@@ -310,5 +311,5 @@ const sourceFile = ts.createSourceFile(
 const apiSurface = extractApiSurface(sourceFile)
 
 // Output as JSON
-// eslint-disable-next-line no-console
+ 
 console.log(JSON.stringify(apiSurface, null, 2))

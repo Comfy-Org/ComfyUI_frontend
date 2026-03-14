@@ -64,8 +64,7 @@ function compareApis(previous, current) {
   const changes = {
     breaking: [],
     additions: [],
-    modifications: [],
-    deprecations: []
+    modifications: []
   }
 
   const categories = [
@@ -271,6 +270,10 @@ function compareItems(prev, curr, category) {
  * Format changelog as markdown
  */
 function formatChangelog(changes, prevVersion, currVersion) {
+  if (changes.breaking.length === 0 && changes.modifications.length === 0) {
+    return ''
+  }
+
   const lines = []
 
   lines.push(`## v${currVersion} (${new Date().toISOString().split('T')[0]})`)
@@ -296,32 +299,6 @@ function formatChangelog(changes, prevVersion, currVersion) {
       lines.push('')
     }
   }
-
-  // Additions - commented out as per feedback
-  // if (changes.additions.length > 0) {
-  //   lines.push('### ✨ Additions')
-  //   lines.push('')
-  //
-  //   const grouped = groupByCategory(changes.additions)
-  //   for (const [category, items] of Object.entries(grouped)) {
-  //     lines.push(`**${categoryToTitle(category)}**`)
-  //     lines.push('')
-  //     for (const item of items) {
-  //       lines.push(`- \`${item.name}\``)
-  //       if (item.item.members && item.item.members.length > 0) {
-  //         const publicMembers = item.item.members.filter(
-  //           (m) => !m.visibility || m.visibility === 'public'
-  //         )
-  //         if (publicMembers.length > 0 && publicMembers.length <= 5) {
-  //           lines.push(
-  //             `  - Members: ${publicMembers.map((m) => `\`${m.name}\``).join(', ')}`
-  //           )
-  //         }
-  //       }
-  //     }
-  //     lines.push('')
-  //   }
-  // }
 
   // Modifications
   if (changes.modifications.length > 0) {
@@ -356,11 +333,6 @@ function formatChangelog(changes, prevVersion, currVersion) {
       }
       lines.push('')
     }
-  }
-
-  if (changes.breaking.length === 0 && changes.modifications.length === 0) {
-    lines.push('_No API changes detected._')
-    lines.push('')
   }
 
   lines.push('---')
@@ -441,5 +413,5 @@ function formatChange(change) {
 const changes = compareApis(previousApi, currentApi)
 const changelog = formatChangelog(changes, previousVersion, currentVersion)
 
-// eslint-disable-next-line no-console
+ 
 console.log(changelog)
