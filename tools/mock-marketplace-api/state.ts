@@ -190,6 +190,38 @@ const seed: MockDb = {
         reviewCount: 0,
         weeklyTrend: 0
       }
+    },
+    {
+      id: 'tpl_seed_6',
+      title: 'Previously Live',
+      description: 'A workflow that was published and then unpublished',
+      shortDescription: 'Previously published, now unpublished',
+      author: {
+        id: 'author_1',
+        name: 'ComfyCreator',
+        isVerified: true,
+        profileUrl: 'https://example.com/comfycreator'
+      },
+      categories: ['image-generation'],
+      tags: ['unpublished', 'testing'],
+      difficulty: 'beginner',
+      requiredModels: [],
+      requiredNodes: [],
+      vramRequirement: 4096,
+      thumbnail: 'https://mock-cdn.example.com/thumbs/prev-live.png',
+      gallery: [],
+      workflowPreview: 'https://mock-cdn.example.com/previews/prev-live.png',
+      license: 'mit',
+      version: '1.0.0',
+      status: 'unpublished' as TemplateStatus,
+      updatedAt: '2025-02-14T16:00:00Z',
+      stats: {
+        downloads: 120,
+        favorites: 8,
+        rating: 4.2,
+        reviewCount: 5,
+        weeklyTrend: -2.1
+      }
     }
   ],
   mediaByTemplateId: {
@@ -201,7 +233,7 @@ const seed: MockDb = {
     ]
   },
   authorStats: {
-    templatesCount: 5,
+    templatesCount: 6,
     totalDownloads: 1250,
     totalFavorites: 89,
     averageRating: 4.5,

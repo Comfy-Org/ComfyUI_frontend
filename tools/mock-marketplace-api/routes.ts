@@ -33,10 +33,13 @@ const REVIEW_UI_HTML = `<!DOCTYPE html>
     .status { font-weight: 600; }
     .status.pending_review { color: #b8860b; }
     .status.approved { color: #22863a; }
+    .status.published { color: #17a2b8; }
     .status.rejected { color: #cb2431; }
     button { margin-right: 0.5rem; padding: 0.25rem 0.75rem; cursor: pointer; }
     button.approve { background: #28a745; color: white; border: none; }
     button.reject { background: #dc3545; color: white; border: none; }
+    button.publish { background: #28a745; color: white; border: none; }
+    button.unpublish { background: #6c757d; color: white; border: none; }
     button.reset { background: #6c757d; color: white; border: none; margin-bottom: 1rem; }
     #error { color: #cb2431; margin-top: 1rem; }
   </style>
@@ -68,10 +71,15 @@ const REVIEW_UI_HTML = `<!DOCTYPE html>
         const tbody = document.getElementById('templates');
         tbody.innerHTML = templates.map(t => {
           const rowClass = t.status === 'pending_review' ? ' class="pending"' : '';
-          const actions = t.status === 'pending_review'
-            ? '<button class="approve" data-id="' + escapeHtml(t.id) + '">Approve</button>' +
-              '<button class="reject" data-id="' + escapeHtml(t.id) + '">Reject</button>'
-            : '';
+          let actions = '';
+          if (t.status === 'pending_review') {
+            actions = '<button class="approve" data-id="' + escapeHtml(t.id) + '">Approve</button>' +
+              '<button class="reject" data-id="' + escapeHtml(t.id) + '">Reject</button>';
+          } else if (t.status === 'published') {
+            actions = '<button class="unpublish" data-id="' + escapeHtml(t.id) + '">Unpublish</button>';
+          } else if (t.status === 'approved' || t.status === 'unpublished') {
+            actions = '<button class="publish" data-id="' + escapeHtml(t.id) + '">Publish</button>';
+          }
           return '<tr' + rowClass + '><td>' + t.id + '</td><td>' + escapeHtml(t.title) +
             '</td><td><span class="status ' + t.status + '">' + t.status + '</span></td>' +
             '<td>' + escapeHtml(t.author?.name ?? '') + '</td><td>' + actions + '</td></tr>';
@@ -81,6 +89,12 @@ const REVIEW_UI_HTML = `<!DOCTYPE html>
         });
         tbody.querySelectorAll('button.reject').forEach(btn => {
           btn.addEventListener('click', () => reject(btn.dataset.id));
+        });
+        tbody.querySelectorAll('button.unpublish').forEach(btn => {
+          btn.addEventListener('click', () => unpublish(btn.dataset.id));
+        });
+        tbody.querySelectorAll('button.publish').forEach(btn => {
+          btn.addEventListener('click', () => publish(btn.dataset.id));
         });
       } catch (e) {
         document.getElementById('error').textContent = 'Error: ' + e.message;
@@ -99,6 +113,18 @@ const REVIEW_UI_HTML = `<!DOCTYPE html>
     }
     async function reject(id) {
       const r = await fetch(base + '/api/marketplace/templates/' + id + '/reject', { method: 'POST' });
+      const data = await r.json();
+      if (data.error) document.getElementById('error').textContent = data.error;
+      else load();
+    }
+    async function unpublish(id) {
+      const r = await fetch(base + '/api/marketplace/templates/' + id + '/unpublish', { method: 'POST' });
+      const data = await r.json();
+      if (data.error) document.getElementById('error').textContent = data.error;
+      else load();
+    }
+    async function publish(id) {
+      const r = await fetch(base + '/api/marketplace/templates/' + id + '/publish', { method: 'POST' });
       const data = await r.json();
       if (data.error) document.getElementById('error').textContent = data.error;
       else load();
