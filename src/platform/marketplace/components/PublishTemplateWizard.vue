@@ -80,10 +80,57 @@
       <p class="text-sm text-muted">
         {{ $t('marketplace.previewDescription') }}
       </p>
-      <div class="border-border rounded-lg border p-4">
-        <h3 class="text-base font-semibold">{{ form.title }}</h3>
-        <p class="mt-1 text-sm text-muted">{{ form.shortDescription }}</p>
-        <p class="mt-2 text-sm">{{ form.description }}</p>
+      <div class="max-w-72">
+        <CardContainer
+          size="tall"
+          variant="ghost"
+          rounded="lg"
+          :has-cursor="false"
+          data-testid="preview-card"
+        >
+          <template #top>
+            <CardTop ratio="square">
+              <template #default>
+                <div
+                  v-if="initialTemplate?.thumbnail"
+                  class="relative size-full overflow-hidden rounded-lg"
+                >
+                  <DefaultThumbnail
+                    :src="initialTemplate.thumbnail"
+                    :alt="form.title"
+                    :hover-zoom="0"
+                    :is-hovered="false"
+                  />
+                </div>
+                <div
+                  v-else
+                  class="flex size-full flex-col items-center justify-center gap-2 rounded-lg bg-dialog-surface"
+                  data-testid="preview-thumbnail-placeholder"
+                >
+                  <i class="icon-[lucide--image] size-10 text-muted" />
+                  <span class="text-xs text-muted">
+                    {{ $t('marketplace.noThumbnailYet') }}
+                  </span>
+                </div>
+              </template>
+            </CardTop>
+          </template>
+          <template #bottom>
+            <CardBottom>
+              <div class="flex flex-col gap-2 pt-3">
+                <h3 class="m-0 line-clamp-1 text-sm" :title="form.title">
+                  {{ form.title }}
+                </h3>
+                <p class="m-0 line-clamp-2 text-sm text-muted">
+                  {{ form.shortDescription }}
+                </p>
+                <p class="m-0 text-sm">
+                  {{ form.description }}
+                </p>
+              </div>
+            </CardBottom>
+          </template>
+        </CardContainer>
       </div>
     </div>
 
@@ -170,6 +217,10 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CardBottom from '@/components/card/CardBottom.vue'
+import CardContainer from '@/components/card/CardContainer.vue'
+import CardTop from '@/components/card/CardTop.vue'
+import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { MarketplaceTemplate } from '@/platform/marketplace/apiTypes'
 import { useMarketplacePublishing } from '@/platform/marketplace/composables/useMarketplacePublishing'

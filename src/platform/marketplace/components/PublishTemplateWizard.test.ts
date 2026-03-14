@@ -60,6 +60,7 @@ const i18n = createI18n({
         previewTitle: 'Preview',
         previewDescription:
           'This is how your template will appear in the marketplace.',
+        noThumbnailYet: 'No thumbnail yet',
         done: 'Done'
       },
       g: {
@@ -173,6 +174,64 @@ describe('PublishTemplateWizard', () => {
     it('shows preview step with template details', async () => {
       const wrapper = await advanceToStep2()
       expect(wrapper.find('[data-testid="step-preview"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="preview-card"]').exists()).toBe(true)
+      expect(wrapper.text()).toContain('My Workflow')
+      expect(wrapper.text()).toContain('Short')
+      expect(wrapper.text()).toContain('Description')
+    })
+
+    it('shows thumbnail placeholder when initialTemplate has no thumbnail', async () => {
+      const wrapper = await advanceToStep2()
+      expect(
+        wrapper.find('[data-testid="preview-thumbnail-placeholder"]').exists()
+      ).toBe(true)
+      expect(wrapper.text()).toContain('No thumbnail yet')
+    })
+
+    it('shows thumbnail (not placeholder) when initialTemplate has thumbnail', async () => {
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_99' })
+      const template: MarketplaceTemplate = {
+        id: 'tpl_99',
+        title: 'Existing',
+        description: 'Desc',
+        shortDescription: 'Short',
+        author: {
+          id: 'a1',
+          name: 'Author',
+          isVerified: false,
+          profileUrl: ''
+        },
+        categories: [],
+        tags: [],
+        difficulty: 'beginner',
+        requiredModels: [],
+        requiredNodes: [],
+        vramRequirement: 0,
+        thumbnail: 'https://example.com/thumb.png',
+        gallery: [],
+        workflowPreview: '',
+        license: 'mit',
+        version: '1.0.0',
+        status: 'draft',
+        updatedAt: new Date().toISOString(),
+        stats: {
+          downloads: 0,
+          favorites: 0,
+          rating: 0,
+          reviewCount: 0,
+          weeklyTrend: 0
+        }
+      }
+      const wrapper = createWrapper({ initialTemplate: template })
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      await vi.dynamicImportSettled()
+
+      expect(
+        wrapper.find('[data-testid="preview-thumbnail-placeholder"]').exists()
+      ).toBe(false)
     })
 
     it('has a back button to return to step 1', async () => {
