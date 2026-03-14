@@ -148,10 +148,10 @@ const upstreamValue = useUpstreamValue(
 const effectiveBounds = computed({
   get: () =>
     isDisabled.value && upstreamValue.value
-      ? (upstreamValue.value as Bounds)
+      ? upstreamValue.value
       : modelValue.value,
   set: (v) => {
-    modelValue.value = v
+    if (!isDisabled.value) modelValue.value = v
   }
 })
 
