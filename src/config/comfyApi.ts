@@ -30,6 +30,19 @@ export function getComfyApiBaseUrl(): string {
   )
 }
 
+/**
+ * Base URL for /customers/* API calls.
+ * In cloud mode, routes through the cloud proxy (same-origin).
+ * In non-cloud mode, calls api.comfy.org directly.
+ */
+export function getCustomerApiBaseUrl(): string {
+  if (isCloud) {
+    return '/api/proxy/registry'
+  }
+
+  return getComfyApiBaseUrl()
+}
+
 export function getComfyPlatformBaseUrl(): string {
   if (!isCloud) {
     return BUILD_TIME_PLATFORM_BASE_URL
