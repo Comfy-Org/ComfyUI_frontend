@@ -6,6 +6,8 @@
  * IO synchronization, and edge cases.
  */
 import { describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -613,5 +615,37 @@ describe.skip('SubgraphNode Cleanup', () => {
     // Verify abort was called on each controller
     expect(abortSpy1).toHaveBeenCalledTimes(1)
     expect(abortSpy2).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('SubgraphNode promotion view keys', () => {
+  it('distinguishes tuples that differ only by colon placement', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const nodeWithKeyBuilder = subgraphNode as unknown as {
+      _makePromotionViewKey: (
+        inputKey: string,
+        interiorNodeId: string,
+        widgetName: string,
+        inputName?: string
+      ) => string
+    }
+
+    const firstKey = nodeWithKeyBuilder._makePromotionViewKey(
+      '65',
+      '18',
+      'a:b',
+      'c'
+    )
+    const secondKey = nodeWithKeyBuilder._makePromotionViewKey(
+      '65',
+      '18',
+      'a',
+      'b:c'
+    )
+
+    expect(firstKey).not.toBe(secondKey)
   })
 })

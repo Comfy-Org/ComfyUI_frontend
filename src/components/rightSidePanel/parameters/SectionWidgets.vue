@@ -23,6 +23,7 @@ import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
+import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
 
 const {
   label,
@@ -272,7 +273,7 @@ defineExpose({
         <TransitionGroup name="list-scale">
           <WidgetItem
             v-for="{ widget, node } in widgets"
-            :key="`${node.id}-${widget.name}-${widget.type}`"
+            :key="getStableWidgetRenderKey(widget)"
             :widget="widget"
             :node="node"
             :is-draggable="isDraggable"
