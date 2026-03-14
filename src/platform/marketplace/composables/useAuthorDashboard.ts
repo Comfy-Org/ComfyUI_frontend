@@ -21,7 +21,8 @@ export function useAuthorDashboard() {
     ) as Record<TemplateStatus, MarketplaceTemplate[]>
 
     for (const t of templates.value) {
-      grouped[t.status].push(t)
+      const bucket = grouped[t.status]
+      if (bucket) bucket.push(t)
     }
 
     return grouped
@@ -32,7 +33,7 @@ export function useAuthorDashboard() {
     error.value = null
     try {
       const result = await marketplaceService.getAuthorTemplates()
-      templates.value = result.templates
+      templates.value = result.templates ?? []
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
     } finally {

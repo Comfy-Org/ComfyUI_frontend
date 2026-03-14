@@ -8,6 +8,7 @@ import type {
   AuthorTemplatesResponse,
   MarketplaceTemplate
 } from '@/platform/marketplace/apiTypes'
+import { OnCloseKey } from '@/types/widgetTypes'
 
 const mockService = vi.hoisted(() => ({
   getAuthorTemplates: vi.fn(),
@@ -70,6 +71,13 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: {
+        closeDialog: 'Close',
+        showLeftPanel: 'Show left panel',
+        hideLeftPanel: 'Hide left panel',
+        showRightPanel: 'Show right panel',
+        hideRightPanel: 'Hide right panel'
+      },
       marketplace: {
         authorDashboard: 'My Templates',
         status: {
@@ -127,6 +135,7 @@ function createWrapper() {
   return mount(AuthorDashboard, {
     global: {
       plugins: [createPinia(), i18n],
+      provide: { [OnCloseKey as symbol]: () => {} },
       stubs: { teleport: true }
     }
   })

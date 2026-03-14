@@ -49,7 +49,7 @@ const seed: MockDb = {
       workflowPreview: 'https://mock-cdn.example.com/previews/portrait.png',
       license: 'cc-by',
       version: '1.0.0',
-      status: 'published' as TemplateStatus,
+      status: 'approved' as TemplateStatus,
       publishedAt: '2025-01-15T10:00:00Z',
       updatedAt: '2025-01-15T10:00:00Z',
       stats: {
