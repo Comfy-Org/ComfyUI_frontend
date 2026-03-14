@@ -277,6 +277,10 @@ jobs:
           PID_FILE="${{ runner.temp }}/ffmpeg.pid"
           if [ -f "$PID_FILE" ]; then
             if [ "$RUNNER_OS" = "Windows" ]; then
+              # Graceful stop: taskkill without /F sends WM_CLOSE so ffmpeg
+              # can finalize the mp4 (write moov atom). Force-kill as fallback.
+              taskkill //PID $(cat "$PID_FILE") 2>/dev/null || true
+              sleep 5
               taskkill //F //PID $(cat "$PID_FILE") 2>/dev/null || true
             else
               kill -INT $(cat "$PID_FILE") 2>/dev/null || true
