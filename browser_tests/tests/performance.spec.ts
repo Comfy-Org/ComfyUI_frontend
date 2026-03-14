@@ -1,3 +1,5 @@
+import { expect } from '@playwright/test'
+
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { recordMeasurement } from '../helpers/perfReporter'
 
@@ -229,6 +231,60 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     recordMeasurement(m)
     console.log(
       `Many nodes idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+    )
+  })
+
+  test('minimap idle', async ({ comfyPage }) => {
+    // Enable minimap via setting, load workflow, then measure idle cost
+    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', true)
+    await comfyPage.workflow.loadWorkflow('perf/many_nodes_100')
+
+    // Wait for minimap to render
+    await comfyPage.page
+      .locator('.litegraph-minimap')
+      .waitFor({ state: 'visible', timeout: 5000 })
+
+    await comfyPage.perf.startMeasuring()
+
+    // Idle for 2 seconds with minimap open and 100 nodes
+    for (let i = 0; i < 120; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('minimap-idle')
+    recordMeasurement(m)
+    console.log(
+      `Minimap idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+    )
+  })
+
+  test('workflow execution', async ({ comfyPage }) => {
+    // Uses lightweight PrimitiveString → PreviewAny workflow (no GPU needed)
+    await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+    await comfyPage.perf.startMeasuring()
+
+    // Queue the prompt and wait for execution to complete
+    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+
+    // Poll for execution completion — PreviewAny widget shows the result
+    const outputNode = await comfyPage.nodeOps.getNodeRefById(1)
+    await comfyPage.page.waitForFunction(
+      () => {
+        const store = window.app?.extensionManager
+        return store !== undefined
+      },
+      { timeout: 10000 }
+    )
+
+    // Wait for the output widget to populate (execution_success)
+    await expect(async () => {
+      expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
+    }).toPass({ timeout: 10000 })
+
+    const m = await comfyPage.perf.stopMeasuring('workflow-execution')
+    recordMeasurement(m)
+    console.log(
+      `Workflow execution: ${m.durationMs.toFixed(0)}ms total, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
     )
   })
 })
