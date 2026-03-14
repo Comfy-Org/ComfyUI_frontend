@@ -30,6 +30,9 @@ function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'
 }
 
+// Full set of model file extensions used for scanning candidate widgets.
+// Intentionally broader than ALLOWED_SUFFIXES in missingModelDownload.ts,
+// which restricts which files are eligible for download.
 export const MODEL_FILE_EXTENSIONS = new Set([
   '.safetensors',
   '.ckpt',

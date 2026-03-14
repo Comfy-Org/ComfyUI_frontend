@@ -8,6 +8,9 @@ const ALLOWED_SOURCES = [
   'http://localhost:'
 ] as const
 
+// Intentionally restrictive subset of model extensions permitted for download.
+// Does not include .bin, .onnx, .gguf — see MODEL_FILE_EXTENSIONS in
+// missingModelScan.ts for the broader scanning set.
 const ALLOWED_SUFFIXES = [
   '.safetensors',
   '.sft',

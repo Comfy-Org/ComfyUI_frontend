@@ -227,4 +227,14 @@ describe('MissingModelCard (OSS)', () => {
       'Cloud environment does not support model imports'
     )
   })
+
+  it('renders unknown category for null directory in OSS', () => {
+    const wrapper = mountCard({
+      missingModelGroups: [
+        makeGroup({ directory: null, isAssetSupported: false })
+      ]
+    })
+    expect(wrapper.text()).toContain('Unknown Category')
+    expect(wrapper.text()).not.toContain('Import Not Supported')
+  })
 })

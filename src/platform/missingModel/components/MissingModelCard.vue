@@ -24,6 +24,11 @@
             ({{ group.models.length }})
           </span>
           <span v-else>
+            <i
+              v-if="group.directory === null"
+              aria-hidden="true"
+              class="mr-1 icon-[lucide--triangle-alert] size-3.5 align-text-bottom"
+            />
             {{
               group.directory ??
               t('rightSidePanel.missingModels.unknownCategory')

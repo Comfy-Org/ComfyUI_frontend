@@ -1,3 +1,4 @@
+// Re-exports from the platform layer for use by the legacy missing-models dialog
 export {
   downloadModel,
   isModelDownloadable,
@@ -6,6 +7,8 @@ export {
   type ModelWithUrl
 } from '@/platform/missingModel/missingModelDownload'
 
+// Legacy-only utility: maps model directory names to badge labels for
+// MissingModelsContent.vue display. Only used by the legacy dialog.
 const DIRECTORY_BADGE_MAP = {
   vae: 'VAE',
   diffusion_models: 'DIFFUSION',

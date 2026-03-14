@@ -1505,8 +1505,6 @@ export class ComfyApp {
       } else {
         const confirmed = enrichedCandidates.filter((c) => c.isMissing === true)
         if (confirmed.length) {
-          useExecutionErrorStore().surfaceMissingModels(confirmed)
-
           api
             .getFolderPaths()
             .then((paths) => {
@@ -1518,8 +1516,10 @@ export class ComfyApp {
                 err
               )
             })
+            .finally(() => {
+              useExecutionErrorStore().surfaceMissingModels(confirmed)
+            })
 
-          const currentCandidates = missingModelStore.missingModelCandidates
           void Promise.allSettled(
             confirmed
               .filter((c) => c.url)
@@ -1527,10 +1527,7 @@ export class ComfyApp {
                 const { fetchModelMetadata } =
                   await import('@/platform/missingModel/missingModelDownload')
                 const metadata = await fetchModelMetadata(c.url!)
-                if (
-                  metadata.fileSize !== null &&
-                  missingModelStore.missingModelCandidates === currentCandidates
-                ) {
+                if (metadata.fileSize !== null) {
                   missingModelStore.setFileSize(c.url!, metadata.fileSize)
                 }
               })

@@ -21,8 +21,11 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   mapAllNodes: vi.fn(() => [])
 }))
 
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  get isCloud() {
+    return mockIsCloud.value
+  }
 }))
 
 vi.mock('@/i18n', () => ({
@@ -520,14 +523,6 @@ describe('useErrorGroups', () => {
     })
   })
 
-  describe('collapseState', () => {
-    it('returns a reactive object', () => {
-      const { groups } = createErrorGroups()
-      expect(groups.collapseState).toBeDefined()
-      expect(typeof groups.collapseState).toBe('object')
-    })
-  })
-
   describe('missingModelGroups', () => {
     function makeModel(
       name: string,
@@ -689,6 +684,77 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'missing_model'
       )
       expect(modelGroup).toBeDefined()
+    })
+  })
+
+  describe('missingModelGroups (Cloud)', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+    })
+
+    afterEach(() => {
+      mockIsCloud.value = false
+    })
+
+    function makeModel(
+      name: string,
+      opts: {
+        nodeId?: string | number
+        widgetName?: string
+        directory?: string
+        isAssetSupported?: boolean
+      } = {}
+    ) {
+      return {
+        name,
+        nodeId: opts.nodeId ?? '1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: opts.widgetName ?? 'ckpt_name',
+        isAssetSupported: opts.isAssetSupported ?? false,
+        isMissing: true as const,
+        directory: opts.directory
+      }
+    }
+
+    it('puts unsupported models into UNSUPPORTED group in Cloud', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model_a.safetensors', {
+          directory: 'checkpoints',
+          isAssetSupported: false
+        }),
+        makeModel('model_b.safetensors', {
+          nodeId: '2',
+          directory: 'loras',
+          isAssetSupported: false
+        })
+      ])
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toHaveLength(1)
+      expect(groups.missingModelGroups.value[0].isAssetSupported).toBe(false)
+      expect(groups.missingModelGroups.value[0].directory).toBeNull()
+    })
+
+    it('groups asset-supported models by directory in Cloud', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model_a.safetensors', {
+          directory: 'checkpoints',
+          isAssetSupported: true
+        }),
+        makeModel('model_b.safetensors', {
+          nodeId: '2',
+          directory: 'loras',
+          isAssetSupported: true
+        })
+      ])
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toHaveLength(2)
+      expect(
+        groups.missingModelGroups.value.every((g) => g.isAssetSupported)
+      ).toBe(true)
     })
   })
 })

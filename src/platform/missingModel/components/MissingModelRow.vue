@@ -59,6 +59,7 @@
             ? t('rightSidePanel.missingModels.collapseNodes')
             : t('rightSidePanel.missingModels.expandNodes')
         "
+        :aria-expanded="expanded"
         :class="
           cn(
             'size-8 shrink-0 transition-transform duration-200 hover:bg-transparent',
@@ -137,6 +138,7 @@
             variant="secondary"
             size="md"
             class="flex w-full flex-1"
+            :aria-label="`${t('g.download')} ${model.name}`"
             @click="handleDownload"
           >
             <i
