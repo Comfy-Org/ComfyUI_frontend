@@ -622,13 +622,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           if (!link) return
 
           const { inputNode, input } = link.resolve(subgraph)
-          const widget = inputNode?.widgets?.find?.((w) => w.name === name)
-          if (widget && inputNode)
+          if (!inputNode || !input) return
+
+          const widget = inputNode.getWidgetFromSlot(input)
+          if (widget)
             this._setWidget(
               subgraphInput,
               existingInput,
               widget,
-              input?.widget,
+              input.widget,
               inputNode
             )
           return
@@ -1295,6 +1297,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._promotedViewManager.remove(view.sourceNodeId, view.sourceWidgetName)
     for (const input of this.inputs) {
       if (input._widget !== view || !input._subgraphSlot) continue
+      const inputName = input.label ?? input.name
 
       this._promotedViewManager.removeByViewKey(
         view.sourceNodeId,
@@ -1302,22 +1305,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         this._makePromotionViewKey(
           String(input._subgraphSlot.id),
           view.sourceNodeId,
-          view.sourceWidgetName
+          view.sourceWidgetName,
+          inputName
         )
       )
     }
-
-    // Reconciled views can also be keyed by inputName-scoped view keys.
-    // Remove both key shapes to avoid stale cache entries across promote/rebind flows.
-    this._promotedViewManager.removeByViewKey(
-      view.sourceNodeId,
-      view.sourceWidgetName,
-      this._makePromotionViewKey(
-        view.name,
-        view.sourceNodeId,
-        view.sourceWidgetName
-      )
-    )
   }
 
   override removeWidget(widget: IBaseWidget): void {

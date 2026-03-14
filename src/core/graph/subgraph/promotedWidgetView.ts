@@ -18,8 +18,10 @@ import {
   resolveConcretePromotedWidget,
   resolvePromotedWidgetAtHost
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 
+import { isPromotedWidgetView } from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
 
 export type { PromotedWidgetView } from './promotedWidgetTypes'
@@ -329,9 +331,29 @@ class PromotedWidgetView implements IPromotedWidgetView {
     widgetName: string
     widget: IBaseWidget
   }> {
-    const linkedInputSlot = this.subgraphNode.inputs.find(
-      (input) => input._widget === this && input._subgraphSlot
-    )
+    const linkedInputSlot = this.subgraphNode.inputs.find((input) => {
+      if (!input._subgraphSlot) return false
+      if (matchPromotedInput([input], this) !== input) return false
+
+      const boundWidget = input._widget
+      if (boundWidget === this) return true
+
+      if (boundWidget && isPromotedWidgetView(boundWidget)) {
+        return (
+          boundWidget.sourceNodeId === this.sourceNodeId &&
+          boundWidget.sourceWidgetName === this.sourceWidgetName
+        )
+      }
+
+      return input._subgraphSlot
+        .getConnectedWidgets()
+        .filter(hasWidgetNode)
+        .some(
+          (widget) =>
+            String(widget.node.id) === this.sourceNodeId &&
+            widget.name === this.sourceWidgetName
+        )
+    })
     const linkedInput = linkedInputSlot?._subgraphSlot
     if (!linkedInput) return []
 

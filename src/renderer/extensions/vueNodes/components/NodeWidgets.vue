@@ -427,7 +427,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError: hasWidgetError(widget, nodeExecId, nodeErrors),
       hidden: mergedOptions.hidden ?? false,
-      id: `${bareWidgetId}:${renderKey}`,
+      id: String(bareWidgetId),
       name: widget.name,
       renderKey,
       type: widget.type,

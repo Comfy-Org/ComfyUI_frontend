@@ -284,7 +284,7 @@ describe('NodeWidgets', () => {
     expect(wrapper.findAll('.lg-node-widget')).toHaveLength(0)
   })
 
-  it('assigns unique AppInput ids for widgets on the same node', () => {
+  it('keeps AppInput ids mapped to node identity for selection', () => {
     const nodeData = createMockNodeData('TestNode', [
       createMockWidget({ nodeId: 'test_node', name: 'seed_a', type: 'text' }),
       createMockWidget({ nodeId: 'test_node', name: 'seed_b', type: 'text' })
@@ -294,6 +294,6 @@ describe('NodeWidgets', () => {
     const appInputWrappers = wrapper.findAllComponents({ name: 'AppInput' })
     const ids = appInputWrappers.map((component) => component.props('id'))
 
-    expect(new Set(ids).size).toBe(2)
+    expect(ids).toStrictEqual(['test_node', 'test_node'])
   })
 })

@@ -1560,9 +1560,11 @@ describe('widgets getter caching', () => {
     )
 
     void subgraphNode.widgets
-    void subgraphNode.widgets
+    const initialResolveCount = resolveSpy.mock.calls.length
+    expect(initialResolveCount).toBeLessThanOrEqual(1)
 
-    expect(resolveSpy.mock.calls.length).toBeLessThanOrEqual(1)
+    void subgraphNode.widgets
+    expect(resolveSpy).toHaveBeenCalledTimes(initialResolveCount)
   })
 
   test('preserves view identities when promotion order changes', () => {
