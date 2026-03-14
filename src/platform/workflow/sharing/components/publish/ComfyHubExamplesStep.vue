@@ -3,7 +3,6 @@
     <p class="text-sm select-none">
       {{
         $t('comfyHubPublish.examplesDescription', {
-          selected: selectedExampleIds.length,
           total: MAX_EXAMPLES
         })
       }}
@@ -11,7 +10,7 @@
 
     <div
       class="grid gap-2"
-      :style="{ gridTemplateColumns: `repeat(${gridColumns}, 1fr)` }"
+      style="grid-template-columns: repeat(auto-fill, 8rem)"
     >
       <!-- Upload tile (hidden when max images reached) -->
       <label
@@ -19,7 +18,7 @@
         tabindex="0"
         role="button"
         :aria-label="$t('comfyHubPublish.uploadExampleImage')"
-        class="focus-visible:outline-ring flex aspect-square max-w-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default text-center transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
+        class="focus-visible:outline-ring flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default text-center transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
         @dragenter.stop
         @dragleave.stop
         @dragover.prevent.stop
@@ -45,31 +44,26 @@
       </label>
 
       <!-- Example images -->
-      <Button
+      <div
         v-for="(image, index) in exampleImages"
         :key="image.id"
-        variant="textonly"
-        size="unset"
-        :class="
-          cn(
-            'relative aspect-square cursor-pointer overflow-hidden rounded-sm p-0',
-            isSelected(image.id) ? 'ring-ring ring-2' : 'ring-0'
-          )
-        "
-        @click="toggleSelection(image.id)"
+        class="group relative aspect-square overflow-hidden rounded-sm"
       >
         <img
           :src="image.url"
           :alt="$t('comfyHubPublish.exampleImage', { index: index + 1 })"
           class="size-full object-cover"
         />
-        <div
-          v-if="isSelected(image.id)"
-          class="absolute bottom-1.5 left-1.5 flex size-7 items-center justify-center rounded-full bg-primary-background text-sm font-bold text-base-foreground"
+        <Button
+          variant="textonly"
+          size="icon"
+          :aria-label="$t('comfyHubPublish.removeExampleImage')"
+          class="absolute top-1 right-1 flex size-6 items-center justify-center bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/80"
+          @click="removeImage(image.id)"
         >
-          {{ selectionIndex(image.id) }}
-        </div>
-      </Button>
+          <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+        </Button>
+      </div>
     </div>
   </div>
 </template>
@@ -84,52 +78,30 @@ import {
   isFileTooLarge,
   MAX_IMAGE_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
-import { cn } from '@/utils/tailwindUtil'
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const MAX_EXAMPLES = 8
 
-const { exampleImages, selectedExampleIds } = defineProps<{
+const { exampleImages } = defineProps<{
   exampleImages: ExampleImage[]
-  selectedExampleIds: string[]
 }>()
 
 const showUploadTile = computed(() => exampleImages.length < MAX_EXAMPLES)
 
-const gridColumns = computed(() => {
-  const total = exampleImages.length + (showUploadTile.value ? 1 : 0)
-  if (total <= 5) return total
-  for (const cols of [5, 4, 3]) {
-    if (total % cols === 0) return cols
-  }
-  return [3, 4, 5].reduce((best, cols) =>
-    total % cols > total % best ? cols : best
-  )
-})
-
 const emit = defineEmits<{
   'update:exampleImages': [value: ExampleImage[]]
-  'update:selectedExampleIds': [value: string[]]
 }>()
 
-function isSelected(id: string): boolean {
-  return selectedExampleIds.includes(id)
-}
-
-function selectionIndex(id: string): number {
-  return selectedExampleIds.indexOf(id) + 1
-}
-
-function toggleSelection(id: string) {
-  if (isSelected(id)) {
-    emit(
-      'update:selectedExampleIds',
-      selectedExampleIds.filter((sid) => sid !== id)
-    )
-  } else if (selectedExampleIds.length < MAX_EXAMPLES) {
-    emit('update:selectedExampleIds', [...selectedExampleIds, id])
+function removeImage(id: string) {
+  const image = exampleImages.find((img) => img.id === id)
+  if (image) {
+    URL.revokeObjectURL(image.url)
   }
+  emit(
+    'update:exampleImages',
+    exampleImages.filter((img) => img.id !== id)
+  )
 }
 
 function addImages(files: FileList) {

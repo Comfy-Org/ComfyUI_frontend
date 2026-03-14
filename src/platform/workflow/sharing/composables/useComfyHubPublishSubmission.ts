@@ -21,10 +21,8 @@ function getFileContentType(file: File): string {
   return file.type || 'application/octet-stream'
 }
 
-function getSelectedExampleFiles(formData: ComfyHubPublishFormData): File[] {
-  const selectedImageIds = new Set(formData.selectedExampleIds)
+function getExampleFiles(formData: ComfyHubPublishFormData): File[] {
   return formData.exampleImages
-    .filter((image) => selectedImageIds.has(image.id))
     .map((image) => image.file)
     .filter((file): file is File => Boolean(file))
 }
@@ -94,7 +92,7 @@ export function useComfyHubPublishSubmission() {
         ? await uploadFileAndGetToken(formData.comparisonAfterFile)
         : undefined
 
-    const selectedSampleFiles = getSelectedExampleFiles(formData)
+    const selectedSampleFiles = getExampleFiles(formData)
     const sampleImageTokensOrUrls =
       selectedSampleFiles.length > 0
         ? await Promise.all(

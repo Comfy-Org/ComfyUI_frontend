@@ -59,7 +59,6 @@ function createFormData(
     comparisonBeforeFile: null,
     comparisonAfterFile: null,
     exampleImages: [],
-    selectedExampleIds: [],
     ...overrides
   }
 }
@@ -144,13 +143,9 @@ describe('useComfyHubPublishSubmission', () => {
     )
   })
 
-  it('uploads selected sample images only', async () => {
-    const selectedFile = new File(['selected'], 'selected.png', {
-      type: 'image/png'
-    })
-    const unselectedFile = new File(['unselected'], 'unselected.png', {
-      type: 'image/png'
-    })
+  it('uploads all example images', async () => {
+    const file1 = new File(['img1'], 'img1.png', { type: 'image/png' })
+    const file2 = new File(['img2'], 'img2.png', { type: 'image/png' })
 
     const { submitToComfyHub } = useComfyHubPublishSubmission()
     await submitToComfyHub(
@@ -158,29 +153,16 @@ describe('useComfyHubPublishSubmission', () => {
         thumbnailType: 'image',
         thumbnailFile: null,
         exampleImages: [
-          {
-            id: 'selected',
-            file: selectedFile,
-            url: 'blob:selected'
-          },
-          {
-            id: 'unselected',
-            file: unselectedFile,
-            url: 'blob:unselected'
-          }
-        ],
-        selectedExampleIds: ['selected']
+          { id: 'a', file: file1, url: 'blob:a' },
+          { id: 'b', file: file2, url: 'blob:b' }
+        ]
       })
     )
 
-    expect(mockRequestAssetUploadUrl).toHaveBeenCalledTimes(1)
-    expect(mockRequestAssetUploadUrl).toHaveBeenCalledWith({
-      filename: 'selected.png',
-      contentType: 'image/png'
-    })
+    expect(mockRequestAssetUploadUrl).toHaveBeenCalledTimes(2)
     expect(mockPublishWorkflow).toHaveBeenCalledWith(
       expect.objectContaining({
-        sampleImageTokensOrUrls: ['token-1']
+        sampleImageTokensOrUrls: ['token-1', 'token-2']
       })
     )
   })

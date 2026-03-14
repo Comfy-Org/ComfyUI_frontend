@@ -44,8 +44,7 @@ function createDefaultFormData(): ComfyHubPublishFormData {
     thumbnailFile: null,
     comparisonBeforeFile: null,
     comparisonAfterFile: null,
-    exampleImages: [],
-    selectedExampleIds: []
+    exampleImages: []
   }
 }
 

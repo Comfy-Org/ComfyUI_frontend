@@ -34,8 +34,7 @@ vi.mock(
         thumbnailFile: null,
         comparisonBeforeFile: null,
         comparisonAfterFile: null,
-        exampleImages: [],
-        selectedExampleIds: []
+        exampleImages: []
       }),
       isFirstStep: ref(false),
       isLastStep: ref(true),

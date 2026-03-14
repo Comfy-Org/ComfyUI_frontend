@@ -17,5 +17,4 @@ export interface ComfyHubPublishFormData {
   comparisonBeforeFile: File | null
   comparisonAfterFile: File | null
   exampleImages: ExampleImage[]
-  selectedExampleIds: string[]
 }

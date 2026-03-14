@@ -3134,6 +3134,7 @@
     "examplesDescription": "Add up to {total} additional sample images",
     "uploadAnImage": "Click to browse or drag an image",
     "uploadExampleImage": "Upload example image",
+    "removeExampleImage": "Remove example image",
     "exampleImage": "Example image {index}",
     "videoPreview": "Video thumbnail preview",
     "maxExamples": "You can select up to {max} examples",

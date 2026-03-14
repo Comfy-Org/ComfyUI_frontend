@@ -35,11 +35,7 @@
           />
           <ComfyHubExamplesStep
             :example-images="formData.exampleImages"
-            :selected-example-ids="formData.selectedExampleIds"
             @update:example-images="onUpdateFormData({ exampleImages: $event })"
-            @update:selected-example-ids="
-              onUpdateFormData({ selectedExampleIds: $event })
-            "
           />
         </div>
         <ComfyHubProfilePromptPanel

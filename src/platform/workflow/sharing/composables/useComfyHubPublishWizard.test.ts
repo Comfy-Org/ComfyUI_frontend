@@ -41,7 +41,6 @@ describe('useComfyHubPublishWizard', () => {
       expect(formData.value.comparisonBeforeFile).toBeNull()
       expect(formData.value.comparisonAfterFile).toBeNull()
       expect(formData.value.exampleImages).toEqual([])
-      expect(formData.value.selectedExampleIds).toEqual([])
     })
   })
 
