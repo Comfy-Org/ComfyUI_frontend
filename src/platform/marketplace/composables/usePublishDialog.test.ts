@@ -3,9 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MarketplaceTemplate } from '@/platform/marketplace/apiTypes'
 import PublishTemplateWizard from '@/platform/marketplace/components/PublishTemplateWizard.vue'
 import { usePublishDialog } from '@/platform/marketplace/composables/usePublishDialog'
-import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock('@/stores/dialogStore')
+const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
+const mockCloseDialog = vi.hoisted(() => vi.fn())
+
+vi.mock('@/services/dialogService', () => ({
+  useDialogService: () => ({ showLayoutDialog: mockShowLayoutDialog })
+}))
+
+vi.mock('@/stores/dialogStore', () => ({
+  useDialogStore: () => ({ closeDialog: mockCloseDialog })
+}))
 
 function makeMockTemplate(
   overrides: Partial<MarketplaceTemplate> = {}
@@ -45,44 +53,30 @@ function makeMockTemplate(
   }
 }
 
-function setupDialogMocks() {
-  const mockShowDialog = vi.fn()
-  const mockCloseDialog = vi.fn()
-  vi.mocked(useDialogStore, { partial: true }).mockReturnValue({
-    showDialog: mockShowDialog,
-    closeDialog: mockCloseDialog
-  })
-
-  return { mockShowDialog, mockCloseDialog }
-}
-
 describe('usePublishDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('show() opens dialog with PublishTemplateWizard and default props', () => {
-    const { mockShowDialog } = setupDialogMocks()
+  it('show() opens layout dialog with PublishTemplateWizard and default props', () => {
     const dialog = usePublishDialog()
 
     dialog.show()
 
-    expect(mockShowDialog).toHaveBeenCalledWith(
+    expect(mockShowLayoutDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'publish-to-marketplace',
-        title: 'Publish to Marketplace',
         component: PublishTemplateWizard,
         props: expect.objectContaining({
           onClose: expect.any(Function)
         })
       })
     )
-    const call = mockShowDialog.mock.calls[0][0]
+    const call = mockShowLayoutDialog.mock.calls[0][0]
     expect(call.props.initialTemplate).toBeUndefined()
   })
 
   it('show({ initialTemplate }) passes initialTemplate to wizard', () => {
-    const { mockShowDialog } = setupDialogMocks()
     const dialog = usePublishDialog()
     const mockTemplate = makeMockTemplate({
       id: 'tpl_99',
@@ -91,7 +85,7 @@ describe('usePublishDialog', () => {
 
     dialog.show({ initialTemplate: mockTemplate })
 
-    expect(mockShowDialog).toHaveBeenCalledWith(
+    expect(mockShowLayoutDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         props: expect.objectContaining({
           initialTemplate: mockTemplate
@@ -101,15 +95,13 @@ describe('usePublishDialog', () => {
   })
 
   it('show({ initialTemplate, readOnly: true }) passes readOnly to wizard', () => {
-    const { mockShowDialog } = setupDialogMocks()
     const dialog = usePublishDialog()
     const mockTemplate = makeMockTemplate()
 
     dialog.show({ initialTemplate: mockTemplate, readOnly: true })
 
-    expect(mockShowDialog).toHaveBeenCalledWith(
+    expect(mockShowLayoutDialog).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: 'Template Details',
         props: expect.objectContaining({
           initialTemplate: mockTemplate,
           readOnly: true
@@ -119,7 +111,6 @@ describe('usePublishDialog', () => {
   })
 
   it('hide() closes dialog with correct key', () => {
-    const { mockCloseDialog } = setupDialogMocks()
     const dialog = usePublishDialog()
 
     dialog.hide()
