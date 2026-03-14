@@ -1,3 +1,8 @@
+import { readFile } from 'fs/promises'
+import { existsSync } from 'fs'
+import { dirname, join, relative } from 'path'
+import { fileURLToPath } from 'url'
+
 import type {
   CreateTemplateRequest,
   TemplateStatus
@@ -8,6 +13,7 @@ import {
   createTemplate,
   findTemplate,
   getDb,
+  getMediaBlob,
   transitionStatus,
   updateTemplate
 } from './state'
@@ -255,10 +261,68 @@ export async function handleRequest(req: Request): Promise<Response> {
       return json({ error: 'No file provided' }, 400)
     }
 
-    const media = addMedia(id, file.type, file.name)
+    const media = await addMedia(id, file)
     if (!media) return json({ error: 'Template not found' }, 404)
 
     return json(media, 201)
+  }
+
+  // GET /api/marketplace/media/seed/* (static placeholder images for seed data)
+  if (method === 'GET' && pathname.startsWith('/api/marketplace/media/seed/')) {
+    const subPath = pathname.slice('/api/marketplace/media/seed/'.length)
+    if (subPath.includes('..') || subPath.startsWith('/')) {
+      return json({ error: 'Invalid path' }, 400)
+    }
+    const __dirname = dirname(fileURLToPath(import.meta.url))
+    const seedMediaDir = join(__dirname, 'seed-media')
+    const filePath = join(seedMediaDir, subPath)
+    const rel = relative(seedMediaDir, filePath)
+    if (rel.startsWith('..') || rel.includes('..')) {
+      return json({ error: 'Invalid path' }, 400)
+    }
+    if (!existsSync(filePath)) {
+      return json({ error: 'Media not found' }, 404)
+    }
+    const buffer = await readFile(filePath)
+    const ext = subPath.split('.').pop()?.toLowerCase()
+    const mimeTypes: Record<string, string> = {
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml'
+    }
+    const contentType = mimeTypes[ext ?? ''] ?? 'application/octet-stream'
+    return new Response(buffer, {
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=3600'
+      }
+    })
+  }
+
+  // GET /api/marketplace/media/:templateId/:filename
+  if (
+    method === 'GET' &&
+    pathname.match(/^\/api\/marketplace\/media\/[^/]+\/.+$/)
+  ) {
+    const match = pathname.match(/^\/api\/marketplace\/media\/([^/]+)\/(.+)$/)
+    if (!match) return json({ error: 'Invalid path' }, 400)
+
+    const [, templateId, encodedFilename] = match
+    const filename = decodeURIComponent(encodedFilename)
+    const blob = getMediaBlob(templateId, filename)
+    if (!blob) {
+      return json({ error: 'Media not found' }, 404)
+    }
+
+    return new Response(blob.buffer, {
+      headers: {
+        'Content-Type': blob.mimeType,
+        'Cache-Control': 'public, max-age=3600'
+      }
+    })
   }
 
   // GET /api/marketplace/author/templates

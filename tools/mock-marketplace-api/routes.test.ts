@@ -265,6 +265,35 @@ describe('mock marketplace routes', () => {
       const body: MediaUploadResponse = await mediaRes.json()
       expect(body.url).toBeTruthy()
       expect(body.type).toBe('image/png')
+      expect(body.url).toMatch(/^\/api\/marketplace\/media\/tpl_/)
+    })
+
+    it('serves uploaded media via GET', async () => {
+      const createRes = await handleRequest(
+        jsonRequest('/api/marketplace/templates', 'POST', {
+          title: 'T',
+          description: 'd',
+          shortDescription: 's'
+        })
+      )
+      const { id } = (await createRes.json()) as CreateTemplateResponse
+
+      const formData = new FormData()
+      const blob = new Blob(['fake-png'], { type: 'image/png' })
+      formData.append('file', blob, 'thumb.png')
+
+      const uploadRes = await handleRequest(
+        new Request(`http://localhost/api/marketplace/templates/${id}/media`, {
+          method: 'POST',
+          body: formData
+        })
+      )
+      const { url } = (await uploadRes.json()) as MediaUploadResponse
+      const getRes = await handleRequest(new Request(`http://localhost${url}`))
+      expect(getRes.status).toBe(200)
+      expect(getRes.headers.get('content-type')).toBe('image/png')
+      const body = await getRes.arrayBuffer()
+      expect(body.byteLength).toBe(8)
     })
 
     it('returns 404 for unknown template', async () => {
@@ -276,6 +305,25 @@ describe('mock marketplace routes', () => {
           method: 'POST',
           body: formData
         })
+      )
+      expect(res.status).toBe(404)
+    })
+  })
+
+  describe('GET /api/marketplace/media/seed/*', () => {
+    it('serves static placeholder images', async () => {
+      const res = await handleRequest(
+        getRequest('/api/marketplace/media/seed/thumbs/portrait.png')
+      )
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toBe('image/png')
+      const body = await res.arrayBuffer()
+      expect(body.byteLength).toBeGreaterThan(0)
+    })
+
+    it('returns 404 for missing file', async () => {
+      const res = await handleRequest(
+        getRequest('/api/marketplace/media/seed/thumbs/nonexistent.png')
       )
       expect(res.status).toBe(404)
     })

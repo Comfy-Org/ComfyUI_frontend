@@ -214,32 +214,35 @@ describe('mock marketplace state', () => {
   })
 
   describe('addMedia', () => {
-    it('stores media for a template', () => {
+    it('stores media for a template', async () => {
       const t = createTemplate({
         title: 'T',
         description: 'd',
         shortDescription: 's'
       })
-      const media = addMedia(t.id, 'image/png', 'photo.png')
+      const file = new File(['fake-image'], 'photo.png', { type: 'image/png' })
+      const media = await addMedia(t.id, file)
       expect(media).toBeDefined()
       expect(media!.url).toContain('photo.png')
       expect(media!.type).toBe('image/png')
     })
 
-    it('accumulates multiple media entries', () => {
+    it('accumulates multiple media entries', async () => {
       const t = createTemplate({
         title: 'T',
         description: 'd',
         shortDescription: 's'
       })
-      addMedia(t.id, 'image/png', 'a.png')
-      addMedia(t.id, 'video/mp4', 'b.mp4')
+      await addMedia(t.id, new File(['a'], 'a.png', { type: 'image/png' }))
+      await addMedia(t.id, new File(['b'], 'b.mp4', { type: 'video/mp4' }))
       const db = getDb()
       expect(db.mediaByTemplateId[t.id]).toHaveLength(2)
     })
 
-    it('returns undefined for unknown template', () => {
-      expect(addMedia('ghost', 'image/png', 'x.png')).toBeUndefined()
+    it('returns undefined for unknown template', async () => {
+      const file = new File(['x'], 'x.png', { type: 'image/png' })
+      const result = await addMedia('ghost', file)
+      expect(result).toBeUndefined()
     })
   })
 })

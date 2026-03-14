@@ -34,6 +34,7 @@ pnpm dev:marketplace   # terminal 2
 | POST   | `/api/marketplace/templates/:id/reject`     | Reject (reviewer)                       |
 | POST   | `/api/marketplace/templates/:id/unpublish`  | Unpublish approved template             |
 | POST   | `/api/marketplace/templates/:id/media`      | Upload media (FormData)                 |
+| GET    | `/api/marketplace/media/seed/*`             | Static placeholder images for seed data |
 | GET    | `/api/marketplace/author/templates`         | List author's templates                 |
 | GET    | `/api/marketplace/author/stats?period=week` | Author stats                            |
 | GET    | `/api/marketplace/categories`               | List categories                         |
@@ -59,6 +60,15 @@ Tests run as part of the standard Vitest suite:
 ```bash
 pnpm vitest run tools/mock-marketplace-api/
 ```
+
+## Seed media
+
+Placeholder images for seeded templates live in `seed-media/`:
+
+- `seed-media/thumbs/` – template thumbnails (e.g. `portrait.png`, `gif.png`)
+- `seed-media/previews/` – workflow preview images
+
+Replace the default 1×1 pixel placeholders with real images as needed. Seed data in `state.ts` references these via `/api/marketplace/media/seed/thumbs/...` and `/api/marketplace/media/seed/previews/...`.
 
 ## Shared types
 

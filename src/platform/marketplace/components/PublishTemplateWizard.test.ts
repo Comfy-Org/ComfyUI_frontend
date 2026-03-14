@@ -146,13 +146,12 @@ describe('PublishTemplateWizard', () => {
       ).toBe(true)
     })
 
-    it('creates draft on first Next, advances to step 2 on second Next', async () => {
+    it('creates draft and advances to step 2 on Next', async () => {
       const createResponse: CreateTemplateResponse = {
         id: 'tpl_1',
         status: 'draft'
       }
       mockService.createTemplate.mockResolvedValue(createResponse)
-      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
 
       const wrapper = createWrapper()
 
@@ -176,12 +175,6 @@ describe('PublishTemplateWizard', () => {
         license: 'mit',
         tags: []
       })
-      expect(wrapper.find('[data-testid="step-details"]').exists()).toBe(true)
-
-      await wrapper.find('[data-testid="btn-next"]').trigger('click')
-      await vi.dynamicImportSettled()
-
-      expect(mockService.updateTemplate).toHaveBeenCalled()
       expect(wrapper.find('[data-testid="step-submit"]').exists()).toBe(true)
     })
 
@@ -330,7 +323,7 @@ describe('PublishTemplateWizard', () => {
       vi.unstubAllGlobals()
     })
 
-    it('uploads thumbnail immediately when image dropped after Next', async () => {
+    it('uploads thumbnail immediately when image dropped with existing draft', async () => {
       vi.stubGlobal(
         'FileReader',
         class {
@@ -341,28 +334,47 @@ describe('PublishTemplateWizard', () => {
           }
         }
       )
-      mockService.createTemplate.mockResolvedValue({
-        id: 'tpl_1',
-        status: 'draft'
-      })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_99' })
       mockService.uploadTemplateMedia.mockResolvedValue({
         url: 'https://cdn.example.com/thumb.png',
         type: 'image/png'
       })
-      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
 
-      const wrapper = createWrapper()
-      await wrapper
-        .find('input[data-testid="input-title"]')
-        .setValue('My Workflow')
-      await wrapper
-        .find('textarea[data-testid="input-description"]')
-        .setValue('Description')
-      await wrapper
-        .find('input[data-testid="input-short-description"]')
-        .setValue('Short')
-      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      const template: MarketplaceTemplate = {
+        id: 'tpl_99',
+        title: 'Existing',
+        description: 'Desc',
+        shortDescription: 'Short',
+        author: {
+          id: 'a1',
+          name: 'Author',
+          isVerified: false,
+          profileUrl: ''
+        },
+        categories: [],
+        tags: [],
+        difficulty: 'beginner',
+        requiredModels: [],
+        requiredNodes: [],
+        vramRequirement: 0,
+        thumbnail: '',
+        gallery: [],
+        workflowPreview: '',
+        license: 'mit',
+        version: '1.0.0',
+        status: 'draft',
+        updatedAt: new Date().toISOString(),
+        stats: {
+          downloads: 0,
+          favorites: 0,
+          rating: 0,
+          reviewCount: 0,
+          weeklyTrend: 0
+        }
+      }
+      const wrapper = createWrapper({ initialTemplate: template })
       await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
 
       const placeholder = wrapper.find(
         '[data-testid="preview-thumbnail-placeholder"]'
@@ -378,7 +390,7 @@ describe('PublishTemplateWizard', () => {
       await flushPromises()
 
       expect(mockService.uploadTemplateMedia).toHaveBeenCalledWith(
-        'tpl_1',
+        'tpl_99',
         expect.any(File)
       )
       expect(
@@ -434,7 +446,6 @@ describe('PublishTemplateWizard', () => {
         id: 'tpl_1',
         status: 'draft'
       })
-      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
       const wrapper = createWrapper()
       await wrapper
         .find('input[data-testid="input-title"]')
@@ -445,8 +456,6 @@ describe('PublishTemplateWizard', () => {
       await wrapper
         .find('input[data-testid="input-short-description"]')
         .setValue('Short')
-      await wrapper.find('[data-testid="btn-next"]').trigger('click')
-      await vi.dynamicImportSettled()
       await wrapper.find('[data-testid="btn-next"]').trigger('click')
       await vi.dynamicImportSettled()
 
@@ -460,7 +469,6 @@ describe('PublishTemplateWizard', () => {
         id: 'tpl_1',
         status: 'draft'
       })
-      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
 
       const wrapper = createWrapper()
       await wrapper
@@ -472,8 +480,6 @@ describe('PublishTemplateWizard', () => {
       await wrapper
         .find('input[data-testid="input-short-description"]')
         .setValue('Short')
-      await wrapper.find('[data-testid="btn-next"]').trigger('click')
-      await vi.dynamicImportSettled()
       await wrapper.find('[data-testid="btn-next"]').trigger('click')
       await vi.dynamicImportSettled()
 

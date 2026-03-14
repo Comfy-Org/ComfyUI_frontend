@@ -81,9 +81,27 @@
                 <div
                   v-for="template in statusGroup.templates"
                   :key="template.id"
-                  class="border-border flex items-center justify-between rounded-lg border p-3"
+                  class="border-border flex items-center justify-between gap-3 rounded-lg border p-3"
                 >
-                  <div>
+                  <div
+                    class="flex size-12 shrink-0 overflow-hidden rounded-md bg-dialog-surface"
+                  >
+                    <img
+                      v-if="template.thumbnail && !thumbErrors[template.id]"
+                      :src="template.thumbnail"
+                      :alt="template.title"
+                      loading="lazy"
+                      class="size-full object-cover"
+                      @error="thumbErrors[template.id] = true"
+                    />
+                    <div
+                      v-if="!template.thumbnail || thumbErrors[template.id]"
+                      class="flex size-full items-center justify-center"
+                    >
+                      <i class="icon-[lucide--image] size-6 text-muted" />
+                    </div>
+                  </div>
+                  <div class="min-w-0 flex-1">
                     <div class="font-medium">{{ template.title }}</div>
                     <div class="text-sm text-muted">
                       {{ template.shortDescription }}
@@ -140,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, provide } from 'vue'
+import { computed, onMounted, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
@@ -183,6 +201,8 @@ const {
 } = useAuthorDashboard()
 
 const { show: showPublishDialog } = usePublishDialog()
+
+const thumbErrors = ref<Record<string, boolean>>({})
 
 function isEditable(status: TemplateStatus): boolean {
   return EDITABLE_STATUSES.includes(status)
