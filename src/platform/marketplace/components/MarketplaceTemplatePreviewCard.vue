@@ -49,9 +49,23 @@
           <p class="m-0 line-clamp-2 text-sm text-muted">
             {{ shortDescription }}
           </p>
-          <div class="flex flex-wrap gap-x-3 gap-y-0 text-xs text-muted">
+          <div
+            class="flex items-center justify-between gap-x-3 gap-y-0 text-xs text-muted"
+          >
+            <Badge
+              v-if="difficultyLabel"
+              size="small"
+              variant="solid"
+              :class="{
+                'bg-blue-400 text-white': difficultyLabel === 'Beginner',
+                'bg-purple-400 text-white': difficultyLabel === 'Intermediate',
+                'bg-purple-600 text-white': difficultyLabel === 'Advanced'
+              }"
+              class="mr-1 rounded-sm p-1"
+            >
+              {{ difficultyLabel }}
+            </Badge>
             <span>{{ licenseLabel }}</span>
-            <span>{{ difficultyLabel }}</span>
           </div>
         </div>
       </CardBottom>
