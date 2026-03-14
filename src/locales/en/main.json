@@ -3652,6 +3652,7 @@
     "thumbnailUploadError": "Please drop an image file",
     "uploadProgress": "Uploading thumbnail: {percent}%",
     "uploadComplete": "Thumbnail uploaded",
+    "thumbnailRequired": "Thumbnail is required",
     "authorDashboard": "Author Dashboard",
     "myTemplates": "My Templates",
     "myDrafts": "My Drafts",

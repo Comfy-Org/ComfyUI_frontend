@@ -53,6 +53,7 @@
           :submitted="submitted"
           :is-pending-review="isPendingReview"
           :can-advance="canAdvance"
+          :can-submit="canSubmit"
           :is-publishing="isPublishing"
           @close="handleClose"
           @back="handleBack"
@@ -173,11 +174,14 @@ const canAdvance = computed(() => {
       form.description !== defaultPlaceholders.description &&
       form.shortDescription.trim() !== '' &&
       form.shortDescription !== defaultPlaceholders.shortDescription &&
-      !!form.difficulty
+      !!form.difficulty &&
+      !!thumbnailUrl.value
     )
   }
   return true
 })
+
+const canSubmit = computed(() => !!thumbnailUrl.value && !isPublishing.value)
 
 function initFromTemplate(template: MarketplaceTemplate) {
   loadForEdit(template)

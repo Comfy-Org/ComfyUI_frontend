@@ -80,6 +80,7 @@ const i18n = createI18n({
         thumbnailUploadError: 'Please drop an image file',
         uploadProgress: 'Uploading thumbnail: {percent}%',
         uploadComplete: 'Thumbnail uploaded',
+        thumbnailRequired: 'Thumbnail is required',
         licenseTypes: {
           'cc-by': 'CC BY',
           'cc-by-sa': 'CC BY-SA',
@@ -168,12 +169,46 @@ describe('PublishTemplateWizard', () => {
       ).toBe(true)
     })
 
+    it('disables Next when form is valid but thumbnail is missing', async () => {
+      const wrapper = createWrapper()
+      await wrapper
+        .find('input[data-testid="input-title"]')
+        .setValue('My Workflow')
+      await wrapper
+        .find('textarea[data-testid="input-description"]')
+        .setValue('Description')
+      await wrapper
+        .find('input[data-testid="input-short-description"]')
+        .setValue('Short')
+      await wrapper.vm.$nextTick()
+
+      expect(
+        (wrapper.find('[data-testid="btn-next"]').element as HTMLButtonElement)
+          .disabled
+      ).toBe(true)
+    })
+
     it('creates draft and advances to step 2 on Next', async () => {
+      vi.stubGlobal(
+        'FileReader',
+        class {
+          onload: ((e: { target: { result: string } }) => void) | null = null
+          onerror: ((e: ProgressEvent) => void) | null = null
+          readAsDataURL() {
+            this.onerror?.(new ProgressEvent('error'))
+          }
+        }
+      )
       const createResponse: CreateTemplateResponse = {
         id: 'tpl_1',
         status: 'draft'
       }
       mockService.createTemplate.mockResolvedValue(createResponse)
+      mockService.uploadTemplateMedia.mockResolvedValue({
+        url: 'https://cdn.example.com/thumb.png',
+        type: 'image/png'
+      })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
 
       const wrapper = createWrapper()
 
@@ -187,6 +222,19 @@ describe('PublishTemplateWizard', () => {
         .find('input[data-testid="input-short-description"]')
         .setValue('Great')
 
+      const placeholder = wrapper.find(
+        '[data-testid="preview-thumbnail-placeholder"]'
+      )
+      const file = new File(['image data'], 'thumb.png', {
+        type: 'image/png'
+      })
+      const fileList = { 0: file, length: 1, item: (i: number) => [file][i] }
+      await placeholder.trigger('drop', {
+        dataTransfer: { files: fileList }
+      })
+      await flushPromises()
+      await flushPromises()
+
       await wrapper.find('[data-testid="btn-next"]').trigger('click')
       await vi.dynamicImportSettled()
 
@@ -199,13 +247,29 @@ describe('PublishTemplateWizard', () => {
         tags: []
       })
       expect(wrapper.find('[data-testid="step-submit"]').exists()).toBe(true)
+      vi.unstubAllGlobals()
     })
 
     it('includes tags in createDraft payload when tags are added', async () => {
+      vi.stubGlobal(
+        'FileReader',
+        class {
+          onload: ((e: { target: { result: string } }) => void) | null = null
+          onerror: ((e: ProgressEvent) => void) | null = null
+          readAsDataURL() {
+            this.onerror?.(new ProgressEvent('error'))
+          }
+        }
+      )
       mockService.createTemplate.mockResolvedValue({
         id: 'tpl_1',
         status: 'draft'
       })
+      mockService.uploadTemplateMedia.mockResolvedValue({
+        url: 'https://cdn.example.com/thumb.png',
+        type: 'image/png'
+      })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
 
       const wrapper = createWrapper()
       await wrapper
@@ -222,8 +286,20 @@ describe('PublishTemplateWizard', () => {
         name: 'TagInputWithAutocomplete'
       })
       await tagInput.vm.$emit('update:modelValue', ['Image', 'Video'])
-      await wrapper.find('[data-testid="btn-next"]').trigger('click')
-      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      const placeholder = wrapper.find(
+        '[data-testid="preview-thumbnail-placeholder"]'
+      )
+      const file = new File(['image data'], 'thumb.png', {
+        type: 'image/png'
+      })
+      const fileList = { 0: file, length: 1, item: (i: number) => [file][i] }
+      await placeholder.trigger('drop', {
+        dataTransfer: { files: fileList }
+      })
+      await flushPromises()
+      await flushPromises()
 
       expect(mockService.createTemplate).toHaveBeenCalledWith({
         title: 'My Workflow',
@@ -233,6 +309,7 @@ describe('PublishTemplateWizard', () => {
         difficulty: 'beginner',
         tags: ['Image', 'Video']
       })
+      vi.unstubAllGlobals()
     })
   })
 
@@ -464,10 +541,26 @@ describe('PublishTemplateWizard', () => {
     })
 
     it('has back button on submit step to return to details', async () => {
+      vi.stubGlobal(
+        'FileReader',
+        class {
+          onload: ((e: { target: { result: string } }) => void) | null = null
+          onerror: ((e: ProgressEvent) => void) | null = null
+          readAsDataURL() {
+            this.onerror?.(new ProgressEvent('error'))
+          }
+        }
+      )
       mockService.createTemplate.mockResolvedValue({
         id: 'tpl_1',
         status: 'draft'
       })
+      mockService.uploadTemplateMedia.mockResolvedValue({
+        url: 'https://cdn.example.com/thumb.png',
+        type: 'image/png'
+      })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
+
       const wrapper = createWrapper()
       await wrapper
         .find('input[data-testid="input-title"]')
@@ -478,19 +571,49 @@ describe('PublishTemplateWizard', () => {
       await wrapper
         .find('input[data-testid="input-short-description"]')
         .setValue('Short')
+
+      const placeholder = wrapper.find(
+        '[data-testid="preview-thumbnail-placeholder"]'
+      )
+      const file = new File(['image data'], 'thumb.png', {
+        type: 'image/png'
+      })
+      const fileList = { 0: file, length: 1, item: (i: number) => [file][i] }
+      await placeholder.trigger('drop', {
+        dataTransfer: { files: fileList }
+      })
+      await flushPromises()
+      await flushPromises()
+
       await wrapper.find('[data-testid="btn-next"]').trigger('click')
       await vi.dynamicImportSettled()
 
       expect(wrapper.find('[data-testid="btn-back"]').exists()).toBe(true)
+      vi.unstubAllGlobals()
     })
   })
 
   describe('step 2: submit', () => {
     async function advanceToSubmitStep() {
+      vi.stubGlobal(
+        'FileReader',
+        class {
+          onload: ((e: { target: { result: string } }) => void) | null = null
+          onerror: ((e: ProgressEvent) => void) | null = null
+          readAsDataURL() {
+            this.onerror?.(new ProgressEvent('error'))
+          }
+        }
+      )
       mockService.createTemplate.mockResolvedValue({
         id: 'tpl_1',
         status: 'draft'
       })
+      mockService.uploadTemplateMedia.mockResolvedValue({
+        url: 'https://cdn.example.com/thumb.png',
+        type: 'image/png'
+      })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
 
       const wrapper = createWrapper()
       await wrapper
@@ -502,9 +625,24 @@ describe('PublishTemplateWizard', () => {
       await wrapper
         .find('input[data-testid="input-short-description"]')
         .setValue('Short')
+
+      const placeholder = wrapper.find(
+        '[data-testid="preview-thumbnail-placeholder"]'
+      )
+      const file = new File(['image data'], 'thumb.png', {
+        type: 'image/png'
+      })
+      const fileList = { 0: file, length: 1, item: (i: number) => [file][i] }
+      await placeholder.trigger('drop', {
+        dataTransfer: { files: fileList }
+      })
+      await flushPromises()
+      await flushPromises()
+
       await wrapper.find('[data-testid="btn-next"]').trigger('click')
       await vi.dynamicImportSettled()
 
+      vi.unstubAllGlobals()
       return wrapper
     }
 
@@ -530,16 +668,16 @@ describe('PublishTemplateWizard', () => {
       mockCreateGraphThumbnail.mockReturnValue(
         'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
       )
-      mockService.uploadTemplateMedia.mockResolvedValue({
-        url: '/api/marketplace/media/tpl_1/previews%2Fworkflow-preview.png',
-        type: 'image/png'
-      })
       mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
       mockService.submitTemplate.mockResolvedValue({
         status: 'pending_review'
       })
 
       const wrapper = await advanceToSubmitStep()
+      mockService.uploadTemplateMedia.mockResolvedValue({
+        url: '/api/marketplace/media/tpl_1/previews%2Fworkflow-preview.png',
+        type: 'image/png'
+      })
       await wrapper.find('[data-testid="btn-submit"]').trigger('click')
       await flushPromises()
 
@@ -579,7 +717,7 @@ describe('PublishTemplateWizard', () => {
         requiredModels: [],
         requiredNodes: [],
         vramRequirement: 0,
-        thumbnail: '',
+        thumbnail: 'https://example.com/thumb.png',
         gallery: [],
         workflowPreview: '',
         license: 'mit',

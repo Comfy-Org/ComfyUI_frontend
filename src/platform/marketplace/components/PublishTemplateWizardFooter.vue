@@ -61,7 +61,7 @@
           <Button
             v-if="currentStep === 2 && !submitted && !isPendingReview"
             data-testid="btn-submit"
-            :disabled="isPublishing"
+            :disabled="!canSubmit"
             @click="$emit('submit')"
           >
             {{
@@ -86,6 +86,7 @@ defineProps<{
   submitted: boolean
   isPendingReview: boolean
   canAdvance: boolean
+  canSubmit: boolean
   isPublishing: boolean
 }>()
 

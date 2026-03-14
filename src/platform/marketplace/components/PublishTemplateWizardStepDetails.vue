@@ -190,9 +190,17 @@
     </div>
 
     <div class="flex flex-col gap-2">
-      <p class="text-xs text-muted">
-        {{ $t('marketplace.previewDescription') }}
-      </p>
+      <div class="flex w-full items-center gap-1.5">
+        <p class="text-xs text-muted">
+          {{ $t('marketplace.previewDescription') }}
+        </p>
+        <i
+          v-if="!readOnly && isThumbnailInvalid"
+          v-tooltip.bottom="$t('marketplace.thumbnailRequired')"
+          class="ml-auto icon-[lucide--circle-alert] size-4 text-warning-background"
+          aria-hidden
+        />
+      </div>
       <div
         class="relative flex w-full justify-center rounded-lg border border-border-default bg-base-background py-5"
       >
@@ -282,7 +290,7 @@ const difficulty = defineModel<DifficultyLevel>('difficulty', {
 })
 const tags = defineModel<string[]>('tags', { required: true })
 
-defineProps<{
+const props = defineProps<{
   readOnly: boolean
   thumbnailUrl: string | null
   licenseOptions: { name: string; value: string }[]
@@ -322,6 +330,11 @@ const isShortDescriptionInvalid = computed(
     shortDescription.value.trim() === '' ||
     shortDescription.value === defaultShortDescription.value
 )
+
+const isThumbnailInvalid = computed(
+  () => !props.thumbnailUrl && !props.isUploadingThumbnail
+)
+
 const thumbnailFileInputRef = ref<HTMLInputElement | null>(null)
 
 function hasImageDropData(e: DragEvent): boolean {
