@@ -2,8 +2,17 @@
   <div data-testid="step-details" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <div class="flex flex-col gap-4">
       <div class="flex flex-col gap-1">
-        <label for="publish-title" class="text-sm font-medium">
+        <label
+          for="publish-title"
+          class="flex items-center gap-1.5 text-sm font-medium"
+        >
           {{ $t('marketplace.title') }}
+          <i
+            v-if="!readOnly && isTitleInvalid"
+            v-tooltip.bottom="$t('marketplace.requiredFieldTooltip')"
+            class="ml-auto icon-[lucide--circle-alert] size-4 text-warning-background"
+            aria-hidden
+          />
         </label>
         <input
           v-if="readOnly"
@@ -35,6 +44,12 @@
             class="icon-[lucide--info] size-4 text-muted"
             aria-hidden
           />
+          <i
+            v-if="!readOnly && isDescriptionInvalid"
+            v-tooltip.bottom="$t('marketplace.requiredFieldTooltip')"
+            class="ml-auto icon-[lucide--circle-alert] size-4 text-warning-background"
+            aria-hidden
+          />
         </label>
         <textarea
           v-if="readOnly"
@@ -61,9 +76,16 @@
           class="flex items-center gap-1.5 text-sm font-medium"
         >
           {{ $t('marketplace.shortDescription') }}
+
           <i
             v-tooltip.bottom="$t('marketplace.shortDescriptionTooltip')"
             class="icon-[lucide--info] size-4 text-muted"
+            aria-hidden
+          />
+          <i
+            v-if="!readOnly && isShortDescriptionInvalid"
+            v-tooltip.bottom="$t('marketplace.requiredFieldTooltip')"
+            class="ml-auto icon-[lucide--circle-alert] size-4 text-warning-background"
             aria-hidden
           />
         </label>
@@ -230,7 +252,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TagInputWithAutocomplete from '@/components/input/TagInputWithAutocomplete.vue'
@@ -271,6 +293,28 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const isOverThumbnailDrop = ref(false)
+
+const defaultTitle = computed(() => t('marketplace.titlePlaceholder'))
+const defaultDescription = computed(() =>
+  t('marketplace.descriptionPlaceholder')
+)
+const defaultShortDescription = computed(() =>
+  t('marketplace.shortDescriptionPlaceholder')
+)
+
+const isTitleInvalid = computed(
+  () => title.value.trim() === '' || title.value === defaultTitle.value
+)
+const isDescriptionInvalid = computed(
+  () =>
+    description.value.trim() === '' ||
+    description.value === defaultDescription.value
+)
+const isShortDescriptionInvalid = computed(
+  () =>
+    shortDescription.value.trim() === '' ||
+    shortDescription.value === defaultShortDescription.value
+)
 const thumbnailFileInputRef = ref<HTMLInputElement | null>(null)
 
 function hasImageDropData(e: DragEvent): boolean {

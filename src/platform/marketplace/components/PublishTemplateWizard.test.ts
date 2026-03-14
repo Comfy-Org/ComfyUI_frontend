@@ -54,6 +54,8 @@ const i18n = createI18n({
         categories: 'Categories',
         tags: 'Tags',
         tagsPlaceholder: 'Add tags...',
+        requiredFieldTooltip:
+          'You must provide your own copy for this field. Placeholder text cannot be used.',
         difficulty: 'Difficulty',
         difficultyTooltip:
           'Consider the number of inputs users must configure and how difficult it is for a relatively experienced user to get the workflow running.',
