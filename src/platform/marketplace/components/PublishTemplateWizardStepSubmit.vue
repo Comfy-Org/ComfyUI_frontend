@@ -21,6 +21,7 @@
             :title="form.title"
             :short-description="form.shortDescription"
             :license-label="licenseLabel"
+            :difficulty-label="difficultyLabel"
             :tags="form.tags"
             :thumbnail-url="thumbnailUrl"
           />
@@ -47,6 +48,7 @@ const props = defineProps<{
   }
   submitted: boolean
   licenseLabel: string
+  difficultyLabel: string
   thumbnailUrl: string | null
 }>()
 

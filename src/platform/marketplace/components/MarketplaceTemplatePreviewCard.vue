@@ -49,9 +49,10 @@
           <p class="m-0 line-clamp-2 text-sm text-muted">
             {{ shortDescription }}
           </p>
-          <span class="text-xs text-muted">
-            {{ licenseLabel }}
-          </span>
+          <div class="flex flex-wrap gap-x-3 gap-y-0 text-xs text-muted">
+            <span>{{ licenseLabel }}</span>
+            <span>{{ difficultyLabel }}</span>
+          </div>
         </div>
       </CardBottom>
     </template>
@@ -69,6 +70,7 @@ defineProps<{
   title: string
   shortDescription: string
   licenseLabel: string
+  difficultyLabel: string
   tags?: string[]
   thumbnailUrl?: string | null
 }>()

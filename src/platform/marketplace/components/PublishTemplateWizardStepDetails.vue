@@ -179,6 +179,7 @@
             :title="title"
             :short-description="shortDescription"
             :license-label="licenseLabel"
+            :difficulty-label="difficultyLabel"
             :tags="tags"
             :thumbnail-url="thumbnailUrl"
           >

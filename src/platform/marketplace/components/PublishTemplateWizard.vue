@@ -37,6 +37,7 @@
               :form="form"
               :submitted="submitted"
               :license-label="licenseLabel"
+              :difficulty-label="difficultyLabel"
               :thumbnail-url="thumbnailUrl"
             />
           </div>
