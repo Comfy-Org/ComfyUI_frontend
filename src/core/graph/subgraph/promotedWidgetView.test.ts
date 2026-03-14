@@ -97,15 +97,15 @@ function callSyncPromotions(node: SubgraphNode) {
   )._syncPromotions()
 }
 
+afterEach(() => {
+  cleanupComplexPromotionFixtureNodeType()
+})
+
 describe(createPromotedWidgetView, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     mockDomWidgetStore.widgetStates.clear()
     vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    cleanupComplexPromotionFixtureNodeType()
   })
 
   test('exposes sourceNodeId and sourceWidgetName', () => {
