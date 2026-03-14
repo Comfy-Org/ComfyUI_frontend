@@ -577,6 +577,13 @@ export class ComfyApp {
     // Get prompt from dropped PNG or json
     useEventListener(document, 'drop', async (event: DragEvent) => {
       try {
+        if (
+          event.target instanceof Element &&
+          event.target.closest('[data-handles-file-drop]')
+        ) {
+          event.preventDefault()
+          return
+        }
         event.preventDefault()
         event.stopPropagation()
 

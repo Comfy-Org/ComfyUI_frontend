@@ -3639,6 +3639,8 @@
     "previewTitle": "Preview",
     "previewDescription": "This is how your template will appear in the marketplace.",
     "noThumbnailYet": "No thumbnail yet",
+    "dropThumbnailHere": "Drop image here",
+    "thumbnailUploadError": "Please drop an image file",
     "authorDashboard": "My Templates",
     "edit": "Edit",
     "done": "Done",

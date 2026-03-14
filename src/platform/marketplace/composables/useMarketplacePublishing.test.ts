@@ -39,7 +39,7 @@ describe('useMarketplacePublishing', () => {
   })
 
   describe('createDraft', () => {
-    it('creates a draft and advances to step 2', async () => {
+    it('creates a draft without advancing step', async () => {
       const response: CreateTemplateResponse = { id: 'tpl_1', status: 'draft' }
       mockService.createTemplate.mockResolvedValue(response)
 
@@ -52,7 +52,7 @@ describe('useMarketplacePublishing', () => {
       })
 
       expect(draftId.value).toBe('tpl_1')
-      expect(currentStep.value).toBe(2)
+      expect(currentStep.value).toBe(1)
     })
 
     it('sets error on failure', async () => {

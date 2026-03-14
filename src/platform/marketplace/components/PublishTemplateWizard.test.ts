@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -62,6 +62,8 @@ const i18n = createI18n({
         previewDescription:
           'This is how your template will appear in the marketplace.',
         noThumbnailYet: 'No thumbnail yet',
+        dropThumbnailHere: 'Drop image here',
+        thumbnailUploadError: 'Please drop an image file',
         licenseTypes: {
           'cc-by': 'CC BY',
           'cc-by-sa': 'CC BY-SA',
@@ -144,12 +146,13 @@ describe('PublishTemplateWizard', () => {
       ).toBe(true)
     })
 
-    it('creates draft and advances to step 2 on Next', async () => {
+    it('creates draft on first Next, advances to step 2 on second Next', async () => {
       const createResponse: CreateTemplateResponse = {
         id: 'tpl_1',
         status: 'draft'
       }
       mockService.createTemplate.mockResolvedValue(createResponse)
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
 
       const wrapper = createWrapper()
 
@@ -173,6 +176,13 @@ describe('PublishTemplateWizard', () => {
         license: 'mit',
         tags: []
       })
+      expect(wrapper.find('[data-testid="step-details"]').exists()).toBe(true)
+
+      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      await vi.dynamicImportSettled()
+
+      expect(mockService.updateTemplate).toHaveBeenCalled()
+      expect(wrapper.find('[data-testid="step-submit"]').exists()).toBe(true)
     })
 
     it('includes tags in createDraft payload when tags are added', async () => {
@@ -252,12 +262,129 @@ describe('PublishTemplateWizard', () => {
       expect(wrapper.text()).toContain('Video')
     })
 
-    it('shows thumbnail placeholder when initialTemplate has no thumbnail', () => {
+    it('shows drop zone on step 1', () => {
       const wrapper = createWrapper()
       expect(
         wrapper.find('[data-testid="preview-thumbnail-placeholder"]').exists()
       ).toBe(true)
-      expect(wrapper.text()).toContain('No thumbnail yet')
+      expect(wrapper.text()).toContain('Drop image here')
+    })
+
+    it('shows preview when image dropped before Next, uploads on Next', async () => {
+      vi.stubGlobal(
+        'FileReader',
+        class {
+          onload: ((e: { target: { result: string } }) => void) | null = null
+          onerror: ((e: ProgressEvent) => void) | null = null
+          readAsDataURL() {
+            this.onerror?.(new ProgressEvent('error'))
+          }
+        }
+      )
+      mockService.createTemplate.mockResolvedValue({
+        id: 'tpl_1',
+        status: 'draft'
+      })
+      mockService.uploadTemplateMedia.mockResolvedValue({
+        url: 'https://cdn.example.com/thumb.png',
+        type: 'image/png'
+      })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
+
+      const wrapper = createWrapper()
+      await wrapper
+        .find('input[data-testid="input-title"]')
+        .setValue('My Workflow')
+      await wrapper
+        .find('textarea[data-testid="input-description"]')
+        .setValue('Description')
+      await wrapper
+        .find('input[data-testid="input-short-description"]')
+        .setValue('Short')
+
+      const placeholder = wrapper.find(
+        '[data-testid="preview-thumbnail-placeholder"]'
+      )
+      const file = new File(['image data'], 'thumb.png', {
+        type: 'image/png'
+      })
+      const fileList = { 0: file, length: 1, item: (i: number) => [file][i] }
+      await placeholder.trigger('drop', {
+        dataTransfer: { files: fileList }
+      })
+      await flushPromises()
+      await flushPromises()
+
+      expect(
+        wrapper.find('[data-testid="preview-thumbnail-placeholder"]').exists()
+      ).toBe(false)
+      expect(mockService.uploadTemplateMedia).not.toHaveBeenCalled()
+
+      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      await flushPromises()
+
+      expect(mockService.uploadTemplateMedia).toHaveBeenCalledWith(
+        'tpl_1',
+        expect.any(File)
+      )
+      vi.unstubAllGlobals()
+    })
+
+    it('uploads thumbnail immediately when image dropped after Next', async () => {
+      vi.stubGlobal(
+        'FileReader',
+        class {
+          onload: ((e: { target: { result: string } }) => void) | null = null
+          onerror: ((e: ProgressEvent) => void) | null = null
+          readAsDataURL() {
+            this.onerror?.(new ProgressEvent('error'))
+          }
+        }
+      )
+      mockService.createTemplate.mockResolvedValue({
+        id: 'tpl_1',
+        status: 'draft'
+      })
+      mockService.uploadTemplateMedia.mockResolvedValue({
+        url: 'https://cdn.example.com/thumb.png',
+        type: 'image/png'
+      })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
+
+      const wrapper = createWrapper()
+      await wrapper
+        .find('input[data-testid="input-title"]')
+        .setValue('My Workflow')
+      await wrapper
+        .find('textarea[data-testid="input-description"]')
+        .setValue('Description')
+      await wrapper
+        .find('input[data-testid="input-short-description"]')
+        .setValue('Short')
+      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      await vi.dynamicImportSettled()
+
+      const placeholder = wrapper.find(
+        '[data-testid="preview-thumbnail-placeholder"]'
+      )
+      const file = new File(['image data'], 'thumb.png', {
+        type: 'image/png'
+      })
+      const fileList = { 0: file, length: 1, item: (i: number) => [file][i] }
+      await placeholder.trigger('drop', {
+        dataTransfer: { files: fileList }
+      })
+      await flushPromises()
+      await flushPromises()
+
+      expect(mockService.uploadTemplateMedia).toHaveBeenCalledWith(
+        'tpl_1',
+        expect.any(File)
+      )
+      expect(
+        wrapper.find('[data-testid="preview-thumbnail-placeholder"]').exists()
+      ).toBe(false)
+      vi.unstubAllGlobals()
     })
 
     it('shows thumbnail (not placeholder) when initialTemplate has thumbnail', async () => {
@@ -307,6 +434,7 @@ describe('PublishTemplateWizard', () => {
         id: 'tpl_1',
         status: 'draft'
       })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
       const wrapper = createWrapper()
       await wrapper
         .find('input[data-testid="input-title"]')
@@ -317,6 +445,8 @@ describe('PublishTemplateWizard', () => {
       await wrapper
         .find('input[data-testid="input-short-description"]')
         .setValue('Short')
+      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      await vi.dynamicImportSettled()
       await wrapper.find('[data-testid="btn-next"]').trigger('click')
       await vi.dynamicImportSettled()
 
@@ -330,6 +460,7 @@ describe('PublishTemplateWizard', () => {
         id: 'tpl_1',
         status: 'draft'
       })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
 
       const wrapper = createWrapper()
       await wrapper
@@ -341,6 +472,8 @@ describe('PublishTemplateWizard', () => {
       await wrapper
         .find('input[data-testid="input-short-description"]')
         .setValue('Short')
+      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      await vi.dynamicImportSettled()
       await wrapper.find('[data-testid="btn-next"]').trigger('click')
       await vi.dynamicImportSettled()
 

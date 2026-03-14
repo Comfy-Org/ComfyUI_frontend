@@ -109,24 +109,44 @@
               <CardTop ratio="square">
                 <template #default>
                   <div
-                    v-if="initialTemplate?.thumbnail"
+                    v-if="thumbnailUrl"
                     class="relative size-full overflow-hidden rounded-lg"
                   >
                     <DefaultThumbnail
-                      :src="initialTemplate.thumbnail"
+                      :src="thumbnailUrl"
                       :alt="form.title"
                       :hover-zoom="0"
                       :is-hovered="false"
+                      object-fit="cover"
                     />
                   </div>
                   <div
                     v-else
-                    class="flex size-full flex-col items-center justify-center gap-2 rounded-lg bg-dialog-surface"
+                    class="relative flex size-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-colors"
+                    :class="
+                      cn(
+                        'cursor-pointer border-border-default bg-dialog-surface hover:border-muted-foreground',
+                        isOverThumbnailDrop && 'border-muted-foreground'
+                      )
+                    "
                     data-testid="preview-thumbnail-placeholder"
+                    data-handles-file-drop
+                    @dragover.prevent="handleThumbnailDragOver"
+                    @dragleave="handleThumbnailDragLeave"
+                    @drop.prevent="handleThumbnailDrop"
                   >
+                    <div
+                      v-if="isUploadingThumbnail"
+                      class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-base-background/80"
+                    >
+                      <i
+                        class="icon-[lucide--loader-circle] size-10 animate-spin text-muted"
+                        aria-hidden
+                      />
+                    </div>
                     <i class="icon-[lucide--image] size-10 text-muted" />
                     <span class="text-xs text-muted">
-                      {{ $t('marketplace.noThumbnailYet') }}
+                      {{ $t('marketplace.dropThumbnailHere') }}
                     </span>
                   </div>
                 </template>
@@ -269,6 +289,8 @@ import type {
 } from '@/platform/marketplace/apiTypes'
 import { LICENSE_TYPES } from '@/platform/marketplace/apiTypes'
 import { useMarketplacePublishing } from '@/platform/marketplace/composables/useMarketplacePublishing'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { extractFilesFromDragEvent, hasImageType } from '@/utils/eventUtils'
 import { cn } from '@/utils/tailwindUtil'
 
 const { onClose, initialTemplate } = defineProps<{
@@ -292,6 +314,7 @@ const {
   createDraft,
   saveDraft,
   submit,
+  uploadMedia,
   nextStep,
   prevStep,
   loadForEdit,
@@ -318,6 +341,10 @@ const licenseLabel = computed(() =>
 )
 
 const submitted = ref(false)
+const thumbnailUrl = ref<string | null>(null)
+const pendingThumbnailFile = ref<File | null>(null)
+const isUploadingThumbnail = ref(false)
+const isOverThumbnailDrop = ref(false)
 
 const isPendingReview = computed(
   () => initialTemplate?.status === 'pending_review'
@@ -349,6 +376,7 @@ function initFromTemplate(template: MarketplaceTemplate) {
   form.shortDescription = template.shortDescription
   form.license = template.license
   form.tags = template.tags ? [...template.tags] : []
+  thumbnailUrl.value = template.thumbnail ?? null
 }
 
 watch(
@@ -373,13 +401,30 @@ async function handleNext() {
         license: form.license,
         tags: form.tags
       })
+      const file = pendingThumbnailFile.value
+      if (file) {
+        pendingThumbnailFile.value = null
+        isUploadingThumbnail.value = true
+        try {
+          const media = await uploadMedia(file)
+          if (media) {
+            await saveDraft({ thumbnail: media.url })
+            thumbnailUrl.value = media.url
+          }
+        } finally {
+          isUploadingThumbnail.value = false
+        }
+      }
     } else {
       await saveDraft({
         title: form.title,
         description: form.description,
         shortDescription: form.shortDescription,
         license: form.license,
-        tags: form.tags
+        tags: form.tags,
+        ...(thumbnailUrl.value?.startsWith('http') && {
+          thumbnail: thumbnailUrl.value
+        })
       })
       nextStep()
     }
@@ -402,5 +447,67 @@ async function handleSubmit() {
 
 function handleDone() {
   onClose?.()
+}
+
+function hasImageDropData(e: DragEvent): boolean {
+  if (!e.dataTransfer) return false
+  if (e.dataTransfer.files?.length) {
+    return Array.from(e.dataTransfer.files).some(hasImageType)
+  }
+  return ['text/uri-list', 'text/x-moz-url'].some((t) =>
+    e.dataTransfer!.types.includes(t)
+  )
+}
+
+function handleThumbnailDragOver(e: DragEvent) {
+  if (!hasImageDropData(e)) return
+  e.preventDefault()
+  e.dataTransfer!.dropEffect = 'copy'
+  isOverThumbnailDrop.value = true
+}
+
+function handleThumbnailDragLeave() {
+  isOverThumbnailDrop.value = false
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+async function handleThumbnailDrop(e: DragEvent) {
+  isOverThumbnailDrop.value = false
+  e.preventDefault()
+  e.stopPropagation()
+  const files = await extractFilesFromDragEvent(e)
+  const imageFile = files.find(hasImageType)
+  if (!imageFile) {
+    useToastStore().addAlert(t('marketplace.thumbnailUploadError'))
+    return
+  }
+  try {
+    thumbnailUrl.value = await fileToDataUrl(imageFile)
+  } catch {
+    thumbnailUrl.value = URL.createObjectURL(imageFile)
+  }
+  if (draftId.value) {
+    pendingThumbnailFile.value = null
+    isUploadingThumbnail.value = true
+    try {
+      const media = await uploadMedia(imageFile)
+      if (media) {
+        await saveDraft({ thumbnail: media.url })
+        thumbnailUrl.value = media.url
+      }
+    } finally {
+      isUploadingThumbnail.value = false
+    }
+  } else {
+    pendingThumbnailFile.value = imageFile
+  }
 }
 </script>

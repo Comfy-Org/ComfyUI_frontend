@@ -23,7 +23,6 @@ export function useMarketplacePublishing() {
     try {
       const result = await marketplaceService.createTemplate(req)
       draftId.value = result.id
-      currentStep.value = 2
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
     }
