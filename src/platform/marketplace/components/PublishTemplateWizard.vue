@@ -49,7 +49,6 @@
           class="shrink-0"
           :error="publishingError"
           :read-only="readOnly"
-          :steps="steps"
           :current-step="currentStep"
           :submitted="submitted"
           :is-pending-review="isPendingReview"
@@ -164,11 +163,6 @@ const thumbnailUploadComplete = ref(false)
 const isPendingReview = computed(
   () => initialTemplate?.status === 'pending_review'
 )
-
-const steps = computed(() => [
-  { id: 'details', label: t('marketplace.steps.details') },
-  { id: 'submit', label: t('marketplace.steps.submit') }
-])
 
 const canAdvance = computed(() => {
   if (currentStep.value === 1) {

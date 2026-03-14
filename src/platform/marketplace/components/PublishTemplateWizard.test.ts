@@ -127,7 +127,6 @@ describe('PublishTemplateWizard', () => {
   describe('step 1: details form', () => {
     it('renders the details step initially', () => {
       const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Details')
       expect(wrapper.find('[data-testid="step-details"]').exists()).toBe(true)
     })
 
