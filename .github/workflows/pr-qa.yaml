@@ -139,6 +139,22 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install ffmpeg
 
+      - name: Grant screen recording permission (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # Grant kTCCServiceScreenCapture to ffmpeg and bash so avfoundation
+          # recording works without the blocking permission dialog.
+          FFMPEG_PATH=$(which ffmpeg)
+          echo "Granting screen recording permission to: $FFMPEG_PATH"
+          # macOS 14+ (Sonoma/Sequoia) TCC.db schema has 17 columns
+          for BIN in "$FFMPEG_PATH" "/bin/bash"; do
+            sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+              "INSERT OR REPLACE INTO access VALUES('kTCCServiceScreenCapture','${BIN}',1,2,0,1,NULL,NULL,0,'UNUSED',NULL,0,$(date +%s),NULL,NULL,NULL,NULL);" 2>/dev/null \
+            || sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+              "INSERT OR REPLACE INTO access VALUES('kTCCServiceScreenCapture','${BIN}',1,2,0,1,NULL,NULL,NULL,'UNUSED',NULL,0,$(date +%s));" 2>/dev/null \
+            || echo "Warning: Could not grant TCC permission to ${BIN}"
+          done
+
       - name: Start recording (macOS)
         if: runner.os == 'macOS'
         run: |
