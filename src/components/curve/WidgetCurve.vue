@@ -13,4 +13,17 @@ const modelValue = defineModel<CurvePoint[]>({
     [1, 1]
   ]
 })
+
+const isDisabled = computed(() => !!widget.options?.disabled)
+
+const upstreamValue = useUpstreamValue(
+  () => widget.linkedUpstream,
+  singleValueExtractor(isCurvePointArray)
+)
+
+const effectivePoints = computed(() =>
+  isDisabled.value && upstreamValue.value
+    ? upstreamValue.value
+    : modelValue.value
+)
 </script>
