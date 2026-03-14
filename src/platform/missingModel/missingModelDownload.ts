@@ -97,9 +97,14 @@ async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
     if (!res.ok) return { fileSize: null, gatedRepoUrl: null }
 
     const data: CivitaiModelVersionResponse = await res.json()
-    const matchingFile = data.files?.find(
-      (file) => file.downloadUrl.startsWith(url) && file.downloadUrl
-    )
+    const matchingFile = data.files?.find((file) => {
+      const downloadUrl = file.downloadUrl
+      return (
+        typeof downloadUrl === 'string' &&
+        downloadUrl.length > 0 &&
+        downloadUrl.startsWith(url)
+      )
+    })
     const fileSize = matchingFile?.sizeKB ? matchingFile.sizeKB * 1024 : null
     return { fileSize, gatedRepoUrl: null }
   } catch {

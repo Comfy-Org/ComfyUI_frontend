@@ -1421,15 +1421,16 @@ export class ComfyApp {
   ): Promise<{ missingModels: ModelFile[] }> {
     const missingModelStore = useMissingModelStore()
 
+    const getDirectory = (nodeType: string) =>
+      useModelToNodeStore().getCategoryForNodeType(nodeType)
+
     const candidates = scanAllModelCandidates(
       this.rootGraph,
       isCloud
         ? (nodeType, widgetName) =>
             assetService.shouldUseAssetBrowser(nodeType, widgetName)
         : () => false,
-      isCloud
-        ? (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
-        : undefined
+      getDirectory
     )
 
     const modelStore = useModelStore()
@@ -1503,11 +1504,14 @@ export class ComfyApp {
             })
           })
       } else {
+        const controller =
+          missingModelStore.createVerificationAbortController()
         const confirmed = enrichedCandidates.filter((c) => c.isMissing === true)
         if (confirmed.length) {
           api
             .getFolderPaths()
             .then((paths) => {
+              if (controller.signal.aborted) return
               missingModelStore.setFolderPaths(paths)
             })
             .catch((err) => {
@@ -1517,6 +1521,7 @@ export class ComfyApp {
               )
             })
             .finally(() => {
+              if (controller.signal.aborted) return
               useExecutionErrorStore().surfaceMissingModels(confirmed)
             })
 
@@ -1524,10 +1529,11 @@ export class ComfyApp {
             confirmed
               .filter((c) => c.url)
               .map(async (c) => {
-                const { fetchModelMetadata } =
-                  await import('@/platform/missingModel/missingModelDownload')
+                const { fetchModelMetadata } = await import(
+                  '@/platform/missingModel/missingModelDownload'
+                )
                 const metadata = await fetchModelMetadata(c.url!)
-                if (metadata.fileSize !== null) {
+                if (!controller.signal.aborted && metadata.fileSize !== null) {
                   missingModelStore.setFileSize(c.url!, metadata.fileSize)
                 }
               })

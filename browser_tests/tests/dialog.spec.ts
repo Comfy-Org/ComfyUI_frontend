@@ -95,9 +95,11 @@ test.describe('Missing models in Error Tab', () => {
       'Comfy.RightSidePanel.ShowErrorsTab',
       true
     )
-    await comfyPage.page.evaluate((url: string) => {
-      return fetch(`${url}/api/devtools/cleanup_fake_model`)
+    const cleanupOk = await comfyPage.page.evaluate(async (url: string) => {
+      const response = await fetch(`${url}/api/devtools/cleanup_fake_model`)
+      return response.ok
     }, comfyPage.url)
+    expect(cleanupOk).toBeTruthy()
   })
 
   test('Should show error overlay with missing models when workflow has missing models', async ({
