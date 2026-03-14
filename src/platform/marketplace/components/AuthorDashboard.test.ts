@@ -91,6 +91,13 @@ const i18n = createI18n({
       marketplace: {
         authorDashboard: 'Author Dashboard',
         myTemplates: 'My Templates',
+        myDrafts: 'My Drafts',
+        mySubmissions: 'My Submissions',
+        noDrafts: 'No drafts yet.',
+        submissionsInReview: 'In review',
+        noSubmissionsInReview: 'No templates in review.',
+        submissionsLive: 'Live',
+        noSubmissionsLive: 'No live templates.',
         refresh: 'Refresh templates',
         edit: 'Edit',
         status: {
@@ -213,14 +220,18 @@ describe('AuthorDashboard', () => {
     expect(mockService.getAuthorStats).toHaveBeenCalled()
   })
 
-  it('shows templates grouped by status', async () => {
+  it('shows all three columns: drafts, in review, and live', async () => {
     const wrapper = createWrapper()
     await vi.dynamicImportSettled()
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('Draft')
+    expect(wrapper.text()).toContain('My Drafts')
+    expect(wrapper.text()).toContain('In review')
+    expect(wrapper.text()).toContain('Live')
+    expect(wrapper.text()).toContain('Draft WF')
     expect(wrapper.text()).toContain('Approved')
     expect(wrapper.text()).toContain('Pending Review')
+    expect(wrapper.text()).toContain('Published')
   })
 
   it('displays stats summary', async () => {
@@ -230,15 +241,6 @@ describe('AuthorDashboard', () => {
 
     expect(wrapper.text()).toContain('500')
     expect(wrapper.text()).toContain('30')
-  })
-
-  it('has period selector buttons', async () => {
-    const wrapper = createWrapper()
-    await vi.dynamicImportSettled()
-
-    expect(wrapper.find('[data-testid="period-day"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="period-week"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="period-month"]').exists()).toBe(true)
   })
 
   describe('Edit button', () => {

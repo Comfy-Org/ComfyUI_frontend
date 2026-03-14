@@ -72,116 +72,111 @@
               }}</span>
             </button>
           </div>
-          <div v-for="statusGroup in statusGroups" :key="statusGroup.status">
-            <template v-if="statusGroup.templates.length > 0">
-              <h3 class="mb-2 text-sm font-semibold">
-                {{ $t(`marketplace.status.${statusGroup.status}`) }}
-                <span class="ml-1 text-muted">
-                  ({{ statusGroup.templates.length }})
-                </span>
-              </h3>
+
+          <div class="grid grid-cols-3 gap-6">
+            <div class="flex flex-col gap-4">
+              <h4 class="mb-2 text-sm font-semibold">
+                {{ $t('marketplace.myDrafts') }}
+              </h4>
               <div class="flex flex-col gap-2">
-                <div
-                  v-for="template in statusGroup.templates"
-                  :key="template.id"
-                  class="border-border flex items-center justify-between gap-3 rounded-lg border p-3"
-                >
-                  <div class="flex shrink-0 gap-1">
-                    <div
-                      class="flex size-12 overflow-hidden rounded-md bg-dialog-surface"
-                    >
-                      <img
-                        v-if="template.thumbnail && !thumbErrors[template.id]"
-                        :src="template.thumbnail"
-                        :alt="template.title"
-                        loading="lazy"
-                        class="size-full object-cover"
-                        @error="thumbErrors[template.id] = true"
-                      />
-                      <div
-                        v-if="!template.thumbnail || thumbErrors[template.id]"
-                        class="flex size-full items-center justify-center"
-                      >
-                        <i class="icon-[lucide--image] size-6 text-muted" />
-                      </div>
-                    </div>
-                    <div
-                      class="flex size-12 overflow-hidden rounded-md bg-dialog-surface"
-                    >
-                      <img
-                        v-if="
-                          template.workflowPreview &&
-                          !previewErrors[template.id]
-                        "
-                        :src="template.workflowPreview"
-                        :alt="`${template.title} workflow`"
-                        loading="lazy"
-                        class="size-full object-cover"
-                        @error="previewErrors[template.id] = true"
-                      />
-                      <div
-                        v-if="
-                          !template.workflowPreview ||
-                          previewErrors[template.id]
-                        "
-                        class="flex size-full items-center justify-center"
-                      >
-                        <i
-                          class="icon-[lucide--git-branch] size-4 text-muted"
-                          aria-hidden
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <div class="font-medium">{{ template.title }}</div>
-                    <div class="text-sm text-muted">
-                      {{ template.shortDescription }}
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <button
-                      v-if="isPublishable(statusGroup.status)"
-                      :data-testid="`btn-publish-template-${template.id}`"
-                      :disabled="isPublishingTemplate === template.id"
-                      class="rounded-sm px-2 py-1 text-sm font-medium text-highlight hover:text-highlight/80 disabled:opacity-50"
-                      @click="handlePublishTemplate(template)"
-                    >
-                      {{
-                        isPublishingTemplate === template.id
-                          ? $t('marketplace.publishing')
-                          : $t('marketplace.publish')
-                      }}
-                    </button>
-                    <button
-                      v-if="isUnpublishable(statusGroup.status)"
-                      :data-testid="`btn-unpublish-template-${template.id}`"
-                      :disabled="isUnpublishingTemplate === template.id"
-                      class="rounded-sm px-2 py-1 text-sm font-medium text-muted hover:text-muted/80 disabled:opacity-50"
-                      @click="handleUnpublishTemplate(template)"
-                    >
-                      {{
-                        isUnpublishingTemplate === template.id
-                          ? $t('marketplace.unpublishing')
-                          : $t('marketplace.unpublish')
-                      }}
-                    </button>
-                    <button
-                      v-if="isEditable(statusGroup.status)"
-                      :data-testid="`btn-edit-template-${template.id}`"
-                      class="rounded-sm px-2 py-1 text-sm font-medium text-highlight hover:text-highlight/80"
-                      @click="handleEditTemplate(template)"
-                    >
-                      {{ $t('marketplace.edit') }}
-                    </button>
-                    <span class="text-sm text-muted">
-                      {{ template.stats.downloads }}
-                      {{ $t('marketplace.stats.downloads').toLowerCase() }}
-                    </span>
-                  </div>
-                </div>
+                <template v-if="draftStatusGroup.templates.length > 0">
+                  <h5 class="mb-1 text-xs font-semibold text-muted">
+                    {{ $t('marketplace.status.draft') }}
+                    ({{ draftStatusGroup.templates.length }})
+                  </h5>
+                  <AuthorTemplateCard
+                    v-for="template in draftStatusGroup.templates"
+                    :key="template.id"
+                    :template="template"
+                    :status="draftStatusGroup.status"
+                    :thumb-errors="thumbErrors"
+                    :preview-errors="previewErrors"
+                    :is-publishing-template="isPublishingTemplate"
+                    :is-unpublishing-template="isUnpublishingTemplate"
+                    @edit="handleEditTemplate"
+                    @publish="handlePublishTemplate"
+                    @unpublish="handleUnpublishTemplate"
+                    @thumb-error="(id) => (thumbErrors[id] = true)"
+                    @preview-error="(id) => (previewErrors[id] = true)"
+                  />
+                </template>
+                <p v-else class="text-sm text-muted">
+                  {{ $t('marketplace.noDrafts') }}
+                </p>
               </div>
-            </template>
+            </div>
+            <div class="flex flex-col gap-4">
+              <h4 class="mb-2 text-sm font-semibold">
+                {{ $t('marketplace.submissionsInReview') }}
+              </h4>
+              <div class="flex flex-col gap-2">
+                <template
+                  v-for="statusGroup in reviewStatusGroups"
+                  :key="statusGroup.status"
+                >
+                  <template v-if="statusGroup.templates.length > 0">
+                    <h5 class="mb-1 text-xs font-semibold text-muted">
+                      {{ $t(`marketplace.status.${statusGroup.status}`) }}
+                      ({{ statusGroup.templates.length }})
+                    </h5>
+                    <AuthorTemplateCard
+                      v-for="template in statusGroup.templates"
+                      :key="template.id"
+                      :template="template"
+                      :status="statusGroup.status"
+                      :thumb-errors="thumbErrors"
+                      :preview-errors="previewErrors"
+                      :is-publishing-template="isPublishingTemplate"
+                      :is-unpublishing-template="isUnpublishingTemplate"
+                      @edit="handleEditTemplate"
+                      @publish="handlePublishTemplate"
+                      @unpublish="handleUnpublishTemplate"
+                      @thumb-error="(id) => (thumbErrors[id] = true)"
+                      @preview-error="(id) => (previewErrors[id] = true)"
+                    />
+                  </template>
+                </template>
+                <p v-if="!hasReviewTemplates" class="text-sm text-muted">
+                  {{ $t('marketplace.noSubmissionsInReview') }}
+                </p>
+              </div>
+            </div>
+            <div class="flex flex-col gap-4">
+              <h4 class="mb-2 text-sm font-semibold">
+                {{ $t('marketplace.submissionsLive') }}
+              </h4>
+              <div class="flex flex-col gap-2">
+                <template
+                  v-for="statusGroup in liveStatusGroups"
+                  :key="statusGroup.status"
+                >
+                  <template v-if="statusGroup.templates.length > 0">
+                    <h5 class="mb-1 text-xs font-semibold text-muted">
+                      {{ $t(`marketplace.status.${statusGroup.status}`) }}
+                      ({{ statusGroup.templates.length }})
+                    </h5>
+                    <AuthorTemplateCard
+                      v-for="template in statusGroup.templates"
+                      :key="template.id"
+                      :template="template"
+                      :status="statusGroup.status"
+                      :thumb-errors="thumbErrors"
+                      :preview-errors="previewErrors"
+                      :is-publishing-template="isPublishingTemplate"
+                      :is-unpublishing-template="isUnpublishingTemplate"
+                      @edit="handleEditTemplate"
+                      @publish="handlePublishTemplate"
+                      @unpublish="handleUnpublishTemplate"
+                      @thumb-error="(id) => (thumbErrors[id] = true)"
+                      @preview-error="(id) => (previewErrors[id] = true)"
+                    />
+                  </template>
+                </template>
+                <p v-if="!hasLiveTemplates" class="text-sm text-muted">
+                  {{ $t('marketplace.noSubmissionsLive') }}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -193,20 +188,14 @@
 import { computed, onMounted, provide, ref } from 'vue'
 
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
+import AuthorTemplateCard from '@/platform/marketplace/components/AuthorTemplateCard.vue'
 import type {
   MarketplaceTemplate,
   TemplateStatus
 } from '@/platform/marketplace/apiTypes'
-import { TEMPLATE_STATUSES } from '@/platform/marketplace/apiTypes'
 import { useAuthorDashboard } from '@/platform/marketplace/composables/useAuthorDashboard'
 import { usePublishDialog } from '@/platform/marketplace/composables/usePublishDialog'
 import { OnCloseKey } from '@/types/widgetTypes'
-
-const EDITABLE_STATUSES: TemplateStatus[] = [
-  'draft',
-  'pending_review',
-  'rejected'
-]
 
 const props = defineProps<{
   onClose?: () => void
@@ -238,18 +227,6 @@ const { show: showPublishDialog } = usePublishDialog()
 const thumbErrors = ref<Record<string, boolean>>({})
 const previewErrors = ref<Record<string, boolean>>({})
 
-function isEditable(status: TemplateStatus): boolean {
-  return EDITABLE_STATUSES.includes(status)
-}
-
-function isPublishable(status: TemplateStatus): boolean {
-  return status === 'approved' || status === 'unpublished'
-}
-
-function isUnpublishable(status: TemplateStatus): boolean {
-  return status === 'published'
-}
-
 function handleEditTemplate(template: MarketplaceTemplate) {
   showPublishDialog({
     initialTemplate: template,
@@ -265,11 +242,36 @@ function handleUnpublishTemplate(template: MarketplaceTemplate) {
   void unpublishTemplate(template.id)
 }
 
-const statusGroups = computed(() =>
-  TEMPLATE_STATUSES.map((status) => ({
+const draftStatusGroup = computed(() => ({
+  status: 'draft' as TemplateStatus,
+  templates: templatesByStatus.value.draft
+}))
+
+const REVIEW_STATUSES: TemplateStatus[] = [
+  'pending_review',
+  'approved',
+  'rejected'
+]
+const LIVE_STATUSES: TemplateStatus[] = ['published', 'unpublished']
+
+const reviewStatusGroups = computed(() =>
+  REVIEW_STATUSES.map((status) => ({
     status,
     templates: templatesByStatus.value[status]
   }))
+)
+const liveStatusGroups = computed(() =>
+  LIVE_STATUSES.map((status) => ({
+    status,
+    templates: templatesByStatus.value[status]
+  }))
+)
+
+const hasReviewTemplates = computed(() =>
+  reviewStatusGroups.value.some((g) => g.templates.length > 0)
+)
+const hasLiveTemplates = computed(() =>
+  liveStatusGroups.value.some((g) => g.templates.length > 0)
 )
 
 onMounted(() => {
