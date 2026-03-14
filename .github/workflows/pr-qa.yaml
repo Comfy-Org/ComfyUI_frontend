@@ -74,7 +74,7 @@ jobs:
         run: echo "QA_ARTIFACTS=$RUNNER_TEMP/qa-artifacts" >> "$GITHUB_ENV"
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref }}
@@ -292,7 +292,7 @@ jobs:
 
       - name: Upload QA artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v6.2.0
         with:
           name: qa-report-${{ runner.os }}-${{ github.run_id }}
           path: ${{ env.QA_ARTIFACTS }}/
@@ -310,7 +310,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Download QA artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: qa-artifacts
           pattern: qa-report-*
@@ -447,15 +447,15 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -464,7 +464,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1
 
       - name: Download QA artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: qa-artifacts
           pattern: qa-report-*
