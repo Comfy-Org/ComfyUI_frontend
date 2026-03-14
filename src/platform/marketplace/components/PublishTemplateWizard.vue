@@ -52,6 +52,7 @@
           @close="handleClose"
           @back="handleBack"
           @next="handleNext"
+          @preview="handlePreview"
           @submit="handleSubmit"
         />
       </div>
@@ -229,6 +230,10 @@ async function handleNext() {
 
 function handleBack() {
   prevStep()
+}
+
+function handlePreview() {
+  nextStep()
 }
 
 function dataUrlToFile(dataUrl: string, filename: string): File {

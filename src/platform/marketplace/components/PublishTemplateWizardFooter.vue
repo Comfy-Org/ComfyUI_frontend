@@ -11,16 +11,32 @@
     </div>
     <div class="flex w-full items-center justify-between">
       <PublishTemplateWizardStepTracker
-        v-if="!readOnly"
         :steps="steps"
         :current-step="currentStep"
       />
-      <div v-else />
       <div>
         <template v-if="readOnly">
-          <Button data-testid="btn-done" @click="$emit('close')">
-            {{ $t('marketplace.done') }}
-          </Button>
+          <div class="flex items-center gap-2">
+            <Button
+              v-if="currentStep === 2"
+              data-testid="btn-back"
+              variant="secondary"
+              @click="$emit('back')"
+            >
+              {{ $t('marketplace.back') }}
+            </Button>
+            <Button
+              v-if="currentStep === 1"
+              data-testid="btn-preview"
+              variant="secondary"
+              @click="$emit('preview')"
+            >
+              {{ $t('marketplace.preview') }}
+            </Button>
+            <Button data-testid="btn-done" @click="$emit('close')">
+              {{ $t('marketplace.done') }}
+            </Button>
+          </div>
         </template>
         <template v-else>
           <div class="flex items-center gap-2">
@@ -86,6 +102,7 @@ defineEmits<{
   (e: 'close'): void
   (e: 'back'): void
   (e: 'next'): void
+  (e: 'preview'): void
   (e: 'submit'): void
 }>()
 </script>
