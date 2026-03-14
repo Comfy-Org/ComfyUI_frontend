@@ -34,6 +34,7 @@ If `CI` is not set:
 1. **Ask the user**: "Is a ComfyUI server already running? If so, what URL? (default: http://127.0.0.1:8188)"
    - If yes: use the provided URL
    - If no: offer to start one:
+
      ```bash
      # Option A: Use existing ComfyUI installation
      # Ask for the path to ComfyUI, then:
@@ -43,6 +44,7 @@ If `CI` is not set:
      # Option B: Build frontend and use preview server (no backend features)
      pnpm build && pnpm preview &
      ```
+
 2. Wait for server readiness by polling the URL (retry with 2s intervals, 60s timeout)
 
 ### Browser Automation Setup
@@ -58,146 +60,147 @@ Determine the server URL. For local dev servers behind proxies, adjust the URL a
 ## Step 2: QA Test Plan
 
 Navigate to the application URL and systematically test each area below. For each test, record:
+
 - **Status**: pass / fail / skip (with reason)
 - **Notes**: any issues, unexpected behavior, or visual glitches
 - **Screenshots**: take screenshots of failures or notable states
 
 ### 2.1 Application Load & Routes
 
-| Test | Steps |
-|------|-------|
-| Root route loads | Navigate to `/` — GraphView should render with canvas |
+| Test              | Steps                                                        |
+| ----------------- | ------------------------------------------------------------ |
+| Root route loads  | Navigate to `/` — GraphView should render with canvas        |
 | User select route | Navigate to `/user-select` — user selection UI should appear |
-| Default redirect | If multi-user mode, `/` redirects to `/user-select` first |
-| 404 handling | Navigate to `/nonexistent` — should handle gracefully |
+| Default redirect  | If multi-user mode, `/` redirects to `/user-select` first    |
+| 404 handling      | Navigate to `/nonexistent` — should handle gracefully        |
 
 ### 2.2 Canvas & Graph View
 
-| Test | Steps |
-|------|-------|
-| Canvas renders | The LiteGraph canvas is visible and interactive |
-| Pan canvas | Click and drag on empty canvas area |
-| Zoom in/out | Use scroll wheel or Alt+=/Alt+- |
-| Fit view | Press `.` key — canvas fits to content |
+| Test                      | Steps                                                          |
+| ------------------------- | -------------------------------------------------------------- |
+| Canvas renders            | The LiteGraph canvas is visible and interactive                |
+| Pan canvas                | Click and drag on empty canvas area                            |
+| Zoom in/out               | Use scroll wheel or Alt+=/Alt+-                                |
+| Fit view                  | Press `.` key — canvas fits to content                         |
 | Add node via double-click | Double-click canvas to open search, type "KSampler", select it |
-| Add node via search | Open search box, find and add a node |
-| Delete node | Select a node, press Delete key |
-| Connect nodes | Drag from output slot to input slot |
-| Disconnect nodes | Right-click a link and remove, or drag from connected slot |
-| Multi-select | Shift+click or drag-select multiple nodes |
-| Copy/Paste | Select nodes, Ctrl+C then Ctrl+V |
-| Undo/Redo | Make changes, Ctrl+Z to undo, Ctrl+Y to redo |
-| Node context menu | Right-click a node — menu appears with all expected options |
-| Canvas context menu | Right-click empty canvas — menu appears |
+| Add node via search       | Open search box, find and add a node                           |
+| Delete node               | Select a node, press Delete key                                |
+| Connect nodes             | Drag from output slot to input slot                            |
+| Disconnect nodes          | Right-click a link and remove, or drag from connected slot     |
+| Multi-select              | Shift+click or drag-select multiple nodes                      |
+| Copy/Paste                | Select nodes, Ctrl+C then Ctrl+V                               |
+| Undo/Redo                 | Make changes, Ctrl+Z to undo, Ctrl+Y to redo                   |
+| Node context menu         | Right-click a node — menu appears with all expected options    |
+| Canvas context menu       | Right-click empty canvas — menu appears                        |
 
 ### 2.3 Node Operations
 
-| Test | Steps |
-|------|-------|
-| Bypass node | Select node, Ctrl+B — node shows bypass state |
-| Mute node | Select node, Ctrl+M — node shows muted state |
-| Collapse node | Select node, Alt+C — node collapses |
-| Pin node | Select node, press P — node becomes pinned |
-| Rename node | Double-click node title — edit mode activates |
-| Node color | Right-click > Color — color picker works |
-| Group nodes | Select multiple nodes, Ctrl+G — group created |
-| Ungroup | Right-click group > Ungroup |
-| Widget interactions | Toggle checkboxes, adjust sliders, type in text fields |
-| Combo widget | Click dropdown widgets — options appear and are selectable |
+| Test                | Steps                                                      |
+| ------------------- | ---------------------------------------------------------- |
+| Bypass node         | Select node, Ctrl+B — node shows bypass state              |
+| Mute node           | Select node, Ctrl+M — node shows muted state               |
+| Collapse node       | Select node, Alt+C — node collapses                        |
+| Pin node            | Select node, press P — node becomes pinned                 |
+| Rename node         | Double-click node title — edit mode activates              |
+| Node color          | Right-click > Color — color picker works                   |
+| Group nodes         | Select multiple nodes, Ctrl+G — group created              |
+| Ungroup             | Right-click group > Ungroup                                |
+| Widget interactions | Toggle checkboxes, adjust sliders, type in text fields     |
+| Combo widget        | Click dropdown widgets — options appear and are selectable |
 
 ### 2.4 Sidebar Tabs
 
-| Test | Steps |
-|------|-------|
-| Workflows tab | Press W — workflows sidebar opens with saved workflows |
-| Node Library tab | Press N — node library opens with categories |
-| Model Library tab | Press M — model library opens |
-| Assets tab | Press A — assets browser opens |
-| Tab toggle | Press same key again — sidebar closes |
-| Search in sidebar | Type in search box — results filter |
-| Drag node from library | Drag a node from library onto canvas |
+| Test                   | Steps                                                  |
+| ---------------------- | ------------------------------------------------------ |
+| Workflows tab          | Press W — workflows sidebar opens with saved workflows |
+| Node Library tab       | Press N — node library opens with categories           |
+| Model Library tab      | Press M — model library opens                          |
+| Assets tab             | Press A — assets browser opens                         |
+| Tab toggle             | Press same key again — sidebar closes                  |
+| Search in sidebar      | Type in search box — results filter                    |
+| Drag node from library | Drag a node from library onto canvas                   |
 
 ### 2.5 Topbar & Workflow Tabs
 
-| Test | Steps |
-|------|-------|
-| Workflow tab display | Current workflow name shown in tab bar |
-| New workflow | Ctrl+N — new blank workflow created |
-| Rename workflow | Double-click workflow tab |
-| Tab context menu | Right-click workflow tab — menu with Close/Rename/etc. |
-| Multiple tabs | Open multiple workflows, switch between them |
-| Queue button | Click Queue/Run button — prompt queues |
-| Batch count | Click batch count editor, change value |
-| Menu hamburger | Click hamburger menu — options appear |
+| Test                 | Steps                                                  |
+| -------------------- | ------------------------------------------------------ |
+| Workflow tab display | Current workflow name shown in tab bar                 |
+| New workflow         | Ctrl+N — new blank workflow created                    |
+| Rename workflow      | Double-click workflow tab                              |
+| Tab context menu     | Right-click workflow tab — menu with Close/Rename/etc. |
+| Multiple tabs        | Open multiple workflows, switch between them           |
+| Queue button         | Click Queue/Run button — prompt queues                 |
+| Batch count          | Click batch count editor, change value                 |
+| Menu hamburger       | Click hamburger menu — options appear                  |
 
 ### 2.6 Settings Dialog
 
-| Test | Steps |
-|------|-------|
-| Open settings | Press Ctrl+, or click settings button |
-| Settings tabs | Navigate through all setting categories |
+| Test             | Steps                                                |
+| ---------------- | ---------------------------------------------------- |
+| Open settings    | Press Ctrl+, or click settings button                |
+| Settings tabs    | Navigate through all setting categories              |
 | Change a setting | Toggle a boolean setting — it persists after closing |
-| Search settings | Type in settings search box — results filter |
-| Keybindings tab | Navigate to keybindings panel |
-| About tab | Navigate to about panel — version info shown |
-| Close settings | Press Escape or click close button |
+| Search settings  | Type in settings search box — results filter         |
+| Keybindings tab  | Navigate to keybindings panel                        |
+| About tab        | Navigate to about panel — version info shown         |
+| Close settings   | Press Escape or click close button                   |
 
 ### 2.7 Bottom Panel
 
-| Test | Steps |
-|------|-------|
-| Toggle panel | Press Ctrl+` — bottom panel opens |
-| Logs tab | Logs/terminal tab shows server output |
-| Shortcuts tab | Shortcuts reference is displayed |
+| Test                | Steps                                  |
+| ------------------- | -------------------------------------- |
+| Toggle panel        | Press Ctrl+` — bottom panel opens      |
+| Logs tab            | Logs/terminal tab shows server output  |
+| Shortcuts tab       | Shortcuts reference is displayed       |
 | Keybindings display | Press Ctrl+Shift+K — keybindings panel |
 
 ### 2.8 Execution & Queue
 
-| Test | Steps |
-|------|-------|
-| Queue prompt | Load default workflow, click Queue — execution starts |
-| Queue progress | Progress indicator shows during execution |
-| Interrupt | Press Ctrl+Alt+Enter during execution — interrupts |
-| Job history | Open job history sidebar — past executions listed |
-| Clear history | Clear execution history via menu |
+| Test           | Steps                                                 |
+| -------------- | ----------------------------------------------------- |
+| Queue prompt   | Load default workflow, click Queue — execution starts |
+| Queue progress | Progress indicator shows during execution             |
+| Interrupt      | Press Ctrl+Alt+Enter during execution — interrupts    |
+| Job history    | Open job history sidebar — past executions listed     |
+| Clear history  | Clear execution history via menu                      |
 
 ### 2.9 Workflow File Operations
 
-| Test | Steps |
-|------|-------|
-| Save workflow | Ctrl+S — workflow saves (check for prompt if new) |
-| Open workflow | Ctrl+O — file picker or workflow browser opens |
-| Export JSON | Menu > Export — workflow JSON downloads |
-| Import workflow | Drag a .json workflow file onto canvas |
-| Load default | Menu > Load Default — default workflow loads |
-| Clear workflow | Menu > Clear — canvas clears (after confirmation) |
+| Test            | Steps                                             |
+| --------------- | ------------------------------------------------- |
+| Save workflow   | Ctrl+S — workflow saves (check for prompt if new) |
+| Open workflow   | Ctrl+O — file picker or workflow browser opens    |
+| Export JSON     | Menu > Export — workflow JSON downloads           |
+| Import workflow | Drag a .json workflow file onto canvas            |
+| Load default    | Menu > Load Default — default workflow loads      |
+| Clear workflow  | Menu > Clear — canvas clears (after confirmation) |
 
 ### 2.10 Advanced Features
 
-| Test | Steps |
-|------|-------|
-| Minimap | Alt+M — minimap toggle |
-| Focus mode | Toggle focus mode |
-| Canvas lock | Press H to lock, V to unlock |
-| Link visibility | Ctrl+Shift+L — toggle links |
-| Subgraph | Select nodes > Ctrl+Shift+E — convert to subgraph |
+| Test            | Steps                                             |
+| --------------- | ------------------------------------------------- |
+| Minimap         | Alt+M — minimap toggle                            |
+| Focus mode      | Toggle focus mode                                 |
+| Canvas lock     | Press H to lock, V to unlock                      |
+| Link visibility | Ctrl+Shift+L — toggle links                       |
+| Subgraph        | Select nodes > Ctrl+Shift+E — convert to subgraph |
 
 ### 2.11 Error Handling
 
-| Test | Steps |
-|------|-------|
-| Missing nodes dialog | Load workflow with non-existent node types |
-| Missing models dialog | Trigger missing model warning |
-| Network error | Disconnect backend, verify graceful handling |
-| Invalid workflow | Try loading malformed JSON |
+| Test                  | Steps                                        |
+| --------------------- | -------------------------------------------- |
+| Missing nodes dialog  | Load workflow with non-existent node types   |
+| Missing models dialog | Trigger missing model warning                |
+| Network error         | Disconnect backend, verify graceful handling |
+| Invalid workflow      | Try loading malformed JSON                   |
 
 ### 2.12 Responsive & Accessibility
 
-| Test | Steps |
-|------|-------|
-| Window resize | Resize browser window — layout adapts |
-| Keyboard navigation | Tab through interactive elements |
-| Sidebar resize | Drag sidebar edge to resize |
+| Test                | Steps                                 |
+| ------------------- | ------------------------------------- |
+| Window resize       | Resize browser window — layout adapts |
+| Keyboard navigation | Tab through interactive elements      |
+| Sidebar resize      | Drag sidebar edge to resize           |
 
 ## Step 3: Generate Report
 
@@ -210,10 +213,12 @@ docs/qa/YYYY-MM-DD-NNN-report.md
 ```
 
 Where:
+
 - `YYYY-MM-DD` is today's date
 - `NNN` is a zero-padded increment index (001, 002, etc.)
 
 To determine the increment, check existing files:
+
 ```bash
 ls docs/qa/ | grep "$(date +%Y-%m-%d)" | wc -l
 ```
@@ -231,29 +236,31 @@ ls docs/qa/ | grep "$(date +%Y-%m-%d)" | wc -l
 
 ## Summary
 
-| Category | Pass | Fail | Skip | Total |
-|----------|------|------|------|-------|
-| Routes & Load | | | | |
-| Canvas | | | | |
-| Node Operations | | | | |
-| Sidebar | | | | |
-| Topbar | | | | |
-| Settings | | | | |
-| Bottom Panel | | | | |
-| Execution | | | | |
-| File Operations | | | | |
-| Advanced | | | | |
-| Error Handling | | | | |
-| Responsive | | | | |
-| **Total** | | | | |
+| Category        | Pass | Fail | Skip | Total |
+| --------------- | ---- | ---- | ---- | ----- |
+| Routes & Load   |      |      |      |       |
+| Canvas          |      |      |      |       |
+| Node Operations |      |      |      |       |
+| Sidebar         |      |      |      |       |
+| Topbar          |      |      |      |       |
+| Settings        |      |      |      |       |
+| Bottom Panel    |      |      |      |       |
+| Execution       |      |      |      |       |
+| File Operations |      |      |      |       |
+| Advanced        |      |      |      |       |
+| Error Handling  |      |      |      |       |
+| Responsive      |      |      |      |       |
+| **Total**       |      |      |      |       |
 
 ## Results
 
 ### Routes & Load
+
 - [x] Root route loads — pass
 - [ ] ...
 
 ### Canvas & Graph View
+
 - [x] Canvas renders — pass
 - [ ] ...
 
@@ -262,6 +269,7 @@ ls docs/qa/ | grep "$(date +%Y-%m-%d)" | wc -l
 ## Issues Found
 
 ### Issue 1: [Title]
+
 - **Severity**: critical / major / minor / cosmetic
 - **Steps to reproduce**: ...
 - **Expected**: ...
@@ -324,6 +332,7 @@ This skill is written to be agent-agnostic:
 - **Other agents**: Any agent with browser automation tools can follow these instructions
 
 The key requirement is the ability to:
+
 1. Navigate to URLs
 2. Take snapshots/screenshots
 3. Click elements
