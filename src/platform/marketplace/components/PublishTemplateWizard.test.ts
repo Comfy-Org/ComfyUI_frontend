@@ -48,6 +48,7 @@ const i18n = createI18n({
         thumbnail: 'Thumbnail',
         categories: 'Categories',
         tags: 'Tags',
+        tagsPlaceholder: 'Add tags...',
         difficulty: 'Difficulty',
         license: 'License',
         next: 'Next',
@@ -61,6 +62,14 @@ const i18n = createI18n({
         previewDescription:
           'This is how your template will appear in the marketplace.',
         noThumbnailYet: 'No thumbnail yet',
+        licenseTypes: {
+          'cc-by': 'CC BY',
+          'cc-by-sa': 'CC BY-SA',
+          'cc-by-nc': 'CC BY-NC',
+          mit: 'MIT',
+          apache: 'Apache 2.0',
+          custom: 'Custom'
+        },
         done: 'Done'
       },
       g: {
@@ -117,6 +126,16 @@ describe('PublishTemplateWizard', () => {
       ).toBe(true)
     })
 
+    it('has license dropdown', () => {
+      const wrapper = createWrapper()
+      expect(wrapper.find('[data-testid="input-license"]').exists()).toBe(true)
+    })
+
+    it('has tags input', () => {
+      const wrapper = createWrapper()
+      expect(wrapper.find('[data-testid="input-tags"]').exists()).toBe(true)
+    })
+
     it('disables Next when form has only default placeholder text', () => {
       const wrapper = createWrapper()
       expect(
@@ -150,7 +169,42 @@ describe('PublishTemplateWizard', () => {
       expect(mockService.createTemplate).toHaveBeenCalledWith({
         title: 'My Workflow',
         description: 'A great workflow',
-        shortDescription: 'Great'
+        shortDescription: 'Great',
+        license: 'mit',
+        tags: []
+      })
+    })
+
+    it('includes tags in createDraft payload when tags are added', async () => {
+      mockService.createTemplate.mockResolvedValue({
+        id: 'tpl_1',
+        status: 'draft'
+      })
+
+      const wrapper = createWrapper()
+      await wrapper
+        .find('input[data-testid="input-title"]')
+        .setValue('My Workflow')
+      await wrapper
+        .find('textarea[data-testid="input-description"]')
+        .setValue('A great workflow')
+      await wrapper
+        .find('input[data-testid="input-short-description"]')
+        .setValue('Great')
+
+      const tagInput = wrapper.findComponent({
+        name: 'TagInputWithAutocomplete'
+      })
+      await tagInput.vm.$emit('update:modelValue', ['Image', 'Video'])
+      await wrapper.find('[data-testid="btn-next"]').trigger('click')
+      await vi.dynamicImportSettled()
+
+      expect(mockService.createTemplate).toHaveBeenCalledWith({
+        title: 'My Workflow',
+        description: 'A great workflow',
+        shortDescription: 'Great',
+        license: 'mit',
+        tags: ['Image', 'Video']
       })
     })
   })
@@ -174,6 +228,28 @@ describe('PublishTemplateWizard', () => {
       expect(wrapper.text()).toContain('My Workflow')
       expect(wrapper.text()).toContain('Short')
       expect(wrapper.text()).toContain('Description')
+    })
+
+    it('shows tags as SquareChips on preview card when form has tags', async () => {
+      const wrapper = createWrapper()
+      await wrapper
+        .find('input[data-testid="input-title"]')
+        .setValue('My Workflow')
+      await wrapper
+        .find('textarea[data-testid="input-description"]')
+        .setValue('Description')
+      await wrapper
+        .find('input[data-testid="input-short-description"]')
+        .setValue('Short')
+
+      const tagInput = wrapper.findComponent({
+        name: 'TagInputWithAutocomplete'
+      })
+      await tagInput.vm.$emit('update:modelValue', ['Image', 'Video'])
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.text()).toContain('Image')
+      expect(wrapper.text()).toContain('Video')
     })
 
     it('shows thumbnail placeholder when initialTemplate has no thumbnail', () => {
@@ -329,6 +405,20 @@ describe('PublishTemplateWizard', () => {
       }
     }
 
+    it('populates form.tags from initialTemplate', async () => {
+      const template = makeSeedTemplate({
+        tags: ['Image', 'Portrait']
+      })
+      const wrapper = createWrapper({ initialTemplate: template })
+      await vi.dynamicImportSettled()
+      await wrapper.vm.$nextTick()
+
+      const tagInput = wrapper.findComponent({
+        name: 'TagInputWithAutocomplete'
+      })
+      expect(tagInput.props('modelValue')).toEqual(['Image', 'Portrait'])
+    })
+
     it('pre-fills form when initialTemplate prop is provided', async () => {
       const template = makeSeedTemplate({
         id: 'tpl_99',
@@ -381,7 +471,8 @@ describe('PublishTemplateWizard', () => {
         expect.objectContaining({
           title: 'Existing',
           description: 'Desc',
-          shortDescription: 'Short'
+          shortDescription: 'Short',
+          tags: []
         })
       )
       expect(mockService.createTemplate).not.toHaveBeenCalled()

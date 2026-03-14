@@ -222,4 +222,19 @@ describe('keybindingService - Canvas Keybindings', () => {
     expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
     outsideDiv.remove()
   })
+
+  it('should not execute keybindings when target is inside data-block-keyboard-shortcuts', async () => {
+    const blockDiv = document.createElement('div')
+    blockDiv.setAttribute('data-block-keyboard-shortcuts', '')
+    const input = document.createElement('input')
+    blockDiv.appendChild(input)
+    document.body.appendChild(blockDiv)
+
+    const event = createTestKeyboardEvent('Delete', { target: input })
+
+    await keybindingService.keybindHandler(event)
+
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    blockDiv.remove()
+  })
 })

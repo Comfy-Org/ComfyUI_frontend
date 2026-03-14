@@ -3618,8 +3618,17 @@
     "thumbnail": "Thumbnail",
     "categories": "Categories",
     "tags": "Tags",
+    "tagsPlaceholder": "Add tags...",
     "difficulty": "Difficulty",
     "license": "License",
+    "licenseTypes": {
+      "cc-by": "CC BY",
+      "cc-by-sa": "CC BY-SA",
+      "cc-by-nc": "CC BY-NC",
+      "mit": "MIT",
+      "apache": "Apache 2.0",
+      "custom": "Custom"
+    },
     "next": "Next",
     "back": "Back",
     "saveDraft": "Save Draft",

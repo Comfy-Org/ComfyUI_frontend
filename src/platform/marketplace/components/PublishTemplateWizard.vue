@@ -67,6 +67,30 @@
             class="border-border rounded-md border bg-base-background px-3 py-2 text-sm"
           />
         </div>
+
+        <div class="flex flex-col gap-1">
+          <label for="publish-license" class="text-sm font-medium">
+            {{ $t('marketplace.license') }}
+          </label>
+          <SingleSelect
+            id="publish-license"
+            v-model="form.license"
+            :label="$t('marketplace.license')"
+            :options="licenseOptions"
+            data-testid="input-license"
+            size="md"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">
+            {{ $t('marketplace.tags') }}
+          </label>
+          <TagInputWithAutocomplete
+            v-model="form.tags"
+            :placeholder="$t('marketplace.tagsPlaceholder')"
+          />
+        </div>
       </div>
 
       <div class="flex flex-col gap-2">
@@ -106,6 +130,15 @@
                     </span>
                   </div>
                 </template>
+                <template #bottom-right>
+                  <template v-if="form.tags?.length">
+                    <SquareChip
+                      v-for="tag in form.tags"
+                      :key="tag"
+                      :label="tag"
+                    />
+                  </template>
+                </template>
               </CardTop>
             </template>
             <template #bottom>
@@ -120,6 +153,9 @@
                   <p class="m-0 text-sm">
                     {{ form.description }}
                   </p>
+                  <span class="text-xs text-muted">
+                    {{ licenseLabel }}
+                  </span>
                 </div>
               </CardBottom>
             </template>
@@ -149,6 +185,14 @@
           <div>
             <strong>{{ $t('marketplace.shortDescription') }}:</strong>
             {{ form.shortDescription }}
+          </div>
+          <div v-if="form.tags?.length">
+            <strong>{{ $t('marketplace.tags') }}:</strong>
+            {{ form.tags.join(', ') }}
+          </div>
+          <div>
+            <strong>{{ $t('marketplace.license') }}:</strong>
+            {{ licenseLabel }}
           </div>
         </div>
       </div>
@@ -211,12 +255,19 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import TagInputWithAutocomplete from '@/components/input/TagInputWithAutocomplete.vue'
+import SingleSelect from '@/components/input/SingleSelect.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
+import SquareChip from '@/components/chip/SquareChip.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { MarketplaceTemplate } from '@/platform/marketplace/apiTypes'
+import type {
+  LicenseType,
+  MarketplaceTemplate
+} from '@/platform/marketplace/apiTypes'
+import { LICENSE_TYPES } from '@/platform/marketplace/apiTypes'
 import { useMarketplacePublishing } from '@/platform/marketplace/composables/useMarketplacePublishing'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -250,8 +301,21 @@ const {
 const form = reactive({
   title: defaultPlaceholders.title,
   description: defaultPlaceholders.description,
-  shortDescription: defaultPlaceholders.shortDescription
+  shortDescription: defaultPlaceholders.shortDescription,
+  license: 'mit' as LicenseType,
+  tags: [] as string[]
 })
+
+const licenseOptions = computed(() =>
+  LICENSE_TYPES.map((value) => ({
+    name: t(`marketplace.licenseTypes.${value}`),
+    value
+  }))
+)
+
+const licenseLabel = computed(() =>
+  t(`marketplace.licenseTypes.${form.license}`)
+)
 
 const submitted = ref(false)
 
@@ -283,6 +347,8 @@ function initFromTemplate(template: MarketplaceTemplate) {
   form.title = template.title
   form.description = template.description
   form.shortDescription = template.shortDescription
+  form.license = template.license
+  form.tags = template.tags ? [...template.tags] : []
 }
 
 watch(
@@ -303,13 +369,17 @@ async function handleNext() {
       await createDraft({
         title: form.title,
         description: form.description,
-        shortDescription: form.shortDescription
+        shortDescription: form.shortDescription,
+        license: form.license,
+        tags: form.tags
       })
     } else {
       await saveDraft({
         title: form.title,
         description: form.description,
-        shortDescription: form.shortDescription
+        shortDescription: form.shortDescription,
+        license: form.license,
+        tags: form.tags
       })
       nextStep()
     }

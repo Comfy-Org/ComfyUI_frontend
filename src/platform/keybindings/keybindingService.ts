@@ -21,6 +21,9 @@ export function useKeybindingService() {
     }
 
     const target = event.composedPath()[0] as HTMLElement
+    if (target.closest('[data-block-keyboard-shortcuts]')) {
+      return
+    }
     if (
       keyCombo.isReservedByTextInput &&
       (target.tagName === 'TEXTAREA' ||
