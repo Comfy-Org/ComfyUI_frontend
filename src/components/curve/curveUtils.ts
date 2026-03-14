@@ -3,6 +3,7 @@ import type { CurvePoint } from './types'
 export function isCurvePointArray(value: unknown): value is CurvePoint[] {
   return (
     Array.isArray(value) &&
+    value.length >= 2 &&
     value.every(
       (p) =>
         Array.isArray(p) &&
