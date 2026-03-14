@@ -39,6 +39,11 @@ pnpm dev:marketplace   # terminal 2
 | GET | `/api/marketplace/categories` | List categories |
 | GET | `/api/marketplace/tags/suggest?query=...` | Tag suggestions |
 | POST | `/api/marketplace/_reset` | Reset DB to seed state |
+| GET | `/review` | Temp UI for testing approve/reject flow |
+
+## Review UI
+
+A temporary HTML UI at `http://localhost:4000/review` lists all workflows (templates), highlights those in `pending_review`, and provides Approve/Reject buttons. Use it to manually test the review flow when running `pnpm mock:marketplace`.
 
 ## Status transitions
 

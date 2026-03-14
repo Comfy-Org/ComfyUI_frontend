@@ -19,6 +19,99 @@ function json(data: unknown, status = 200): Response {
   })
 }
 
+const REVIEW_UI_HTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Marketplace Review UI</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem 1rem; text-align: left; }
+    th { background: #f0f0f0; }
+    tr.pending { background: #fff9e6; }
+    .status { font-weight: 600; }
+    .status.pending_review { color: #b8860b; }
+    .status.approved { color: #22863a; }
+    .status.rejected { color: #cb2431; }
+    button { margin-right: 0.5rem; padding: 0.25rem 0.75rem; cursor: pointer; }
+    button.approve { background: #28a745; color: white; border: none; }
+    button.reject { background: #dc3545; color: white; border: none; }
+    button.reset { background: #6c757d; color: white; border: none; margin-bottom: 1rem; }
+    #error { color: #cb2431; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Marketplace Review UI</h1>
+  <p>Temp UI for testing approve/reject workflow flow.</p>
+  <button class="reset" onclick="resetDb()">Reset DB</button>
+  <div id="error"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Author</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="templates"></tbody>
+  </table>
+  <script>
+    const base = '';
+    async function load() {
+      try {
+        const r = await fetch(base + '/api/marketplace/author/templates');
+        const { templates } = await r.json();
+        document.getElementById('error').textContent = '';
+        const tbody = document.getElementById('templates');
+        tbody.innerHTML = templates.map(t => {
+          const rowClass = t.status === 'pending_review' ? ' class="pending"' : '';
+          const actions = t.status === 'pending_review'
+            ? '<button class="approve" data-id="' + escapeHtml(t.id) + '">Approve</button>' +
+              '<button class="reject" data-id="' + escapeHtml(t.id) + '">Reject</button>'
+            : '';
+          return '<tr' + rowClass + '><td>' + t.id + '</td><td>' + escapeHtml(t.title) +
+            '</td><td><span class="status ' + t.status + '">' + t.status + '</span></td>' +
+            '<td>' + escapeHtml(t.author?.name ?? '') + '</td><td>' + actions + '</td></tr>';
+        }).join('');
+        tbody.querySelectorAll('button.approve').forEach(btn => {
+          btn.addEventListener('click', () => approve(btn.dataset.id));
+        });
+        tbody.querySelectorAll('button.reject').forEach(btn => {
+          btn.addEventListener('click', () => reject(btn.dataset.id));
+        });
+      } catch (e) {
+        document.getElementById('error').textContent = 'Error: ' + e.message;
+      }
+    }
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+    async function approve(id) {
+      const r = await fetch(base + '/api/marketplace/templates/' + id + '/approve', { method: 'POST' });
+      const data = await r.json();
+      if (data.error) document.getElementById('error').textContent = data.error;
+      else load();
+    }
+    async function reject(id) {
+      const r = await fetch(base + '/api/marketplace/templates/' + id + '/reject', { method: 'POST' });
+      const data = await r.json();
+      if (data.error) document.getElementById('error').textContent = data.error;
+      else load();
+    }
+    async function resetDb() {
+      await fetch(base + '/api/marketplace/_reset', { method: 'POST' });
+      load();
+    }
+    load();
+  </script>
+</body>
+</html>`
+
 function extractIdFromPath(
   pathname: string,
   prefix: string
@@ -162,6 +255,13 @@ export async function handleRequest(req: Request): Promise<Response> {
     const { resetDb } = await import('./state')
     resetDb()
     return json({ ok: true })
+  }
+
+  // GET /review (temp UI for testing approve/reject flow)
+  if (method === 'GET' && pathname === '/review') {
+    return new Response(REVIEW_UI_HTML, {
+      headers: { 'Content-Type': 'text/html' }
+    })
   }
 
   return json({ error: 'Not found' }, 404)

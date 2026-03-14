@@ -120,6 +120,6 @@ describe('mock marketplace integration', () => {
       new Request('http://localhost/api/marketplace/author/templates')
     )
     const { templates } = await listRes.json()
-    expect(templates).toHaveLength(2) // back to seed count
+    expect(templates).toHaveLength(3) // back to seed count
   })
 })
