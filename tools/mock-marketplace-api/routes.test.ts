@@ -296,6 +296,36 @@ describe('mock marketplace routes', () => {
       expect(body.byteLength).toBe(8)
     })
 
+    it('stores workflow preview in previews path when type=preview', async () => {
+      const createRes = await handleRequest(
+        jsonRequest('/api/marketplace/templates', 'POST', {
+          title: 'T',
+          description: 'd',
+          shortDescription: 's'
+        })
+      )
+      const { id } = (await createRes.json()) as CreateTemplateResponse
+
+      const formData = new FormData()
+      const blob = new Blob(['workflow-preview'], { type: 'image/png' })
+      formData.append('file', blob, 'workflow-preview.png')
+      formData.append('type', 'preview')
+
+      const uploadRes = await handleRequest(
+        new Request(`http://localhost/api/marketplace/templates/${id}/media`, {
+          method: 'POST',
+          body: formData
+        })
+      )
+      const { url } = (await uploadRes.json()) as MediaUploadResponse
+      expect(url).toContain('previews')
+      expect(url).toContain('workflow-preview.png')
+
+      const getRes = await handleRequest(new Request(`http://localhost${url}`))
+      expect(getRes.status).toBe(200)
+      expect(getRes.headers.get('content-type')).toBe('image/png')
+    })
+
     it('returns 404 for unknown template', async () => {
       const formData = new FormData()
       formData.append('file', new Blob(['x']), 'x.png')

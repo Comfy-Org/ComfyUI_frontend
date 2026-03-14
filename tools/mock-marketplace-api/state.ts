@@ -122,12 +122,16 @@ export function transitionStatus(
 
 export async function addMedia(
   templateId: string,
-  file: File
+  file: File,
+  mediaType?: 'thumbnail' | 'preview'
 ): Promise<MediaUploadResponse | undefined> {
   if (!findTemplate(templateId)) return undefined
 
   const buffer = await file.arrayBuffer()
-  const filename = file.name || 'upload'
+  const filename =
+    mediaType === 'preview'
+      ? 'previews/workflow-preview.png'
+      : file.name || 'upload'
   const key = `${templateId}/${filename}`
   mediaBlobs[key] = { buffer, mimeType: file.type }
 

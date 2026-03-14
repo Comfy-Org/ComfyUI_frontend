@@ -87,10 +87,14 @@ function createMarketplaceService() {
 
   async function uploadTemplateMedia(
     id: string,
-    file: File
+    file: File,
+    options?: { type?: 'thumbnail' | 'preview' }
   ): Promise<MediaUploadResponse> {
     const formData = new FormData()
     formData.append('file', file)
+    if (options?.type) {
+      formData.append('type', options.type)
+    }
 
     const res = await api.fetchApi(`/marketplace/templates/${id}/media`, {
       method: 'POST',

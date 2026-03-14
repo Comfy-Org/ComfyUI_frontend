@@ -40,13 +40,18 @@ export function useMarketplacePublishing() {
   }
 
   async function uploadMedia(
-    file: File
+    file: File,
+    options?: { type?: 'thumbnail' | 'preview' }
   ): Promise<MediaUploadResponse | undefined> {
     if (!draftId.value) return undefined
 
     error.value = null
     try {
-      return await marketplaceService.uploadTemplateMedia(draftId.value, file)
+      return await marketplaceService.uploadTemplateMedia(
+        draftId.value,
+        file,
+        options
+      )
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
       return undefined

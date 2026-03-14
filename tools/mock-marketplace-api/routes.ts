@@ -261,7 +261,10 @@ export async function handleRequest(req: Request): Promise<Response> {
       return json({ error: 'No file provided' }, 400)
     }
 
-    const media = await addMedia(id, file)
+    const typeParam = formData.get('type') as string | null
+    const mediaType = typeParam === 'preview' ? ('preview' as const) : undefined
+
+    const media = await addMedia(id, file, mediaType)
     if (!media) return json({ error: 'Template not found' }, 404)
 
     return json(media, 201)

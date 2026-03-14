@@ -83,22 +83,51 @@
                   :key="template.id"
                   class="border-border flex items-center justify-between gap-3 rounded-lg border p-3"
                 >
-                  <div
-                    class="flex size-12 shrink-0 overflow-hidden rounded-md bg-dialog-surface"
-                  >
-                    <img
-                      v-if="template.thumbnail && !thumbErrors[template.id]"
-                      :src="template.thumbnail"
-                      :alt="template.title"
-                      loading="lazy"
-                      class="size-full object-cover"
-                      @error="thumbErrors[template.id] = true"
-                    />
+                  <div class="flex shrink-0 gap-1">
                     <div
-                      v-if="!template.thumbnail || thumbErrors[template.id]"
-                      class="flex size-full items-center justify-center"
+                      class="flex size-12 overflow-hidden rounded-md bg-dialog-surface"
                     >
-                      <i class="icon-[lucide--image] size-6 text-muted" />
+                      <img
+                        v-if="template.thumbnail && !thumbErrors[template.id]"
+                        :src="template.thumbnail"
+                        :alt="template.title"
+                        loading="lazy"
+                        class="size-full object-cover"
+                        @error="thumbErrors[template.id] = true"
+                      />
+                      <div
+                        v-if="!template.thumbnail || thumbErrors[template.id]"
+                        class="flex size-full items-center justify-center"
+                      >
+                        <i class="icon-[lucide--image] size-6 text-muted" />
+                      </div>
+                    </div>
+                    <div
+                      class="flex size-12 overflow-hidden rounded-md bg-dialog-surface"
+                    >
+                      <img
+                        v-if="
+                          template.workflowPreview &&
+                          !previewErrors[template.id]
+                        "
+                        :src="template.workflowPreview"
+                        :alt="`${template.title} workflow`"
+                        loading="lazy"
+                        class="size-full object-cover"
+                        @error="previewErrors[template.id] = true"
+                      />
+                      <div
+                        v-if="
+                          !template.workflowPreview ||
+                          previewErrors[template.id]
+                        "
+                        class="flex size-full items-center justify-center"
+                      >
+                        <i
+                          class="icon-[lucide--git-branch] size-4 text-muted"
+                          aria-hidden
+                        />
+                      </div>
                     </div>
                   </div>
                   <div class="min-w-0 flex-1">
@@ -203,6 +232,7 @@ const {
 const { show: showPublishDialog } = usePublishDialog()
 
 const thumbErrors = ref<Record<string, boolean>>({})
+const previewErrors = ref<Record<string, boolean>>({})
 
 function isEditable(status: TemplateStatus): boolean {
   return EDITABLE_STATUSES.includes(status)

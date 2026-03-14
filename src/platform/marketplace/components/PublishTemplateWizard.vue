@@ -235,6 +235,7 @@ import TagInputWithAutocomplete from '@/components/input/TagInputWithAutocomplet
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MarketplaceTemplatePreviewCard from '@/platform/marketplace/components/MarketplaceTemplatePreviewCard.vue'
+import { createGraphThumbnail } from '@/renderer/core/thumbnail/graphThumbnailRenderer'
 import type {
   LicenseType,
   MarketplaceTemplate
@@ -393,7 +394,46 @@ function handleBack() {
   prevStep()
 }
 
+function dataUrlToFile(dataUrl: string, filename: string): File {
+  const [header, base64] = dataUrl.split(',')
+  const mimeMatch = header.match(/data:([^;]+)/)
+  const mimeType = mimeMatch?.[1] ?? 'image/png'
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return new File([bytes], filename, { type: mimeType })
+}
+
+async function captureWorkflowPreview(): Promise<File | null> {
+  const canvas = document.querySelector('.minimap-canvas') as HTMLCanvasElement
+  if (canvas?.width && canvas?.height) {
+    try {
+      const dataUrl = canvas.toDataURL('image/png')
+      return dataUrlToFile(dataUrl, 'workflow-preview.png')
+    } catch {
+      // Fall back to programmatic render if DOM canvas fails
+    }
+  }
+  const dataUrl = createGraphThumbnail()
+  if (!dataUrl) return null
+  return dataUrlToFile(dataUrl, 'workflow-preview.png')
+}
+
 async function handleSubmit() {
+  const previewFile = await captureWorkflowPreview()
+  if (previewFile) {
+    try {
+      const media = await uploadMedia(previewFile, { type: 'preview' })
+      if (media) {
+        await saveDraft({ workflowPreview: media.url })
+      }
+    } catch (err) {
+      console.error('uploading workflow preview failed', err)
+    }
+  }
+
   const result = await submit()
   if (result?.status === 'pending_review') {
     submitted.value = true

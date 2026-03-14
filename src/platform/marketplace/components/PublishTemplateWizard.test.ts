@@ -24,6 +24,11 @@ vi.mock('@/platform/marketplace/services/marketplaceService', () => ({
   marketplaceService: mockService
 }))
 
+const mockCreateGraphThumbnail = vi.hoisted(() => vi.fn())
+vi.mock('@/renderer/core/thumbnail/graphThumbnailRenderer', () => ({
+  createGraphThumbnail: () => mockCreateGraphThumbnail()
+}))
+
 const { default: PublishTemplateWizard } =
   await import('@/platform/marketplace/components/PublishTemplateWizard.vue')
 
@@ -318,7 +323,8 @@ describe('PublishTemplateWizard', () => {
 
       expect(mockService.uploadTemplateMedia).toHaveBeenCalledWith(
         'tpl_1',
-        expect.any(File)
+        expect.any(File),
+        undefined
       )
       vi.unstubAllGlobals()
     })
@@ -391,7 +397,8 @@ describe('PublishTemplateWizard', () => {
 
       expect(mockService.uploadTemplateMedia).toHaveBeenCalledWith(
         'tpl_99',
-        expect.any(File)
+        expect.any(File),
+        undefined
       )
       expect(
         wrapper.find('[data-testid="preview-thumbnail-placeholder"]').exists()
@@ -502,6 +509,37 @@ describe('PublishTemplateWizard', () => {
       await vi.dynamicImportSettled()
 
       expect(mockService.submitTemplate).toHaveBeenCalledWith('tpl_1')
+    })
+
+    it('uploads workflow preview from minimap and saves workflowPreview before submit', async () => {
+      mockCreateGraphThumbnail.mockReturnValue(
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+      )
+      mockService.uploadTemplateMedia.mockResolvedValue({
+        url: '/api/marketplace/media/tpl_1/previews%2Fworkflow-preview.png',
+        type: 'image/png'
+      })
+      mockService.updateTemplate.mockResolvedValue({ id: 'tpl_1' })
+      mockService.submitTemplate.mockResolvedValue({
+        status: 'pending_review'
+      })
+
+      const wrapper = await advanceToSubmitStep()
+      await wrapper.find('[data-testid="btn-submit"]').trigger('click')
+      await flushPromises()
+
+      expect(mockService.uploadTemplateMedia).toHaveBeenCalledWith(
+        'tpl_1',
+        expect.any(File),
+        { type: 'preview' }
+      )
+      expect(mockService.updateTemplate).toHaveBeenCalledWith(
+        'tpl_1',
+        expect.objectContaining({
+          workflowPreview:
+            '/api/marketplace/media/tpl_1/previews%2Fworkflow-preview.png'
+        })
+      )
     })
   })
 
