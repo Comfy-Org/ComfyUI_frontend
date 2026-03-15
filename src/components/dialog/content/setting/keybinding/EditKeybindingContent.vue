@@ -13,8 +13,12 @@
       :placeholder="$t('g.enterYourKeybind')"
       :aria-label="$t('g.enterYourKeybind')"
       autocomplete="off"
+      readonly
       autofocus
       @keydown.stop.prevent="captureKeybinding"
+      @compositionstart.prevent
+      @compositionupdate.prevent
+      @compositionend.prevent
     />
     <div class="min-h-12">
       <p
