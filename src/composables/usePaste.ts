@@ -57,11 +57,11 @@ function pasteClipboardItems(data: DataTransfer): boolean {
   return false
 }
 
-function pasteItemsOnNode(
+async function pasteItemsOnNode(
   items: DataTransferItemList,
   node: LGraphNode | null,
   contentType: string
-): void {
+): Promise<void> {
   if (!node) return
 
   const filteredItems = Array.from(items).filter((item) =>
@@ -72,10 +72,12 @@ function pasteItemsOnNode(
   if (!blob) return
 
   node.pasteFile?.(blob)
-  node.pasteFiles?.(
-    Array.from(filteredItems)
-      .map((i) => i.getAsFile())
-      .filter((f) => f !== null)
+  await Promise.resolve(
+    node.pasteFiles?.(
+      Array.from(filteredItems)
+        .map((i) => i.getAsFile())
+        .filter((f) => f !== null)
+    )
   )
 }
 
@@ -89,27 +91,37 @@ export async function pasteImageNode(
     imageNode = await createNode(canvas, 'LoadImage')
   }
 
-  pasteItemsOnNode(items, imageNode, 'image')
+  await pasteItemsOnNode(items, imageNode, 'image')
   return imageNode
+}
+
+export interface PasteNodesResult {
+  nodes: LGraphNode[]
+  completion: Promise<void>
 }
 
 export async function pasteImageNodes(
   canvas: LGraphCanvas,
   fileList: File[]
-): Promise<LGraphNode[]> {
+): Promise<PasteNodesResult> {
   const nodes: LGraphNode[] = []
+  const uploads: Promise<void>[] = []
 
   for (const file of fileList) {
+    const node = await createNode(canvas, 'LoadImage')
+    if (!node) continue
+
+    nodes.push(node)
+
     const transfer = new DataTransfer()
     transfer.items.add(file)
-    const imageNode = await pasteImageNode(canvas, transfer.items)
-
-    if (imageNode) {
-      nodes.push(imageNode)
-    }
+    uploads.push(pasteItemsOnNode(transfer.items, node, 'image'))
   }
 
-  return nodes
+  return {
+    nodes,
+    completion: Promise.all(uploads).then(() => {})
+  }
 }
 
 export async function pasteAudioNode(
@@ -120,7 +132,7 @@ export async function pasteAudioNode(
   if (!audioNode) {
     audioNode = await createNode(canvas, 'LoadAudio')
   }
-  pasteItemsOnNode(items, audioNode, 'audio')
+  await pasteItemsOnNode(items, audioNode, 'audio')
   return audioNode
 }
 
@@ -151,7 +163,7 @@ export async function pasteVideoNode(
   if (!videoNode) {
     videoNode = await createNode(canvas, 'LoadVideo')
   }
-  pasteItemsOnNode(items, videoNode, 'video')
+  await pasteItemsOnNode(items, videoNode, 'video')
   return videoNode
 }
 

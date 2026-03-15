@@ -200,7 +200,7 @@ declare module '@/lib/litegraph/src/litegraph' {
     /** Callback for pasting an image file into the node */
     pasteFile?(file: File): void
     /** Callback for pasting multiple files into the node */
-    pasteFiles?(files: File[]): void
+    pasteFiles?(files: File[]): boolean | Promise<boolean>
   }
   /**
    * Only used by the Primitive node. Primitive node is using the widget property

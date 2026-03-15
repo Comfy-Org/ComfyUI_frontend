@@ -1722,22 +1722,24 @@ export class ComfyApp {
 
     this.canvas.emitBeforeChange()
     try {
-      const imageNodes = await pasteImageNodes(this.canvas, fileList)
-      if (imageNodes.length === 0) return
+      const { nodes, completion } = await pasteImageNodes(this.canvas, fileList)
+      if (nodes.length === 0) return
 
-      if (imageNodes.length > 1) {
+      if (nodes.length > 1) {
         const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
         if (!batchImagesNode) return
 
-        imageNodes.forEach((imageNode, index) => {
+        nodes.forEach((imageNode, index) => {
           imageNode.connect(0, batchImagesNode, index)
         })
 
-        this.positionBatchNodes(imageNodes, batchImagesNode)
-        this.canvas.selectItems([...imageNodes, batchImagesNode])
+        this.positionBatchNodes(nodes, batchImagesNode)
+        this.canvas.selectItems([...nodes, batchImagesNode])
       } else {
-        this.canvas.selectItems(imageNodes)
+        this.canvas.selectItems(nodes)
       }
+
+      await completion
     } finally {
       this.canvas.emitAfterChange()
     }
