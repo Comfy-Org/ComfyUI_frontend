@@ -1729,12 +1729,12 @@ export class ComfyApp {
         const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
         if (!batchImagesNode) return
 
+        this.positionBatchNodes(nodes, batchImagesNode)
+        this.canvas.selectItems([...nodes, batchImagesNode])
+
         nodes.forEach((imageNode, index) => {
           imageNode.connect(0, batchImagesNode, index)
         })
-
-        this.positionBatchNodes(nodes, batchImagesNode)
-        this.canvas.selectItems([...nodes, batchImagesNode])
       } else {
         this.canvas.selectItems(nodes)
       }
