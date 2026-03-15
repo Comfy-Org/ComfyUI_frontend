@@ -1274,7 +1274,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Run jobs in parallel',
     tooltip:
       'When enabled, multiple workflow runs execute concurrently instead of queuing sequentially.',
-    type: isCloud ? 'boolean' : 'hidden',
+    type: 'boolean',
     defaultValue: true,
     versionAdded: '1.42.0'
   },

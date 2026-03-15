@@ -165,9 +165,6 @@ export function useFeatureFlags() {
       )
       if (override !== undefined) return override
 
-      if (!isCloud) return false
-      if (!isAuthenticatedConfigLoaded.value) return false
-
       return (
         remoteConfig.value.concurrent_execution_enabled ??
         api.getServerFeature(
