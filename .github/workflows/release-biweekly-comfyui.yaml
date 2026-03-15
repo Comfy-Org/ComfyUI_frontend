@@ -205,7 +205,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 'lts/*'
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Build project
@@ -242,6 +242,7 @@ jobs:
       - name: Publish pypi package
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
         with:
+          skip-existing: true
           password: ${{ secrets.PYPI_TOKEN }}
           packages-dir: comfyui_frontend_package/dist
 
@@ -423,7 +424,11 @@ jobs:
             fi
 
             if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
-              echo "PR already exists (#${EXISTING_PR}), updating branch will update the PR"
+              echo "PR already exists (#${EXISTING_PR}), refreshing title/body"
+              gh pr edit "$EXISTING_PR" \
+                --repo Comfy-Org/ComfyUI \
+                --title "Bump comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}" \
+                --body-file ../pr-body.txt
             else
               echo "Failed to create PR and no existing PR found"
               exit 1
