@@ -3437,6 +3437,7 @@
       "customNodeDownloadDisabled": "Cloud environment does not support model imports for custom nodes in this section. Please use standard loader nodes or substitute with a model from the library below.",
       "importNotSupported": "Import Not Supported",
       "copyModelName": "Copy model name",
+      "copyUrl": "Copy URL",
       "confirmSelection": "Confirm selection",
       "locateNode": "Locate node on canvas",
       "cancelSelection": "Cancel selection",
