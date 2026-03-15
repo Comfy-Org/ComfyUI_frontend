@@ -577,6 +577,19 @@ export const CORE_SETTINGS: SettingParams[] = [
       value === 'Integrated' ? 'Default' : value
   },
   {
+    id: 'Comfy.Appearance.ReduceAnimations',
+    category: ['Appearance', 'General'],
+    name: 'Disable animations',
+    type: 'boolean',
+    defaultValue: false,
+    tooltip:
+      'Turns off all UI animations. Speeds up inference when the display GPU is also used for generation.',
+    onChange: (value: unknown) => {
+      document.body.classList.toggle('reduce-animations', !!value)
+    },
+    versionAdded: '1.43.0'
+  },
+  {
     id: 'Comfy.UseNewMenu',
     category: ['Comfy', 'Menu', 'UseNewMenu'],
     defaultValue: 'Top',
