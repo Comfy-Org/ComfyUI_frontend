@@ -1,9 +1,31 @@
 <template>
   <div class="keybinding-panel flex flex-col gap-2">
-    <SearchInput
-      v-model="filters['global'].value"
-      :placeholder="$t('g.searchPlaceholder', { subject: $t('g.keybindings') })"
-    />
+    <Teleport defer to="#keybinding-panel-header">
+      <SearchInput
+        v-model="filters['global'].value"
+        class="max-w-96"
+        size="lg"
+        :placeholder="
+          $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
+        "
+      />
+    </Teleport>
+
+    <Teleport defer to="#keybinding-panel-actions">
+      <div class="flex items-center gap-2">
+        <KeybindingPresetToolbar
+          :preset-names="presetNames"
+          @presets-changed="refreshPresetList"
+        />
+        <DropdownMenu
+          :entries="menuEntries"
+          icon="icon-[lucide--ellipsis]"
+          item-class="text-sm gap-2"
+          button-size="unset"
+          button-class="size-10"
+        />
+      </div>
+    </Teleport>
 
     <ContextMenuRoot>
       <ContextMenuTrigger as-child>
@@ -270,6 +292,7 @@
 </template>
 
 <script setup lang="ts">
+import type { MenuItem } from 'primevue/menuitem'
 import { FilterMatchMode } from '@primevue/core/api'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -282,9 +305,10 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
@@ -292,10 +316,13 @@ import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
+import KeybindingPresetToolbar from './keybinding/KeybindingPresetToolbar.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
 
 const filters = ref({
@@ -304,10 +331,91 @@ const filters = ref({
 
 const keybindingStore = useKeybindingStore()
 const keybindingService = useKeybindingService()
+const presetService = useKeybindingPresetService()
+const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
 
+const presetNames = ref<string[]>([])
+
+async function refreshPresetList() {
+  presetNames.value = (await presetService.listPresets()) ?? []
+}
+
+async function initPresets() {
+  await refreshPresetList()
+  const currentName = settingStore.get('Comfy.Keybinding.CurrentPreset')
+  if (currentName !== 'default') {
+    const preset = await presetService.loadPreset(currentName)
+    if (preset) {
+      keybindingStore.savedPresetData = preset
+      keybindingStore.currentPresetName = currentName
+    } else {
+      await presetService.switchToDefaultPreset()
+    }
+  }
+}
+
+onMounted(() => initPresets())
+
+// "..." menu entries (teleported to header)
+async function saveAsNewPreset() {
+  await presetService.promptAndSaveNewPreset()
+  refreshPresetList()
+}
+
+async function handleDeletePreset() {
+  await presetService.deletePreset(keybindingStore.currentPresetName)
+  refreshPresetList()
+}
+
+async function handleImportPreset() {
+  await presetService.importPreset()
+  refreshPresetList()
+}
+
+const showSaveAsNew = computed(
+  () =>
+    keybindingStore.currentPresetName !== 'default' ||
+    keybindingStore.isCurrentPresetModified
+)
+
+const menuEntries = computed<MenuItem[]>(() => [
+  ...(showSaveAsNew.value
+    ? [
+        {
+          label: t('g.keybindingPresets.saveAsNewPreset'),
+          icon: 'icon-[lucide--save]',
+          command: saveAsNewPreset
+        }
+      ]
+    : []),
+  {
+    label: t('g.keybindingPresets.resetToDefault'),
+    icon: 'icon-[lucide--rotate-cw]',
+    command: () =>
+      presetService.switchPreset('default').then(() => refreshPresetList())
+  },
+  {
+    label: t('g.keybindingPresets.deletePreset'),
+    icon: 'icon-[lucide--trash-2]',
+    disabled: keybindingStore.currentPresetName === 'default',
+    command: handleDeletePreset
+  },
+  {
+    label: t('g.keybindingPresets.importPreset'),
+    icon: 'icon-[lucide--file-input]',
+    command: handleImportPreset
+  },
+  {
+    label: t('g.keybindingPresets.exportPreset'),
+    icon: 'icon-[lucide--file-output]',
+    command: () => presetService.exportPreset()
+  }
+])
+
+// Keybinding table logic
 interface ICommandData {
   id: string
   keybindings: KeybindingImpl[]

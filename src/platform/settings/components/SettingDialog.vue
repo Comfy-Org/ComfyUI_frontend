@@ -41,7 +41,20 @@
       </nav>
     </template>
 
-    <template #header />
+    <template #header>
+      <div
+        v-if="activeCategoryKey === 'keybinding'"
+        id="keybinding-panel-header"
+        class="flex-1"
+      />
+    </template>
+
+    <template #header-right-area>
+      <div
+        v-if="activeCategoryKey === 'keybinding'"
+        id="keybinding-panel-actions"
+      />
+    </template>
 
     <template #content>
       <template v-if="activePanel">
