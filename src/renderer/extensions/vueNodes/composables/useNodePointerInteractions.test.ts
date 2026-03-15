@@ -324,4 +324,123 @@ describe('useNodePointerInteractions', () => {
       true
     )
   })
+
+  describe('click suppression', () => {
+    it('should suppress next click after drag', async () => {
+      vi.useFakeTimers()
+      const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+      const target = document.createElement('div')
+
+      // 1. Start drag
+      pointerHandlers.onPointerdown(
+        createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+      )
+      pointerHandlers.onPointermove(
+        createPointerEvent('pointermove', {
+          clientX: 110,
+          clientY: 110,
+          buttons: 1
+        })
+      )
+
+      // 2. End drag on target
+      const upEvent = createPointerEvent('pointerup', {
+        clientX: 110,
+        clientY: 110
+      })
+      Object.defineProperty(upEvent, 'currentTarget', {
+        value: target,
+        configurable: true
+      })
+      pointerHandlers.onPointerup(upEvent)
+
+      // 3. Trigger click
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true
+      })
+      const stopPropagationSpy = vi.spyOn(clickEvent, 'stopPropagation')
+      const preventDefaultSpy = vi.spyOn(clickEvent, 'preventDefault')
+
+      target.dispatchEvent(clickEvent)
+
+      expect(stopPropagationSpy).toHaveBeenCalled()
+      expect(preventDefaultSpy).toHaveBeenCalled()
+
+      vi.useRealTimers()
+    })
+
+    it('should NOT suppress click after non-drag interaction', async () => {
+      const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+      const target = document.createElement('div')
+
+      // 1. Click without moving (no drag)
+      pointerHandlers.onPointerdown(
+        createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+      )
+      const upEvent = createPointerEvent('pointerup', {
+        clientX: 100,
+        clientY: 100
+      })
+      Object.defineProperty(upEvent, 'currentTarget', {
+        value: target,
+        configurable: true
+      })
+      pointerHandlers.onPointerup(upEvent)
+
+      // 2. Trigger click
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true
+      })
+      const stopPropagationSpy = vi.spyOn(clickEvent, 'stopPropagation')
+
+      target.dispatchEvent(clickEvent)
+
+      expect(stopPropagationSpy).not.toHaveBeenCalled()
+    })
+
+    it('should cleanup listener after 300ms if no click fires', async () => {
+      vi.useFakeTimers()
+      const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+      const target = document.createElement('div')
+
+      // 1. Perform drag
+      pointerHandlers.onPointerdown(
+        createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+      )
+      pointerHandlers.onPointermove(
+        createPointerEvent('pointermove', {
+          clientX: 110,
+          clientY: 110,
+          buttons: 1
+        })
+      )
+      const upEvent = createPointerEvent('pointerup', {
+        clientX: 110,
+        clientY: 110
+      })
+      Object.defineProperty(upEvent, 'currentTarget', {
+        value: target,
+        configurable: true
+      })
+      pointerHandlers.onPointerup(upEvent)
+
+      // 2. Fast forward past timeout
+      vi.advanceTimersByTime(301)
+
+      // 3. Trigger click
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true
+      })
+      const stopPropagationSpy = vi.spyOn(clickEvent, 'stopPropagation')
+
+      target.dispatchEvent(clickEvent)
+
+      expect(stopPropagationSpy).not.toHaveBeenCalled()
+
+      vi.useRealTimers()
+    })
+  })
 })

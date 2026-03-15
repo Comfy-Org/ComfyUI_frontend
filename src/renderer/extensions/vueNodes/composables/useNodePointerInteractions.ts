@@ -135,9 +135,11 @@ export function useNodePointerInteractions(
     const wasDragging = layoutStore.isDraggingVueNodes.value
 
     if (hasDraggingStarted || wasDragging) {
+      const nodeEl = event.currentTarget as HTMLElement | null
       safeDragEnd(event)
 
-      if (wasDragging) {
+      if (wasDragging && nodeEl) {
+        suppressNextClick(nodeEl)
         return
       }
     }
@@ -151,6 +153,35 @@ export function useNodePointerInteractions(
     if (nodeId) {
       toggleNodeSelectionAfterPointerUp(nodeId, multiSelect)
     }
+  }
+
+  let clickSuppressionController: AbortController | null = null
+
+  /**
+   * Register a one-shot capture-phase listener to swallow it so
+   * interactive children (e.g. collapse button) don't trigger.
+   */
+  function suppressNextClick(target: HTMLElement) {
+    // Cancel any existing pending suppression
+    clickSuppressionController?.abort()
+    clickSuppressionController = new AbortController()
+
+    const { signal } = clickSuppressionController
+
+    target.addEventListener(
+      'click',
+      (e) => {
+        e.stopPropagation()
+        e.preventDefault()
+      },
+      { capture: true, once: true, signal }
+    )
+
+    // Safety fallback: if no click occurs within 300ms (e.g. drag ended outside window),
+    // expire the listener via the AbortController.
+    setTimeout(() => {
+      clickSuppressionController?.abort()
+    }, 300)
   }
 
   function onPointercancel(event: PointerEvent) {
