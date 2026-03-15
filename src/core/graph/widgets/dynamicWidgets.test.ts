@@ -210,4 +210,41 @@ describe('Autogrow', () => {
       'aa'
     ])
   })
+
+  test('Multi-spec autogrow recreates shim widgets on configure', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+    const multiInputsSpec = {
+      required: { value: ['IMAGE', {}], mask: ['IMAGE', {}] }
+    }
+    addAutogrow(node, { min: 1, input: multiInputsSpec })
+
+    // Multi-spec autogrow creates shim widgets via ensureWidgetForInput
+    const shimWidgets = node.widgets.filter((w) => w.type === 'shim')
+    expect(shimWidgets.length).toBe(2)
+
+    // Connect the last slot to trigger growth
+    connectInput(node, 0, graph)
+    expect(node.inputs.length).toBe(4)
+
+    // Simulate paste: manually add a serialized autogrow input with widget ref
+    // but missing its shim widget (reproducing the paste bug)
+    const shimsBefore = node.widgets.filter((w) => w.type === 'shim').length
+    const lastInput = node.inputs.at(-1)!
+    expect(lastInput.widget).toBeDefined()
+
+    // Remove all shim widgets to simulate paste (shim has serialize: false)
+    node.widgets = node.widgets.filter((w) => w.type !== 'shim')
+    expect(node.widgets.filter((w) => w.type === 'shim').length).toBe(0)
+
+    // Re-trigger onConnectionsChange for each input (simulates configure())
+    for (const [i, input] of node.inputs.entries()) {
+      node.onConnectionsChange?.(1, i, true, null, input)
+    }
+
+    // Shim widgets should be recreated
+    const shimsAfter = node.widgets.filter((w) => w.type === 'shim').length
+    expect(shimsAfter).toBe(shimsBefore)
+  })
 })
