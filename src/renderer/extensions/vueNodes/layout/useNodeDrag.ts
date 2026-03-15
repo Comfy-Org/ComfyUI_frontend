@@ -1,12 +1,15 @@
 import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
+  Bounds,
   NodeBoundsUpdate,
   NodeId,
   Point
@@ -17,11 +20,21 @@ import { useTransformState } from '@/renderer/core/layout/transform/useTransform
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 import { createSharedComposable } from '@vueuse/core'
 
+import type {
+  NodeAlignmentGuide,
+  NodeAlignmentSnapResult
+} from './nodeAlignmentSnap'
+import { resolveNodeAlignmentSnap } from './nodeAlignmentSnap'
+
 export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
 
+const SNAP_SEARCH_RADIUS_PX = 96
+
 function useNodeDragIndividual() {
+  const canvasStore = useCanvasStore()
   const mutations = useLayoutMutations()
-  const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
+  const { selectedNodeIds, selectedItems } = storeToRefs(canvasStore)
+  const settingStore = useSettingStore()
 
   // Get transform utilities from TransformPane if available
   const transformState = useTransformState()
@@ -42,6 +55,8 @@ function useNodeDragIndividual() {
   // For groups: track the last applied canvas delta to compute frame delta
   let lastCanvasDelta: Point | null = null
   let selectedGroups: LGraphGroup[] | null = null
+  let draggedSelectionBounds: Bounds | null = null
+  let draggedSelectionNodeIds: Set<NodeId> | null = null
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
     const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
@@ -55,10 +70,14 @@ function useNodeDragIndividual() {
     dragStartMouse = { x: event.clientX, y: event.clientY }
 
     const selectedNodes = toValue(selectedNodeIds)
+    draggedSelectionNodeIds = new Set(selectedNodes)
+    draggedSelectionNodeIds.add(nodeId)
+    draggedSelectionBounds = getDraggedSelectionBounds(draggedSelectionNodeIds)
+    updateDragSnapGuides([])
 
     // capture the starting positions of all other selected nodes
     // Only move other selected items if the dragged node is part of the selection
-    const isDraggedNodeInSelection = selectedNodes?.has(nodeId)
+    const isDraggedNodeInSelection = selectedNodes.has(nodeId)
 
     if (isDraggedNodeInSelection && selectedNodes.size > 1) {
       otherSelectedNodesStartPositions = new Map()
@@ -120,11 +139,12 @@ function useNodeDragIndividual() {
         x: canvasWithDelta.x - canvasOrigin.x,
         y: canvasWithDelta.y - canvasOrigin.y
       }
+      const snappedCanvasDelta = maybeResolveAlignmentSnap(event, canvasDelta)
 
       // Calculate new position for the current node
       const newPosition = {
-        x: dragStartPos.x + canvasDelta.x,
-        y: dragStartPos.y + canvasDelta.y
+        x: dragStartPos.x + snappedCanvasDelta.x,
+        y: dragStartPos.y + snappedCanvasDelta.y
       }
 
       // Move drag updates in one transaction to avoid per-node notify fan-out.
@@ -140,8 +160,8 @@ function useNodeDragIndividual() {
           startPos
         ] of otherSelectedNodesStartPositions) {
           const newOtherPosition = {
-            x: startPos.x + canvasDelta.x,
-            y: startPos.y + canvasDelta.y
+            x: startPos.x + snappedCanvasDelta.x,
+            y: startPos.y + snappedCanvasDelta.y
           }
           updates.push({ nodeId: otherNodeId, position: newOtherPosition })
         }
@@ -153,8 +173,8 @@ function useNodeDragIndividual() {
       // This matches LiteGraph's behavior which uses delta-based movement
       if (selectedGroups && selectedGroups.length > 0 && lastCanvasDelta) {
         const frameDelta = {
-          x: canvasDelta.x - lastCanvasDelta.x,
-          y: canvasDelta.y - lastCanvasDelta.y
+          x: snappedCanvasDelta.x - lastCanvasDelta.x,
+          y: snappedCanvasDelta.y - lastCanvasDelta.y
         }
 
         for (const group of selectedGroups) {
@@ -162,7 +182,7 @@ function useNodeDragIndividual() {
         }
       }
 
-      lastCanvasDelta = canvasDelta
+      lastCanvasDelta = snappedCanvasDelta
     })
   }
 
@@ -233,6 +253,9 @@ function useNodeDragIndividual() {
     otherSelectedNodesStartPositions = null
     selectedGroups = null
     lastCanvasDelta = null
+    draggedSelectionBounds = null
+    draggedSelectionNodeIds = null
+    updateDragSnapGuides([])
 
     // Stop tracking shift key state
     stopShiftSync?.()
@@ -249,5 +272,142 @@ function useNodeDragIndividual() {
     startDrag,
     handleDrag,
     endDrag
+  }
+
+  function maybeResolveAlignmentSnap(
+    event: PointerEvent,
+    canvasDelta: Point
+  ): Point {
+    if (!settingStore.get('Comfy.Canvas.AlignNodesWhileDragging')) {
+      updateDragSnapGuides([])
+      return canvasDelta
+    }
+
+    if (
+      shouldSnap(event) ||
+      !draggedSelectionBounds ||
+      !draggedSelectionNodeIds
+    ) {
+      updateDragSnapGuides([])
+      return canvasDelta
+    }
+
+    const translatedSelectionBounds = translateBounds(
+      draggedSelectionBounds,
+      canvasDelta
+    )
+    const searchRadius = SNAP_SEARCH_RADIUS_PX / transformState.camera.z
+    const candidateBounds = getNearbyAlignmentCandidateBounds(
+      translatedSelectionBounds,
+      draggedSelectionNodeIds,
+      searchRadius
+    )
+
+    const snapResult: NodeAlignmentSnapResult = resolveNodeAlignmentSnap({
+      selectionBounds: draggedSelectionBounds,
+      candidateBounds,
+      delta: canvasDelta,
+      zoomScale: transformState.camera.z
+    })
+
+    updateDragSnapGuides(snapResult.guides)
+    return snapResult.delta
+  }
+
+  function getDraggedSelectionBounds(nodeIds: Set<NodeId>): Bounds | null {
+    const bounds = Array.from(nodeIds)
+      .map((id) => layoutStore.getNodeLayoutRef(id).value)
+      .filter((layout): layout is NonNullable<typeof layout> => layout !== null)
+      .map(getRenderedNodeBounds)
+
+    return mergeBounds(bounds)
+  }
+
+  function getNearbyAlignmentCandidateBounds(
+    translatedSelectionBounds: Bounds,
+    selectedNodeSet: Set<NodeId>,
+    searchRadius: number
+  ): Bounds[] {
+    const candidateIds = layoutStore.queryNodesInBounds(
+      expandBounds(translatedSelectionBounds, searchRadius)
+    )
+    const candidates: Bounds[] = []
+
+    for (const nodeId of candidateIds) {
+      if (selectedNodeSet.has(nodeId)) {
+        continue
+      }
+
+      const layout = layoutStore.getNodeLayoutRef(nodeId).value
+      if (!layout) {
+        continue
+      }
+
+      candidates.push(getRenderedNodeBounds(layout))
+    }
+
+    return candidates
+  }
+
+  function updateDragSnapGuides(guides: NodeAlignmentGuide[]) {
+    layoutStore.vueDragSnapGuides.value = guides
+    canvasStore.canvas?.setDirty(true)
+  }
+}
+
+function getRenderedNodeBounds(layout: {
+  position: Point
+  size: { width: number; height: number }
+}): Bounds {
+  const titleHeight = LiteGraph.NODE_TITLE_HEIGHT || 0
+
+  return {
+    x: layout.position.x,
+    y: layout.position.y - titleHeight,
+    width: layout.size.width,
+    height: layout.size.height + titleHeight
+  }
+}
+
+function mergeBounds(boundsList: Bounds[]): Bounds | null {
+  const [firstBounds, ...remainingBounds] = boundsList
+  if (!firstBounds) {
+    return null
+  }
+
+  let left = firstBounds.x
+  let top = firstBounds.y
+  let right = firstBounds.x + firstBounds.width
+  let bottom = firstBounds.y + firstBounds.height
+
+  for (const bounds of remainingBounds) {
+    left = Math.min(left, bounds.x)
+    top = Math.min(top, bounds.y)
+    right = Math.max(right, bounds.x + bounds.width)
+    bottom = Math.max(bottom, bounds.y + bounds.height)
+  }
+
+  return {
+    x: left,
+    y: top,
+    width: right - left,
+    height: bottom - top
+  }
+}
+
+function expandBounds(bounds: Bounds, padding: number): Bounds {
+  return {
+    x: bounds.x - padding,
+    y: bounds.y - padding,
+    width: bounds.width + padding * 2,
+    height: bounds.height + padding * 2
+  }
+}
+
+function translateBounds(bounds: Bounds, delta: Point): Bounds {
+  return {
+    ...bounds,
+    x: bounds.x + delta.x,
+    y: bounds.y + delta.y
   }
 }
