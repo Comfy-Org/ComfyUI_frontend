@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { until } from '@vueuse/core'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted, ref } from 'vue'
@@ -20,7 +19,7 @@ const router = useRouter()
 const { reportError, accessBillingPortal } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-const { isActiveSubscription, isInitialized } = useBillingContext()
+const { isActiveSubscription, isInitialized, initialize } = useBillingContext()
 
 const selectedTierKey = ref<TierKey | null>(null)
 
@@ -76,7 +75,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   }
 
   if (!isInitialized.value) {
-    await until(isInitialized).toBe(true)
+    await initialize()
   }
 
   if (isActiveSubscription.value) {
