@@ -38,12 +38,7 @@
       <div ref="canvasBackgroundRef" class="size-full" />
     </div>
 
-    <div
-      v-if="!initialized"
-      class="absolute inset-0 z-50 flex items-center justify-center"
-    >
-      <span class="mask-editor-spinner" />
-    </div>
+    <LoadingOverlay :loading="!initialized" size="sm" />
 
     <div class="maskEditor-ui-container flex min-h-0 flex-1 flex-col">
       <div class="flex min-h-0 flex-1 overflow-hidden">
@@ -83,6 +78,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 
 import BrushCursor from './BrushCursor.vue'
 import PointerZone from './PointerZone.vue'
@@ -234,20 +231,5 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   z-index: 0;
-}
-
-.mask-editor-spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid rgb(255 255 255 / 20%);
-  border-top-color: rgb(255 255 255 / 80%);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>
