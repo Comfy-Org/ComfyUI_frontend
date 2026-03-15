@@ -1,5 +1,6 @@
-// TODO: Fix these tests after migration
-import { assert, describe, expect, it } from 'vitest'
+import { assert, beforeEach, describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 
 import {
   LGraphGroup,
@@ -10,8 +11,14 @@ import type { LGraph, ISlotType } from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
+})
 
 function createNode(
   graph: LGraph,
@@ -40,8 +47,8 @@ function createNode(
   graph.add(node)
   return node
 }
-describe.skip('SubgraphConversion', () => {
-  describe.skip('Subgraph Unpacking Functionality', () => {
+describe('SubgraphConversion', () => {
+  describe('Subgraph Unpacking Functionality', () => {
     it('Should keep interior nodes and links', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)

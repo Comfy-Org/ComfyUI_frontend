@@ -87,7 +87,7 @@ export { ContextMenu } from './ContextMenu'
 export { DragAndScale } from './DragAndScale'
 
 export { Rectangle } from './infrastructure/Rectangle'
-export { RecursionError } from './infrastructure/RecursionError'
+export type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 export type {
   CanvasColour,
   ColorOption,

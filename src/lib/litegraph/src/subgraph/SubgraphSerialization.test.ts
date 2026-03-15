@@ -1,20 +1,27 @@
-// TODO: Fix these tests after migration
 /**
  * SubgraphSerialization Tests
  *
  * Tests for saving, loading, and version compatibility of subgraphs.
  * This covers serialization, deserialization, data integrity, and migration scenarios.
  */
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 
 import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-describe.skip('SubgraphSerialization - Basic Serialization', () => {
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
+})
+
+describe('SubgraphSerialization - Basic Serialization', () => {
   it('should save and load simple subgraphs', () => {
     const original = createTestSubgraph({
       name: 'Simple Test',
@@ -122,7 +129,7 @@ describe.skip('SubgraphSerialization - Basic Serialization', () => {
   })
 })
 
-describe.skip('SubgraphSerialization - Complex Serialization', () => {
+describe('SubgraphSerialization - Complex Serialization', () => {
   it('should serialize nested subgraphs with multiple levels', () => {
     // Create a nested structure
     const childSubgraph = createTestSubgraph({
@@ -217,7 +224,7 @@ describe.skip('SubgraphSerialization - Complex Serialization', () => {
   })
 })
 
-describe.skip('SubgraphSerialization - Version Compatibility', () => {
+describe('SubgraphSerialization - Version Compatibility', () => {
   it('should handle version field in exports', () => {
     const subgraph = createTestSubgraph({ nodeCount: 1 })
     const exported = subgraph.asSerialisable()
@@ -323,7 +330,7 @@ describe.skip('SubgraphSerialization - Version Compatibility', () => {
   })
 })
 
-describe.skip('SubgraphSerialization - Data Integrity', () => {
+describe('SubgraphSerialization - Data Integrity', () => {
   it('should pass round-trip testing (save → load → save → compare)', () => {
     const original = createTestSubgraph({
       name: 'Round Trip Test',
