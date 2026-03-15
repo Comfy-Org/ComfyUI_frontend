@@ -106,7 +106,11 @@ describe('ComfyApp', () => {
       expect(createNode).toHaveBeenCalledWith(mockCanvas, 'BatchImagesNode')
       expect(mockNode1.connect).toHaveBeenCalledWith(0, mockBatchNode, 0)
       expect(mockNode2.connect).toHaveBeenCalledWith(0, mockBatchNode, 1)
-      expect(mockCanvas.selectItems).not.toHaveBeenCalled()
+      expect(mockCanvas.selectItems).toHaveBeenCalledWith([
+        mockNode1,
+        mockNode2,
+        mockBatchNode
+      ])
     })
 
     it('should select single image node without batch node', async () => {
