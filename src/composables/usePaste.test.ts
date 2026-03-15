@@ -28,7 +28,7 @@ function createMockNode(): LGraphNode {
   return createMockLGraphNode({
     pos: [0, 0],
     pasteFile: vi.fn(),
-    pasteFiles: vi.fn()
+    pasteFiles: vi.fn().mockResolvedValue(true)
   })
 }
 
@@ -201,20 +201,21 @@ describe('pasteImageNodes', () => {
     const file2 = createImageFile('test2.jpg', 'image/jpeg')
 
     const result = await pasteImageNodes(mockCanvas, [file1, file2])
+    await result.completion
 
     expect(createNode).toHaveBeenCalledTimes(2)
     expect(createNode).toHaveBeenNthCalledWith(1, mockCanvas, 'LoadImage')
     expect(createNode).toHaveBeenNthCalledWith(2, mockCanvas, 'LoadImage')
     expect(mockNode1.pasteFile).toHaveBeenCalledWith(file1)
     expect(mockNode2.pasteFile).toHaveBeenCalledWith(file2)
-    expect(result).toEqual([mockNode1, mockNode2])
+    expect(result.nodes).toEqual([mockNode1, mockNode2])
   })
 
   it('should handle empty file list', async () => {
     const result = await pasteImageNodes(mockCanvas, [])
 
     expect(createNode).not.toHaveBeenCalled()
-    expect(result).toEqual([])
+    expect(result.nodes).toEqual([])
   })
 })
 

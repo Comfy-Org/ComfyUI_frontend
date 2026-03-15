@@ -1784,21 +1784,28 @@ export class ComfyApp {
     if (fileList.length === 0) return
     if (!fileList[0].type.startsWith('image')) return
 
-    const imageNodes = await pasteImageNodes(this.canvas, fileList)
-    if (imageNodes.length === 0) return
+    this.canvas.emitBeforeChange()
+    try {
+      const { nodes, completion } = await pasteImageNodes(this.canvas, fileList)
+      if (nodes.length === 0) return
 
-    if (imageNodes.length > 1) {
-      const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
-      if (!batchImagesNode) return
+      if (nodes.length > 1) {
+        const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
+        if (!batchImagesNode) return
 
-      this.positionBatchNodes(imageNodes, batchImagesNode)
-      this.canvas.selectItems([...imageNodes, batchImagesNode])
+        this.positionBatchNodes(nodes, batchImagesNode)
+        this.canvas.selectItems([...nodes, batchImagesNode])
 
-      imageNodes.forEach((imageNode, index) => {
-        imageNode.connect(0, batchImagesNode, index)
-      })
-    } else {
-      this.canvas.selectItems(imageNodes)
+        nodes.forEach((imageNode, index) => {
+          imageNode.connect(0, batchImagesNode, index)
+        })
+      } else {
+        this.canvas.selectItems(nodes)
+      }
+
+      await completion
+    } finally {
+      this.canvas.emitAfterChange()
     }
   }
 
@@ -1839,8 +1846,9 @@ export class ComfyApp {
   }
 
   positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void {
-    const [x, y, width] = nodes[0].getBounding()
-    batchNode.pos = [x + width + 100, y + 30]
+    const [x, y] = nodes[0].pos
+    const nodeWidth = nodes[0].size[0]
+    batchNode.pos = [x + nodeWidth + 100, y + 30]
 
     // Retrieving Node Height is inconsistent
     let height = 0
