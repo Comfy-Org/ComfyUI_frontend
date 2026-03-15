@@ -72,7 +72,7 @@
       :class="
         cn(
           'flex flex-1 flex-col bg-node-component-header-surface',
-          'w-(--node-width)',
+          'w-(--node-width) contain-layout contain-style',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
