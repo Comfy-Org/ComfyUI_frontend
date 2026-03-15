@@ -237,68 +237,10 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('SEEDVR2', 'SeedVR2LoadDiTModel', 'model')
 
     // Qwen VL vision-language models (comfyui-qwen-vl)
-    // Register each specific path to avoid LLM fallback catching unrelated models
-    // (e.g., LLM/llava-* should NOT map to AILab_QwenVL)
-    quickRegister(
-      'LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct',
-      'AILab_QwenVL',
-      'model_name'
-    )
-    quickRegister(
-      'LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct',
-      'AILab_QwenVL',
-      'model_name'
-    )
-    quickRegister(
-      'LLM/Qwen-VL/Qwen3-VL-2B-Instruct',
-      'AILab_QwenVL',
-      'model_name'
-    )
-    quickRegister(
-      'LLM/Qwen-VL/Qwen3-VL-2B-Thinking',
-      'AILab_QwenVL',
-      'model_name'
-    )
-    quickRegister(
-      'LLM/Qwen-VL/Qwen3-VL-4B-Instruct',
-      'AILab_QwenVL',
-      'model_name'
-    )
-    quickRegister(
-      'LLM/Qwen-VL/Qwen3-VL-4B-Thinking',
-      'AILab_QwenVL',
-      'model_name'
-    )
-    quickRegister(
-      'LLM/Qwen-VL/Qwen3-VL-8B-Instruct',
-      'AILab_QwenVL',
-      'model_name'
-    )
-    quickRegister(
-      'LLM/Qwen-VL/Qwen3-VL-8B-Thinking',
-      'AILab_QwenVL',
-      'model_name'
-    )
-    quickRegister(
-      'LLM/Qwen-VL/Qwen3-VL-32B-Instruct',
-      'AILab_QwenVL',
-      'model_name'
-    )
-    quickRegister(
-      'LLM/Qwen-VL/Qwen3-VL-32B-Thinking',
-      'AILab_QwenVL',
-      'model_name'
-    )
-    quickRegister(
-      'LLM/Qwen-VL/Qwen3-0.6B',
-      'AILab_QwenVL_PromptEnhancer',
-      'model_name'
-    )
-    quickRegister(
-      'LLM/Qwen-VL/Qwen3-4B-Instruct-2507',
-      'AILab_QwenVL_PromptEnhancer',
-      'model_name'
-    )
+    // Use parent path so getCategoryForNodeType returns a single category that
+    // includes all subdirectory models via hierarchical fallback in the asset API
+    quickRegister('LLM/Qwen-VL', 'AILab_QwenVL', 'model_name')
+    quickRegister('LLM/Qwen-VL', 'AILab_QwenVL_PromptEnhancer', 'model_name')
     quickRegister('LLM/checkpoints', 'LoadChatGLM3', 'chatglm3_checkpoint')
 
     // Qwen3 TTS speech models (ComfyUI-FunBox)
