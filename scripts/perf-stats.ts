@@ -90,10 +90,8 @@ export function trendDirection(values: number[]): TrendDirection {
   const firstHalf = values.slice(0, half)
   const secondHalf = values.slice(-half)
 
-  const firstMean =
-    firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length
-  const secondMean =
-    secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length
+  const firstMean = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length
+  const secondMean = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length
 
   if (firstMean === 0) return 'stable'
   const changePct = ((secondMean - firstMean) / firstMean) * 100
