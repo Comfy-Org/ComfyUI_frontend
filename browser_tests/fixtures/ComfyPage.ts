@@ -431,9 +431,9 @@ export const comfyPageFixture = base.extend<{
         // Disable toast warning about version compatibility, as they may or
         // may not appear - depending on upstream ComfyUI dependencies
         'Comfy.VersionCompatibility.DisableWarnings': true,
-        // Browser tests should opt into missing-model warnings explicitly so
-        // workflows do not render differently based on models present on disk.
-        'Comfy.Workflow.ShowMissingModelsWarning': false
+        // Disable errors tab to prevent missing model detection from
+        // rendering error indicators on nodes during unrelated tests.
+        'Comfy.RightSidePanel.ShowErrorsTab': false
       })
     } catch (e) {
       console.error(e)
