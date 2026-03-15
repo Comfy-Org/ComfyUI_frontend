@@ -20,6 +20,9 @@
 
 <script setup lang="ts">
 import { useImage, whenever } from '@vueuse/core'
+import { ref } from 'vue'
+
+import { isCloud } from '@/platform/distribution/types'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
@@ -33,6 +36,19 @@ const emit = defineEmits<{
   view: []
 }>()
 
+const originalDimensions = ref<{ width: number; height: number }>()
+
+if (isCloud && asset.src) {
+  fetch(asset.src).then((resp) => {
+    const w = Number(resp.headers.get('X-Original-Width'))
+    const h = Number(resp.headers.get('X-Original-Height'))
+    if (w > 0 && h > 0) {
+      originalDimensions.value = { width: w, height: h }
+      emit('image-loaded', w, h)
+    }
+  })
+}
+
 const { state, error, isReady } = useImage({
   src: asset.src ?? '',
   alt: getAssetDisplayName(asset)
@@ -40,7 +56,10 @@ const { state, error, isReady } = useImage({
 
 whenever(
   () =>
-    isReady.value && state.value?.naturalWidth && state.value?.naturalHeight,
+    isReady.value &&
+    state.value?.naturalWidth &&
+    state.value?.naturalHeight &&
+    !originalDimensions.value,
   () =>
     emit('image-loaded', state.value!.naturalWidth, state.value!.naturalHeight)
 )
