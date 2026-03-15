@@ -7,6 +7,7 @@ import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
@@ -244,16 +245,17 @@ function safeWidgetMapper(
       }
     }
 
-    const promotedInputName = node.inputs?.find((input) => {
-      if (input.name === widget.name) return true
-      if (input._widget === widget) return true
-      return false
-    })?.name
+    const matchedInput = matchPromotedInput(node.inputs, widget)
+    const promotedInputName = matchedInput?.name
     const displayName = promotedInputName ?? widget.name
-    const promotedSource = resolvePromotedSourceByInputName(displayName) ?? {
+    const directSource = {
       sourceNodeId: widget.sourceNodeId,
       sourceWidgetName: widget.sourceWidgetName
     }
+    const promotedSource =
+      matchedInput?._widget === widget
+        ? (resolvePromotedSourceByInputName(displayName) ?? directSource)
+        : directSource
 
     return {
       displayName,
@@ -520,8 +522,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Update only widgets with new slot metadata, keeping other widget data intact
     for (const widget of currentData.widgets ?? []) {
-      const slotInfo = slotMetadata.get(widget.slotName ?? widget.name)
-      if (slotInfo) widget.slotMetadata = slotInfo
+      widget.slotMetadata = slotMetadata.get(widget.slotName ?? widget.name)
     }
   }
 
