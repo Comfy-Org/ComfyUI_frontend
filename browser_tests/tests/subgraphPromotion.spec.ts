@@ -432,7 +432,7 @@ test.describe(
         await expect(clipNode).toBeVisible()
         const textarea = clipNode.locator('textarea')
         await expect(textarea).toBeVisible()
-        await textarea.click({ button: 'right' })
+        await textarea.click({ button: 'right', force: true })
         await comfyPage.nextFrame()
 
         const promoteEntry = comfyPage.page
