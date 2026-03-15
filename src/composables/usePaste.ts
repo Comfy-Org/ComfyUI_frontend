@@ -95,7 +95,7 @@ export async function pasteImageNode(
   return imageNode
 }
 
-export interface PasteNodesResult {
+interface PasteNodesResult {
   nodes: LGraphNode[]
   completion: Promise<void>
 }
