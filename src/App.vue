@@ -18,7 +18,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { parsePreloadError } from '@/utils/preloadErrorUtil'
+import { isStaleChunkError, parsePreloadError } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const { t } = useI18n()
@@ -96,12 +96,14 @@ onMounted(() => {
         }
       })
     }
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.preloadErrorTitle'),
-      detail: t('g.preloadError'),
-      life: 10000
-    })
+    if (isStaleChunkError(info)) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('g.preloadErrorTitle'),
+        detail: t('g.preloadError'),
+        life: 10000
+      })
+    }
   })
 
   // Capture resource load failures (CSS, scripts) in non-localhost distributions
