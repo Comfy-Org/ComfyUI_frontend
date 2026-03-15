@@ -305,6 +305,8 @@
   --component-node-widget-background-highlighted: var(--color-ash-500);
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-400);
+  --interface-panel-job-card-surface: var(--secondary-background);
+  --interface-panel-job-card-hover: var(--secondary-background-hover);
 
   /* Default UI element color palette variables */
   --palette-contrast-mix-color: #fff;
@@ -454,6 +456,8 @@
   --component-node-widget-background-highlighted: var(--color-graphite-400);
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-600);
+  --interface-panel-job-card-surface: var(--secondary-background);
+  --interface-panel-job-card-hover: var(--secondary-background-hover);
 
   --modal-card-background: var(--secondary-background);
   --modal-card-background-hovered: var(--secondary-background-hover);
@@ -496,6 +500,10 @@
   );
   --color-interface-menu-surface: var(--interface-menu-surface);
   --color-interface-menu-stroke: var(--interface-menu-stroke);
+  --color-interface-panel-job-card-surface: var(
+    --interface-panel-job-card-surface
+  );
+  --color-interface-panel-job-card-hover: var(--interface-panel-job-card-hover);
   --color-interface-panel-surface: var(--interface-panel-surface);
   --color-interface-panel-hover-surface: var(--interface-panel-hover-surface);
   --color-interface-panel-selected-surface: var(

@@ -11,7 +11,7 @@
       <AssetsListItem
         v-for="job in group.items"
         :key="job.id"
-        class="w-full shrink-0 cursor-default text-text-primary transition-colors hover:bg-secondary-background-hover"
+        :class="getJobRowClass(job)"
         :preview-url="getJobPreviewUrl(job)"
         :is-video-preview="isVideoPreviewJob(job)"
         :preview-alt="job.title"
@@ -76,6 +76,7 @@ import { ref } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import { cn } from '@/utils/tailwindUtil'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
 
@@ -102,6 +103,14 @@ const isCancelable = (job: JobListItem) =>
 
 const isFailedDeletable = (job: JobListItem) =>
   job.showClear !== false && job.state === 'failed'
+
+const getJobRowClass = (job: JobListItem) =>
+  cn(
+    'w-full shrink-0 cursor-default text-text-primary transition-colors',
+    job.state === 'running'
+      ? 'bg-interface-panel-job-card-surface hover:bg-interface-panel-job-card-hover'
+      : 'hover:bg-secondary-background-hover'
+  )
 
 const getPreviewOutput = (job: JobListItem) => job.taskRef?.previewOutput
 

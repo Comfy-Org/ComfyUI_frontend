@@ -143,4 +143,33 @@ describe('JobAssetsList', () => {
 
     expect(wrapper.emitted('viewItem')).toBeUndefined()
   })
+
+  it('uses the running job card surface classes for running jobs', () => {
+    const runningJob = buildJob({
+      state: 'running',
+      taskRef: createTaskRef(createResultItem('job-1.png'))
+    })
+    const completedJob = buildJob({
+      id: 'job-2',
+      title: 'Job 2'
+    })
+    const wrapper = mountJobAssetsList([runningJob, completedJob])
+
+    const [runningItem, completedItem] = wrapper.findAllComponents({
+      name: 'AssetsListItem'
+    })
+
+    expect(runningItem.classes()).toContain(
+      'bg-interface-panel-job-card-surface'
+    )
+    expect(runningItem.classes()).toContain(
+      'hover:bg-interface-panel-job-card-hover'
+    )
+    expect(completedItem.classes()).not.toContain(
+      'bg-interface-panel-job-card-surface'
+    )
+    expect(completedItem.classes()).toContain(
+      'hover:bg-secondary-background-hover'
+    )
+  })
 })
