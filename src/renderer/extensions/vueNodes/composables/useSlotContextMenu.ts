@@ -100,17 +100,12 @@ export function renameSlot(context: SlotMenuContext, newLabel: string): void {
   const result = getSlotInfo(context)
   if (!result) return
 
-  const { graph, node } = result
-  const slotInfo = context.isInput
-    ? node.getInputInfo(context.slotIndex)
-    : node.getOutputInfo(context.slotIndex)
-  if (!slotInfo) return
+  const { graph, slotInfo } = result
 
   graph.beforeChange()
   slotInfo.label = newLabel
   app.canvas?.setDirty(true, true)
   graph.afterChange()
-  triggerSlotRefresh(context)
 }
 
 export function disconnectSlotLinks(context: SlotMenuContext): void {

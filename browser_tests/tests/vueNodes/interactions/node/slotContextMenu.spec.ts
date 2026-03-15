@@ -98,6 +98,68 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     await expect(slotMenu).not.toBeVisible()
   })
 
+  test('Rename Slot updates the slot label reactively in the DOM', async ({
+    comfyPage
+  }) => {
+    // Find a KSampler input slot that is renamable (not widget-backed)
+    const slotInfo = await comfyPage.page.evaluate(() => {
+      const graph = window.app!.graph!
+      const node = graph.findNodesByType('KSampler', [])[0]
+      if (!node?.inputs) return null
+      const idx = node.inputs.findIndex(
+        (i) => !i.nameLocked && !('widget' in i && i.widget)
+      )
+      if (idx < 0) return null
+      return {
+        index: idx,
+        originalName: node.inputs[idx].label || node.inputs[idx].name
+      }
+    })
+    expect(slotInfo).not.toBeNull()
+
+    const ksamplerNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    const inputSlot = ksamplerNode
+      .locator('.lg-slot--input')
+      .nth(slotInfo!.index)
+    await expect(inputSlot).toBeVisible()
+
+    // Right-click to open slot context menu
+    await inputSlot.click({ button: 'right', position: { x: 6, y: 12 } })
+
+    const slotMenu = comfyPage.page.locator(
+      'div[role="menu"]:not(.p-contextmenu)'
+    )
+    await expect(slotMenu).toBeVisible()
+
+    // Click "Rename"
+    await slotMenu.getByRole('menuitem', { name: 'Rename' }).click()
+
+    // Menu should close, prompt dialog should appear
+    await expect(slotMenu).not.toBeVisible()
+
+    const promptInput = comfyPage.page.locator('.prompt-dialog-content input')
+    await expect(promptInput).toBeVisible()
+
+    // Type a new name and confirm
+    await promptInput.fill('MyCustomSlot')
+    await comfyPage.page.locator('.prompt-dialog-content button').click()
+
+    // Wait for dialog to close
+    await expect(promptInput).not.toBeVisible()
+    await comfyPage.nextFrame()
+
+    // The slot label in the DOM should reactively reflect the new name
+    await expect(inputSlot).toContainText('MyCustomSlot')
+
+    // Verify the underlying graph data also changed
+    const labelInGraph = await comfyPage.page.evaluate((idx) => {
+      const graph = window.app!.graph!
+      const node = graph.findNodesByType('KSampler', [])[0]
+      return node?.inputs?.[idx]?.label
+    }, slotInfo!.index)
+    expect(labelInGraph).toBe('MyCustomSlot')
+  })
+
   test('Slot context menu Disconnect Links removes connections', async ({
     comfyPage
   }) => {

@@ -451,28 +451,63 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
       enumerable: true
     })
   }
+  // Instrument `label` on a slot so that setting it fires a graph trigger,
+  // following the same pattern as LGraphNodeProperties for node-level props.
+  const instrumentSlotLabel = (slot: INodeInputSlot | INodeOutputSlot) => {
+    const descriptor = Object.getOwnPropertyDescriptor(slot, 'label')
+    if (descriptor?.get) return // already instrumented
+
+    let value = slot.label
+    Object.defineProperty(slot, 'label', {
+      get: () => value,
+      set: (newValue: string | undefined) => {
+        if (value === newValue) return
+        value = newValue
+        node.graph?.trigger('node:slot-label:changed', { nodeId: node.id })
+      },
+      configurable: true,
+      enumerable: true
+    })
+  }
+
   const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
+  reactiveInputs.forEach(instrumentSlotLabel)
   Object.defineProperty(node, 'inputs', {
     get() {
       return reactiveInputs
     },
-    set(v) {
+    set(v: INodeInputSlot[]) {
+      v.forEach(instrumentSlotLabel)
       reactiveInputs.splice(0, reactiveInputs.length, ...v)
     },
     configurable: true,
     enumerable: true
   })
   const reactiveOutputs = shallowReactive<INodeOutputSlot[]>(node.outputs ?? [])
+  reactiveOutputs.forEach(instrumentSlotLabel)
   Object.defineProperty(node, 'outputs', {
     get() {
       return reactiveOutputs
     },
-    set(v) {
+    set(v: INodeOutputSlot[]) {
+      v.forEach(instrumentSlotLabel)
       reactiveOutputs.splice(0, reactiveOutputs.length, ...v)
     },
     configurable: true,
     enumerable: true
   })
+
+  // Hook into node callbacks to instrument dynamically added slots.
+  const origOnInputAdded = node.onInputAdded
+  node.onInputAdded = (slot) => {
+    instrumentSlotLabel(slot)
+    origOnInputAdded?.call(node, slot)
+  }
+  const origOnOutputAdded = node.onOutputAdded
+  node.onOutputAdded = (slot) => {
+    instrumentSlotLabel(slot)
+    origOnOutputAdded?.call(node, slot)
+  }
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
     const widgetsSnapshot = node.widgets ?? []
