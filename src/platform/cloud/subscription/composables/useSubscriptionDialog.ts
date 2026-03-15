@@ -3,6 +3,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { isCloud } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const DIALOG_KEY = 'subscription-required'
@@ -26,6 +27,8 @@ export const useSubscriptionDialog = () => {
   }
 
   function showPricingTable(options?: { reason?: SubscriptionDialogReason }) {
+    if (!isCloud) return
+
     const useWorkspaceVariant =
       flags.teamWorkspacesEnabled && !workspaceStore.isInPersonalWorkspace
 
