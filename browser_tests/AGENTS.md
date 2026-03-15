@@ -32,11 +32,11 @@ browser_tests/
 
 ## Gotchas
 
-| Symptom | Cause | Fix |
-| --- | --- | --- |
+| Symptom                                            | Cause                                       | Fix                                                                                |
+| -------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `subtree intercepts pointer events` on DOM widgets | Canvas `z-999` overlay intercepts `click()` | Use `dispatchEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 })` |
-| Context menu empty or wrong items | Node not selected | Select node first: `vueNodes.selectNode()` or `nodeRef.click('title')` |
-| `navigateIntoSubgraph` timeout | Node too small in test asset JSON | Use node size `[400, 200]` minimum |
+| Context menu empty or wrong items                  | Node not selected                           | Select node first: `vueNodes.selectNode()` or `nodeRef.click('title')`             |
+| `navigateIntoSubgraph` timeout                     | Node too small in test asset JSON           | Use node size `[400, 200]` minimum                                                 |
 
 ## After Making Changes
 
