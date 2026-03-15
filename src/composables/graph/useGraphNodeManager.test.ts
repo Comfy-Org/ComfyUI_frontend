@@ -14,6 +14,7 @@ import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -473,6 +474,9 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
 
+    const settingStore = useSettingStore()
+    settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+
     // Initialize store (triggers watcher registration)
     useGraphNodeManager(graph)
     const store = useExecutionErrorStore()
@@ -647,6 +651,9 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+
+    const settingStore = useSettingStore()
+    settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
 
     useGraphNodeManager(graph)
     useExecutionErrorStore()
