@@ -430,7 +430,10 @@ export const comfyPageFixture = base.extend<{
         'Comfy.VueNodes.AutoScaleLayout': false,
         // Disable toast warning about version compatibility, as they may or
         // may not appear - depending on upstream ComfyUI dependencies
-        'Comfy.VersionCompatibility.DisableWarnings': true
+        'Comfy.VersionCompatibility.DisableWarnings': true,
+        // Disable errors tab to prevent missing model detection from
+        // rendering error indicators on nodes during unrelated tests.
+        'Comfy.RightSidePanel.ShowErrorsTab': false
       })
     } catch (e) {
       console.error(e)

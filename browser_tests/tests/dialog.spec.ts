@@ -71,6 +71,10 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
 test.describe('Execution error', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
     await comfyPage.setup()
   })
 

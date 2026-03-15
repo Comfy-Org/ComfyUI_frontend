@@ -6,10 +6,6 @@ import {
 test.describe('Vue Node Resizing', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      false
-    )
     await comfyPage.vueNodes.waitForNodes()
   })
 

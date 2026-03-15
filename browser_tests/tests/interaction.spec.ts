@@ -13,10 +13,6 @@ import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  await comfyPage.settings.setSetting(
-    'Comfy.RightSidePanel.ShowErrorsTab',
-    false
-  )
   // Wait for the legacy menu to appear and canvas to settle after layout shift.
   await comfyPage.page.locator('.comfy-menu').waitFor({ state: 'visible' })
   await comfyPage.nextFrame()

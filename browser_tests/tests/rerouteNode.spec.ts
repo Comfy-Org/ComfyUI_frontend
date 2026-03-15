@@ -6,10 +6,6 @@ import { getMiddlePoint } from '../fixtures/utils/litegraphUtils'
 test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      false
-    )
   })
 
   test.afterEach(async ({ comfyPage }) => {
@@ -49,10 +45,6 @@ test.describe(
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
       await comfyPage.settings.setSetting('LiteGraph.Reroute.SplineOffset', 80)
-      await comfyPage.settings.setSetting(
-        'Comfy.RightSidePanel.ShowErrorsTab',
-        false
-      )
     })
 
     test('loads from workflow', async ({ comfyPage }) => {

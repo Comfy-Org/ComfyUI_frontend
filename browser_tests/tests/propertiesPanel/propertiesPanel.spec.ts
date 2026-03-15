@@ -3,13 +3,6 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 
 test.describe('Properties panel', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      false
-    )
-  })
-
   test('opens and updates title based on selection', async ({ comfyPage }) => {
     await comfyPage.actionbar.propertiesButton.click()
 
