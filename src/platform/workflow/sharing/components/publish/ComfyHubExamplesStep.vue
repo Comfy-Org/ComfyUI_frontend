@@ -9,7 +9,8 @@
     </p>
 
     <div
-      class="grid gap-2"
+      role="list"
+      class="group/grid grid gap-2"
       style="grid-template-columns: repeat(auto-fill, 8rem)"
     >
       <!-- Upload tile (hidden when max images reached) -->
@@ -43,65 +44,95 @@
         }}</span>
       </label>
 
-      <!-- Example images -->
-      <div
+      <!-- Example images (drag to reorder) -->
+      <ReorderableExampleImage
         v-for="(image, index) in exampleImages"
         :key="image.id"
-        class="group relative aspect-square overflow-hidden rounded-sm"
-      >
-        <img
-          :src="image.url"
-          :alt="$t('comfyHubPublish.exampleImage', { index: index + 1 })"
-          class="size-full object-cover"
-        />
-        <Button
-          variant="textonly"
-          size="icon"
-          :aria-label="$t('comfyHubPublish.removeExampleImage')"
-          class="absolute top-1 right-1 flex size-6 items-center justify-center bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/80"
-          @click="removeImage(image.id)"
-        >
-          <i class="icon-[lucide--x] size-4" aria-hidden="true" />
-        </Button>
-      </div>
+        :image="image"
+        :index="index"
+        :total="exampleImages.length"
+        :instance-id="instanceId"
+        @remove="removeImage"
+        @move="moveImage"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { v4 as uuidv4 } from 'uuid'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import {
   isFileTooLarge,
   MAX_IMAGE_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
+import ReorderableExampleImage from './ReorderableExampleImage.vue'
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const MAX_EXAMPLES = 8
 
-const { exampleImages } = defineProps<{
-  exampleImages: ExampleImage[]
-}>()
+const exampleImages = defineModel<ExampleImage[]>('exampleImages', {
+  required: true
+})
 
-const showUploadTile = computed(() => exampleImages.length < MAX_EXAMPLES)
+const showUploadTile = computed(() => exampleImages.value.length < MAX_EXAMPLES)
 
-const emit = defineEmits<{
-  'update:exampleImages': [value: ExampleImage[]]
-}>()
+const instanceId = Symbol('example-images')
+
+let cleanupMonitor = () => {}
+
+onMounted(() => {
+  cleanupMonitor = monitorForElements({
+    canMonitor: ({ source }) => source.data.instanceId === instanceId,
+    onDrop: ({ source, location }) => {
+      const destination = location.current.dropTargets[0]
+      if (!destination) return
+
+      const fromId = source.data.imageId
+      const toId = destination.data.imageId
+      if (typeof fromId !== 'string' || typeof toId !== 'string') return
+
+      reorderImages(fromId, toId)
+    }
+  })
+})
+
+onBeforeUnmount(() => {
+  cleanupMonitor()
+})
+
+function moveByIndex(fromIndex: number, toIndex: number) {
+  if (fromIndex < 0 || toIndex < 0) return
+  if (toIndex >= exampleImages.value.length || fromIndex === toIndex) return
+
+  const updated = [...exampleImages.value]
+  const [moved] = updated.splice(fromIndex, 1)
+  updated.splice(toIndex, 0, moved)
+  exampleImages.value = updated
+}
+
+function reorderImages(fromId: string, toId: string) {
+  moveByIndex(
+    exampleImages.value.findIndex((img) => img.id === fromId),
+    exampleImages.value.findIndex((img) => img.id === toId)
+  )
+}
+
+function moveImage(id: string, direction: number) {
+  const currentIndex = exampleImages.value.findIndex((img) => img.id === id)
+  moveByIndex(currentIndex, currentIndex + direction)
+}
 
 function removeImage(id: string) {
-  const image = exampleImages.find((img) => img.id === id)
+  const image = exampleImages.value.find((img) => img.id === id)
   if (image) {
     URL.revokeObjectURL(image.url)
   }
-  emit(
-    'update:exampleImages',
-    exampleImages.filter((img) => img.id !== id)
-  )
+  exampleImages.value = exampleImages.value.filter((img) => img.id !== id)
 }
 
 function addImages(files: FileList) {
@@ -115,7 +146,7 @@ function addImages(files: FileList) {
     }))
 
   if (newImages.length > 0) {
-    emit('update:exampleImages', [...exampleImages, ...newImages])
+    exampleImages.value = [...exampleImages.value, ...newImages]
   }
 }
 
