@@ -151,6 +151,40 @@ A flaky test cannot prove anything — it may show red for reasons unrelated to 
 | Shared state between tests             | Isolate with `afterEach` / `beforeEach` |
 | Timing-dependent logic                 | Use `expect.poll()` or `toPass()`       |
 
+## Gaming the Red-Green Process
+
+These are ways the red-green proof gets invalidated during Step 2 (the fix commit). The test from Step 1 is immutable — if any of these happen, restart from Step 1.
+
+**Weakening the assertion to make it pass:**
+
+```typescript
+// Step 1 (red) — strict assertion
+expect(result).toBe('/external/drive/models/checkpoints/file.safetensors')
+
+// Step 2 (green) — weakened to pass without a real fix
+expect(result).toBeDefined() // This proves nothing
+```
+
+**Updating snapshots to bless the bug:**
+
+```bash
+# Instead of fixing the code, just updating the snapshot to match buggy output
+pnpm test:unit -- --update
+```
+
+If a snapshot needs updating, the fix should change the code behavior, not the expected output.
+
+**Adding mocks in Step 2 that hide the failure:**
+
+```typescript
+// Step 2 adds a mock that didn't exist in Step 1
+vi.mock('./pathResolver', () => ({
+  resolve: () => '/expected/path' // Hardcoded to pass
+}))
+```
+
+Step 2 should only change source code — not test infrastructure.
+
 ## Testing the Happy Path Only
 
 The red-green pattern specifically requires the test to exercise the **broken path**. If you only test the case that already works, the test will pass (green) on Step 1 — defeating the purpose.

@@ -89,12 +89,26 @@ test.describe('Model Download', { tag: ['@smoke'] }, () => {
 })
 ```
 
+### Verify Locally First
+
+Run the test locally before pushing to confirm it fails for the right reason:
+
+```bash
+# Vitest
+pnpm test:unit -- <test-file>
+
+# Playwright
+pnpm test:browser:local -- --grep "<test name>"
+```
+
+If the test passes locally, it does not reproduce the bug — revisit your test before pushing.
+
 ### Quality Checks and Commit
 
 ```bash
 pnpm typecheck
 pnpm lint
-pnpm format
+pnpm format:check
 
 git add <test-files-only>
 git commit -m "test: add failing test for <concise bug description>"
@@ -119,6 +133,7 @@ Write the minimum code change needed to make the failing test pass.
 
 ### Rules
 
+- Do NOT modify, weaken, or delete the test from Step 1 — it is immutable. If the test needs changes, restart from Step 1 and re-prove the red.
 - Do NOT add new tests (tests were finalized in Step 1)
 - Do NOT refactor, clean up, or make "drive-by" improvements
 - Do NOT modify code unrelated to the bug
