@@ -51,6 +51,7 @@ For Playwright tests, follow the `/writing-playwright-tests` skill for patterns,
 - Do NOT include any fix, workaround, or behavioral change
 - Do NOT add unrelated tests or refactor existing tests
 - Keep the test minimal — only what is needed to reproduce the bug
+- Avoid common anti-patterns — see `reference/testing-anti-patterns.md`
 
 ### Vitest Example
 
@@ -194,4 +195,5 @@ If main itself is red, branch from the last green commit or fix the pre-existing
 | Unit CI | `.github/workflows/ci-tests-unit.yaml` |
 | E2E CI | `.github/workflows/ci-tests-e2e.yaml` |
 | Lint CI | `.github/workflows/ci-lint-format.yaml` |
+| Testing anti-patterns | `reference/testing-anti-patterns.md` |
 | Related skill | `.claude/skills/perf-fix-with-proof/SKILL.md` |
