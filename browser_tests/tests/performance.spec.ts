@@ -107,6 +107,51 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test('large graph idle rendering', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+    await comfyPage.perf.startMeasuring()
+
+    // Let the large graph idle for 2 seconds — measures compositor and
+    // style recalculation cost at scale (245 nodes).
+    for (let i = 0; i < 120; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('large-graph-idle')
+    recordMeasurement(m)
+    console.log(
+      `Large graph idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts`
+    )
+  })
+
+  test('large graph pan interaction', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    const canvas = comfyPage.canvas
+    const box = await canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+
+    await comfyPage.perf.startMeasuring()
+
+    // Simulate panning across a large graph — stresses compositor
+    // layer management and transform recalculation.
+    const centerX = box.x + box.width / 2
+    const centerY = box.y + box.height / 2
+    await comfyPage.page.mouse.move(centerX, centerY)
+    await comfyPage.page.mouse.down({ button: 'middle' })
+    for (let i = 0; i < 60; i++) {
+      await comfyPage.page.mouse.move(centerX + i * 5, centerY + i * 2)
+      await comfyPage.nextFrame()
+    }
+    await comfyPage.page.mouse.up({ button: 'middle' })
+
+    const m = await comfyPage.perf.stopMeasuring('large-graph-pan')
+    recordMeasurement(m)
+    console.log(
+      `Large graph pan: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.taskDurationMs.toFixed(1)}ms task`
+    )
+  })
+
   test('subgraph DOM widget clipping during node selection', async ({
     comfyPage
   }) => {
