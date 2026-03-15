@@ -542,10 +542,16 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     }
 
     // node.inputs/outputs are shallowReactive arrays (via defineProperty).
+    // Use splice (not assignment) to preserve array identity so Vue components
+    // that hold a reference to this array continue to track changes.
     // Shallow-copy each element so shallowReactive detects new references
-    // and triggers Vue updates for deep property changes (e.g., label).
-    if (nodeRef.outputs) {
-      currentData.outputs = nodeRef.outputs.map((o) => ({ ...o }))
+    // for deep property changes (e.g., label).
+    if (nodeRef.outputs && currentData.outputs) {
+      currentData.outputs.splice(
+        0,
+        currentData.outputs.length,
+        ...nodeRef.outputs.map((o) => ({ ...o }))
+      )
     }
 
     if (nodeRef.inputs) {

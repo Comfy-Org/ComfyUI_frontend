@@ -332,11 +332,10 @@ describe(renameSlot, () => {
     expect(mockGraph.afterChange).toHaveBeenCalled()
   })
 
-  it('replaces slot element in shallowReactive array after rename', () => {
+  it('triggers slot refresh event after rename', () => {
     const inputSlot = { type: 'IMAGE', link: null, name: 'image', label: '' }
-    const inputs = [inputSlot]
     mockGraph.getNodeById.mockReturnValue({
-      inputs,
+      inputs: [inputSlot],
       outputs: [],
       getInputInfo: () => inputSlot,
       getOutputInfo: () => null
@@ -344,8 +343,9 @@ describe(renameSlot, () => {
 
     renameSlot({ nodeId: '1', slotIndex: 0, isInput: true }, 'renamed')
 
-    expect(inputs[0]).not.toBe(inputSlot)
-    expect(inputs[0].label).toBe('renamed')
+    expect(mockGraph.trigger).toHaveBeenCalledWith('node:slot-label:changed', {
+      nodeId: '1'
+    })
   })
 
   it('does nothing when slot info is null', () => {
