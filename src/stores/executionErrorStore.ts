@@ -505,6 +505,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     [lastNodeErrors, () => missingModelStore.missingModelNodeIds],
     () => {
       if (!app.isGraphReady) return
+      // Legacy (LGraphNode) only: suppress missing-model error flags when
+      // the Errors tab is hidden, since legacy nodes lack the per-widget
+      // red highlight that Vue nodes use to indicate *why* a node has errors.
+      // Vue nodes compute hasAnyError independently and are unaffected.
       const showErrorsTab = useSettingStore().get(
         'Comfy.RightSidePanel.ShowErrorsTab'
       )
