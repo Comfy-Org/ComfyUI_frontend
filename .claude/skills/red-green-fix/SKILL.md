@@ -37,9 +37,9 @@ Write a test that reproduces the bug. **Do NOT write any fix code.**
 
 ### Choosing the Test Framework
 
-| Bug type | Framework | File location |
-|---|---|---|
-| Logic, utils, stores, composables | Vitest | `src/**/*.test.ts` (colocated) |
+| Bug type                          | Framework  | File location                   |
+| --------------------------------- | ---------- | ------------------------------- |
+| Logic, utils, stores, composables | Vitest     | `src/**/*.test.ts` (colocated)  |
 | UI interaction, canvas, workflows | Playwright | `browser_tests/tests/*.spec.ts` |
 
 For Playwright tests, follow the `/writing-playwright-tests` skill for patterns, fixtures, and tags.
@@ -62,7 +62,10 @@ import { resolveModelPath } from './pathUtil'
 
 describe('resolveModelPath', () => {
   it('handles absolute paths from folder_paths API', () => {
-    const result = resolveModelPath('/absolute/models', '/absolute/models/checkpoints')
+    const result = resolveModelPath(
+      '/absolute/models',
+      '/absolute/models/checkpoints'
+    )
     expect(result).toBe('/absolute/models/checkpoints')
   })
 })
@@ -71,7 +74,10 @@ describe('resolveModelPath', () => {
 ### Playwright Example
 
 ```typescript
-import { comfyPageFixture as test, comfyExpect as expect } from '../fixtures/ComfyPage'
+import {
+  comfyPageFixture as test,
+  comfyExpect as expect
+} from '../fixtures/ComfyPage'
 
 test.describe('Model Download', { tag: ['@smoke'] }, () => {
   test('downloads model when path is absolute', async ({ comfyPage }) => {
@@ -185,15 +191,15 @@ If main itself is red, branch from the last green commit or fix the pre-existing
 
 ## Reference
 
-| Resource | Path |
-|---|---|
-| Unit test framework | Vitest (`src/**/*.test.ts`) |
-| E2E test framework | Playwright (`browser_tests/tests/*.spec.ts`) |
-| E2E fixtures | `browser_tests/fixtures/` |
-| E2E assets | `browser_tests/assets/` |
-| Playwright skill | `.claude/skills/writing-playwright-tests/SKILL.md` |
-| Unit CI | `.github/workflows/ci-tests-unit.yaml` |
-| E2E CI | `.github/workflows/ci-tests-e2e.yaml` |
-| Lint CI | `.github/workflows/ci-lint-format.yaml` |
-| Testing anti-patterns | `reference/testing-anti-patterns.md` |
-| Related skill | `.claude/skills/perf-fix-with-proof/SKILL.md` |
+| Resource              | Path                                               |
+| --------------------- | -------------------------------------------------- |
+| Unit test framework   | Vitest (`src/**/*.test.ts`)                        |
+| E2E test framework    | Playwright (`browser_tests/tests/*.spec.ts`)       |
+| E2E fixtures          | `browser_tests/fixtures/`                          |
+| E2E assets            | `browser_tests/assets/`                            |
+| Playwright skill      | `.claude/skills/writing-playwright-tests/SKILL.md` |
+| Unit CI               | `.github/workflows/ci-tests-unit.yaml`             |
+| E2E CI                | `.github/workflows/ci-tests-e2e.yaml`              |
+| Lint CI               | `.github/workflows/ci-lint-format.yaml`            |
+| Testing anti-patterns | `reference/testing-anti-patterns.md`               |
+| Related skill         | `.claude/skills/perf-fix-with-proof/SKILL.md`      |

@@ -97,7 +97,11 @@ it('full model download flow', async () => {
 
 ```typescript
 it('resolves absolute savePath without nesting under modelsDirectory', () => {
-  const result = getLocalSavePath('/models', '/models/checkpoints', 'file.safetensors')
+  const result = getLocalSavePath(
+    '/models',
+    '/models/checkpoints',
+    'file.safetensors'
+  )
   expect(result).toBe('/models/checkpoints/file.safetensors')
 })
 ```
@@ -112,12 +116,14 @@ Duplicated test code hides what actually differs between cases. Use parameterize
 
 ```typescript
 it('resolves checkpoints path', () => {
-  expect(resolve('/models', '/models/checkpoints', 'a.safetensors'))
-    .toBe('/models/checkpoints/a.safetensors')
+  expect(resolve('/models', '/models/checkpoints', 'a.safetensors')).toBe(
+    '/models/checkpoints/a.safetensors'
+  )
 })
 it('resolves loras path', () => {
-  expect(resolve('/models', '/models/loras', 'b.safetensors'))
-    .toBe('/models/loras/b.safetensors')
+  expect(resolve('/models', '/models/loras', 'b.safetensors')).toBe(
+    '/models/loras/b.safetensors'
+  )
 })
 ```
 
@@ -126,7 +132,7 @@ it('resolves loras path', () => {
 ```typescript
 it.each([
   ['/models/checkpoints', 'a.safetensors', '/models/checkpoints/a.safetensors'],
-  ['/models/loras', 'b.safetensors', '/models/loras/b.safetensors'],
+  ['/models/loras', 'b.safetensors', '/models/loras/b.safetensors']
 ])('resolves %s/%s to %s', (dir, file, expected) => {
   expect(resolve('/models', dir, file)).toBe(expected)
 })
@@ -138,12 +144,12 @@ A flaky test cannot prove anything — it may show red for reasons unrelated to 
 
 **Common causes in this codebase:**
 
-| Cause | Fix |
-|---|---|
-| Missing `nextFrame()` after canvas ops | Add `await comfyPage.nextFrame()` |
-| `waitForTimeout` instead of assertions | Use `toBeVisible()`, `toHaveText()` |
-| Shared state between tests | Isolate with `afterEach` / `beforeEach` |
-| Timing-dependent logic | Use `expect.poll()` or `toPass()` |
+| Cause                                  | Fix                                     |
+| -------------------------------------- | --------------------------------------- |
+| Missing `nextFrame()` after canvas ops | Add `await comfyPage.nextFrame()`       |
+| `waitForTimeout` instead of assertions | Use `toBeVisible()`, `toHaveText()`     |
+| Shared state between tests             | Isolate with `afterEach` / `beforeEach` |
+| Timing-dependent logic                 | Use `expect.poll()` or `toPass()`       |
 
 ## Testing the Happy Path Only
 
@@ -164,7 +170,11 @@ it('downloads to default models directory', () => {
 ```typescript
 it('downloads to external models directory configured via extra_model_paths', () => {
   // This is the broken case — absolute path from folder_paths API
-  const result = resolve('/models', '/external/drive/models/checkpoints', 'file.safetensors')
+  const result = resolve(
+    '/models',
+    '/external/drive/models/checkpoints',
+    'file.safetensors'
+  )
   expect(result).toBe('/external/drive/models/checkpoints/file.safetensors')
 })
 ```
