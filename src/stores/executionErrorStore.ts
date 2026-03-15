@@ -505,10 +505,15 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     [lastNodeErrors, () => missingModelStore.missingModelNodeIds],
     () => {
       if (!app.isGraphReady) return
+      const showErrorsTab = useSettingStore().get(
+        'Comfy.RightSidePanel.ShowErrorsTab'
+      )
       reconcileNodeErrorFlags(
         app.rootGraph,
         lastNodeErrors.value,
-        missingModelStore.missingModelAncestorExecutionIds
+        showErrorsTab
+          ? missingModelStore.missingModelAncestorExecutionIds
+          : new Set()
       )
     },
     { flush: 'post' }
