@@ -5,2300 +5,1500 @@
     {
       "id": 1,
       "type": "Note",
-      "pos": [
-        0,
-        0
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [0, 0],
+      "size": [250, 150],
       "flags": {},
       "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 1 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 1 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 2,
       "type": "Note",
-      "pos": [
-        300,
-        0
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [300, 0],
+      "size": [250, 150],
       "flags": {},
       "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 2 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 2 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 3,
       "type": "Note",
-      "pos": [
-        600,
-        0
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [600, 0],
+      "size": [250, 150],
       "flags": {},
       "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 3 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 3 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 4,
       "type": "Note",
-      "pos": [
-        900,
-        0
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [900, 0],
+      "size": [250, 150],
       "flags": {},
       "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 4 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 4 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 5,
       "type": "Note",
-      "pos": [
-        1200,
-        0
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1200, 0],
+      "size": [250, 150],
       "flags": {},
       "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 5 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 5 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 6,
       "type": "Note",
-      "pos": [
-        1500,
-        0
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1500, 0],
+      "size": [250, 150],
       "flags": {},
       "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 6 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 6 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 7,
       "type": "Note",
-      "pos": [
-        1800,
-        0
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1800, 0],
+      "size": [250, 150],
       "flags": {},
       "order": 6,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 7 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 7 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 8,
       "type": "Note",
-      "pos": [
-        2100,
-        0
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2100, 0],
+      "size": [250, 150],
       "flags": {},
       "order": 7,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 8 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 8 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 9,
       "type": "Note",
-      "pos": [
-        2400,
-        0
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2400, 0],
+      "size": [250, 150],
       "flags": {},
       "order": 8,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 9 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 9 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 10,
       "type": "Note",
-      "pos": [
-        2700,
-        0
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2700, 0],
+      "size": [250, 150],
       "flags": {},
       "order": 9,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 10 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 10 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 11,
       "type": "Note",
-      "pos": [
-        0,
-        200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [0, 200],
+      "size": [250, 150],
       "flags": {},
       "order": 10,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 11 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 11 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 12,
       "type": "Note",
-      "pos": [
-        300,
-        200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [300, 200],
+      "size": [250, 150],
       "flags": {},
       "order": 11,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 12 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 12 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 13,
       "type": "Note",
-      "pos": [
-        600,
-        200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [600, 200],
+      "size": [250, 150],
       "flags": {},
       "order": 12,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 13 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 13 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 14,
       "type": "Note",
-      "pos": [
-        900,
-        200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [900, 200],
+      "size": [250, 150],
       "flags": {},
       "order": 13,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 14 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 14 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 15,
       "type": "Note",
-      "pos": [
-        1200,
-        200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1200, 200],
+      "size": [250, 150],
       "flags": {},
       "order": 14,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 15 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 15 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 16,
       "type": "Note",
-      "pos": [
-        1500,
-        200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1500, 200],
+      "size": [250, 150],
       "flags": {},
       "order": 15,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 16 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 16 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 17,
       "type": "Note",
-      "pos": [
-        1800,
-        200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1800, 200],
+      "size": [250, 150],
       "flags": {},
       "order": 16,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 17 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 17 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 18,
       "type": "Note",
-      "pos": [
-        2100,
-        200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2100, 200],
+      "size": [250, 150],
       "flags": {},
       "order": 17,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 18 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 18 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 19,
       "type": "Note",
-      "pos": [
-        2400,
-        200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2400, 200],
+      "size": [250, 150],
       "flags": {},
       "order": 18,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 19 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 19 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 20,
       "type": "Note",
-      "pos": [
-        2700,
-        200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2700, 200],
+      "size": [250, 150],
       "flags": {},
       "order": 19,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 20 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 20 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 21,
       "type": "Note",
-      "pos": [
-        0,
-        400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [0, 400],
+      "size": [250, 150],
       "flags": {},
       "order": 20,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 21 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 21 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 22,
       "type": "Note",
-      "pos": [
-        300,
-        400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [300, 400],
+      "size": [250, 150],
       "flags": {},
       "order": 21,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 22 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 22 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 23,
       "type": "Note",
-      "pos": [
-        600,
-        400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [600, 400],
+      "size": [250, 150],
       "flags": {},
       "order": 22,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 23 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 23 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 24,
       "type": "Note",
-      "pos": [
-        900,
-        400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [900, 400],
+      "size": [250, 150],
       "flags": {},
       "order": 23,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 24 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 24 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 25,
       "type": "Note",
-      "pos": [
-        1200,
-        400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1200, 400],
+      "size": [250, 150],
       "flags": {},
       "order": 24,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 25 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 25 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 26,
       "type": "Note",
-      "pos": [
-        1500,
-        400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1500, 400],
+      "size": [250, 150],
       "flags": {},
       "order": 25,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 26 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 26 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 27,
       "type": "Note",
-      "pos": [
-        1800,
-        400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1800, 400],
+      "size": [250, 150],
       "flags": {},
       "order": 26,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 27 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 27 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 28,
       "type": "Note",
-      "pos": [
-        2100,
-        400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2100, 400],
+      "size": [250, 150],
       "flags": {},
       "order": 27,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 28 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 28 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 29,
       "type": "Note",
-      "pos": [
-        2400,
-        400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2400, 400],
+      "size": [250, 150],
       "flags": {},
       "order": 28,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 29 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 29 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 30,
       "type": "Note",
-      "pos": [
-        2700,
-        400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2700, 400],
+      "size": [250, 150],
       "flags": {},
       "order": 29,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 30 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 30 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 31,
       "type": "Note",
-      "pos": [
-        0,
-        600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [0, 600],
+      "size": [250, 150],
       "flags": {},
       "order": 30,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 31 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 31 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 32,
       "type": "Note",
-      "pos": [
-        300,
-        600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [300, 600],
+      "size": [250, 150],
       "flags": {},
       "order": 31,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 32 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 32 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 33,
       "type": "Note",
-      "pos": [
-        600,
-        600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [600, 600],
+      "size": [250, 150],
       "flags": {},
       "order": 32,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 33 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 33 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 34,
       "type": "Note",
-      "pos": [
-        900,
-        600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [900, 600],
+      "size": [250, 150],
       "flags": {},
       "order": 33,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 34 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 34 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 35,
       "type": "Note",
-      "pos": [
-        1200,
-        600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1200, 600],
+      "size": [250, 150],
       "flags": {},
       "order": 34,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 35 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 35 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 36,
       "type": "Note",
-      "pos": [
-        1500,
-        600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1500, 600],
+      "size": [250, 150],
       "flags": {},
       "order": 35,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 36 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 36 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 37,
       "type": "Note",
-      "pos": [
-        1800,
-        600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1800, 600],
+      "size": [250, 150],
       "flags": {},
       "order": 36,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 37 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 37 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 38,
       "type": "Note",
-      "pos": [
-        2100,
-        600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2100, 600],
+      "size": [250, 150],
       "flags": {},
       "order": 37,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 38 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 38 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 39,
       "type": "Note",
-      "pos": [
-        2400,
-        600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2400, 600],
+      "size": [250, 150],
       "flags": {},
       "order": 38,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 39 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 39 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 40,
       "type": "Note",
-      "pos": [
-        2700,
-        600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2700, 600],
+      "size": [250, 150],
       "flags": {},
       "order": 39,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 40 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 40 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 41,
       "type": "Note",
-      "pos": [
-        0,
-        800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [0, 800],
+      "size": [250, 150],
       "flags": {},
       "order": 40,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 41 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 41 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 42,
       "type": "Note",
-      "pos": [
-        300,
-        800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [300, 800],
+      "size": [250, 150],
       "flags": {},
       "order": 41,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 42 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 42 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 43,
       "type": "Note",
-      "pos": [
-        600,
-        800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [600, 800],
+      "size": [250, 150],
       "flags": {},
       "order": 42,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 43 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 43 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 44,
       "type": "Note",
-      "pos": [
-        900,
-        800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [900, 800],
+      "size": [250, 150],
       "flags": {},
       "order": 43,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 44 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 44 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 45,
       "type": "Note",
-      "pos": [
-        1200,
-        800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1200, 800],
+      "size": [250, 150],
       "flags": {},
       "order": 44,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 45 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 45 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 46,
       "type": "Note",
-      "pos": [
-        1500,
-        800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1500, 800],
+      "size": [250, 150],
       "flags": {},
       "order": 45,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 46 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 46 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 47,
       "type": "Note",
-      "pos": [
-        1800,
-        800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1800, 800],
+      "size": [250, 150],
       "flags": {},
       "order": 46,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 47 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 47 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 48,
       "type": "Note",
-      "pos": [
-        2100,
-        800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2100, 800],
+      "size": [250, 150],
       "flags": {},
       "order": 47,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 48 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 48 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 49,
       "type": "Note",
-      "pos": [
-        2400,
-        800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2400, 800],
+      "size": [250, 150],
       "flags": {},
       "order": 48,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 49 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 49 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 50,
       "type": "Note",
-      "pos": [
-        2700,
-        800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2700, 800],
+      "size": [250, 150],
       "flags": {},
       "order": 49,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 50 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 50 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 51,
       "type": "Note",
-      "pos": [
-        0,
-        1000
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [0, 1000],
+      "size": [250, 150],
       "flags": {},
       "order": 50,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 51 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 51 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 52,
       "type": "Note",
-      "pos": [
-        300,
-        1000
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [300, 1000],
+      "size": [250, 150],
       "flags": {},
       "order": 51,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 52 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 52 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 53,
       "type": "Note",
-      "pos": [
-        600,
-        1000
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [600, 1000],
+      "size": [250, 150],
       "flags": {},
       "order": 52,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 53 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 53 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 54,
       "type": "Note",
-      "pos": [
-        900,
-        1000
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [900, 1000],
+      "size": [250, 150],
       "flags": {},
       "order": 53,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 54 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 54 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 55,
       "type": "Note",
-      "pos": [
-        1200,
-        1000
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1200, 1000],
+      "size": [250, 150],
       "flags": {},
       "order": 54,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 55 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 55 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 56,
       "type": "Note",
-      "pos": [
-        1500,
-        1000
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1500, 1000],
+      "size": [250, 150],
       "flags": {},
       "order": 55,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 56 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 56 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 57,
       "type": "Note",
-      "pos": [
-        1800,
-        1000
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1800, 1000],
+      "size": [250, 150],
       "flags": {},
       "order": 56,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 57 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 57 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 58,
       "type": "Note",
-      "pos": [
-        2100,
-        1000
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2100, 1000],
+      "size": [250, 150],
       "flags": {},
       "order": 57,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 58 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 58 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 59,
       "type": "Note",
-      "pos": [
-        2400,
-        1000
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2400, 1000],
+      "size": [250, 150],
       "flags": {},
       "order": 58,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 59 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 59 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 60,
       "type": "Note",
-      "pos": [
-        2700,
-        1000
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2700, 1000],
+      "size": [250, 150],
       "flags": {},
       "order": 59,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 60 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 60 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 61,
       "type": "Note",
-      "pos": [
-        0,
-        1200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [0, 1200],
+      "size": [250, 150],
       "flags": {},
       "order": 60,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 61 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 61 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 62,
       "type": "Note",
-      "pos": [
-        300,
-        1200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [300, 1200],
+      "size": [250, 150],
       "flags": {},
       "order": 61,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 62 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 62 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 63,
       "type": "Note",
-      "pos": [
-        600,
-        1200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [600, 1200],
+      "size": [250, 150],
       "flags": {},
       "order": 62,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 63 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 63 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 64,
       "type": "Note",
-      "pos": [
-        900,
-        1200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [900, 1200],
+      "size": [250, 150],
       "flags": {},
       "order": 63,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 64 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 64 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 65,
       "type": "Note",
-      "pos": [
-        1200,
-        1200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1200, 1200],
+      "size": [250, 150],
       "flags": {},
       "order": 64,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 65 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 65 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 66,
       "type": "Note",
-      "pos": [
-        1500,
-        1200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1500, 1200],
+      "size": [250, 150],
       "flags": {},
       "order": 65,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 66 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 66 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 67,
       "type": "Note",
-      "pos": [
-        1800,
-        1200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1800, 1200],
+      "size": [250, 150],
       "flags": {},
       "order": 66,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 67 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 67 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 68,
       "type": "Note",
-      "pos": [
-        2100,
-        1200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2100, 1200],
+      "size": [250, 150],
       "flags": {},
       "order": 67,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 68 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 68 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 69,
       "type": "Note",
-      "pos": [
-        2400,
-        1200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2400, 1200],
+      "size": [250, 150],
       "flags": {},
       "order": 68,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 69 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 69 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 70,
       "type": "Note",
-      "pos": [
-        2700,
-        1200
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2700, 1200],
+      "size": [250, 150],
       "flags": {},
       "order": 69,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 70 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 70 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 71,
       "type": "Note",
-      "pos": [
-        0,
-        1400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [0, 1400],
+      "size": [250, 150],
       "flags": {},
       "order": 70,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 71 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 71 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 72,
       "type": "Note",
-      "pos": [
-        300,
-        1400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [300, 1400],
+      "size": [250, 150],
       "flags": {},
       "order": 71,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 72 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 72 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 73,
       "type": "Note",
-      "pos": [
-        600,
-        1400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [600, 1400],
+      "size": [250, 150],
       "flags": {},
       "order": 72,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 73 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 73 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 74,
       "type": "Note",
-      "pos": [
-        900,
-        1400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [900, 1400],
+      "size": [250, 150],
       "flags": {},
       "order": 73,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 74 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 74 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 75,
       "type": "Note",
-      "pos": [
-        1200,
-        1400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1200, 1400],
+      "size": [250, 150],
       "flags": {},
       "order": 74,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 75 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 75 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 76,
       "type": "Note",
-      "pos": [
-        1500,
-        1400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1500, 1400],
+      "size": [250, 150],
       "flags": {},
       "order": 75,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 76 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 76 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 77,
       "type": "Note",
-      "pos": [
-        1800,
-        1400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1800, 1400],
+      "size": [250, 150],
       "flags": {},
       "order": 76,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 77 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 77 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 78,
       "type": "Note",
-      "pos": [
-        2100,
-        1400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2100, 1400],
+      "size": [250, 150],
       "flags": {},
       "order": 77,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 78 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 78 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 79,
       "type": "Note",
-      "pos": [
-        2400,
-        1400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2400, 1400],
+      "size": [250, 150],
       "flags": {},
       "order": 78,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 79 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 79 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 80,
       "type": "Note",
-      "pos": [
-        2700,
-        1400
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2700, 1400],
+      "size": [250, 150],
       "flags": {},
       "order": 79,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 80 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 80 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 81,
       "type": "Note",
-      "pos": [
-        0,
-        1600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [0, 1600],
+      "size": [250, 150],
       "flags": {},
       "order": 80,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 81 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 81 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 82,
       "type": "Note",
-      "pos": [
-        300,
-        1600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [300, 1600],
+      "size": [250, 150],
       "flags": {},
       "order": 81,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 82 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 82 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 83,
       "type": "Note",
-      "pos": [
-        600,
-        1600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [600, 1600],
+      "size": [250, 150],
       "flags": {},
       "order": 82,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 83 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 83 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 84,
       "type": "Note",
-      "pos": [
-        900,
-        1600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [900, 1600],
+      "size": [250, 150],
       "flags": {},
       "order": 83,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 84 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 84 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 85,
       "type": "Note",
-      "pos": [
-        1200,
-        1600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1200, 1600],
+      "size": [250, 150],
       "flags": {},
       "order": 84,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 85 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 85 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 86,
       "type": "Note",
-      "pos": [
-        1500,
-        1600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1500, 1600],
+      "size": [250, 150],
       "flags": {},
       "order": 85,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 86 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 86 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 87,
       "type": "Note",
-      "pos": [
-        1800,
-        1600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1800, 1600],
+      "size": [250, 150],
       "flags": {},
       "order": 86,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 87 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 87 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 88,
       "type": "Note",
-      "pos": [
-        2100,
-        1600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2100, 1600],
+      "size": [250, 150],
       "flags": {},
       "order": 87,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 88 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 88 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 89,
       "type": "Note",
-      "pos": [
-        2400,
-        1600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2400, 1600],
+      "size": [250, 150],
       "flags": {},
       "order": 88,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 89 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 89 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 90,
       "type": "Note",
-      "pos": [
-        2700,
-        1600
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2700, 1600],
+      "size": [250, 150],
       "flags": {},
       "order": 89,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 90 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 90 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 91,
       "type": "Note",
-      "pos": [
-        0,
-        1800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [0, 1800],
+      "size": [250, 150],
       "flags": {},
       "order": 90,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 91 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 91 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 92,
       "type": "Note",
-      "pos": [
-        300,
-        1800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [300, 1800],
+      "size": [250, 150],
       "flags": {},
       "order": 91,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 92 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 92 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 93,
       "type": "Note",
-      "pos": [
-        600,
-        1800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [600, 1800],
+      "size": [250, 150],
       "flags": {},
       "order": 92,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 93 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 93 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 94,
       "type": "Note",
-      "pos": [
-        900,
-        1800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [900, 1800],
+      "size": [250, 150],
       "flags": {},
       "order": 93,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 94 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 94 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 95,
       "type": "Note",
-      "pos": [
-        1200,
-        1800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1200, 1800],
+      "size": [250, 150],
       "flags": {},
       "order": 94,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 95 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 95 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 96,
       "type": "Note",
-      "pos": [
-        1500,
-        1800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1500, 1800],
+      "size": [250, 150],
       "flags": {},
       "order": 95,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 96 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 96 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 97,
       "type": "Note",
-      "pos": [
-        1800,
-        1800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [1800, 1800],
+      "size": [250, 150],
       "flags": {},
       "order": 96,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 97 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 97 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 98,
       "type": "Note",
-      "pos": [
-        2100,
-        1800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2100, 1800],
+      "size": [250, 150],
       "flags": {},
       "order": 97,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 98 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 98 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 99,
       "type": "Note",
-      "pos": [
-        2400,
-        1800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2400, 1800],
+      "size": [250, 150],
       "flags": {},
       "order": 98,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 99 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 99 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 100,
       "type": "Note",
-      "pos": [
-        2700,
-        1800
-      ],
-      "size": [
-        250,
-        150
-      ],
+      "pos": [2700, 1800],
+      "size": [250, 150],
       "flags": {},
       "order": 99,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "Node 100 - perf test placeholder"
-      ],
+      "widgets_values": ["Node 100 - perf test placeholder"],
       "color": "#332922",
       "bgcolor": "#593930"
     }

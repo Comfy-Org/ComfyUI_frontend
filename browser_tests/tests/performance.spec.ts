@@ -266,17 +266,8 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     // Queue the prompt and wait for execution to complete
     await comfyPage.command.executeCommand('Comfy.QueuePrompt')
 
-    // Poll for execution completion — PreviewAny widget shows the result
-    const outputNode = await comfyPage.nodeOps.getNodeRefById(1)
-    await comfyPage.page.waitForFunction(
-      () => {
-        const store = window.app?.extensionManager
-        return store !== undefined
-      },
-      { timeout: 10000 }
-    )
-
     // Wait for the output widget to populate (execution_success)
+    const outputNode = await comfyPage.nodeOps.getNodeRefById(1)
     await expect(async () => {
       expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
     }).toPass({ timeout: 10000 })

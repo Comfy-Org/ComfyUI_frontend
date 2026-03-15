@@ -83,9 +83,11 @@ export class PerformanceHelper {
    */
   private async collectTBT(): Promise<number> {
     return this.page.evaluate(() => {
-      const entries = performance.getEntriesByType(
-        'longtask'
-      ) as PerformanceEntry[]
+      const observer = (window as Record<string, unknown>)
+        .__perfLongtaskObserver as PerformanceObserver | undefined
+      const entries = observer
+        ? observer.takeRecords()
+        : (performance.getEntriesByType('longtask') as PerformanceEntry[])
       let tbt = 0
       for (const entry of entries) {
         if (entry.duration > 50) {
@@ -115,8 +117,7 @@ export class PerformanceHelper {
               resolve(0)
               return
             }
-            const total =
-              timestamps[timestamps.length - 1] - timestamps[0]
+            const total = timestamps[timestamps.length - 1] - timestamps[0]
             resolve(total / (timestamps.length - 1))
           }
         }
@@ -131,10 +132,9 @@ export class PerformanceHelper {
         'Measurement already in progress — call stopMeasuring() first'
       )
     }
-    // Clear longtask entries before measurement window
+    // Install longtask observer if not already present, then drain buffered
+    // entries so old longtasks don't bleed into the new measurement window.
     await this.page.evaluate(() => {
-      performance.clearResourceTimings()
-      // Install longtask observer if not already present
       if (!(window as Record<string, unknown>).__perfLongtaskObserver) {
         const observer = new PerformanceObserver(() => {
           // entries buffered automatically
@@ -142,6 +142,10 @@ export class PerformanceHelper {
         observer.observe({ type: 'longtask', buffered: true })
         ;(window as Record<string, unknown>).__perfLongtaskObserver = observer
       }
+      // Drain any previously buffered longtask entries
+      const observer = (window as Record<string, unknown>)
+        .__perfLongtaskObserver as PerformanceObserver
+      observer.takeRecords()
     })
     this.snapshot = await this.getSnapshot()
   }
