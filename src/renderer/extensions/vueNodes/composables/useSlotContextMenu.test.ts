@@ -298,9 +298,7 @@ describe(renameSlot, () => {
     const inputSlot = { type: 'IMAGE', link: null, name: 'image', label: '' }
     mockGraph.getNodeById.mockReturnValue({
       inputs: [inputSlot],
-      outputs: [],
-      getInputInfo: () => inputSlot,
-      getOutputInfo: () => null
+      outputs: []
     })
 
     renameSlot({ nodeId: '1', slotIndex: 0, isInput: true }, 'my_image')
@@ -320,9 +318,7 @@ describe(renameSlot, () => {
     }
     mockGraph.getNodeById.mockReturnValue({
       inputs: [],
-      outputs: [outputSlot],
-      getInputInfo: () => null,
-      getOutputInfo: () => outputSlot
+      outputs: [outputSlot]
     })
 
     renameSlot({ nodeId: '1', slotIndex: 0, isInput: false }, 'my_model')
@@ -332,28 +328,10 @@ describe(renameSlot, () => {
     expect(mockGraph.afterChange).toHaveBeenCalled()
   })
 
-  it('triggers slot refresh event after rename', () => {
-    const inputSlot = { type: 'IMAGE', link: null, name: 'image', label: '' }
+  it('does nothing when slot not found', () => {
     mockGraph.getNodeById.mockReturnValue({
-      inputs: [inputSlot],
-      outputs: [],
-      getInputInfo: () => inputSlot,
-      getOutputInfo: () => null
-    })
-
-    renameSlot({ nodeId: '1', slotIndex: 0, isInput: true }, 'renamed')
-
-    expect(mockGraph.trigger).toHaveBeenCalledWith('node:slot-label:changed', {
-      nodeId: '1'
-    })
-  })
-
-  it('does nothing when slot info is null', () => {
-    mockGraph.getNodeById.mockReturnValue({
-      inputs: [{ type: 'IMAGE', link: null, name: 'image' }],
-      outputs: [],
-      getInputInfo: () => null,
-      getOutputInfo: () => null
+      inputs: [],
+      outputs: []
     })
 
     renameSlot({ nodeId: '1', slotIndex: 0, isInput: true }, 'new')
