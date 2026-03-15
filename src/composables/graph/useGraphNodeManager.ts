@@ -541,17 +541,18 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       widget.slotMetadata = slotMetadata.get(widget.slotName ?? widget.name)
     }
 
-    // Refresh output slot snapshots to pick up label changes
+    // node.inputs/outputs are shallowReactive arrays (via defineProperty).
+    // Shallow-copy each element so shallowReactive detects new references
+    // and triggers Vue updates for deep property changes (e.g., label).
     if (nodeRef.outputs) {
-      currentData.outputs = [...nodeRef.outputs]
+      currentData.outputs = nodeRef.outputs.map((o) => ({ ...o }))
     }
 
-    // Force shallowReactive inputs to re-trigger for property changes (e.g., label)
     if (nodeRef.inputs) {
       currentData.inputs?.splice(
         0,
         currentData.inputs.length,
-        ...nodeRef.inputs
+        ...nodeRef.inputs.map((i) => ({ ...i }))
       )
     }
   }
@@ -812,20 +813,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         }
       },
       'node:slot-label:changed': (slotLabelEvent) => {
-        const nodeId = String(slotLabelEvent.nodeId)
-        const nodeRef = nodeRefs.get(nodeId)
-        if (!nodeRef) return
-
-        // Force shallowReactive to detect the deep property change
-        // by re-assigning the affected array through the defineProperty setter.
-        if (slotLabelEvent.slotType !== NodeSlotType.OUTPUT && nodeRef.inputs) {
-          nodeRef.inputs = [...nodeRef.inputs]
-        }
-        if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
-          nodeRef.outputs = [...nodeRef.outputs]
-        }
-        // Re-extract widget data so promotedLabel reflects the rename
-        vueNodeData.set(nodeId, extractVueNodeData(nodeRef))
+        refreshNodeSlots(String(slotLabelEvent.nodeId))
       }
     }
 

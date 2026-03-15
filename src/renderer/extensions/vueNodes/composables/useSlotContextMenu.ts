@@ -108,9 +108,22 @@ export function renameSlot(context: SlotMenuContext, newLabel: string): void {
 
   graph.beforeChange()
   slotInfo.label = newLabel
+
+  // node.inputs/outputs are shallowReactive arrays (via defineProperty).
+  // Mutating a deep property (label) doesn't trigger shallowReactive tracking.
+  // Replace the element at the index to notify Vue of the change.
+  if (context.isInput && node.inputs) {
+    node.inputs.splice(context.slotIndex, 1, {
+      ...node.inputs[context.slotIndex]
+    })
+  } else if (!context.isInput && node.outputs) {
+    node.outputs.splice(context.slotIndex, 1, {
+      ...node.outputs[context.slotIndex]
+    })
+  }
+
   app.canvas?.setDirty(true, true)
   graph.afterChange()
-  triggerSlotRefresh(context)
 }
 
 export function disconnectSlotLinks(context: SlotMenuContext): void {

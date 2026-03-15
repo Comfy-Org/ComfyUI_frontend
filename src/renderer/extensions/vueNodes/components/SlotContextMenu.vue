@@ -7,34 +7,34 @@
         left: `${screenPosition.x}px`,
         top: `${screenPosition.y}px`
       }"
-      class="fixed z-1000 min-w-40 rounded-lg border border-border-subtle bg-base-background py-1 shadow-interface"
+      class="fixed z-1700 min-w-[220px] rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm"
       role="menu"
       @keydown.escape="hide"
     >
-      <button
+      <div
         v-if="showDisconnect"
-        class="hover:bg-surface-hover flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm"
+        class="m-1 flex cursor-pointer items-center gap-1 rounded-lg p-2 leading-none hover:bg-secondary-background-hover"
         role="menuitem"
         @click="handleDisconnect"
       >
         {{ t('g.disconnectLinks') }}
-      </button>
-      <button
+      </div>
+      <div
         v-if="showRename"
-        class="hover:bg-surface-hover flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm"
+        class="m-1 flex cursor-pointer items-center gap-1 rounded-lg p-2 leading-none hover:bg-secondary-background-hover"
         role="menuitem"
         @click="handleRename"
       >
         {{ t('g.rename') }}
-      </button>
-      <button
+      </div>
+      <div
         v-if="showRemove"
-        class="hover:bg-surface-hover flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-error"
+        class="m-1 flex cursor-pointer items-center gap-1 rounded-lg p-2 leading-none text-error hover:bg-secondary-background-hover"
         role="menuitem"
         @click="handleRemove"
       >
         {{ t('g.removeSlot') }}
-      </button>
+      </div>
     </div>
   </Teleport>
 </template>
