@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -51,9 +51,11 @@ vi.mock('@/stores/userStore', () => ({
 }))
 
 const mockIsFirebaseInitialized = ref(false)
+const mockIsFirebaseAuthenticated = ref(false)
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({
-    isInitialized: mockIsFirebaseInitialized
+    isInitialized: mockIsFirebaseInitialized,
+    isAuthenticated: mockIsFirebaseAuthenticated
   }))
 }))
 
@@ -66,6 +68,7 @@ describe('bootstrapStore', () => {
   beforeEach(() => {
     mockIsSettingsReady.value = false
     mockIsFirebaseInitialized.value = false
+    mockIsFirebaseAuthenticated.value = false
     mockNeedsLogin.value = false
     mockDistributionTypes.isCloud = false
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -95,17 +98,25 @@ describe('bootstrapStore', () => {
       mockDistributionTypes.isCloud = true
     })
 
-    it('waits for Firebase auth before loading i18n and settings', async () => {
+    it('waits for Firebase auth initialization and authentication before loading', async () => {
       const store = useBootstrapStore()
       const settingStore = useSettingStore()
       const bootstrapPromise = store.startStoreBootstrap()
 
-      // Bootstrap is blocked waiting for firebase
+      // Bootstrap is blocked waiting for firebase initialization
       expect(store.isI18nReady).toBe(false)
       expect(settingStore.isReady).toBe(false)
 
-      // Unblock by initializing firebase
+      // Initialize firebase but user is not yet authenticated
       mockIsFirebaseInitialized.value = true
+      await nextTick()
+
+      // Still blocked waiting for authentication
+      expect(store.isI18nReady).toBe(false)
+      expect(settingStore.isReady).toBe(false)
+
+      // Authenticate user
+      mockIsFirebaseAuthenticated.value = true
       await bootstrapPromise
 
       await vi.waitFor(() => {
