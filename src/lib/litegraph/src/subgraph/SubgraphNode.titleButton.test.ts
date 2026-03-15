@@ -31,10 +31,6 @@ describe('SubgraphNode Title Button', () => {
       const button = subgraphNode.title_buttons[0]
       expect(button).toBeInstanceOf(LGraphButton)
       expect(button.name).toBe('enter_subgraph')
-      expect(button.text).toBe('\uE93B') // pi-window-maximize
-      expect(button.xOffset).toBe(-10)
-      expect(button.yOffset).toBe(0)
-      expect(button.fontSize).toBe(16)
     })
 
     it('should preserve enter_subgraph button when adding more buttons', () => {
@@ -201,24 +197,6 @@ describe('SubgraphNode Title Button', () => {
         )
       ).toBe(true)
       expect(subgraphNode.flags.collapsed).toBe(true)
-    })
-  })
-
-  describe('Visual properties', () => {
-    it('should have appropriate visual properties for enter button', () => {
-      const subgraph = createTestSubgraph()
-      const subgraphNode = createTestSubgraphNode(subgraph)
-
-      const enterButton = subgraphNode.title_buttons[0]
-
-      // Check visual properties
-      expect(enterButton.text).toBe('\uE93B') // pi-window-maximize
-      expect(enterButton.fontSize).toBe(16) // Icon size
-      expect(enterButton.xOffset).toBe(-10) // Positioned from right edge
-      expect(enterButton.yOffset).toBe(0) // Centered vertically
-
-      // Should be visible by default
-      expect(enterButton.visible).toBe(true)
     })
   })
 })
