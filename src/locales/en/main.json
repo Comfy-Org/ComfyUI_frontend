@@ -2247,7 +2247,12 @@
     "topupTimeout": "Top-up verification timed out"
   },
   "subscription": {
-    "chooseBestPlanWorkspace": "Choose the best plan for your workspace",
+    "plansFor": "Plans for",
+    "personalWorkspace": "Personal Workspace",
+    "teamWorkspace": "Team Workspace",
+    "soloUseOnly": "Solo use only",
+    "needTeamWorkspace": "Need team workspace?",
+    "inviteUpTo": "Invite up to",
     "title": "Subscription",
     "titleUnsubscribed": "Subscribe to Comfy Cloud",
     "comfyCloud": "Comfy Cloud",

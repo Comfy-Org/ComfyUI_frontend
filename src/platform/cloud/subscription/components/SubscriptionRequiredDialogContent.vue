@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="relative flex h-full flex-col gap-8 overflow-y-auto! p-4 pt-8 md:p-16"
+    class="relative flex h-full flex-col gap-6 overflow-y-auto! p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
       size="icon"
@@ -12,13 +12,21 @@
     >
       <i class="pi pi-times text-xl" />
     </Button>
-    <div class="text-center">
-      <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
-        {{ $t('subscription.description') }}
+    <div class="flex flex-col items-center gap-3">
+      <div
+        class="flex size-10 items-center justify-center rounded-xl bg-muted-foreground/30 text-lg font-semibold text-white"
+      >
+        P
+      </div>
+      <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
+        {{ $t('subscription.plansFor') }}
+        <span class="text-muted-foreground">
+          {{ $t('subscription.personalWorkspace') }}
+        </span>
       </h2>
     </div>
 
-    <PricingTable class="flex-1" />
+    <PricingTable class="flex-1" @choose-team-workspace="handleChooseTeam" />
 
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center gap-2">
@@ -144,9 +152,10 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
-const { onClose, reason } = defineProps<{
+const { onClose, reason, onChooseTeam } = defineProps<{
   onClose: () => void
   reason?: SubscriptionDialogReason
+  onChooseTeam?: () => void
 }>()
 
 const emit = defineEmits<{
@@ -243,6 +252,11 @@ watch(
 
 const handleSubscribed = () => {
   emit('close', true)
+}
+
+const handleChooseTeam = () => {
+  stopPolling()
+  onChooseTeam?.()
 }
 
 const handleClose = () => {
