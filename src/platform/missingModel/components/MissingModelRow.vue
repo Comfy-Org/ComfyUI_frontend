@@ -31,6 +31,16 @@
       </div>
 
       <Button
+        v-if="!isCloud && model.representative.url && !isAssetSupported"
+        variant="secondary"
+        size="sm"
+        class="h-8 shrink-0 rounded-lg text-sm"
+        @click="copyToClipboard(model.representative.url!)"
+      >
+        {{ t('rightSidePanel.missingModels.copyUrl') }}
+      </Button>
+
+      <Button
         variant="textonly"
         size="icon-sm"
         :aria-label="t('rightSidePanel.missingModels.confirmSelection')"
@@ -133,7 +143,10 @@
             :type-mismatch="typeMismatch"
           />
         </div>
-        <div v-else-if="downloadable" class="flex w-full items-start py-1">
+        <div
+          v-else-if="!isCloud && downloadable"
+          class="flex w-full items-start py-1"
+        >
           <Button
             variant="secondary"
             size="md"
@@ -185,6 +198,7 @@ import {
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { isCloud } from '@/platform/distribution/types'
 import {
   downloadModel,
   isModelDownloadable
