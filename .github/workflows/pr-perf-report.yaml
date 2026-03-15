@@ -23,10 +23,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: '.nvmrc'
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
       - name: Download PR metadata
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
@@ -113,30 +111,19 @@ jobs:
           path: temp/perf-baseline/
           if_no_artifact_found: warn
 
-      - name: Load historical baselines from perf-data branch
+      - name: Download perf history from perf-data branch
         if: steps.sha-check.outputs.stale != 'true'
         continue-on-error: true
         run: |
-          mkdir -p temp/perf-history
-
-          git fetch origin perf-data 2>/dev/null || {
-            echo "perf-data branch not found, skipping historical data"
-            exit 0
-          }
-
-          INDEX=0
-          for file in $(git ls-tree --name-only origin/perf-data baselines/ 2>/dev/null | sort -r | head -5); do
-            DIR="temp/perf-history/$INDEX"
-            mkdir -p "$DIR"
-            git show "origin/perf-data:${file}" > "$DIR/perf-metrics.json" 2>/dev/null || true
-            INDEX=$((INDEX + 1))
-          done
-
-          echo "Loaded $INDEX historical baselines"
+          if git ls-remote --exit-code origin perf-data >/dev/null 2>&1; then
+            git fetch origin perf-data --depth=1
+            mkdir -p temp/perf-history
+            git archive origin/perf-data -- perf-history/ 2>/dev/null | tar -x -C temp/ 2>/dev/null || true
+          fi
 
       - name: Generate perf report
         if: steps.sha-check.outputs.stale != 'true'
-        run: npx --yes tsx scripts/perf-report.ts > perf-report.md
+        run: pnpm exec tsx scripts/perf-report.ts > perf-report.md
 
       - name: Post PR comment
         if: steps.sha-check.outputs.stale != 'true'

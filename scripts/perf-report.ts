@@ -7,6 +7,9 @@ import {
   computeStats,
   formatSignificance,
   isNoteworthy,
+  sparkline,
+  trendArrow,
+  trendDirection,
   zScore
 } from './perf-stats'
 
@@ -94,6 +97,27 @@ function getHistoricalStats(
     }
   }
   return computeStats(values)
+}
+
+function getHistoricalTimeSeries(
+  reports: PerfReport[],
+  testName: string,
+  metric: MetricKey
+): number[] {
+  const sorted = [...reports].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
+  const values: number[] = []
+  for (const r of sorted) {
+    const group = groupByName(r.measurements)
+    const samples = group.get(testName)
+    if (samples) {
+      values.push(
+        samples.reduce((sum, s) => sum + s[metric], 0) / samples.length
+      )
+    }
+  }
+  return values
 }
 
 function computeCV(stats: MetricStats): number {
@@ -226,6 +250,34 @@ function renderFullReport(
     }
   }
   lines.push('', '</details>')
+
+  const trendRows: string[] = []
+  for (const [testName] of prGroups) {
+    for (const { key, label, unit } of REPORTED_METRICS) {
+      const series = getHistoricalTimeSeries(historical, testName, key)
+      if (series.length < 3) continue
+      const dir = trendDirection(series)
+      const arrow = trendArrow(dir)
+      const spark = sparkline(series)
+      const last = series[series.length - 1]
+      trendRows.push(
+        `| ${testName}: ${label} | ${spark} | ${arrow} | ${formatValue(last, unit)} |`
+      )
+    }
+  }
+
+  if (trendRows.length > 0) {
+    lines.push(
+      '',
+      `<details><summary>Trend (last ${historical.length} commits on main)</summary>`,
+      '',
+      '| Metric | Trend | Dir | Latest |',
+      '|--------|-------|-----|--------|',
+      ...trendRows,
+      '',
+      '</details>'
+    )
+  }
 
   return lines
 }
