@@ -1,4 +1,3 @@
-import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
@@ -16,6 +15,7 @@ import type {
 } from '@/schemas/apiSchema'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
+import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
@@ -256,10 +256,7 @@ export class TaskItemImpl {
             }
           }
         : {})
-    // Remove animated outputs from the outputs object
-    this.outputs = _.mapValues(effectiveOutputs, (nodeOutputs) =>
-      _.omit(nodeOutputs, 'animated')
-    )
+    this.outputs = effectiveOutputs
     this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
   }
 
@@ -267,18 +264,7 @@ export class TaskItemImpl {
     if (!this.outputs) {
       return []
     }
-    return Object.entries(this.outputs).flatMap(([nodeId, nodeOutputs]) =>
-      Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
-        (items as ResultItem[]).map(
-          (item: ResultItem) =>
-            new ResultItemImpl({
-              ...item,
-              nodeId,
-              mediaType
-            })
-        )
-      )
-    )
+    return parseTaskOutput(this.outputs)
   }
 
   /** All outputs that support preview (images, videos, audio, 3D) */
