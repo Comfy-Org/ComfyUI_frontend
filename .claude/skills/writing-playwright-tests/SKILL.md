@@ -53,6 +53,9 @@ These are frequent causes of flaky tests - check them first, but investigate if 
 | Widget value wrong after drag-drop | Upload incomplete         | Add `{ waitForUpload: true }`                                                          |
 | Test fails when run with others    | Test pollution            | Add `afterEach` with `resetView()`                                                     |
 | Local screenshots don't match CI   | Platform differences      | Screenshots are Linux-only, use PR label                                               |
+| `subtree intercepts pointer events`| Canvas overlay (z-999)    | Use `dispatchEvent` on the DOM element to bypass overlay                               |
+| Context menu empty / wrong items   | Node not selected         | Select node first: `vueNodes.selectNode()` or `nodeRef.click('title')`                 |
+| `navigateIntoSubgraph` timeout     | Node too small in asset   | Use node size `[400, 200]` minimum in test asset JSON                                  |
 
 ## Test Tags
 
