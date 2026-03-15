@@ -2242,7 +2242,10 @@ describe('ComfyApp', () => {
       const mockNode2 = createMockNode({ id: 2 })
       const mockBatchNode = createMockNode({ id: 3, type: 'BatchImagesNode' })
 
-      vi.mocked(pasteImageNodes).mockResolvedValue([mockNode1, mockNode2])
+      vi.mocked(pasteImageNodes).mockResolvedValue({
+        nodes: [mockNode1, mockNode2],
+        completion: Promise.resolve()
+      })
       vi.mocked(createNode).mockResolvedValue(mockBatchNode)
 
       const file1 = createTestFile('test1.png', 'image/png')
@@ -2264,7 +2267,10 @@ describe('ComfyApp', () => {
 
     it('should select single image node without batch node', async () => {
       const mockNode1 = createMockNode({ id: 1 })
-      vi.mocked(pasteImageNodes).mockResolvedValue([mockNode1])
+      vi.mocked(pasteImageNodes).mockResolvedValue({
+        nodes: [mockNode1],
+        completion: Promise.resolve()
+      })
 
       const file = createTestFile('test.png', 'image/png')
 

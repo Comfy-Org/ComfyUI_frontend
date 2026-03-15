@@ -200,7 +200,7 @@ declare module '@/lib/litegraph/src/litegraph' {
     /** Callback for pasting an image file into the node */
     pasteFile?(file: File): void
     /** Callback for pasting multiple files into the node */
-    pasteFiles?(files: File[]): void
+    pasteFiles?(files: File[]): boolean | Promise<boolean>
 
     /** Used internally for sizing the node during creation */
     _initialMinSize?: { width: number; height: number }
