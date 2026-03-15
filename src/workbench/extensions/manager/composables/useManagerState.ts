@@ -4,6 +4,7 @@ import { computed, readonly } from 'vue'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
+import { getServerCapability } from '@/services/serverCapabilities'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -39,7 +40,7 @@ export function useManagerState() {
       const clientSupportsV4 =
         api.getClientFeatureFlags().supports_manager_v4_ui ?? false
 
-      const serverSupportsV4 = api.getServerFeature(
+      const serverSupportsV4 = getServerCapability(
         'extension.manager.supports_v4'
       )
 
@@ -74,8 +75,7 @@ export function useManagerState() {
         return ManagerUIState.LEGACY_UI
       }
 
-      // If server feature flags haven't loaded yet, default to NEW_UI
-      // This is a temporary state - feature flags are exchanged immediately on WebSocket connection
+      // If server capability is not set, default to NEW_UI
       // NEW_UI is the safest default since v2 API is the current standard
       // If the server doesn't support v2, API calls will fail with 404 and be handled gracefully
       if (serverSupportsV4 === undefined) {

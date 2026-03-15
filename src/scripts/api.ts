@@ -2,7 +2,6 @@ import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
-import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
@@ -342,9 +341,12 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Feature flags received from the backend server.
+   * @deprecated Use `getServerCapability()` from `@/services/serverCapabilities`.
+   * Note: This field was previously a Vue `Ref`; accessing `.value` or using it as
+   * a reactive source no longer works. Migrate to `getServerCapability()` for
+   * both value access and capability observation.
    */
-  serverFeatureFlags = ref<Record<string, unknown>>({})
+  serverFeatureFlags: Record<string, unknown> = {}
 
   /**
    * The auth token for the comfy org account if the user is logged in.
@@ -744,12 +746,7 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'feature_flags':
-              // Store server feature flags
-              this.serverFeatureFlags.value = msg.data
-              console.log(
-                'Server feature flags received:',
-                this.serverFeatureFlags.value
-              )
+              this.serverFeatureFlags = msg.data
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
@@ -1364,35 +1361,23 @@ export class ComfyApi extends EventTarget {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 
-  /**
-   * Checks if the server supports a specific feature.
-   * @param featureName The name of the feature to check (supports dot notation for nested values)
-   * @returns true if the feature is supported, false otherwise
-   */
+  /** @deprecated Use `getServerCapability()` from `@/services/serverCapabilities` */
   serverSupportsFeature(featureName: string): boolean {
     const override = getDevOverride<boolean>(featureName)
     if (override !== undefined) return override
-    return get(this.serverFeatureFlags.value, featureName) === true
+    return get(this.serverFeatureFlags, featureName) === true
   }
 
-  /**
-   * Gets a server feature flag value.
-   * @param featureName The name of the feature to get (supports dot notation for nested values)
-   * @param defaultValue The default value if the feature is not found
-   * @returns The feature value or default
-   */
+  /** @deprecated Use `getServerCapability()` from `@/services/serverCapabilities` */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
     const override = getDevOverride<T>(featureName)
     if (override !== undefined) return override
-    return get(this.serverFeatureFlags.value, featureName, defaultValue) as T
+    return get(this.serverFeatureFlags, featureName, defaultValue) as T
   }
 
-  /**
-   * Gets all server feature flags.
-   * @returns Copy of all server feature flags
-   */
+  /** @deprecated Use `getServerCapability()` from `@/services/serverCapabilities` */
   getServerFeatures(): Record<string, unknown> {
-    return { ...this.serverFeatureFlags.value }
+    return { ...this.serverFeatureFlags }
   }
 
   async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {

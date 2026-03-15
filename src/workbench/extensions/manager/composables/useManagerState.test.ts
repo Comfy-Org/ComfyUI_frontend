@@ -3,19 +3,22 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
+import * as serverCapabilities from '@/services/serverCapabilities'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import {
   ManagerUIState,
   useManagerState
 } from '@/workbench/extensions/manager/composables/useManagerState'
 
-// Mock dependencies that are not stores
 vi.mock('@/scripts/api', () => ({
   api: {
     getClientFeatureFlags: vi.fn(),
-    getServerFeature: vi.fn(),
     getSystemStats: vi.fn()
   }
+}))
+
+vi.mock('@/services/serverCapabilities', () => ({
+  getServerCapability: vi.fn()
 }))
 
 vi.mock('@/composables/useFeatureFlags', () => {
@@ -66,7 +69,6 @@ describe('useManagerState', () => {
   let systemStatsStore: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {
-    // Create a fresh testing pinia and activate it for each test
     setActivePinia(
       createTestingPinia({
         stubActions: false,
@@ -74,20 +76,16 @@ describe('useManagerState', () => {
       })
     )
 
-    // Initialize stores
     systemStatsStore = useSystemStatsStore()
 
-    // Reset all mocks
     vi.resetAllMocks()
 
-    // Set default mock returns
     vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
-    vi.mocked(api.getServerFeature).mockReturnValue(undefined)
+    vi.mocked(serverCapabilities.getServerCapability).mockReturnValue(undefined)
   })
 
   describe('managerUIState property', () => {
     it('should return DISABLED state when --enable-manager is NOT present', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -96,7 +94,7 @@ describe('useManagerState', () => {
             embedded_python: false,
             comfyui_version: '1.0.0',
             pytorch_version: '2.0.0',
-            argv: ['python', 'main.py'], // No --enable-manager flag
+            argv: ['python', 'main.py'],
             ram_total: 16000000000,
             ram_free: 8000000000
           },
@@ -110,7 +108,6 @@ describe('useManagerState', () => {
     })
 
     it('should return LEGACY_UI state when --enable-manager-legacy-ui is present', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -138,7 +135,6 @@ describe('useManagerState', () => {
     })
 
     it('should return NEW_UI state when client and server both support v4', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -159,14 +155,13 @@ describe('useManagerState', () => {
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(serverCapabilities.getServerCapability).mockReturnValue(true)
 
       const managerState = useManagerState()
       expect(managerState.managerUIState.value).toBe(ManagerUIState.NEW_UI)
     })
 
     it('should return LEGACY_UI state when server supports v4 but client does not', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -187,14 +182,13 @@ describe('useManagerState', () => {
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: false
       })
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(serverCapabilities.getServerCapability).mockReturnValue(true)
 
       const managerState = useManagerState()
       expect(managerState.managerUIState.value).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should return LEGACY_UI state when server does not support v4', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -213,14 +207,13 @@ describe('useManagerState', () => {
       })
 
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
-      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      vi.mocked(serverCapabilities.getServerCapability).mockReturnValue(false)
 
       const managerState = useManagerState()
       expect(managerState.managerUIState.value).toBe(ManagerUIState.LEGACY_UI)
     })
 
-    it('should return NEW_UI state when server feature flags are undefined', () => {
-      // Set up store state
+    it('should return NEW_UI state when server capability is undefined', () => {
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -239,15 +232,15 @@ describe('useManagerState', () => {
       })
 
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
-      vi.mocked(api.getServerFeature).mockReturnValue(undefined)
+      vi.mocked(serverCapabilities.getServerCapability).mockReturnValue(
+        undefined
+      )
 
       const managerState = useManagerState()
-      // When server feature flags haven't loaded yet, default to NEW_UI
       expect(managerState.managerUIState.value).toBe(ManagerUIState.NEW_UI)
     })
 
     it('should handle null systemStats gracefully', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: null,
         isInitialized: true
@@ -256,17 +249,15 @@ describe('useManagerState', () => {
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(serverCapabilities.getServerCapability).mockReturnValue(true)
 
       const managerState = useManagerState()
-      // When systemStats is null, we can't check for --enable-manager flag, so manager is disabled
       expect(managerState.managerUIState.value).toBe(ManagerUIState.DISABLED)
     })
   })
 
   describe('helper properties', () => {
     it('isManagerEnabled should return true when state is not DISABLED', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -287,14 +278,13 @@ describe('useManagerState', () => {
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(serverCapabilities.getServerCapability).mockReturnValue(true)
 
       const managerState = useManagerState()
       expect(managerState.isManagerEnabled.value).toBe(true)
     })
 
     it('isManagerEnabled should return false when state is DISABLED', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -303,7 +293,7 @@ describe('useManagerState', () => {
             embedded_python: false,
             comfyui_version: '1.0.0',
             pytorch_version: '2.0.0',
-            argv: ['python', 'main.py'], // No --enable-manager flag
+            argv: ['python', 'main.py'],
             ram_total: 16000000000,
             ram_free: 8000000000
           },
@@ -317,7 +307,6 @@ describe('useManagerState', () => {
     })
 
     it('isNewManagerUI should return true when state is NEW_UI', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -338,14 +327,13 @@ describe('useManagerState', () => {
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(serverCapabilities.getServerCapability).mockReturnValue(true)
 
       const managerState = useManagerState()
       expect(managerState.isNewManagerUI.value).toBe(true)
     })
 
     it('isLegacyManagerUI should return true when state is LEGACY_UI', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -373,7 +361,6 @@ describe('useManagerState', () => {
     })
 
     it('shouldShowInstallButton should return true only for NEW_UI', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -394,14 +381,13 @@ describe('useManagerState', () => {
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(serverCapabilities.getServerCapability).mockReturnValue(true)
 
       const managerState = useManagerState()
       expect(managerState.shouldShowInstallButton.value).toBe(true)
     })
 
     it('shouldShowManagerButtons should return true when not DISABLED', () => {
-      // Set up store state
       systemStatsStore.$patch({
         systemStats: {
           system: {
@@ -422,7 +408,7 @@ describe('useManagerState', () => {
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(serverCapabilities.getServerCapability).mockReturnValue(true)
 
       const managerState = useManagerState()
       expect(managerState.shouldShowManagerButtons.value).toBe(true)
