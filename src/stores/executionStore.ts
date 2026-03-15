@@ -285,7 +285,7 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
-    if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
+    clearInitializationByJobId(jobId)
     resetExecutionState(jobId)
   }
 
@@ -296,12 +296,10 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
-    if (isCloud && activeJobId.value) {
-      useTelemetry()?.trackExecutionSuccess({
-        jobId: activeJobId.value
-      })
-    }
     const jobId = e.detail.prompt_id
+    if (isCloud && jobId) {
+      useTelemetry()?.trackExecutionSuccess({ jobId })
+    }
     resetExecutionState(jobId)
   }
 
