@@ -32,16 +32,56 @@
         <Suspense @resolve="comfyRunButtonResolved">
           <ComfyRunButton />
         </Suspense>
-        <Button
-          v-tooltip.bottom="cancelJobTooltipConfig"
-          variant="destructive"
-          size="icon"
-          :disabled="isExecutionIdle"
-          :aria-label="t('menu.interrupt')"
-          @click="cancelCurrentJob"
-        >
-          <i class="icon-[lucide--x] size-4" />
-        </Button>
+        <template v-if="showConcurrentControls">
+          <div
+            class="flex items-center gap-1 rounded-lg bg-secondary-background px-2 py-1"
+          >
+            <span class="text-sm font-normal tabular-nums">
+              {{ t('menu.nRunning', { count: n(runningCount) }) }}
+            </span>
+            <Button
+              v-tooltip.bottom="cancelJobTooltipConfig"
+              variant="destructive"
+              size="icon"
+              :aria-label="t('menu.interrupt')"
+              @click="cancelCurrentJob"
+            >
+              <i class="icon-[lucide--x] size-4" />
+            </Button>
+          </div>
+          <div
+            v-if="queuedCount > 0"
+            class="flex items-center gap-1 rounded-lg bg-secondary-background px-2 py-1"
+          >
+            <span class="text-sm font-normal tabular-nums">
+              {{ t('menu.nQueued', { count: n(queuedCount) }) }}
+            </span>
+            <Button
+              v-tooltip.bottom="clearQueueTooltipConfig"
+              variant="destructive"
+              size="icon"
+              :aria-label="
+                t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
+              "
+              @click="handleClearQueue"
+            >
+              <i class="icon-[lucide--list-x] size-4" />
+            </Button>
+          </div>
+        </template>
+
+        <template v-else>
+          <Button
+            v-tooltip.bottom="cancelJobTooltipConfig"
+            variant="destructive"
+            size="icon"
+            :disabled="isExecutionIdle"
+            :aria-label="t('menu.interrupt')"
+            @click="cancelCurrentJob"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </Button>
+        </template>
         <Button
           v-tooltip.bottom="queueHistoryTooltipConfig"
           variant="secondary"
@@ -108,6 +148,7 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
+import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -142,6 +183,14 @@ const { t, n } = useI18n()
 const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
 const { activeJobsCount } = storeToRefs(queueStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
+
+const { isConcurrentExecutionEnabled } = useConcurrentExecution()
+
+const runningCount = computed(() => executionStore.runningJobIds.length)
+const queuedCount = computed(() => queueStore.pendingTasks.length)
+const showConcurrentControls = computed(
+  () => isConcurrentExecutionEnabled.value && !executionStore.isIdle
+)
 
 const position = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
@@ -370,6 +419,9 @@ watch(isDragging, (dragging) => {
 
 const cancelJobTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.interrupt'))
+)
+const clearQueueTooltipConfig = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.clearQueueTooltip'))
 )
 const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(

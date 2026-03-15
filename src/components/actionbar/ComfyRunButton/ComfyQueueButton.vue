@@ -19,8 +19,8 @@
       {{ queueButtonLabel }}
     </Button>
 
-    <DropdownMenuRoot>
-      <DropdownMenuTrigger as-child>
+    <DropdownMenu>
+      <template #button>
         <Button
           variant="secondary"
           size="unset"
@@ -30,54 +30,82 @@
         >
           <TinyChevronIcon />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuPortal>
-        <DropdownMenuContent
-          :side-offset="4"
-          class="z-1000 min-w-44 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
+      </template>
+      <template #default="{ itemClass }">
+        <DropdownMenuItem
+          v-for="item in queueModeMenuItems"
+          :key="item.key"
+          as-child
+          @select.prevent="item.command"
         >
-          <DropdownMenuItem
-            v-for="item in queueModeMenuItems"
-            :key="item.key"
-            as-child
-            @select.prevent="item.command"
+          <Button
+            v-tooltip="{
+              value: item.tooltip,
+              showDelay: 600
+            }"
+            :variant="item.key === selectedQueueMode ? 'primary' : 'secondary'"
+            size="sm"
+            :class="cn(itemClass, queueMenuItemButtonClass)"
           >
-            <Button
-              v-tooltip="{
-                value: item.tooltip,
-                showDelay: 600
-              }"
-              :variant="
-                item.key === selectedQueueMode ? 'primary' : 'secondary'
-              "
-              size="sm"
-              :class="queueMenuItemButtonClass"
-            >
-              {{ item.label }}
-            </Button>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenuPortal>
-    </DropdownMenuRoot>
+            {{ item.label }}
+          </Button>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator
+          v-if="isParallelToggleVisible"
+          class="m-1 h-px bg-border-subtle"
+        />
+        <DropdownMenuItem
+          v-if="isParallelToggleVisible"
+          :class="itemClass"
+          :disabled="isParallelToggleDisabled"
+          @select.prevent="toggleParallel"
+        >
+          <div class="flex flex-col select-none">
+            <div class="flex items-center gap-1.5">
+              <span class="text-sm text-text-primary">{{
+                t('menu.parallelExecution')
+              }}</span>
+              <StatusBadge :label="t('g.new')" class="text-[10px]" />
+            </div>
+            <span class="text-text-muted text-xs">{{
+              t('menu.parallelUpTo', { count: maxConcurrentJobs })
+            }}</span>
+          </div>
+          <SwitchRoot
+            :checked="parallelToggleChecked"
+            :disabled="isParallelToggleDisabled"
+            class="relative ml-auto h-5 w-9 shrink-0 cursor-pointer rounded-full bg-secondary-background transition-colors data-disabled:cursor-not-allowed data-[state=checked]:bg-primary-background"
+            @click.stop
+            @update:checked="onParallelToggle"
+          >
+            <SwitchThumb
+              class="block size-4 translate-x-0.5 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-[18px]"
+            />
+          </SwitchRoot>
+        </DropdownMenuItem>
+      </template>
+    </DropdownMenu>
   </ButtonGroup>
 </template>
 
 <script setup lang="ts">
 import {
-  DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
+  DropdownMenuSeparator,
+  SwitchRoot,
+  SwitchThumb
 } from 'reka-ui'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
@@ -218,6 +246,23 @@ const queueButtonTooltip = computed(() => {
   }
   return t('menu.runWorkflow')
 })
+
+const { isFeatureEnabled, isUserEnabled, maxConcurrentJobs, setUserEnabled } =
+  useConcurrentExecution()
+
+const isParallelToggleVisible = isFeatureEnabled
+const isParallelToggleDisabled = computed(
+  () => selectedQueueMode.value !== 'disabled'
+)
+const parallelToggleChecked = isUserEnabled
+
+function onParallelToggle(checked: boolean) {
+  void setUserEnabled(checked)
+}
+
+function toggleParallel() {
+  onParallelToggle(!parallelToggleChecked.value)
+}
 
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {
