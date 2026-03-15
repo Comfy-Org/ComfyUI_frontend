@@ -4,10 +4,11 @@ import Load3D from '@/components/load3d/Load3D.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import { generate3DThumbnail } from '@/platform/assets/components/thumbnail3dRenderer'
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import { api } from '@/scripts/api'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 type SaveMeshOutput = NodeOutputWith<{
@@ -100,17 +101,15 @@ useExtensionService().registerExtension({
 
           const loadFolder = fileInfo.type as 'input' | 'output'
 
-          const onModelLoaded = () => {
-            load3d.removeEventListener('modelLoadingEnd', onModelLoaded)
-            void Load3dUtils.generateThumbnailIfNeeded(
-              load3d,
-              filePath,
-              loadFolder
-            )
-          }
-          load3d.addEventListener('modelLoadingEnd', onModelLoaded)
-
           config.configureForSaveMesh(loadFolder, filePath)
+
+          // Pre-generate thumbnail for asset browser cache
+          const params = new URLSearchParams({
+            filename: fileInfo.filename ?? '',
+            type: loadFolder,
+            subfolder: fileInfo.subfolder ?? ''
+          })
+          generate3DThumbnail(api.apiURL(`/view?${params}`)).catch(() => {})
         }
       })
     }

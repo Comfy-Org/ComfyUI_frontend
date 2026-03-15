@@ -150,6 +150,7 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
+import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
@@ -237,7 +238,12 @@ const adaptedAsset = computed(() => {
     name: asset.name,
     display_name: asset.display_name,
     kind: fileKind.value,
-    src: asset.thumbnail_url || asset.preview_url || '',
+    src:
+      fileKind.value === '3D'
+        ? getAssetUrl(asset)
+        : asset.thumbnail_url || asset.preview_url || '',
+    preview_url: asset.preview_url,
+    preview_id: asset.preview_id,
     size: asset.size,
     tags: asset.tags || [],
     created_at: asset.created_at,
