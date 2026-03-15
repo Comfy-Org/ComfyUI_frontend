@@ -435,11 +435,17 @@ test.describe(
         await comfyPage.vueNodes.selectNode('10')
         await comfyPage.nextFrame()
 
-        // Right-click the textarea to trigger the Vue contextmenu handler.
-        // force:true is needed to bypass the z-999 overlay interception.
+        // Dispatch a contextmenu event directly on the textarea. A normal
+        // right-click is intercepted by the z-999 canvas overlay, but the
+        // Vue WidgetTextarea.vue handler listens on @contextmenu.capture,
+        // so dispatching the event directly tests the fix from PR #9840.
         const textarea = clipNode.locator('textarea')
         await expect(textarea).toBeVisible()
-        await textarea.click({ button: 'right', force: true })
+        await textarea.dispatchEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          button: 2
+        })
         await comfyPage.nextFrame()
 
         // The PrimeVue context menu should show "Promote Widget" since
