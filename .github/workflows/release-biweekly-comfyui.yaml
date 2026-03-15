@@ -162,9 +162,105 @@ jobs:
           echo "- Target version: ${{ needs.resolve-version.outputs.target_version }}" >> $GITHUB_STEP_SUMMARY
           echo "- [View workflow runs](https://github.com/Comfy-Org/ComfyUI_frontend/actions/workflows/release-version-bump.yaml)" >> $GITHUB_STEP_SUMMARY
 
+  wait-for-release:
+    needs: [resolve-version, trigger-release-if-needed]
+    if: always() && needs.resolve-version.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for release tag
+        if: needs.trigger-release-if-needed.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+          TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
+        run: |
+          set -euo pipefail
+
+          TAG="v${TARGET_VERSION}"
+          echo "Waiting for tag ${TAG} to appear..."
+
+          MAX_ATTEMPTS=60
+          SLEEP_SECONDS=30
+
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            if gh api "repos/Comfy-Org/ComfyUI_frontend/git/refs/tags/${TAG}" --silent 2>/dev/null; then
+              echo "✅ Tag ${TAG} found after ${i} attempts"
+              exit 0
+            fi
+
+            echo "Attempt ${i}/${MAX_ATTEMPTS}: Tag ${TAG} not found yet, waiting ${SLEEP_SECONDS}s..."
+            sleep $SLEEP_SECONDS
+          done
+
+          echo "❌ Tag ${TAG} not found after ${MAX_ATTEMPTS} attempts ($(( MAX_ATTEMPTS * SLEEP_SECONDS / 60 )) minutes)"
+          echo "The release PR may need to be merged manually."
+          echo "Re-run this workflow via workflow_dispatch after the release is complete."
+          exit 1
+
+      - name: Tag already exists
+        if: needs.trigger-release-if-needed.result == 'skipped'
+        env:
+          TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
+        run: |
+          echo "✅ No new release needed — tag v${TARGET_VERSION} should already exist"
+
+  publish-pypi:
+    needs: [resolve-version, wait-for-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code at target version
+        uses: actions/checkout@v6
+        with:
+          ref: v${{ needs.resolve-version.outputs.target_version }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Build project
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+          ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
+          ENABLE_MINIFY: 'true'
+          USE_PROD_CONFIG: 'true'
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Install build dependencies
+        run: python -m pip install build
+
+      - name: Setup pypi package
+        run: |
+          mkdir -p comfyui_frontend_package/comfyui_frontend_package/static/
+          cp -r dist/* comfyui_frontend_package/comfyui_frontend_package/static/
+
+      - name: Build pypi package
+        run: python -m build
+        working-directory: comfyui_frontend_package
+        env:
+          COMFYUI_FRONTEND_VERSION: ${{ needs.resolve-version.outputs.target_version }}
+
+      - name: Publish pypi package
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}
+          packages-dir: comfyui_frontend_package/dist
+
   create-comfyui-pr:
-    needs: [check-release-week, resolve-version, trigger-release-if-needed]
-    if: always() && needs.resolve-version.result == 'success' && (needs.check-release-week.outputs.is_release_week == 'true' || github.event_name == 'workflow_dispatch')
+    needs: [check-release-week, resolve-version, publish-pypi]
+    if: always() && needs.resolve-version.result == 'success' && needs.publish-pypi.result == 'success' && (needs.check-release-week.outputs.is_release_week == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     steps:
