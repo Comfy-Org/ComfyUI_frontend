@@ -1,5 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -14,6 +15,20 @@ import type * as WorkflowStoreModule from '@/platform/workflow/management/stores
 import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
+
+const mockConcurrentExecutionEnabled = ref(false)
+
+vi.mock('@/composables/useConcurrentExecution', () => ({
+  useConcurrentExecution: () => ({
+    isConcurrentExecutionEnabled: mockConcurrentExecutionEnabled,
+    isFeatureEnabled: ref(false),
+    isUserEnabled: ref(false),
+    maxConcurrentJobs: ref(1),
+    hasSeenOnboarding: ref(false),
+    setUserEnabled: vi.fn(),
+    markOnboardingSeen: vi.fn()
+  })
+}))
 
 // Mock the workflowStore
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
@@ -56,7 +71,8 @@ vi.mock('@/scripts/api', () => ({
       apiEventHandlers.delete(event)
     }),
     clientId: 'test-client',
-    apiURL: vi.fn((path: string) => `/api${path}`)
+    apiURL: vi.fn((path: string) => `/api${path}`),
+    getServerFeature: vi.fn()
   }
 }))
 
@@ -427,6 +443,300 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
     store.reconcileInitializingJobs(new Set())
 
     expect(store.initializingJobIds).toEqual(new Set())
+  })
+})
+
+describe('useExecutionStore - focusedJobId management', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should initialize focusedJobId as null', () => {
+    expect(store.focusedJobId).toBeNull()
+  })
+
+  it('should set focusedJobId and update nodeProgressStates via setFocusedJob', () => {
+    store.nodeProgressStatesByJob = {
+      'job-1': {
+        'node-1': {
+          value: 50,
+          max: 100,
+          state: 'running',
+          node_id: 'node-1',
+          prompt_id: 'job-1'
+        }
+      },
+      'job-2': {
+        'node-2': {
+          value: 30,
+          max: 100,
+          state: 'running',
+          node_id: 'node-2',
+          prompt_id: 'job-2'
+        }
+      }
+    }
+
+    store.setFocusedJob('job-1')
+    expect(store.focusedJobId).toBe('job-1')
+    expect(store.nodeProgressStates).toEqual({
+      'node-1': {
+        value: 50,
+        max: 100,
+        state: 'running',
+        node_id: 'node-1',
+        prompt_id: 'job-1'
+      }
+    })
+
+    store.setFocusedJob('job-2')
+    expect(store.focusedJobId).toBe('job-2')
+    expect(store.nodeProgressStates).toEqual({
+      'node-2': {
+        value: 30,
+        max: 100,
+        state: 'running',
+        node_id: 'node-2',
+        prompt_id: 'job-2'
+      }
+    })
+  })
+
+  it('should clear nodeProgressStates when setFocusedJob is called with null', () => {
+    store.nodeProgressStatesByJob = {
+      'job-1': {
+        'node-1': {
+          value: 50,
+          max: 100,
+          state: 'running',
+          node_id: 'node-1',
+          prompt_id: 'job-1'
+        }
+      }
+    }
+    store.setFocusedJob('job-1')
+    expect(store.nodeProgressStates).not.toEqual({})
+
+    store.setFocusedJob(null)
+    expect(store.focusedJobId).toBeNull()
+    expect(store.nodeProgressStates).toEqual({})
+  })
+
+  it('should return undefined for focusedJob when no job is focused', () => {
+    expect(store.focusedJob).toBeUndefined()
+  })
+
+  it('should return the focused QueuedJob from focusedJob computed', () => {
+    store.queuedJobs = {
+      'job-1': { nodes: { n1: false, n2: true } }
+    }
+    store.setFocusedJob('job-1')
+    expect(store.focusedJob).toEqual({ nodes: { n1: false, n2: true } })
+  })
+})
+
+describe('useExecutionStore - isConcurrentExecutionActive', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should be false when no jobs are running', () => {
+    expect(store.isConcurrentExecutionActive).toBe(false)
+  })
+
+  it('should be false when only one job is running', () => {
+    store.nodeProgressStatesByJob = {
+      'job-1': {
+        'node-1': {
+          value: 50,
+          max: 100,
+          state: 'running',
+          node_id: 'node-1',
+          prompt_id: 'job-1'
+        }
+      }
+    }
+    expect(store.isConcurrentExecutionActive).toBe(false)
+  })
+
+  it('should be true when multiple jobs are running', () => {
+    store.nodeProgressStatesByJob = {
+      'job-1': {
+        'node-1': {
+          value: 50,
+          max: 100,
+          state: 'running',
+          node_id: 'node-1',
+          prompt_id: 'job-1'
+        }
+      },
+      'job-2': {
+        'node-2': {
+          value: 30,
+          max: 100,
+          state: 'running',
+          node_id: 'node-2',
+          prompt_id: 'job-2'
+        }
+      }
+    }
+    expect(store.isConcurrentExecutionActive).toBe(true)
+  })
+})
+
+describe('useExecutionStore - isIdle with multi-job', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockConcurrentExecutionEnabled.value = true
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should be true when no jobs are running', () => {
+    expect(store.isIdle).toBe(true)
+  })
+
+  it('should be false when at least one job is running', () => {
+    store.nodeProgressStatesByJob = {
+      'job-1': {
+        'node-1': {
+          value: 0,
+          max: 100,
+          state: 'running',
+          node_id: 'node-1',
+          prompt_id: 'job-1'
+        }
+      }
+    }
+    expect(store.isIdle).toBe(false)
+  })
+
+  it('should be true when all jobs are finished (not running)', () => {
+    store.nodeProgressStatesByJob = {
+      'job-1': {
+        'node-1': {
+          value: 100,
+          max: 100,
+          state: 'finished',
+          node_id: 'node-1',
+          prompt_id: 'job-1'
+        }
+      }
+    }
+    expect(store.isIdle).toBe(true)
+  })
+})
+
+describe('useExecutionStore - resetExecutionState auto-advance', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should set focusedJobId to null when last running job finishes', () => {
+    store.nodeProgressStatesByJob = {
+      'job-1': {
+        'node-1': {
+          value: 50,
+          max: 100,
+          state: 'running',
+          node_id: 'node-1',
+          prompt_id: 'job-1'
+        }
+      }
+    }
+    store.activeJobId = 'job-1'
+    store.setFocusedJob('job-1')
+
+    // When the last job finishes, nodeProgressStatesByJob will be empty
+    // and focusedJobId should become null
+    store.nodeProgressStatesByJob = {}
+    store.setFocusedJob(null)
+    expect(store.focusedJobId).toBeNull()
+    expect(store.nodeProgressStates).toEqual({})
+  })
+
+  it('should not change focusedJobId when a non-focused job finishes', () => {
+    store.nodeProgressStatesByJob = {
+      'job-1': {
+        'node-1': {
+          value: 50,
+          max: 100,
+          state: 'running',
+          node_id: 'node-1',
+          prompt_id: 'job-1'
+        }
+      },
+      'job-2': {
+        'node-2': {
+          value: 30,
+          max: 100,
+          state: 'running',
+          node_id: 'node-2',
+          prompt_id: 'job-2'
+        }
+      }
+    }
+    store.setFocusedJob('job-1')
+
+    // job-2 finishes — focusedJobId should stay on job-1
+    const updated = { ...store.nodeProgressStatesByJob }
+    delete updated['job-2']
+    store.nodeProgressStatesByJob = updated
+
+    // Focus should still be on job-1
+    expect(store.focusedJobId).toBe('job-1')
+    expect(store.nodeProgressStates).toEqual({
+      'node-1': {
+        value: 50,
+        max: 100,
+        state: 'running',
+        node_id: 'node-1',
+        prompt_id: 'job-1'
+      }
+    })
+  })
+})
+
+describe('useExecutionStore - executionProgress from focusedJob', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockConcurrentExecutionEnabled.value = true
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should compute executionProgress from focused job nodes', () => {
+    store.queuedJobs = {
+      'job-1': { nodes: { n1: true, n2: false, n3: false } },
+      'job-2': { nodes: { n4: true, n5: true } }
+    }
+    store.setFocusedJob('job-1')
+    // 1 out of 3 done
+    expect(store.executionProgress).toBeCloseTo(1 / 3)
+
+    store.setFocusedJob('job-2')
+    // 2 out of 2 done
+    expect(store.executionProgress).toBe(1)
+  })
+
+  it('should return 0 when no job is focused', () => {
+    expect(store.executionProgress).toBe(0)
   })
 })
 

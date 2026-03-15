@@ -26,7 +26,9 @@ export enum ServerFeatureFlag {
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
   WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
-  COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled'
+  COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
+  CONCURRENT_EXECUTION_ENABLED = 'concurrent_execution_enabled',
+  MAX_CONCURRENT_JOBS = 'max_concurrent_jobs'
 }
 
 /**
@@ -156,6 +158,31 @@ export function useFeatureFlags() {
         remoteConfig.value.comfyhub_profile_gate_enabled,
         false
       )
+    },
+    get concurrentExecutionEnabled() {
+      const override = getDevOverride<boolean>(
+        ServerFeatureFlag.CONCURRENT_EXECUTION_ENABLED
+      )
+      if (override !== undefined) return override
+
+      return (
+        remoteConfig.value.concurrent_execution_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.CONCURRENT_EXECUTION_ENABLED,
+          false
+        )
+      )
+    },
+    get maxConcurrentJobs() {
+      const override = getDevOverride<number>(
+        ServerFeatureFlag.MAX_CONCURRENT_JOBS
+      )
+      if (override !== undefined) return Math.max(1, override)
+
+      const configured =
+        remoteConfig.value.max_concurrent_jobs ??
+        api.getServerFeature(ServerFeatureFlag.MAX_CONCURRENT_JOBS, 1)
+      return Math.max(1, configured)
     }
   })
 

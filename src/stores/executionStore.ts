@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
+import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -57,9 +58,11 @@ export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
   const executionErrorStore = useExecutionErrorStore()
+  const { isConcurrentExecutionEnabled } = useConcurrentExecution()
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<string | null>(null)
+  const focusedJobId = ref<string | null>(null)
   const queuedJobs = ref<Record<NodeId, QueuedJob>>({})
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
@@ -170,7 +173,10 @@ export const useExecutionStore = defineStore('execution', () => {
   const executingNode = computed<ComfyNode | null>(() => {
     if (!executingNodeId.value) return null
 
-    const workflow: ComfyWorkflow | undefined = activeJob.value?.workflow
+    const job = isConcurrentExecutionEnabled.value
+      ? focusedJob.value
+      : activeJob.value
+    const workflow: ComfyWorkflow | undefined = job?.workflow
     if (!workflow) return null
 
     const canvasState: ComfyWorkflowJSON | null =
@@ -195,20 +201,36 @@ export const useExecutionStore = defineStore('execution', () => {
     () => queuedJobs.value[activeJobId.value ?? '']
   )
 
+  const focusedJob = computed<QueuedJob | undefined>(
+    () => queuedJobs.value[focusedJobId.value ?? '']
+  )
+
+  const isConcurrentExecutionActive = computed(
+    () => runningJobIds.value.length > 1
+  )
+
+  const _currentJob = computed(() =>
+    isConcurrentExecutionEnabled.value ? focusedJob.value : activeJob.value
+  )
+
   const totalNodesToExecute = computed<number>(() => {
-    if (!activeJob.value) return 0
-    return Object.values(activeJob.value.nodes).length
+    if (!_currentJob.value) return 0
+    return Object.values(_currentJob.value.nodes).length
   })
 
-  const isIdle = computed<boolean>(() => !activeJobId.value)
+  const isIdle = computed<boolean>(() =>
+    isConcurrentExecutionEnabled.value
+      ? runningJobIds.value.length === 0
+      : !activeJobId.value
+  )
 
   const nodesExecuted = computed<number>(() => {
-    if (!activeJob.value) return 0
-    return Object.values(activeJob.value.nodes).filter(Boolean).length
+    if (!_currentJob.value) return 0
+    return Object.values(_currentJob.value.nodes).filter(Boolean).length
   })
 
   const executionProgress = computed<number>(() => {
-    if (!activeJob.value) return 0
+    if (!_currentJob.value) return 0
     const total = totalNodesToExecute.value
     const done = nodesExecuted.value
     return total > 0 ? done / total : 0
@@ -251,6 +273,15 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
     clearInitializationByJobId(activeJobId.value)
 
+    if (isConcurrentExecutionEnabled.value) {
+      // Auto-focus the first job, or if the current focused job is no longer running
+      if (!focusedJobId.value || !queuedJobs.value[focusedJobId.value]) {
+        focusedJobId.value = activeJobId.value
+      }
+    } else {
+      focusedJobId.value = activeJobId.value
+    }
+
     // Ensure path mapping exists — execution_start can arrive via WebSocket
     // before the HTTP response from queuePrompt triggers storeJob.
     if (!jobIdToSessionWorkflowPath.value.has(activeJobId.value)) {
@@ -260,9 +291,10 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
-    if (!activeJob.value) return
+    const job = queuedJobs.value[e.detail.prompt_id]
+    if (!job) return
     for (const n of e.detail.nodes) {
-      activeJob.value.nodes[n] = true
+      job.nodes[n] = true
     }
   }
 
@@ -270,22 +302,21 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
-    if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
+    clearInitializationByJobId(jobId)
     resetExecutionState(jobId)
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
-    if (!activeJob.value) return
-    activeJob.value.nodes[e.detail.node] = true
+    const job = queuedJobs.value[e.detail.prompt_id]
+    if (!job) return
+    job.nodes[e.detail.node] = true
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
-    if (isCloud && activeJobId.value) {
-      useTelemetry()?.trackExecutionSuccess({
-        jobId: activeJobId.value
-      })
-    }
     const jobId = e.detail.prompt_id
+    if (jobId) {
+      useTelemetry()?.trackExecutionSuccess({ jobId })
+    }
     resetExecutionState(jobId)
   }
 
@@ -354,22 +385,34 @@ export const useExecutionStore = defineStore('execution', () => {
       ...nodeProgressStatesByJob.value,
       [jobId]: nodes
     }
-    evictOldProgressJobs()
-    nodeProgressStates.value = nodes
 
-    // If we have progress for the currently executing node, update it for backwards compatibility
-    if (executingNodeId.value && nodes[executingNodeId.value]) {
-      const nodeState = nodes[executingNodeId.value]
-      _executingNodeProgress.value = {
-        value: nodeState.value,
-        max: nodeState.max,
-        prompt_id: nodeState.prompt_id,
-        node: nodeState.display_node_id || nodeState.node_id
+    const shouldUpdate = isConcurrentExecutionEnabled.value
+      ? jobId === focusedJobId.value
+      : true
+
+    if (shouldUpdate) {
+      if (!isConcurrentExecutionEnabled.value) evictOldProgressJobs()
+      nodeProgressStates.value = nodes
+
+      // If we have progress for the currently executing node, update it for backwards compatibility
+      if (executingNodeId.value && nodes[executingNodeId.value]) {
+        const nodeState = nodes[executingNodeId.value]
+        _executingNodeProgress.value = {
+          value: nodeState.value,
+          max: nodeState.max,
+          prompt_id: nodeState.prompt_id,
+          node: nodeState.display_node_id || nodeState.node_id
+        }
       }
     }
   }
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
+    if (
+      isConcurrentExecutionEnabled.value &&
+      e.detail.prompt_id !== focusedJobId.value
+    )
+      return
     _executingNodeProgress.value = e.detail
   }
 
@@ -492,8 +535,6 @@ export const useExecutionStore = defineStore('execution', () => {
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: string | null) {
-    executionIdToLocatorCache.clear()
-    nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
     if (jobId) {
       const map = { ...nodeProgressStatesByJob.value }
@@ -501,12 +542,44 @@ export const useExecutionStore = defineStore('execution', () => {
       nodeProgressStatesByJob.value = map
       useJobPreviewStore().clearPreview(jobId)
     }
-    if (activeJobId.value) {
-      delete queuedJobs.value[activeJobId.value]
+
+    if (isConcurrentExecutionEnabled.value) {
+      if (jobId === activeJobId.value || !jobIdParam) {
+        if (activeJobId.value) {
+          delete queuedJobs.value[activeJobId.value]
+        }
+        activeJobId.value = null
+      }
+      if (jobId === focusedJobId.value || !jobIdParam) {
+        // Auto-advance to next running job, or null
+        focusedJobId.value =
+          runningJobIds.value.find((id) => id !== jobId) ?? null
+        nodeProgressStates.value = focusedJobId.value
+          ? (nodeProgressStatesByJob.value[focusedJobId.value] ?? {})
+          : {}
+      }
+    } else {
+      executionIdToLocatorCache.clear()
+      nodeProgressStates.value = {}
+      if (activeJobId.value) {
+        delete queuedJobs.value[activeJobId.value]
+      }
+      activeJobId.value = null
+      focusedJobId.value = null
     }
-    activeJobId.value = null
+
     _executingNodeProgress.value = null
     executionErrorStore.clearPromptError()
+  }
+
+  function setFocusedJob(jobId: string | null) {
+    focusedJobId.value = jobId
+    _executingNodeProgress.value = null
+    if (jobId) {
+      nodeProgressStates.value = nodeProgressStatesByJob.value[jobId] ?? {}
+    } else {
+      nodeProgressStates.value = {}
+    }
   }
 
   function getNodeIdIfExecuting(nodeId: string | number) {
@@ -625,6 +698,10 @@ export const useExecutionStore = defineStore('execution', () => {
     executingNodeId,
     executingNodeIds,
     activeJob,
+    focusedJobId,
+    focusedJob,
+    isConcurrentExecutionActive,
+    setFocusedJob,
     totalNodesToExecute,
     nodesExecuted,
     executionProgress,
