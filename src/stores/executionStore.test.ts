@@ -1,5 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -14,6 +15,20 @@ import type * as WorkflowStoreModule from '@/platform/workflow/management/stores
 import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
+
+const mockConcurrentExecutionEnabled = ref(false)
+
+vi.mock('@/composables/useConcurrentExecution', () => ({
+  useConcurrentExecution: () => ({
+    isConcurrentExecutionEnabled: mockConcurrentExecutionEnabled,
+    isFeatureEnabled: ref(false),
+    isUserEnabled: ref(false),
+    maxConcurrentJobs: ref(1),
+    hasSeenOnboarding: ref(false),
+    setUserEnabled: vi.fn(),
+    markOnboardingSeen: vi.fn()
+  })
+}))
 
 // Mock the workflowStore
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
@@ -582,6 +597,7 @@ describe('useExecutionStore - isIdle with multi-job', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockConcurrentExecutionEnabled.value = true
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
@@ -700,6 +716,7 @@ describe('useExecutionStore - executionProgress from focusedJob', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockConcurrentExecutionEnabled.value = true
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
