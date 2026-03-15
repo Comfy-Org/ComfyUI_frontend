@@ -164,7 +164,11 @@ jobs:
 
   publish-pypi:
     needs: [resolve-version, trigger-release-if-needed]
-    if: always() && needs.resolve-version.result == 'success'
+    if: >
+      always() &&
+      needs.resolve-version.result == 'success' &&
+      (needs.trigger-release-if-needed.result == 'success' ||
+       needs.trigger-release-if-needed.result == 'skipped')
     runs-on: ubuntu-latest
 
     steps:
