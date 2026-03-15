@@ -36,8 +36,9 @@ test.describe('Group Copy Paste', { tag: ['@canvas'] }, () => {
     )
 
     expect(positions).toHaveLength(2)
-    expect(
-      positions[0].x !== positions[1].x || positions[0].y !== positions[1].y
-    ).toBe(true)
+    const dx = Math.abs(positions[0].x - positions[1].x)
+    const dy = Math.abs(positions[0].y - positions[1].y)
+    expect(dx).toBeCloseTo(50, 0)
+    expect(dy).toBeCloseTo(15, 0)
   })
 })
