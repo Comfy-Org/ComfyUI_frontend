@@ -83,18 +83,19 @@ export class PerformanceHelper {
    */
   private async collectTBT(): Promise<number> {
     return this.page.evaluate(() => {
-      const observer = (window as Record<string, unknown>)
-        .__perfLongtaskObserver as PerformanceObserver | undefined
-      const entries = observer
-        ? observer.takeRecords()
-        : (performance.getEntriesByType('longtask') as PerformanceEntry[])
-      let tbt = 0
-      for (const entry of entries) {
-        if (entry.duration > 50) {
-          tbt += entry.duration - 50
-        }
+      const state = (window as unknown as Record<string, unknown>)
+        .__perfLongtaskState as
+        | { observer: PerformanceObserver; tbtMs: number }
+        | undefined
+      if (!state) return 0
+
+      // Flush any queued-but-undelivered entries into our accumulator
+      for (const entry of state.observer.takeRecords()) {
+        if (entry.duration > 50) state.tbtMs += entry.duration - 50
       }
-      return tbt
+      const result = state.tbtMs
+      state.tbtMs = 0
+      return result
     })
   }
 
@@ -105,6 +106,7 @@ export class PerformanceHelper {
   private async measureFrameDuration(sampleFrames = 10): Promise<number> {
     return this.page.evaluate((frames) => {
       return new Promise<number>((resolve) => {
+        const timeout = setTimeout(() => resolve(0), 5000)
         const timestamps: number[] = []
         let count = 0
         function tick(ts: number) {
@@ -113,6 +115,7 @@ export class PerformanceHelper {
           if (count <= frames) {
             requestAnimationFrame(tick)
           } else {
+            clearTimeout(timeout)
             if (timestamps.length < 2) {
               resolve(0)
               return
@@ -132,20 +135,33 @@ export class PerformanceHelper {
         'Measurement already in progress — call stopMeasuring() first'
       )
     }
-    // Install longtask observer if not already present, then drain buffered
-    // entries so old longtasks don't bleed into the new measurement window.
+    // Install longtask observer if not already present, then reset the
+    // accumulator so old longtasks don't bleed into the new measurement window.
     await this.page.evaluate(() => {
-      if (!(window as Record<string, unknown>).__perfLongtaskObserver) {
-        const observer = new PerformanceObserver(() => {
-          // entries buffered automatically
-        })
-        observer.observe({ type: 'longtask', buffered: true })
-        ;(window as Record<string, unknown>).__perfLongtaskObserver = observer
+      const win = window as unknown as Record<string, unknown>
+      if (!win.__perfLongtaskState) {
+        const state: { observer: PerformanceObserver; tbtMs: number } = {
+          observer: new PerformanceObserver((list) => {
+            const self = (window as unknown as Record<string, unknown>)
+              .__perfLongtaskState as {
+              observer: PerformanceObserver
+              tbtMs: number
+            }
+            for (const entry of list.getEntries()) {
+              if (entry.duration > 50) self.tbtMs += entry.duration - 50
+            }
+          }),
+          tbtMs: 0
+        }
+        state.observer.observe({ type: 'longtask', buffered: true })
+        win.__perfLongtaskState = state
       }
-      // Drain any previously buffered longtask entries
-      const observer = (window as Record<string, unknown>)
-        .__perfLongtaskObserver as PerformanceObserver
-      observer.takeRecords()
+      const state = win.__perfLongtaskState as {
+        observer: PerformanceObserver
+        tbtMs: number
+      }
+      state.tbtMs = 0
+      state.observer.takeRecords()
     })
     this.snapshot = await this.getSnapshot()
   }
