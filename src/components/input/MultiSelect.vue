@@ -111,11 +111,7 @@
             v-if="showSelectedCount"
             class="px-1 text-sm text-base-foreground"
           >
-            {{
-              selectedCount > 0
-                ? $t('g.itemsSelected', { selectedCount })
-                : $t('g.itemSelected', { selectedCount })
-            }}
+            {{ $t('g.itemSelected', { count: selectedCount }, selectedCount) }}
           </span>
           <Button
             v-if="showClearButton"

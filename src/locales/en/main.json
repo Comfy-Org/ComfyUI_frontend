@@ -271,8 +271,7 @@
     "clearAll": "Clear all",
     "copyURL": "Copy URL",
     "releaseTitle": "{package} {version} Release",
-    "itemSelected": "{selectedCount} item selected",
-    "itemsSelected": "{selectedCount} items selected",
+    "itemSelected": "{count} item selected | {count} items selected",
     "multiSelectDropdown": "Multi-select dropdown",
     "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
@@ -330,6 +329,8 @@
     "preloadErrorTitle": "Loading Error",
     "recents": "Recents",
     "partner": "Partner",
+    "blueprints": "Blueprints",
+    "partnerNodes": "Partner Nodes",
     "collapseAll": "Collapse all",
     "expandAll": "Expand all"
   },

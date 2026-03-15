@@ -100,7 +100,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await expect(searchBoxV2.filterOptions.first()).toBeVisible()
 
       // Type to narrow and select MODEL
-      await searchBoxV2.input.fill('MODEL')
+      await searchBoxV2.filterSearch.fill('MODEL')
       await searchBoxV2.filterOptions
         .filter({ hasText: 'MODEL' })
         .first()

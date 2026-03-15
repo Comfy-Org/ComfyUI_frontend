@@ -40,6 +40,7 @@ export const testI18n = createI18n({
         recents: 'Recents',
         favorites: 'Favorites',
         essentials: 'Essentials',
+        category: 'Category',
         custom: 'Custom',
         comfy: 'Comfy',
         partner: 'Partner',
@@ -49,15 +50,12 @@ export const testI18n = createI18n({
         input: 'Input',
         output: 'Output',
         source: 'Source',
-        search: 'Search'
-      },
-      sideToolbar: {
-        nodeLibraryTab: {
-          filterOptions: {
-            blueprints: 'Blueprints',
-            partnerNodes: 'Partner Nodes'
-          }
-        }
+        search: 'Search',
+        blueprints: 'Blueprints',
+        partnerNodes: 'Partner Nodes',
+        remove: 'Remove',
+        itemSelected: '{count} item selected | {count} items selected',
+        clearAll: 'Clear all'
       }
     }
   }

@@ -1,52 +1,85 @@
 <template>
-  <div class="flex min-h-0 flex-col overflow-y-auto py-2.5">
+  <RovingFocusGroup
+    as="div"
+    orientation="vertical"
+    :loop="true"
+    class="group/categories flex min-h-0 flex-col overflow-y-auto py-2.5 select-none"
+  >
     <!-- Preset categories -->
-    <div class="flex flex-col px-1">
-      <button
+    <div v-if="!hidePresets" class="flex flex-col px-3">
+      <RovingFocusItem
         v-for="preset in topCategories"
         :key="preset.id"
-        type="button"
-        :data-testid="`category-${preset.id}`"
-        :aria-current="selectedCategory === preset.id || undefined"
-        :class="categoryBtnClass(preset.id)"
-        @click="selectCategory(preset.id)"
+        as-child
       >
-        {{ preset.label }}
-      </button>
+        <button
+          type="button"
+          :data-testid="`category-${preset.id}`"
+          :aria-current="selectedCategory === preset.id || undefined"
+          :class="categoryBtnClass(preset.id)"
+          @click="selectCategory(preset.id)"
+        >
+          {{ preset.label }}
+        </button>
+      </RovingFocusItem>
     </div>
 
     <!-- Source categories -->
-    <div class="my-2 flex flex-col border-y border-border-subtle px-1 py-2">
-      <button
+    <div
+      v-if="!hidePresets && sourceCategories.length > 0"
+      class="my-2 flex flex-col border-y border-border-subtle px-3 py-2"
+    >
+      <RovingFocusItem
         v-for="preset in sourceCategories"
         :key="preset.id"
-        type="button"
-        :data-testid="`category-${preset.id}`"
-        :aria-current="selectedCategory === preset.id || undefined"
-        :class="categoryBtnClass(preset.id)"
-        @click="selectCategory(preset.id)"
+        as-child
       >
-        {{ preset.label }}
-      </button>
+        <button
+          type="button"
+          :data-testid="`category-${preset.id}`"
+          :aria-current="selectedCategory === preset.id || undefined"
+          :class="categoryBtnClass(preset.id)"
+          @click="selectCategory(preset.id)"
+        >
+          {{ preset.label }}
+        </button>
+      </RovingFocusItem>
     </div>
 
     <!-- Category tree -->
-    <div class="flex flex-col px-1">
+    <div
+      role="tree"
+      :aria-label="t('g.category')"
+      :class="
+        cn(
+          'flex flex-col px-3',
+          !hidePresets &&
+            !sourceCategories.length &&
+            'mt-2 border-t border-border-subtle pt-2'
+        )
+      "
+    >
       <NodeSearchCategoryTreeNode
         v-for="category in categoryTree"
         :key="category.key"
         :node="category"
         :selected-category="selectedCategory"
         :selected-collapsed="selectedCollapsed"
+        :hide-chevrons="hideChevrons"
         @select="selectCategory"
       />
     </div>
-  </div>
+  </RovingFocusGroup>
 </template>
 
+<script lang="ts">
+export const DEFAULT_CATEGORY = 'most-relevant'
+</script>
+
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RovingFocusGroup, RovingFocusItem } from 'reka-ui'
 
 import NodeSearchCategoryTreeNode, {
   CATEGORY_SELECTED_CLASS,
@@ -54,52 +87,66 @@ import NodeSearchCategoryTreeNode, {
 } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
 import type { CategoryNode } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { NodeSourceType } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
+
+const {
+  hideChevrons = false,
+  hidePresets = false,
+  hasEssentialNodes = false,
+  hasCustomNodes = false,
+  nodeDefs,
+  rootLabel,
+  rootKey
+} = defineProps<{
+  hideChevrons?: boolean
+  hidePresets?: boolean
+  hasEssentialNodes?: boolean
+  hasCustomNodes?: boolean
+  nodeDefs?: ComfyNodeDefImpl[]
+  rootLabel?: string
+  rootKey?: string
+}>()
 
 const selectedCategory = defineModel<string>('selectedCategory', {
   required: true
 })
 
+const emit = defineEmits<{
+  autoExpand: [key: string]
+}>()
+
 const { t } = useI18n()
 const nodeDefStore = useNodeDefStore()
+const nodeBookmarkStore = useNodeBookmarkStore()
 
-const topCategories = computed(() => [
-  { id: 'most-relevant', label: t('g.mostRelevant') },
-  { id: 'recents', label: t('g.recents') },
-  { id: 'favorites', label: t('g.favorites') }
-])
-
-const hasEssentialNodes = computed(() =>
-  nodeDefStore.visibleNodeDefs.some(
-    (n) => n.nodeSource.type === NodeSourceType.Essentials
-  )
-)
+const topCategories = computed(() => {
+  const categories = [{ id: DEFAULT_CATEGORY, label: t('g.mostRelevant') }]
+  if (nodeBookmarkStore.bookmarks.length > 0) {
+    categories.push({ id: 'favorites', label: t('g.favorites') })
+  }
+  return categories
+})
 
 const sourceCategories = computed(() => {
   const categories = []
-  if (hasEssentialNodes.value) {
+  if (hasEssentialNodes) {
     categories.push({ id: 'essentials', label: t('g.essentials') })
   }
-  categories.push(
-    {
-      id: 'blueprints',
-      label: t('sideToolbar.nodeLibraryTab.filterOptions.blueprints')
-    },
-    { id: 'partner', label: t('g.partner') },
-    { id: 'comfy', label: t('g.comfy') },
-    { id: 'extensions', label: t('g.extensions') }
-  )
+  if (hasCustomNodes) {
+    categories.push({ id: 'custom', label: t('g.custom') })
+  }
   return categories
 })
 
 const categoryTree = computed<CategoryNode[]>(() => {
-  const tree = nodeOrganizationService.organizeNodes(
-    nodeDefStore.visibleNodeDefs,
-    { groupBy: 'category' }
-  )
+  const defs = nodeDefs ?? nodeDefStore.visibleNodeDefs
+  const tree = nodeOrganizationService.organizeNodes(defs, {
+    groupBy: 'category'
+  })
 
   const stripRootPrefix = (key: string) => key.replace(/^root\//, '')
 
@@ -114,14 +161,48 @@ const categoryTree = computed<CategoryNode[]>(() => {
     }
   }
 
-  return (tree.children ?? [])
+  const nodes = (tree.children ?? [])
     .filter((node): node is TreeNode => !node.leaf)
     .map(mapNode)
+
+  if (rootLabel && nodes.length > 1) {
+    const key = rootKey ?? rootLabel.toLowerCase()
+    function prefixKeys(node: CategoryNode): CategoryNode {
+      return {
+        key: key + '/' + node.key,
+        label: node.label,
+        ...(node.children?.length
+          ? { children: node.children.map(prefixKeys) }
+          : {})
+      }
+    }
+    return [{ key, label: rootLabel, children: nodes.map(prefixKeys) }]
+  }
+
+  return nodes
 })
+
+// Notify parent when there is only a single root category to auto-expand
+watch(
+  categoryTree,
+  (nodes) => {
+    if (nodes.length === 1 && nodes[0].children?.length) {
+      const rootKey = nodes[0].key
+      if (
+        selectedCategory.value !== rootKey &&
+        !selectedCategory.value.startsWith(rootKey + '/')
+      ) {
+        emit('autoExpand', rootKey)
+      }
+    }
+  },
+  { immediate: true }
+)
 
 function categoryBtnClass(id: string) {
   return cn(
-    'cursor-pointer rounded-sm border-none bg-transparent px-3 py-2.5 text-left text-sm transition-colors',
+    'cursor-pointer rounded-lg border-none bg-transparent py-2.5 pr-3 text-left font-inter text-sm transition-colors',
+    hideChevrons ? 'pl-3' : 'pl-9',
     selectedCategory.value === id
       ? CATEGORY_SELECTED_CLASS
       : CATEGORY_UNSELECTED_CLASS
@@ -129,6 +210,10 @@ function categoryBtnClass(id: string) {
 }
 
 const selectedCollapsed = ref(false)
+
+watch(selectedCategory, () => {
+  selectedCollapsed.value = false
+})
 
 function selectCategory(categoryId: string) {
   if (selectedCategory.value === categoryId) {

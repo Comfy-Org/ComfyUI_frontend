@@ -3,8 +3,8 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import NodeSearchCategorySidebar from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
 import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
+import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import {
   createMockNodeDef,
   setupTestPinia,
@@ -55,11 +55,24 @@ describe('NodeSearchContent', () => {
     return wrapper
   }
 
+  function mockBookmarks(
+    isBookmarked: boolean | ((node: ComfyNodeDefImpl) => boolean) = true,
+    bookmarkList: string[] = []
+  ) {
+    const bookmarkStore = useNodeBookmarkStore()
+    if (typeof isBookmarked === 'function') {
+      vi.spyOn(bookmarkStore, 'isBookmarked').mockImplementation(isBookmarked)
+    } else {
+      vi.spyOn(bookmarkStore, 'isBookmarked').mockReturnValue(isBookmarked)
+    }
+    vi.spyOn(bookmarkStore, 'bookmarks', 'get').mockReturnValue(bookmarkList)
+  }
+
   async function setupFavorites(
     nodes: Parameters<typeof createMockNodeDef>[0][]
   ) {
     useNodeDefStore().updateNodeDefs(nodes.map(createMockNodeDef))
-    vi.spyOn(useNodeBookmarkStore(), 'isBookmarked').mockReturnValue(true)
+    mockBookmarks(true, ['placeholder'])
     const wrapper = await createWrapper()
     await wrapper.find('[data-testid="category-favorites"]').trigger('click')
     await nextTick()
@@ -106,8 +119,9 @@ describe('NodeSearchContent', () => {
           display_name: 'Regular Node'
         })
       ])
-      vi.spyOn(useNodeBookmarkStore(), 'isBookmarked').mockImplementation(
-        (node: ComfyNodeDefImpl) => node.name === 'BookmarkedNode'
+      mockBookmarks(
+        (node: ComfyNodeDefImpl) => node.name === 'BookmarkedNode',
+        ['BookmarkedNode']
       )
 
       const wrapper = await createWrapper()
@@ -123,81 +137,13 @@ describe('NodeSearchContent', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', display_name: 'Node One' })
       ])
-      vi.spyOn(useNodeBookmarkStore(), 'isBookmarked').mockReturnValue(false)
+      mockBookmarks(false, ['placeholder'])
 
       const wrapper = await createWrapper()
       await wrapper.find('[data-testid="category-favorites"]').trigger('click')
       await nextTick()
 
       expect(wrapper.text()).toContain('No results')
-    })
-
-    it('should show only CustomNodes when Extensions is selected', async () => {
-      useNodeDefStore().updateNodeDefs([
-        createMockNodeDef({
-          name: 'CoreNode',
-          display_name: 'Core Node',
-          python_module: 'nodes'
-        }),
-        createMockNodeDef({
-          name: 'CustomNode',
-          display_name: 'Custom Node',
-          python_module: 'custom_nodes.my_extension'
-        })
-      ])
-      await nextTick()
-
-      expect(useNodeDefStore().nodeDefsByName['CoreNode'].nodeSource.type).toBe(
-        NodeSourceType.Core
-      )
-      expect(
-        useNodeDefStore().nodeDefsByName['CustomNode'].nodeSource.type
-      ).toBe(NodeSourceType.CustomNodes)
-
-      const wrapper = await createWrapper()
-      await wrapper.find('[data-testid="category-extensions"]').trigger('click')
-      await nextTick()
-
-      const items = getNodeItems(wrapper)
-      expect(items).toHaveLength(1)
-      expect(items[0].text()).toContain('Custom Node')
-    })
-
-    it('should hide Essentials category when no essential nodes exist', async () => {
-      useNodeDefStore().updateNodeDefs([
-        createMockNodeDef({
-          name: 'RegularNode',
-          display_name: 'Regular Node'
-        })
-      ])
-
-      const wrapper = await createWrapper()
-      expect(wrapper.find('[data-testid="category-essentials"]').exists()).toBe(
-        false
-      )
-    })
-
-    it('should show only essential nodes when Essentials is selected', async () => {
-      useNodeDefStore().updateNodeDefs([
-        createMockNodeDef({
-          name: 'EssentialNode',
-          display_name: 'Essential Node',
-          essentials_category: 'basic'
-        }),
-        createMockNodeDef({
-          name: 'RegularNode',
-          display_name: 'Regular Node'
-        })
-      ])
-      await nextTick()
-
-      const wrapper = await createWrapper()
-      await wrapper.find('[data-testid="category-essentials"]').trigger('click')
-      await nextTick()
-
-      const items = getNodeItems(wrapper)
-      expect(items).toHaveLength(1)
-      expect(items[0].text()).toContain('Essential Node')
     })
 
     it('should include subcategory nodes when parent category is selected', async () => {
@@ -227,6 +173,135 @@ describe('NodeSearchContent', () => {
       expect(texts).toHaveLength(2)
       expect(texts).toContain('KSampler')
       expect(texts).toContain('KSampler Advanced')
+    })
+  })
+
+  describe('root filter (filter bar categories)', () => {
+    it('should show only non-Core nodes when Extensions root filter is active', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'CoreNode',
+          display_name: 'Core Node',
+          python_module: 'nodes'
+        }),
+        createMockNodeDef({
+          name: 'CustomNode',
+          display_name: 'Custom Node',
+          python_module: 'custom_nodes.my_extension'
+        })
+      ])
+      await nextTick()
+
+      expect(useNodeDefStore().nodeDefsByName['CoreNode'].nodeSource.type).toBe(
+        NodeSourceType.Core
+      )
+      expect(
+        useNodeDefStore().nodeDefsByName['CustomNode'].nodeSource.type
+      ).toBe(NodeSourceType.CustomNodes)
+
+      const wrapper = await createWrapper()
+      const extensionsBtn = wrapper
+        .findAll('button')
+        .find((b) => b.text().includes('Extensions'))
+      expect(extensionsBtn).toBeTruthy()
+      await extensionsBtn!.trigger('click')
+      await nextTick()
+
+      const items = getNodeItems(wrapper)
+      expect(items).toHaveLength(1)
+      expect(items[0].text()).toContain('Custom Node')
+    })
+
+    it('should show only essential nodes when Essentials root filter is active', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'EssentialNode',
+          display_name: 'Essential Node',
+          essentials_category: 'basic'
+        }),
+        createMockNodeDef({
+          name: 'RegularNode',
+          display_name: 'Regular Node'
+        })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper()
+      const filterBar = wrapper.findComponent(NodeSearchFilterBar)
+      const essentialsBtn = filterBar
+        .findAll('button')
+        .find((b) => b.text().includes('Essentials'))
+      expect(essentialsBtn).toBeTruthy()
+      await essentialsBtn!.trigger('click')
+      await nextTick()
+
+      const items = getNodeItems(wrapper)
+      expect(items).toHaveLength(1)
+      expect(items[0].text()).toContain('Essential Node')
+    })
+
+    it('should show only API nodes when Partner Nodes root filter is active', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'ApiNode',
+          display_name: 'API Node',
+          api_node: true
+        }),
+        createMockNodeDef({
+          name: 'RegularNode',
+          display_name: 'Regular Node'
+        })
+      ])
+
+      const wrapper = await createWrapper()
+      const filterBar = wrapper.findComponent(NodeSearchFilterBar)
+      const partnerBtn = filterBar
+        .findAll('button')
+        .find((b) => b.text().includes('Partner'))
+      expect(partnerBtn).toBeTruthy()
+      await partnerBtn!.trigger('click')
+      await nextTick()
+
+      const items = getNodeItems(wrapper)
+      expect(items).toHaveLength(1)
+      expect(items[0].text()).toContain('API Node')
+    })
+
+    it('should toggle root filter off when clicking the active category button', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'CoreNode',
+          display_name: 'Core Node',
+          python_module: 'nodes'
+        }),
+        createMockNodeDef({
+          name: 'CustomNode',
+          display_name: 'Custom Node',
+          python_module: 'custom_nodes.my_extension'
+        })
+      ])
+      await nextTick()
+
+      vi.spyOn(useNodeFrequencyStore(), 'topNodeDefs', 'get').mockReturnValue([
+        useNodeDefStore().nodeDefsByName['CoreNode'],
+        useNodeDefStore().nodeDefsByName['CustomNode']
+      ])
+
+      const wrapper = await createWrapper()
+      const filterBar = wrapper.findComponent(NodeSearchFilterBar)
+      const extensionsBtn = filterBar
+        .findAll('button')
+        .find((b) => b.text().includes('Extensions'))!
+
+      // Activate
+      await extensionsBtn.trigger('click')
+      await nextTick()
+      expect(getNodeItems(wrapper)).toHaveLength(1)
+
+      // Deactivate (toggle off)
+      await extensionsBtn.trigger('click')
+      await nextTick()
+      expect(getNodeItems(wrapper)).toHaveLength(2)
     })
   })
 
@@ -263,6 +338,7 @@ describe('NodeSearchContent', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'TestNode', display_name: 'Test Node' })
       ])
+      mockBookmarks(true, ['placeholder'])
 
       const wrapper = await createWrapper()
 
@@ -373,17 +449,61 @@ describe('NodeSearchContent', () => {
       })
     })
 
-    it('should select item on hover', async () => {
+    it('should select item on hover via pointermove', async () => {
       const wrapper = await setupFavorites([
         { name: 'Node1', display_name: 'Node One' },
         { name: 'Node2', display_name: 'Node Two' }
       ])
 
       const results = getResultItems(wrapper)
-      await results[1].trigger('mouseenter')
+      await results[1].trigger('pointermove')
       await nextTick()
 
       expect(results[1].attributes('aria-selected')).toBe('true')
+    })
+
+    it('should navigate results with ArrowDown/ArrowUp from a focused result item', async () => {
+      const wrapper = await setupFavorites([
+        { name: 'Node1', display_name: 'Node One' },
+        { name: 'Node2', display_name: 'Node Two' },
+        { name: 'Node3', display_name: 'Node Three' }
+      ])
+
+      const results = getResultItems(wrapper)
+      await results[0].trigger('keydown', { key: 'ArrowDown' })
+      await nextTick()
+
+      expect(getResultItems(wrapper)[1].attributes('aria-selected')).toBe(
+        'true'
+      )
+
+      await getResultItems(wrapper)[1].trigger('keydown', { key: 'ArrowDown' })
+      await nextTick()
+
+      expect(getResultItems(wrapper)[2].attributes('aria-selected')).toBe(
+        'true'
+      )
+
+      await getResultItems(wrapper)[2].trigger('keydown', { key: 'ArrowUp' })
+      await nextTick()
+
+      expect(getResultItems(wrapper)[1].attributes('aria-selected')).toBe(
+        'true'
+      )
+    })
+
+    it('should select node with Enter from a focused result item', async () => {
+      const wrapper = await setupFavorites([
+        { name: 'TestNode', display_name: 'Test Node' }
+      ])
+
+      await getResultItems(wrapper)[0].trigger('keydown', { key: 'Enter' })
+      await nextTick()
+
+      expect(wrapper.emitted('addNode')).toBeTruthy()
+      expect(wrapper.emitted('addNode')![0][0]).toMatchObject({
+        name: 'TestNode'
+      })
     })
 
     it('should add node on click', async () => {
@@ -413,9 +533,9 @@ describe('NodeSearchContent', () => {
     })
 
     it('should emit null hoverNode when no results', async () => {
+      mockBookmarks(false, ['placeholder'])
       const wrapper = await createWrapper()
 
-      vi.spyOn(useNodeBookmarkStore(), 'isBookmarked').mockReturnValue(false)
       await wrapper.find('[data-testid="category-favorites"]').trigger('click')
       await nextTick()
 
@@ -507,223 +627,6 @@ describe('NodeSearchContent', () => {
       expect(wrapper.emitted('removeFilter')![0][0]).toMatchObject({
         value: 'IMAGE'
       })
-    })
-  })
-
-  describe('filter selection mode', () => {
-    function setupNodesWithTypes() {
-      useNodeDefStore().updateNodeDefs([
-        createMockNodeDef({
-          name: 'ImageNode',
-          display_name: 'Image Node',
-          input: { required: { image: ['IMAGE', {}] } },
-          output: ['IMAGE']
-        }),
-        createMockNodeDef({
-          name: 'LatentNode',
-          display_name: 'Latent Node',
-          input: { required: { latent: ['LATENT', {}] } },
-          output: ['LATENT']
-        }),
-        createMockNodeDef({
-          name: 'ModelNode',
-          display_name: 'Model Node',
-          input: { required: { model: ['MODEL', {}] } },
-          output: ['MODEL']
-        })
-      ])
-    }
-
-    function findFilterBarButton(wrapper: VueWrapper, label: string) {
-      return wrapper
-        .findAll('button[aria-pressed]')
-        .find((b) => b.text() === label)
-    }
-
-    async function enterFilterMode(wrapper: VueWrapper) {
-      await findFilterBarButton(wrapper, 'Input')!.trigger('click')
-      await nextTick()
-    }
-
-    function getFilterOptions(wrapper: VueWrapper) {
-      return wrapper.findAll('[data-testid="filter-option"]')
-    }
-
-    function getFilterOptionTexts(wrapper: VueWrapper) {
-      return getFilterOptions(wrapper).map(
-        (o) =>
-          o
-            .findAll('span')[0]
-            ?.text()
-            .replace(/^[•·]\s*/, '')
-            .trim() ?? ''
-      )
-    }
-
-    function hasSidebar(wrapper: VueWrapper) {
-      return wrapper.findComponent(NodeSearchCategorySidebar).exists()
-    }
-
-    it('should enter filter mode when a filter chip is selected', async () => {
-      setupNodesWithTypes()
-      const wrapper = await createWrapper()
-
-      expect(hasSidebar(wrapper)).toBe(true)
-
-      await enterFilterMode(wrapper)
-
-      expect(hasSidebar(wrapper)).toBe(false)
-      expect(getFilterOptions(wrapper).length).toBeGreaterThan(0)
-    })
-
-    it('should show available filter options sorted alphabetically', async () => {
-      setupNodesWithTypes()
-      const wrapper = await createWrapper()
-      await enterFilterMode(wrapper)
-
-      const texts = getFilterOptionTexts(wrapper)
-      expect(texts).toContain('IMAGE')
-      expect(texts).toContain('LATENT')
-      expect(texts).toContain('MODEL')
-      expect(texts).toEqual([...texts].sort())
-    })
-
-    it('should filter options when typing in filter mode', async () => {
-      setupNodesWithTypes()
-      const wrapper = await createWrapper()
-      await enterFilterMode(wrapper)
-
-      await wrapper.find('input[type="text"]').setValue('IMAGE')
-      await nextTick()
-
-      const texts = getFilterOptionTexts(wrapper)
-      expect(texts).toContain('IMAGE')
-      expect(texts).not.toContain('MODEL')
-    })
-
-    it('should show no results when filter query has no matches', async () => {
-      setupNodesWithTypes()
-      const wrapper = await createWrapper()
-      await enterFilterMode(wrapper)
-
-      await wrapper.find('input[type="text"]').setValue('NONEXISTENT_TYPE')
-      await nextTick()
-
-      expect(wrapper.text()).toContain('No results')
-    })
-
-    it('should emit addFilter when a filter option is clicked', async () => {
-      setupNodesWithTypes()
-      const wrapper = await createWrapper()
-      await enterFilterMode(wrapper)
-
-      const imageOption = getFilterOptions(wrapper).find((o) =>
-        o.text().includes('IMAGE')
-      )
-      await imageOption!.trigger('click')
-      await nextTick()
-
-      expect(wrapper.emitted('addFilter')![0][0]).toMatchObject({
-        filterDef: expect.objectContaining({ id: 'input' }),
-        value: 'IMAGE'
-      })
-    })
-
-    it('should exit filter mode after applying a filter', async () => {
-      setupNodesWithTypes()
-      const wrapper = await createWrapper()
-      await enterFilterMode(wrapper)
-
-      await getFilterOptions(wrapper)[0].trigger('click')
-      await nextTick()
-      await nextTick()
-
-      expect(hasSidebar(wrapper)).toBe(true)
-    })
-
-    it('should emit addFilter when Enter is pressed on selected option', async () => {
-      setupNodesWithTypes()
-      const wrapper = await createWrapper()
-      await enterFilterMode(wrapper)
-
-      await wrapper
-        .find('input[type="text"]')
-        .trigger('keydown', { key: 'Enter' })
-      await nextTick()
-
-      expect(wrapper.emitted('addFilter')![0][0]).toMatchObject({
-        filterDef: expect.objectContaining({ id: 'input' }),
-        value: 'IMAGE'
-      })
-    })
-
-    it('should navigate filter options with ArrowDown/ArrowUp', async () => {
-      setupNodesWithTypes()
-      const wrapper = await createWrapper()
-      await enterFilterMode(wrapper)
-
-      const input = wrapper.find('input[type="text"]')
-
-      expect(getFilterOptions(wrapper)[0].attributes('aria-selected')).toBe(
-        'true'
-      )
-
-      await input.trigger('keydown', { key: 'ArrowDown' })
-      await nextTick()
-      expect(getFilterOptions(wrapper)[1].attributes('aria-selected')).toBe(
-        'true'
-      )
-
-      await input.trigger('keydown', { key: 'ArrowUp' })
-      await nextTick()
-      expect(getFilterOptions(wrapper)[0].attributes('aria-selected')).toBe(
-        'true'
-      )
-    })
-
-    it('should toggle filter mode off when same chip is clicked again', async () => {
-      setupNodesWithTypes()
-      const wrapper = await createWrapper()
-      await enterFilterMode(wrapper)
-
-      await findFilterBarButton(wrapper, 'Input')!.trigger('click')
-      await nextTick()
-      await nextTick()
-
-      expect(hasSidebar(wrapper)).toBe(true)
-    })
-
-    it('should reset filter query when re-entering filter mode', async () => {
-      setupNodesWithTypes()
-      const wrapper = await createWrapper()
-      await enterFilterMode(wrapper)
-
-      const input = wrapper.find('input[type="text"]')
-      await input.setValue('IMAGE')
-      await nextTick()
-
-      await findFilterBarButton(wrapper, 'Input')!.trigger('click')
-      await nextTick()
-      await nextTick()
-
-      await enterFilterMode(wrapper)
-
-      expect((input.element as HTMLInputElement).value).toBe('')
-    })
-
-    it('should exit filter mode when cancel button is clicked', async () => {
-      setupNodesWithTypes()
-      const wrapper = await createWrapper()
-      await enterFilterMode(wrapper)
-
-      expect(hasSidebar(wrapper)).toBe(false)
-
-      const cancelBtn = wrapper.find('[data-testid="cancel-filter"]')
-      await cancelBtn.trigger('click')
-      await nextTick()
-      await nextTick()
-
-      expect(hasSidebar(wrapper)).toBe(true)
     })
   })
 })

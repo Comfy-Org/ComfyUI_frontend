@@ -1,7 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import {
   setupTestPinia,
@@ -18,7 +17,11 @@ vi.mock('@/utils/litegraphUtil', () => ({
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    get: vi.fn(),
+    get: vi.fn((key: string) => {
+      if (key === 'Comfy.NodeLibrary.Bookmarks.V2') return []
+      if (key === 'Comfy.NodeLibrary.BookmarksCustomization') return {}
+      return undefined
+    }),
     set: vi.fn()
   }))
 }))
@@ -39,20 +42,6 @@ function createFilter(
   }
 }
 
-function createActiveFilter(label: string): FilterChip {
-  return {
-    key: label.toLowerCase(),
-    label,
-    filter: {
-      id: label.toLowerCase(),
-      matches: vi.fn(() => true)
-    } as Partial<FuseFilter<ComfyNodeDefImpl, string>> as FuseFilter<
-      ComfyNodeDefImpl,
-      string
-    >
-  }
-}
-
 describe('NodeSearchInput', () => {
   beforeEach(() => {
     setupTestPinia()
@@ -62,51 +51,27 @@ describe('NodeSearchInput', () => {
   function createWrapper(
     props: Partial<{
       filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
-      activeFilter: FilterChip | null
       searchQuery: string
-      filterQuery: string
     }> = {}
   ) {
     return mount(NodeSearchInput, {
       props: {
         filters: [],
-        activeFilter: null,
         searchQuery: '',
-        filterQuery: '',
         ...props
       },
       global: { plugins: [testI18n] }
     })
   }
 
-  it('should route input to searchQuery when no active filter', async () => {
+  it('should route input to searchQuery', async () => {
     const wrapper = createWrapper()
     await wrapper.find('input').setValue('test search')
 
     expect(wrapper.emitted('update:searchQuery')![0]).toEqual(['test search'])
   })
 
-  it('should route input to filterQuery when active filter is set', async () => {
-    const wrapper = createWrapper({
-      activeFilter: createActiveFilter('Input')
-    })
-    await wrapper.find('input').setValue('IMAGE')
-
-    expect(wrapper.emitted('update:filterQuery')![0]).toEqual(['IMAGE'])
-    expect(wrapper.emitted('update:searchQuery')).toBeUndefined()
-  })
-
-  it('should show filter label placeholder when active filter is set', () => {
-    const wrapper = createWrapper({
-      activeFilter: createActiveFilter('Input')
-    })
-
-    expect(
-      (wrapper.find('input').element as HTMLInputElement).placeholder
-    ).toContain('input')
-  })
-
-  it('should show add node placeholder when no active filter', () => {
+  it('should show add node placeholder', () => {
     const wrapper = createWrapper()
 
     expect(
@@ -114,31 +79,12 @@ describe('NodeSearchInput', () => {
     ).toContain('Add a node')
   })
 
-  it('should hide filter chips when active filter is set', () => {
-    const wrapper = createWrapper({
-      filters: [createFilter('input', 'IMAGE')],
-      activeFilter: createActiveFilter('Input')
-    })
-
-    expect(wrapper.findAll('[data-testid="filter-chip"]')).toHaveLength(0)
-  })
-
-  it('should show filter chips when no active filter', () => {
+  it('should show filter chips when filters are present', () => {
     const wrapper = createWrapper({
       filters: [createFilter('input', 'IMAGE')]
     })
 
     expect(wrapper.findAll('[data-testid="filter-chip"]')).toHaveLength(1)
-  })
-
-  it('should emit cancelFilter when cancel button is clicked', async () => {
-    const wrapper = createWrapper({
-      activeFilter: createActiveFilter('Input')
-    })
-
-    await wrapper.find('[data-testid="cancel-filter"]').trigger('click')
-
-    expect(wrapper.emitted('cancelFilter')).toHaveLength(1)
   })
 
   it('should emit selectCurrent on Enter', async () => {
