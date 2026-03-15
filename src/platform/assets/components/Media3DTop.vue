@@ -5,7 +5,6 @@
       :src="thumbnailSrc"
       :alt="asset?.name"
       class="size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
-      @error="thumbnailError = true"
     />
     <div
       v-else
@@ -20,16 +19,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { useImage } from '@vueuse/core'
+import { computed } from 'vue'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 const { asset } = defineProps<{ asset: AssetMeta }>()
 
-const thumbnailError = ref(false)
-
 const thumbnailSrc = computed(() => {
   if (!asset?.src) return ''
   return asset.src.replace(/([?&]filename=)([^&]*)/, '$1$2.png')
 })
+
+const { error: thumbnailError } = useImage(
+  computed(() => ({ src: thumbnailSrc.value, alt: asset?.name ?? '' }))
+)
 </script>
