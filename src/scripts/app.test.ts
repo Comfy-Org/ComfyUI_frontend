@@ -207,7 +207,7 @@ describe('ComfyApp', () => {
     it('should position batch node to the right of first node', () => {
       const mockNode1 = createMockNode({
         pos: [100, 200],
-        getBounding: vi.fn(() => new Float64Array([100, 200, 300, 400]))
+        size: [300, 400]
       })
       const mockBatchNode = createMockNode({ pos: [0, 0] })
 
@@ -219,8 +219,8 @@ describe('ComfyApp', () => {
     it('should stack multiple image nodes vertically', () => {
       const mockNode1 = createMockNode({
         pos: [100, 200],
-        type: 'LoadImage',
-        getBounding: vi.fn(() => new Float64Array([100, 200, 300, 400]))
+        size: [300, 400],
+        type: 'LoadImage'
       })
       const mockNode2 = createMockNode({ pos: [0, 0], type: 'LoadImage' })
       const mockNode3 = createMockNode({ pos: [0, 0], type: 'LoadImage' })
@@ -235,7 +235,8 @@ describe('ComfyApp', () => {
 
     it('should call graph change once for all nodes', () => {
       const mockNode1 = createMockNode({
-        getBounding: vi.fn(() => new Float64Array([100, 200, 300, 400]))
+        pos: [100, 200],
+        size: [300, 400]
       })
       const mockBatchNode = createMockNode()
 

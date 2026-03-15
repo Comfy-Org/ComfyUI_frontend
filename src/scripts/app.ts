@@ -1782,8 +1782,9 @@ export class ComfyApp {
   }
 
   positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void {
-    const [x, y, width] = nodes[0].getBounding()
-    batchNode.pos = [x + width + 100, y + 30]
+    const [x, y] = nodes[0].pos
+    const nodeWidth = nodes[0].size[0]
+    batchNode.pos = [x + nodeWidth + 100, y + 30]
 
     // Retrieving Node Height is inconsistent
     let height = 0
