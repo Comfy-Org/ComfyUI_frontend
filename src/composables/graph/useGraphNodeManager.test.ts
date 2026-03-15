@@ -241,6 +241,89 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 
     expect(widgetData?.slotMetadata?.linked).toBe(false)
   })
+
+  it('clears stale slotMetadata when input no longer matches widget', async () => {
+    const { graph, node } = createWidgetInputGraph()
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    const nodeData = vueNodeData.get(String(node.id))!
+    const widgetData = nodeData.widgets!.find((w) => w.name === 'prompt')!
+
+    expect(widgetData.slotMetadata?.linked).toBe(true)
+
+    node.inputs[0].name = 'other'
+    node.inputs[0].widget = { name: 'other' }
+    node.inputs[0].link = null
+
+    graph.trigger('node:slot-links:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: 0,
+      connected: false,
+      linkId: 42
+    })
+
+    await nextTick()
+
+    expect(widgetData.slotMetadata).toBeUndefined()
+  })
+
+  it('clears slotMetadata when the matching input is removed via removeInput', async () => {
+    const { graph, node } = createWidgetInputGraph()
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    const nodeData = vueNodeData.get(String(node.id))!
+    const getWidget = () => nodeData.widgets?.find((w) => w.name === 'prompt')
+
+    expect(getWidget()?.slotMetadata?.linked).toBe(true)
+
+    // Remove the input slot entirely (LGraphNode.removeInput disconnects first)
+    node.removeInput(0)
+    await nextTick()
+
+    // slotMetadata should be cleared because the input no longer exists
+    // (reactiveComputed rebuilds the widgets array with fresh objects)
+    expect(getWidget()?.slotMetadata).toBeUndefined()
+  })
+
+  it('clears slotMetadata when node.inputs is replaced with an empty array', async () => {
+    const { graph, node } = createWidgetInputGraph()
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    const nodeData = vueNodeData.get(String(node.id))!
+    const getWidget = () => nodeData.widgets?.find((w) => w.name === 'prompt')
+
+    expect(getWidget()?.slotMetadata?.linked).toBe(true)
+
+    // Some extensions (e.g., groupNode) replace the entire inputs array
+    node.inputs = []
+    await nextTick()
+
+    expect(getWidget()?.slotMetadata).toBeUndefined()
+  })
+
+  it('populates slotMetadata when a matching input is added via addInput', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('string', 'prompt', 'hello', () => undefined, {})
+    graph.add(node)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(node.id))!
+    const getWidget = () => nodeData.widgets?.find((w) => w.name === 'prompt')
+
+    // No matching input yet
+    expect(getWidget()?.slotMetadata).toBeUndefined()
+
+    // Add a matching input
+    const input = node.addInput('prompt', 'STRING')
+    input.widget = { name: 'prompt' }
+    await nextTick()
+
+    // slotMetadata should now be populated (linked: false since no link)
+    expect(getWidget()?.slotMetadata).toBeDefined()
+    expect(getWidget()?.slotMetadata?.linked).toBe(false)
+  })
 })
 
 describe('Subgraph Promoted Pseudo Widgets', () => {

@@ -44,6 +44,26 @@ export interface WidgetSlotMetadata {
 }
 
 /**
+ * Builds a map of widget-name → slot metadata from the node's current inputs.
+ * Used by both the full reactive rebuild and the partial slot-refresh path
+ * to ensure consistent derivation of slot metadata.
+ */
+function buildSlotMetadata(
+  inputs?: INodeInputSlot[]
+): Map<string, WidgetSlotMetadata> {
+  const metadata = new Map<string, WidgetSlotMetadata>()
+  inputs?.forEach((input, index) => {
+    const slotInfo: WidgetSlotMetadata = {
+      index,
+      linked: input.link != null
+    }
+    if (input.name) metadata.set(input.name, slotInfo)
+    if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
+  })
+  return metadata
+}
+
+/**
  * Minimal render-specific widget data extracted from LiteGraph widgets.
  * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
  */
@@ -411,16 +431,12 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
     const widgetsSnapshot = node.widgets ?? []
+    const currentSlotMetadata = buildSlotMetadata(node.inputs)
 
     slotMetadata.clear()
-    node.inputs?.forEach((input, index) => {
-      const slotInfo = {
-        index,
-        linked: input.link != null
-      }
-      if (input.name) slotMetadata.set(input.name, slotInfo)
-      if (input.widget?.name) slotMetadata.set(input.widget.name, slotInfo)
-    })
+    for (const [key, value] of currentSlotMetadata) {
+      slotMetadata.set(key, value)
+    }
     return widgetsSnapshot.map(safeWidgetMapper(node, slotMetadata))
   })
 
@@ -473,22 +489,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     if (!nodeRef || !currentData) return
 
-    // Only extract slot-related data instead of full node re-extraction
-    const slotMetadata = new Map<string, WidgetSlotMetadata>()
+    const slotMetadata = buildSlotMetadata(nodeRef.inputs)
 
-    nodeRef.inputs?.forEach((input, index) => {
-      const slotInfo = {
-        index,
-        linked: input.link != null
-      }
-      if (input.name) slotMetadata.set(input.name, slotInfo)
-      if (input.widget?.name) slotMetadata.set(input.widget.name, slotInfo)
-    })
-
-    // Update only widgets with new slot metadata, keeping other widget data intact
+    // Always overwrite — never merge — to clear stale metadata when inputs
+    // are removed or renamed.
     for (const widget of currentData.widgets ?? []) {
-      const slotInfo = slotMetadata.get(widget.slotName ?? widget.name)
-      if (slotInfo) widget.slotMetadata = slotInfo
+      widget.slotMetadata = slotMetadata.get(widget.slotName ?? widget.name)
     }
   }
 
