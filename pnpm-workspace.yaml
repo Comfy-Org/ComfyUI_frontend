@@ -65,7 +65,7 @@ catalog:
   eslint-import-resolver-typescript: ^4.4.4
   eslint-plugin-better-tailwindcss: ^4.3.1
   eslint-plugin-import-x: ^4.16.1
-  eslint-plugin-oxlint: 1.25.0
+  eslint-plugin-oxlint: 1.55.0
   eslint-plugin-storybook: ^10.2.10
   eslint-plugin-unused-imports: ^4.3.0
   eslint-plugin-vue: ^10.6.2
@@ -84,9 +84,9 @@ catalog:
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
   nx: 22.5.2
-  oxfmt: ^0.34.0
-  oxlint: ^1.49.0
-  oxlint-tsgolint: ^0.14.2
+  oxfmt: ^0.40.0
+  oxlint: ^1.55.0
+  oxlint-tsgolint: ^0.17.0
   picocolors: ^1.1.1
   pinia: ^3.0.4
   postcss-html: ^1.8.0
