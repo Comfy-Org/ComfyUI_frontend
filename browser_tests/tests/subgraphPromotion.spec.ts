@@ -424,15 +424,13 @@ test.describe(
         await comfyPage.nextFrame()
         await comfyPage.vueNodes.waitForNodes()
 
-        // The interior CLIPTextEncode node should render a textarea widget
-        // in Vue mode. Right-click it to verify the contextmenu event
-        // propagates correctly (fix from PR #9840) and shows the ComfyUI
-        // context menu with "Promote Widget".
-        const clipNode = comfyPage.vueNodes
-          .getNodeByTitle('CLIPTextEncode')
-          .first()
+        // The interior CLIPTextEncode node (id 10) should render a textarea
+        // widget in Vue mode. Right-click it to verify the contextmenu
+        // event propagates correctly (fix from PR #9840) and shows the
+        // ComfyUI context menu with "Promote Widget".
+        const clipNode = comfyPage.vueNodes.getNodeLocator('10')
         await expect(clipNode).toBeVisible()
-        const textarea = clipNode.getByRole('textbox', { name: 'text' })
+        const textarea = clipNode.locator('textarea')
         await expect(textarea).toBeVisible()
         await textarea.click({ button: 'right' })
         await comfyPage.nextFrame()
