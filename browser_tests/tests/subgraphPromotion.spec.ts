@@ -405,6 +405,59 @@ test.describe(
       })
     })
 
+    test.describe('Textarea Widget Context Menu in Subgraph (Vue Mode)', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      })
+
+      test('Right-click on textarea widget inside subgraph shows Promote Widget option', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-text-widget'
+        )
+        await comfyPage.vueNodes.waitForNodes()
+
+        // Navigate into the subgraph (node id 11)
+        await comfyPage.vueNodes.enterSubgraph('11')
+        await comfyPage.nextFrame()
+        await comfyPage.vueNodes.waitForNodes()
+
+        // The interior CLIPTextEncode node (id 10) should render a textarea
+        // widget in Vue mode. Right-click it to verify the contextmenu
+        // event propagates correctly (fix from PR #9840) and shows the
+        // ComfyUI context menu with "Promote Widget".
+        const clipNode = comfyPage.vueNodes.getNodeLocator('10')
+        await expect(clipNode).toBeVisible()
+
+        // Select the node first so the context menu builds correctly
+        await comfyPage.vueNodes.selectNode('10')
+        await comfyPage.nextFrame()
+
+        // Dispatch a contextmenu event directly on the textarea. A normal
+        // right-click is intercepted by the z-999 canvas overlay, but the
+        // Vue WidgetTextarea.vue handler listens on @contextmenu.capture,
+        // so dispatching the event directly tests the fix from PR #9840.
+        const textarea = clipNode.locator('textarea')
+        await expect(textarea).toBeVisible()
+        await textarea.dispatchEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          button: 2
+        })
+        await comfyPage.nextFrame()
+
+        // The PrimeVue context menu should show "Promote Widget" since
+        // the node is inside a subgraph (not the root graph).
+        const promoteEntry = comfyPage.page
+          .locator('.p-contextmenu')
+          .locator('text=Promote Widget')
+
+        await expect(promoteEntry.first()).toBeVisible({ timeout: 5000 })
+      })
+    })
+
     test.describe('Pseudo-Widget Promotion', () => {
       test('Promotion store tracks pseudo-widget entries for subgraph with preview node', async ({
         comfyPage
