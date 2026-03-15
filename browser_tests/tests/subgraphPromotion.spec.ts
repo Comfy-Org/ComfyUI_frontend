@@ -430,14 +430,23 @@ test.describe(
         // ComfyUI context menu with "Promote Widget".
         const clipNode = comfyPage.vueNodes.getNodeLocator('10')
         await expect(clipNode).toBeVisible()
+
+        // Select the node first so the context menu builds correctly
+        await comfyPage.vueNodes.selectNode('10')
+        await comfyPage.nextFrame()
+
+        // Right-click the textarea to trigger the Vue contextmenu handler.
+        // force:true is needed to bypass the z-999 overlay interception.
         const textarea = clipNode.locator('textarea')
         await expect(textarea).toBeVisible()
         await textarea.click({ button: 'right', force: true })
         await comfyPage.nextFrame()
 
+        // The PrimeVue context menu should show "Promote Widget" since
+        // the node is inside a subgraph (not the root graph).
         const promoteEntry = comfyPage.page
-          .locator('.p-contextmenu .p-menuitem-text')
-          .filter({ hasText: /Promote Widget/ })
+          .locator('.p-contextmenu')
+          .locator('text=Promote Widget')
 
         await expect(promoteEntry.first()).toBeVisible({ timeout: 5000 })
       })
