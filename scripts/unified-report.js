@@ -19,11 +19,9 @@ const lines = []
 
 // --- Size section ---
 if (sizeStatus === 'ready') {
-  const sizeReport = execFileSync(
-    'node',
-    ['scripts/size-report.js'],
-    { encoding: 'utf-8' }
-  ).trimEnd()
+  const sizeReport = execFileSync('node', ['scripts/size-report.js'], {
+    encoding: 'utf-8'
+  }).trimEnd()
   lines.push(sizeReport)
 } else if (sizeStatus === 'failed') {
   lines.push('## 📦 Bundle Size')
