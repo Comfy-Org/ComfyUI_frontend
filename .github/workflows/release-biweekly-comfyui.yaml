@@ -170,7 +170,6 @@ jobs:
       (needs.trigger-release-if-needed.result == 'success' ||
        needs.trigger-release-if-needed.result == 'skipped')
     runs-on: ubuntu-latest
-
     steps:
       - name: Wait for release PR to be created and merged
         if: needs.trigger-release-if-needed.result == 'success'
