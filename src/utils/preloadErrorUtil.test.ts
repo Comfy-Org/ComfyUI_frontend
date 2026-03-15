@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parsePreloadError } from './preloadErrorUtil'
+import { isStaleChunkError, parsePreloadError } from './preloadErrorUtil'
 
 describe('parsePreloadError', () => {
   it('parses CSS preload error', () => {
@@ -88,5 +88,76 @@ describe('parsePreloadError', () => {
     const result = parsePreloadError(error)
 
     expect(result.chunkName).toBe('index')
+  })
+})
+
+describe('isStaleChunkError', () => {
+  it('returns true for hashed JS chunk under /assets/', () => {
+    const info = parsePreloadError(
+      new Error(
+        'Failed to fetch dynamically imported module: /assets/vendor-vue-core-abc123.js'
+      )
+    )
+    expect(isStaleChunkError(info)).toBe(true)
+  })
+
+  it('returns true for hashed CSS chunk under /assets/', () => {
+    const info = parsePreloadError(
+      new Error('Unable to preload CSS for /assets/style-9f8e7d.css')
+    )
+    expect(isStaleChunkError(info)).toBe(true)
+  })
+
+  it('returns true for hashed mjs chunk under /assets/', () => {
+    const info = parsePreloadError(
+      new Error(
+        'Failed to fetch dynamically imported module: /assets/chunk-abc123.mjs'
+      )
+    )
+    expect(isStaleChunkError(info)).toBe(true)
+  })
+
+  it('returns false for non-asset URLs like /api/i18n', () => {
+    const info = parsePreloadError(
+      new Error(
+        'Failed to fetch dynamically imported module: https://cloud.comfy.org/api/i18n'
+      )
+    )
+    expect(isStaleChunkError(info)).toBe(false)
+  })
+
+  it('returns false for unhashed asset files', () => {
+    const info = parsePreloadError(
+      new Error('Failed to fetch dynamically imported module: /assets/index.js')
+    )
+    expect(isStaleChunkError(info)).toBe(false)
+  })
+
+  it('returns false when no URL can be extracted', () => {
+    const info = parsePreloadError(new Error('Something failed'))
+    expect(isStaleChunkError(info)).toBe(false)
+  })
+
+  it('returns false for font files', () => {
+    const info = parsePreloadError(
+      new Error('Unable to preload CSS for /assets/inter-abc123.woff2')
+    )
+    expect(isStaleChunkError(info)).toBe(false)
+  })
+
+  it('returns false for image files', () => {
+    const info = parsePreloadError(
+      new Error('Unable to preload CSS for /assets/logo-abc123.png')
+    )
+    expect(isStaleChunkError(info)).toBe(false)
+  })
+
+  it('returns true for full URL with hashed asset path', () => {
+    const info = parsePreloadError(
+      new Error(
+        'Failed to fetch dynamically imported module: https://cloud.comfy.org/assets/vendor-three-def456.js'
+      )
+    )
+    expect(isStaleChunkError(info)).toBe(true)
   })
 })
