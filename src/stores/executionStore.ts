@@ -3,6 +3,7 @@ import { computed, ref, shallowRef } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
