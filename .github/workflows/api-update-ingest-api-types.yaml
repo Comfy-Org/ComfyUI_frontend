@@ -1,8 +1,22 @@
-# Description: When upstream cloud/ingest OpenAPI spec is updated, regenerate TypeScript types and Zod schemas
+# Description: Receives pre-generated Ingest API types from the cloud repo and creates a PR.
+# This workflow does NOT clone the cloud repo. Instead, the cloud repo pushes
+# generated files here via repository_dispatch with the spec as payload.
+#
+# Trigger: Cloud repo runs codegen and dispatches event with generated files.
+# See: Comfy-Org/cloud/.github/workflows/push-ingest-types-to-frontend.yaml
 name: 'Api: Update Ingest API Types'
 
 on:
   workflow_dispatch:
+    inputs:
+      openapi_spec_url:
+        description: 'URL to download the OpenAPI spec (e.g., from a GitHub artifact)'
+        required: true
+        type: string
+      cloud_commit:
+        description: 'Cloud repo commit SHA (short) for reference'
+        required: true
+        type: string
 
   repository_dispatch:
     types: [ingest-api-updated]
@@ -31,27 +45,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Checkout cloud repository
-        uses: actions/checkout@v6
-        with:
-          repository: Comfy-Org/cloud
-          path: cloud
-          token: ${{ secrets.COMFY_API_PAT }}
-          sparse-checkout: services/ingest/openapi.yaml
-          clean: true
-
-      - name: Get API commit information
-        id: api-info
+      - name: Resolve inputs
+        id: resolve
         run: |
-          cd cloud
-          API_COMMIT=$(git rev-parse --short HEAD)
-          echo "commit=${API_COMMIT}" >> $GITHUB_OUTPUT
-          cd ..
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "spec_url=${{ github.event.client_payload.openapi_spec_url }}" >> $GITHUB_OUTPUT
+            echo "commit=${{ github.event.client_payload.cloud_commit }}" >> $GITHUB_OUTPUT
+          else
+            echo "spec_url=${{ inputs.openapi_spec_url }}" >> $GITHUB_OUTPUT
+            echo "commit=${{ inputs.cloud_commit }}" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Copy OpenAPI spec and generate types
+      - name: Download OpenAPI spec
         run: |
-          echo "Generating Ingest API types from cloud@${{ steps.api-info.outputs.commit }}..."
-          cp cloud/services/ingest/openapi.yaml packages/ingest-types/openapi.yaml
+          curl -fSL "${{ steps.resolve.outputs.spec_url }}" -o packages/ingest-types/openapi.yaml
+          echo "Downloaded OpenAPI spec from cloud@${{ steps.resolve.outputs.commit }}"
+
+      - name: Generate types and Zod schemas
+        run: |
           cd packages/ingest-types
           pnpm generate
 
@@ -81,19 +92,19 @@ jobs:
         uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
-          commit-message: '[chore] Update Ingest API types from cloud@${{ steps.api-info.outputs.commit }}'
-          title: '[chore] Update Ingest API types from cloud@${{ steps.api-info.outputs.commit }}'
+          commit-message: '[chore] Update Ingest API types from cloud@${{ steps.resolve.outputs.commit }}'
+          title: '[chore] Update Ingest API types from cloud@${{ steps.resolve.outputs.commit }}'
           body: |
             ## Automated Ingest API Type Update
 
             This PR updates the Ingest API TypeScript types and Zod schemas from the latest cloud OpenAPI specification.
 
-            - Cloud commit: ${{ steps.api-info.outputs.commit }}
+            - Cloud commit: ${{ steps.resolve.outputs.commit }}
             - Generated using @hey-api/openapi-ts with Zod plugin
 
             These types cover cloud-only endpoints (workspaces, billing, secrets, assets, tasks, etc.).
             Overlapping endpoints shared with the local ComfyUI Python backend are excluded.
-          branch: update-ingest-types-${{ steps.api-info.outputs.commit }}
+          branch: update-ingest-types-${{ steps.resolve.outputs.commit }}
           base: main
           delete-branch: true
           add-paths: |
