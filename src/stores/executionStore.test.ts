@@ -56,7 +56,8 @@ vi.mock('@/scripts/api', () => ({
       apiEventHandlers.delete(event)
     }),
     clientId: 'test-client',
-    apiURL: vi.fn((path: string) => `/api${path}`)
+    apiURL: vi.fn((path: string) => `/api${path}`),
+    getServerFeature: vi.fn()
   }
 }))
 
