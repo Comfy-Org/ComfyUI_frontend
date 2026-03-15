@@ -166,6 +166,7 @@ gh pr create --title "fix: <description>" --body "$(cat <<'EOF'
 
 - [ ] CI red on test-only commit
 - [ ] CI green on fix commit
+- [ ] Added/updated E2E regression under `browser_tests/` or explained why not applicable
 - [ ] Manual verification (if applicable)
 EOF
 )"
