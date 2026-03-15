@@ -39,11 +39,12 @@
 </template>
 
 <script setup lang="ts">
-import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
+import { useCanvasAnchoredPosition } from '@/composables/graph/useCanvasAnchoredPosition'
 import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu
@@ -52,7 +53,6 @@ import type {
   MenuOption,
   SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import ColorPickerMenu from './selectionToolbox/ColorPickerMenu.vue'
 
@@ -67,66 +67,17 @@ const colorPickerMenu = ref<InstanceType<typeof ColorPickerMenu>>()
 const isOpen = ref(false)
 
 const { menuOptions, bump } = useMoreOptionsMenu()
-const canvasStore = useCanvasStore()
+const { screenPosition, anchorToEvent } = useCanvasAnchoredPosition(isOpen)
 
-// World position (canvas coordinates) where menu was opened
-const worldPosition = ref({ x: 0, y: 0 })
-
-// Get canvas bounding rect reactively
-const lgCanvas = canvasStore.getCanvas()
-const { left: canvasLeft, top: canvasTop } = useElementBounding(lgCanvas.canvas)
-
-// Track last canvas transform to detect actual changes
-let lastScale = 0
-let lastOffsetX = 0
-let lastOffsetY = 0
-
-// Update menu position based on canvas transform
-const updateMenuPosition = () => {
+watchEffect(() => {
   if (!isOpen.value) return
-
   const menuInstance = contextMenu.value as unknown as {
     container?: HTMLElement
   }
   const menuEl = menuInstance?.container
   if (!menuEl) return
-
-  const { scale, offset } = lgCanvas.ds
-
-  // Only update if canvas transform actually changed
-  if (
-    scale === lastScale &&
-    offset[0] === lastOffsetX &&
-    offset[1] === lastOffsetY
-  ) {
-    return
-  }
-
-  lastScale = scale
-  lastOffsetX = offset[0]
-  lastOffsetY = offset[1]
-
-  // Convert world position to screen position
-  const screenX = (worldPosition.value.x + offset[0]) * scale + canvasLeft.value
-  const screenY = (worldPosition.value.y + offset[1]) * scale + canvasTop.value
-
-  // Update menu position
-  menuEl.style.left = `${screenX}px`
-  menuEl.style.top = `${screenY}px`
-}
-
-// Sync with canvas transform using requestAnimationFrame
-const { resume: startSync, pause: stopSync } = useRafFn(updateMenuPosition, {
-  immediate: false
-})
-
-// Start/stop syncing based on menu visibility
-watchEffect(() => {
-  if (isOpen.value) {
-    startSync()
-  } else {
-    stopSync()
-  }
+  menuEl.style.left = `${screenPosition.value.x}px`
+  menuEl.style.top = `${screenPosition.value.y}px`
 })
 
 // Close on touch outside to handle mobile devices where click might be swallowed
@@ -207,25 +158,7 @@ const menuItems = computed<ExtendedMenuItem[]>(() =>
 // Show context menu
 function show(event: MouseEvent) {
   bump()
-
-  // Convert screen position to world coordinates
-  // Screen position relative to canvas = event position - canvas offset
-  const screenX = event.clientX - canvasLeft.value
-  const screenY = event.clientY - canvasTop.value
-
-  // Convert to world coordinates using canvas transform
-  const { scale, offset } = lgCanvas.ds
-  worldPosition.value = {
-    x: screenX / scale - offset[0],
-    y: screenY / scale - offset[1]
-  }
-
-  // Initialize last* values to current transform to prevent updateMenuPosition
-  // from overwriting PrimeVue's flip-adjusted position on the first RAF tick
-  lastScale = scale
-  lastOffsetX = offset[0]
-  lastOffsetY = offset[1]
-
+  anchorToEvent(event)
   isOpen.value = true
   contextMenu.value?.show(event)
 }

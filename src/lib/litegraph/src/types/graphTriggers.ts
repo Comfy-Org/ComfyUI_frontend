@@ -14,6 +14,12 @@ interface NodeSlotErrorsChangedEvent {
   nodeId: NodeId
 }
 
+interface NodeSlotLabelChangedEvent {
+  type: 'node:slot-label:changed'
+  nodeId: NodeId
+  slotType?: NodeSlotType
+}
+
 interface NodeSlotLinksChangedEvent {
   type: 'node:slot-links:changed'
   nodeId: NodeId
@@ -23,17 +29,11 @@ interface NodeSlotLinksChangedEvent {
   linkId: number
 }
 
-interface NodeSlotLabelChangedEvent {
-  type: 'node:slot-label:changed'
-  nodeId: NodeId
-  slotType?: NodeSlotType
-}
-
 export type LGraphTriggerEvent =
   | NodePropertyChangedEvent
   | NodeSlotErrorsChangedEvent
-  | NodeSlotLinksChangedEvent
   | NodeSlotLabelChangedEvent
+  | NodeSlotLinksChangedEvent
 
 export type LGraphTriggerAction = LGraphTriggerEvent['type']
 
