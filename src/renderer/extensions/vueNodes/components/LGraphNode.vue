@@ -76,6 +76,7 @@
         cn(
           'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
           'min-h-(--node-height) w-(--node-width) min-w-(--min-node-width)',
+          'contain-layout contain-style',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
           {
