@@ -276,7 +276,13 @@ jobs:
           echo "- Status: ✅ Published and confirmed available" >> $GITHUB_STEP_SUMMARY
 
   create-comfyui-pr:
-    needs: [check-release-week, resolve-version, trigger-release-if-needed, publish-pypi]
+    needs:
+      [
+        check-release-week,
+        resolve-version,
+        trigger-release-if-needed,
+        publish-pypi
+      ]
     if: always() && needs.resolve-version.result == 'success' && needs.publish-pypi.result == 'success' && (needs.check-release-week.outputs.is_release_week == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
