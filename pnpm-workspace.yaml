@@ -94,7 +94,7 @@ catalog:
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: ^4.2.5
-  reka-ui: ^2.5.0
+  reka-ui: ^2.9.0
   rollup-plugin-visualizer: ^6.0.4
   storybook: ^10.2.10
   stylelint: ^16.26.1

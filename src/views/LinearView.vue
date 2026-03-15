@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
-import type { MaybeElement } from '@vueuse/core'
-import Splitter from 'primevue/splitter'
-import SplitterPanel from 'primevue/splitterpanel'
 import { storeToRefs } from 'pinia'
+import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 import { computed, useTemplateRef } from 'vue'
 
 import AppBuilder from '@/components/builder/AppBuilder.vue'
@@ -21,7 +19,6 @@ import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBa
 import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAppMode } from '@/composables/useAppMode'
-import { useStablePrimeVueSplitterSizer } from '@/composables/useStablePrimeVueSplitterSizer'
 import {
   BUILDER_MIN_SIZE,
   CENTER_PANEL_SIZE,
@@ -67,24 +64,13 @@ function sidePanelMinSize(isBuilder: boolean, isHidden: boolean) {
   return SIDEBAR_MIN_SIZE
 }
 
-// Remount splitter when panel structure changes so initializePanels()
-// properly sets flexBasis for the current set of panels.
+// Remount splitter when panel structure changes so layout
+// properly recalculates for the current set of panels.
 const splitterKey = computed(() => {
   const left = hasLeftPanel.value ? 'L' : ''
   const right = hasRightPanel.value ? 'R' : ''
   return isArrangeMode.value ? 'arrange' : `app-${left}${right}`
 })
-
-const leftPanelRef = useTemplateRef<MaybeElement>('leftPanel')
-const rightPanelRef = useTemplateRef<MaybeElement>('rightPanel')
-
-const { onResizeEnd } = useStablePrimeVueSplitterSizer(
-  [
-    { ref: leftPanelRef, storageKey: 'Comfy.LinearView.LeftPanelWidth' },
-    { ref: rightPanelRef, storageKey: 'Comfy.LinearView.RightPanelWidth' }
-  ],
-  [activeTab, splitterKey]
-)
 
 const TYPEFORM_WIDGET_ID = 'jmmzmlKw'
 
@@ -104,16 +90,16 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         <TopbarSubscribeButton />
       </div>
     </div>
-    <Splitter
+    <SplitterGroup
       :key="splitterKey"
-      class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full border-none"
-      @resizestart="$event.originalEvent.preventDefault()"
-      @resizeend="onResizeEnd"
+      direction="horizontal"
+      :auto-save-id="`linear-view-${sidebarOnLeft ? 'left' : 'right'}-${splitterKey}`"
+      class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full"
     >
       <SplitterPanel
         v-if="hasLeftPanel"
-        ref="leftPanel"
-        :size="SIDE_PANEL_SIZE"
+        :order="1"
+        :default-size="SIDE_PANEL_SIZE"
         :min-size="
           sidePanelMinSize(showLeftBuilder, showRightBuilder && !activeTab)
         "
@@ -140,9 +126,19 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           :toast-to="unrefElement(bottomLeftRef) ?? undefined"
         />
       </SplitterPanel>
+      <SplitterResizeHandle
+        v-if="hasLeftPanel"
+        :class="
+          cn(
+            'splitter-resize-handle w-1',
+            showRightBuilder && !activeTab && 'hidden'
+          )
+        "
+      />
       <SplitterPanel
         id="linearCenterPanel"
-        :size="CENTER_PANEL_SIZE"
+        :order="2"
+        :default-size="CENTER_PANEL_SIZE"
         class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
       >
         <LinearProgressBar
@@ -159,10 +155,19 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
         <div class="absolute top-4 right-4 z-20"><ErrorOverlay app-mode /></div>
       </SplitterPanel>
+      <SplitterResizeHandle
+        v-if="hasRightPanel"
+        :class="
+          cn(
+            'splitter-resize-handle w-1',
+            showLeftBuilder && !activeTab && 'hidden'
+          )
+        "
+      />
       <SplitterPanel
         v-if="hasRightPanel"
-        ref="rightPanel"
-        :size="SIDE_PANEL_SIZE"
+        :order="3"
+        :default-size="SIDE_PANEL_SIZE"
         :min-size="
           sidePanelMinSize(showRightBuilder, showLeftBuilder && !activeTab)
         "
@@ -187,24 +192,20 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           <ExtensionSlot :extension="activeTab" />
         </div>
       </SplitterPanel>
-    </Splitter>
+    </SplitterGroup>
   </div>
 </template>
 
 <style scoped>
-:deep(.p-splitter-gutter) {
-  pointer-events: auto;
-}
-
-:deep(.p-splitter-gutter:hover),
-:deep(.p-splitter-gutter[data-p-gutter-resizing='true']) {
+.splitter-resize-handle[data-state='hover'],
+.splitter-resize-handle[data-state='drag'] {
   transition: background-color 0.2s ease 300ms;
   background-color: var(--p-primary-color);
 }
 
-/* Hide gutter next to hidden arrange panels */
-:deep(.arrange-panel[style*='display: none'] + .p-splitter-gutter),
-:deep(.p-splitter-gutter + .arrange-panel[style*='display: none']) {
+/* Hide handle next to hidden arrange panels */
+:deep(.arrange-panel[style*='display: none'] + .splitter-resize-handle),
+:deep(.splitter-resize-handle + .arrange-panel[style*='display: none']) {
   display: none;
 }
 </style>
