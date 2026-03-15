@@ -298,6 +298,7 @@ function renderNoBaselineReport(
   for (const [testName, prSamples] of prGroups) {
     for (const { key, label, unit } of REPORTED_METRICS) {
       const prMean = meanMetric(prSamples, key)
+      if (prMean === null) continue
       lines.push(`| ${testName}: ${label} | ${formatValue(prMean, unit)} |`)
     }
     const heapMean =
