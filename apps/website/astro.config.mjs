@@ -6,16 +6,16 @@ export default defineConfig({
   output: 'static',
   integrations: [vue()],
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss()]
   },
   build: {
-    assetsPrefix: '/_website/',
+    assetsPrefix: '/_website/'
   },
   i18n: {
     locales: ['en', 'zh-CN'],
     defaultLocale: 'en',
     routing: {
-      prefixDefaultLocale: false,
-    },
-  },
+      prefixDefaultLocale: false
+    }
+  }
 })

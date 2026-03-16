@@ -7,15 +7,13 @@ const navLinks = [
   { label: 'ENTERPRISE', href: '/enterprise' },
   { label: 'GALLERY', href: '/gallery' },
   { label: 'ABOUT', href: '/about' },
-  { label: 'CAREERS', href: '/careers' },
+  { label: 'CAREERS', href: '/careers' }
 ]
 </script>
 
 <template>
   <nav class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md">
-    <div
-      class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4"
-    >
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
       <!-- Logo -->
       <a href="/" class="text-2xl font-bold italic text-brand-yellow">
         Comfy
