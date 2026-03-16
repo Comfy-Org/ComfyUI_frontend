@@ -3,6 +3,8 @@ packages:
   - packages/**
 
 catalog:
+  '@astrojs/check': ^0.9.0
+  '@astrojs/vue': ^5.0.0
   '@alloc/quick-lru': ^5.2.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^9.39.1
@@ -13,6 +15,7 @@ catalog:
   '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.1.1
   '@lobehub/i18n-cli': ^1.26.1
+  '@nanostores/vue': ^0.10.0
   '@nx/eslint': 22.5.2
   '@nx/playwright': 22.5.2
   '@nx/storybook': 22.5.2
@@ -55,6 +58,7 @@ catalog:
   '@vueuse/integrations': ^14.2.0
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
+  astro: ^5.10.0
   axios: ^1.13.5
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
@@ -83,6 +87,7 @@ catalog:
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
+  nanostores: ^0.11.0
   nx: 22.5.2
   oxfmt: ^0.34.0
   oxlint: ^1.49.0
