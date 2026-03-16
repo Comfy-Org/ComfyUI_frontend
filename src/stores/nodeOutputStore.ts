@@ -15,7 +15,11 @@ import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
-import { isAnimatedOutput, isVideoNode } from '@/utils/litegraphUtil'
+import {
+  isAnimatedOutput,
+  isVideoNode,
+  resolveNode
+} from '@/utils/litegraphUtil'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -464,7 +468,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (!LiteGraph.vueNodesMode) return
 
-    const node = app.rootGraph?.getNodeById(Number(nodeId))
+    const node = resolveNode(Number(nodeId))
     if (!node) return
 
     node.imgs = [element]
