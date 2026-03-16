@@ -176,8 +176,7 @@ function renderM2Scoreboard(
       : null
 
   const tbtValues = samples.map((s) => s.totalBlockingTimeMs)
-  const avgTBT =
-    tbtValues.reduce((a, b) => a + b, 0) / tbtValues.length
+  const avgTBT = tbtValues.reduce((a, b) => a + b, 0) / tbtValues.length
   const tbtPassed = avgTBT <= M2_TARGET_TBT_MS
   const tbtIcon = tbtPassed ? '✅' : '🔴'
 
@@ -197,8 +196,7 @@ function renderM2Scoreboard(
     `| **TBT** | **${avgTBT.toFixed(0)}ms** | ≤${M2_TARGET_TBT_MS}ms | ${tbtIcon} ${tbtPassed ? 'PASS' : 'FAIL'} |`,
     `| **Frame Duration** | **${avgFD.toFixed(1)}ms** | ≤${M2_TARGET_FRAME_DURATION_MS}ms | ${fdIcon} ${fdPassed ? 'PASS' : 'FAIL'} |`
   ]
-  if (avgP50 !== null)
-    lines.push(`| P50 FPS | ${avgP50.toFixed(0)} | — | — |`)
+  if (avgP50 !== null) lines.push(`| P50 FPS | ${avgP50.toFixed(0)} | — | — |`)
   if (avgMean !== null)
     lines.push(`| Mean FPS | ${avgMean.toFixed(0)} | — | — |`)
   lines.push(
