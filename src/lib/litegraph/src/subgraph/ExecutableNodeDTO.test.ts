@@ -446,7 +446,7 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
     expect(dto.hasOwnProperty('widgets')).toBe(false) // Widgets not copied
   })
 
-  it('should handle disposal without memory leaks', () => {
+  it('should drop local references without explicit disposal', () => {
     const graph = new LGraph()
     const nodes: ExecutableNodeDTO[] = []
 

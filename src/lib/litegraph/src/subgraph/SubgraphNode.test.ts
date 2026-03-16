@@ -364,13 +364,9 @@ describe('SubgraphNode Execution', () => {
       parentGraph: subgraph
     })
 
-    expect(() => {
-      // Add subgraph node to its own subgraph (circular reference)
-      subgraph.add(subgraphNode)
-
-      const executableNodes = new Map()
-      subgraphNode.getInnerNodes(executableNodes)
-    }).toThrow()
+    // Add subgraph node to its own subgraph (circular reference)
+    // add() itself throws due to recursive forEachNode traversal
+    expect(() => subgraph.add(subgraphNode)).toThrow()
   })
 
   it('should resolve cross-boundary links', () => {

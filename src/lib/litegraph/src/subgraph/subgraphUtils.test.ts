@@ -106,30 +106,22 @@ describe('subgraphUtils', () => {
     })
 
     it('throws RangeError when graph.add() creates a circular subgraph reference', () => {
-      expect(() => {
-        const rootGraph = new LGraph()
-        const subgraph1 = createTestSubgraph({ name: 'Subgraph 1' })
-        const subgraph2 = createTestSubgraph({ name: 'Subgraph 2' })
+      const rootGraph = new LGraph()
+      const subgraph1 = createTestSubgraph({ name: 'Subgraph 1' })
+      const subgraph2 = createTestSubgraph({ name: 'Subgraph 2' })
 
-        // Add subgraph1 to root
-        const node1 = createTestSubgraphNode(subgraph1)
-        rootGraph.add(node1)
+      // Add subgraph1 to root
+      const node1 = createTestSubgraphNode(subgraph1)
+      rootGraph.add(node1)
 
-        // Add subgraph2 to subgraph1
-        const node2 = createTestSubgraphNode(subgraph2)
-        subgraph1.add(node2)
+      // Add subgraph2 to subgraph1
+      const node2 = createTestSubgraphNode(subgraph2)
+      subgraph1.add(node2)
 
-        // Add subgraph1 to subgraph2 (circular reference)
-        const node3 = createTestSubgraphNode(subgraph1, { id: 3 })
-        subgraph2.add(node3)
-
-        const registry = new Map<UUID, LGraph>([
-          [subgraph1.id, subgraph1],
-          [subgraph2.id, subgraph2]
-        ])
-
-        findUsedSubgraphIds(rootGraph, registry)
-      }).toThrow(RangeError)
+      // Add subgraph1 to subgraph2 (circular reference)
+      // Note: add() itself throws RangeError due to recursive forEachNode
+      const node3 = createTestSubgraphNode(subgraph1, { id: 3 })
+      expect(() => subgraph2.add(node3)).toThrow(RangeError)
     })
 
     it('should handle missing subgraphs in registry gracefully', () => {

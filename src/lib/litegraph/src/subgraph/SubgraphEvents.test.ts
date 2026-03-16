@@ -334,7 +334,7 @@ describe('SubgraphEvents - Event Sequence Testing', () => {
     }
   )
 
-  subgraphTest('handles concurrent event handling', ({ eventCapture }) => {
+  subgraphTest('fires all listeners synchronously', ({ eventCapture }) => {
     const { subgraph, capture } = eventCapture
 
     const handler1 = vi.fn(() => {

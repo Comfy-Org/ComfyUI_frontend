@@ -52,7 +52,7 @@ describe('SubgraphEdgeCases - Recursion Detection', () => {
     expect(firstLevel.isSubgraphNode()).toBe(true)
   })
 
-  it('should use WeakSet for cycle detection', () => {
+  it('should throw RangeError for self-referential subgraph', () => {
     // Current limitation: creating self-referential subgraph instances overflows recursion depth.
     const subgraph = createTestSubgraph({ nodeCount: 1 })
     const subgraphNode = createTestSubgraphNode(subgraph)
