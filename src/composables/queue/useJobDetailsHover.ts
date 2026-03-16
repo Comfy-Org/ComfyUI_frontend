@@ -47,11 +47,20 @@ export function useJobDetailsHover<TActive>({
     onReset?.()
   }
 
+  function hasDisplayedJob(jobId: string) {
+    return getDisplayedJobGroups().some((group) =>
+      group.items.some((item) => item.id === jobId)
+    )
+  }
+
   function scheduleDetailsShow(nextActive: TActive, onShow?: () => void) {
+    const nextActiveId = getActiveId(nextActive)
     clearShowTimer()
     showTimer.value = window.setTimeout(() => {
-      activeDetails.value = nextActive
       showTimer.value = null
+      if (!hasDisplayedJob(nextActiveId)) return
+
+      activeDetails.value = nextActive
       onShow?.()
     }, DETAILS_SHOW_DELAY_MS)
   }
@@ -77,16 +86,11 @@ export function useJobDetailsHover<TActive>({
     }, DETAILS_HIDE_DELAY_MS)
   }
 
-  watch(getDisplayedJobGroups, (groups) => {
+  watch(getDisplayedJobGroups, () => {
     const currentActive = activeDetails.value
     if (!currentActive) return
 
-    const activeId = getActiveId(currentActive)
-    const hasActiveJob = groups.some((group) =>
-      group.items.some((item) => item.id === activeId)
-    )
-
-    if (!hasActiveJob) {
+    if (!hasDisplayedJob(getActiveId(currentActive))) {
       resetActiveDetails()
     }
   })
