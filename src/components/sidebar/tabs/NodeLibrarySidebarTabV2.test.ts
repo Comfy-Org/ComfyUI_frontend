@@ -1,8 +1,12 @@
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import type { TestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
 import NodeLibrarySidebarTabV2 from './NodeLibrarySidebarTabV2.vue'
 
@@ -68,6 +72,14 @@ vi.mock('./nodeLibrary/NodeDragPreview.vue', () => ({
   }
 }))
 
+vi.mock('@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue', () => ({
+  default: {
+    name: 'NodeHelpPage',
+    template: '<div data-testid="node-help-page">{{ node.display_name }}</div>',
+    props: ['node']
+  }
+}))
+
 vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
   default: {
     name: 'SearchBox',
@@ -91,10 +103,16 @@ describe('NodeLibrarySidebarTabV2', () => {
     vi.clearAllMocks()
   })
 
-  function mountComponent() {
+  function createTestPinia(): TestingPinia {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    return pinia
+  }
+
+  function mountComponent(pinia = createTestPinia()) {
     return mount(NodeLibrarySidebarTabV2, {
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n],
+        plugins: [pinia, i18n],
         stubs: {
           teleport: true
         }
@@ -123,5 +141,22 @@ describe('NodeLibrarySidebarTabV2', () => {
     expect(wrapper.find('[data-testid="blueprints-panel"]').exists()).toBe(
       false
     )
+  })
+
+  it('should render node help instead of the node library when help is open', () => {
+    const pinia = createTestPinia()
+    const nodeHelpStore = useNodeHelpStore()
+    nodeHelpStore.openHelp({
+      nodePath: 'loaders/LoadImage',
+      display_name: 'Load Image'
+    } as Parameters<typeof nodeHelpStore.openHelp>[0])
+
+    const wrapper = mountComponent(pinia)
+
+    expect(wrapper.find('[data-testid="node-help-page"]').text()).toContain(
+      'Load Image'
+    )
+    expect(wrapper.find('[data-testid="search-box"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="essential-panel"]').exists()).toBe(false)
   })
 })

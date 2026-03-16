@@ -1,159 +1,166 @@
 <template>
-  <SidebarTabTemplate :title="$t('sideToolbar.nodes')">
-    <template #header>
-      <SidebarTopArea bottom-divider>
-        <SearchInput
-          ref="searchBoxRef"
-          v-model="searchQuery"
-          :placeholder="$t('g.search') + '...'"
-          @search="handleSearch"
-        />
-        <template #actions>
-          <DropdownMenuRoot>
-            <DropdownMenuTrigger as-child>
-              <Button
-                variant="secondary"
-                size="icon"
-                :aria-label="$t('g.sort')"
-              >
-                <i class="icon-[lucide--arrow-up-down] size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuContent
-                class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
-                align="end"
-                :side-offset="4"
-              >
-                <DropdownMenuRadioGroup v-model="sortOrder">
-                  <DropdownMenuRadioItem
-                    v-for="option in sortingOptions"
-                    :key="option.id"
-                    :value="option.id"
+  <div class="h-full">
+    <SidebarTabTemplate v-if="!isHelpOpen" :title="$t('sideToolbar.nodes')">
+      <template #header>
+        <SidebarTopArea bottom-divider>
+          <SearchInput
+            ref="searchBoxRef"
+            v-model="searchQuery"
+            :placeholder="$t('g.search') + '...'"
+            @search="handleSearch"
+          />
+          <template #actions>
+            <DropdownMenuRoot>
+              <DropdownMenuTrigger as-child>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  :aria-label="$t('g.sort')"
+                >
+                  <i class="icon-[lucide--arrow-up-down] size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuContent
+                  class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                  align="end"
+                  :side-offset="4"
+                >
+                  <DropdownMenuRadioGroup v-model="sortOrder">
+                    <DropdownMenuRadioItem
+                      v-for="option in sortingOptions"
+                      :key="option.id"
+                      :value="option.id"
+                      class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                    >
+                      <span class="flex-1">{{ $t(option.label) }}</span>
+                      <DropdownMenuItemIndicator class="w-4">
+                        <i class="icon-[lucide--check] size-4" />
+                      </DropdownMenuItemIndicator>
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenuPortal>
+            </DropdownMenuRoot>
+            <DropdownMenuRoot v-if="selectedTab === 'all'">
+              <DropdownMenuTrigger as-child>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
+                >
+                  <i class="icon-[lucide--list-filter] size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuContent
+                  class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                  align="end"
+                  :side-offset="4"
+                >
+                  <DropdownMenuCheckboxItem
+                    v-model="filterOptions.blueprints"
                     class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
                   >
-                    <span class="flex-1">{{ $t(option.label) }}</span>
+                    <span class="flex-1">{{
+                      $t('sideToolbar.nodeLibraryTab.filterOptions.blueprints')
+                    }}</span>
                     <DropdownMenuItemIndicator class="w-4">
                       <i class="icon-[lucide--check] size-4" />
                     </DropdownMenuItemIndicator>
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenuPortal>
-          </DropdownMenuRoot>
-          <DropdownMenuRoot v-if="selectedTab === 'all'">
-            <DropdownMenuTrigger as-child>
-              <Button
-                variant="secondary"
-                size="icon"
-                :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
-              >
-                <i class="icon-[lucide--list-filter] size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuContent
-                class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
-                align="end"
-                :side-offset="4"
-              >
-                <DropdownMenuCheckboxItem
-                  v-model="filterOptions.blueprints"
-                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                >
-                  <span class="flex-1">{{
-                    $t('sideToolbar.nodeLibraryTab.filterOptions.blueprints')
-                  }}</span>
-                  <DropdownMenuItemIndicator class="w-4">
-                    <i class="icon-[lucide--check] size-4" />
-                  </DropdownMenuItemIndicator>
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  v-model="filterOptions.partnerNodes"
-                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                >
-                  <span class="flex-1">{{
-                    $t('sideToolbar.nodeLibraryTab.filterOptions.partnerNodes')
-                  }}</span>
-                  <DropdownMenuItemIndicator class="w-4">
-                    <i class="icon-[lucide--check] size-4" />
-                  </DropdownMenuItemIndicator>
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  v-model="filterOptions.comfyNodes"
-                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                >
-                  <span class="flex-1">{{
-                    $t('sideToolbar.nodeLibraryTab.filterOptions.comfyNodes')
-                  }}</span>
-                  <DropdownMenuItemIndicator class="w-4">
-                    <i class="icon-[lucide--check] size-4" />
-                  </DropdownMenuItemIndicator>
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  v-model="filterOptions.extensions"
-                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                >
-                  <span class="flex-1">{{
-                    $t('sideToolbar.nodeLibraryTab.filterOptions.extensions')
-                  }}</span>
-                  <DropdownMenuItemIndicator class="w-4">
-                    <i class="icon-[lucide--check] size-4" />
-                  </DropdownMenuItemIndicator>
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            </DropdownMenuPortal>
-          </DropdownMenuRoot>
-        </template>
-      </SidebarTopArea>
-      <div class="border-b border-comfy-input p-2 2xl:px-4">
-        <TabList v-model="selectedTab">
-          <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
-            {{ tab.label }}
-          </Tab>
-        </TabList>
-      </div>
-    </template>
-    <template #body>
-      <NodeDragPreview />
-      <div class="flex h-full flex-col">
-        <div class="min-h-0 flex-1 overflow-y-auto py-2">
-          <TabPanel
-            v-if="flags.nodeLibraryEssentialsEnabled"
-            :model-value="selectedTab"
-            value="essentials"
-          >
-            <EssentialNodesPanel
-              v-model:expanded-keys="expandedKeys"
-              :root="renderedEssentialRoot"
-              :flat-nodes="essentialFlatNodes"
-              @node-click="handleNodeClick"
-            />
-          </TabPanel>
-          <TabPanel :model-value="selectedTab" value="all">
-            <AllNodesPanel
-              v-model:expanded-keys="expandedKeys"
-              :sections="renderedSections"
-              :fill-node-info="fillNodeInfo"
-              :sort-order="sortOrder"
-              @node-click="handleNodeClick"
-            />
-          </TabPanel>
-          <TabPanel :model-value="selectedTab" value="blueprints">
-            <BlueprintsPanel
-              v-model:expanded-keys="expandedKeys"
-              :sections="renderedBlueprintsSections"
-              @node-click="handleNodeClick"
-            />
-          </TabPanel>
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    v-model="filterOptions.partnerNodes"
+                    class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                  >
+                    <span class="flex-1">{{
+                      $t(
+                        'sideToolbar.nodeLibraryTab.filterOptions.partnerNodes'
+                      )
+                    }}</span>
+                    <DropdownMenuItemIndicator class="w-4">
+                      <i class="icon-[lucide--check] size-4" />
+                    </DropdownMenuItemIndicator>
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    v-model="filterOptions.comfyNodes"
+                    class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                  >
+                    <span class="flex-1">{{
+                      $t('sideToolbar.nodeLibraryTab.filterOptions.comfyNodes')
+                    }}</span>
+                    <DropdownMenuItemIndicator class="w-4">
+                      <i class="icon-[lucide--check] size-4" />
+                    </DropdownMenuItemIndicator>
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    v-model="filterOptions.extensions"
+                    class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                  >
+                    <span class="flex-1">{{
+                      $t('sideToolbar.nodeLibraryTab.filterOptions.extensions')
+                    }}</span>
+                    <DropdownMenuItemIndicator class="w-4">
+                      <i class="icon-[lucide--check] size-4" />
+                    </DropdownMenuItemIndicator>
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenuPortal>
+            </DropdownMenuRoot>
+          </template>
+        </SidebarTopArea>
+        <div class="border-b border-comfy-input p-2 2xl:px-4">
+          <TabList v-model="selectedTab">
+            <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
+              {{ tab.label }}
+            </Tab>
+          </TabList>
         </div>
-      </div>
-    </template>
-  </SidebarTabTemplate>
+      </template>
+      <template #body>
+        <NodeDragPreview />
+        <div class="flex h-full flex-col">
+          <div class="min-h-0 flex-1 overflow-y-auto py-2">
+            <TabPanel
+              v-if="flags.nodeLibraryEssentialsEnabled"
+              :model-value="selectedTab"
+              value="essentials"
+            >
+              <EssentialNodesPanel
+                v-model:expanded-keys="expandedKeys"
+                :root="renderedEssentialRoot"
+                :flat-nodes="essentialFlatNodes"
+                @node-click="handleNodeClick"
+              />
+            </TabPanel>
+            <TabPanel :model-value="selectedTab" value="all">
+              <AllNodesPanel
+                v-model:expanded-keys="expandedKeys"
+                :sections="renderedSections"
+                :fill-node-info="fillNodeInfo"
+                :sort-order="sortOrder"
+                @node-click="handleNodeClick"
+              />
+            </TabPanel>
+            <TabPanel :model-value="selectedTab" value="blueprints">
+              <BlueprintsPanel
+                v-model:expanded-keys="expandedKeys"
+                :sections="renderedBlueprintsSections"
+                @node-click="handleNodeClick"
+              />
+            </TabPanel>
+          </div>
+        </div>
+      </template>
+    </SidebarTabTemplate>
+
+    <NodeHelpPage v-else :node="currentHelpNode!" @close="closeHelp" />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -173,6 +180,7 @@ import TabList from '@/components/tab/TabList.vue'
 import TabPanel from '@/components/tab/TabPanel.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
@@ -182,6 +190,7 @@ import {
   DEFAULT_TAB_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import { getProviderIcon } from '@/utils/categoryUtil'
 import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -256,7 +265,10 @@ const expandedKeysByTab = ref<Record<TabId, string[]>>({
 const expandedKeys = usePerTabState(selectedTab, expandedKeysByTab)
 
 const nodeDefStore = useNodeDefStore()
+const nodeHelpStore = useNodeHelpStore()
 const { startDrag } = useNodeDragToCanvas()
+const { currentHelpNode, isHelpOpen } = storeToRefs(nodeHelpStore)
+const { closeHelp } = nodeHelpStore
 
 const filteredNodeDefs = computed(() => {
   if (searchQuery.value.length === 0) {
