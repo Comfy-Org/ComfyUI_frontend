@@ -54,6 +54,7 @@
         :instance-id="instanceId"
         @remove="removeImage"
         @move="moveImage"
+        @insert-files="insertImagesAt"
       />
     </div>
   </div>
@@ -135,8 +136,8 @@ function removeImage(id: string) {
   exampleImages.value = exampleImages.value.filter((img) => img.id !== id)
 }
 
-function addImages(files: FileList) {
-  const newImages: ExampleImage[] = Array.from(files)
+function createExampleImages(files: FileList): ExampleImage[] {
+  return Array.from(files)
     .filter((f) => f.type.startsWith('image/'))
     .filter((f) => !isFileTooLarge(f, MAX_IMAGE_SIZE_MB))
     .map((file) => ({
@@ -144,10 +145,33 @@ function addImages(files: FileList) {
       url: URL.createObjectURL(file),
       file
     }))
+}
 
+function addImages(files: FileList) {
+  const remaining = MAX_EXAMPLES - exampleImages.value.length
+  if (remaining <= 0) return
+
+  const newImages = createExampleImages(files).slice(0, remaining)
   if (newImages.length > 0) {
-    exampleImages.value = [...exampleImages.value, ...newImages]
+    exampleImages.value = [...newImages, ...exampleImages.value]
   }
+}
+
+function insertImagesAt(index: number, files: FileList) {
+  const newImages = createExampleImages(files)
+  if (newImages.length === 0) return
+
+  const remaining = MAX_EXAMPLES - exampleImages.value.length
+  const updated = [...exampleImages.value]
+
+  if (remaining <= 0) {
+    const replacedImages = updated.splice(index, newImages.length, ...newImages)
+    for (const img of replacedImages) URL.revokeObjectURL(img.url)
+  } else {
+    updated.splice(index, 0, ...newImages.slice(0, remaining))
+  }
+
+  exampleImages.value = updated
 }
 
 function handleFileSelect(event: Event) {

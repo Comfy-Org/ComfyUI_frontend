@@ -16,11 +16,13 @@
         total: total
       })
     "
-    @pointerdown="tileRef?.focus()"
-    @keydown.left.prevent="handleMove(-1)"
-    @keydown.right.prevent="handleMove(1)"
-    @keydown.delete.prevent="$emit('remove', image.id)"
-    @keydown.backspace.prevent="$emit('remove', image.id)"
+    @pointerdown="tileRef && focusVisible(tileRef)"
+    @keydown.left.prevent="handleArrowKey(-1, $event)"
+    @keydown.right.prevent="handleArrowKey(1, $event)"
+    @keydown.delete.prevent="handleRemove"
+    @keydown.backspace.prevent="handleRemove"
+    @dragover.prevent.stop
+    @drop.prevent.stop="handleFileDrop"
   >
     <img
       :src="image.url"
@@ -63,12 +65,43 @@ const { image, index, total, instanceId } = defineProps<{
 const emit = defineEmits<{
   remove: [id: string]
   move: [id: string, direction: number]
+  insertFiles: [index: number, files: FileList]
 }>()
 
-async function handleMove(direction: number) {
-  emit('move', image.id, direction)
+function focusVisible(el: HTMLElement) {
+  el.focus({ focusVisible: true } as FocusOptions)
+}
+
+async function handleArrowKey(direction: number, event: KeyboardEvent) {
+  if (event.shiftKey) {
+    emit('move', image.id, direction)
+    await nextTick()
+    if (tileRef.value) focusVisible(tileRef.value)
+  } else {
+    focusSibling(direction)
+  }
+}
+
+function focusSibling(direction: number) {
+  const sibling =
+    direction < 0
+      ? tileRef.value?.previousElementSibling
+      : tileRef.value?.nextElementSibling
+  if (sibling instanceof HTMLElement) focusVisible(sibling)
+}
+
+async function handleRemove() {
+  const next =
+    tileRef.value?.nextElementSibling ?? tileRef.value?.previousElementSibling
+  emit('remove', image.id)
   await nextTick()
-  tileRef.value?.focus()
+  if (next instanceof HTMLElement) focusVisible(next)
+}
+
+function handleFileDrop(event: DragEvent) {
+  if (event.dataTransfer?.files?.length) {
+    emit('insertFiles', index, event.dataTransfer.files)
+  }
 }
 
 const tileRef = ref<HTMLElement | null>(null)

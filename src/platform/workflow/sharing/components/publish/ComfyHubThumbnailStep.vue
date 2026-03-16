@@ -81,7 +81,7 @@
               :ref="(el) => (comparisonDropRefs[slot.key] = el as HTMLElement)"
               :class="
                 cn(
-                  'flex aspect-square h-full min-h-0 flex-[0_1_auto] cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors',
+                  'flex aspect-square h-full min-h-0 flex-[0_1_auto] cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-center transition-colors',
                   comparisonPreviewUrls[slot.key]
                     ? 'self-start'
                     : 'flex-[0_1_1]',
@@ -126,7 +126,7 @@
           ref="singleDropRef"
           :class="
             cn(
-              'm-auto flex aspect-square min-h-0 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors',
+              'm-auto flex aspect-square min-h-0 w-full max-w-48 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-center transition-colors',
               thumbnailPreviewUrl ? 'self-center p-1' : 'flex-1',
               isOverSingleDrop
                 ? 'border-muted-foreground'
