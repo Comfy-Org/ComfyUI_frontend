@@ -25,14 +25,17 @@ vi.mock('@/scripts/app', () => {
     setDirty: vi.fn()
   }
 
+  const mockGraph = {
+    _nodes: [],
+    nodes: [],
+    subgraphs: new Map(),
+    getNodeById: vi.fn()
+  }
+
   return {
     app: {
-      graph: {
-        _nodes: [],
-        nodes: [],
-        subgraphs: new Map(),
-        getNodeById: vi.fn()
-      },
+      graph: mockGraph,
+      rootGraph: mockGraph,
       canvas: mockCanvas
     }
   }
@@ -141,6 +144,48 @@ describe('useSubgraphNavigationStore', () => {
     // The navigation stack should be restored for workflow1
     expect(navigationStore.exportState()).toHaveLength(2)
     expect(navigationStore.exportState()).toEqual(['subgraph-1', 'subgraph-2'])
+  })
+
+  it('should reset navigation on workflow switch and restore on switch back', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const workflowStore = useWorkflowStore()
+
+    const workflow1 = {
+      path: 'workflow1.json',
+      filename: 'workflow1.json'
+    } as ComfyWorkflow
+
+    workflowStore.activeWorkflow =
+      workflow1 as typeof workflowStore.activeWorkflow
+
+    navigationStore.restoreState(['sub-1', 'sub-2'])
+    expect(navigationStore.exportState()).toEqual(['sub-1', 'sub-2'])
+
+    const workflow2 = {
+      path: 'workflow2.json',
+      filename: 'workflow2.json'
+    } as ComfyWorkflow
+
+    workflowStore.activeWorkflow =
+      workflow2 as typeof workflowStore.activeWorkflow
+
+    navigationStore.restoreState([])
+    expect(navigationStore.exportState()).toHaveLength(0)
+
+    workflowStore.activeWorkflow =
+      workflow1 as typeof workflowStore.activeWorkflow
+
+    navigationStore.restoreState(['sub-1', 'sub-2'])
+    expect(navigationStore.exportState()).toEqual(['sub-1', 'sub-2'])
+  })
+
+  it('should handle restoreState with unreachable subgraph IDs', () => {
+    const navigationStore = useSubgraphNavigationStore()
+
+    navigationStore.restoreState(['nonexistent-sub'])
+
+    expect(navigationStore.exportState()).toEqual(['nonexistent-sub'])
+    expect(navigationStore.navigationStack).toEqual([])
   })
 
   it('should clear navigation when activeSubgraph becomes undefined', async () => {

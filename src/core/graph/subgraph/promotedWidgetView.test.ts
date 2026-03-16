@@ -1709,6 +1709,134 @@ describe('disconnected state', () => {
   })
 })
 
+function createThreeLevelNestedSubgraph() {
+  // Level C (innermost): concrete widget
+  const subgraphC = createTestSubgraph({
+    inputs: [{ name: 'c_input', type: '*' }]
+  })
+  const concreteNode = new LGraphNode('ConcreteNode')
+  const concreteInput = concreteNode.addInput('c_input', '*')
+  const concreteWidget = concreteNode.addWidget(
+    'number',
+    'c_input',
+    100,
+    () => {}
+  )
+  concreteInput.widget = { name: 'c_input' }
+  subgraphC.add(concreteNode)
+  subgraphC.inputNode.slots[0].connect(concreteInput, concreteNode)
+
+  const subgraphNodeC = createTestSubgraphNode(subgraphC, { id: 501 })
+
+  // Level B (middle): wraps C
+  const subgraphB = createTestSubgraph({
+    inputs: [{ name: 'b_input', type: '*' }]
+  })
+  subgraphB.add(subgraphNodeC)
+  subgraphNodeC._internalConfigureAfterSlots()
+  subgraphB.inputNode.slots[0].connect(
+    subgraphNodeC.inputs[0],
+    subgraphNodeC
+  )
+
+  const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 502 })
+
+  // Level A (outermost): wraps B
+  const subgraphA = createTestSubgraph({
+    inputs: [{ name: 'a_input', type: '*' }]
+  })
+  subgraphA.add(subgraphNodeB)
+  subgraphNodeB._internalConfigureAfterSlots()
+  subgraphA.inputNode.slots[0].connect(
+    subgraphNodeB.inputs[0],
+    subgraphNodeB
+  )
+
+  const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 503 })
+  return { concreteNode, concreteWidget, subgraphNodeA }
+}
+
+describe('three-level nested value propagation', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('value set at outermost level propagates to concrete widget', () => {
+    const { concreteNode, subgraphNodeA } = createThreeLevelNestedSubgraph()
+
+    expect(subgraphNodeA.widgets).toHaveLength(1)
+    expect(subgraphNodeA.widgets[0].value).toBe(100)
+
+    subgraphNodeA.widgets[0].value = 200
+    expect(concreteNode.widgets![0].value).toBe(200)
+  })
+
+  test('type resolves correctly through all three layers', () => {
+    const { subgraphNodeA } = createThreeLevelNestedSubgraph()
+
+    expect(subgraphNodeA.widgets[0].type).toBe('number')
+  })
+
+  test('concrete value change is visible at the outermost level', () => {
+    const { concreteWidget, subgraphNodeA } = createThreeLevelNestedSubgraph()
+
+    concreteWidget.value = 999
+    expect(subgraphNodeA.widgets[0].value).toBe(999)
+  })
+})
+
+describe('multi-link representative determinism for input-based promotion', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('first link is consistently chosen as representative for reads and writes', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'shared', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 601 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const firstNode = new LGraphNode('FirstNode')
+    const firstInput = firstNode.addInput('shared', '*')
+    firstNode.addWidget('text', 'shared', 'first-val', () => {})
+    firstInput.widget = { name: 'shared' }
+    subgraph.add(firstNode)
+
+    const secondNode = new LGraphNode('SecondNode')
+    const secondInput = secondNode.addInput('shared', '*')
+    secondNode.addWidget('text', 'shared', 'second-val', () => {})
+    secondInput.widget = { name: 'shared' }
+    subgraph.add(secondNode)
+
+    const thirdNode = new LGraphNode('ThirdNode')
+    const thirdInput = thirdNode.addInput('shared', '*')
+    thirdNode.addWidget('text', 'shared', 'third-val', () => {})
+    thirdInput.widget = { name: 'shared' }
+    subgraph.add(thirdNode)
+
+    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
+    subgraph.inputNode.slots[0].connect(secondInput, secondNode)
+    subgraph.inputNode.slots[0].connect(thirdInput, thirdNode)
+
+    const widgets = promotedWidgets(subgraphNode)
+    expect(widgets).toHaveLength(1)
+    expect(widgets[0].sourceNodeId).toBe(String(firstNode.id))
+
+    // Read returns the first link's value
+    expect(widgets[0].value).toBe('first-val')
+
+    // Write propagates to all linked nodes
+    widgets[0].value = 'updated'
+    expect(firstNode.widgets![0].value).toBe('updated')
+    expect(secondNode.widgets![0].value).toBe('updated')
+    expect(thirdNode.widgets![0].value).toBe('updated')
+
+    // Repeated reads are still deterministic
+    expect(widgets[0].value).toBe('updated')
+  })
+})
+
 function createFakeCanvasContext() {
   return new Proxy({} as CanvasRenderingContext2D, {
     get: () => vi.fn(() => ({ width: 10 }))

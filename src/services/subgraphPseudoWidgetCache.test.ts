@@ -138,6 +138,90 @@ describe('resolveSubgraphPseudoWidgetCache', () => {
     expect(result.nodes).toEqual([newNode])
   })
 
+  it('rebuilds cache with different results when replacement node lacks the pseudo widget', () => {
+    const oldNode = node('n1', [widget('preview', true)])
+    const promotions: readonly SubgraphPromotionEntry[] = [
+      { interiorNodeId: 'n1', widgetName: 'preview' }
+    ]
+    const initial = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
+      cache: null,
+      promotions,
+      getNodeById: () => oldNode,
+      isPreviewPseudoWidget: (candidate) => candidate.isPseudo === true
+    })
+
+    expect(initial.nodes).toHaveLength(1)
+
+    const replacementNode = node('n1', [widget('other')])
+
+    const result = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
+      cache: initial.cache,
+      promotions,
+      getNodeById: () => replacementNode,
+      isPreviewPseudoWidget: (candidate) => candidate.isPseudo === true
+    })
+
+    expect(result.cache).not.toBe(initial.cache)
+    expect(result.nodes).toEqual([])
+    expect(result.cache.entries).toHaveLength(0)
+  })
+
+  it('includes all pseudo-widget promotions across multiple interior nodes', () => {
+    const nodeA = node('n1', [widget('preview', true)])
+    const nodeB = node('n2', [widget('preview', true)])
+    const promotions: readonly SubgraphPromotionEntry[] = [
+      { interiorNodeId: 'n1', widgetName: 'preview' },
+      { interiorNodeId: 'n2', widgetName: 'preview' }
+    ]
+    const getNodeById = (id: string) => {
+      if (id === 'n1') return nodeA
+      if (id === 'n2') return nodeB
+      return undefined
+    }
+
+    const result = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
+      cache: null,
+      promotions,
+      getNodeById,
+      isPreviewPseudoWidget: (candidate) => candidate.isPseudo === true
+    })
+
+    expect(result.nodes).toEqual([nodeA, nodeB])
+    expect(result.cache.entries).toHaveLength(2)
+
+    const reducedPromotions: readonly SubgraphPromotionEntry[] = [
+      { interiorNodeId: 'n1', widgetName: 'preview' }
+    ]
+
+    const reduced = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
+      cache: null,
+      promotions: reducedPromotions,
+      getNodeById,
+      isPreviewPseudoWidget: (candidate) => candidate.isPseudo === true
+    })
+
+    expect(reduced.nodes).toEqual([nodeA])
+    expect(reduced.cache.entries).toHaveLength(1)
+    expect(reduced.cache.entries[0].interiorNodeId).toBe('n1')
+  })
+
+  it('excludes promotions where isPreviewPseudoWidget returns false', () => {
+    const interiorNode = node('n1', [widget('myWidget', false)])
+    const promotions: readonly SubgraphPromotionEntry[] = [
+      { interiorNodeId: 'n1', widgetName: 'myWidget' }
+    ]
+
+    const result = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
+      cache: null,
+      promotions,
+      getNodeById: (id) => (id === 'n1' ? interiorNode : undefined),
+      isPreviewPseudoWidget: (candidate) => candidate.isPseudo === true
+    })
+
+    expect(result.nodes).toEqual([])
+    expect(result.cache.entries).toHaveLength(0)
+  })
+
   it('drops cached entries when node no longer resolves', () => {
     const promotions: readonly SubgraphPromotionEntry[] = [
       { interiorNodeId: 'missing', widgetName: '$$canvas-image-preview' }
