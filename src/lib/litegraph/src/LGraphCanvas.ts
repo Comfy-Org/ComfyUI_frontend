@@ -5021,10 +5021,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           colour,
           fromDirection,
           dragDirection,
-          {
-            ...(this._cachedLinkRenderContext ?? this.buildLinkRenderContext()),
-            linkMarkerShape: LinkMarkerShape.None
-          }
+          this._cachedLinkRenderContext ?? this.buildLinkRenderContext()
         )
       }
       if (renderLink instanceof MovingInputLink) this.setDirty(false, true)
