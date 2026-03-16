@@ -1,39 +1,26 @@
 <script setup lang="ts">
-import { useEventListener, useTimeout } from '@vueuse/core'
-import { remove, takeWhile } from 'es-toolkit'
+import { useTimeout } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
-import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
-import { cn } from '@/utils/tailwindUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { resolveNodeWidget } from '@/utils/litegraphUtil'
 const { t } = useI18n()
 const commandStore = useCommandStore()
-const executionErrorStore = useExecutionErrorStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
 const { isActiveSubscription } = useBillingContext()
@@ -42,7 +29,7 @@ const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
 
-const props = defineProps<{
+const { toastTo, mobile } = defineProps<{
   toastTo?: string | HTMLElement
   mobile?: boolean
 }>()
@@ -55,91 +42,6 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
   8000,
   { controls: true, immediate: false }
 )
-
-const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
-useEventListener(
-  app.rootGraph.events,
-  'configured',
-  () => (graphNodes.value = app.rootGraph.nodes)
-)
-
-const mappedSelections = computed(() => {
-  void graphNodes.value
-  let unprocessedInputs = appModeStore.selectedInputs.flatMap(
-    ([nodeId, widgetName]) => {
-      const [node, widget] = resolveNodeWidget(nodeId, widgetName)
-      return widget ? ([[node, widget]] as const) : []
-    }
-  )
-  const processedInputs: ReturnType<typeof nodeToNodeData>[] = []
-  while (unprocessedInputs.length) {
-    const [node] = unprocessedInputs[0]
-    const inputGroup = takeWhile(unprocessedInputs, ([n]) => n === node).map(
-      ([, widget]) => widget
-    )
-    unprocessedInputs = unprocessedInputs.slice(inputGroup.length)
-    //FIXME: hide widget if owning node bypassed
-    if (node?.mode !== LGraphEventMode.ALWAYS) continue
-
-    const nodeData = nodeToNodeData(node)
-    remove(nodeData.widgets ?? [], (vueWidget) => {
-      if (vueWidget.slotMetadata?.linked) return true
-
-      if (!node.isSubgraphNode())
-        return !inputGroup.some((w) => w.name === vueWidget.name)
-
-      const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
-      return !inputGroup.some(
-        (subWidget) =>
-          isPromotedWidgetView(subWidget) &&
-          subWidget.sourceNodeId == storeNodeId &&
-          subWidget.sourceWidgetName === vueWidget.storeName
-      )
-    })
-    for (const widget of nodeData.widgets ?? []) {
-      widget.slotMetadata = undefined
-      widget.nodeId = String(node.id)
-    }
-    processedInputs.push(nodeData)
-  }
-  return processedInputs
-})
-
-function getDropIndicator(node: LGraphNode) {
-  if (node.type !== 'LoadImage') return undefined
-
-  const filename = node.widgets?.[0]?.value
-  const resultItem = { type: 'input', filename: `${filename}` }
-
-  const buildImageUrl = () => {
-    if (!filename) return undefined
-    const params = new URLSearchParams(resultItem)
-    appendCloudResParam(params, resultItem.filename)
-    return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
-  }
-
-  return {
-    iconClass: 'icon-[lucide--image]',
-    imageUrl: buildImageUrl(),
-    label: props.mobile ? undefined : t('linearMode.dragAndDropImage'),
-    onClick: () => node.widgets?.[1]?.callback?.(undefined)
-  }
-}
-
-function nodeToNodeData(node: LGraphNode) {
-  const dropIndicator = getDropIndicator(node)
-  const nodeData = extractVueNodeData(node)
-
-  return {
-    ...nodeData,
-    //note lastNodeErrors uses exeuctionid, node.id is execution for root
-    hasErrors: !!executionErrorStore.lastNodeErrors?.[node.id],
-
-    dropIndicator,
-    onDragDrop: node.onDragDrop,
-    onDragOver: node.onDragOver
-  }
-}
 
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
@@ -196,32 +98,7 @@ defineExpose({ runButtonClick })
         data-testid="linear-widgets"
         class="grow overflow-y-auto contain-size"
       >
-        <template
-          v-for="(nodeData, index) of mappedSelections"
-          :key="nodeData.id"
-        >
-          <div
-            v-if="index !== 0 && !appModeStore.selectedInputs.length"
-            class="w-full border-t border-node-component-border"
-          />
-          <DropZone
-            :on-drag-over="nodeData.onDragOver"
-            :on-drag-drop="nodeData.onDragDrop"
-            :drop-indicator="nodeData.dropIndicator"
-            class="text-muted-foreground"
-          >
-            <NodeWidgets
-              :node-data
-              :class="
-                cn(
-                  'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
-                  nodeData.hasErrors &&
-                    'ring-2 ring-node-stroke-error ring-inset'
-                )
-              "
-            />
-          </DropZone>
-        </template>
+        <AppModeWidgetList :mobile />
       </section>
       <Teleport
         v-if="!jobToastTimeout || pendingJobQueues > 0"

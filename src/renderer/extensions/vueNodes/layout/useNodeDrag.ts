@@ -127,10 +127,10 @@ function useNodeDragIndividual() {
         y: dragStartPos.y + canvasDelta.y
       }
 
-      // Apply mutation through the layout system (Vue batches DOM updates automatically)
-      mutations.moveNode(nodeId, newPosition)
+      // Move drag updates in one transaction to avoid per-node notify fan-out.
+      const updates = [{ nodeId, position: newPosition }]
 
-      // If we're dragging multiple selected nodes, move them all together
+      // Include other selected nodes so multi-drag stays in lockstep.
       if (
         otherSelectedNodesStartPositions &&
         otherSelectedNodesStartPositions.size > 0
@@ -143,9 +143,11 @@ function useNodeDragIndividual() {
             x: startPos.x + canvasDelta.x,
             y: startPos.y + canvasDelta.y
           }
-          mutations.moveNode(otherNodeId, newOtherPosition)
+          updates.push({ nodeId: otherNodeId, position: newOtherPosition })
         }
       }
+
+      mutations.batchMoveNodes(updates)
 
       // Move selected groups using frame delta (difference from last frame)
       // This matches LiteGraph's behavior which uses delta-based movement

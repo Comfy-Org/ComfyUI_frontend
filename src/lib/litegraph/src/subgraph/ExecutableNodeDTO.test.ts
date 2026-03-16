@@ -1,9 +1,12 @@
 // TODO: Fix these tests after migration
-import { describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
   LGraphNode,
+  LGraphEventMode,
   ExecutableNodeDTO
 } from '@/lib/litegraph/src/litegraph'
 
@@ -243,6 +246,136 @@ describe.skip('ExecutableNodeDTO Output Resolution', () => {
     // For regular nodes, resolveOutput returns the node itself even if no outputs
     // This tests the current implementation behavior
     const resolved = dto.resolveOutput(0, 'string', new Set())
+    expect(resolved).toBeDefined()
+    expect(resolved?.node).toBe(dto)
+    expect(resolved?.origin_slot).toBe(0)
+  })
+})
+
+describe('Muted node output resolution', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('should return undefined for NEVER mode nodes', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Muted Node')
+    node.addOutput('out', 'string')
+    node.mode = LGraphEventMode.NEVER
+    graph.add(node)
+
+    const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
+    const resolved = dto.resolveOutput(0, 'string', new Set())
+
+    expect(resolved).toBeUndefined()
+  })
+
+  it('should return undefined for muted subgraph nodes without throwing', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'out', type: 'IMAGE' }],
+      nodeCount: 1
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    subgraphNode.mode = LGraphEventMode.NEVER
+
+    // Empty map simulates executionUtil skipping getInnerNodes() for muted nodes
+    const nodesByExecutionId = new Map()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    const resolved = dto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeUndefined()
+  })
+
+  it('should resolve undefined when input is connected to a muted node', () => {
+    const graph = new LGraph()
+
+    const mutedNode = new LGraphNode('Muted Node')
+    mutedNode.addOutput('result', 'IMAGE')
+    mutedNode.mode = LGraphEventMode.NEVER
+    graph.add(mutedNode)
+
+    const downstreamNode = new LGraphNode('Downstream')
+    downstreamNode.addInput('input', 'IMAGE')
+    graph.add(downstreamNode)
+
+    mutedNode.connect(0, downstreamNode, 0)
+
+    const nodeDtoMap = new Map()
+    const mutedDto = new ExecutableNodeDTO(mutedNode, [], nodeDtoMap, undefined)
+    nodeDtoMap.set(mutedDto.id, mutedDto)
+
+    const downstreamDto = new ExecutableNodeDTO(
+      downstreamNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(downstreamDto.id, downstreamDto)
+
+    const resolved = downstreamDto.resolveInput(0)
+    expect(resolved).toBeUndefined()
+  })
+})
+
+describe('Bypass node output resolution', () => {
+  it('should still resolve bypass for BYPASS mode nodes', () => {
+    const graph = new LGraph()
+
+    const upstreamNode = new LGraphNode('Upstream')
+    upstreamNode.addOutput('out', 'IMAGE')
+    graph.add(upstreamNode)
+
+    const bypassedNode = new LGraphNode('Bypassed')
+    bypassedNode.addInput('in', 'IMAGE')
+    bypassedNode.addOutput('out', 'IMAGE')
+    bypassedNode.mode = LGraphEventMode.BYPASS
+    graph.add(bypassedNode)
+
+    upstreamNode.connect(0, bypassedNode, 0)
+
+    const nodeDtoMap = new Map()
+    const upstreamDto = new ExecutableNodeDTO(
+      upstreamNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(upstreamDto.id, upstreamDto)
+
+    const bypassedDto = new ExecutableNodeDTO(
+      bypassedNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(bypassedDto.id, bypassedDto)
+
+    const resolved = bypassedDto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeDefined()
+    expect(resolved?.node).toBe(upstreamDto)
+  })
+})
+
+describe('ALWAYS mode node output resolution', () => {
+  it('should attempt normal resolution for ALWAYS mode nodes', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Normal Node')
+    node.addOutput('out', 'IMAGE')
+    node.mode = LGraphEventMode.ALWAYS
+    graph.add(node)
+
+    const nodeDtoMap = new Map()
+    const dto = new ExecutableNodeDTO(node, [], nodeDtoMap, undefined)
+    nodeDtoMap.set(dto.id, dto)
+
+    const resolved = dto.resolveOutput(0, 'IMAGE', new Set())
     expect(resolved).toBeDefined()
     expect(resolved?.node).toBe(dto)
     expect(resolved?.origin_slot).toBe(0)

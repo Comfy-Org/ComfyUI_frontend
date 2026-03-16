@@ -114,7 +114,8 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
 
 const zProgressTextWsMessage = z.object({
   nodeId: zNodeId,
-  text: z.string()
+  text: z.string(),
+  prompt_id: z.string().optional()
 })
 
 const zNotificationWsMessage = z.object({
@@ -466,7 +467,8 @@ const zSettings = z.object({
   'Comfy.VersionCompatibility.DisableWarnings': z.boolean(),
   'Comfy.RightSidePanel.IsOpen': z.boolean(),
   'Comfy.RightSidePanel.ShowErrorsTab': z.boolean(),
-  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean()
+  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean(),
+  'LiteGraph.Group.SelectChildrenOnClick': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>

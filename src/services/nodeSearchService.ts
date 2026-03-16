@@ -34,10 +34,7 @@ export class NodeSearchService {
       id: 'input',
       name: 'Input Type',
       invokeSequence: 'i',
-      getItemOptions: (node) =>
-        Object.values(node.inputs ?? []).flatMap((input) =>
-          input.type.split(',')
-        ),
+      getItemOptions: (node) => node.inputTypes,
       fuseOptions
     })
 

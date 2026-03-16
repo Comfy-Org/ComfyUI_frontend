@@ -384,6 +384,15 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('BiRefNet/pth', 'LS_LoadBiRefNetModel', 'model')
     quickRegister('onnx/human-parts', 'LS_HumanPartsUltra', '')
     quickRegister('lama', 'LaMa', 'lama_model')
+
+    // CogVideoX video generation models (comfyui-cogvideoxwrapper)
+    quickRegister('CogVideo', 'DownloadAndLoadCogVideoModel', 'model')
+
+    // Inpaint models (comfyui-inpaint-nodes)
+    quickRegister('inpaint', 'INPAINT_LoadInpaintModel', 'model_name')
+
+    // LayerDiffuse transparent image generation (comfyui-layerdiffuse)
+    quickRegister('layer_model', 'LayeredDiffusionApply', 'config')
   }
 
   return {

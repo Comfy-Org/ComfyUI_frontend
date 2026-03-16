@@ -26,6 +26,10 @@ import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
+import {
+  cachedMeasureText,
+  clearTextMeasureCache
+} from './utils/textMeasureCache'
 import type {
   CustomEventDispatcher,
   ICustomEventTarget
@@ -565,6 +569,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   allow_dragnodes: boolean
   allow_interaction: boolean
   multi_select: boolean
+  groupSelectChildren: boolean
   allow_searchbox: boolean
   allow_reconnect_links: boolean
   align_to_grid: boolean
@@ -933,6 +938,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.allow_interaction = true
     // allow selecting multi nodes without pressing extra keys
     this.multi_select = false
+    this.groupSelectChildren = false
     this.allow_searchbox = true
     // allows to change a connection with having to redo it again
     this.allow_reconnect_links = true
@@ -1951,6 +1957,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return false
   }
 
+  /** Prevents default for middle-click auxclick only. */
+  _preventMiddleAuxClick(e: MouseEvent): void {
+    if (e.button === 1) e.preventDefault()
+  }
+
   /** Captures an event and prevents default - returns true. */
   _doReturnTrue(e: Event): boolean {
     e.preventDefault()
@@ -1986,6 +1997,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas.addEventListener('pointercancel', this._mousecancel_callback, true)
 
     canvas.addEventListener('contextmenu', this._doNothing)
+    // Prevent middle-click paste (PRIMARY clipboard on Linux) - fixes #4464
+    canvas.addEventListener('auxclick', this._preventMiddleAuxClick)
 
     // Keyboard
     this._key_callback = this.processKey.bind(this)
@@ -2024,6 +2037,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas.removeEventListener('keydown', this._key_callback!)
     document.removeEventListener('keyup', this._key_callback!)
     canvas.removeEventListener('contextmenu', this._doNothing)
+    canvas.removeEventListener('auxclick', this._preventMiddleAuxClick)
     canvas.removeEventListener('dragenter', this._doReturnTrue)
 
     this._mousedown_callback = undefined
@@ -2945,6 +2959,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
             // Enforce minimum size
             const min = node.computeSize()
+            if (this._snapToGrid) {
+              // Previously newBounds.size is snapped with 'round'
+              // Now the minimum size is snapped with 'ceil' to avoid clipping
+              snapPoint(min, this._snapToGrid, 'ceil')
+            }
             if (newBounds.width < min[0]) {
               // If resizing from left, adjust position to maintain right edge
               if (resizeDirection.includes('W')) {
@@ -4141,6 +4160,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         item.setPos(item.pos[0] + dx, item.pos[1] + dy)
       } else if (item instanceof Reroute) {
         item.move(dx, dy)
+      } else if (item instanceof LGraphGroup) {
+        item.move(dx, dy, true)
       }
     }
 
@@ -4363,7 +4384,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (!modifySelection) this.deselectAll(item)
       this.select(item)
     } else if (modifySelection && !sticky) {
-      this.deselect(item)
+      // Modifier-click toggles only the clicked item, not its children.
+      // Cascade on select is a convenience; cascade on deselect would
+      // remove the user's ability to keep children selected (e.g. for
+      // deletion) after toggling the group off.
+      if (item instanceof LGraphGroup && this.groupSelectChildren) {
+        item.selected = false
+        this.selectedItems.delete(item)
+        this.state.selectionChanged = true
+      } else {
+        this.deselect(item)
+      }
     } else if (!sticky) {
       this.deselectAll(item)
     } else {
@@ -4388,6 +4419,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (item instanceof LGraphGroup) {
       item.recomputeInsideNodes()
+      if (this.groupSelectChildren) {
+        this.#traverseGroupChildren(
+          item,
+          (child) => {
+            if (!child.selected || !this.selectedItems.has(child)) {
+              child.selected = true
+              this.selectedItems.add(child)
+              this.state.selectionChanged = true
+            }
+          },
+          (child) => this.select(child)
+        )
+      }
       return
     }
 
@@ -4426,6 +4470,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     item.selected = false
     this.selectedItems.delete(item)
     this.state.selectionChanged = true
+
+    if (item instanceof LGraphGroup && this.groupSelectChildren) {
+      this.#traverseGroupChildren(
+        item,
+        (child) => {
+          if (child.selected || this.selectedItems.has(child)) {
+            child.selected = false
+            this.selectedItems.delete(child)
+            this.state.selectionChanged = true
+          }
+        },
+        (child) => this.deselect(child)
+      )
+      return
+    }
+
     if (!(item instanceof LGraphNode)) return
 
     // Node-specific handling
@@ -4457,6 +4517,29 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (node && this.selectedItems.has(node)) continue
 
         delete this.highlighted_links[id]
+      }
+    }
+  }
+
+  /**
+   * Iterative traversal of a group's descendants.
+   * Calls {@link groupAction} on nested groups and {@link leafAction} on
+   * non-group children.  Always recurses into nested groups regardless of
+   * their current selection state.
+   */
+  #traverseGroupChildren(
+    group: LGraphGroup,
+    groupAction: (child: LGraphGroup) => void,
+    leafAction: (child: Positionable) => void
+  ): void {
+    const stack: Positionable[] = [...group._children]
+    while (stack.length > 0) {
+      const child = stack.pop()!
+      if (child instanceof LGraphGroup) {
+        groupAction(child)
+        for (const nested of child._children) stack.push(nested)
+      } else {
+        leafAction(child)
       }
     }
   }
@@ -4593,7 +4676,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.emitBeforeChange()
     graph.beforeChange()
 
-    for (const item of this.selectedItems) {
+    // Snapshot to prevent mutation during iteration (e.g. group deselect cascade)
+    const toDelete = [...this.selectedItems]
+    for (const item of toDelete) {
       if (item instanceof LGraphNode) {
         const node = item
         if (node.block_delete) continue
@@ -4819,6 +4904,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * draws the front canvas (the one containing all the nodes)
    */
   drawFrontCanvas(): void {
+    clearTextMeasureCache()
     this.dirty_canvas = false
 
     const { ctx, canvas, graph } = this
@@ -5185,7 +5271,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const lineHeight = 13
     const lineCount = (this.graph ? 5 : 1) + (this.info_text ? 1 : 0)
     x = x || 10
-    y = y || this.canvas.offsetHeight - (lineCount + 1) * lineHeight
+    y =
+      y ||
+      this.canvas.height /
+        ((this.canvas.ownerDocument.defaultView ?? window).devicePixelRatio ||
+          1) -
+        (lineCount + 1) * lineHeight
 
     ctx.save()
     ctx.translate(x, y)
@@ -5548,8 +5639,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     text = text.substring(0, 30)
 
     ctx.font = '14px Courier New'
-    const info = ctx.measureText(text)
-    const w = info.width + 20
+    const w = cachedMeasureText(ctx, text) + 20
     const h = 24
     ctx.shadowColor = 'black'
     ctx.shadowOffsetX = 2

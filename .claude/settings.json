@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpx vitest run --testPathPattern=\"draftCacheV2.property\")",
+      "Bash(pnpx vitest run \"draftCacheV2.property\")",
+      "Bash(node -e \"const fc = require\\(''fast-check''\\); console.log\\(Object.keys\\(fc\\).filter\\(k => k.includes\\(''string''\\)\\).join\\('', ''\\)\\)\")"
+    ]
+  }
+}
