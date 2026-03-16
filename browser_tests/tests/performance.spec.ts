@@ -252,9 +252,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.nextFrame()
     }
 
-    const m = await comfyPage.perf.stopMeasuring(
-      'primevue-dialog-open-close'
-    )
+    const m = await comfyPage.perf.stopMeasuring('primevue-dialog-open-close')
     recordMeasurement(m)
     console.log(
       `PrimeVue dialog: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.styleRecalcDurationMs.toFixed(1)}ms recalc time`
