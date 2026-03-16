@@ -1,99 +1,108 @@
 <template>
-  <div
-    ref="dialogRef"
-    class="flex max-h-[min(80vh,750px)] min-h-[400px] w-full flex-col overflow-hidden rounded-lg border border-interface-stroke bg-base-background"
+  <FocusScope
+    as-child
+    loop
+    trapped
+    @mount-auto-focus.prevent
+    @unmount-auto-focus.prevent
   >
-    <!-- Search input row -->
-    <NodeSearchInput
-      ref="searchInputRef"
-      v-model:search-query="searchQuery"
-      :filters="filters"
-      @remove-filter="emit('removeFilter', $event)"
-      @navigate-down="navigateResults(1)"
-      @navigate-up="navigateResults(-1)"
-      @select-current="selectCurrentResult"
-    />
-
-    <!-- Filter header row -->
-    <div class="flex items-center">
-      <NodeSearchFilterBar
-        class="flex-1"
+    <div
+      ref="dialogRef"
+      class="flex max-h-[min(80vh,750px)] min-h-[400px] w-full flex-col overflow-hidden rounded-lg border border-interface-stroke bg-base-background"
+    >
+      <!-- Search input row -->
+      <NodeSearchInput
+        ref="searchInputRef"
+        v-model:search-query="searchQuery"
         :filters="filters"
-        :active-category="rootFilter"
-        :has-essential-nodes="nodeAvailability.essential"
-        :has-blueprint-nodes="nodeAvailability.blueprint"
-        :has-partner-nodes="nodeAvailability.partner"
-        :has-custom-nodes="nodeAvailability.custom"
-        @toggle-filter="onToggleFilter"
-        @clear-filter-group="onClearFilterGroup"
-        @focus-search="nextTick(() => searchInputRef?.focus())"
-        @select-category="onSelectCategory"
-      />
-    </div>
-
-    <!-- Content area -->
-    <div class="flex min-h-0 flex-1 overflow-hidden">
-      <!-- Category sidebar -->
-      <NodeSearchCategorySidebar
-        v-model:selected-category="sidebarCategory"
-        class="w-52 shrink-0"
-        :hide-chevrons="!anyTreeCategoryHasChildren"
-        :hide-presets="rootFilter !== null"
-        :has-essential-nodes="nodeAvailability.essential"
-        :has-custom-nodes="nodeAvailability.custom"
-        :node-defs="rootFilteredNodeDefs"
-        :root-label="rootFilterLabel"
-        :root-key="rootFilter ?? undefined"
-        @auto-expand="selectedCategory = $event"
+        @remove-filter="emit('removeFilter', $event)"
+        @navigate-down="navigateResults(1)"
+        @navigate-up="navigateResults(-1)"
+        @select-current="selectCurrentResult"
       />
 
-      <!-- Results list -->
-      <div
-        id="results-list"
-        role="listbox"
-        tabindex="-1"
-        class="flex-1 overflow-y-auto py-2 pr-3 pl-1 select-none"
-        @pointermove="onPointerMove"
-      >
+      <!-- Filter header row -->
+      <div class="flex items-center">
+        <NodeSearchFilterBar
+          class="flex-1"
+          :filters="filters"
+          :active-category="rootFilter"
+          :has-essential-nodes="nodeAvailability.essential"
+          :has-blueprint-nodes="nodeAvailability.blueprint"
+          :has-partner-nodes="nodeAvailability.partner"
+          :has-custom-nodes="nodeAvailability.custom"
+          @toggle-filter="onToggleFilter"
+          @clear-filter-group="onClearFilterGroup"
+          @focus-search="nextTick(() => searchInputRef?.focus())"
+          @select-category="onSelectCategory"
+        />
+      </div>
+
+      <!-- Content area -->
+      <div class="flex min-h-0 flex-1 overflow-hidden">
+        <!-- Category sidebar -->
+        <NodeSearchCategorySidebar
+          v-model:selected-category="sidebarCategory"
+          class="w-52 shrink-0"
+          :hide-chevrons="!anyTreeCategoryHasChildren"
+          :hide-presets="rootFilter !== null"
+          :has-essential-nodes="nodeAvailability.essential"
+          :has-custom-nodes="nodeAvailability.custom"
+          :node-defs="rootFilteredNodeDefs"
+          :root-label="rootFilterLabel"
+          :root-key="rootFilter ?? undefined"
+          @auto-expand="selectedCategory = $event"
+        />
+
+        <!-- Results list -->
         <div
-          v-for="(node, index) in displayedResults"
-          :id="`result-item-${index}`"
-          :key="node.name"
-          role="option"
-          data-testid="result-item"
-          :tabindex="index === selectedIndex ? 0 : -1"
-          :aria-selected="index === selectedIndex"
-          :class="
-            cn(
-              'flex h-14 cursor-pointer items-center rounded-lg px-4 outline-none focus-visible:ring-2 focus-visible:ring-primary',
-              index === selectedIndex && 'bg-secondary-background'
-            )
-          "
-          @click="emit('addNode', node, $event)"
-          @keydown.down.prevent="navigateResults(1, true)"
-          @keydown.up.prevent="navigateResults(-1, true)"
-          @keydown.enter.prevent="selectCurrentResult"
+          id="results-list"
+          role="listbox"
+          tabindex="-1"
+          class="flex-1 overflow-y-auto py-2 pr-3 pl-1 select-none"
+          @pointermove="onPointerMove"
         >
-          <NodeSearchListItem
-            :node-def="node"
-            :current-query="searchQuery"
-            show-description
-            :show-source-badge="rootFilter !== 'essentials'"
-            :hide-bookmark-icon="effectiveCategory === 'favorites'"
-          />
-        </div>
-        <div
-          v-if="displayedResults.length === 0"
-          class="px-4 py-8 text-center text-muted-foreground"
-        >
-          {{ $t('g.noResults') }}
+          <div
+            v-for="(node, index) in displayedResults"
+            :id="`result-item-${index}`"
+            :key="node.name"
+            role="option"
+            data-testid="result-item"
+            :tabindex="index === selectedIndex ? 0 : -1"
+            :aria-selected="index === selectedIndex"
+            :class="
+              cn(
+                'flex h-14 cursor-pointer items-center rounded-lg px-4 outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                index === selectedIndex && 'bg-secondary-background'
+              )
+            "
+            @click="emit('addNode', node, $event)"
+            @keydown.down.prevent="navigateResults(1, true)"
+            @keydown.up.prevent="navigateResults(-1, true)"
+            @keydown.enter.prevent="selectCurrentResult"
+          >
+            <NodeSearchListItem
+              :node-def="node"
+              :current-query="searchQuery"
+              show-description
+              :show-source-badge="rootFilter !== 'essentials'"
+              :hide-bookmark-icon="effectiveCategory === 'favorites'"
+            />
+          </div>
+          <div
+            v-if="displayedResults.length === 0"
+            class="px-4 py-8 text-center text-muted-foreground"
+          >
+            {{ $t('g.noResults') }}
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </FocusScope>
 </template>
 
 <script setup lang="ts">
+import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -229,7 +238,6 @@ function onSelectCategory(category: string) {
     rootFilter.value = category
   }
   selectedCategory.value = DEFAULT_CATEGORY
-  searchQuery.value = ''
   nextTick(() => searchInputRef.value?.focus())
 }
 
@@ -242,21 +250,14 @@ const searchResults = computed(() => {
   })
 })
 
-const effectiveCategory = computed(() =>
-  searchQuery.value ? DEFAULT_CATEGORY : selectedCategory.value
-)
+const effectiveCategory = computed(() => selectedCategory.value)
 
 const sidebarCategory = computed({
   get: () => effectiveCategory.value,
   set: (category: string) => {
     selectedCategory.value = category
-    searchQuery.value = ''
   }
 })
-
-function matchesFilters(node: ComfyNodeDefImpl): boolean {
-  return filters.every(({ filterDef, value }) => filterDef.matches(node, value))
-}
 
 // Check if any tree category has children (for chevron visibility)
 const anyTreeCategoryHasChildren = computed(() =>
@@ -296,17 +297,25 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
 
   if (category === DEFAULT_CATEGORY) return getMostRelevantResults(baseNodes)
 
-  const sourceFilter = sourceCategoryFilters[category]
-  let results: ComfyNodeDefImpl[]
-  if (sourceFilter) {
-    results = baseNodes.filter(sourceFilter)
-  } else if (category === 'favorites') {
-    results = baseNodes.filter((n) => nodeBookmarkStore.isBookmarked(n))
+  const hasSearch = searchQuery.value || filters.length > 0
+  let source: ComfyNodeDefImpl[]
+  if (hasSearch) {
+    const searched = searchResults.value
+    if (rootFilter.value) {
+      const rootSet = new Set(baseNodes.map((n) => n.name))
+      source = searched.filter((n) => rootSet.has(n.name))
+    } else {
+      source = searched
+    }
   } else {
-    results = getCategoryResults(baseNodes, category)
+    source = baseNodes
   }
 
-  return filters.length > 0 ? results.filter(matchesFilters) : results
+  const sourceFilter = sourceCategoryFilters[category]
+  if (sourceFilter) return source.filter(sourceFilter)
+  if (category === 'favorites')
+    return source.filter((n) => nodeBookmarkStore.isBookmarked(n))
+  return getCategoryResults(source, category)
 })
 
 const hoveredNodeDef = computed(

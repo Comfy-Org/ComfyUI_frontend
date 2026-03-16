@@ -306,7 +306,7 @@ describe('NodeSearchContent', () => {
   })
 
   describe('search and category interaction', () => {
-    it('should override category to most-relevant when search query is active', async () => {
+    it('should search within selected category', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
           name: 'KSampler',
@@ -331,10 +331,10 @@ describe('NodeSearchContent', () => {
       await nextTick()
 
       const texts = getNodeItems(wrapper).map((i) => i.text())
-      expect(texts.some((t) => t.includes('Load Checkpoint'))).toBe(true)
+      expect(texts.some((t) => t.includes('Load Checkpoint'))).toBe(false)
     })
 
-    it('should clear search query when category changes', async () => {
+    it('should preserve search query when category changes', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'TestNode', display_name: 'Test Node' })
       ])
@@ -349,7 +349,7 @@ describe('NodeSearchContent', () => {
 
       await wrapper.find('[data-testid="category-favorites"]').trigger('click')
       await nextTick()
-      expect((input.element as HTMLInputElement).value).toBe('')
+      expect((input.element as HTMLInputElement).value).toBe('test query')
     })
 
     it('should reset selected index when search query changes', async () => {
