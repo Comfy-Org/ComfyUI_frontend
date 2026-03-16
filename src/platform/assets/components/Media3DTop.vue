@@ -1,18 +1,26 @@
 <template>
-  <div class="relative size-full overflow-hidden rounded-sm">
+  <div ref="containerRef" class="relative size-full overflow-hidden rounded-sm">
     <img
-      v-if="!thumbnailError"
+      v-if="thumbnailSrc"
       :src="thumbnailSrc"
       :alt="asset?.name"
       class="size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
-      @error="thumbnailError = true"
     />
     <div
       v-else
       class="flex size-full flex-col items-center justify-center gap-2 bg-modal-card-placeholder-background transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
     >
-      <i class="icon-[lucide--box] text-3xl text-muted-foreground" />
-      <span class="text-sm text-base-foreground">
+      <i
+        :class="
+          cn(
+            'text-3xl text-muted-foreground',
+            loading
+              ? 'icon-[lucide--loader-circle] animate-spin'
+              : 'icon-[lucide--box]'
+          )
+        "
+      />
+      <span v-if="!loading" class="text-sm text-base-foreground">
         {{ $t('assetBrowser.media.threeDModelPlaceholder') }}
       </span>
     </div>
@@ -20,16 +28,84 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { useIntersectionObserver } from '@vueuse/core'
+import { onBeforeUnmount, ref, watch } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
+
+import { renderThumbnail } from '@/extensions/core/load3d/ThumbnailRenderer'
+import { api } from '@/scripts/api'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import {
+  findServerPreviewUrl,
+  persistThumbnail
+} from '../utils/assetPreviewUtil'
 
 const { asset } = defineProps<{ asset: AssetMeta }>()
 
-const thumbnailError = ref(false)
+const containerRef = ref<HTMLElement>()
+const thumbnailSrc = ref<string | null>(null)
+const loading = ref(false)
+const hasAttempted = ref(false)
 
-const thumbnailSrc = computed(() => {
-  if (!asset?.src) return ''
-  return asset.src.replace(/([?&]filename=)([^&]*)/, '$1$2.png')
+useIntersectionObserver(containerRef, ([entry]) => {
+  if (entry?.isIntersecting && !hasAttempted.value) {
+    hasAttempted.value = true
+    void loadThumbnail()
+  }
 })
+
+async function loadThumbnail() {
+  if (asset?.preview_id && asset?.preview_url) {
+    thumbnailSrc.value = asset.preview_url
+    return
+  }
+
+  if (!asset?.src) return
+
+  if (asset.name && api.getServerFeature('assets', false)) {
+    const serverPreviewUrl = await findServerPreviewUrl(asset.name)
+    if (serverPreviewUrl) {
+      thumbnailSrc.value = serverPreviewUrl
+      return
+    }
+  }
+
+  loading.value = true
+  try {
+    const blob = await renderThumbnail(asset.src)
+    if (!blob) return
+
+    thumbnailSrc.value = URL.createObjectURL(blob)
+
+    if (asset.id && api.getServerFeature('assets', false)) {
+      void persistThumbnail(asset.name, blob)
+    }
+  } catch {
+    thumbnailSrc.value = null
+  } finally {
+    loading.value = false
+  }
+}
+
+function revokeThumbnail() {
+  if (thumbnailSrc.value?.startsWith('blob:')) {
+    URL.revokeObjectURL(thumbnailSrc.value)
+  }
+  thumbnailSrc.value = null
+}
+
+watch(
+  () => asset?.src,
+  () => {
+    if (hasAttempted.value) {
+      hasAttempted.value = false
+      revokeThumbnail()
+      loading.value = false
+    }
+  }
+)
+
+onBeforeUnmount(revokeThumbnail)
 </script>

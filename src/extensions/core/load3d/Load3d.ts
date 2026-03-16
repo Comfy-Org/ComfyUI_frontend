@@ -10,6 +10,7 @@ import { ModelExporter } from './ModelExporter'
 import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
 import { SceneModelManager } from './SceneModelManager'
+import { positionThumbnailCamera } from './ThumbnailRenderer'
 import { ViewHelperManager } from './ViewHelperManager'
 import {
   type CameraState,
@@ -781,25 +782,18 @@ class Load3d {
         this.cameraManager.toggleCamera('perspective')
       }
 
-      const box = new THREE.Box3().setFromObject(this.modelManager.currentModel)
-      const size = box.getSize(new THREE.Vector3())
-      const center = box.getCenter(new THREE.Vector3())
-
-      const maxDim = Math.max(size.x, size.y, size.z)
-      const distance = maxDim * 1.5
-
-      const cameraPosition = new THREE.Vector3(
-        center.x - distance * 0.8,
-        center.y + distance * 0.4,
-        center.z + distance * 0.3
+      positionThumbnailCamera(
+        this.cameraManager.perspectiveCamera,
+        this.modelManager.currentModel
       )
 
-      this.cameraManager.perspectiveCamera.position.copy(cameraPosition)
-      this.cameraManager.perspectiveCamera.lookAt(center)
-      this.cameraManager.perspectiveCamera.updateProjectionMatrix()
-
       if (this.controlsManager.controls) {
-        this.controlsManager.controls.target.copy(center)
+        const box = new THREE.Box3().setFromObject(
+          this.modelManager.currentModel
+        )
+        this.controlsManager.controls.target.copy(
+          box.getCenter(new THREE.Vector3())
+        )
         this.controlsManager.controls.update()
       }
 
