@@ -99,7 +99,7 @@
             :class="
               cn(
                 'flex h-10 items-center justify-between rounded-lg px-3',
-                getMaxMembers(tier) > 1 ? 'bg-[rgba(0,205,114,0.20)]' : ''
+                getMaxMembers(tier) > 1 ? 'bg-emerald-500/20' : ''
               )
             "
           >

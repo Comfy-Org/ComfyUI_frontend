@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="relative flex h-full flex-col gap-6 overflow-y-auto! p-4 pt-8 md:px-16 md:py-8"
+    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
       size="icon"

@@ -95,20 +95,20 @@
             </div>
           </div>
 
-          <div
-            class="flex h-10 items-center rounded-lg bg-muted-foreground/30 px-3"
+          <p
+            role="note"
+            :aria-label="t('subscription.soloUseOnly')"
+            class="m-0 flex h-10 items-center rounded-lg bg-muted-foreground/30 px-3 text-sm text-muted-foreground"
           >
-            <span class="text-sm text-muted-foreground">
-              {{ t('subscription.soloUseOnly') }}
-              <span class="mx-1 text-muted-foreground">–</span>
-              <button
-                class="text-primary-foreground cursor-pointer border-none bg-transparent p-0 text-sm font-medium underline hover:text-base-foreground"
-                @click="emit('chooseTeamWorkspace')"
-              >
-                {{ t('subscription.needTeamWorkspace') }}
-              </button>
-            </span>
-          </div>
+            {{ t('subscription.soloUseOnly') }}
+            <span class="mx-1 text-muted-foreground">–</span>
+            <button
+              class="text-primary-foreground cursor-pointer border-none bg-transparent p-0 text-sm font-medium underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+              @click="emit('chooseTeamWorkspace')"
+            >
+              {{ t('subscription.needTeamWorkspace') }}
+            </button>
+          </p>
 
           <div class="flex flex-1 flex-col gap-3 pb-0">
             <div class="flex flex-row items-center justify-between">
