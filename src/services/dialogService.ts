@@ -555,11 +555,15 @@ export const useDialogService = () => {
 
   async function showCloudNotification() {
     const { default: component } = await lazyCloudNotificationContent()
-    dialogStore.showDialog({
+    showLayoutDialog({
       key: 'global-cloud-notification',
       component,
+      props: {},
       dialogComponentProps: {
-        closable: true
+        closable: false,
+        pt: {
+          root: { class: 'h-[420px] w-[680px]' }
+        }
       }
     })
   }

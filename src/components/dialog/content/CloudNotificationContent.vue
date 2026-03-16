@@ -1,91 +1,92 @@
 <template>
-  <div class="w-[480px] p-6">
-    <div class="mb-6">
-      <div class="mb-2 flex items-center gap-3">
-        <img
-          src="/assets/images/comfy-cloud-logo.svg"
-          :alt="t('cloudNotification.title')"
-          class="size-8 shrink-0"
-        />
-        <h1 class="text-2xl font-semibold">
-          {{ t('cloudNotification.title') }}
-        </h1>
-      </div>
-      <p class="text-base text-muted">
-        {{ t('cloudNotification.message') }}
-      </p>
-    </div>
-
-    <div class="mb-6 space-y-4">
-      <div class="flex gap-3">
-        <i class="pi pi-bolt mt-0.5 shrink-0 text-xl text-blue-500" />
-        <div class="flex-1">
-          <div class="mb-1 font-medium">
-            {{ t('cloudNotification.feature1Title') }}
-          </div>
-          <div class="text-sm text-muted">
-            {{ t('cloudNotification.feature1') }}
-          </div>
-        </div>
-      </div>
-
-      <div class="flex gap-3">
-        <i class="pi pi-box mt-0.5 shrink-0 text-xl text-blue-500" />
-        <div class="flex-1">
-          <div class="mb-1 font-medium">
-            {{ t('cloudNotification.feature2Title') }}
-          </div>
-          <div class="text-sm text-muted">
-            {{ t('cloudNotification.feature2') }}
-          </div>
-        </div>
-      </div>
-
-      <div class="flex gap-3">
-        <i class="pi pi-gift mt-0.5 shrink-0 text-xl text-blue-500" />
-        <div class="flex-1">
-          <div class="mb-1 font-medium">
-            {{ t('cloudNotification.feature3Title') }}
-          </div>
-          <div class="text-sm text-muted">
-            {{ t('cloudNotification.feature3') }}
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="relative grid h-full grid-cols-5">
+    <Button
+      size="icon"
+      variant="muted-textonly"
+      class="absolute top-2.5 right-2.5 z-10 size-8 rounded-full p-0 text-white hover:bg-white/20"
+      :aria-label="t('g.close')"
+      @click="onDismiss"
+    >
+      <i class="pi pi-times" />
+    </Button>
 
     <div
-      class="mb-6 rounded-sm border-l-2 border-blue-500 bg-blue-500/5 py-2.5 pr-4 pl-3"
+      class="relative col-span-2 flex items-center justify-center overflow-hidden rounded-sm"
     >
-      <p class="text-sm whitespace-pre-line text-muted">
-        {{ t('cloudNotification.footer') }}
-      </p>
+      <video
+        autoplay
+        loop
+        muted
+        playsinline
+        class="h-full min-w-[125%] object-cover p-0"
+        style="margin-left: -20%"
+      >
+        <source
+          src="/assets/images/cloud-subscription.webm"
+          type="video/webm"
+        />
+      </video>
     </div>
 
-    <div class="flex gap-3">
-      <Button
-        :label="t('cloudNotification.continueLocally')"
-        severity="secondary"
-        outlined
-        class="flex-1"
-        @click="onDismiss"
-      />
-      <Button
-        :label="t('cloudNotification.exploreCloud')"
-        icon="pi pi-arrow-right"
-        icon-pos="right"
-        class="flex-1"
-        @click="onExplore"
-      />
+    <div class="col-span-3 flex flex-col justify-between p-8">
+      <div>
+        <div class="flex flex-col gap-4">
+          <div class="text-sm font-semibold text-text-primary">
+            {{ t('cloudNotification.title') }}
+          </div>
+          <p class="m-0 text-sm text-text-secondary">
+            {{ t('cloudNotification.message') }}
+          </p>
+        </div>
+
+        <div class="mt-6 flex flex-col items-start gap-0 self-stretch">
+          <div class="flex items-center gap-2 py-2">
+            <i class="pi pi-check text-xs text-text-primary" />
+            <span class="text-sm text-text-primary">
+              {{ t('cloudNotification.feature1Title') }}
+            </span>
+          </div>
+          <div class="flex items-center gap-2 py-2">
+            <i class="pi pi-check text-xs text-text-primary" />
+            <span class="text-sm text-text-primary">
+              {{ t('cloudNotification.feature2Title') }}
+            </span>
+          </div>
+          <div class="flex items-center gap-2 py-2">
+            <i class="pi pi-check text-xs text-text-primary" />
+            <span class="text-sm text-text-primary">
+              {{ t('cloudNotification.feature3Title') }}
+            </span>
+          </div>
+          <div class="flex items-center gap-2 py-2">
+            <i class="pi pi-check text-xs text-text-primary" />
+            <span class="text-sm text-text-primary">
+              {{ t('cloudNotification.feature4Title') }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2 pt-8">
+        <Button
+          class="w-full rounded-lg bg-(--color-accent-blue,#0B8CE9) px-4 py-2 font-inter text-sm font-bold text-white hover:bg-(--color-accent-blue,#0B8CE9)/90"
+          @click="onExplore"
+        >
+          {{ t('cloudNotification.exploreCloud') }}
+        </Button>
+        <p class="m-0 text-center text-xs text-text-secondary">
+          {{ t('cloudNotification.footer') }}
+        </p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
