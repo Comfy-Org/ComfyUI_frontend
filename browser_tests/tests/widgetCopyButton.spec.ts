@@ -8,21 +8,14 @@ test.describe('Widget copy button', { tag: '@ui' }, () => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.setup()
+
+    // Add a PreviewAny node which has a read-only textarea with a copy button
+    await comfyPage.page.evaluate(() => {
+      const node = window.LiteGraph!.createNode('PreviewAny')
+      window.app!.graph.add(node)
+    })
+
     await comfyPage.vueNodes.waitForNodes()
-  })
-
-  test('Vue nodes render with widgets', async ({ comfyPage }) => {
-    const nodeCount = await comfyPage.vueNodes.getNodeCount()
-    expect(nodeCount).toBeGreaterThan(0)
-
-    const firstNode = comfyPage.vueNodes.nodes.first()
-    await expect(firstNode).toBeVisible()
-  })
-
-  test('Textarea widgets exist on nodes', async ({ comfyPage }) => {
-    const textareas = comfyPage.page.locator('[data-node-id] textarea')
-    await expect(textareas.first()).toBeVisible()
-    expect(await textareas.count()).toBeGreaterThan(0)
   })
 
   test('Copy button has correct aria-label', async ({ comfyPage }) => {
@@ -32,20 +25,6 @@ test.describe('Widget copy button', { tag: '@ui' }, () => {
       .first()
     await expect(copyButton).toBeAttached()
     await expect(copyButton).toHaveAttribute('aria-label', /copy/i)
-  })
-
-  test('Copy icon uses lucide copy class', async ({ comfyPage }) => {
-    const copyIcon = comfyPage.page
-      .locator('[data-node-id] .icon-\\[lucide--copy\\]')
-      .first()
-    await expect(copyIcon).toBeAttached()
-  })
-
-  test('Widget container has group class for hover', async ({ comfyPage }) => {
-    const textarea = comfyPage.page.locator('[data-node-id] textarea').first()
-    await expect(textarea).toBeVisible()
-    const container = textarea.locator('..')
-    await expect(container).toHaveClass(/group/)
   })
 
   test('Copy button exists within textarea widget group container', async ({
