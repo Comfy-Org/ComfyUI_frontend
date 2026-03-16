@@ -99,11 +99,11 @@
             :class="
               cn(
                 'flex h-10 items-center justify-between rounded-lg px-3',
-                getMaxMembers(tier) > 1 ? 'bg-emerald-500/20' : ''
+                maxMembersByTier[tier.key] > 1 ? 'bg-emerald-500/20' : ''
               )
             "
           >
-            <template v-if="getMaxMembers(tier) > 1">
+            <template v-if="maxMembersByTier[tier.key] > 1">
               <div class="flex items-center gap-2">
                 <i class="pi pi-users text-xs text-emerald-400" />
                 <span class="text-sm text-emerald-400">
@@ -111,7 +111,7 @@
                 </span>
               </div>
               <span class="text-sm font-bold text-base-foreground">
-                {{ t('subscription.memberCount', getMaxMembers(tier)) }}
+                {{ t('subscription.memberCount', maxMembersByTier[tier.key]) }}
               </span>
             </template>
           </div>
@@ -138,7 +138,7 @@
               <span
                 class="font-inter text-sm/normal font-bold text-base-foreground"
               >
-                {{ getMaxMembers(tier) }}
+                {{ maxMembersByTier[tier.key] }}
               </span>
             </div>
 
@@ -499,7 +499,13 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
   return plan ? plan.price_cents / 100 : tier.pricing.yearly * 12
 }
 
-const getMaxMembers = (tier: PricingTierConfig): number => getMaxSeats(tier.key)
+const maxMembersByTier = computed(
+  () =>
+    Object.fromEntries(tiers.map((t) => [t.key, getMaxSeats(t.key)])) as Record<
+      CheckoutTierKey,
+      number
+    >
+)
 
 const getMonthlyCreditsPerMember = (tier: PricingTierConfig): number =>
   tier.pricing.credits

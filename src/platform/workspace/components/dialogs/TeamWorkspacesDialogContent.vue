@@ -57,10 +57,10 @@
                   {{ workspace.name }}
                 </span>
                 <span
-                  v-if="getTierLabel(workspace)"
+                  v-if="tierLabels.get(workspace.id)"
                   class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
                 >
-                  {{ getTierLabel(workspace) }}
+                  {{ tierLabels.get(workspace.id) }}
                 </span>
               </div>
             </div>
@@ -150,6 +150,13 @@ const workspaceName = ref('')
 
 const ownedTeamWorkspaces = computed(() =>
   sharedWorkspaces.value.filter((w) => w.role === 'owner')
+)
+
+const tierLabels = computed(
+  () =>
+    new Map(
+      ownedTeamWorkspaces.value.map((w) => [w.id, getTierLabel(w)] as const)
+    )
 )
 
 const isValidName = computed(() => {

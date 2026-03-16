@@ -25,28 +25,6 @@ export function useCreateWorkspaceUrlLoader() {
   const router = useRouter()
   const dialogService = useDialogService()
 
-  const ensureQueryFromIntent = async () => {
-    hydratePreservedQuery(NAMESPACE)
-    const mergedQuery = mergePreservedQueryIntoQuery(NAMESPACE, route.query)
-
-    if (mergedQuery) {
-      await router.replace({ query: mergedQuery })
-    }
-
-    return mergedQuery ?? route.query
-  }
-
-  const cleanupUrlParams = () => {
-    const newQuery = { ...route.query }
-    delete newQuery.create_workspace
-    router.replace({ query: newQuery }).catch((error) => {
-      console.warn(
-        '[useCreateWorkspaceUrlLoader] Failed to clean URL params:',
-        error
-      )
-    })
-  }
-
   /**
    * Opens the create workspace dialog if `?create_workspace=1` is present.
    *
@@ -57,11 +35,24 @@ export function useCreateWorkspaceUrlLoader() {
    * 4. Clean up URL and preserved query
    */
   async function loadCreateWorkspaceFromUrl() {
-    const query = await ensureQueryFromIntent()
+    hydratePreservedQuery(NAMESPACE)
+    const mergedQuery = mergePreservedQueryIntoQuery(NAMESPACE, route.query)
+    if (mergedQuery) {
+      await router.replace({ query: mergedQuery })
+    }
+
+    const query = mergedQuery ?? route.query
     const param = query.create_workspace
     if (!param || typeof param !== 'string') return
 
-    cleanupUrlParams()
+    const newQuery = { ...route.query }
+    delete newQuery.create_workspace
+    router.replace({ query: newQuery }).catch((error) => {
+      console.warn(
+        '[useCreateWorkspaceUrlLoader] Failed to clean URL params:',
+        error
+      )
+    })
     clearPreservedQuery(NAMESPACE)
 
     try {
