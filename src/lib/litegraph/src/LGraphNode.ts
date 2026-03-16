@@ -4087,9 +4087,7 @@ export class LGraphNode
     ctx: CanvasRenderingContext2D,
     { fromSlot, colorContext, editorAlpha, lowQuality }: DrawSlotsOptions
   ) {
-    const slotArrays = [this._concreteInputs, this._concreteOutputs]
-    for (let a = 0; a < 2; a++) {
-      const slots = slotArrays[a]
+    for (const slots of [this._concreteInputs, this._concreteOutputs]) {
       for (let s = 0; s < slots.length; s++) {
         const slot = slots[s]
         const isValidTarget = fromSlot && slot.isValidTarget(fromSlot)
