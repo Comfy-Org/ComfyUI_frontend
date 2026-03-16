@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computedAsync, refDebounced } from '@vueuse/core'
 import Popover from 'primevue/popover'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -83,6 +84,7 @@ const layoutMode = defineModel<LayoutMode>('layoutMode', {
 })
 const files = defineModel<File[]>('files', { default: () => [] })
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
+const debouncedSearchQuery = refDebounced(searchQuery, 250, { maxWait: 1000 })
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
   default: 'all'
 })
