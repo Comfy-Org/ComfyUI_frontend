@@ -3,6 +3,7 @@ issue_enrichment:
     enabled: true
 reviews:
   high_level_summary: false
+  request_changes_workflow: true
   auto_review:
     drafts: true
     ignore_title_keywords:
@@ -13,6 +14,7 @@ reviews:
       - github-actions
       - github-actions[bot]
   pre_merge_checks:
+    override_requested_reviewers_only: true
     custom_checks:
       - name: End-to-end regression coverage for fixes
         mode: error
