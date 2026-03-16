@@ -120,10 +120,11 @@ describe('MissingModelUrlInput', () => {
       mockPrivateModelsEnabled.value = false
       const wrapper = mountComponent()
       const input = wrapper.find('input')
+      input.element.value = 'https://example.com/model.safetensors'
       await input.trigger('input')
       expect(mockHandleUrlInput).toHaveBeenCalledWith(
         MODEL_KEY,
-        expect.any(String)
+        'https://example.com/model.safetensors'
       )
     })
   })
@@ -167,6 +168,16 @@ describe('MissingModelUrlInput', () => {
 
       expect(mockShowUploadDialog).toHaveBeenCalled()
       expect(mockHandleImport).not.toHaveBeenCalled()
+    })
+
+    it('clear button works for free-tier users', async () => {
+      mockPrivateModelsEnabled.value = false
+      const store = useMissingModelStore()
+      store.urlInputs[MODEL_KEY] = 'https://example.com/model.safetensors'
+      const wrapper = mountComponent()
+      const clearBtn = wrapper.find('button[aria-label="Clear URL"]')
+      await clearBtn.trigger('click')
+      expect(mockHandleUrlInput).toHaveBeenCalledWith(MODEL_KEY, '')
     })
   })
 })
