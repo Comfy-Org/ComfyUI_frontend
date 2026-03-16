@@ -8,8 +8,6 @@ on:
   pull_request:
     types: [labeled]
     branches: [main]
-  push: # REMOVE BEFORE MERGE — test trigger for sno-skills branch
-    branches: [sno-skills]
   workflow_dispatch:
     inputs:
       mode:
