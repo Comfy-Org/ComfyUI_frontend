@@ -120,11 +120,13 @@ jobs:
       - name: Setup Xvfb (Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb ffmpeg >/dev/null 2>&1
-          Xvfb :99 -screen 0 1280x720x24 -ac &
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb ffmpeg x11-xserver-utils >/dev/null 2>&1
+          Xvfb :99 -screen 0 1280x720x24 -ac -nolisten tcp &
           echo $! > "${{ runner.temp }}/xvfb.pid"
           sleep 2
           echo "DISPLAY=:99" >> "$GITHUB_ENV"
+          # Set black background and normal cursor (removes the default X cursor)
+          DISPLAY=:99 xsetroot -solid black -cursor_name left_ptr 2>/dev/null || true
 
       - name: Start recording (Linux)
         if: runner.os == 'Linux'
