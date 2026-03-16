@@ -877,7 +877,6 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
   })
-})
   describe('_slotsDirty flag', () => {
     test('starts dirty', () => {
       const n = new LGraphNode('Test')
@@ -943,7 +942,9 @@ describe('LGraphNode', () => {
       expect(n._slotsDirty).toBe(true)
     })
   })
+})
 
+describe('snapToGrid', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
