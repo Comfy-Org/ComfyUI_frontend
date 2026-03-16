@@ -35,7 +35,8 @@ vi.mock('@/scripts/api', () => ({
   api: {
     apiURL: vi.fn(),
     addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
+    removeEventListener: vi.fn(),
+    getServerFeature: vi.fn(() => false)
   }
 }))
 
