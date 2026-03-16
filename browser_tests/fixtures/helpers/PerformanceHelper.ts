@@ -14,6 +14,14 @@ interface PerfSnapshot {
   JSEventListeners: number
 }
 
+export interface FPSResult {
+  p5: number
+  p50: number
+  p95: number
+  mean: number
+  frameCount: number
+}
+
 export interface PerfMeasurement {
   name: string
   durationMs: number
@@ -29,6 +37,9 @@ export interface PerfMeasurement {
   eventListeners: number
   totalBlockingTimeMs: number
   frameDurationMs: number
+  fpsP5?: number
+  fpsP50?: number
+  fpsMean?: number
 }
 
 export class PerformanceHelper {
@@ -127,6 +138,41 @@ export class PerformanceHelper {
         requestAnimationFrame(tick)
       })
     }, sampleFrames)
+  }
+
+  async measureFPS(durationMs: number): Promise<FPSResult> {
+    return this.page.evaluate((duration) => {
+      return new Promise<FPSResult>((resolve) => {
+        const frameDurations: number[] = []
+        let lastTime = 0
+        const start = performance.now()
+
+        function tick(now: number) {
+          if (lastTime > 0) frameDurations.push(now - lastTime)
+          lastTime = now
+          if (now - start < duration) {
+            requestAnimationFrame(tick)
+          } else {
+            if (frameDurations.length === 0) {
+              resolve({ p5: 0, p50: 0, p95: 0, mean: 0, frameCount: 0 })
+              return
+            }
+            const fps = frameDurations.map((d) => 1000 / d)
+            fps.sort((a, b) => a - b)
+            const percentile = (p: number) =>
+              fps[Math.floor(fps.length * p)] ?? 0
+            resolve({
+              p5: percentile(0.05),
+              p50: percentile(0.5),
+              p95: percentile(0.95),
+              mean: fps.reduce((a, b) => a + b, 0) / fps.length,
+              frameCount: fps.length
+            })
+          }
+        }
+        requestAnimationFrame(tick)
+      })
+    }, durationMs)
   }
 
   async startMeasuring(): Promise<void> {
