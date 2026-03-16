@@ -35,8 +35,10 @@
           'z-40': store.activeLayer === 'mask'
         }"
       />
-      <div ref="canvasBackgroundRef" class="size-full bg-white" />
+      <div ref="canvasBackgroundRef" class="size-full" />
     </div>
+
+    <LoadingOverlay :loading="!initialized" size="sm" />
 
     <div class="maskEditor-ui-container flex min-h-0 flex-1 flex-col">
       <div class="flex min-h-0 flex-1 overflow-hidden">
@@ -76,6 +78,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 
 import BrushCursor from './BrushCursor.vue'
 import PointerZone from './PointerZone.vue'
