@@ -2586,7 +2586,8 @@
     "roleOwner": "Owner",
     "roleMember": "Member",
     "createWorkspace": "Create new workspace",
-    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one."
+    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
+    "failedToSwitch": "Failed to switch workspace"
   },
   "selectionToolbox": {
     "executeButton": {

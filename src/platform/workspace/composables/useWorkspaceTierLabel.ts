@@ -32,11 +32,19 @@ export function useWorkspaceTierLabel() {
       : baseName
   }
 
+  function isYearlyPlan(planSlug: string | null): boolean {
+    if (!planSlug) return false
+    return planSlug.includes('YEARLY') || planSlug.includes('ANNUAL')
+  }
+
   function getTierLabel(workspace: WorkspaceSubscriptionInfo): string | null {
     if (!workspace.isSubscribed) return null
 
     if (workspace.subscriptionTier) {
-      return formatTierName(workspace.subscriptionTier, false)
+      return formatTierName(
+        workspace.subscriptionTier,
+        isYearlyPlan(workspace.subscriptionPlan)
+      )
     }
 
     if (!workspace.subscriptionPlan) return null
@@ -47,8 +55,7 @@ export function useWorkspaceTierLabel() {
     )
     if (!tierMatch) return null
 
-    const isYearly = planSlug.includes('YEARLY') || planSlug.includes('ANNUAL')
-    return formatTierName(tierMatch, isYearly)
+    return formatTierName(tierMatch, isYearlyPlan(planSlug))
   }
 
   return { formatTierName, getTierLabel }

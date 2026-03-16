@@ -51,6 +51,19 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({
+      show: vi.fn(),
+      showPricingTable: vi.fn(),
+      hide: vi.fn(),
+      startTeamWorkspaceUpgradeFlow: vi.fn(),
+      resumePendingPricingFlow: vi.fn()
+    })
+  })
+)
+
 describe('WorkspaceAuthGate', () => {
   beforeEach(() => {
     vi.clearAllMocks()

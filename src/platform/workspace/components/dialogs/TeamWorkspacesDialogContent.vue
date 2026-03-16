@@ -6,6 +6,7 @@
     <header class="flex items-start gap-3 p-5 pb-0">
       <div
         class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-background text-white"
+        aria-hidden="true"
       >
         <i class="icon-[lucide--users] text-lg" />
       </div>
@@ -18,7 +19,7 @@
         </p>
       </div>
       <button
-        class="focus-visible:ring-secondary-foreground -mt-1 cursor-pointer rounded-sm border-none bg-transparent p-1 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="focus-visible:ring-secondary-foreground -mt-1 cursor-pointer rounded-sm border-none bg-transparent p-2 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -41,7 +42,7 @@
       >
         <li v-for="workspace in ownedTeamWorkspaces" :key="workspace.id">
           <button
-            class="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border-default bg-transparent px-4 py-3 transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:outline-none"
+            class="focus-visible:ring-secondary-foreground flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border-default bg-transparent px-4 py-3 transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:outline-none"
             @click="handleSwitch(workspace.id)"
           >
             <WorkspaceProfilePic
@@ -134,6 +135,7 @@ const { onConfirm } = defineProps<{
 }>()
 
 const DIALOG_KEY = 'team-workspaces'
+const SAFE_NAME_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9\s\-_'.,()&+]*$/
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()
@@ -152,8 +154,7 @@ const ownedTeamWorkspaces = computed(() =>
 
 const isValidName = computed(() => {
   const name = workspaceName.value.trim()
-  const safeNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9\s\-_'.,()&+]*$/
-  return name.length >= 1 && name.length <= 50 && safeNameRegex.test(name)
+  return name.length >= 1 && name.length <= 50 && SAFE_NAME_REGEX.test(name)
 })
 
 function onCancel() {
@@ -161,8 +162,16 @@ function onCancel() {
 }
 
 async function handleSwitch(workspaceId: string) {
-  dialogStore.closeDialog({ key: DIALOG_KEY })
-  await switchWorkspace(workspaceId)
+  try {
+    dialogStore.closeDialog({ key: DIALOG_KEY })
+    await switchWorkspace(workspaceId)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('workspaceSwitcher.failedToSwitch'),
+      detail: error instanceof Error ? error.message : t('g.unknownError')
+    })
+  }
 }
 
 async function onCreate() {
@@ -170,11 +179,10 @@ async function onCreate() {
   loading.value = true
   try {
     const name = workspaceName.value.trim()
+    await workspaceStore.createWorkspace(name)
     await onConfirm?.(name)
     dialogStore.closeDialog({ key: DIALOG_KEY })
-    await workspaceStore.createWorkspace(name)
   } catch (error) {
-    console.error('[TeamWorkspacesDialog] Failed to create workspace:', error)
     toast.add({
       severity: 'error',
       summary: t('workspacePanel.toast.failedToCreateWorkspace'),
