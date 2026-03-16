@@ -1,5 +1,7 @@
 import { describe, expect, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import { verifyEventSequence } from './__fixtures__/subgraphHelpers'
 
@@ -423,5 +425,45 @@ describe('SubgraphEvents - Event Cancellation', () => {
     expect(emptySubgraph.inputs).not.toContain(input)
     expect(emptySubgraph.inputs).toHaveLength(0)
     expect(allowHandler).toHaveBeenCalled()
+  })
+
+  subgraphTest('veto preserves input connections', ({ emptySubgraph }) => {
+    const input = emptySubgraph.addInput('test', 'number')
+
+    const node = new LGraphNode('Interior')
+    node.addInput('in', 'number')
+    emptySubgraph.add(node)
+
+    input.connect(node.inputs[0], node)
+    expect(input.linkIds).not.toHaveLength(0)
+
+    emptySubgraph.events.addEventListener('removing-input', (event) => {
+      event.preventDefault()
+    })
+
+    emptySubgraph.removeInput(input)
+
+    expect(emptySubgraph.inputs).toContain(input)
+    expect(input.linkIds).not.toHaveLength(0)
+  })
+
+  subgraphTest('veto preserves output connections', ({ emptySubgraph }) => {
+    const output = emptySubgraph.addOutput('test', 'number')
+
+    const node = new LGraphNode('Interior')
+    node.addOutput('out', 'number')
+    emptySubgraph.add(node)
+
+    output.connect(node.outputs[0], node)
+    expect(output.linkIds).not.toHaveLength(0)
+
+    emptySubgraph.events.addEventListener('removing-output', (event) => {
+      event.preventDefault()
+    })
+
+    emptySubgraph.removeOutput(output)
+
+    expect(emptySubgraph.outputs).toContain(output)
+    expect(output.linkIds).not.toHaveLength(0)
   })
 })

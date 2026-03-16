@@ -121,6 +121,21 @@ describe('resolveSubgraphInputLink', () => {
     expect(result).toBe('seed_input')
   })
 
+  test('resolves the first connected link when multiple links exist', () => {
+    const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
+    addLinkedInteriorInput(subgraph, 'prompt', 'first_input', 'firstWidget')
+    addLinkedInteriorInput(subgraph, 'prompt', 'second_input', 'secondWidget')
+
+    const result = resolveSubgraphInputLink(
+      subgraphNode,
+      'prompt',
+      ({ targetInput }) => targetInput.name
+    )
+
+    // First connected wins — consistent with SubgraphNode._resolveLinkedPromotionBySubgraphInput
+    expect(result).toBe('first_input')
+  })
+
   test('caches getTargetWidget result within the same callback evaluation', () => {
     const { subgraph, subgraphNode } = createSubgraphSetup('model')
     const linked = addLinkedInteriorInput(

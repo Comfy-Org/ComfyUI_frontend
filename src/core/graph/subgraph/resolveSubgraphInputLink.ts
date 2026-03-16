@@ -19,9 +19,9 @@ export function resolveSubgraphInputLink<TResult>(
   )
   if (!inputSlot) return undefined
 
-  // Iterate from newest to oldest so the latest connection wins.
-  for (let index = inputSlot.linkIds.length - 1; index >= 0; index -= 1) {
-    const linkId = inputSlot.linkIds[index]
+  // Iterate forward so the first connected source is the promoted representative,
+  // matching SubgraphNode._resolveLinkedPromotionBySubgraphInput.
+  for (const linkId of inputSlot.linkIds) {
     const link = node.subgraph.getLink(linkId)
     if (!link) continue
 
