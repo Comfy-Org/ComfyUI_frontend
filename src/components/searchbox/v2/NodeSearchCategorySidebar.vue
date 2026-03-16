@@ -87,7 +87,6 @@ import NodeSearchCategoryTreeNode, {
 } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
 import type { CategoryNode } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
@@ -96,16 +95,12 @@ import { cn } from '@/utils/tailwindUtil'
 const {
   hideChevrons = false,
   hidePresets = false,
-  hasEssentialNodes = false,
-  hasCustomNodes = false,
   nodeDefs,
   rootLabel,
   rootKey
 } = defineProps<{
   hideChevrons?: boolean
   hidePresets?: boolean
-  hasEssentialNodes?: boolean
-  hasCustomNodes?: boolean
   nodeDefs?: ComfyNodeDefImpl[]
   rootLabel?: string
   rootKey?: string
@@ -121,26 +116,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const nodeDefStore = useNodeDefStore()
-const nodeBookmarkStore = useNodeBookmarkStore()
 
-const topCategories = computed(() => {
-  const categories = [{ id: DEFAULT_CATEGORY, label: t('g.mostRelevant') }]
-  if (nodeBookmarkStore.bookmarks.length > 0) {
-    categories.push({ id: 'favorites', label: t('g.favorites') })
-  }
-  return categories
-})
+const topCategories = computed(() => [
+  { id: DEFAULT_CATEGORY, label: t('g.mostRelevant') }
+])
 
-const sourceCategories = computed(() => {
-  const categories = []
-  if (hasEssentialNodes) {
-    categories.push({ id: 'essentials', label: t('g.essentials') })
-  }
-  if (hasCustomNodes) {
-    categories.push({ id: 'custom', label: t('g.extensions') })
-  }
-  return categories
-})
+const sourceCategories = computed<{ id: string; label: string }[]>(() => [])
 
 const categoryTree = computed<CategoryNode[]>(() => {
   const defs = nodeDefs ?? nodeDefStore.visibleNodeDefs

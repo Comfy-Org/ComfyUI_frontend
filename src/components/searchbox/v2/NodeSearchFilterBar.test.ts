@@ -61,15 +61,23 @@ describe(NodeSearchFilterBar, () => {
     expect(texts).toContain('Output')
   })
 
+  it('should always render Comfy button', async () => {
+    const wrapper = await createWrapper()
+    const texts = wrapper.findAll('button').map((b) => b.text())
+    expect(texts).toContain('Comfy')
+  })
+
   it('should render conditional category buttons when matching nodes exist', async () => {
     const wrapper = await createWrapper({
+      hasFavorites: true,
       hasEssentialNodes: true,
       hasBlueprintNodes: true,
       hasPartnerNodes: true
     })
     const texts = wrapper.findAll('button').map((b) => b.text())
+    expect(texts).toContain('Bookmarked')
     expect(texts).toContain('Blueprints')
-    expect(texts).toContain('Partner Nodes')
+    expect(texts).toContain('Partner')
     expect(texts).toContain('Essentials')
   })
 

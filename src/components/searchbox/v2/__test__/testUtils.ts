@@ -39,6 +39,7 @@ export const testI18n = createI18n({
         mostRelevant: 'Most relevant',
         recents: 'Recents',
         favorites: 'Favorites',
+        bookmarked: 'Bookmarked',
         essentials: 'Essentials',
         category: 'Category',
         custom: 'Custom',

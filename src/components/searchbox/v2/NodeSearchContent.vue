@@ -21,6 +21,7 @@
           class="flex-1"
           :filters="filters"
           :active-category="rootFilter"
+          :has-favorites="nodeBookmarkStore.bookmarks.length > 0"
           :has-essential-nodes="nodeAvailability.essential"
           :has-blueprint-nodes="nodeAvailability.blueprint"
           :has-partner-nodes="nodeAvailability.partner"
@@ -40,8 +41,6 @@
           class="w-52 shrink-0"
           :hide-chevrons="!anyTreeCategoryHasChildren"
           :hide-presets="rootFilter !== null"
-          :has-essential-nodes="nodeAvailability.essential"
-          :has-custom-nodes="nodeAvailability.custom"
           :node-defs="rootFilteredNodeDefs"
           :root-label="rootFilterLabel"
           :root-key="rootFilter ?? undefined"
@@ -121,6 +120,7 @@ import { cn } from '@/utils/tailwindUtil'
 const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
   {
     essentials: isEssentialNode,
+    comfy: (n) => !isCustomNode(n),
     custom: isCustomNode
   }
 
@@ -177,12 +177,16 @@ const rootFilter = ref<string | null>(null)
 
 const rootFilterLabel = computed(() => {
   switch (rootFilter.value) {
+    case 'favorites':
+      return t('g.bookmarked')
     case BLUEPRINT_CATEGORY:
       return t('g.blueprints')
     case 'partner-nodes':
-      return t('g.partnerNodes')
+      return t('g.partner')
     case 'essentials':
       return t('g.essentials')
+    case 'comfy':
+      return t('g.comfy')
     case 'custom':
       return t('g.extensions')
     default:
@@ -196,6 +200,8 @@ const rootFilteredNodeDefs = computed(() => {
   const sourceFilter = sourceCategoryFilters[rootFilter.value]
   if (sourceFilter) return allNodes.filter(sourceFilter)
   switch (rootFilter.value) {
+    case 'favorites':
+      return allNodes.filter((n) => nodeBookmarkStore.isBookmarked(n))
     case BLUEPRINT_CATEGORY:
       return allNodes.filter((n) => n.category.startsWith(rootFilter.value!))
     case 'partner-nodes':
@@ -307,8 +313,6 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
 
   const sourceFilter = sourceCategoryFilters[category]
   if (sourceFilter) return source.filter(sourceFilter)
-  if (category === 'favorites')
-    return source.filter((n) => nodeBookmarkStore.isBookmarked(n))
   return getCategoryResults(source, category)
 })
 

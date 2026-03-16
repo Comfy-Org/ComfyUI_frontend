@@ -66,27 +66,18 @@ describe('NodeSearchCategorySidebar', () => {
       expect(wrapper.text()).toContain('Most relevant')
     })
 
-    it('should show Favorites only when bookmarks exist', async () => {
-      const wrapper = await createWrapper()
-      expect(wrapper.text()).not.toContain('Favorites')
-    })
-
-    it('should show Favorites when bookmarks are present', async () => {
+    it('should not show Favorites in sidebar', async () => {
       vi.spyOn(useNodeBookmarkStore(), 'bookmarks', 'get').mockReturnValue([
         'some-bookmark'
       ])
       const wrapper = await createWrapper()
-      expect(wrapper.text()).toContain('Favorites')
+      expect(wrapper.text()).not.toContain('Favorites')
     })
 
-    it('should show Extensions source category when custom nodes exist', async () => {
-      const wrapper = await createWrapper({ hasCustomNodes: true })
-      expect(wrapper.text()).toContain('Extensions')
-    })
-
-    it('should not show Custom source category when no custom nodes exist', async () => {
+    it('should not show source categories in sidebar', async () => {
       const wrapper = await createWrapper()
-      expect(wrapper.text()).not.toContain('Custom')
+      expect(wrapper.text()).not.toContain('Extensions')
+      expect(wrapper.text()).not.toContain('Essentials')
     })
 
     it('should mark the selected preset category as selected', async () => {
@@ -99,22 +90,6 @@ describe('NodeSearchCategorySidebar', () => {
       )
 
       expect(mostRelevantBtn.attributes('aria-current')).toBe('true')
-    })
-
-    it('should emit update:selectedCategory when preset is clicked', async () => {
-      vi.spyOn(useNodeBookmarkStore(), 'bookmarks', 'get').mockReturnValue([
-        'some-bookmark'
-      ])
-      const wrapper = await createWrapper({
-        selectedCategory: DEFAULT_CATEGORY
-      })
-
-      await clickCategory(wrapper, 'Favorites')
-
-      expect(wrapper.emitted('update:selectedCategory')).toBeTruthy()
-      expect(wrapper.emitted('update:selectedCategory')![0]).toEqual([
-        'favorites'
-      ])
     })
   })
 

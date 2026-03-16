@@ -68,13 +68,22 @@ describe('NodeSearchContent', () => {
     vi.spyOn(bookmarkStore, 'bookmarks', 'get').mockReturnValue(bookmarkList)
   }
 
+  function clickFilterButton(wrapper: VueWrapper, text: string) {
+    const btn = wrapper
+      .findComponent(NodeSearchFilterBar)
+      .findAll('button')
+      .find((b) => b.text() === text)
+    expect(btn, `Expected filter button "${text}"`).toBeDefined()
+    return btn!.trigger('click')
+  }
+
   async function setupFavorites(
     nodes: Parameters<typeof createMockNodeDef>[0][]
   ) {
     useNodeDefStore().updateNodeDefs(nodes.map(createMockNodeDef))
     mockBookmarks(true, ['placeholder'])
     const wrapper = await createWrapper()
-    await wrapper.find('[data-testid="category-favorites"]').trigger('click')
+    await clickFilterButton(wrapper, 'Bookmarked')
     await nextTick()
     return wrapper
   }
@@ -125,7 +134,7 @@ describe('NodeSearchContent', () => {
       )
 
       const wrapper = await createWrapper()
-      await wrapper.find('[data-testid="category-favorites"]').trigger('click')
+      await clickFilterButton(wrapper, 'Bookmarked')
       await nextTick()
 
       const items = getNodeItems(wrapper)
@@ -140,7 +149,7 @@ describe('NodeSearchContent', () => {
       mockBookmarks(false, ['placeholder'])
 
       const wrapper = await createWrapper()
-      await wrapper.find('[data-testid="category-favorites"]').trigger('click')
+      await clickFilterButton(wrapper, 'Bookmarked')
       await nextTick()
 
       expect(wrapper.text()).toContain('No results')
@@ -347,7 +356,7 @@ describe('NodeSearchContent', () => {
       await nextTick()
       expect((input.element as HTMLInputElement).value).toBe('test query')
 
-      await wrapper.find('[data-testid="category-favorites"]').trigger('click')
+      await clickFilterButton(wrapper, 'Bookmarked')
       await nextTick()
       expect((input.element as HTMLInputElement).value).toBe('test query')
     })
@@ -382,11 +391,10 @@ describe('NodeSearchContent', () => {
       await input.trigger('keydown', { key: 'ArrowDown' })
       await nextTick()
 
-      await wrapper
-        .find('[data-testid="category-most-relevant"]')
-        .trigger('click')
+      // Toggle Bookmarked off (back to default) then on again to reset index
+      await clickFilterButton(wrapper, 'Bookmarked')
       await nextTick()
-      await wrapper.find('[data-testid="category-favorites"]').trigger('click')
+      await clickFilterButton(wrapper, 'Bookmarked')
       await nextTick()
 
       expect(getResultItems(wrapper)[0].attributes('aria-selected')).toBe(
@@ -536,7 +544,7 @@ describe('NodeSearchContent', () => {
       mockBookmarks(false, ['placeholder'])
       const wrapper = await createWrapper()
 
-      await wrapper.find('[data-testid="category-favorites"]').trigger('click')
+      await clickFilterButton(wrapper, 'Bookmarked')
       await nextTick()
 
       const emitted = wrapper.emitted('hoverNode')!

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-2 px-3">
+  <div class="flex items-center gap-2.5 px-3">
     <!-- Category filter buttons -->
     <button
       v-for="btn in categoryButtons"
@@ -11,6 +11,8 @@
     >
       {{ btn.label }}
     </button>
+
+    <div class="h-5 w-px shrink-0 bg-border-subtle" />
 
     <!-- Type filter popovers (Input / Output) -->
     <NodeSearchTypeFilterPopover
@@ -64,6 +66,7 @@ import { cn } from '@/utils/tailwindUtil'
 const {
   filters = [],
   activeCategory = null,
+  hasFavorites = false,
   hasEssentialNodes = false,
   hasBlueprintNodes = false,
   hasPartnerNodes = false,
@@ -71,6 +74,7 @@ const {
 } = defineProps<{
   filters?: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
   activeCategory?: string | null
+  hasFavorites?: boolean
   hasEssentialNodes?: boolean
   hasBlueprintNodes?: boolean
   hasPartnerNodes?: boolean
@@ -91,15 +95,19 @@ const MAX_VISIBLE_DOTS = 4
 
 const categoryButtons = computed(() => {
   const buttons: { id: string; label: string }[] = []
+  if (hasFavorites) {
+    buttons.push({ id: 'favorites', label: t('g.bookmarked') })
+  }
   if (hasBlueprintNodes) {
     buttons.push({ id: BLUEPRINT_CATEGORY, label: t('g.blueprints') })
   }
   if (hasPartnerNodes) {
-    buttons.push({ id: 'partner-nodes', label: t('g.partnerNodes') })
+    buttons.push({ id: 'partner-nodes', label: t('g.partner') })
   }
   if (hasEssentialNodes) {
     buttons.push({ id: 'essentials', label: t('g.essentials') })
   }
+  buttons.push({ id: 'comfy', label: t('g.comfy') })
   if (hasCustomNodes) {
     buttons.push({ id: 'custom', label: t('g.extensions') })
   }
