@@ -84,6 +84,16 @@ describe('useDismissableOverlay', () => {
     expect(dismissCount).toBe(1)
   })
 
+  it('ignores scroll inside the overlay', () => {
+    mountComposable({
+      dismissOnScroll: true
+    })
+
+    overlayEl.dispatchEvent(new Event('scroll'))
+
+    expect(dismissCount).toBe(0)
+  })
+
   it('does not dismiss when closed', () => {
     isOpen.value = false
     mountComposable({

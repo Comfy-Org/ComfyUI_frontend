@@ -24,13 +24,18 @@ export function useDismissableOverlay({
   getTriggerEl,
   dismissOnScroll = false
 }: UseDismissableOverlayOptions) {
-  const dismissIfOutside = (event: PointerEvent) => {
-    if (!toValue(isOpen) || !isNode(event.target)) {
+  const dismissIfOutside = (event: Event) => {
+    if (!toValue(isOpen)) {
       return
     }
 
     const overlay = getOverlayEl()
     if (!overlay) {
+      return
+    }
+
+    if (!isNode(event.target)) {
+      onDismiss()
       return
     }
 
@@ -47,20 +52,9 @@ export function useDismissableOverlay({
   useEventListener(window, 'pointerdown', dismissIfOutside, { capture: true })
 
   if (dismissOnScroll) {
-    useEventListener(
-      window,
-      'scroll',
-      () => {
-        if (!toValue(isOpen)) {
-          return
-        }
-
-        onDismiss()
-      },
-      {
-        capture: true,
-        passive: true
-      }
-    )
+    useEventListener(window, 'scroll', dismissIfOutside, {
+      capture: true,
+      passive: true
+    })
   }
 }

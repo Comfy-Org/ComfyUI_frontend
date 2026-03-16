@@ -1,7 +1,7 @@
 <template>
   <Popover
     ref="jobItemPopoverRef"
-    :dismissable="true"
+    :dismissable="false"
     :close-on-escape="true"
     unstyled
     :pt="{
