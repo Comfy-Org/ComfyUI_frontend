@@ -31,7 +31,15 @@ interface PerfMeasurement {
   frameDurationMs: number
   p95FrameDurationMs: number
   allFrameDurationsMs?: number[]
+  fpsP5?: number
+  fpsP50?: number
+  fpsMean?: number
 }
+
+const M2_TARGET_FPS = 52
+const M2_TARGET_TBT_MS = 200
+const M2_TARGET_FRAME_DURATION_MS = 20
+const M2_TEST_NAME = 'large-graph-idle'
 
 interface PerfReport {
   timestamp: string
@@ -251,6 +259,70 @@ function renderHeadlineSummary(
     lines.push('> ' + summaries.join('\n> '), '')
   }
 
+  return lines
+}
+
+function renderM2Scoreboard(
+  prGroups: Map<string, PerfMeasurement[]>
+): string[] {
+  const samples = prGroups.get(M2_TEST_NAME)
+  if (!samples?.length) return []
+
+  const fpsValues = samples
+    .map((s) => s.fpsP5)
+    .filter((v): v is number => v != null && v > 0)
+  if (fpsValues.length === 0) return []
+
+  const avgP5 = fpsValues.reduce((a, b) => a + b, 0) / fpsValues.length
+  const passed = avgP5 >= M2_TARGET_FPS
+  const icon = passed ? '✅' : '🔴'
+  const p50Values = samples
+    .map((s) => s.fpsP50)
+    .filter((v): v is number => v != null && v > 0)
+  const avgP50 =
+    p50Values.length > 0
+      ? p50Values.reduce((a, b) => a + b, 0) / p50Values.length
+      : null
+  const meanValues = samples
+    .map((s) => s.fpsMean)
+    .filter((v): v is number => v != null && v > 0)
+  const avgMean =
+    meanValues.length > 0
+      ? meanValues.reduce((a, b) => a + b, 0) / meanValues.length
+      : null
+
+  const tbtValues = samples.map((s) => s.totalBlockingTimeMs)
+  const avgTBT =
+    tbtValues.reduce((a, b) => a + b, 0) / tbtValues.length
+  const tbtPassed = avgTBT <= M2_TARGET_TBT_MS
+  const tbtIcon = tbtPassed ? '✅' : '🔴'
+
+  const fdValues = samples.map((s) => s.frameDurationMs)
+  const avgFD = fdValues.reduce((a, b) => a + b, 0) / fdValues.length
+  const fdPassed = avgFD <= M2_TARGET_FRAME_DURATION_MS
+  const fdIcon = fdPassed ? '✅' : '🔴'
+
+  const allPassed = passed && tbtPassed && fdPassed
+
+  const lines: string[] = [
+    `### ${allPassed ? '✅' : '🔴'} M2 Perf Target — 245-node workflow`,
+    '',
+    `| Metric | Value | Target | Status |`,
+    `|--------|-------|--------|--------|`,
+    `| **P5 FPS** | **${avgP5.toFixed(0)}** | ≥${M2_TARGET_FPS} | ${icon} ${passed ? 'PASS' : 'FAIL'} |`,
+    `| **TBT** | **${avgTBT.toFixed(0)}ms** | ≤${M2_TARGET_TBT_MS}ms | ${tbtIcon} ${tbtPassed ? 'PASS' : 'FAIL'} |`,
+    `| **Frame Duration** | **${avgFD.toFixed(1)}ms** | ≤${M2_TARGET_FRAME_DURATION_MS}ms | ${fdIcon} ${fdPassed ? 'PASS' : 'FAIL'} |`
+  ]
+  if (avgP50 !== null)
+    lines.push(`| P50 FPS | ${avgP50.toFixed(0)} | — | — |`)
+  if (avgMean !== null)
+    lines.push(`| Mean FPS | ${avgMean.toFixed(0)} | — | — |`)
+  lines.push(
+    `| Samples | ${fpsValues.length} | — | — |`,
+    '',
+    `> Legacy baseline: ~60 FPS idle, ~70 FPS zoom. Target = <25% regression.`,
+    ''
+  )
   return lines
 }
 
@@ -482,6 +554,8 @@ function main() {
   const lines: string[] = []
   lines.push('## ⚡ Performance Report\n')
   lines.push(...renderHeadlineSummary(prGroups))
+
+  lines.push(...renderM2Scoreboard(prGroups))
 
   if (baseline && historical.length >= 2) {
     lines.push(...renderFullReport(prGroups, baseline, historical))
