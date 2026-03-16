@@ -1909,23 +1909,29 @@ audio.comfy-audio.empty-audio-widget {
     /* Shadow Cover TOP */
     linear-gradient(--value(--color-*) 30%, transparent) center top,
     /* Shadow Cover BOTTOM */
-    linear-gradient(transparent, --value(--color-*) 70%) center bottom,
+      linear-gradient(transparent, --value(--color-*) 70%) center bottom,
     /* Shadow TOP */
-    radial-gradient(
-      farthest-side at 50% 0,
-      color-mix(in oklab, --value(--color-*), #777777 35%),
-      60%,
-      transparent
-    ) center top,
+      radial-gradient(
+        farthest-side at 50% 0,
+        color-mix(in oklab, --value(--color-*), #777777 35%),
+        60%,
+        transparent
+      )
+      center top,
     /* Shadow BOTTOM */
-    radial-gradient(
-      farthest-side at 50% 100%,
-      color-mix(in oklab, --value(--color-*), #777777 35%),
-      60%,
-      transparent
-    ) center bottom;
+      radial-gradient(
+        farthest-side at 50% 100%,
+        color-mix(in oklab, --value(--color-*), #777777 35%),
+        60%,
+        transparent
+      )
+      center bottom;
 
   background-repeat: no-repeat;
-  background-size: 300% 40px, 300% 40px, 300% 14px, 300% 14px;
+  background-size:
+    300% 40px,
+    300% 40px,
+    300% 14px,
+    300% 14px;
   background-attachment: local, local, scroll, scroll;
 }
