@@ -2,7 +2,6 @@ import { flushPromises, mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
 
 import FormDropdown from './FormDropdown.vue'
 import type { FormDropdownItem } from './types'
@@ -19,33 +18,54 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   })
 }))
 
-const MockFormDropdownMenu = defineComponent({
+const MockFormDropdownMenu = {
   name: 'FormDropdownMenu',
-  props: {
-    items: { type: Array as () => FormDropdownItem[], default: () => [] },
-    isSelected: { type: Function, default: undefined },
-    filterOptions: { type: Array, default: () => [] },
-    sortOptions: { type: Array, default: () => [] },
-    maxSelectable: { type: Number, default: 1 },
-    disabled: { type: Boolean, default: false },
-    showOwnershipFilter: { type: Boolean, default: false },
-    ownershipOptions: { type: Array, default: () => [] },
-    showBaseModelFilter: { type: Boolean, default: false },
-    baseModelOptions: { type: Array, default: () => [] }
-  },
-  setup() {
-    return () => h('div', { class: 'mock-menu' })
-  }
-})
+  props: [
+    'items',
+    'isSelected',
+    'filterOptions',
+    'sortOptions',
+    'maxSelectable',
+    'disabled',
+    'showOwnershipFilter',
+    'ownershipOptions',
+    'showBaseModelFilter',
+    'baseModelOptions'
+  ],
+  template: '<div class="mock-menu" />'
+}
 
-function mountDropdown(items: FormDropdownItem[]) {
+const MockFormDropdownInput = {
+  name: 'FormDropdownInput',
+  template:
+    '<button class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
+}
+
+const MockPopover = {
+  name: 'Popover',
+  template: '<div><slot /></div>'
+}
+
+interface MountDropdownOptions {
+  searcher?: (
+    query: string,
+    items: FormDropdownItem[],
+    onCleanup: (cleanupFn: () => void) => void
+  ) => Promise<FormDropdownItem[]>
+  searchQuery?: string
+}
+
+function mountDropdown(
+  items: FormDropdownItem[],
+  options: MountDropdownOptions = {}
+) {
   return mount(FormDropdown, {
-    props: { items },
+    props: { items, ...options },
     global: {
       plugins: [PrimeVue, i18n],
       stubs: {
-        FormDropdownInput: true,
-        Popover: { template: '<div><slot /></div>' },
+        FormDropdownInput: MockFormDropdownInput,
+        Popover: MockPopover,
         FormDropdownMenu: MockFormDropdownMenu
       }
     }
@@ -56,7 +76,7 @@ function getMenuItems(
   wrapper: ReturnType<typeof mountDropdown>
 ): FormDropdownItem[] {
   return wrapper
-    .findComponent(MockFormDropdownMenu)
+    .findComponent({ name: 'FormDropdownMenu' })
     .props('items') as FormDropdownItem[]
 }
 
@@ -111,5 +131,48 @@ describe('FormDropdown', () => {
 
       expect(getMenuItems(wrapper)).toHaveLength(0)
     })
+  })
+
+  it('avoids filtering work while dropdown is closed', async () => {
+    const searcher = vi.fn(
+      async (_query: string, sourceItems: FormDropdownItem[]) =>
+        sourceItems.filter((item) => item.name.includes('video'))
+    )
+
+    const wrapper = mountDropdown(
+      [createItem('1', 'video-a.mp4'), createItem('2', 'video-b.mp4')],
+      { searcher }
+    )
+    await flushPromises()
+
+    expect(searcher).not.toHaveBeenCalled()
+
+    await wrapper.setProps({ searchQuery: 'video-a' })
+    await wrapper.setProps({
+      items: [createItem('3', 'video-c.mp4'), createItem('4', 'video-d.mp4')]
+    })
+    await flushPromises()
+
+    expect(searcher).not.toHaveBeenCalled()
+    expect(getMenuItems(wrapper).map((item) => item.id)).toEqual(['3', '4'])
+  })
+
+  it('runs filtering when dropdown opens', async () => {
+    const searcher = vi.fn(
+      async (_query: string, sourceItems: FormDropdownItem[]) =>
+        sourceItems.filter((item) => item.id === 'keep')
+    )
+
+    const wrapper = mountDropdown(
+      [createItem('keep', 'alpha'), createItem('drop', 'beta')],
+      { searcher }
+    )
+    await flushPromises()
+
+    await wrapper.find('.mock-dropdown-trigger').trigger('click')
+    await flushPromises()
+
+    expect(searcher).toHaveBeenCalled()
+    expect(getMenuItems(wrapper).map((item) => item.id)).toEqual(['keep'])
   })
 })

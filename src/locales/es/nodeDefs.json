@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Activa la optimización de KV Cache para imágenes de referencia en modelos de la familia Flux.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "modelo",
+        "tooltip": "El modelo en el que se usará KV Cache."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "El modelo modificado con KV Cache activado."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Este nodo redimensiona la imagen a una más óptima para flux kontext.",
     "display_name": "EscalaImagenFluxKontext",
@@ -11291,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Pintor",
+    "inputs": {
+      "bg_color": {
+        "name": "color_de_fondo"
+      },
+      "height": {
+        "name": "alto"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Imagen base opcional para pintar encima"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "CombinarCondPares",
     "inputs": {
@@ -12852,6 +12896,133 @@
       "1": {
         "name": "alto",
         "tooltip": "Altura calculada en píxeles (múltiplo de 8)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Genera imágenes a partir de descripciones de texto usando Reve.",
+    "display_name": "Reve Crear Imagen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Versión del modelo a utilizar para la generación."
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_test_time_scaling": {
+        "name": "escalado_en_tiempo_de_prueba"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descripción en texto de la imagen deseada. Máximo 2560 caracteres."
+      },
+      "remove_background": {
+        "name": "eliminar_fondo",
+        "tooltip": "Eliminar el fondo de la imagen generada. Puede tener un costo adicional."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "upscale": {
+        "name": "escalar",
+        "tooltip": "Aumentar la resolución de la imagen generada. Puede tener un costo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Edita imágenes usando instrucciones en lenguaje natural con Reve.",
+    "display_name": "Reve Editar Imagen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "edit_instruction": {
+        "name": "instrucción_de_edición",
+        "tooltip": "Descripción en texto de cómo editar la imagen. Máximo 2560 caracteres."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "La imagen a editar."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Versión del modelo a utilizar para la edición."
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_test_time_scaling": {
+        "name": "escalado_en_tiempo_de_prueba"
+      },
+      "remove_background": {
+        "name": "eliminar_fondo",
+        "tooltip": "Eliminar el fondo de la imagen generada. Puede tener un costo adicional."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "upscale": {
+        "name": "escalar",
+        "tooltip": "Aumentar la resolución de la imagen generada. Puede tener un costo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Combina imágenes de referencia con prompts de texto para crear nuevas imágenes usando Reve.",
+    "display_name": "Reve Mezclar Imagen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Versión del modelo a utilizar para mezclar."
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_test_time_scaling": {
+        "name": "escalado_en_tiempo_de_prueba"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descripción en texto de la imagen deseada. Puede incluir etiquetas XML img para referenciar imágenes específicas por índice, por ejemplo <img>0</img>, <img>1</img>, etc."
+      },
+      "reference_images": {
+        "name": "imágenes_de_referencia"
+      },
+      "remove_background": {
+        "name": "eliminar_fondo",
+        "tooltip": "Eliminar el fondo de la imagen generada. Puede tener un costo adicional."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "upscale": {
+        "name": "escalar",
+        "tooltip": "Aumentar la resolución de la imagen generada. Puede tener un costo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15080,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "Después de ingresar el modelo 3D, realiza el repintado de la textura del modelo 3D.",
+    "display_name": "Hunyuan3D: Edición de Textura 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Modelo 3D en formato FBX. El modelo debe tener menos de 100000 caras."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describe la edición de la textura. Soporta hasta 1024 caracteres UTF-8."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Imagen(es) a Modelo (Pro)",
     "inputs": {
@@ -15127,6 +15333,22 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
         "tooltip": null
       }
     }
@@ -15228,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }

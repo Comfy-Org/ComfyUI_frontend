@@ -31,7 +31,7 @@
       @pointerdown.capture.stop
       @pointermove.capture.stop
       @pointerup.capture.stop
-      @contextmenu.capture.stop
+      @contextmenu.capture="handleContextMenu"
     />
     <Button
       v-if="isReadOnly"
@@ -54,6 +54,7 @@ import { computed, useId } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
@@ -84,6 +85,14 @@ const id = useId()
 const isReadOnly = computed(() =>
   Boolean(widget.options?.read_only || widget.options?.disabled)
 )
+
+function handleContextMenu(e: MouseEvent) {
+  if (isNodeOptionsOpen()) {
+    e.stopPropagation()
+    return
+  }
+  e.preventDefault()
+}
 
 function handleCopy() {
   copyToClipboard(modelValue.value)

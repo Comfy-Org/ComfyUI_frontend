@@ -1,6 +1,7 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 import { watch } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   checkForCompletedTopup as checkTopupUtil,
@@ -278,6 +279,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     trigger_source?: ExecutionTriggerSource
   }): void {
     const executionContext = getExecutionContext()
+    const { mode, isAppMode } = useAppMode()
 
     const runButtonProperties: RunButtonProperties = {
       subscribe_to_run: options?.subscribe_to_run || false,
@@ -290,7 +292,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       api_node_names: executionContext.api_node_names,
       has_toolkit_nodes: executionContext.has_toolkit_nodes,
       toolkit_node_names: executionContext.toolkit_node_names,
-      trigger_source: options?.trigger_source
+      trigger_source: options?.trigger_source,
+      view_mode: mode.value,
+      is_app_mode: isAppMode.value
     }
 
     this.lastTriggerSource = options?.trigger_source
