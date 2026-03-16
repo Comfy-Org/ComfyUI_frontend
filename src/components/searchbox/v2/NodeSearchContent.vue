@@ -1,5 +1,5 @@
 <template>
-  <FocusScope as-child loop @unmount-auto-focus.prevent>
+  <FocusScope as-child loop>
     <div
       ref="dialogRef"
       class="flex max-h-[min(80vh,750px)] min-h-[400px] w-full flex-col overflow-hidden rounded-lg border border-interface-stroke bg-base-background"
