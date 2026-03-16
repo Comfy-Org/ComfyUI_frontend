@@ -251,4 +251,26 @@ describe('LGraphNode', () => {
     )
     expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe('')
   })
+
+  it('should isolate stacking context on outer container and apply containment only to inner wrapper', () => {
+    const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+
+    const outerClasses = wrapper.classes()
+    const innerWrapper = wrapper.find('[data-testid="node-inner-wrapper"]')
+    const innerClasses = innerWrapper.classes()
+
+    // Outer container must have isolation: isolate to prevent text
+    // from lower z-index nodes bleeding through (see #9988).
+    expect(outerClasses).toContain('isolate')
+
+    // CSS containment must NOT be on the outer container because it
+    // interferes with inter-node stacking compositing.
+    expect(outerClasses).not.toContain('contain-layout')
+    expect(outerClasses).not.toContain('contain-style')
+
+    // CSS containment belongs on the inner wrapper for performance
+    // without affecting stacking between sibling nodes.
+    expect(innerClasses).toContain('contain-layout')
+    expect(innerClasses).toContain('contain-style')
+  })
 })
