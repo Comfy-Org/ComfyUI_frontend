@@ -8,13 +8,44 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
-import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
+import type { ISlotType } from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+
+function createRegisteredNode(
+  graph: LGraph | Subgraph,
+  inputs: ISlotType[] = [],
+  outputs: ISlotType[] = [],
+  title?: string
+) {
+  const type = JSON.stringify({ inputs, outputs })
+  if (!LiteGraph.registered_node_types[type]) {
+    class testnode extends LGraphNode {
+      constructor(title: string) {
+        super(title)
+        let i = 0
+        for (const input of inputs) this.addInput('input_' + i++, input)
+        let o = 0
+        for (const output of outputs) this.addOutput('output_' + o++, output)
+      }
+    }
+    LiteGraph.registered_node_types[type] = testnode
+  }
+  const node = LiteGraph.createNode(type, title)
+  if (!node) throw new Error('Failed to create node')
+  graph.add(node)
+  return node
+}
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -411,5 +442,37 @@ describe('SubgraphSerialization - Data Integrity', () => {
 
     // Nodes are not restored without registered types
     expect(restored.nodes).toHaveLength(0)
+  })
+
+  it('should preserve interior link structure through serialization', () => {
+    const subgraph = createTestSubgraph({ nodeCount: 0 })
+
+    const nodeA = createRegisteredNode(subgraph, [], ['number'], 'A')
+    const nodeB = createRegisteredNode(subgraph, ['number'], ['string'], 'B')
+    const nodeC = createRegisteredNode(subgraph, ['string'], [], 'C')
+
+    nodeA.connect(0, nodeB, 0)
+    nodeB.connect(0, nodeC, 0)
+
+    expect(subgraph.nodes).toHaveLength(3)
+    expect(subgraph.links.size).toBe(2)
+
+    const exported = subgraph.asSerialisable()
+    const restored = new Subgraph(new LGraph(), exported)
+    restored.configure(exported)
+
+    expect(restored.nodes).toHaveLength(3)
+    expect(restored.links.size).toBe(2)
+
+    for (const [, link] of restored.links) {
+      const originNode = restored.getNodeById(link.origin_id)
+      const targetNode = restored.getNodeById(link.target_id)
+      expect(originNode).toBeDefined()
+      expect(targetNode).toBeDefined()
+      expect(link.origin_slot).toBeGreaterThanOrEqual(0)
+      expect(link.target_slot).toBeGreaterThanOrEqual(0)
+      expect(originNode!.outputs[link.origin_slot]).toBeDefined()
+      expect(targetNode!.inputs[link.target_slot]).toBeDefined()
+    }
   })
 })

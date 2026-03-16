@@ -9,6 +9,8 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, ISlotType } from '@/lib/litegraph/src/litegraph'
 
+import { usePromotionStore } from '@/stores/promotionStore'
+
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -202,6 +204,45 @@ describe('SubgraphConversion', () => {
         linkRefCount += reroute.linkIds.size
       }
       expect(linkRefCount).toBe(4)
+    })
+  })
+
+  describe('Promotion cleanup on unpack', () => {
+    it('Should clear promotions for the unpacked subgraph node', () => {
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const innerNode = createNode(subgraph, [], ['number'])
+      innerNode.addWidget('text', 'myWidget', 'default', () => {})
+
+      const promotionStore = usePromotionStore()
+      const graphId = graph.id
+      const subgraphNodeId = subgraphNode.id
+
+      promotionStore.promote(
+        graphId,
+        subgraphNodeId,
+        String(innerNode.id),
+        'myWidget'
+      )
+
+      expect(
+        promotionStore.isPromoted(
+          graphId,
+          subgraphNodeId,
+          String(innerNode.id),
+          'myWidget'
+        )
+      ).toBe(true)
+
+      graph.unpackSubgraph(subgraphNode)
+
+      expect(graph.getNodeById(subgraphNodeId)).toBeUndefined()
+      expect(
+        promotionStore.getPromotions(graphId, subgraphNodeId)
+      ).toHaveLength(0)
     })
   })
 })

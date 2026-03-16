@@ -466,4 +466,38 @@ describe('SubgraphEvents - Event Cancellation', () => {
     expect(emptySubgraph.outputs).toContain(output)
     expect(output.linkIds).not.toHaveLength(0)
   })
+
+  subgraphTest(
+    'rename input cancellation does not prevent rename',
+    ({ emptySubgraph }) => {
+      const input = emptySubgraph.addInput('original', 'number')
+
+      const preventHandler = vi.fn((event: Event) => {
+        event.preventDefault()
+      })
+      emptySubgraph.events.addEventListener('renaming-input', preventHandler)
+
+      emptySubgraph.renameInput(input, 'new_name')
+
+      expect(input.label).toBe('new_name')
+      expect(preventHandler).toHaveBeenCalled()
+    }
+  )
+
+  subgraphTest(
+    'rename output cancellation does not prevent rename',
+    ({ emptySubgraph }) => {
+      const output = emptySubgraph.addOutput('original', 'number')
+
+      const preventHandler = vi.fn((event: Event) => {
+        event.preventDefault()
+      })
+      emptySubgraph.events.addEventListener('renaming-output', preventHandler)
+
+      emptySubgraph.renameOutput(output, 'new_name')
+
+      expect(output.label).toBe('new_name')
+      expect(preventHandler).toHaveBeenCalled()
+    }
+  )
 })
