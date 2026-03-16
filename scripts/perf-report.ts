@@ -152,35 +152,36 @@ function renderM2Scoreboard(
   const samples = prGroups.get(M2_TEST_NAME)
   if (!samples?.length) return []
 
-  const fpsValues = samples
-    .map((s) => s.fpsP5)
-    .filter((v): v is number => v != null && v > 0)
-  if (fpsValues.length === 0) return []
+  const scoredSamples = samples.filter(
+    (s): s is PerfMeasurement & { fpsP5: number } => Number.isFinite(s.fpsP5)
+  )
+  if (scoredSamples.length === 0) return []
 
+  const fpsValues = scoredSamples.map((s) => s.fpsP5)
   const avgP5 = fpsValues.reduce((a, b) => a + b, 0) / fpsValues.length
   const passed = avgP5 >= M2_TARGET_FPS
   const icon = passed ? '✅' : '🔴'
-  const p50Values = samples
+  const p50Values = scoredSamples
     .map((s) => s.fpsP50)
-    .filter((v): v is number => v != null && v > 0)
+    .filter((v): v is number => Number.isFinite(v))
   const avgP50 =
     p50Values.length > 0
       ? p50Values.reduce((a, b) => a + b, 0) / p50Values.length
       : null
-  const meanValues = samples
+  const meanValues = scoredSamples
     .map((s) => s.fpsMean)
-    .filter((v): v is number => v != null && v > 0)
+    .filter((v): v is number => Number.isFinite(v))
   const avgMean =
     meanValues.length > 0
       ? meanValues.reduce((a, b) => a + b, 0) / meanValues.length
       : null
 
-  const tbtValues = samples.map((s) => s.totalBlockingTimeMs)
+  const tbtValues = scoredSamples.map((s) => s.totalBlockingTimeMs)
   const avgTBT = tbtValues.reduce((a, b) => a + b, 0) / tbtValues.length
   const tbtPassed = avgTBT <= M2_TARGET_TBT_MS
   const tbtIcon = tbtPassed ? '✅' : '🔴'
 
-  const fdValues = samples.map((s) => s.frameDurationMs)
+  const fdValues = scoredSamples.map((s) => s.frameDurationMs)
   const avgFD = fdValues.reduce((a, b) => a + b, 0) / fdValues.length
   const fdPassed = avgFD <= M2_TARGET_FRAME_DURATION_MS
   const fdIcon = fdPassed ? '✅' : '🔴'
@@ -200,7 +201,7 @@ function renderM2Scoreboard(
   if (avgMean !== null)
     lines.push(`| Mean FPS | ${avgMean.toFixed(0)} | — | — |`)
   lines.push(
-    `| Samples | ${fpsValues.length} | — | — |`,
+    `| Samples | ${scoredSamples.length} | — | — |`,
     '',
     `> Legacy baseline: ~60 FPS idle, ~70 FPS zoom. Target = <25% regression.`,
     ''

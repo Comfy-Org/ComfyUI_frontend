@@ -146,21 +146,37 @@ export class PerformanceHelper {
         const frameDurations: number[] = []
         let lastTime = 0
         const start = performance.now()
+        let settled = false
+        const timeout = setTimeout(() => {
+          if (settled) return
+          settled = true
+          resolve({ p5: 0, p50: 0, p95: 0, mean: 0, frameCount: 0 })
+        }, duration + 5000)
 
         function tick(now: number) {
+          if (settled) return
           if (lastTime > 0) frameDurations.push(now - lastTime)
           lastTime = now
           if (now - start < duration) {
             requestAnimationFrame(tick)
           } else {
+            settled = true
+            clearTimeout(timeout)
             if (frameDurations.length === 0) {
               resolve({ p5: 0, p50: 0, p95: 0, mean: 0, frameCount: 0 })
               return
             }
             const fps = frameDurations.map((d) => 1000 / d)
             fps.sort((a, b) => a - b)
-            const percentile = (p: number) =>
-              fps[Math.floor(fps.length * p)] ?? 0
+            function percentile(p: number): number {
+              const rank = p * (fps.length - 1)
+              const lo = Math.floor(rank)
+              const hi = Math.ceil(rank)
+              const weight = rank - lo
+              const loVal = fps[lo] ?? 0
+              const hiVal = fps[hi] ?? loVal
+              return loVal + (hiVal - loVal) * weight
+            }
             resolve({
               p5: percentile(0.05),
               p50: percentile(0.5),
