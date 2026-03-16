@@ -281,24 +281,32 @@ ls docs/qa/ | grep "$(date +%Y-%m-%d)" | wc -l
 Any additional observations, performance notes, or suggestions.
 ```
 
-## Step 4: Create Draft PR
+## Step 4: Commit and Push Report
 
-After generating the report, create a draft PR:
+### In CI (when `CI=true`)
+
+Commit and push the report directly to the current branch. Do **not** create
+a new PR — the CI workflow handles posting results as a PR comment.
+
+```bash
+git add docs/qa/
+git commit -m "docs: add QA report $(date +%Y-%m-%d)"
+git push
+```
+
+### Local / interactive use
+
+When running locally, create a draft PR after committing:
 
 ```bash
 # Ensure on a feature branch
 BRANCH_NAME="qa/$(date +%Y-%m-%d)-$(git rev-parse --short HEAD)"
 git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
 
-# Stage the report
 git add docs/qa/
-
-# Commit
 git commit -m "docs: add QA report $(date +%Y-%m-%d)
 
 Automated QA report covering all frontend routes and features."
-
-# Push
 git push -u origin "$BRANCH_NAME"
 
 # Create draft PR assigned to comfy-pr-bot
