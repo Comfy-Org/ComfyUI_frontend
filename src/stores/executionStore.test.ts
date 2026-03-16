@@ -747,10 +747,7 @@ describe('useExecutionStore - RAF batching', () => {
   })
 
   describe('handleProgress', () => {
-    function makeProgressEvent(
-      value: number,
-      max: number
-    ): CustomEvent {
+    function makeProgressEvent(value: number, max: number): CustomEvent {
       return new CustomEvent('progress', {
         detail: { value, max, prompt_id: 'job-1', node: '1' }
       })
