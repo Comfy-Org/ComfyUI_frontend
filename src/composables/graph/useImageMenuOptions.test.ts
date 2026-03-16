@@ -38,6 +38,7 @@ function createImageNode(
   return createMockLGraphNode({
     imgs: [img],
     imageIndex: 0,
+    pasteFile: vi.fn(),
     pasteFiles: vi.fn(),
     ...overrides
   })
@@ -75,7 +76,11 @@ describe('useImageMenuOptions', () => {
     })
 
     it('returns only Paste Image when node has no images but supports paste', () => {
-      const node = createMockLGraphNode({ imgs: [], pasteFiles: vi.fn() })
+      const node = createMockLGraphNode({
+        imgs: [],
+        pasteFile: vi.fn(),
+        pasteFiles: vi.fn()
+      })
       const { getImageMenuOptions } = useImageMenuOptions()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
@@ -118,6 +123,7 @@ describe('useImageMenuOptions', () => {
       await pasteOption!.action!()
 
       expect(navigator.clipboard.read).toHaveBeenCalled()
+      expect(node.pasteFile).toHaveBeenCalledWith(expect.any(File))
       expect(node.pasteFiles).toHaveBeenCalledWith(
         expect.arrayContaining([expect.any(File)])
       )

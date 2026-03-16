@@ -3,12 +3,37 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCommandStore } from '@/stores/commandStore'
-import { pasteClipboardImageToNode } from '@/utils/clipboardUtil'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 
 function canPasteImage(node?: LGraphNode): boolean {
   return typeof node?.pasteFiles === 'function'
+}
+
+async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
+  if (!navigator.clipboard?.read) {
+    console.warn('Clipboard API not available')
+    return
+  }
+
+  try {
+    const clipboardItems = await navigator.clipboard.read()
+    for (const item of clipboardItems) {
+      const imageType = item.types.find((type) => type.startsWith('image/'))
+      if (!imageType) continue
+
+      const blob = await item.getType(imageType)
+      const ext = imageType.split('/')[1] ?? 'png'
+      const file = new File([blob], `pasted-image.${ext}`, {
+        type: imageType
+      })
+      node.pasteFile?.(file)
+      node.pasteFiles?.([file])
+      return
+    }
+  } catch (error) {
+    console.error('Failed to paste image from clipboard:', error)
+  }
 }
 
 /**
