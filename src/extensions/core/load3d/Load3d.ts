@@ -10,7 +10,6 @@ import { ModelExporter } from './ModelExporter'
 import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
 import { SceneModelManager } from './SceneModelManager'
-import { positionThumbnailCamera } from './ThumbnailRenderer'
 import { ViewHelperManager } from './ViewHelperManager'
 import {
   type CameraState,
@@ -20,6 +19,25 @@ import {
   type MaterialMode,
   type UpDirection
 } from './interfaces'
+
+function positionThumbnailCamera(
+  camera: THREE.PerspectiveCamera,
+  model: THREE.Object3D
+) {
+  const box = new THREE.Box3().setFromObject(model)
+  const size = box.getSize(new THREE.Vector3())
+  const center = box.getCenter(new THREE.Vector3())
+  const maxDim = Math.max(size.x, size.y, size.z)
+  const distance = maxDim * 1.5
+
+  camera.position.set(
+    center.x + distance * 0.7,
+    center.y + distance * 0.5,
+    center.z + distance * 0.7
+  )
+  camera.lookAt(center)
+  camera.updateProjectionMatrix()
+}
 
 class Load3d {
   renderer: THREE.WebGLRenderer
