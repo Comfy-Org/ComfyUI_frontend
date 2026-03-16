@@ -119,5 +119,9 @@ describe('JobGroupsList hover behavior', () => {
     vi.advanceTimersByTime(50)
     await nextTick()
     expect(jobItems[0].props('activeDetailsId')).toBeNull()
+
+    vi.advanceTimersByTime(50)
+    await nextTick()
+    expect(jobItems[1].props('activeDetailsId')).toBeNull()
   })
 })
