@@ -23,18 +23,14 @@ async function addGhostAtCenter(comfyPage: ComfyPage) {
   await comfyPage.page.mouse.move(centerX, centerY)
   await comfyPage.nextFrame()
 
-  const nodeId = await comfyPage.page.evaluate(
-    ([clientX, clientY]) => {
-      const node = window.LiteGraph!.createNode('VAEDecode')!
-      const event = new MouseEvent('click', { clientX, clientY })
-      window.app!.graph.add(node, { ghost: true, dragEvent: event })
-      return node.id
-    },
-    [centerX, centerY] as const
+  const nodeRef = await comfyPage.nodeOps.addNode(
+    'VAEDecode',
+    { ghost: true },
+    { x: centerX, y: centerY }
   )
   await comfyPage.nextFrame()
 
-  return { nodeId, centerX, centerY }
+  return { nodeId: nodeRef.id, centerX, centerY }
 }
 
 function getNodeById(comfyPage: ComfyPage, nodeId: number | string) {
@@ -82,7 +78,6 @@ for (const mode of ['litegraph', 'vue'] as const) {
         },
         [centerX, centerY] as const
       )
-      await comfyPage.nextFrame()
 
       expect(Math.abs(result.diffX)).toBeLessThan(5)
       expect(Math.abs(result.diffY)).toBeLessThan(5)
@@ -157,6 +152,54 @@ for (const mode of ['litegraph', 'vue'] as const) {
 
       const after = await getNodeById(comfyPage, nodeId)
       expect(after).toBeNull()
+    })
+
+    test('moving ghost onto existing node and clicking places correctly', async ({
+      comfyPage
+    }) => {
+      // Get existing KSampler node from the default workflow
+      const [ksamplerRef] =
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      const ksamplerPos = await ksamplerRef.getPosition()
+      const ksamplerSize = await ksamplerRef.getSize()
+      const targetX = Math.round(ksamplerPos.x + ksamplerSize.width / 2)
+      const targetY = Math.round(ksamplerPos.y + ksamplerSize.height / 2)
+
+      // Start ghost placement away from the existing node
+      const startX = 50
+      const startY = 50
+      await comfyPage.page.mouse.move(startX, startY, { steps: 20 })
+      await comfyPage.nextFrame()
+
+      const ghostRef = await comfyPage.nodeOps.addNode(
+        'VAEDecode',
+        { ghost: true },
+        { x: startX, y: startY }
+      )
+      await comfyPage.nextFrame()
+
+      // Move ghost onto the existing node
+      await comfyPage.page.mouse.move(targetX, targetY, { steps: 20 })
+      await comfyPage.nextFrame()
+
+      // Click to finalize — on top of the existing node
+      await comfyPage.page.mouse.click(targetX, targetY)
+      await comfyPage.nextFrame()
+
+      // Ghost should be placed (no longer ghost)
+      const ghostResult = await getNodeById(comfyPage, ghostRef.id)
+      expect(ghostResult).not.toBeNull()
+      expect(ghostResult!.ghost).toBe(false)
+
+      // Ghost node should have moved from its start position toward where we clicked
+      const ghostPos = await ghostRef.getPosition()
+      expect(
+        Math.abs(ghostPos.x - startX) > 20 || Math.abs(ghostPos.y - startY) > 20
+      ).toBe(true)
+
+      // Existing node should NOT be selected
+      const selectedIds = await comfyPage.nodeOps.getSelectedNodeIds()
+      expect(selectedIds).not.toContain(ksamplerRef.id)
     })
   })
 }
