@@ -3,6 +3,10 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Paste Image context menu option', { tag: ['@node'] }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+  })
+
   test('shows Paste Image in LoadImage node context menu', async ({
     comfyPage
   }) => {
