@@ -10,7 +10,7 @@
     <label
       v-if="!hideLayoutField"
       :for="id"
-      class="pointer-events-none absolute top-1.5 left-3 z-10 text-xxs text-muted-foreground"
+      class="pointer-events-none absolute top-0 left-0 z-10 w-full rounded-t-lg bg-component-node-widget-background px-3 pt-1.5 pb-0.5 text-xxs text-muted-foreground"
     >
       {{ displayName }}
     </label>
