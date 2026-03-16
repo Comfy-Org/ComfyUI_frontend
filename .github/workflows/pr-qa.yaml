@@ -1,7 +1,7 @@
 # Automated QA of ComfyUI frontend using Claude CLI + Playwright MCP.
 # Two modes:
-#   Focused (claude-qa label): Linux-only, tests areas affected by PR changes
-#   Full (claude-qa-full label): 3-OS matrix, full test plan
+#   Focused (qa-changes label): Linux-only, tests areas affected by PR changes
+#   Full (qa-full label): 3-OS matrix, full test plan
 name: 'PR: QA'
 
 on:
@@ -39,7 +39,7 @@ jobs:
 
           # Only run on label events if it's one of our labels
           if [ "${{ github.event.action }}" = "labeled" ] && \
-             [ "$LABEL" != "claude-qa" ] && [ "$LABEL" != "claude-qa-full" ]; then
+             [ "$LABEL" != "qa-changes" ] && [ "$LABEL" != "qa-full" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -48,7 +48,7 @@ jobs:
              [ "${{ inputs.mode }}" = "full" ]; then
             FULL=true
           fi
-          if [ "$LABEL" = "claude-qa-full" ]; then
+          if [ "$LABEL" = "qa-full" ]; then
             FULL=true
           fi
 
@@ -464,8 +464,8 @@ jobs:
 
       - name: Remove QA label
         if: >-
-          github.event.label.name == 'claude-qa' ||
-          github.event.label.name == 'claude-qa-full'
+          github.event.label.name == 'qa-changes' ||
+          github.event.label.name == 'qa-full'
         run: |
           gh pr edit ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} --remove-label "${{ github.event.label.name }}"
