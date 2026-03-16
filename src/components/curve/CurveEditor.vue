@@ -82,23 +82,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed, toRef, useTemplateRef } from 'vue'
 
 import { useCurveEditor } from '@/composables/useCurveEditor'
 import { cn } from '@/utils/tailwindUtil'
 
-import type { CurvePoint } from './types'
+import type { CurveInterpolation, CurvePoint } from './types'
 
 import { histogramToPath } from './curveUtils'
 
 const {
   curveColor = 'white',
   histogram,
-  disabled = false
+  disabled = false,
+  interpolation = 'monotone_cubic'
 } = defineProps<{
   curveColor?: string
   histogram?: Uint32Array | null
   disabled?: boolean
+  interpolation?: CurveInterpolation
 }>()
 
 const modelValue = defineModel<CurvePoint[]>({
@@ -109,7 +111,8 @@ const svgRef = useTemplateRef<SVGSVGElement>('svgRef')
 
 const { curvePath, handleSvgPointerDown, startDrag } = useCurveEditor({
   svgRef,
-  modelValue
+  modelValue,
+  interpolation: toRef(() => interpolation)
 })
 
 function onSvgPointerDown(e: PointerEvent) {
