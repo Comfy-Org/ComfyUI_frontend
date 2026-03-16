@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/vue'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -20,10 +19,9 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
 export type WidgetItem = [PartialNode, IBaseWidget]
-export { CANVAS_IMAGE_PREVIEW_WIDGET }
 
 export function getWidgetName(w: IBaseWidget): string {
-  return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
+  return w.name
 }
 
 /** Known non-$$ preview widget types added by core or popular extensions. */
@@ -51,9 +49,7 @@ export function promoteWidget(
   parents: SubgraphNode[]
 ) {
   const store = usePromotionStore()
-  const nodeId = String(
-    isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-  )
+  const nodeId = String(node.id)
   const widgetName = getWidgetName(widget)
   for (const parent of parents) {
     store.promote(parent.rootGraph.id, parent.id, nodeId, widgetName)
@@ -71,9 +67,7 @@ export function demoteWidget(
   parents: SubgraphNode[]
 ) {
   const store = usePromotionStore()
-  const nodeId = String(
-    isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-  )
+  const nodeId = String(node.id)
   const widgetName = getWidgetName(widget)
   for (const parent of parents) {
     store.demote(parent.rootGraph.id, parent.id, nodeId, widgetName)

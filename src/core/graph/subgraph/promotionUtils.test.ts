@@ -1,267 +1,159 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  promoteWidget,
+  demoteWidget,
+  getWidgetName,
+  pruneDisconnected
+} from '@/core/graph/subgraph/promotionUtils'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { usePromotionStore } from '@/stores/promotionStore'
 
-const updatePreviewsMock = vi.hoisted(() => vi.fn())
+vi.mock('@sentry/vue', () => ({ addBreadcrumb: vi.fn() }))
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({})
+}))
+vi.mock('@/stores/domWidgetStore', () => ({
+  useDomWidgetStore: () => ({ widgetStates: new Map() })
+}))
 vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: updatePreviewsMock })
+  useLitegraphService: () => ({ updatePreviews: () => ({}) })
+}))
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: () => ({ navigationStack: [] })
+}))
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ add: vi.fn() })
 }))
 
-import {
-  CANVAS_IMAGE_PREVIEW_WIDGET,
-  getPromotableWidgets,
-  isPreviewPseudoWidget,
-  promoteRecommendedWidgets,
-  pruneDisconnected
-} from './promotionUtils'
-
-function widget(
-  overrides: Partial<
-    Pick<IBaseWidget, 'name' | 'serialize' | 'type' | 'options'>
-  >
+function createPromotedWidgetStub(
+  sourceNodeId: string,
+  sourceWidgetName: string
 ): IBaseWidget {
-  return { name: 'widget', ...overrides } as unknown as IBaseWidget
+  return {
+    name: 'promoted-slot-name',
+    type: 'number',
+    value: 42,
+    y: 0,
+    options: {},
+    sourceNodeId,
+    sourceWidgetName
+  } as IBaseWidget
 }
 
-describe('isPreviewPseudoWidget', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+})
+
+describe('promoteWidget', () => {
+  test('uses node.id for normal widgets', () => {
+    const subgraph = createTestSubgraph()
+    const parent = createTestSubgraphNode(subgraph, { id: 10 })
+    const node = { id: 42, title: 'Leaf', type: 'KSampler' }
+    const widget: IBaseWidget = {
+      name: 'seed',
+      type: 'number',
+      value: 0,
+      y: 0,
+      options: {}
+    }
+
+    promoteWidget(node, widget, [parent])
+
+    const store = usePromotionStore()
+    const entries = store.getPromotions(parent.rootGraph.id, parent.id)
+    expect(entries).toHaveLength(1)
+    expect(entries[0].interiorNodeId).toBe('42')
+    expect(entries[0].widgetName).toBe('seed')
   })
 
-  it('returns true for $$-prefixed widget names', () => {
-    expect(
-      isPreviewPseudoWidget(widget({ name: '$$canvas-image-preview' }))
-    ).toBe(true)
-    expect(isPreviewPseudoWidget(widget({ name: '$$anything' }))).toBe(true)
+  test('uses node.id (immediate interior) for PromotedWidgetView, not sourceNodeId', () => {
+    const subgraph = createTestSubgraph()
+    const parent = createTestSubgraphNode(subgraph, { id: 10 })
+    const node = { id: 77, title: 'SubgraphNodeB', type: subgraph.id }
+    const widget = createPromotedWidgetStub('999', 'deep_seed')
+
+    promoteWidget(node, widget, [parent])
+
+    const store = usePromotionStore()
+    const entries = store.getPromotions(parent.rootGraph.id, parent.id)
+    expect(entries).toHaveLength(1)
+    expect(entries[0].interiorNodeId).toBe('77')
+  })
+})
+
+describe('demoteWidget', () => {
+  test('uses node.id (immediate interior) for PromotedWidgetView demote', () => {
+    const subgraph = createTestSubgraph()
+    const parent = createTestSubgraphNode(subgraph, { id: 10 })
+    const store = usePromotionStore()
+
+    store.promote(parent.rootGraph.id, parent.id, '77', 'promoted-slot-name')
+
+    const node = { id: 77, title: 'SubgraphNodeB', type: subgraph.id }
+    const widget = createPromotedWidgetStub('999', 'deep_seed')
+
+    demoteWidget(node, widget, [parent])
+
+    const entries = store.getPromotions(parent.rootGraph.id, parent.id)
+    expect(entries).toHaveLength(0)
+  })
+})
+
+describe('getWidgetName', () => {
+  test('returns widget.name for normal widget', () => {
+    const widget: IBaseWidget = {
+      name: 'seed',
+      type: 'number',
+      value: 0,
+      y: 0,
+      options: {}
+    }
+    expect(getWidgetName(widget)).toBe('seed')
   })
 
-  it('returns true for serialize:false with type "preview"', () => {
-    expect(
-      isPreviewPseudoWidget(
-        widget({ name: 'videopreview', serialize: false, type: 'preview' })
-      )
-    ).toBe(true)
-  })
-
-  it('returns true for options.serialize:false with type "preview" (VHS pattern)', () => {
-    expect(
-      isPreviewPseudoWidget(
-        widget({
-          name: 'videopreview',
-          type: 'preview',
-          options: { serialize: false }
-        })
-      )
-    ).toBe(true)
-  })
-
-  it('returns true for serialize:false with type "video"', () => {
-    expect(
-      isPreviewPseudoWidget(
-        widget({ name: 'vid', serialize: false, type: 'video' })
-      )
-    ).toBe(true)
-  })
-
-  it('returns true for serialize:false with type "audioUI"', () => {
-    expect(
-      isPreviewPseudoWidget(
-        widget({ name: 'audio', serialize: false, type: 'audioUI' })
-      )
-    ).toBe(true)
-  })
-
-  it('returns false for type "preview" when serialize is not false', () => {
-    expect(
-      isPreviewPseudoWidget(
-        widget({ name: 'videopreview', serialize: true, type: 'preview' })
-      )
-    ).toBe(false)
-  })
-
-  it('returns false for regular widgets', () => {
-    expect(
-      isPreviewPseudoWidget(widget({ name: 'seed', type: 'number' }))
-    ).toBe(false)
-  })
-
-  it('returns false for serialize:false with unknown type', () => {
-    expect(
-      isPreviewPseudoWidget(
-        widget({ name: 'text', serialize: false, type: 'customtext' })
-      )
-    ).toBe(false)
+  test('returns widget.name for PromotedWidgetView (not sourceWidgetName)', () => {
+    const widget = createPromotedWidgetStub('999', 'deep_seed')
+    expect(getWidgetName(widget)).toBe('promoted-slot-name')
   })
 })
 
 describe('pruneDisconnected', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
-  })
-
-  it('removes disconnected entries and emits a dev warning', () => {
+  test('keeps promotion entries referencing nodes present in the subgraph', () => {
     const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
-    const interiorNode = new LGraphNode('TestNode')
-    subgraphNode.subgraph.add(interiorNode)
-    interiorNode.addWidget('text', 'kept', 'value', () => {})
-
+    const parent = createTestSubgraphNode(subgraph, { id: 10 })
     const store = usePromotionStore()
-    store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, [
-      { interiorNodeId: String(interiorNode.id), widgetName: 'kept' },
-      { interiorNodeId: String(interiorNode.id), widgetName: 'missing-widget' },
-      { interiorNodeId: '9999', widgetName: 'missing-node' }
-    ])
 
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const innerNode = new LGraphNode('InnerNode')
+    innerNode.addWidget('number', 'value', 0, () => undefined)
+    parent.subgraph.add(innerNode)
 
-    pruneDisconnected(subgraphNode)
+    store.promote(parent.rootGraph.id, parent.id, String(innerNode.id), 'value')
 
-    expect(
-      store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
-    ).toEqual([{ interiorNodeId: String(interiorNode.id), widgetName: 'kept' }])
-    expect(warnSpy).toHaveBeenCalledOnce()
+    pruneDisconnected(parent)
+
+    const entries = store.getPromotions(parent.rootGraph.id, parent.id)
+    expect(entries).toHaveLength(1)
+    expect(entries[0].interiorNodeId).toBe(String(innerNode.id))
   })
 
-  it('keeps virtual canvas preview promotions for PreviewImage nodes', () => {
+  test('prunes promotion entries referencing nodes NOT in the subgraph', () => {
     const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
-    const interiorNode = new LGraphNode('PreviewImage')
-    interiorNode.type = 'PreviewImage'
-    subgraphNode.subgraph.add(interiorNode)
-
+    const parent = createTestSubgraphNode(subgraph, { id: 10 })
     const store = usePromotionStore()
-    store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, [
-      {
-        interiorNodeId: String(interiorNode.id),
-        widgetName: CANVAS_IMAGE_PREVIEW_WIDGET
-      }
-    ])
 
-    pruneDisconnected(subgraphNode)
+    store.promote(parent.rootGraph.id, parent.id, 'nonexistent-999', 'seed')
 
-    expect(
-      store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
-    ).toEqual([
-      {
-        interiorNodeId: String(interiorNode.id),
-        widgetName: CANVAS_IMAGE_PREVIEW_WIDGET
-      }
-    ])
-  })
-})
+    pruneDisconnected(parent)
 
-describe('getPromotableWidgets', () => {
-  it('adds virtual canvas preview widget for PreviewImage nodes', () => {
-    const node = new LGraphNode('PreviewImage')
-    node.type = 'PreviewImage'
-
-    const widgets = getPromotableWidgets(node)
-
-    expect(
-      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
-    ).toBe(true)
-  })
-
-  it('adds virtual canvas preview widget for SaveImage nodes', () => {
-    const node = new LGraphNode('SaveImage')
-    node.type = 'SaveImage'
-
-    const widgets = getPromotableWidgets(node)
-
-    expect(
-      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
-    ).toBe(true)
-  })
-
-  it('adds virtual canvas preview widget for GLSLShader nodes', () => {
-    const node = new LGraphNode('GLSLShader')
-    node.type = 'GLSLShader'
-
-    const widgets = getPromotableWidgets(node)
-
-    expect(
-      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
-    ).toBe(true)
-  })
-
-  it('does not add virtual canvas preview widget for non-image nodes', () => {
-    const node = new LGraphNode('TextNode')
-    node.addOutput('TEXT', 'STRING')
-
-    const widgets = getPromotableWidgets(node)
-
-    expect(
-      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
-    ).toBe(false)
-  })
-
-  it('does not add virtual canvas preview widget for ImageInvert nodes', () => {
-    const node = new LGraphNode('ImageInvert')
-    node.type = 'ImageInvert'
-
-    const widgets = getPromotableWidgets(node)
-
-    expect(
-      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
-    ).toBe(false)
-  })
-})
-
-describe('promoteRecommendedWidgets', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    updatePreviewsMock.mockReset()
-  })
-
-  it('skips deferred updatePreviews when a preview widget already exists', () => {
-    const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
-    const interiorNode = new LGraphNode('TestNode')
-    subgraph.add(interiorNode)
-
-    const previewWidget = interiorNode.addWidget(
-      'custom',
-      'videopreview',
-      'value',
-      () => {}
-    )
-    previewWidget.type = 'preview'
-    previewWidget.serialize = false
-
-    promoteRecommendedWidgets(subgraphNode)
-
-    expect(updatePreviewsMock).not.toHaveBeenCalled()
-  })
-
-  it('eagerly promotes virtual preview widget for CANVAS_IMAGE_PREVIEW nodes', () => {
-    const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
-    const glslNode = new LGraphNode('GLSLShader')
-    glslNode.type = 'GLSLShader'
-    subgraph.add(glslNode)
-
-    promoteRecommendedWidgets(subgraphNode)
-
-    const store = usePromotionStore()
-    expect(
-      store.isPromoted(
-        subgraphNode.rootGraph.id,
-        subgraphNode.id,
-        String(glslNode.id),
-        CANVAS_IMAGE_PREVIEW_WIDGET
-      )
-    ).toBe(true)
-    expect(updatePreviewsMock).not.toHaveBeenCalled()
+    const entries = store.getPromotions(parent.rootGraph.id, parent.id)
+    expect(entries).toHaveLength(0)
   })
 })
