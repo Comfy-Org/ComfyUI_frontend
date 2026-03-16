@@ -7,6 +7,7 @@
  *   pnpm tsx scripts/lint-bench.ts --runs 3            # iteration count
  *   pnpm tsx scripts/lint-bench.ts --warmup            # add a warmup run
  *   pnpm tsx scripts/lint-bench.ts --commands oxlint   # benchmark only oxlint
+ *   pnpm tsx scripts/lint-bench.ts --profile-rules     # per-rule ESLint timing
  */
 import { execSync } from 'node:child_process'
 import {
@@ -152,16 +153,108 @@ function saveJson(path: string, data: BenchReport): void {
   writeFileSync(path, JSON.stringify(data, null, 2))
 }
 
+interface RuleTiming {
+  rule: string
+  timeMs: number
+  relative: number
+}
+
+function parseTimingOutput(stderr: string): RuleTiming[] {
+  const rules: RuleTiming[] = []
+  const lines = stderr.split('\n')
+
+  for (const line of lines) {
+    // Match lines like: "no-multi-spaces         |    52.472 |     6.1%"
+    const match = line.match(/^([^|]+?)\s+\|\s+([\d.]+)\s+\|\s+([\d.]+)\s*%/)
+    if (!match) continue
+
+    const rule = match[1].trim()
+    // Skip the header row
+    if (rule === 'Rule' || rule.startsWith(':')) continue
+
+    rules.push({
+      rule,
+      timeMs: parseFloat(match[2]),
+      relative: parseFloat(match[3])
+    })
+  }
+
+  return rules.sort((a, b) => b.timeMs - a.timeMs)
+}
+
+function runWithStderr(
+  command: string,
+  env?: Record<string, string | undefined>
+): string {
+  try {
+    execSync(command, {
+      env: { ...process.env, ...env },
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 600_000
+    })
+  } catch (e: unknown) {
+    // ESLint exits non-zero on lint errors; stderr still has timing data
+    const error = e as { stderr?: Buffer | string }
+    if (error.stderr) {
+      return typeof error.stderr === 'string'
+        ? error.stderr
+        : error.stderr.toString('utf-8')
+    }
+  }
+  return ''
+}
+
+function profileRules(): RuleTiming[] {
+  console.error('Profiling ESLint per-rule timing (TIMING=all)...')
+  if (existsSync(ESLINT_CACHE)) rmSync(ESLINT_CACHE)
+
+  const stderr = runWithStderr('pnpm eslint src', { TIMING: 'all' })
+  return parseTimingOutput(stderr)
+}
+
+function printRuleProfile(rules: RuleTiming[], top: number): void {
+  const shown = rules.slice(0, top)
+  const totalMs = rules.reduce((sum, r) => sum + r.timeMs, 0)
+  const branch = git('branch --show-current')
+  const gitSha = git('rev-parse --short HEAD')
+
+  const lines = [
+    '',
+    '## ESLint Per-Rule Timing',
+    '',
+    `Branch: \`${branch}\` (\`${gitSha}\`) | Rules: ${rules.length} | Total rule time: ${formatMs(totalMs)}`,
+    '',
+    `| # | Rule | Time | % |`,
+    `|---|------|------|---|`,
+    ...shown.map(
+      (r, i) =>
+        `| ${i + 1} | ${r.rule} | ${formatMs(r.timeMs)} | ${r.relative.toFixed(1)}% |`
+    ),
+    '',
+    ''
+  ]
+
+  process.stdout.write(lines.join('\n'))
+}
+
 interface Args {
   runs: number
   saveBaseline: boolean
   warmup: boolean
   filter?: string
+  profileRules: boolean
+  top: number
 }
 
 function parseArgs(): Args {
   const args = process.argv.slice(2)
-  const parsed: Args = { runs: 3, saveBaseline: false, warmup: false }
+  const parsed: Args = {
+    runs: 3,
+    saveBaseline: false,
+    warmup: false,
+    profileRules: false,
+    top: 30
+  }
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -177,6 +270,12 @@ function parseArgs(): Args {
       case '--commands':
         parsed.filter = args[++i]
         break
+      case '--profile-rules':
+        parsed.profileRules = true
+        break
+      case '--top':
+        parsed.top = parseInt(args[++i], 10)
+        break
     }
   }
 
@@ -184,7 +283,33 @@ function parseArgs(): Args {
 }
 
 function main() {
-  const { runs, saveBaseline, warmup, filter } = parseArgs()
+  const {
+    runs,
+    saveBaseline,
+    warmup,
+    filter,
+    profileRules: doProfile,
+    top
+  } = parseArgs()
+
+  if (doProfile) {
+    const rules = profileRules()
+    if (rules.length === 0) {
+      console.error('No timing data found in ESLint output.')
+      process.exit(1)
+    }
+    printRuleProfile(rules, top)
+
+    mkdirSync(RESULTS_DIR, { recursive: true })
+    writeFileSync(
+      join(RESULTS_DIR, 'rule-profile.json'),
+      JSON.stringify(rules, null, 2)
+    )
+    console.error(
+      `Rule profile saved to ${join(RESULTS_DIR, 'rule-profile.json')}`
+    )
+    return
+  }
 
   const commands = filter
     ? COMMANDS.filter((c) => c.label === filter)
