@@ -353,14 +353,21 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
     handler(
       new CustomEvent('progress_state', { detail: { nodes, prompt_id: jobId } })
     )
+    // Flush the RAF so the batched update is applied immediately
+    vi.advanceTimersByTime(16)
   }
 
   beforeEach(() => {
+    vi.useFakeTimers()
     vi.clearAllMocks()
     apiEventHandlers.clear()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('should retain entries below the limit', () => {
@@ -841,6 +848,144 @@ describe('useExecutionStore - RAF batching', () => {
       handler(makeProgressStateEvent('1', 'running'))
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
+    })
+  })
+
+  describe('pending RAF is discarded when execution completes', () => {
+    it('discards pending progress RAF on execution_success', () => {
+      const progressHandler = getRegisteredHandler('progress')
+      const startHandler = getRegisteredHandler('execution_start')
+      const successHandler = getRegisteredHandler('execution_success')
+
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      progressHandler(
+        new CustomEvent('progress', {
+          detail: { value: 5, max: 10, prompt_id: 'job-1', node: '1' }
+        })
+      )
+
+      successHandler(
+        new CustomEvent('execution_success', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      vi.advanceTimersByTime(16)
+
+      expect(store._executingNodeProgress).toBeNull()
+    })
+
+    it('discards pending progress_state RAF on execution_success', () => {
+      const progressStateHandler = getRegisteredHandler('progress_state')
+      const startHandler = getRegisteredHandler('execution_start')
+      const successHandler = getRegisteredHandler('execution_success')
+
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      progressStateHandler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 5,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      successHandler(
+        new CustomEvent('execution_success', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      vi.advanceTimersByTime(16)
+
+      expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
+    })
+
+    it('discards pending progress RAF on execution_error', () => {
+      const progressHandler = getRegisteredHandler('progress')
+      const startHandler = getRegisteredHandler('execution_start')
+      const errorHandler = getRegisteredHandler('execution_error')
+
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      progressHandler(
+        new CustomEvent('progress', {
+          detail: { value: 5, max: 10, prompt_id: 'job-1', node: '1' }
+        })
+      )
+
+      errorHandler(
+        new CustomEvent('execution_error', {
+          detail: {
+            prompt_id: 'job-1',
+            node_id: '1',
+            node_type: 'TestNode',
+            exception_message: 'error',
+            exception_type: 'RuntimeError',
+            traceback: []
+          }
+        })
+      )
+
+      vi.advanceTimersByTime(16)
+
+      expect(store._executingNodeProgress).toBeNull()
+    })
+
+    it('discards pending progress RAF on execution_interrupted', () => {
+      const progressHandler = getRegisteredHandler('progress')
+      const startHandler = getRegisteredHandler('execution_start')
+      const interruptedHandler = getRegisteredHandler('execution_interrupted')
+
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      progressHandler(
+        new CustomEvent('progress', {
+          detail: { value: 5, max: 10, prompt_id: 'job-1', node: '1' }
+        })
+      )
+
+      interruptedHandler(
+        new CustomEvent('execution_interrupted', {
+          detail: {
+            prompt_id: 'job-1',
+            node_id: '1',
+            node_type: 'TestNode',
+            executed: []
+          }
+        })
+      )
+
+      vi.advanceTimersByTime(16)
+
+      expect(store._executingNodeProgress).toBeNull()
     })
   })
 
