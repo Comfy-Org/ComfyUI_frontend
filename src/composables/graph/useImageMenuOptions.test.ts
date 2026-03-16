@@ -67,11 +67,20 @@ describe('useImageMenuOptions', () => {
       expect(labels).not.toContain('Paste Image')
     })
 
-    it('returns empty array when node has no images', () => {
+    it('returns empty array when node has no images and no pasteFiles', () => {
       const node = createMockLGraphNode({ imgs: [] })
       const { getImageMenuOptions } = useImageMenuOptions()
 
       expect(getImageMenuOptions(node)).toEqual([])
+    })
+
+    it('returns only Paste Image when node has no images but supports paste', () => {
+      const node = createMockLGraphNode({ imgs: [], pasteFiles: vi.fn() })
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const options = getImageMenuOptions(node)
+      const labels = options.map((o) => o.label)
+
+      expect(labels).toEqual(['Paste Image'])
     })
 
     it('places Paste Image between Copy Image and Save Image', () => {

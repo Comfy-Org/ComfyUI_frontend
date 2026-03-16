@@ -83,38 +83,47 @@ export function useImageMenuOptions() {
   }
 
   const getImageMenuOptions = (node: LGraphNode): MenuOption[] => {
-    if (!node?.imgs?.length) return []
+    const hasImages = !!node?.imgs?.length
+    if (!hasImages && !canPasteImage(node)) return []
 
-    return [
-      {
-        label: t('contextMenu.Open in Mask Editor'),
-        action: () => openMaskEditor()
-      },
-      {
-        label: t('contextMenu.Open Image'),
-        icon: 'icon-[lucide--external-link]',
-        action: () => openImage(node)
-      },
-      {
-        label: t('contextMenu.Copy Image'),
-        icon: 'icon-[lucide--copy]',
-        action: () => copyImage(node)
-      },
-      ...(canPasteImage(node)
-        ? [
-            {
-              label: t('contextMenu.Paste Image'),
-              icon: 'icon-[lucide--clipboard-paste]',
-              action: () => pasteClipboardImageToNode(node)
-            }
-          ]
-        : []),
-      {
+    const options: MenuOption[] = []
+
+    if (hasImages) {
+      options.push(
+        {
+          label: t('contextMenu.Open in Mask Editor'),
+          action: () => openMaskEditor()
+        },
+        {
+          label: t('contextMenu.Open Image'),
+          icon: 'icon-[lucide--external-link]',
+          action: () => openImage(node)
+        },
+        {
+          label: t('contextMenu.Copy Image'),
+          icon: 'icon-[lucide--copy]',
+          action: () => copyImage(node)
+        }
+      )
+    }
+
+    if (canPasteImage(node)) {
+      options.push({
+        label: t('contextMenu.Paste Image'),
+        icon: 'icon-[lucide--clipboard-paste]',
+        action: () => pasteClipboardImageToNode(node)
+      })
+    }
+
+    if (hasImages) {
+      options.push({
         label: t('contextMenu.Save Image'),
         icon: 'icon-[lucide--download]',
         action: () => saveImage(node)
-      }
-    ]
+      })
+    }
+
+    return options
   }
 
   return {

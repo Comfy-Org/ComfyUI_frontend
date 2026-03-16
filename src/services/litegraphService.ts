@@ -1,7 +1,6 @@
 import _ from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
-import { pasteClipboardImageToNode } from '@/utils/clipboardUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
@@ -687,17 +686,6 @@ export const useLitegraphService = () => {
           img = this.imgs[this.overIndex]
         }
         if (img) {
-          const node = this
-          const pasteImageOption: IContextMenuValue[] =
-            typeof node.pasteFiles === 'function'
-              ? [
-                  {
-                    content: 'Paste Image',
-                    callback: () => pasteClipboardImageToNode(node)
-                  }
-                ]
-              : []
-
           options.unshift(
             {
               content: 'Open Image',
@@ -708,7 +696,6 @@ export const useLitegraphService = () => {
               }
             },
             ...getCopyImageOption(img),
-            ...pasteImageOption,
             {
               content: 'Save Image',
               callback: () => {
