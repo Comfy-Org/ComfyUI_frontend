@@ -296,6 +296,11 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuting(e: CustomEvent<NodeId | null>): void {
+    // Cancel any pending progress RAF before clearing state to prevent
+    // stale data from being written back on the next frame.
+    progressBatch.cancel()
+    _pendingProgress = null
+
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
@@ -520,6 +525,13 @@ export const useExecutionStore = defineStore('execution', () => {
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: string | null) {
+    // Cancel pending RAFs before clearing state to prevent stale data
+    // from being written back on the next frame.
+    progressBatch.cancel()
+    _pendingProgress = null
+    progressStateBatch.cancel()
+    _pendingProgressState = null
+
     executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
