@@ -95,7 +95,7 @@ export type ModelFile = z.infer<typeof zModelFile>
 
 /** Payload for updating an asset via PUT /assets/:id */
 export type AssetUpdatePayload = Partial<
-  Pick<AssetItem, 'name' | 'tags' | 'user_metadata'>
+  Pick<AssetItem, 'name' | 'tags' | 'user_metadata' | 'preview_id'>
 >
 
 /** User-editable metadata fields for model assets */
