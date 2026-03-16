@@ -1,19 +1,5 @@
 import type { CurvePoint } from './types'
 
-export function isCurvePointArray(value: unknown): value is CurvePoint[] {
-  return (
-    Array.isArray(value) &&
-    value.length >= 2 &&
-    value.every(
-      (p) =>
-        Array.isArray(p) &&
-        p.length === 2 &&
-        typeof p[0] === 'number' &&
-        typeof p[1] === 'number'
-    )
-  )
-}
-
 /**
  * Monotone cubic Hermite interpolation.
  * Produces a smooth curve that passes through all control points
