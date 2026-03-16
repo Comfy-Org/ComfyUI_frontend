@@ -81,7 +81,6 @@
           ? 'Execution error'
           : null
       "
-      :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
     />
   </TransformPane>
@@ -144,6 +143,7 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
@@ -245,6 +245,16 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle()
+
+// Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
+let cleanupErrorHooks: (() => void) | null = null
+watch(
+  () => canvasStore.currentGraph,
+  (graph) => {
+    cleanupErrorHooks?.()
+    cleanupErrorHooks = graph ? installErrorClearingHooks(graph) : null
+  }
+)
 
 const handleVueNodeLifecycleReset = async () => {
   if (shouldRenderVueNodes.value) {
@@ -364,10 +374,24 @@ watch(
   }
 )
 
-// Update the progress of executing nodes
+/**
+ * Propagates execution progress from the store to LiteGraph node objects
+ * and triggers a canvas redraw.
+ *
+ * No `deep: true` needed — `nodeLocationProgressStates` is a computed that
+ * returns a new `Record` object on every progress event (the underlying
+ * `nodeProgressStates` ref is replaced wholesale by the WebSocket handler).
+ *
+ * `currentGraph` triggers this watcher on subgraph navigation so stale
+ * progress bars are cleared when returning to the root graph.
+ */
 watch(
   () =>
-    [executionStore.nodeLocationProgressStates, canvasStore.canvas] as const,
+    [
+      executionStore.nodeLocationProgressStates,
+      canvasStore.canvas,
+      canvasStore.currentGraph
+    ] as const,
   ([nodeLocationProgressStates, canvas]) => {
     if (!canvas?.graph) return
     for (const node of canvas.graph.nodes) {
@@ -382,43 +406,15 @@ watch(
 
     // Force canvas redraw to ensure progress updates are visible
     canvas.setDirty(true, false)
-  },
-  { deep: true }
+  }
 )
 
-// Update node slot errors for LiteGraph nodes
-// (Vue nodes read from store directly)
+// Repaint canvas when node errors change.
+// Slot error flags are reconciled by reconcileNodeErrorFlags in executionErrorStore.
 watch(
   () => executionErrorStore.lastNodeErrors,
-  (lastNodeErrors) => {
-    if (!comfyApp.graph) return
-
-    forEachNode(comfyApp.rootGraph, (node) => {
-      // Clear existing errors
-      for (const slot of node.inputs) {
-        delete slot.hasErrors
-      }
-      for (const slot of node.outputs) {
-        delete slot.hasErrors
-      }
-
-      const nodeErrors = lastNodeErrors?.[node.id]
-      if (!nodeErrors) return
-
-      const validErrors = nodeErrors.errors.filter(
-        (error) => error.extra_info?.input_name !== undefined
-      )
-
-      validErrors.forEach((error) => {
-        const inputName = error.extra_info!.input_name!
-        const inputIndex = node.findInputSlot(inputName)
-        if (inputIndex !== -1) {
-          node.inputs[inputIndex].hasErrors = true
-        }
-      })
-    })
-
-    comfyApp.canvas.setDirty(true, true)
+  () => {
+    comfyApp.canvas?.setDirty(true, true)
   }
 )
 
@@ -521,6 +517,11 @@ onMounted(async () => {
 
     comfyAppReady.value = true
 
+    // Install error-clearing hooks on the initial graph
+    if (comfyApp.canvas?.graph) {
+      cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
+    }
+
     vueNodeLifecycle.setupEmptyGraphListener()
   } finally {
     workspaceStore.spinner = false
@@ -538,7 +539,7 @@ onMounted(async () => {
 
   // Restore saved workflow and workflow tabs state
   await workflowPersistence.initializeWorkflow()
-  workflowPersistence.restoreWorkflowTabsState()
+  await workflowPersistence.restoreWorkflowTabsState()
 
   const sharedWorkflowLoadStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
@@ -564,13 +565,13 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  cleanupErrorHooks?.()
+  cleanupErrorHooks = null
   vueNodeLifecycle.cleanup()
 })
 function forwardPanEvent(e: PointerEvent) {
-  if (
-    (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target) ||
-    !isMiddlePointerInput(e)
-  )
+  if (!isMiddlePointerInput(e)) return
+  if (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target)
     return
 
   canvasInteractions.forwardEventToCanvas(e)

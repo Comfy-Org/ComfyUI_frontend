@@ -19,6 +19,11 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import {
+  isBoundsEqual,
+  isSizeEqual
+} from '@/renderer/core/layout/utils/geometry'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
 
@@ -29,6 +34,11 @@ interface ElementBoundsUpdate {
   /** Element identifier (could be nodeId, widgetId, slotId, etc.) */
   id: string
   /** Updated bounds */
+  bounds: Bounds
+}
+
+interface CachedNodeMeasurement {
+  nodeId: NodeId
   bounds: Bounds
 }
 
@@ -63,7 +73,14 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 
 // Elements whose ResizeObserver fired while the tab was hidden
 const deferredElements = new Set<HTMLElement>()
+const elementsNeedingFreshMeasurement = new WeakSet<HTMLElement>()
+const cachedNodeMeasurements = new WeakMap<HTMLElement, CachedNodeMeasurement>()
 const visibility = useDocumentVisibility()
+
+function markElementForFreshMeasurement(element: HTMLElement) {
+  elementsNeedingFreshMeasurement.add(element)
+  cachedNodeMeasurements.delete(element)
+}
 
 watch(visibility, (state) => {
   if (state !== 'visible' || deferredElements.size === 0) return
@@ -71,6 +88,7 @@ watch(visibility, (state) => {
   // Re-observe deferred elements to trigger fresh measurements
   for (const element of deferredElements) {
     if (element.isConnected) {
+      markElementForFreshMeasurement(element)
       resizeObserver.observe(element)
     }
   }
@@ -86,6 +104,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     for (const entry of entries) {
       if (entry.target instanceof HTMLElement) {
         deferredElements.add(entry.target)
+        markElementForFreshMeasurement(entry.target)
         resizeObserver.unobserve(entry.target)
       }
     }
@@ -97,7 +116,7 @@ const resizeObserver = new ResizeObserver((entries) => {
   // Group updates by type, then flush via each config's handler
   const updatesByType = new Map<string, ElementBoundsUpdate[]>()
   // Track nodes whose slots should be resynced after node size changes
-  const nodesNeedingSlotResync = new Set<string>()
+  const nodesNeedingSlotResync = new Set<NodeId>()
 
   for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue
@@ -117,6 +136,17 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
 
     if (!elementType || !elementId) continue
+    const nodeId: NodeId | undefined =
+      elementType === 'node' ? elementId : undefined
+
+    // Skip collapsed nodes — their DOM height is just the header, and writing
+    // that back to the layout store would overwrite the stored expanded size.
+    if (elementType === 'node' && element.dataset.collapsed != null) {
+      if (nodeId) {
+        nodesNeedingSlotResync.add(nodeId)
+      }
+      continue
+    }
 
     // Use borderBoxSize when available; fall back to contentRect for older engines/tests
     // Border box is the border included FULL wxh DOM value.
@@ -126,8 +156,35 @@ const resizeObserver = new ResizeObserver((entries) => {
           inlineSize: entry.contentRect.width,
           blockSize: entry.contentRect.height
         }
-    const width = borderBox.inlineSize
-    const height = borderBox.blockSize
+    const width = Math.max(0, borderBox.inlineSize)
+    const height = Math.max(0, borderBox.blockSize)
+    const nodeLayout = nodeId
+      ? layoutStore.getNodeLayoutRef(nodeId).value
+      : null
+    const normalizedHeight = removeNodeTitleHeight(height)
+    const previousMeasurement = cachedNodeMeasurements.get(element)
+    const hasFreshMeasurementPending =
+      elementsNeedingFreshMeasurement.has(element)
+    const hasMatchingCachedNodeMeasurement =
+      previousMeasurement != null &&
+      previousMeasurement.nodeId === nodeId &&
+      nodeLayout != null &&
+      isBoundsEqual(previousMeasurement.bounds, nodeLayout.bounds)
+
+    // ResizeObserver emits entries where nothing changed (e.g. initial observe).
+    // Skip expensive DOM reads when this exact element/node already measured at
+    // the same normalized bounds and size.
+    if (
+      nodeLayout &&
+      !hasFreshMeasurementPending &&
+      isSizeEqual(nodeLayout.size, {
+        width,
+        height: normalizedHeight
+      }) &&
+      hasMatchingCachedNodeMeasurement
+    ) {
+      continue
+    }
 
     // Screen-space rect
     const rect = element.getBoundingClientRect()
@@ -136,8 +193,24 @@ const resizeObserver = new ResizeObserver((entries) => {
     const bounds: Bounds = {
       x: topLeftCanvas.x,
       y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
-      width: Math.max(0, width),
-      height: Math.max(0, height)
+      width,
+      height
+    }
+    const normalizedBounds: Bounds = {
+      ...bounds,
+      height: normalizedHeight
+    }
+
+    elementsNeedingFreshMeasurement.delete(element)
+    if (nodeId) {
+      cachedNodeMeasurements.set(element, {
+        nodeId,
+        bounds: normalizedBounds
+      })
+    }
+
+    if (nodeLayout && isBoundsEqual(nodeLayout.bounds, normalizedBounds)) {
+      continue
     }
 
     let updates = updatesByType.get(elementType)
@@ -148,17 +221,21 @@ const resizeObserver = new ResizeObserver((entries) => {
     updates.push({ id: elementId, bounds })
 
     // If this entry is a node, mark it for slot layout resync
-    if (elementType === 'node' && elementId) {
-      nodesNeedingSlotResync.add(elementId)
+    if (nodeId) {
+      nodesNeedingSlotResync.add(nodeId)
     }
   }
 
-  layoutStore.setSource(LayoutSource.DOM)
+  if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return
 
-  // Flush per-type
-  for (const [type, updates] of updatesByType) {
-    const config = trackingConfigs.get(type)
-    if (config && updates.length) config.updateHandler(updates)
+  if (updatesByType.size > 0) {
+    layoutStore.setSource(LayoutSource.DOM)
+
+    // Flush per-type
+    for (const [type, updates] of updatesByType) {
+      const config = trackingConfigs.get(type)
+      if (config && updates.length) config.updateHandler(updates)
+    }
   }
 
   // After node bounds are updated, refresh slot cached offsets and layouts
@@ -204,6 +281,7 @@ export function useVueElementTracking(
 
     // Set the data attribute expected by the RO pipeline for this type
     element.dataset[config.dataAttribute] = appIdentifier
+    markElementForFreshMeasurement(element)
     resizeObserver.observe(element)
   })
 
@@ -216,6 +294,8 @@ export function useVueElementTracking(
 
     // Remove the data attribute and observer
     delete element.dataset[config.dataAttribute]
+    cachedNodeMeasurements.delete(element)
+    elementsNeedingFreshMeasurement.delete(element)
     resizeObserver.unobserve(element)
   })
 }
