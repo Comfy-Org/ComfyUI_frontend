@@ -186,6 +186,78 @@ export async function pasteVideoNodes(
   return nodes
 }
 
+interface MediaFiles {
+  images: File[]
+  videos: File[]
+  audios: File[]
+}
+
+export function collectMediaFiles(items: DataTransferItemList): MediaFiles {
+  const result: MediaFiles = { images: [], videos: [], audios: [] }
+  for (const item of items) {
+    const file = item.getAsFile()
+    if (!file) continue
+    if (item.type.startsWith('image/')) result.images.push(file)
+    else if (item.type.startsWith('video/')) result.videos.push(file)
+    else if (item.type.startsWith('audio/')) result.audios.push(file)
+  }
+  return result
+}
+
+async function handleMediaPaste(
+  canvas: LGraphCanvas,
+  canvasStore: ReturnType<typeof useCanvasStore>,
+  files: File[],
+  selectedNode: LGraphNode | null,
+  mediaType: 'image' | 'video' | 'audio'
+): Promise<void> {
+  if (selectedNode || files.length === 1) {
+    const transfer = new DataTransfer()
+    transfer.items.add(files[0])
+    if (mediaType === 'image')
+      await pasteImageNode(canvas, transfer.items, selectedNode)
+    else if (mediaType === 'video')
+      await pasteVideoNode(canvas, transfer.items, selectedNode)
+    else await pasteAudioNode(canvas, transfer.items, selectedNode)
+    return
+  }
+
+  const lgCanvas = canvasStore.getCanvas()
+  lgCanvas.emitBeforeChange()
+  try {
+    if (mediaType === 'image') {
+      const { nodes, completion } = await pasteImageNodes(canvas, files)
+      if (nodes.length > 1) {
+        const batchImagesNode = await createNode(canvas, 'BatchImagesNode')
+        if (batchImagesNode) {
+          app.positionBatchNodes(nodes, batchImagesNode)
+          lgCanvas.selectItems([...nodes, batchImagesNode])
+          nodes.forEach((imageNode, index) => {
+            imageNode.connect(0, batchImagesNode, index)
+          })
+        }
+      } else if (nodes.length > 0) {
+        lgCanvas.selectItems(nodes)
+      }
+      await completion
+    } else if (mediaType === 'video') {
+      const nodes = await pasteVideoNodes(canvas, files)
+      if (nodes.length > 0) {
+        app.positionNodes(nodes)
+        lgCanvas.selectItems(nodes)
+      }
+    } else {
+      const nodes = await pasteAudioNodes(canvas, files)
+      if (nodes.length > 0) {
+        app.positionNodes(nodes)
+        lgCanvas.selectItems(nodes)
+      }
+    }
+  } finally {
+    lgCanvas.emitAfterChange()
+  }
+}
+
 /**
  * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
  */
@@ -228,18 +300,38 @@ export const usePaste = () => {
       ? currentNode
       : null
 
-    // Look for image paste data
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        await pasteImageNode(canvas as LGraphCanvas, items, imageNode)
-        return
-      } else if (item.type.startsWith('video/')) {
-        await pasteVideoNode(canvas as LGraphCanvas, items, videoNode)
-        return
-      } else if (item.type.startsWith('audio/')) {
-        await pasteAudioNode(canvas as LGraphCanvas, items, audioNode)
-        return
-      }
+    // Look for media paste data
+    const mediaFiles = collectMediaFiles(items)
+
+    if (mediaFiles.images.length > 0) {
+      await handleMediaPaste(
+        canvas as LGraphCanvas,
+        canvasStore,
+        mediaFiles.images,
+        imageNode,
+        'image'
+      )
+      return
+    }
+    if (mediaFiles.videos.length > 0) {
+      await handleMediaPaste(
+        canvas as LGraphCanvas,
+        canvasStore,
+        mediaFiles.videos,
+        videoNode,
+        'video'
+      )
+      return
+    }
+    if (mediaFiles.audios.length > 0) {
+      await handleMediaPaste(
+        canvas as LGraphCanvas,
+        canvasStore,
+        mediaFiles.audios,
+        audioNode,
+        'audio'
+      )
+      return
     }
     if (pasteClipboardItems(data)) return
 

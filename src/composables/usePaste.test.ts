@@ -1,3 +1,4 @@
+import { useEventListener } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   LGraphCanvas,
@@ -15,6 +16,7 @@ import {
 } from '@/utils/litegraphUtil'
 import {
   cloneDataTransfer,
+  collectMediaFiles,
   pasteAudioNode,
   pasteAudioNodes,
   pasteImageNode,
@@ -28,7 +30,8 @@ function createMockNode(): LGraphNode {
   return createMockLGraphNode({
     pos: [0, 0],
     pasteFile: vi.fn(),
-    pasteFiles: vi.fn().mockResolvedValue(true)
+    pasteFiles: vi.fn().mockResolvedValue(true),
+    connect: vi.fn()
   })
 }
 
@@ -67,7 +70,10 @@ const mockCanvas = {
   } as Partial<LGraph> as LGraph,
   graph_mouse: [100, 200],
   pasteFromClipboard: vi.fn(),
-  _deserializeItems: vi.fn()
+  _deserializeItems: vi.fn(),
+  emitBeforeChange: vi.fn(),
+  emitAfterChange: vi.fn(),
+  selectItems: vi.fn()
 } as Partial<LGraphCanvas> as LGraphCanvas
 
 const mockCanvasStore = {
@@ -96,7 +102,9 @@ vi.mock('@/stores/workspaceStore', () => ({
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    loadGraphData: vi.fn()
+    loadGraphData: vi.fn(),
+    positionNodes: vi.fn(),
+    positionBatchNodes: vi.fn()
   }
 }))
 
@@ -595,6 +603,138 @@ describe('usePaste', () => {
         expect.any(Object)
       )
     })
+  })
+})
+
+describe('collectMediaFiles', () => {
+  it('should collect image files from DataTransferItemList', () => {
+    const dt = createDataTransfer([
+      createImageFile('a.png'),
+      createImageFile('b.jpg', 'image/jpeg')
+    ])
+
+    const result = collectMediaFiles(dt.items)
+
+    expect(result.images).toHaveLength(2)
+    expect(result.videos).toHaveLength(0)
+    expect(result.audios).toHaveLength(0)
+  })
+
+  it('should collect mixed media types', () => {
+    const dt = createDataTransfer([
+      createImageFile(),
+      createVideoFile(),
+      createAudioFile()
+    ])
+
+    const result = collectMediaFiles(dt.items)
+
+    expect(result.images).toHaveLength(1)
+    expect(result.videos).toHaveLength(1)
+    expect(result.audios).toHaveLength(1)
+  })
+
+  it('should return empty arrays when no media items', () => {
+    const dt = new DataTransfer()
+    dt.setData('text/plain', 'hello')
+
+    const result = collectMediaFiles(dt.items)
+
+    expect(result.images).toHaveLength(0)
+    expect(result.videos).toHaveLength(0)
+    expect(result.audios).toHaveLength(0)
+  })
+})
+
+describe('batch paste undo', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockCanvas.current_node = null
+    mockWorkspaceStore.shiftDown = false
+    vi.mocked(mockCanvas.graph!.add).mockImplementation(
+      (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
+    )
+  })
+
+  function getPasteHandler(): (e: ClipboardEvent) => Promise<void> {
+    const calls = vi.mocked(useEventListener).mock.calls
+    const pasteCall = calls.find(([_target, event]) => event === 'paste')
+    return pasteCall![2] as (e: ClipboardEvent) => Promise<void>
+  }
+
+  async function dispatchPaste(files: File[]): Promise<void> {
+    const dt = createDataTransfer(files)
+    const event = {
+      clipboardData: dt,
+      target: document.createElement('div')
+    } as unknown as ClipboardEvent
+    await getPasteHandler()(event)
+  }
+
+  it('should wrap multiple image paste in emitBeforeChange/emitAfterChange', async () => {
+    const mockNode1 = createMockNode()
+    const mockNode2 = createMockNode()
+    const mockBatchNode = createMockNode()
+    vi.mocked(createNode)
+      .mockResolvedValueOnce(mockNode1)
+      .mockResolvedValueOnce(mockNode2)
+      .mockResolvedValueOnce(mockBatchNode)
+
+    usePaste()
+    await dispatchPaste([createImageFile('a.png'), createImageFile('b.png')])
+
+    expect(mockCanvas.emitBeforeChange).toHaveBeenCalledOnce()
+    expect(mockCanvas.emitAfterChange).toHaveBeenCalledOnce()
+  })
+
+  it('should create BatchImagesNode and connect nodes for multiple images', async () => {
+    const mockNodes = Array.from({ length: 10 }, () => createMockNode())
+    let callIndex = 0
+    vi.mocked(createNode).mockImplementation(async () => {
+      return mockNodes[callIndex++]
+    })
+
+    usePaste()
+    await dispatchPaste([createImageFile('a.png'), createImageFile('b.png')])
+
+    expect(createNode).toHaveBeenCalledWith(mockCanvas, 'BatchImagesNode')
+
+    const createNodeCalls = vi.mocked(createNode).mock.calls
+    const imageNodeCount = createNodeCalls.filter(
+      ([, name]) => name === 'LoadImage'
+    ).length
+    const batchNodeCallIndex = createNodeCalls.findIndex(
+      ([, name]) => name === 'BatchImagesNode'
+    )
+    const batchNode = mockNodes[batchNodeCallIndex]
+
+    expect(imageNodeCount).toBeGreaterThanOrEqual(2)
+    expect(batchNodeCallIndex).toBeGreaterThan(-1)
+    expect(app.positionBatchNodes).toHaveBeenCalled()
+
+    const imageNodes = createNodeCalls
+      .filter(([, name]) => name === 'LoadImage')
+      .map((_, i) => mockNodes[i])
+    imageNodes.forEach((node, index) => {
+      expect(node.connect).toHaveBeenCalledWith(0, batchNode, index)
+    })
+  })
+
+  it('should not batch when image node is selected', async () => {
+    const mockNode = createMockLGraphNode({
+      is_selected: true,
+      pasteFile: vi.fn(),
+      pasteFiles: vi.fn(),
+      connect: vi.fn()
+    })
+    mockCanvas.current_node = mockNode
+    vi.mocked(isImageNode).mockReturnValue(true)
+
+    usePaste()
+    await dispatchPaste([createImageFile('a.png'), createImageFile('b.png')])
+
+    expect(mockNode.pasteFile).toHaveBeenCalled()
+    expect(mockCanvas.emitBeforeChange).not.toHaveBeenCalled()
   })
 })
 
