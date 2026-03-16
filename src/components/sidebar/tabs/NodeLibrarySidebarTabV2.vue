@@ -384,7 +384,8 @@ function disambiguateBlueprintLabels(
       if (folder.type !== 'folder' || !folder.children) return folder
       const labelCounts = new Map<string, number>()
       for (const node of folder.children) {
-        if (node.label) labelCounts.set(node.label, (labelCounts.get(node.label) ?? 0) + 1)
+        if (node.label)
+          labelCounts.set(node.label, (labelCounts.get(node.label) ?? 0) + 1)
       }
       return {
         ...folder,

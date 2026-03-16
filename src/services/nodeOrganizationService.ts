@@ -170,12 +170,8 @@ class NodeOrganizationService {
 
     const catLen = ESSENTIALS_CATEGORIES.length
     tree.children.sort((a, b) => {
-      const ai = ESSENTIALS_CATEGORIES.indexOf(
-        a.label as EssentialsCategory
-      )
-      const bi = ESSENTIALS_CATEGORIES.indexOf(
-        b.label as EssentialsCategory
-      )
+      const ai = ESSENTIALS_CATEGORIES.indexOf(a.label as EssentialsCategory)
+      const bi = ESSENTIALS_CATEGORIES.indexOf(b.label as EssentialsCategory)
       return (ai === -1 ? catLen : ai) - (bi === -1 ? catLen : bi)
     })
 
