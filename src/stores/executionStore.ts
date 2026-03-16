@@ -33,6 +33,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { createRafBatch } from '@/utils/rafBatch'
 
 interface QueuedJob {
   /**
@@ -243,16 +244,10 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('execution_error', handleExecutionError)
     api.removeEventListener('progress_text', handleProgressText)
 
-    if (_progressRafId !== null) {
-      cancelAnimationFrame(_progressRafId)
-      _progressRafId = null
-      _pendingProgress = null
-    }
-    if (_progressStateRafId !== null) {
-      cancelAnimationFrame(_progressStateRafId)
-      _progressStateRafId = null
-      _pendingProgressState = null
-    }
+    progressBatch.cancel()
+    _pendingProgress = null
+    progressStateBatch.cancel()
+    _pendingProgressState = null
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -344,19 +339,16 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   let _pendingProgressState: ProgressStateWsMessage | null = null
-  let _progressStateRafId: number | null = null
+  const progressStateBatch = createRafBatch(() => {
+    if (_pendingProgressState) {
+      _applyProgressState(_pendingProgressState)
+      _pendingProgressState = null
+    }
+  })
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
     _pendingProgressState = e.detail
-    if (_progressStateRafId === null) {
-      _progressStateRafId = requestAnimationFrame(() => {
-        _progressStateRafId = null
-        if (_pendingProgressState) {
-          _applyProgressState(_pendingProgressState)
-          _pendingProgressState = null
-        }
-      })
-    }
+    progressStateBatch.schedule()
   }
 
   function _applyProgressState(detail: ProgressStateWsMessage) {
@@ -397,19 +389,16 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   let _pendingProgress: ProgressWsMessage | null = null
-  let _progressRafId: number | null = null
+  const progressBatch = createRafBatch(() => {
+    if (_pendingProgress) {
+      _executingNodeProgress.value = _pendingProgress
+      _pendingProgress = null
+    }
+  })
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
     _pendingProgress = e.detail
-    if (_progressRafId === null) {
-      _progressRafId = requestAnimationFrame(() => {
-        _progressRafId = null
-        if (_pendingProgress) {
-          _executingNodeProgress.value = _pendingProgress
-          _pendingProgress = null
-        }
-      })
-    }
+    progressBatch.schedule()
   }
 
   function handleStatus() {
