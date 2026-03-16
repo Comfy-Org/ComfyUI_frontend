@@ -454,6 +454,10 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Show the team workspaces dialog for creating or switching workspaces.
+   * Optionally calls `onConfirm` after a workspace is successfully created.
+   */
   async function showTeamWorkspacesDialog(
     onConfirm?: (name: string) => void | Promise<void>
   ) {

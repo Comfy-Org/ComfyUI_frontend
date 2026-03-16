@@ -115,6 +115,9 @@ export const useSubscriptionDialog = () => {
    * 2. Open the create workspace dialog
    * 3. On successful creation, persist a resume intent so the team pricing
    *    dialog reopens automatically after the page reload
+   *
+   * Uses sessionStorage (not a store) because the intent must survive
+   * a full page reload triggered by workspace switching.
    */
   function startTeamWorkspaceUpgradeFlow() {
     hide()

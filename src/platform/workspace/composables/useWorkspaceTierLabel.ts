@@ -2,6 +2,8 @@ import { useI18n } from 'vue-i18n'
 
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
 
+// Maps API tier identifiers to i18n key segments.
+// FOUNDERS_EDITION is a legacy alias for FOUNDER — both resolve to the same label.
 const TIER_KEY_MAP: Record<string, string> = {
   FREE: 'free',
   STANDARD: 'standard',
@@ -17,6 +19,10 @@ interface WorkspaceSubscriptionInfo {
   subscriptionTier: SubscriptionTier | null
 }
 
+/**
+ * Provides helpers for deriving human-readable subscription tier labels
+ * from workspace subscription info, with support for yearly plan suffixes.
+ */
 export function useWorkspaceTierLabel() {
   const { t } = useI18n()
 

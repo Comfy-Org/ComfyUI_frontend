@@ -16,6 +16,7 @@
       <div
         class="flex size-10 items-center justify-center rounded-xl bg-muted-foreground/30 text-lg font-semibold text-white"
       >
+        <!-- Decorative initial for "Personal" workspace icon; not user-facing text -->
         P
       </div>
       <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
