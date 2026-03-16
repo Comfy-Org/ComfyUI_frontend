@@ -37,7 +37,7 @@
       @pointerdown.capture.stop
       @pointermove.capture.stop
       @pointerup.capture.stop
-      @contextmenu.capture.stop
+      @contextmenu.capture="handleContextMenu"
     />
     <div
       v-if="showHighlight"
@@ -77,6 +77,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
@@ -162,6 +163,14 @@ watch(
   },
   { immediate: true }
 )
+
+function handleContextMenu(e: MouseEvent) {
+  if (isNodeOptionsOpen()) {
+    e.stopPropagation()
+    return
+  }
+  e.preventDefault()
+}
 
 function handleCopy() {
   copyToClipboard(modelValue.value)

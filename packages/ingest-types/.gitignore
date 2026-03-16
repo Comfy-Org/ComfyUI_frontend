@@ -1,0 +1,4 @@
+# OpenAPI spec is fetched from cloud repo during CI
+openapi.yaml
+# Crash logs
+openapi-ts-error-*.log

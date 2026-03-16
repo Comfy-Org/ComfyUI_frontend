@@ -17,6 +17,7 @@ import {
 } from '@/lib/litegraph/src/utils/type'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { BadgePosition, LGraphBadge } from './LGraphBadge'
@@ -2083,7 +2084,7 @@ export class LGraphNode
       this._collapsed_width = Math.min(
         this.size[0],
         ctx
-          ? ctx.measureText(this.getTitle() ?? '').width +
+          ? cachedMeasureText(ctx, this.getTitle() ?? '') +
               LiteGraph.NODE_TITLE_HEIGHT * 2
           : 0
       )

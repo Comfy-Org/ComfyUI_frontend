@@ -24,6 +24,9 @@ export class ExecutableGroupNodeDTO extends ExecutableNodeDTO {
   }
 
   override resolveOutput(slot: number, type: ISlotType, visited: Set<string>) {
+    // Muted nodes produce no output
+    if (this.mode === LGraphEventMode.NEVER) return
+
     // Temporary duplication: Bypass nodes are bypassed using the first input with matching type
     if (this.mode === LGraphEventMode.BYPASS) {
       const { inputs } = this

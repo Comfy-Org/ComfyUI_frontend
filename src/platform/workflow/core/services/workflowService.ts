@@ -16,7 +16,6 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
-import { useMissingModelsDialog } from '@/composables/useMissingModelsDialog'
 import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
@@ -40,7 +39,6 @@ export const useWorkflowService = () => {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
-  const missingModelsDialog = useMissingModelsDialog()
   const missingNodesDialog = useMissingNodesDialog()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
@@ -539,7 +537,7 @@ export const useWorkflowService = () => {
     const wf = workflow ?? workflowStore.activeWorkflow
     if (!wf?.pendingWarnings) return
 
-    const { missingNodeTypes, missingModels } = wf.pendingWarnings
+    const { missingNodeTypes } = wf.pendingWarnings
     wf.pendingWarnings = null
 
     if (missingNodeTypes?.length) {
@@ -547,15 +545,7 @@ export const useWorkflowService = () => {
       if (settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')) {
         missingNodesDialog.show({ missingNodeTypes })
       }
-
       executionErrorStore.surfaceMissingNodes(missingNodeTypes)
-    }
-
-    if (
-      missingModels &&
-      settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')
-    ) {
-      missingModelsDialog.show(missingModels)
     }
   }
 

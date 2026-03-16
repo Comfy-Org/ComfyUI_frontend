@@ -924,7 +924,8 @@ export function useBrushDrawing(initialSettings?: {
       }
 
       // Calculate target spacing based on step size percentage
-      const stepPercentage = store.brushSettings.stepSize / 100
+      const stepPercentage =
+        Math.pow(100, store.brushSettings.stepSize / 100) / 100
       const targetSpacing = Math.max(
         1.0,
         store.brushSettings.size * stepPercentage
@@ -1483,7 +1484,8 @@ export function useBrushDrawing(initialSettings?: {
         const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y)
 
         // Calculate target spacing based on stepSize
-        const stepPercentage = store.brushSettings.stepSize / 100
+        const stepPercentage =
+          Math.pow(100, store.brushSettings.stepSize / 100) / 100
         const stepSize = Math.max(
           1.0,
           store.brushSettings.size * stepPercentage

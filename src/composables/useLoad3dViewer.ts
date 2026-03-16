@@ -357,7 +357,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   }
 
   /**
-   * Initialize viewer in standalone mode (for asset preview)
+   * Initialize viewer in standalone mode (for asset preview).
+   * Creates the Load3d instance once; subsequent calls reuse it.
    */
   const initializeStandaloneViewer = async (
     containerRef: HTMLElement,
@@ -366,6 +367,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     if (!containerRef) return
 
     try {
+      if (load3d) {
+        await loadStandaloneModel(modelUrl)
+        return
+      }
+
       isStandaloneMode.value = true
 
       load3d = new Load3d(containerRef, {
@@ -392,6 +398,23 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       setupAnimationEvents()
     } catch (error) {
       console.error('Error initializing standalone 3D viewer:', error)
+      useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+    }
+  }
+
+  /**
+   * Load a new model into an existing standalone viewer,
+   * reusing the same WebGLRenderer.
+   */
+  const loadStandaloneModel = async (modelUrl: string) => {
+    if (!load3d) return
+
+    try {
+      await load3d.loadModel(modelUrl)
+      isSplatModel.value = load3d.isSplatModel()
+      isPlyModel.value = load3d.isPlyModel()
+    } catch (error) {
+      console.error('Error loading model in standalone viewer:', error)
       useToastStore().addAlert('Failed to load 3D model')
     }
   }
