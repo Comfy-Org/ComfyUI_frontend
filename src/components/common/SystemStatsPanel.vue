@@ -51,6 +51,8 @@ import type { SystemStats } from '@/schemas/apiSchema'
 import { formatCommitHash, formatSize } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+const frontendCommit = __COMFYUI_FRONTEND_COMMIT__
+
 const props = defineProps<{
   stats: SystemStats
 }>()
@@ -67,6 +69,7 @@ type SystemInfoKey = keyof SystemStats['system']
 type ColumnDef = {
   field: SystemInfoKey
   header: string
+  getValue?: () => string
   format?: (value: string) => string
   formatNumber?: (value: number) => string
 }
@@ -94,6 +97,7 @@ const cloudColumns: ColumnDef[] = [
   {
     field: 'comfyui_frontend_version',
     header: 'Frontend Version',
+    getValue: () => frontendCommit,
     format: formatCommitHash
   },
   { field: 'workflow_templates_version', header: 'Templates Version' }
@@ -108,8 +112,10 @@ function isOutdated(column: ColumnDef): boolean {
   return !!installed && !!required && installed !== required
 }
 
-const getDisplayValue = (column: ColumnDef) => {
-  const value = systemInfo.value[column.field]
+function getDisplayValue(column: ColumnDef) {
+  const value = column.getValue
+    ? column.getValue()
+    : systemInfo.value[column.field]
   if (column.formatNumber && typeof value === 'number') {
     return column.formatNumber(value)
   }
