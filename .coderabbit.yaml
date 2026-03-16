@@ -15,7 +15,7 @@ reviews:
   pre_merge_checks:
     custom_checks:
       - name: End-to-end regression coverage for fixes
-        mode: warning
+        mode: error
         instructions: |
           Pass if at least one of the following is true:
           1. Neither the PR title nor any commit subject in the PR uses bug-fix language such as `fix`, `fixed`, `fixes`, `fixing`, `bugfix`, or `hotfix`.
