@@ -15,7 +15,7 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 const mockMissingCoreNodes = vi.hoisted(() => ({
-  value: {} as Record<string, unknown[]>
+  value: {} as Record<string, { type: string }[]>
 }))
 const mockSystemStats = vi.hoisted(() => ({
   value: null as { system?: { comfyui_version?: string } } | null

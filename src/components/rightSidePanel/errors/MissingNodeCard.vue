@@ -148,14 +148,8 @@ const sortedMissingCoreNodes = computed(() =>
 )
 
 function getUniqueNodeNames(nodes: LGraphNode[]): string[] {
-  return nodes
-    .reduce<string[]>((acc, node) => {
-      if (node.type && !acc.includes(node.type)) {
-        acc.push(node.type)
-      }
-      return acc
-    }, [])
-    .sort()
+  const types = new Set(nodes.map((node) => node.type).filter(Boolean))
+  return [...types].sort()
 }
 
 const comfyManagerStore = useComfyManagerStore()
