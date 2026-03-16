@@ -3596,6 +3596,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.state.ghostNodeId = node.id
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: true,
+      nodeId: node.id
+    })
 
     this.deselectAll()
     this.select(node)
@@ -3612,6 +3616,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.state.ghostNodeId = null
     this.isDragging = false
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: false,
+      nodeId
+    })
 
     const node = this.graph?.getNodeById(nodeId)
     if (!node) return
