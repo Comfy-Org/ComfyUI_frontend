@@ -1,3 +1,5 @@
+import { expect } from '@playwright/test'
+
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { recordMeasurement } from '../helpers/perfReporter'
 
@@ -173,5 +175,71 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     const m = await comfyPage.perf.stopMeasuring('subgraph-dom-widget-clipping')
     recordMeasurement(m)
     console.log(`Subgraph clipping: ${m.layouts} forced layouts`)
+  })
+
+  test('canvas zoom sweep', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.perf.startMeasuring()
+
+    // Zoom in 10 steps, then zoom out 10 steps
+    for (let i = 0; i < 10; i++) {
+      await comfyPage.canvasOps.zoom(-100)
+      await comfyPage.nextFrame()
+    }
+    for (let i = 0; i < 10; i++) {
+      await comfyPage.canvasOps.zoom(100)
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('canvas-zoom-sweep')
+    recordMeasurement(m)
+    console.log(
+      `Zoom sweep: ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+    )
+  })
+
+  test('minimap idle', async ({ comfyPage }) => {
+    // Enable minimap via setting, load workflow, then measure idle cost
+    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', true)
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    // Wait for minimap to render
+    await comfyPage.page
+      .locator('.litegraph-minimap')
+      .waitFor({ state: 'visible', timeout: 5000 })
+
+    await comfyPage.perf.startMeasuring()
+
+    // Idle for 2 seconds with minimap open and 245 nodes
+    for (let i = 0; i < 120; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('minimap-idle')
+    recordMeasurement(m)
+    console.log(
+      `Minimap idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+    )
+  })
+
+  test('workflow execution', async ({ comfyPage }) => {
+    // Uses lightweight PrimitiveString → PreviewAny workflow (no GPU needed)
+    await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+    await comfyPage.perf.startMeasuring()
+
+    // Queue the prompt and wait for execution to complete
+    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+
+    // Wait for the output widget to populate (execution_success)
+    const outputNode = await comfyPage.nodeOps.getNodeRefById(1)
+    await expect(async () => {
+      expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
+    }).toPass({ timeout: 10000 })
+
+    const m = await comfyPage.perf.stopMeasuring('workflow-execution')
+    recordMeasurement(m)
+    console.log(
+      `Workflow execution: ${m.durationMs.toFixed(0)}ms total, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+    )
   })
 })

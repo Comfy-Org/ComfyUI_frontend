@@ -42,7 +42,7 @@
 
   <TransitionCollapse>
     <div v-if="urlMetadata[modelKey]" class="flex flex-col gap-2">
-      <div class="flex items-center gap-2 px-0.5 pt-0.5">
+      <div class="flex items-center gap-2 px-0.5 pt-2.5">
         <span class="text-foreground min-w-0 truncate text-xs font-bold">
           {{ urlMetadata[modelKey]?.filename }}
         </span>

@@ -1421,14 +1421,17 @@ export class ComfyApp {
   ): Promise<{ missingModels: ModelFile[] }> {
     const missingModelStore = useMissingModelStore()
 
-    const candidates = isCloud
-      ? scanAllModelCandidates(
-          this.rootGraph,
-          (nodeType, widgetName) =>
-            assetService.shouldUseAssetBrowser(nodeType, widgetName),
-          (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
-        )
-      : []
+    const getDirectory = (nodeType: string) =>
+      useModelToNodeStore().getCategoryForNodeType(nodeType)
+
+    const candidates = scanAllModelCandidates(
+      this.rootGraph,
+      isCloud
+        ? (nodeType, widgetName) =>
+            assetService.shouldUseAssetBrowser(nodeType, widgetName)
+        : () => false,
+      getDirectory
+    )
 
     const modelStore = useModelStore()
     await modelStore.loadModelFolders()
@@ -1473,32 +1476,68 @@ export class ComfyApp {
       }
     }
 
-    if (isCloud && enrichedCandidates.length) {
-      const controller = missingModelStore.createVerificationAbortController()
-      verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
-        .then(() => {
-          if (controller.signal.aborted) return
-          const confirmed = enrichedCandidates.filter(
-            (c) => c.isMissing === true
-          )
-          if (confirmed.length) {
-            useExecutionErrorStore().surfaceMissingModels(confirmed)
-          }
-        })
-        .catch((err) => {
-          console.warn(
-            '[Missing Model Pipeline] Asset verification failed:',
-            err
-          )
-          useToastStore().add({
-            severity: 'warn',
-            summary: st(
-              'toastMessages.missingModelVerificationFailed',
-              'Failed to verify missing models. Some models may not be shown in the Errors tab.'
-            ),
-            life: 5000
+    if (enrichedCandidates.length) {
+      if (isCloud) {
+        const controller = missingModelStore.createVerificationAbortController()
+        verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+          .then(() => {
+            if (controller.signal.aborted) return
+            const confirmed = enrichedCandidates.filter(
+              (c) => c.isMissing === true
+            )
+            if (confirmed.length) {
+              useExecutionErrorStore().surfaceMissingModels(confirmed)
+            }
           })
-        })
+          .catch((err) => {
+            console.warn(
+              '[Missing Model Pipeline] Asset verification failed:',
+              err
+            )
+            useToastStore().add({
+              severity: 'warn',
+              summary: st(
+                'toastMessages.missingModelVerificationFailed',
+                'Failed to verify missing models. Some models may not be shown in the Errors tab.'
+              ),
+              life: 5000
+            })
+          })
+      } else {
+        const controller = missingModelStore.createVerificationAbortController()
+        const confirmed = enrichedCandidates.filter((c) => c.isMissing === true)
+        if (confirmed.length) {
+          api
+            .getFolderPaths()
+            .then((paths) => {
+              if (controller.signal.aborted) return
+              missingModelStore.setFolderPaths(paths)
+            })
+            .catch((err) => {
+              console.warn(
+                '[Missing Model Pipeline] Failed to fetch folder paths:',
+                err
+              )
+            })
+            .finally(() => {
+              if (controller.signal.aborted) return
+              useExecutionErrorStore().surfaceMissingModels(confirmed)
+            })
+
+          void Promise.allSettled(
+            confirmed
+              .filter((c) => c.url)
+              .map(async (c) => {
+                const { fetchModelMetadata } =
+                  await import('@/platform/missingModel/missingModelDownload')
+                const metadata = await fetchModelMetadata(c.url!)
+                if (!controller.signal.aborted && metadata.fileSize !== null) {
+                  missingModelStore.setFileSize(c.url!, metadata.fileSize)
+                }
+              })
+          )
+        }
+      }
     }
 
     return { missingModels }
