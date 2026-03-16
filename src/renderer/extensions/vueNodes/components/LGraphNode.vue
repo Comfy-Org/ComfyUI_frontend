@@ -22,13 +22,12 @@
           : 'pointer-events-none'
       )
     "
-    :style="[
-      {
-        transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex,
-        opacity: nodeOpacity
-      }
-    ]"
+    :style="{
+      '--min-node-width': `${MIN_NODE_WIDTH}px`,
+      transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+      zIndex: zIndex,
+      opacity: nodeOpacity
+    }"
     :inert="isGhostPlacing"
     v-bind="remainingPointerHandlers"
     @pointerdown="nodeOnPointerdown"
