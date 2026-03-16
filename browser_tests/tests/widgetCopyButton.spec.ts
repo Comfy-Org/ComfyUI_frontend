@@ -31,7 +31,7 @@ test.describe('Widget copy button', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     const container = comfyPage.page
-      .locator('[data-node-id] div.group:has(textarea)')
+      .locator('[data-node-id] div.group:has(textarea[readonly])')
       .first()
     await expect(container).toBeVisible()
     await container.hover()
