@@ -60,11 +60,7 @@
           variant="primary"
           class="h-9 w-full justify-center gap-2 text-sm font-semibold"
           :loading="urlImporting[modelKey]"
-          @click="
-            canImportModels
-              ? handleImport(modelKey, directory)
-              : showUploadDialog()
-          "
+          @click="handleImportClick"
         >
           <i aria-hidden="true" class="icon-[lucide--download] size-4" />
           {{
@@ -128,4 +124,12 @@ const { urlInputs, urlMetadata, urlFetching, urlErrors, urlImporting } =
   storeToRefs(store)
 
 const { handleUrlInput, handleImport } = useMissingModelInteractions()
+
+function handleImportClick() {
+  if (canImportModels.value) {
+    handleImport(modelKey, directory)
+  } else {
+    showUploadDialog()
+  }
+}
 </script>
