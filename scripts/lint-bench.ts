@@ -9,7 +9,7 @@
  *   pnpm tsx scripts/lint-bench.ts --commands oxlint   # benchmark only oxlint
  *   pnpm tsx scripts/lint-bench.ts --profile-rules     # per-rule ESLint timing
  */
-import { execSync } from 'node:child_process'
+import { execSync, spawnSync } from 'node:child_process'
 import {
   existsSync,
   mkdirSync,
@@ -182,34 +182,23 @@ function parseTimingOutput(stderr: string): RuleTiming[] {
   return rules.sort((a, b) => b.timeMs - a.timeMs)
 }
 
-function runWithStderr(
-  command: string,
-  env?: Record<string, string | undefined>
-): string {
-  try {
-    execSync(command, {
-      env: { ...process.env, ...env },
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 600_000
-    })
-  } catch (e: unknown) {
-    // ESLint exits non-zero on lint errors; stderr still has timing data
-    const error = e as { stderr?: Buffer | string }
-    if (error.stderr) {
-      return typeof error.stderr === 'string'
-        ? error.stderr
-        : error.stderr.toString('utf-8')
-    }
-  }
-  return ''
-}
-
 function profileRules(): RuleTiming[] {
   console.error('Profiling ESLint per-rule timing (TIMING=all)...')
   if (existsSync(ESLINT_CACHE)) rmSync(ESLINT_CACHE)
 
-  const stderr = runWithStderr('pnpm eslint src', { TIMING: 'all' })
-  return parseTimingOutput(stderr)
+  const result = spawnSync('pnpm', ['eslint', 'src'], {
+    env: { ...process.env, TIMING: 'all' },
+    stdio: ['pipe', 'pipe', 'pipe'],
+    timeout: 600_000
+  })
+
+  const stderr = result.stderr?.toString('utf-8') ?? ''
+  const stdout = result.stdout?.toString('utf-8') ?? ''
+
+  // TIMING output goes to stderr, but check both in case pnpm redirects
+  const rules = parseTimingOutput(stderr)
+  if (rules.length > 0) return rules
+  return parseTimingOutput(stdout)
 }
 
 function printRuleProfile(rules: RuleTiming[], top: number): void {
