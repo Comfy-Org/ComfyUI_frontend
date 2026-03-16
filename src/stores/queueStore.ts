@@ -288,9 +288,10 @@ export class TaskItemImpl {
 
   get previewOutput(): ResultItemImpl | undefined {
     const previewable = this.previewableOutputs
-    // Prefer saved media files over the temp previews
+    // Prefer the last saved media file (most recent result) over temp previews
     return (
-      previewable.find((output) => output.type === 'output') ?? previewable[0]
+      previewable.findLast((output) => output.type === 'output') ??
+      previewable.at(-1)
     )
   }
 

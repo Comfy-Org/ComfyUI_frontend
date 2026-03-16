@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-import { fetchModelMetadata } from './missingModelsUtils'
+import { fetchModelMetadata } from './missingModelDownload'
 
 const fetchMock = vi.fn()
 vi.stubGlobal('fetch', fetchMock)

@@ -5,7 +5,7 @@
     :aria-label="
       asset
         ? $t('assetBrowser.ariaLabel.assetCard', {
-            name: asset.display_name || asset.name,
+            name: getAssetDisplayName(asset),
             type: fileKind
           })
         : $t('assetBrowser.ariaLabel.loadingAsset')
@@ -150,8 +150,10 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
+import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
+import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
@@ -225,7 +227,7 @@ const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
 
 // Get filename without extension
 const fileName = computed(() => {
-  return getFilenameDetails(asset?.display_name || asset?.name || '').filename
+  return getFilenameDetails(asset ? getAssetDisplayName(asset) : '').filename
 })
 
 // Adapt AssetItem to legacy AssetMeta format for existing components
@@ -236,7 +238,12 @@ const adaptedAsset = computed(() => {
     name: asset.name,
     display_name: asset.display_name,
     kind: fileKind.value,
-    src: asset.thumbnail_url || asset.preview_url || '',
+    src:
+      fileKind.value === '3D'
+        ? getAssetUrl(asset)
+        : asset.thumbnail_url || asset.preview_url || '',
+    preview_url: asset.preview_url,
+    preview_id: asset.preview_id,
     size: asset.size,
     tags: asset.tags || [],
     created_at: asset.created_at,

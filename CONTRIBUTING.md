@@ -17,7 +17,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Prerequisites & Technology Stack
 
 - **Required Software**:
-  - Node.js (see `.nvmrc`, currently v24) and pnpm
+  - Node.js (see `.nvmrc` for the required version) and pnpm
   - Git for version control
   - A running ComfyUI backend instance (otherwise, you can use `pnpm dev:cloud`)
 
@@ -86,6 +86,10 @@ navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to
 
 > ⚠️ IMPORTANT:
 > The dev server will NOT load JavaScript extensions from custom nodes. Only core extensions (built into the frontend) will be loaded. This is because the shim system that allows custom node JavaScript to import frontend modules only works in production builds. Python custom nodes still function normally. See [Extension Development Guide](docs/extensions/development.md) for details and workarounds. And See [Extension Overview](docs/extensions/README.md) for extensions overview.
+
+## Troubleshooting
+
+If you run into issues during development (e.g. `pnpm dev` hanging, TypeScript errors after pulling, lock file conflicts), see [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common fixes.
 
 ## Development Workflow
 

@@ -229,7 +229,10 @@ export const usePaste = () => {
         return
       }
     }
-    if (pasteClipboardItems(data)) return
+
+    const isMediaNodeSelected =
+      isImageNodeSelected || isVideoNodeSelected || isAudioNodeSelected
+    if (!isMediaNodeSelected && pasteClipboardItems(data)) return
 
     // No image found. Look for node data
     data = data.getData('text/plain')

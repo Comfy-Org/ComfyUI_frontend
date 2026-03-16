@@ -7,10 +7,11 @@
     ref="nodeContainerRef"
     tabindex="0"
     :data-node-id="nodeData.id"
+    :data-collapsed="isCollapsed || undefined"
     :class="
       cn(
         'group/node lg-node absolute text-sm',
-        'flex min-w-[225px] flex-col contain-layout contain-style',
+        'flex min-w-(--min-node-width) flex-col contain-layout contain-style',
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
@@ -78,7 +79,7 @@
       :class="
         cn(
           'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
-          'min-h-(--node-height) w-(--node-width)',
+          'min-h-(--node-height) w-(--node-width) min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
           {
@@ -278,6 +279,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutChange } from '@/renderer/core/layout/types'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -306,6 +308,7 @@ import { isTransparent } from '@/utils/colorUtil'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 import { RESIZE_HANDLES } from '../interactions/resize/resizeHandleConfig'
 import { useNodeResize } from '../interactions/resize/useNodeResize'
@@ -455,18 +458,13 @@ function initSizeStyles() {
  * Handle external size changes (e.g., from extensions calling node.setSize()).
  * Updates CSS variables when layoutStore changes from Canvas/External source.
  */
-function handleLayoutChange(change: {
-  source: LayoutSource
-  nodeIds: string[]
-}) {
+function handleLayoutChange(change: LayoutChange) {
   // Only handle Canvas or External source (extensions calling setSize)
   if (
     change.source !== LayoutSource.Canvas &&
     change.source !== LayoutSource.External
   )
     return
-
-  if (!change.nodeIds.includes(nodeData.id)) return
   if (layoutStore.isResizingVueNodes.value) return
   if (isCollapsed.value) return
 
@@ -483,7 +481,10 @@ let unsubscribeLayoutChange: (() => void) | null = null
 
 onMounted(() => {
   initSizeStyles()
-  unsubscribeLayoutChange = layoutStore.onChange(handleLayoutChange)
+  unsubscribeLayoutChange = layoutStore.onNodeChange(
+    nodeData.id,
+    handleLayoutChange
+  )
 })
 
 onUnmounted(() => {
@@ -493,7 +494,6 @@ onUnmounted(() => {
 const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
-const MIN_NODE_WIDTH = 225
 const mutations = useLayoutMutations()
 
 const { startResize } = useNodeResize((result, element) => {
