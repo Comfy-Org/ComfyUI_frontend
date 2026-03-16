@@ -71,7 +71,18 @@ async function runButtonClick(e: Event) {
   }
 }
 
-defineExpose({ runButtonClick })
+function handleDragDrop(e: DragEvent) {
+  for (const nodeData of mappedSelections.value) {
+    if (!nodeData?.onDragOver?.(e)) continue
+
+    nodeData?.onDragDrop?.(e)
+    e.stopPropagation()
+    e.preventDefault()
+    return
+  }
+}
+
+defineExpose({ runButtonClick, handleDragDrop })
 </script>
 <template>
   <div
