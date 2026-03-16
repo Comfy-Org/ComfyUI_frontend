@@ -36,7 +36,7 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
-      grepInvert: /@mobile|@perf/ // Run all tests except those tagged with @mobile or @perf
+      grepInvert: /@mobile|@perf|@audit/ // Run all tests except those tagged with @mobile, @perf, or @audit
     },
 
     {
