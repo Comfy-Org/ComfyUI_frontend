@@ -208,6 +208,11 @@ export class ComfyApp {
     return this.rootGraphInternal!
   }
 
+  /** Whether the root graph has been initialized. Safe to check without triggering error logs. */
+  get isGraphReady(): boolean {
+    return !!this.rootGraphInternal
+  }
+
   canvas!: LGraphCanvas
   dragOverNode: LGraphNode | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
