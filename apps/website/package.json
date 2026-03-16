@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@comfyorg/design-system": "workspace:*",
+    "@vercel/analytics": "catalog:",
     "nanostores": "catalog:",
     "@nanostores/vue": "catalog:",
     "vue": "catalog:"

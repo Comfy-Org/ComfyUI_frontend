@@ -51,6 +51,7 @@ catalog:
   '@types/semver': ^7.7.0
   '@types/three': ^0.169.0
   '@vitejs/plugin-vue': ^6.0.0
+  '@vercel/analytics': ^2.0.1
   '@vitest/coverage-v8': ^4.0.16
   '@vitest/ui': ^4.0.16
   '@vue/test-utils': ^2.4.6

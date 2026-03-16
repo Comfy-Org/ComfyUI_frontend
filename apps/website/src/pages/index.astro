@@ -1,9 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
+import SiteNav from '../components/SiteNav.vue'
+import SiteFooter from '../components/SiteFooter.vue'
 ---
 
 <BaseLayout title="Comfy — Professional Control of Visual AI">
-  <main class="flex min-h-screen items-center justify-center">
+  <SiteNav client:load />
+  <main class="flex min-h-screen items-center justify-center pt-16">
     <div class="text-center">
       <h1 class="text-5xl font-bold tracking-tight">
         Professional Control of Visual AI
@@ -14,4 +17,5 @@ import BaseLayout from '../layouts/BaseLayout.astro'
       </p>
     </div>
   </main>
+  <SiteFooter client:visible />
 </BaseLayout>
