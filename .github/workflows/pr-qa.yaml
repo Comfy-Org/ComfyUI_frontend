@@ -130,6 +130,7 @@ jobs:
 
       - name: Start recording (Linux)
         if: runner.os == 'Linux'
+        continue-on-error: true
         run: |
           mkdir -p "$QA_ARTIFACTS"
           ffmpeg -y -f x11grab -video_size 1280x720 -framerate 10 \
@@ -161,6 +162,7 @@ jobs:
 
       - name: Start recording (macOS)
         if: runner.os == 'macOS'
+        continue-on-error: true
         run: |
           mkdir -p "$QA_ARTIFACTS"
           ffmpeg -f avfoundation -list_devices true -i "" 2>&1 || true
@@ -178,6 +180,7 @@ jobs:
 
       - name: Start recording (Windows)
         if: runner.os == 'Windows'
+        continue-on-error: true
         shell: bash
         run: |
           mkdir -p "$QA_ARTIFACTS"
@@ -333,13 +336,13 @@ jobs:
 
   report:
     needs: [resolve-matrix, qa]
-    if: always() && github.event.pull_request.number
+    if: always() && github.event.pull_request.number && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
       - name: Download QA artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           path: qa-artifacts
           pattern: qa-report-*
@@ -474,7 +477,7 @@ jobs:
 
   video-review:
     needs: [qa, report]
-    if: always() && github.event.pull_request.number
+    if: always() && github.event.pull_request.number && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -483,9 +486,9 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -499,7 +502,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1
 
       - name: Download QA artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           path: qa-artifacts
           pattern: qa-report-*
