@@ -114,7 +114,11 @@
                 </span>
               </div>
               <span class="text-sm font-bold text-base-foreground">
-                {{ t('subscription.memberCount', maxMembersByTier[tier.key]) }}
+                {{
+                  t('subscription.memberCount', {
+                    count: maxMembersByTier[tier.key]
+                  })
+                }}
               </span>
             </template>
           </div>
