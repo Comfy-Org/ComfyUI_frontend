@@ -1,4 +1,3 @@
-import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { Keybinding } from '../../src/platform/keybindings/types'
@@ -72,6 +71,10 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
 test.describe('Execution error', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
     await comfyPage.setup()
   })
 
@@ -88,117 +91,58 @@ test.describe('Execution error', () => {
   })
 })
 
-test.describe('Missing models warning', () => {
-  test('Should be disabled by default in browser tests', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('missing/missing_models')
-
-    const dialogTitle = comfyPage.page.getByText(
-      'This workflow is missing models'
-    )
-    await expect(dialogTitle).not.toBeVisible()
-  })
-
+test.describe('Missing models in Error Tab', () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
-      'Comfy.Workflow.ShowMissingModelsWarning',
+      'Comfy.RightSidePanel.ShowErrorsTab',
       true
     )
-    await comfyPage.page.evaluate((url: string) => {
-      return fetch(`${url}/api/devtools/cleanup_fake_model`)
+    const cleanupOk = await comfyPage.page.evaluate(async (url: string) => {
+      const response = await fetch(`${url}/api/devtools/cleanup_fake_model`)
+      return response.ok
     }, comfyPage.url)
+    expect(cleanupOk).toBeTruthy()
   })
 
-  test('Should display a warning when missing models are found', async ({
+  test('Should show error overlay with missing models when workflow has missing models', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('missing/missing_models')
 
-    const dialogTitle = comfyPage.page.getByText(
-      'This workflow is missing models'
-    )
-    await expect(dialogTitle).toBeVisible()
+    const errorOverlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    await expect(errorOverlay).toBeVisible()
 
-    const downloadAllButton = comfyPage.page.getByText('Download all')
-    await expect(downloadAllButton).toBeVisible()
+    const missingModelsTitle = comfyPage.page.getByText(/Missing Models/)
+    await expect(missingModelsTitle).toBeVisible()
   })
 
-  test('Should display a warning when missing models are found in node properties', async ({
+  test('Should show missing models from node properties', async ({
     comfyPage
   }) => {
-    // Load workflow that has a node with models metadata at the node level
     await comfyPage.workflow.loadWorkflow(
       'missing/missing_models_from_node_properties'
     )
 
-    const dialogTitle = comfyPage.page.getByText(
-      'This workflow is missing models'
-    )
-    await expect(dialogTitle).toBeVisible()
+    const errorOverlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    await expect(errorOverlay).toBeVisible()
 
-    const downloadAllButton = comfyPage.page.getByText('Download all')
-    await expect(downloadAllButton).toBeVisible()
+    const missingModelsTitle = comfyPage.page.getByText(/Missing Models/)
+    await expect(missingModelsTitle).toBeVisible()
   })
 
-  test('Should not display a warning when no missing models are found', async ({
+  test('Should not show missing models when widget values have changed', async ({
     comfyPage
   }) => {
-    const modelFoldersRes = {
-      status: 200,
-      body: JSON.stringify([
-        {
-          name: 'text_encoders',
-          folders: ['ComfyUI/models/text_encoders']
-        }
-      ])
-    }
-    await comfyPage.page.route(
-      '**/api/experiment/models',
-      (route) => route.fulfill(modelFoldersRes),
-      { times: 1 }
-    )
-
-    // Reload page to trigger indexing of model folders
-    await comfyPage.setup()
-
-    const clipModelsRes = {
-      status: 200,
-      body: JSON.stringify([
-        {
-          name: 'fake_model.safetensors',
-          pathIndex: 0
-        }
-      ])
-    }
-    await comfyPage.page.route(
-      '**/api/experiment/models/text_encoders',
-      (route) => route.fulfill(clipModelsRes),
-      { times: 1 }
-    )
-
-    await comfyPage.workflow.loadWorkflow('missing/missing_models')
-
-    const dialogTitle = comfyPage.page.getByText(
-      'This workflow is missing models'
-    )
-    await expect(dialogTitle).not.toBeVisible()
-  })
-
-  test('Should not display warning when model metadata exists but widget values have changed', async ({
-    comfyPage
-  }) => {
-    // This tests the scenario where outdated model metadata exists in the workflow
-    // but the actual selected models (widget values) have changed
     await comfyPage.workflow.loadWorkflow(
       'missing/model_metadata_widget_mismatch'
     )
 
-    // The missing models warning should NOT appear
-    const dialogTitle = comfyPage.page.getByText(
-      'This workflow is missing models'
-    )
-    await expect(dialogTitle).not.toBeVisible()
+    const missingModelsTitle = comfyPage.page.getByText(/Missing Models/)
+    await expect(missingModelsTitle).not.toBeVisible()
+
+    const errorOverlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    await expect(errorOverlay).not.toBeVisible()
   })
 
   // Flaky test after parallelization
@@ -206,14 +150,10 @@ test.describe('Missing models warning', () => {
   test.skip('Should download missing model when clicking download button', async ({
     comfyPage
   }) => {
-    // The fake_model.safetensors is served by
-    // https://github.com/Comfy-Org/ComfyUI_devtools/blob/main/__init__.py
     await comfyPage.workflow.loadWorkflow('missing/missing_models')
 
-    const dialogTitle = comfyPage.page.getByText(
-      'This workflow is missing models'
-    )
-    await expect(dialogTitle).toBeVisible()
+    const errorOverlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    await expect(errorOverlay).toBeVisible()
 
     const downloadAllButton = comfyPage.page.getByText('Download all')
     await expect(downloadAllButton).toBeVisible()
@@ -222,50 +162,6 @@ test.describe('Missing models warning', () => {
 
     const download = await downloadPromise
     expect(download.suggestedFilename()).toBe('fake_model.safetensors')
-  })
-
-  test.describe('Do not show again checkbox', () => {
-    let checkbox: Locator
-    let closeButton: Locator
-
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Workflow.ShowMissingModelsWarning',
-        true
-      )
-      await comfyPage.workflow.loadWorkflow('missing/missing_models')
-
-      checkbox = comfyPage.page.getByLabel("Don't show this again")
-      closeButton = comfyPage.page.getByLabel('Close')
-    })
-
-    test('Should disable warning dialog when checkbox is checked', async ({
-      comfyPage
-    }) => {
-      const changeSettingPromise = comfyPage.page.waitForRequest(
-        '**/api/settings/Comfy.Workflow.ShowMissingModelsWarning'
-      )
-      await checkbox.click()
-      await changeSettingPromise
-
-      await closeButton.click()
-
-      const settingValue = await comfyPage.settings.getSetting(
-        'Comfy.Workflow.ShowMissingModelsWarning'
-      )
-      expect(settingValue).toBe(false)
-    })
-
-    test('Should keep warning dialog enabled when checkbox is unchecked', async ({
-      comfyPage
-    }) => {
-      await closeButton.click()
-
-      const settingValue = await comfyPage.settings.getSetting(
-        'Comfy.Workflow.ShowMissingModelsWarning'
-      )
-      expect(settingValue).toBe(true)
-    })
   })
 })
 

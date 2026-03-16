@@ -546,6 +546,7 @@
     "Open in Mask Editor": "Open in Mask Editor",
     "Open Image": "Open Image",
     "Copy Image": "Copy Image",
+    "Paste Image": "Paste Image",
     "Save Image": "Save Image",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
@@ -3433,6 +3434,7 @@
       "customNodeDownloadDisabled": "Cloud environment does not support model imports for custom nodes in this section. Please use standard loader nodes or substitute with a model from the library below.",
       "importNotSupported": "Import Not Supported",
       "copyModelName": "Copy model name",
+      "copyUrl": "Copy URL",
       "confirmSelection": "Confirm selection",
       "locateNode": "Locate node on canvas",
       "cancelSelection": "Cancel selection",
@@ -3441,7 +3443,8 @@
       "collapseNodes": "Hide referencing nodes",
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
-      "assetLoadTimeout": "Model detection timed out. Try reloading the workflow."
+      "assetLoadTimeout": "Model detection timed out. Try reloading the workflow.",
+      "downloadAll": "Download all"
     }
   },
   "errorOverlay": {

@@ -1,5 +1,5 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
@@ -1159,7 +1159,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering.',
     defaultValue: false,
-    defaultsByInstallVersion: { '1.41.0': isCloud },
+    defaultsByInstallVersion: { '1.41.0': isCloud || isDesktop },
     sortOrder: 100,
     experimental: true,
     versionAdded: '1.27.1'

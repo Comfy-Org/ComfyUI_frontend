@@ -4160,6 +4160,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         item.setPos(item.pos[0] + dx, item.pos[1] + dy)
       } else if (item instanceof Reroute) {
         item.move(dx, dy)
+      } else if (item instanceof LGraphGroup) {
+        item.move(dx, dy, true)
       }
     }
 
