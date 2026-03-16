@@ -63,6 +63,14 @@ export function getNodeSource(
     if (!moduleName) {
       return UNKNOWN_NODE_SOURCE
     }
+    if (moduleName === 'frontend_only') {
+      return {
+        type: NodeSourceType.CustomNodes,
+        className: 'comfy-frontend-only',
+        displayText: 'Frontend Only',
+        badgeText: ''
+      }
+    }
     const customNodeName = moduleName.split('@')[0]
     const displayName = shortenNodeName(customNodeName)
     return {
