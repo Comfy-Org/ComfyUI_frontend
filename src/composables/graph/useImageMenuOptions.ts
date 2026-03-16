@@ -6,6 +6,10 @@ import { useCommandStore } from '@/stores/commandStore'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 
+function canPasteImage(node: LGraphNode): boolean {
+  return typeof node.pasteFiles === 'function'
+}
+
 /**
  * Composable for image-related menu operations
  */
@@ -63,6 +67,28 @@ export function useImageMenuOptions() {
     }
   }
 
+  const pasteImage = async (node: LGraphNode) => {
+    if (!navigator.clipboard?.read) {
+      console.warn('Clipboard API not available')
+      return
+    }
+
+    try {
+      const clipboardItems = await navigator.clipboard.read()
+      for (const item of clipboardItems) {
+        const imageType = item.types.find((type) => type.startsWith('image/'))
+        if (!imageType) continue
+
+        const blob = await item.getType(imageType)
+        const file = new File([blob], 'pasted-image.png', { type: imageType })
+        node.pasteFiles?.([file])
+        return
+      }
+    } catch (error) {
+      console.error('Failed to paste image from clipboard:', error)
+    }
+  }
+
   const saveImage = (node: LGraphNode) => {
     if (!node?.imgs?.length) return
     const img = node.imgs[node.imageIndex ?? 0]
@@ -95,6 +121,15 @@ export function useImageMenuOptions() {
         icon: 'icon-[lucide--copy]',
         action: () => copyImage(node)
       },
+      ...(canPasteImage(node)
+        ? [
+            {
+              label: t('contextMenu.Paste Image'),
+              icon: 'icon-[lucide--clipboard-paste]',
+              action: () => pasteImage(node)
+            }
+          ]
+        : []),
       {
         label: t('contextMenu.Save Image'),
         icon: 'icon-[lucide--download]',
