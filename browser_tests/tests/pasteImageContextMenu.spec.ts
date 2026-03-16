@@ -29,5 +29,6 @@ test.describe('Paste Image context menu option', { tag: ['@node'] }, () => {
     const menuOptions = await saveImageNode.getContextMenuOptionNames()
 
     expect(menuOptions).not.toContain('Paste Image')
+    expect(menuOptions).not.toContain('Open Image')
   })
 })
