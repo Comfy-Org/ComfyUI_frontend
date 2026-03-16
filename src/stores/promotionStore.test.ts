@@ -287,6 +287,147 @@ describe(usePromotionStore, () => {
     })
   })
 
+  describe('ordering preservation through visibility toggle', () => {
+    it('preserves position when demoting then re-promoting', () => {
+      store.promote(graphA, nodeId, '10', 'seed')
+      store.promote(graphA, nodeId, '11', 'steps')
+      store.promote(graphA, nodeId, '12', 'cfg')
+
+      store.demote(graphA, nodeId, '11', 'steps')
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { interiorNodeId: '10', widgetName: 'seed' },
+        { interiorNodeId: '12', widgetName: 'cfg' }
+      ])
+
+      store.promote(graphA, nodeId, '11', 'steps')
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { interiorNodeId: '10', widgetName: 'seed' },
+        { interiorNodeId: '11', widgetName: 'steps' },
+        { interiorNodeId: '12', widgetName: 'cfg' }
+      ])
+    })
+
+    it('preserves position through multiple toggle cycles', () => {
+      store.promote(graphA, nodeId, '10', 'seed')
+      store.promote(graphA, nodeId, '11', 'steps')
+      store.promote(graphA, nodeId, '12', 'cfg')
+
+      store.demote(graphA, nodeId, '11', 'steps')
+      store.promote(graphA, nodeId, '11', 'steps')
+      store.demote(graphA, nodeId, '11', 'steps')
+      store.promote(graphA, nodeId, '11', 'steps')
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { interiorNodeId: '10', widgetName: 'seed' },
+        { interiorNodeId: '11', widgetName: 'steps' },
+        { interiorNodeId: '12', widgetName: 'cfg' }
+      ])
+    })
+
+    it('preserves position when demoting first entry', () => {
+      store.promote(graphA, nodeId, '10', 'seed')
+      store.promote(graphA, nodeId, '11', 'steps')
+      store.promote(graphA, nodeId, '12', 'cfg')
+
+      store.demote(graphA, nodeId, '10', 'seed')
+      store.promote(graphA, nodeId, '10', 'seed')
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { interiorNodeId: '10', widgetName: 'seed' },
+        { interiorNodeId: '11', widgetName: 'steps' },
+        { interiorNodeId: '12', widgetName: 'cfg' }
+      ])
+    })
+
+    it('preserves position when demoting last entry', () => {
+      store.promote(graphA, nodeId, '10', 'seed')
+      store.promote(graphA, nodeId, '11', 'steps')
+      store.promote(graphA, nodeId, '12', 'cfg')
+
+      store.demote(graphA, nodeId, '12', 'cfg')
+      store.promote(graphA, nodeId, '12', 'cfg')
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { interiorNodeId: '10', widgetName: 'seed' },
+        { interiorNodeId: '11', widgetName: 'steps' },
+        { interiorNodeId: '12', widgetName: 'cfg' }
+      ])
+    })
+
+    it('appends truly new entries after all manifest entries', () => {
+      store.promote(graphA, nodeId, '10', 'seed')
+      store.promote(graphA, nodeId, '11', 'steps')
+      store.demote(graphA, nodeId, '11', 'steps')
+
+      store.promote(graphA, nodeId, '13', 'denoise')
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { interiorNodeId: '10', widgetName: 'seed' },
+        { interiorNodeId: '13', widgetName: 'denoise' }
+      ])
+
+      store.promote(graphA, nodeId, '11', 'steps')
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { interiorNodeId: '10', widgetName: 'seed' },
+        { interiorNodeId: '11', widgetName: 'steps' },
+        { interiorNodeId: '13', widgetName: 'denoise' }
+      ])
+    })
+
+    it('movePromotion operates on visible entries only', () => {
+      store.promote(graphA, nodeId, '10', 'seed')
+      store.promote(graphA, nodeId, '11', 'steps')
+      store.promote(graphA, nodeId, '12', 'cfg')
+
+      store.demote(graphA, nodeId, '11', 'steps')
+
+      store.movePromotion(graphA, nodeId, 0, 1)
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { interiorNodeId: '12', widgetName: 'cfg' },
+        { interiorNodeId: '10', widgetName: 'seed' }
+      ])
+    })
+
+    it('setPromotions replaces the entire manifest including hidden entries', () => {
+      store.promote(graphA, nodeId, '10', 'seed')
+      store.promote(graphA, nodeId, '11', 'steps')
+      store.demote(graphA, nodeId, '11', 'steps')
+
+      store.setPromotions(graphA, nodeId, [
+        { interiorNodeId: '20', widgetName: 'model' }
+      ])
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { interiorNodeId: '20', widgetName: 'model' }
+      ])
+
+      store.promote(graphA, nodeId, '11', 'steps')
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { interiorNodeId: '20', widgetName: 'model' },
+        { interiorNodeId: '11', widgetName: 'steps' }
+      ])
+    })
+
+    it('ref-counts stay correct through demote-promote cycles', () => {
+      const nodeA = 1 as NodeId
+      const nodeB = 2 as NodeId
+
+      store.promote(graphA, nodeA, '10', 'seed')
+      store.promote(graphA, nodeB, '10', 'seed')
+
+      store.demote(graphA, nodeA, '10', 'seed')
+      expect(store.isPromotedByAny(graphA, '10', 'seed')).toBe(true)
+
+      store.promote(graphA, nodeA, '10', 'seed')
+      expect(store.isPromotedByAny(graphA, '10', 'seed')).toBe(true)
+
+      store.demote(graphA, nodeA, '10', 'seed')
+      store.demote(graphA, nodeB, '10', 'seed')
+      expect(store.isPromotedByAny(graphA, '10', 'seed')).toBe(false)
+    })
+  })
+
   describe('graph isolation', () => {
     it('isolates promotions by graph id', () => {
       store.promote(graphA, nodeId, '10', 'seed')
