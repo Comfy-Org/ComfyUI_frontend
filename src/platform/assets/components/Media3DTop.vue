@@ -22,10 +22,11 @@
 import { useIntersectionObserver } from '@vueuse/core'
 import { onBeforeUnmount, ref, watch } from 'vue'
 
-import { api } from '@/scripts/api'
-
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
-import { findServerPreviewUrl } from '../utils/assetPreviewUtil'
+import {
+  findServerPreviewUrl,
+  isAssetPreviewSupported
+} from '../utils/assetPreviewUtil'
 
 const { asset } = defineProps<{ asset: AssetMeta }>()
 
@@ -48,8 +49,11 @@ async function loadThumbnail() {
 
   if (!asset?.src) return
 
-  if (asset.name && api.getServerFeature('assets', false)) {
-    const serverPreviewUrl = await findServerPreviewUrl(asset.name)
+  if (asset.name && isAssetPreviewSupported()) {
+    const serverPreviewUrl = await findServerPreviewUrl(
+      asset.name,
+      asset.display_name
+    )
     if (serverPreviewUrl) {
       thumbnailSrc.value = serverPreviewUrl
     }

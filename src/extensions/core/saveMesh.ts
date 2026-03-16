@@ -7,14 +7,16 @@ import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
-import { api } from '@/scripts/api'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
 }>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { persistThumbnail } from '@/platform/assets/utils/assetPreviewUtil'
+import {
+  isAssetPreviewSupported,
+  persistThumbnail
+} from '@/platform/assets/utils/assetPreviewUtil'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
@@ -103,14 +105,15 @@ useExtensionService().registerExtension({
 
           config.configureForSaveMesh(loadFolder, filePath)
 
-          if (api.getServerFeature('assets', false)) {
+          if (isAssetPreviewSupported()) {
             const filename = fileInfo.filename ?? ''
+            const displayName = fileInfo.display_name
             const onModelLoaded = () => {
               load3d.removeEventListener('modelLoadingEnd', onModelLoaded)
               load3d
                 .captureThumbnail(256, 256)
                 .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-                .then((blob) => persistThumbnail(filename, blob))
+                .then((blob) => persistThumbnail(filename, blob, displayName))
                 .catch(() => {})
             }
             load3d.addEventListener('modelLoadingEnd', onModelLoaded)

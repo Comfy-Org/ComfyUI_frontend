@@ -1,12 +1,26 @@
+import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
-
-import { assetService } from '../services/assetService'
 
 interface AssetRecord {
   id: string
   name: string
   preview_url?: string
   preview_id?: string
+}
+
+export function isAssetPreviewSupported(): boolean {
+  return (
+    assetService.isAssetAPIEnabled() || api.getServerFeature('assets', false)
+  )
+}
+
+/**
+ * Extract the filename portion from a path that may include subdirectories.
+ * e.g. "mesh/ComfyUI_00003_.glb" -> "ComfyUI_00003_.glb"
+ */
+function basename(path: string): string {
+  const i = path.lastIndexOf('/')
+  return i >= 0 ? path.slice(i + 1) : path
 }
 
 async function fetchAssetsByName(name: string): Promise<AssetRecord[]> {
@@ -17,19 +31,44 @@ async function fetchAssetsByName(name: string): Promise<AssetRecord[]> {
   return data.assets ?? []
 }
 
+/**
+ * Search for the model asset record by name.
+ * On local, `name` (the raw filename) matches directly.
+ * On cloud, `name` is a hash; fall back to `displayName` (original filename)
+ * which may include a subfolder prefix.
+ */
+async function findModelAsset(
+  name: string,
+  displayName?: string
+): Promise<AssetRecord | undefined> {
+  let assets = await fetchAssetsByName(name)
+  let modelAsset = assets.find((a) => a.name === name)
+
+  if (!modelAsset && displayName) {
+    const base = basename(displayName)
+    assets = await fetchAssetsByName(base)
+    modelAsset =
+      assets.find((a) => a.name === base) ??
+      assets.find((a) => a.name === displayName)
+  }
+
+  return modelAsset
+}
+
 export async function findServerPreviewUrl(
-  name: string
+  name: string,
+  displayName?: string
 ): Promise<string | null> {
   try {
-    const assets = await fetchAssetsByName(name)
+    const modelAsset = await findModelAsset(name, displayName)
 
-    const modelAsset = assets.find((a) => a.name === name)
     if (!modelAsset?.preview_id) return null
 
-    const previewAsset = assets.find((a) => a.id === modelAsset.preview_id)
-    if (!previewAsset?.preview_url) return null
+    // Local API computes preview_url from the linked preview asset
+    if (modelAsset.preview_url) return api.api_base + modelAsset.preview_url
 
-    return api.api_base + previewAsset.preview_url
+    // Cloud list API may omit preview_url; construct from preview_id directly
+    return api.apiURL(`/assets/${modelAsset.preview_id}/content`)
   } catch {
     return null
   }
@@ -37,14 +76,14 @@ export async function findServerPreviewUrl(
 
 export async function persistThumbnail(
   modelName: string,
-  blob: Blob
+  blob: Blob,
+  displayName?: string
 ): Promise<void> {
   try {
-    const assets = await fetchAssetsByName(modelName)
-    const modelAsset = assets.find((a) => a.name === modelName)
+    const modelAsset = await findModelAsset(modelName, displayName)
     if (!modelAsset || modelAsset.preview_id) return
 
-    const previewFilename = `${modelName}_preview.png`
+    const previewFilename = `${modelAsset.name}_preview.png`
     const uploaded = await assetService.uploadAssetFromBase64({
       data: await blobToDataUrl(blob),
       name: previewFilename,
