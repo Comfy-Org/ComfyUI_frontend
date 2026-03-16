@@ -29,9 +29,7 @@ test.describe('Queue Notification Banners', { tag: '@ui' }, () => {
     await comfyPage.page.keyboard.press('Escape')
     await comfyPage.command.executeCommand('Comfy.QueuePrompt')
 
-    const errorOverlay = comfyPage.page.locator(
-      '[data-testid="error-overlay"]'
-    )
+    const errorOverlay = comfyPage.page.locator('[data-testid="error-overlay"]')
     await expect(errorOverlay).toBeVisible()
   })
 
@@ -40,9 +38,7 @@ test.describe('Queue Notification Banners', { tag: '@ui' }, () => {
     await comfyPage.page.keyboard.press('Escape')
     await comfyPage.command.executeCommand('Comfy.QueuePrompt')
 
-    const errorOverlay = comfyPage.page.locator(
-      '[data-testid="error-overlay"]'
-    )
+    const errorOverlay = comfyPage.page.locator('[data-testid="error-overlay"]')
     await expect(errorOverlay).toBeVisible()
     await expect(errorOverlay).not.toHaveText('')
   })
@@ -52,9 +48,7 @@ test.describe('Queue Notification Banners', { tag: '@ui' }, () => {
     await comfyPage.page.keyboard.press('Escape')
     await comfyPage.command.executeCommand('Comfy.QueuePrompt')
 
-    const errorOverlay = comfyPage.page.locator(
-      '[data-testid="error-overlay"]'
-    )
+    const errorOverlay = comfyPage.page.locator('[data-testid="error-overlay"]')
     await expect(errorOverlay).toBeVisible()
 
     await errorOverlay.getByRole('button', { name: /Dismiss/i }).click()
