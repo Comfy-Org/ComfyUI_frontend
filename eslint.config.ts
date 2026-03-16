@@ -305,6 +305,66 @@ export default defineConfig([
     }
   },
 
+  // Layer architecture boundary enforcement
+  // Layers (bottom to top): base → platform → workbench → renderer
+  // Each layer may only import from layers below it.
+  // Set to 'warn' because there are existing violations being migrated gradually.
+  {
+    files: [
+      'src/base/**/*.{ts,vue}',
+      'src/platform/**/*.{ts,vue}',
+      'src/workbench/**/*.{ts,vue}'
+    ],
+    rules: {
+      'import-x/no-restricted-paths': [
+        'warn',
+        {
+          zones: [
+            // base cannot import from platform, workbench, or renderer
+            {
+              target: './src/base/**',
+              from: './src/platform/**',
+              message:
+                'base/ cannot import from platform/ (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            {
+              target: './src/base/**',
+              from: './src/workbench/**',
+              message:
+                'base/ cannot import from workbench/ (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            {
+              target: './src/base/**',
+              from: './src/renderer/**',
+              message:
+                'base/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            // platform cannot import from workbench or renderer
+            {
+              target: './src/platform/**',
+              from: './src/workbench/**',
+              message:
+                'platform/ cannot import from workbench/ (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            {
+              target: './src/platform/**',
+              from: './src/renderer/**',
+              message:
+                'platform/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            // workbench cannot import from renderer
+            {
+              target: './src/workbench/**',
+              from: './src/renderer/**',
+              message:
+                'workbench/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
+            }
+          ]
+        }
+      ]
+    }
+  },
+
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {
