@@ -8,6 +8,7 @@ import type {
   ComfyHubPublishFormData,
   ThumbnailType
 } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import { normalizeTags } from '@/platform/workflow/sharing/utils/normalizeTags'
 
 function mapThumbnailType(type: ThumbnailType): ComfyHubApiThumbnailType {
   if (type === 'imageComparison') {
@@ -106,7 +107,7 @@ export function useComfyHubPublishSubmission() {
       workflowFilename,
       assetIds,
       description: formData.description || undefined,
-      tags: formData.tags.length > 0 ? formData.tags : undefined,
+      tags: formData.tags.length > 0 ? normalizeTags(formData.tags) : undefined,
       thumbnailType,
       thumbnailTokenOrUrl,
       thumbnailComparisonTokenOrUrl,
