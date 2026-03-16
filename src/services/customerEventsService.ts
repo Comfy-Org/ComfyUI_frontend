@@ -123,12 +123,13 @@ export const useCustomerEventsService = () => {
 
   function formatJsonValue(value: unknown) {
     if (typeof value === 'number') {
-      // Format numbers with commas and decimals if needed
       return value.toLocaleString()
     }
-    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
-      // Format dates nicely
-      return new Date(value).toLocaleString()
+    if (typeof value === 'string') {
+      const date = new Date(value)
+      if (!Number.isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+        return d(date, { dateStyle: 'medium', timeStyle: 'short' })
+      }
     }
     return value
   }
