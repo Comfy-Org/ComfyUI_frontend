@@ -225,7 +225,7 @@ jobs:
           if [ "$QA_MODE" = "full" ]; then
             cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
           You are running a FULL automated QA pass on the ComfyUI frontend.
-          Read the file skills/comfy-qa/SKILL.md and follow the FULL QA test plan.
+          Read the file .claude/skills/comfy-qa/SKILL.md and follow the FULL QA test plan.
 
           Environment: CI=true, OS=${{ runner.os }}
           Server URL: http://127.0.0.1:8188
