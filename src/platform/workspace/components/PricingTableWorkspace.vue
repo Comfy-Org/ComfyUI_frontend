@@ -105,7 +105,10 @@
           >
             <template v-if="maxMembersByTier[tier.key] > 1">
               <div class="flex items-center gap-2">
-                <i class="pi pi-users text-xs text-emerald-400" />
+                <i
+                  class="pi pi-users text-xs text-emerald-400"
+                  aria-hidden="true"
+                />
                 <span class="text-sm text-emerald-400">
                   {{ t('subscription.inviteUpTo') }}
                 </span>

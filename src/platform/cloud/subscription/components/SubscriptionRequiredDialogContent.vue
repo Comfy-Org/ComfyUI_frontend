@@ -20,12 +20,17 @@
         <!-- Decorative initial for "Personal" workspace icon; not user-facing text -->
         P
       </div>
-      <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
-        {{ $t('subscription.plansFor') }}
-        <span class="text-muted-foreground">
-          {{ $t('subscription.personalWorkspace') }}
-        </span>
-      </h2>
+      <i18n-t
+        keypath="subscription.plansForWorkspace"
+        tag="h2"
+        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
+      >
+        <template #workspace>
+          <span class="text-muted-foreground">
+            {{ $t('subscription.personalWorkspace') }}
+          </span>
+        </template>
+      </i18n-t>
     </div>
 
     <PricingTable class="flex-1" @choose-team-workspace="handleChooseTeam" />
@@ -258,7 +263,11 @@ const handleSubscribed = () => {
 
 const handleChooseTeam = () => {
   stopPolling()
-  onChooseTeam?.()
+  if (onChooseTeam) {
+    onChooseTeam()
+  } else {
+    onClose()
+  }
 }
 
 const handleClose = () => {

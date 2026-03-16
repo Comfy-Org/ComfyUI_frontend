@@ -134,6 +134,7 @@ export const useSubscriptionDialog = () => {
           '[useSubscriptionDialog] Failed to open team workspaces dialog:',
           error
         )
+        showPricingTable()
       })
   }
 

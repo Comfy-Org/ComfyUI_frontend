@@ -2253,7 +2253,7 @@
     "topupTimeout": "Top-up verification timed out"
   },
   "subscription": {
-    "plansFor": "Plans for",
+    "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
     "teamWorkspace": "Team Workspace",
     "soloUseOnly": "Solo use only",

@@ -31,7 +31,8 @@ export function useWorkspaceTierLabel() {
     isYearly: boolean
   ): string {
     if (!tier) return ''
-    const key = TIER_KEY_MAP[tier] ?? 'standard'
+    const key = TIER_KEY_MAP[tier]
+    if (!key) return ''
     const baseName = t(`subscription.tiers.${key}.name`)
     return isYearly
       ? t('subscription.tierNameYearly', { name: baseName })

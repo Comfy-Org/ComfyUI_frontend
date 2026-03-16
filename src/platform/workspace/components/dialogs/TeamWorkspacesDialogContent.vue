@@ -99,7 +99,7 @@
           type="text"
           class="focus:ring-secondary-foreground w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:outline-none"
           :placeholder="$t('teamWorkspacesDialog.namePlaceholder')"
-          @keydown.enter="isValidName && onCreate()"
+          @keydown.enter="isValidName && !loading && onCreate()"
         />
       </div>
       <Button
@@ -107,7 +107,7 @@
         size="lg"
         class="w-full"
         :loading
-        :disabled="!isValidName"
+        :disabled="!isValidName || loading"
         @click="onCreate"
       >
         <i class="pi pi-plus text-xs" aria-hidden="true" />
@@ -182,7 +182,7 @@ async function handleSwitch(workspaceId: string) {
 }
 
 async function onCreate() {
-  if (!isValidName.value) return
+  if (!isValidName.value || loading.value) return
   loading.value = true
   try {
     const name = workspaceName.value.trim()

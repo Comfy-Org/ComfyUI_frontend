@@ -31,12 +31,17 @@
       >
         T
       </div>
-      <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
-        {{ $t('subscription.plansFor') }}
-        <span class="text-emerald-400">
-          {{ $t('subscription.teamWorkspace') }}
-        </span>
-      </h2>
+      <i18n-t
+        keypath="subscription.plansForWorkspace"
+        tag="h2"
+        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
+      >
+        <template #workspace>
+          <span class="text-emerald-400">
+            {{ $t('subscription.teamWorkspace') }}
+          </span>
+        </template>
+      </i18n-t>
     </div>
 
     <div v-if="reason === 'out_of_credits'" class="text-center">

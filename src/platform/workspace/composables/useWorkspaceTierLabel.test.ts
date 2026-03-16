@@ -52,8 +52,8 @@ describe('useWorkspaceTierLabel', () => {
       )
     })
 
-    it('falls back to standard for unknown tier', () => {
-      expect(formatTierName('UNKNOWN_TIER', false)).toBe('Standard')
+    it('returns empty string for unknown tier', () => {
+      expect(formatTierName('UNKNOWN_TIER', false)).toBe('')
     })
   })
 
