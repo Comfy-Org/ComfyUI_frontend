@@ -7,8 +7,8 @@ import { pasteClipboardImageToNode } from '@/utils/clipboardUtil'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 
-function canPasteImage(node: LGraphNode): boolean {
-  return typeof node.pasteFiles === 'function'
+function canPasteImage(node?: LGraphNode): boolean {
+  return typeof node?.pasteFiles === 'function'
 }
 
 /**
@@ -84,7 +84,8 @@ export function useImageMenuOptions() {
 
   const getImageMenuOptions = (node: LGraphNode): MenuOption[] => {
     const hasImages = !!node?.imgs?.length
-    if (!hasImages && !canPasteImage(node)) return []
+    const canPaste = canPasteImage(node)
+    if (!hasImages && !canPaste) return []
 
     const options: MenuOption[] = []
 
@@ -107,7 +108,7 @@ export function useImageMenuOptions() {
       )
     }
 
-    if (canPasteImage(node)) {
+    if (canPaste) {
       options.push({
         label: t('contextMenu.Paste Image'),
         icon: 'icon-[lucide--clipboard-paste]',
