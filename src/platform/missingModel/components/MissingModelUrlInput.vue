@@ -1,13 +1,6 @@
 <template>
   <div
-    :class="
-      cn(
-        'flex h-8 items-center rounded-lg border border-transparent bg-secondary-background px-3 transition-colors focus-within:border-interface-stroke',
-        !canImportModels && 'cursor-pointer'
-      )
-    "
-    v-bind="upgradePromptAttrs"
-    @click="!canImportModels && showUploadDialog()"
+    class="flex h-8 items-center rounded-lg border border-transparent bg-secondary-background px-3 transition-colors focus-within:border-interface-stroke"
   >
     <label :for="`url-input-${modelKey}`" class="sr-only">
       {{ t('rightSidePanel.missingModels.urlPlaceholder') }}
@@ -16,14 +9,8 @@
       :id="`url-input-${modelKey}`"
       type="text"
       :value="urlInputs[modelKey] ?? ''"
-      :readonly="!canImportModels"
       :placeholder="t('rightSidePanel.missingModels.urlPlaceholder')"
-      :class="
-        cn(
-          'text-foreground w-full border-none bg-transparent text-xs outline-none placeholder:text-muted-foreground',
-          !canImportModels && 'pointer-events-none opacity-60'
-        )
-      "
+      class="text-foreground w-full border-none bg-transparent text-xs outline-none placeholder:text-muted-foreground"
       @input="
         handleUrlInput(modelKey, ($event.target as HTMLInputElement).value)
       "
@@ -73,7 +60,11 @@
           variant="primary"
           class="h-9 w-full justify-center gap-2 text-sm font-semibold"
           :loading="urlImporting[modelKey]"
-          @click="handleImport(modelKey, directory)"
+          @click="
+            canImportModels
+              ? handleImport(modelKey, directory)
+              : showUploadDialog()
+          "
         >
           <i aria-hidden="true" class="icon-[lucide--download] size-4" />
           {{
@@ -113,7 +104,6 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { cn } from '@/utils/tailwindUtil'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import { formatSize } from '@/utils/formatUtil'
@@ -138,19 +128,4 @@ const { urlInputs, urlMetadata, urlFetching, urlErrors, urlImporting } =
   storeToRefs(store)
 
 const { handleUrlInput, handleImport } = useMissingModelInteractions()
-
-const upgradePromptAttrs = computed(() =>
-  canImportModels.value
-    ? {}
-    : {
-        role: 'button',
-        tabindex: 0,
-        onKeydown: (e: KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            showUploadDialog()
-          }
-        }
-      }
-)
 </script>
