@@ -28,6 +28,8 @@ const lazyUpdatePasswordContent = () =>
   import('@/components/dialog/content/UpdatePasswordContent.vue')
 const lazyComfyOrgHeader = () =>
   import('@/components/dialog/header/ComfyOrgHeader.vue')
+const lazyCloudNotificationContent = () =>
+  import('@/components/dialog/content/CloudNotificationContent.vue')
 
 export type ConfirmationDialogType =
   | 'default'
@@ -551,6 +553,17 @@ export const useDialogService = () => {
     })
   }
 
+  async function showCloudNotification() {
+    const { default: component } = await lazyCloudNotificationContent()
+    dialogStore.showDialog({
+      key: 'global-cloud-notification',
+      component,
+      dialogComponentProps: {
+        closable: true
+      }
+    })
+  }
+
   return {
     showExecutionErrorDialog,
     showApiNodesSignInDialog,
@@ -559,6 +572,7 @@ export const useDialogService = () => {
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
     showExtensionDialog,
+    showCloudNotification,
     prompt,
     showErrorDialog,
     confirm,

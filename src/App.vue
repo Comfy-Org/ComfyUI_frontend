@@ -14,11 +14,13 @@ import { useI18n } from 'vue-i18n'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
+import { useDialogService } from '@/services/dialogService'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const { t } = useI18n()
@@ -126,5 +128,17 @@ onMounted(() => {
   // Initialize conflict detection in background
   // This runs async and doesn't block UI setup
   void conflictDetection.initializeConflictDetection()
+
+  // Show cloud notification for macOS desktop users (one-time)
+  if (isDesktop && navigator.platform.toLowerCase().includes('mac')) {
+    const settingStore = useSettingStore()
+    if (!settingStore.get('Comfy.Desktop.CloudNotificationShown')) {
+      const dialogService = useDialogService()
+      setTimeout(async () => {
+        await dialogService.showCloudNotification()
+        await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
+      }, 2000)
+    }
+  }
 })
 </script>

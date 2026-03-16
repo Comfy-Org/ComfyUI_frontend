@@ -3622,5 +3622,18 @@
   "builderMenu": {
     "enterAppMode": "Enter app mode",
     "exitAppBuilder": "Exit app builder"
+  },
+  "cloudNotification": {
+    "title": "Run ComfyUI in the Cloud",
+    "message": "No setup, all popular models and extensions ready to use. Start creating in seconds on any device.",
+    "feature1Title": "Works Anywhere, Instantly",
+    "feature1": "No setup required. Open your browser and start creating on any device.",
+    "feature2Title": "Ready-to-Use Models & Fast GPUs",
+    "feature2": "All popular AI models pre-installed, running on powerful server GPUs.",
+    "feature3Title": "400 Free Credits Monthly",
+    "feature3": "Get started free with 400 credits every month. No card required.",
+    "footer": "ComfyUI stays free and open source.\nCloud is optional — for instant access to powerful GPUs without setup.",
+    "continueLocally": "Continue Locally",
+    "exploreCloud": "Explore Cloud"
   }
 }
