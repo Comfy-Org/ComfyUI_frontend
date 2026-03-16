@@ -137,7 +137,7 @@ const sourceCategories = computed(() => {
     categories.push({ id: 'essentials', label: t('g.essentials') })
   }
   if (hasCustomNodes) {
-    categories.push({ id: 'custom', label: t('g.custom') })
+    categories.push({ id: 'custom', label: t('g.extensions') })
   }
   return categories
 })
