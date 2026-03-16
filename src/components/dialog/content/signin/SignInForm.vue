@@ -34,10 +34,13 @@
           {{ t('auth.login.passwordLabel') }}
         </label>
         <span
-          class="cursor-pointer text-base font-medium text-muted select-none"
-          :class="{
-            'text-link-disabled': !$form.email?.value || $form.email?.invalid
-          }"
+          :class="
+            cn('text-base font-medium text-muted select-none', {
+              'cursor-not-allowed opacity-50':
+                !$form.email?.value || $form.email?.invalid,
+              'cursor-pointer': $form.email?.value && !$form.email?.invalid
+            })
+          "
           @click="handleForgotPassword($form.email?.value, $form.email?.valid)"
         >
           {{ t('auth.login.forgotPassword') }}
@@ -60,13 +63,15 @@
     </div>
 
     <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="h-8 w-8" />
+    <ProgressSpinner v-if="loading" class="mx-auto size-8" />
     <Button
       v-else
       type="submit"
-      :label="t('auth.login.loginButton')"
       class="mt-4 h-10 font-medium"
-    />
+      :disabled="!$form.valid"
+    >
+      {{ t('auth.login.loginButton') }}
+    </Button>
   </Form>
 </template>
 
@@ -74,7 +79,7 @@
 import type { FormSubmitEvent } from '@primevue/forms'
 import { Form } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
-import Button from 'primevue/button'
+import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -82,10 +87,12 @@ import { useToast } from 'primevue/usetoast'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { cn } from '@/utils/tailwindUtil'
 
 const authStore = useFirebaseAuthStore()
 const firebaseAuthActions = useFirebaseAuthActions()
@@ -100,11 +107,11 @@ const emit = defineEmits<{
 
 const emailInputId = 'comfy-org-sign-in-email'
 
-const onSubmit = (event: FormSubmitEvent) => {
+const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
   if (event.valid) {
     emit('submit', event.values as SignInData)
   }
-}
+}, 1_500)
 
 const handleForgotPassword = async (
   email: string,
@@ -123,11 +130,3 @@ const handleForgotPassword = async (
   await firebaseAuthActions.sendPasswordReset(email)
 }
 </script>
-
-<style scoped>
-@reference '../../../../assets/css/style.css';
-
-.text-link-disabled {
-  @apply opacity-50 cursor-not-allowed;
-}
-</style>

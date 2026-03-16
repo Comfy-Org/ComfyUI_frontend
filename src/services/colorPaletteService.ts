@@ -101,14 +101,13 @@ export const useColorPaletteService = () => {
     linkColorPalette: Colors['node_slot']
   ) {
     if (!linkColorPalette) return
-    const rootStyle = document.getElementById('vue-app')?.style
+    const rootStyle = document.documentElement?.style
     if (!rootStyle) return
 
     for (const dataType of nodeDefStore.nodeDataTypes) {
       const cssVar = `color-datatype-${dataType}`
 
-      const valueMaybe =
-        linkColorPalette[dataType as unknown as keyof Colors['node_slot']]
+      const valueMaybe = linkColorPalette[dataType as keyof Colors['node_slot']]
       if (valueMaybe) {
         rootStyle.setProperty(`--${cssVar}`, valueMaybe)
       } else {
@@ -122,7 +121,7 @@ export const useColorPaletteService = () => {
     colorPaletteId: string
   ) {
     if (!palette) return
-    const rootStyle = document.getElementById('vue-app')?.style
+    const rootStyle = document.documentElement?.style
     if (!rootStyle) return
 
     for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
@@ -161,22 +160,25 @@ export const useColorPaletteService = () => {
     }
     app.canvas._pattern = undefined
 
-    for (const [key, value] of Object.entries(palette)) {
-      if (Object.prototype.hasOwnProperty.call(LiteGraph, key)) {
-        if (key === 'NODE_DEFAULT_SHAPE' && typeof value === 'string') {
-          console.warn(
-            `litegraph_base.NODE_DEFAULT_SHAPE only accepts [${[
-              LiteGraph.BOX_SHAPE,
-              LiteGraph.ROUND_SHAPE,
-              LiteGraph.CARD_SHAPE
-            ].join(', ')}] but got ${value}`
-          )
-          LiteGraph.NODE_DEFAULT_SHAPE = LiteGraph.ROUND_SHAPE
-        } else {
-          ;(LiteGraph as any)[key] = value
-        }
-      }
+    if (typeof palette.NODE_DEFAULT_SHAPE === 'string')
+      console.warn(
+        `litegraph_base.NODE_DEFAULT_SHAPE only accepts [${[
+          LiteGraph.BOX_SHAPE,
+          LiteGraph.ROUND_SHAPE,
+          LiteGraph.CARD_SHAPE
+        ].join(', ')}] but got ${palette.NODE_DEFAULT_SHAPE}`
+      )
+
+    const default_shape =
+      typeof palette.NODE_DEFAULT_SHAPE === 'string'
+        ? LiteGraph.ROUND_SHAPE
+        : palette.NODE_DEFAULT_SHAPE
+    const sanitizedPalette: Partial<typeof LiteGraph> = {
+      ...palette,
+      NODE_DEFAULT_SHAPE: default_shape
     }
+
+    Object.assign(LiteGraph, sanitizedPalette)
   }
 
   /**
@@ -185,7 +187,7 @@ export const useColorPaletteService = () => {
    * @param schema - The Zod schema object to analyze.
    * @returns Array of optional key names.
    */
-  const getOptionalKeys = (schema: z.ZodObject<any, any>) => {
+  const getOptionalKeys = (schema: z.ZodObject<z.ZodRawShape>) => {
     const optionalKeys: string[] = []
     const shape = schema.shape
 
@@ -204,7 +206,10 @@ export const useColorPaletteService = () => {
    *
    * @param comfyColorPalette - The palette to set.
    */
-  const loadComfyColorPalette = (comfyColorPalette: Colors['comfy_base']) => {
+  const loadComfyColorPalette = (
+    comfyColorPalette: Colors['comfy_base'],
+    isLightTheme: boolean
+  ) => {
     if (!comfyColorPalette) return
     const rootStyle = document.documentElement.style
     for (const [key, value] of Object.entries(comfyColorPalette)) {
@@ -222,12 +227,17 @@ export const useColorPaletteService = () => {
 
     const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
     if (backgroundImage) {
-      rootStyle.setProperty(
-        '--bg-img',
-        `url('${backgroundImage}') no-repeat center /cover`
-      )
+      rootStyle.setProperty('--bg-img', `url('${backgroundImage}')`)
     } else {
       rootStyle.removeProperty('--bg-img')
+    }
+
+    try {
+      const splashBg = isLightTheme ? '#FFFFFF' : comfyColorPalette['bg-color']
+      localStorage.setItem('comfy-splash-bg', splashBg)
+      localStorage.setItem('comfy-splash-fg', comfyColorPalette['fg-color'])
+    } catch (_) {
+      /* empty */
     }
   }
 
@@ -250,7 +260,10 @@ export const useColorPaletteService = () => {
       colorPaletteId
     )
     loadLinkColorPaletteForVueNodes(completedPalette.colors.node_slot)
-    loadComfyColorPalette(completedPalette.colors.comfy_base)
+    loadComfyColorPalette(
+      completedPalette.colors.comfy_base,
+      completedPalette.light_theme === true
+    )
     app.canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId

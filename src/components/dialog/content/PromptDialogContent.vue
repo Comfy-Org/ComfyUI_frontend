@@ -4,6 +4,7 @@
       <InputText
         ref="inputRef"
         v-model="inputValue"
+        :placeholder
         autofocus
         @keyup.enter="onConfirm"
         @focus="selectAllText"
@@ -17,17 +18,18 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{
   message: string
   defaultValue: string
   onConfirm: (value: string) => void
+  placeholder?: string
 }>()
 
 const inputValue = ref<string>(props.defaultValue)

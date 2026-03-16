@@ -24,7 +24,12 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const isAuthenticated = computed(() => !!currentUser.value)
 
   const initializeUserFromApiKey = async () => {
-    const createCustomerResponse = await firebaseAuthStore.createCustomer()
+    const createCustomerResponse = await firebaseAuthStore
+      .createCustomer()
+      .catch((err) => {
+        console.error(err)
+        return
+      })
     if (!createCustomerResponse) {
       apiKey.value = null
       throw new Error(t('auth.login.noAssociatedUser'))

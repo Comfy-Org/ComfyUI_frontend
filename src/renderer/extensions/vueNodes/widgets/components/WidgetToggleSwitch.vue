@@ -1,45 +1,85 @@
 <template>
-  <WidgetLayoutField :widget>
-    <ToggleSwitch
-      v-model="localValue"
-      v-bind="filteredProps"
-      class="ml-auto block"
-      :aria-label="widget.name"
-      @update:model-value="onChange"
-    />
+  <WidgetLayoutField v-slot="{ borderStyle }" :widget :no-border="!hasLabels">
+    <!-- Use ToggleGroup when explicit labels are provided -->
+    <ToggleGroup
+      v-if="hasLabels"
+      type="single"
+      :model-value="modelValue ? 'on' : 'off'"
+      :disabled="Boolean(widget.options?.read_only)"
+      :class="
+        cn(
+          WidgetInputBaseClass,
+          'flex w-full min-w-0 items-center justify-center gap-1 p-1'
+        )
+      "
+      @update:model-value="(v) => handleOptionChange(v as string)"
+    >
+      <ToggleGroupItem value="off" size="sm">
+        {{ widget.options?.off ?? t('widgets.boolean.false') }}
+      </ToggleGroupItem>
+      <ToggleGroupItem value="on" size="sm">
+        {{ widget.options?.on ?? t('widgets.boolean.true') }}
+      </ToggleGroupItem>
+    </ToggleGroup>
+
+    <!-- Use ToggleSwitch for implicit boolean states -->
+    <div
+      v-else
+      :class="
+        cn(
+          '-m-1 flex w-fit items-center gap-2 rounded-full p-1',
+          hideLayoutField || 'ml-auto',
+          borderStyle
+        )
+      "
+    >
+      <ToggleSwitch
+        v-model="modelValue"
+        v-bind="filteredProps"
+        :aria-label="widget.name"
+      />
+    </div>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { useBooleanWidgetValue } from '@/composables/graph/useWidgetValue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useHideLayoutField } from '@/types/widgetTypes'
+import { cn } from '@/utils/tailwindUtil'
 import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const props = defineProps<{
-  widget: SimplifiedWidget<boolean>
-  modelValue: boolean
+const { widget } = defineProps<{
+  widget: SimplifiedWidget<boolean, IWidgetOptions>
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-}>()
+const modelValue = defineModel<boolean>()
 
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useBooleanWidgetValue(
-  props.widget,
-  props.modelValue,
-  emit
-)
+const hideLayoutField = useHideLayoutField()
+const { t } = useI18n()
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)
+  filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
 )
+
+const hasLabels = computed(() => {
+  return widget.options?.on != null || widget.options?.off != null
+})
+
+function handleOptionChange(value: string | undefined) {
+  if (value) {
+    modelValue.value = value === 'on'
+  }
+}
 </script>

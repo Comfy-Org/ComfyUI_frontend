@@ -40,7 +40,8 @@
 <script setup lang="ts">
 import type { PassThrough } from '@primevue/core'
 import Button from 'primevue/button'
-import Step, { type StepPassThroughOptions } from 'primevue/step'
+import Step from 'primevue/step'
+import type { StepPassThroughOptions } from 'primevue/step'
 import StepList from 'primevue/steplist'
 
 defineProps<{
@@ -50,8 +51,6 @@ defineProps<{
   canProceed: boolean
   /** Whether the location step should be disabled */
   disableLocationStep: boolean
-  /** Whether the migration step should be disabled */
-  disableMigrationStep: boolean
   /** Whether the settings step should be disabled */
   disableSettingsStep: boolean
 }>()

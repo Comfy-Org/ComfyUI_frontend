@@ -92,7 +92,7 @@ describe('ResultGallery', () => {
         }
       },
       props: {
-        allGalleryItems: mockGalleryItems as unknown as ResultItemImpl[],
+        allGalleryItems: mockGalleryItems as ResultItemImpl[],
         activeIndex: 0,
         ...props
       },
@@ -117,7 +117,10 @@ describe('ResultGallery', () => {
     const wrapper = mountGallery({ activeIndex: -1 })
 
     // Initially galleryVisible should be false
-    const vm: any = wrapper.vm
+    type GalleryVM = typeof wrapper.vm & {
+      galleryVisible: boolean
+    }
+    const vm = wrapper.vm as GalleryVM
     expect(vm.galleryVisible).toBe(false)
 
     // Change activeIndex
@@ -167,7 +170,11 @@ describe('ResultGallery', () => {
     expect(galleria.exists()).toBe(true)
 
     // Check that our PT props for positioning work correctly
-    const pt = galleria.props('pt') as any
+    interface GalleriaPT {
+      prevButton?: { style?: string }
+      nextButton?: { style?: string }
+    }
+    const pt = galleria.props('pt') as GalleriaPT
     expect(pt?.prevButton?.style).toContain('position: fixed')
     expect(pt?.nextButton?.style).toContain('position: fixed')
   })

@@ -1,6 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCommandStore } from '@/stores/commandStore'
 
 import type { MenuOption } from './useMoreOptionsMenu'
@@ -16,16 +17,16 @@ export function useImageMenuOptions() {
     void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
   }
 
-  const openImage = (node: any) => {
+  const openImage = (node: LGraphNode) => {
     if (!node?.imgs?.length) return
     const img = node.imgs[node.imageIndex ?? 0]
     if (!img) return
     const url = new URL(img.src)
     url.searchParams.delete('preview')
-    window.open(url.toString(), '_blank')
+    void openFileInNewTab(url.toString())
   }
 
-  const copyImage = async (node: any) => {
+  const copyImage = async (node: LGraphNode) => {
     if (!node?.imgs?.length) return
     const img = node.imgs[node.imageIndex ?? 0]
     if (!img) return
@@ -62,7 +63,7 @@ export function useImageMenuOptions() {
     }
   }
 
-  const saveImage = (node: any) => {
+  const saveImage = (node: LGraphNode) => {
     if (!node?.imgs?.length) return
     const img = node.imgs[node.imageIndex ?? 0]
     if (!img) return
@@ -76,7 +77,7 @@ export function useImageMenuOptions() {
     }
   }
 
-  const getImageMenuOptions = (node: any): MenuOption[] => {
+  const getImageMenuOptions = (node: LGraphNode): MenuOption[] => {
     if (!node?.imgs?.length) return []
 
     return [

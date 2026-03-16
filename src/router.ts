@@ -7,27 +7,46 @@ import {
 } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
 
-import { isCloud } from '@/platform/distribution/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useUserStore } from '@/stores/userStore'
-import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
-import { cloudOnboardingRoutes } from './platform/cloud/onboarding/onboardingCloudRoutes'
+import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+
+const cloudOnboardingRoutes = isCloud
+  ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))
+      .cloudOnboardingRoutes
+  : []
 
 const isFileProtocol = window.location.protocol === 'file:'
 
-// Determine base path for the router
-// - Electron: always root
-// - Web: rely on Vite's BASE_URL (configured via vite.config `base`)
+/**
+ * Determine base path for the router.
+ * - Electron: always root
+ * - Cloud: use Vite's BASE_URL (configured at build time)
+ * - Standard web (including reverse proxy subpaths): use window.location.pathname
+ *   to support deployments like http://mysite.com/ComfyUI/
+ */
 function getBasePath(): string {
-  if (isElectron()) return '/'
-  // Vite injects BASE_URL at build/dev time; default to '/'
-  return import.meta.env?.BASE_URL || '/'
+  if (isDesktop) return '/'
+  if (isCloud) return import.meta.env?.BASE_URL || '/'
+  return window.location.pathname
 }
 
 const basePath = getBasePath()
+
+function trackPageView(): void {
+  if (!isCloud || typeof window === 'undefined') return
+
+  useTelemetry()?.trackPageView(document.title, {
+    path: window.location.href
+  })
+}
 
 const router = createRouter({
   history: isFileProtocol
@@ -75,7 +94,27 @@ const router = createRouter({
   }
 })
 
+installPreservedQueryTracker(router, [
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
+    keys: ['template', 'source', 'mode']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.SHARE,
+    keys: ['share']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.INVITE,
+    keys: ['invite']
+  }
+])
+
+router.afterEach(() => {
+  trackPageView()
+})
+
 if (isCloud) {
+  const { flags } = useFeatureFlags()
   const PUBLIC_ROUTE_NAMES = new Set([
     'cloud-login',
     'cloud-signup',
@@ -134,36 +173,49 @@ if (isCloud) {
       return next()
     }
 
+    const query =
+      to.fullPath === '/'
+        ? undefined
+        : { previousFullPath: encodeURIComponent(to.fullPath) }
+
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {
-      return next({ name: 'cloud-login' })
+      return next({
+        name: 'cloud-login',
+        query
+      })
     }
 
     // Handle other protected routes
     if (!isLoggedIn) {
       // For Electron, use dialog
-      if (isElectron()) {
+      if (isDesktop) {
         const dialogService = useDialogService()
         const loginSuccess = await dialogService.showSignInDialog()
         return loginSuccess ? next() : next(false)
       }
 
       // For web, redirect to login
-      return next({ name: 'cloud-login' })
+      return next({
+        name: 'cloud-login',
+        query
+      })
     }
 
-    // User is logged in - check if they need onboarding
+    // User is logged in - check if they need onboarding (when enabled)
     // For root path, check actual user status to handle waitlisted users
-    if (!isElectron() && isLoggedIn && to.path === '/') {
+    if (!isDesktop && isLoggedIn && to.path === '/') {
+      if (!flags.onboardingSurveyEnabled) {
+        return next()
+      }
       // Import auth functions dynamically to avoid circular dependency
-      const { getSurveyCompletedStatus } = await import(
-        '@/platform/cloud/onboarding/auth'
-      )
+      const { getSurveyCompletedStatus } =
+        await import('@/platform/cloud/onboarding/auth')
       try {
         // Check user's actual status
         const surveyCompleted = await getSurveyCompletedStatus()
 
-        // Survey is required for all users regardless of whitelist status
+        // Survey is required for all users (when feature flag enabled)
         if (!surveyCompleted) {
           return next({ name: 'cloud-survey' })
         }

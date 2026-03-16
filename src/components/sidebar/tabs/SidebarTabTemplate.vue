@@ -1,18 +1,26 @@
 <template>
   <div
-    class="comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col"
-    :class="props.class"
+    :class="
+      cn(
+        'comfy-vue-side-bar-container group/sidebar-tab flex size-full flex-col',
+        props.class
+      )
+    "
   >
-    <div class="comfy-vue-side-bar-header">
-      <Toolbar class="min-h-8 rounded-none border-x-0 border-t-0 px-2 py-1">
+    <div class="comfy-vue-side-bar-header flex flex-col">
+      <Toolbar
+        class="min-h-16 rounded-none border-x-0 border-t-0 bg-transparent px-3 2xl:px-4"
+        :pt="sidebarPt"
+      >
         <template #start>
-          <span class="truncate text-xs 2xl:text-sm" :title="props.title">
-            {{ props.title.toUpperCase() }}
+          <span class="truncate font-bold" :title="props.title">
+            {{ props.title }}
           </span>
+          <slot name="alt-title" />
         </template>
         <template #end>
           <div
-            class="touch:w-auto touch:opacity-100 flex flex-row transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100"
+            class="flex flex-row overflow-hidden transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100 touch:w-auto touch:opacity-100 [&_.p-button]:py-1 2xl:[&_.p-button]:py-2"
           >
             <slot name="tool-buttons" />
           </div>
@@ -24,6 +32,7 @@
     <ScrollPanel class="comfy-vue-side-bar-body h-0 grow">
       <slot name="body" />
     </ScrollPanel>
+    <slot name="footer" />
   </div>
 </template>
 
@@ -31,20 +40,13 @@
 import ScrollPanel from 'primevue/scrollpanel'
 import Toolbar from 'primevue/toolbar'
 
+import { cn } from '@/utils/tailwindUtil'
+
 const props = defineProps<{
   title: string
   class?: string
 }>()
+const sidebarPt = {
+  start: 'min-w-0 flex-1 overflow-hidden'
+}
 </script>
-
-<style scoped>
-@reference '../../../assets/css/style.css';
-
-:deep(.p-toolbar-end) .p-button {
-  @apply py-1 2xl:py-2;
-}
-
-:deep(.p-toolbar-start) {
-  @apply min-w-0 flex-1 overflow-hidden;
-}
-</style>

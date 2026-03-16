@@ -3,25 +3,20 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import {
   type ControlsManagerInterface,
-  type EventManagerInterface,
-  type NodeStorageInterface
+  type EventManagerInterface
 } from './interfaces'
 
 export class ControlsManager implements ControlsManagerInterface {
   controls: OrbitControls
-  // @ts-expect-error unused variable
   private eventManager: EventManagerInterface
-  private nodeStorage: NodeStorageInterface
   private camera: THREE.Camera
 
   constructor(
     renderer: THREE.WebGLRenderer,
     camera: THREE.Camera,
-    eventManager: EventManagerInterface,
-    nodeStorage: NodeStorageInterface
+    eventManager: EventManagerInterface
   ) {
     this.eventManager = eventManager
-    this.nodeStorage = nodeStorage
     this.camera = camera
 
     const container = renderer.domElement.parentElement || renderer.domElement
@@ -44,15 +39,7 @@ export class ControlsManager implements ControlsManagerInterface {
             : 'orthographic'
       }
 
-      const cameraConfig = this.nodeStorage.loadNodeProperty('Camera Config', {
-        cameraType: cameraState.cameraType,
-        fov:
-          this.camera instanceof THREE.PerspectiveCamera
-            ? (this.camera as THREE.PerspectiveCamera).fov
-            : 75
-      })
-      cameraConfig.state = cameraState
-      this.nodeStorage.storeNodeProperty('Camera Config', cameraConfig)
+      this.eventManager.emitEvent('cameraChanged', cameraState)
     })
   }
 

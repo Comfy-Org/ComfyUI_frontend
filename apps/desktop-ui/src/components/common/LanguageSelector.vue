@@ -7,7 +7,7 @@
     option-value="value"
     :disabled="isSwitching"
     :pt="dropdownPt"
-    :size="props.size"
+    :size="size"
     class="language-selector"
     @change="onLocaleChange"
   >
@@ -36,16 +36,10 @@ import { i18n, loadLocale, st } from '@/i18n'
 type VariantKey = 'dark' | 'light'
 type SizeKey = 'small' | 'large'
 
-const props = withDefaults(
-  defineProps<{
-    variant?: VariantKey
-    size?: SizeKey
-  }>(),
-  {
-    variant: 'dark',
-    size: 'small'
-  }
-)
+const { variant = 'dark', size = 'small' } = defineProps<{
+  variant?: VariantKey
+  size?: SizeKey
+}>()
 
 const dropdownId = `language-select-${Math.random().toString(36).slice(2)}`
 
@@ -59,7 +53,8 @@ const LOCALES = [
   ['fr', 'Français'],
   ['es', 'Español'],
   ['ar', 'عربي'],
-  ['tr', 'Türkçe']
+  ['tr', 'Türkçe'],
+  ['pt-BR', 'Português (BR)']
 ] as const satisfies ReadonlyArray<[string, string]>
 
 type SupportedLocale = (typeof LOCALES)[number][0]
@@ -103,10 +98,8 @@ const VARIANT_PRESETS = {
 const selectedLocale = ref<string>(i18n.global.locale.value)
 const isSwitching = ref(false)
 
-const sizePreset = computed(() => SIZE_PRESETS[props.size as SizeKey])
-const variantPreset = computed(
-  () => VARIANT_PRESETS[props.variant as VariantKey]
-)
+const sizePreset = computed(() => SIZE_PRESETS[size])
+const variantPreset = computed(() => VARIANT_PRESETS[variant])
 
 const dropdownPt = computed(() => ({
   root: {
@@ -194,13 +187,17 @@ async function onLocaleChange(event: SelectChangeEvent) {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 :deep(.p-dropdown-panel .p-dropdown-item) {
-  @apply transition-colors;
+  transition-property: color, background-color, border-color;
+  transition-duration: var(--default-transition-duration);
 }
 
 :deep(.p-dropdown) {
-  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow/60 focus-visible:ring-offset-2;
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--color-neutral-900),
+      0 0 0 4px color-mix(in srgb, var(--color-brand-yellow) 60%, transparent);
+  }
 }
 </style>

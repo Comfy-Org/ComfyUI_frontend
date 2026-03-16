@@ -76,14 +76,6 @@ describe('NodePreview', () => {
     expect(wrapper.find('._sb_preview_badge').text()).toBe('Preview')
   })
 
-  it('applies text-ellipsis class to node header for text truncation', () => {
-    const wrapper = mountComponent()
-    const nodeHeader = wrapper.find('.node_header')
-
-    expect(nodeHeader.classes()).toContain('text-ellipsis')
-    expect(nodeHeader.classes()).toContain('mr-4')
-  })
-
   it('sets title attribute on node header with full display name', () => {
     const wrapper = mountComponent()
     const nodeHeader = wrapper.find('.node_header')

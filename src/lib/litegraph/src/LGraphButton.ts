@@ -1,6 +1,7 @@
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphBadgeOptions } from './LGraphBadge'
 import { Rectangle } from './infrastructure/Rectangle'
+import { cachedMeasureText } from './utils/textMeasureCache'
 
 export interface LGraphButtonOptions extends LGraphBadgeOptions {
   name?: string // To identify the button
@@ -22,7 +23,7 @@ export class LGraphButton extends LGraphBadge {
     ctx.font = `${this.fontSize}px 'PrimeIcons'`
 
     // For icon buttons, just measure the text width without padding
-    const textWidth = this.text ? ctx.measureText(this.text).width : 0
+    const textWidth = this.text ? cachedMeasureText(ctx, this.text) : 0
 
     ctx.font = font
     return textWidth

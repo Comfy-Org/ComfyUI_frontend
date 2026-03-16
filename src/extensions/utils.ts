@@ -126,9 +126,6 @@ export function defineProcessQueue<T>(): {
     consume()
   }
   function process(newWorker: (items: T[]) => void) {
-    if (worker) {
-      throw new Error('queue worker already registered')
-    }
     worker = newWorker
     consume()
   }

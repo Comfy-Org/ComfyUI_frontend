@@ -12,12 +12,18 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type { AuditLog } from '@/services/customerEventsService'
+
 /**
  * Authentication metadata for sign-up tracking
  */
 export interface AuthMetadata {
   method?: 'email' | 'google' | 'github'
   is_new_user?: boolean
+  user_id?: string
   referrer_url?: string
   utm_source?: string
   utm_medium?: string
@@ -35,6 +41,13 @@ export interface SurveyResponses {
   making?: string[]
 }
 
+export interface SurveyResponsesNormalized extends SurveyResponses {
+  industry_normalized?: string
+  industry_raw?: string
+  useCase_normalized?: string
+  useCase_raw?: string
+}
+
 /**
  * Run button tracking properties
  */
@@ -47,7 +60,11 @@ export interface RunButtonProperties {
   subgraph_count: number
   has_api_nodes: boolean
   api_node_names: string[]
+  has_toolkit_nodes: boolean
+  toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
+  view_mode?: string
+  is_app_mode?: boolean
 }
 
 /**
@@ -70,6 +87,9 @@ export interface ExecutionContext {
   total_node_count: number
   has_api_nodes: boolean
   api_node_names: string[]
+  has_toolkit_nodes: boolean
+  toolkit_node_names: string[]
+  toolkit_node_count: number
   trigger_source?: ExecutionTriggerSource
 }
 
@@ -119,7 +139,36 @@ export interface WorkflowImportMetadata {
   /**
    * The source of the workflow open/import action
    */
-  open_source?: 'file_button' | 'file_drop' | 'template' | 'unknown'
+  open_source?:
+    | 'file_button'
+    | 'file_drop'
+    | 'template'
+    | 'shared_url'
+    | 'unknown'
+}
+
+export interface EnterLinearMetadata {
+  source?: string
+}
+
+export interface WorkflowSavedMetadata {
+  is_app: boolean
+  is_new: boolean
+}
+
+export interface DefaultViewSetMetadata {
+  default_view: 'app' | 'graph'
+}
+
+type ShareFlowStep =
+  | 'dialog_opened'
+  | 'save_prompted'
+  | 'link_created'
+  | 'link_copied'
+
+export interface ShareFlowMetadata {
+  step: ShareFlowStep
+  source?: 'app_mode' | 'graph_mode'
 }
 
 /**
@@ -136,7 +185,7 @@ export type WorkflowOpenSource = NonNullable<
  * Template library metadata
  */
 export interface TemplateLibraryMetadata {
-  source: 'sidebar' | 'menu' | 'command'
+  source: 'sidebar' | 'menu' | 'command' | 'appbuilder'
 }
 
 /**
@@ -195,6 +244,8 @@ export interface TemplateFilterMetadata {
   selected_runs_on: string[]
   sort_by:
     | 'default'
+    | 'recommended'
+    | 'popular'
     | 'alphabetical'
     | 'newest'
     | 'vram-low-to-high'
@@ -254,77 +305,136 @@ export interface WorkflowCreatedMetadata {
 }
 
 /**
- * Core telemetry provider interface
+ * Page view metadata for route tracking
+ */
+export interface PageViewMetadata {
+  path?: string
+  referrer?: string
+  title?: string
+  [key: string]: unknown
+}
+
+export interface CheckoutAttributionMetadata {
+  ga_client_id?: string
+  ga_session_id?: string
+  ga_session_number?: string
+  im_ref?: string
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  utm_term?: string
+  utm_content?: string
+  gclid?: string
+  gbraid?: string
+  wbraid?: string
+}
+
+export interface SubscriptionMetadata {
+  current_tier?: string
+  reason?: SubscriptionDialogReason
+}
+
+export interface BeginCheckoutMetadata
+  extends Record<string, unknown>, CheckoutAttributionMetadata {
+  user_id: string
+  tier: TierKey
+  cycle: BillingCycle
+  checkout_type: 'new' | 'change'
+  previous_tier?: TierKey
+}
+
+/**
+ * Telemetry provider interface for individual providers.
+ * All methods are optional - providers only implement what they need.
  */
 export interface TelemetryProvider {
   // Authentication flow events
-  trackSignupOpened(): void
-  trackAuth(metadata: AuthMetadata): void
-  trackUserLoggedIn(): void
+  trackSignupOpened?(): void
+  trackAuth?(metadata: AuthMetadata): void
+  trackUserLoggedIn?(): void
 
   // Subscription flow events
-  trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void
-  trackMonthlySubscriptionSucceeded(): void
-  trackAddApiCreditButtonClicked(): void
-  trackApiCreditTopupButtonPurchaseClicked(amount: number): void
-  trackApiCreditTopupSucceeded(): void
-  trackRunButton(options?: {
+  trackSubscription?(
+    event: 'modal_opened' | 'subscribe_clicked',
+    metadata?: SubscriptionMetadata
+  ): void
+  trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
+  trackMonthlySubscriptionSucceeded?(): void
+  trackMonthlySubscriptionCancelled?(): void
+  trackAddApiCreditButtonClicked?(): void
+  trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
+  trackApiCreditTopupSucceeded?(): void
+  trackRunButton?(options?: {
     subscribe_to_run?: boolean
     trigger_source?: ExecutionTriggerSource
   }): void
 
   // Credit top-up tracking (composition with internal utilities)
-  startTopupTracking(): void
-  checkForCompletedTopup(events: any[] | undefined | null): boolean
-  clearTopupTracking(): void
+  startTopupTracking?(): void
+  checkForCompletedTopup?(events: AuditLog[] | undefined | null): boolean
+  clearTopupTracking?(): void
 
   // Survey flow events
-  trackSurvey(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
+  trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
   // Email verification events
-  trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void
+  trackEmailVerification?(stage: 'opened' | 'requested' | 'completed'): void
 
   // Template workflow events
-  trackTemplate(metadata: TemplateMetadata): void
-  trackTemplateLibraryOpened(metadata: TemplateLibraryMetadata): void
-  trackTemplateLibraryClosed(metadata: TemplateLibraryClosedMetadata): void
+  trackTemplate?(metadata: TemplateMetadata): void
+  trackTemplateLibraryOpened?(metadata: TemplateLibraryMetadata): void
+  trackTemplateLibraryClosed?(metadata: TemplateLibraryClosedMetadata): void
 
   // Workflow management events
-  trackWorkflowImported(metadata: WorkflowImportMetadata): void
-  trackWorkflowOpened(metadata: WorkflowImportMetadata): void
+  trackWorkflowImported?(metadata: WorkflowImportMetadata): void
+  trackWorkflowOpened?(metadata: WorkflowImportMetadata): void
+  trackWorkflowSaved?(metadata: WorkflowSavedMetadata): void
+  trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
+  trackEnterLinear?(metadata: EnterLinearMetadata): void
+  trackShareFlow?(metadata: ShareFlowMetadata): void
 
   // Page visibility events
-  trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void
+  trackPageVisibilityChanged?(metadata: PageVisibilityMetadata): void
 
   // Tab tracking events
-  trackTabCount(metadata: TabCountMetadata): void
+  trackTabCount?(metadata: TabCountMetadata): void
 
   // Node search analytics events
-  trackNodeSearch(metadata: NodeSearchMetadata): void
-  trackNodeSearchResultSelected(metadata: NodeSearchResultMetadata): void
+  trackNodeSearch?(metadata: NodeSearchMetadata): void
+  trackNodeSearchResultSelected?(metadata: NodeSearchResultMetadata): void
 
   // Template filter tracking events
-  trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void
+  trackTemplateFilterChanged?(metadata: TemplateFilterMetadata): void
 
   // Help center events
-  trackHelpCenterOpened(metadata: HelpCenterOpenedMetadata): void
-  trackHelpResourceClicked(metadata: HelpResourceClickedMetadata): void
-  trackHelpCenterClosed(metadata: HelpCenterClosedMetadata): void
+  trackHelpCenterOpened?(metadata: HelpCenterOpenedMetadata): void
+  trackHelpResourceClicked?(metadata: HelpResourceClickedMetadata): void
+  trackHelpCenterClosed?(metadata: HelpCenterClosedMetadata): void
 
   // Workflow creation events
-  trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void
+  trackWorkflowCreated?(metadata: WorkflowCreatedMetadata): void
 
   // Workflow execution events
-  trackWorkflowExecution(): void
-  trackExecutionError(metadata: ExecutionErrorMetadata): void
-  trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void
+  trackWorkflowExecution?(): void
+  trackExecutionError?(metadata: ExecutionErrorMetadata): void
+  trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
 
   // Settings events
-  trackSettingChanged(metadata: SettingChangedMetadata): void
+  trackSettingChanged?(metadata: SettingChangedMetadata): void
 
   // Generic UI button click events
-  trackUiButtonClicked(metadata: UiButtonClickMetadata): void
+  trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
+
+  // Page view tracking
+  trackPageView?(pageName: string, properties?: PageViewMetadata): void
 }
+
+/**
+ * Telemetry dispatcher interface returned by useTelemetry().
+ * All methods are required - the registry implements all methods and dispatches
+ * to registered providers using optional chaining.
+ */
+export type TelemetryDispatcher = Required<TelemetryProvider>
 
 /**
  * Telemetry event constants
@@ -344,6 +454,7 @@ export const TelemetryEvents = {
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
+  MONTHLY_SUBSCRIPTION_CANCELLED: 'app:monthly_subscription_cancelled',
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
@@ -366,6 +477,8 @@ export const TelemetryEvents = {
   // Workflow Management
   WORKFLOW_IMPORTED: 'app:workflow_imported',
   WORKFLOW_OPENED: 'app:workflow_opened',
+  ENTER_LINEAR_MODE: 'app:app_mode_opened',
+  SHARE_FLOW: 'app:share_flow',
 
   // Page Visibility
   PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
@@ -390,13 +503,18 @@ export const TelemetryEvents = {
 
   // Workflow Creation
   WORKFLOW_CREATED: 'app:workflow_created',
+  WORKFLOW_SAVED: 'app:workflow_saved',
+  DEFAULT_VIEW_SET: 'app:default_view_set',
 
   // Execution Lifecycle
   EXECUTION_START: 'execution_start',
   EXECUTION_ERROR: 'execution_error',
   EXECUTION_SUCCESS: 'execution_success',
   // Generic UI Button Click
-  UI_BUTTON_CLICKED: 'app:ui_button_clicked'
+  UI_BUTTON_CLICKED: 'app:ui_button_clicked',
+
+  // Page View
+  PAGE_VIEW: 'app:page_view'
 } as const
 
 export type TelemetryEventName =
@@ -407,6 +525,7 @@ export type ExecutionTriggerSource =
   | 'keybinding'
   | 'legacy_ui'
   | 'unknown'
+  | 'linear'
 
 /**
  * Union type for all possible telemetry event properties
@@ -434,3 +553,8 @@ export type TelemetryEventProperties =
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
   | WorkflowCreatedMetadata
+  | EnterLinearMetadata
+  | ShareFlowMetadata
+  | WorkflowSavedMetadata
+  | DefaultViewSetMetadata
+  | SubscriptionMetadata

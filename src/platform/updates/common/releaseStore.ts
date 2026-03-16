@@ -1,12 +1,11 @@
 import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { compare } from 'semver'
+import { compare, valid } from 'semver'
 import { computed, ref } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { isElectron } from '@/utils/envUtil'
 import { stringToLocale } from '@/utils/formatUtil'
 
 import { useReleaseService } from './releaseService'
@@ -24,10 +23,12 @@ export const useReleaseStore = defineStore('release', () => {
   const systemStatsStore = useSystemStatsStore()
   const settingStore = useSettingStore()
 
-  // Current ComfyUI version
-  const currentComfyUIVersion = computed(
-    () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
-  )
+  const currentVersion = computed(() => {
+    if (isCloud) {
+      return systemStatsStore?.systemStats?.system?.cloud_version ?? ''
+    }
+    return systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
+  })
 
   // Release data from settings
   const locale = computed(() => settingStore.get('Comfy.Locale'))
@@ -55,22 +56,33 @@ export const useReleaseStore = defineStore('release', () => {
   // Helper constants
   const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000 // 3 days
 
+  const compareVersions = (
+    releaseVersion: string,
+    currentVer: string
+  ): number => {
+    if (valid(releaseVersion) && valid(currentVer)) {
+      return compare(releaseVersion, currentVer)
+    }
+    // Non-semver (e.g. git hash): assume different = newer
+    return releaseVersion === currentVer ? 0 : 1
+  }
+
   // New version available?
   const isNewVersionAvailable = computed(
     () =>
       !!recentRelease.value &&
-      compare(
+      compareVersions(
         recentRelease.value.version,
-        currentComfyUIVersion.value || '0.0.0'
+        currentVersion.value || '0.0.0'
       ) > 0
   )
 
   const isLatestVersion = computed(
     () =>
       !!recentRelease.value &&
-      compare(
+      compareVersions(
         recentRelease.value.version,
-        currentComfyUIVersion.value || '0.0.0'
+        currentVersion.value || '0.0.0'
       ) === 0
   )
 
@@ -82,7 +94,7 @@ export const useReleaseStore = defineStore('release', () => {
   // Show toast if needed
   const shouldShowToast = computed(() => {
     // Only show on desktop version
-    if (!isElectron() || isCloud) {
+    if (!isDesktop || isCloud) {
       return false
     }
 
@@ -114,7 +126,7 @@ export const useReleaseStore = defineStore('release', () => {
   // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
     // Only show on desktop version
-    if (!isElectron() || isCloud) {
+    if (!isDesktop || isCloud) {
       return false
     }
 
@@ -158,23 +170,25 @@ export const useReleaseStore = defineStore('release', () => {
     return true
   })
 
-  // Show "What's New" popup
   const shouldShowPopup = computed(() => {
-    // Only show on desktop version
-    if (!isElectron() || isCloud) {
+    if (!isDesktop && !isCloud) {
       return false
     }
 
-    // Skip if notifications are disabled
     if (!showVersionUpdates.value) {
       return false
     }
 
-    if (!isLatestVersion.value) {
+    if (!recentRelease.value) {
       return false
     }
 
-    // Hide if already seen
+    // Skip version check if current version isn't semver (e.g. git hash)
+    const skipVersionCheck = !valid(currentVersion.value)
+    if (!skipVersionCheck && !isLatestVersion.value) {
+      return false
+    }
+
     if (
       releaseVersion.value === recentRelease.value.version &&
       releaseStatus.value === "what's new seen"
@@ -194,9 +208,11 @@ export const useReleaseStore = defineStore('release', () => {
       return
     }
 
-    await settingStore.set('Comfy.Release.Version', version)
-    await settingStore.set('Comfy.Release.Status', 'skipped')
-    await settingStore.set('Comfy.Release.Timestamp', Date.now())
+    await settingStore.setMany({
+      'Comfy.Release.Version': version,
+      'Comfy.Release.Status': 'skipped',
+      'Comfy.Release.Timestamp': Date.now()
+    })
   }
 
   async function handleShowChangelog(version: string): Promise<void> {
@@ -204,9 +220,11 @@ export const useReleaseStore = defineStore('release', () => {
       return
     }
 
-    await settingStore.set('Comfy.Release.Version', version)
-    await settingStore.set('Comfy.Release.Status', 'changelog seen')
-    await settingStore.set('Comfy.Release.Timestamp', Date.now())
+    await settingStore.setMany({
+      'Comfy.Release.Version': version,
+      'Comfy.Release.Status': 'changelog seen',
+      'Comfy.Release.Timestamp': Date.now()
+    })
   }
 
   async function handleWhatsNewSeen(version: string): Promise<void> {
@@ -214,9 +232,11 @@ export const useReleaseStore = defineStore('release', () => {
       return
     }
 
-    await settingStore.set('Comfy.Release.Version', version)
-    await settingStore.set('Comfy.Release.Status', "what's new seen")
-    await settingStore.set('Comfy.Release.Timestamp', Date.now())
+    await settingStore.setMany({
+      'Comfy.Release.Version': version,
+      'Comfy.Release.Status': "what's new seen",
+      'Comfy.Release.Timestamp': Date.now()
+    })
   }
 
   // Fetch releases from API
@@ -225,8 +245,7 @@ export const useReleaseStore = defineStore('release', () => {
       return
     }
 
-    // Skip fetching if notifications are disabled
-    if (!showVersionUpdates.value) {
+    if (!isCloud && !showVersionUpdates.value) {
       return
     }
 
@@ -248,8 +267,8 @@ export const useReleaseStore = defineStore('release', () => {
       }
 
       const fetchedReleases = await releaseService.getReleases({
-        project: 'comfyui',
-        current_version: currentComfyUIVersion.value,
+        project: isCloud ? 'cloud' : 'comfyui',
+        current_version: currentVersion.value,
         form_factor: systemStatsStore.getFormFactor(),
         locale: stringToLocale(locale.value)
       })

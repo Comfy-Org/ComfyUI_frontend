@@ -3,8 +3,8 @@ import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 /**
- * Widget for multi-line text input
- * This is a widget that only has a Vue widgets implementation
+ * Widget for multi-line text input.
+ * This widget only has a Vue implementation.
  */
 export class TextareaWidget
   extends BaseWidget<ITextareaWidget>
@@ -13,35 +13,10 @@ export class TextareaWidget
   override type = 'textarea' as const
 
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
-    const { width } = options
-    const { y, height } = this
-
-    const { fillStyle, strokeStyle, textAlign, textBaseline, font } = ctx
-
-    ctx.fillStyle = this.background_color
-    ctx.fillRect(15, y, width - 30, height)
-
-    ctx.strokeStyle = this.outline_color
-    ctx.strokeRect(15, y, width - 30, height)
-
-    ctx.fillStyle = this.text_color
-    ctx.font = '11px monospace'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-
-    const text = 'Textarea: Vue-only'
-    ctx.fillText(text, width / 2, y + height / 2)
-
-    Object.assign(ctx, {
-      fillStyle,
-      strokeStyle,
-      textAlign,
-      textBaseline,
-      font
-    })
+    this.drawVueOnlyWarning(ctx, options, 'Textarea')
   }
 
   onClick(_options: WidgetEventOptions): void {
-    // This is a widget that only has a Vue widgets implementation
+    // This widget only has a Vue implementation
   }
 }

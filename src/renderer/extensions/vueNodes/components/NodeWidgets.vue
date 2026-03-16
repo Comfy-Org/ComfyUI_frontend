@@ -6,79 +6,125 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets flex flex-col has-[.widget-expands]:flex-1 gap-1 pr-3',
+        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
     "
+    :style="{
+      'grid-template-rows': gridTemplateRows,
+      flex: gridTemplateRows.includes('auto') ? 1 : undefined
+    }"
+    @pointerdown.capture="handleBringToFront"
     @pointerdown="handleWidgetPointerEvent"
     @pointermove="handleWidgetPointerEvent"
     @pointerup="handleWidgetPointerEvent"
   >
-    <div
-      v-for="(widget, index) in processedWidgets"
-      :key="`widget-${index}-${widget.name}`"
-      class="lg-node-widget group flex items-stretch has-[.widget-expands]:flex-1"
-    >
-      <!-- Widget Input Slot Dot -->
-
+    <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
-        :class="
-          cn(
-            'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-center',
-            widget.slotMetadata?.linked && 'opacity-100'
-          )
-        "
+        v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
+        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
-        <InputSlot
-          v-if="widget.slotMetadata"
-          :slot-data="{
-            name: widget.name,
-            type: widget.type,
-            boundingRect: [0, 0, 0, 0]
-          }"
-          :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :index="widget.slotMetadata.index"
-          dot-only
-        />
+        <!-- Widget Input Slot Dot -->
+        <div
+          :class="
+            cn(
+              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+              widget.slotMetadata?.linked && 'opacity-100'
+            )
+          "
+        >
+          <InputSlot
+            v-if="widget.slotMetadata"
+            :slot-data="{
+              name: widget.name,
+              type: widget.type,
+              boundingRect: [0, 0, 0, 0]
+            }"
+            :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+            :has-error="widget.hasError"
+            :index="widget.slotMetadata.index"
+            :socketless="widget.simplified.spec?.socketless"
+            dot-only
+          />
+        </div>
+        <!-- Widget Component -->
+        <AppInput
+          :id="widget.id"
+          :name="widget.name"
+          :enable="canSelectInputs && !widget.simplified.options?.disabled"
+        >
+          <component
+            :is="widget.vueComponent"
+            v-model="widget.value"
+            v-tooltip.left="widget.tooltipConfig"
+            :widget="widget.simplified"
+            :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+            :node-type="nodeType"
+            :class="
+              cn(
+                'col-span-2',
+                widget.hasError && 'font-bold text-node-stroke-error'
+              )
+            "
+            @update:model-value="widget.updateHandler"
+            @contextmenu="widget.handleContextMenu"
+          />
+        </AppInput>
       </div>
-      <!-- Widget Component -->
-      <component
-        :is="widget.vueComponent"
-        v-tooltip.left="widget.tooltipConfig"
-        :widget="widget.simplified"
-        :model-value="widget.value"
-        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-        :node-type="nodeType"
-        class="flex-1"
-        @update:model-value="widget.updateHandler"
-      />
-    </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref } from 'vue'
+import type { TooltipOptions } from 'primevue'
+import { computed, onErrorCaptured, ref, toValue } from 'vue'
+import type { Component } from 'vue'
 
 import type {
   SafeWidgetData,
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
+import { useAppMode } from '@/composables/useAppMode'
+import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 // Import widget components directly
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
+  shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { nodeTypeValidForApp } from '@/stores/appModeStore'
+import type { WidgetState } from '@/stores/widgetValueStore'
+import {
+  stripGraphPrefix,
+  useWidgetValueStore
+} from '@/stores/widgetValueStore'
+import { usePromotionStore } from '@/stores/promotionStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type {
+  LinkedUpstreamInfo,
+  SimplifiedWidget,
+  WidgetValue
+} from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
+import { getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
+import { app } from '@/scripts/app'
 
 import InputSlot from './InputSlot.vue'
 
@@ -90,11 +136,26 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
+const { isSelectInputsMode } = useAppMode()
+const canvasStore = useCanvasStore()
+const { bringNodeToFront } = useNodeZIndex()
+const promotionStore = usePromotionStore()
+const executionErrorStore = useExecutionErrorStore()
+const missingModelStore = useMissingModelStore()
+
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
   event.stopPropagation()
   forwardEventToCanvas(event)
 }
+
+function handleBringToFront() {
+  if (nodeData?.id != null) {
+    bringNodeToFront(String(nodeData.id))
+  }
+}
+
+const { handleNodeRightClick } = useNodeEventHandlers()
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
@@ -107,79 +168,285 @@ onErrorCaptured((error) => {
   return false
 })
 
+const canSelectInputs = computed(
+  () =>
+    isSelectInputsMode.value &&
+    nodeData?.mode === LGraphEventMode.ALWAYS &&
+    nodeTypeValidForApp(nodeData.type) &&
+    !nodeData.hasErrors
+)
 const nodeType = computed(() => nodeData?.type || '')
+const settingStore = useSettingStore()
+const showAdvanced = computed(
+  () =>
+    nodeData?.showAdvanced ||
+    settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+)
 const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
   nodeType.value
 )
+const widgetValueStore = useWidgetValueStore()
+
+function createWidgetUpdateHandler(
+  widgetState: WidgetState | undefined,
+  widget: SafeWidgetData,
+  nodeExecId: string,
+  widgetOptions: IWidgetOptions | Record<string, never>
+): (newValue: WidgetValue) => void {
+  return (newValue: WidgetValue) => {
+    if (widgetState) widgetState.value = newValue
+    widget.callback?.(newValue)
+    const effectiveExecId = widget.sourceExecutionId ?? nodeExecId
+    executionErrorStore.clearWidgetRelatedErrors(
+      effectiveExecId,
+      widget.slotName ?? widget.name,
+      widget.name,
+      newValue,
+      { min: widgetOptions?.min, max: widgetOptions?.max }
+    )
+  }
+}
 
 interface ProcessedWidget {
+  advanced: boolean
+  handleContextMenu: (e: PointerEvent) => void
+  hasLayoutSize: boolean
+  hasError: boolean
+  hidden: boolean
+  id: string
   name: string
-  type: string
-  vueComponent: any
+  renderKey: string
   simplified: SimplifiedWidget
+  tooltipConfig: TooltipOptions
+  type: string
+  updateHandler: (value: WidgetValue) => void
   value: WidgetValue
-  updateHandler: (value: unknown) => void
-  tooltipConfig: any
+  vueComponent: Component
   slotMetadata?: WidgetSlotMetadata
+}
+
+function hasWidgetError(
+  widget: SafeWidgetData,
+  nodeExecId: string,
+  nodeErrors: { errors: { extra_info?: { input_name?: string } }[] } | undefined
+): boolean {
+  const errors = widget.sourceExecutionId
+    ? executionErrorStore.lastNodeErrors?.[widget.sourceExecutionId]?.errors
+    : nodeErrors?.errors
+  const inputName = widget.slotName ?? widget.name
+  return (
+    !!errors?.some((e) => e.extra_info?.input_name === inputName) ||
+    missingModelStore.isWidgetMissingModel(
+      widget.sourceExecutionId ?? nodeExecId,
+      widget.name
+    )
+  )
+}
+
+function getWidgetIdentity(
+  widget: SafeWidgetData,
+  nodeId: string | number | undefined,
+  index: number
+): {
+  dedupeIdentity?: string
+  renderKey: string
+} {
+  const rawWidgetId = widget.storeNodeId ?? widget.nodeId
+  const storeWidgetName = widget.storeName ?? widget.name
+  const slotNameForIdentity = widget.slotName ?? widget.name
+  const stableIdentityRoot = rawWidgetId
+    ? `node:${String(stripGraphPrefix(rawWidgetId))}`
+    : widget.sourceExecutionId
+      ? `exec:${widget.sourceExecutionId}`
+      : undefined
+
+  const dedupeIdentity = stableIdentityRoot
+    ? `${stableIdentityRoot}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}`
+    : undefined
+  const renderKey =
+    dedupeIdentity ??
+    `transient:${String(nodeId ?? '')}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}:${index}`
+
+  return {
+    dedupeIdentity,
+    renderKey
+  }
+}
+
+function isWidgetVisible(options: IWidgetOptions): boolean {
+  const hidden = options.hidden ?? false
+  const advanced = options.advanced ?? false
+  return !hidden && (!advanced || showAdvanced.value)
 }
 
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
 
-  const widgets = nodeData.widgets as SafeWidgetData[]
-  const result: ProcessedWidget[] = []
+  // nodeData.id is the local node ID; subgraph nodes need the full execution
+  // path (e.g. "65:63") to match keys in lastNodeErrors.
+  const nodeExecId = app.isGraphReady
+    ? getExecutionIdFromNodeData(app.rootGraph, nodeData)
+    : String(nodeData.id ?? '')
 
-  for (const widget of widgets) {
-    // Skip if widget is in the hidden list for this node type
-    if (widget.options?.hidden) continue
-    if (widget.options?.canvasOnly) continue
-    if (!widget.type) continue
+  const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
+  const graphId = canvasStore.canvas?.graph?.rootGraph.id
+
+  const nodeId = nodeData.id
+  const { widgets } = nodeData
+  const result: ProcessedWidget[] = []
+  const uniqueWidgets: Array<{
+    widget: SafeWidgetData
+    identity: ReturnType<typeof getWidgetIdentity>
+    mergedOptions: IWidgetOptions
+    widgetState: WidgetState | undefined
+    isVisible: boolean
+  }> = []
+  const dedupeIndexByIdentity = new Map<string, number>()
+
+  for (const [index, widget] of widgets.entries()) {
     if (!shouldRenderAsVue(widget)) continue
 
+    const identity = getWidgetIdentity(widget, nodeId, index)
+    const storeWidgetName = widget.storeName ?? widget.name
+    const bareWidgetId = String(
+      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
+    )
+    const widgetState = graphId
+      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
+      : undefined
+    const mergedOptions: IWidgetOptions = {
+      ...(widget.options ?? {}),
+      ...(widgetState?.options ?? {})
+    }
+    const visible = isWidgetVisible(mergedOptions)
+    if (!identity.dedupeIdentity) {
+      uniqueWidgets.push({
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: visible
+      })
+      continue
+    }
+
+    const existingIndex = dedupeIndexByIdentity.get(identity.dedupeIdentity)
+    if (existingIndex === undefined) {
+      dedupeIndexByIdentity.set(identity.dedupeIdentity, uniqueWidgets.length)
+      uniqueWidgets.push({
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: visible
+      })
+      continue
+    }
+
+    const existingWidget = uniqueWidgets[existingIndex]
+    if (existingWidget && !existingWidget.isVisible && visible) {
+      uniqueWidgets[existingIndex] = {
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: true
+      }
+    }
+  }
+
+  for (const {
+    widget,
+    mergedOptions,
+    widgetState,
+    identity: { renderKey }
+  } of uniqueWidgets) {
+    const bareWidgetId = String(
+      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
+    )
+    const isPromotedView = !!widget.nodeId
+
     const vueComponent =
-      getComponent(widget.type, widget.name) ||
+      getComponent(widget.type) ||
       (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
 
-    const slotMetadata = widget.slotMetadata
+    const { slotMetadata } = widget
 
-    let widgetOptions = widget.options
-    // Core feature: Disable Vue widgets when their input slots are connected
-    // This prevents conflicting input sources - when a slot is linked to another
-    // node's output, the widget should be read-only to avoid data conflicts
-    if (slotMetadata?.linked) {
-      widgetOptions = { ...widget.options, disabled: true }
-    }
+    // Get value from store (falls back to undefined if not registered)
+    const value = widgetState?.value as WidgetValue
+
+    // Build options from store state, with disabled override for
+    // slot-linked widgets or widgets with disabled state (e.g. display-only)
+    const isDisabled = slotMetadata?.linked || widgetState?.disabled
+    const widgetOptions = isDisabled
+      ? { ...mergedOptions, disabled: true }
+      : mergedOptions
+
+    const borderStyle =
+      graphId &&
+      !isPromotedView &&
+      promotionStore.isPromotedByAny(graphId, String(bareWidgetId), widget.name)
+        ? 'ring ring-component-node-widget-promoted'
+        : mergedOptions.advanced
+          ? 'ring ring-component-node-widget-advanced'
+          : undefined
+
+    const linkedUpstream: LinkedUpstreamInfo | undefined =
+      slotMetadata?.linked && slotMetadata.originNodeId
+        ? {
+            nodeId: slotMetadata.originNodeId,
+            outputName: slotMetadata.originOutputName
+          }
+        : undefined
 
     const simplified: SimplifiedWidget = {
       name: widget.name,
       type: widget.type,
-      value: widget.value,
-      label: widget.label,
-      options: widgetOptions,
+      value,
+      borderStyle,
       callback: widget.callback,
+      controlWidget: widget.controlWidget,
+      label: widgetState?.label,
+      linkedUpstream,
+      options: widgetOptions,
       spec: widget.spec
     }
 
-    const updateHandler = (value: unknown) => {
-      // Update the widget value directly
-      widget.value = value as WidgetValue
-
-      // Skip callback for asset widgets - their callback opens the modal,
-      // but Vue asset mode handles selection through the dropdown
-      if (widget.callback && widget.type !== 'asset') {
-        widget.callback(value)
-      }
-    }
+    const updateHandler = createWidgetUpdateHandler(
+      widgetState,
+      widget,
+      nodeExecId,
+      widgetOptions
+    )
 
     const tooltipText = getWidgetTooltip(widget)
     const tooltipConfig = createTooltipConfig(tooltipText)
+    const handleContextMenu = (e: PointerEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      handleNodeRightClick(e, nodeId)
+      showNodeOptions(
+        e,
+        widget.name,
+        widget.nodeId !== undefined
+          ? String(stripGraphPrefix(widget.nodeId))
+          : undefined
+      )
+    }
 
     result.push({
+      advanced: mergedOptions.advanced ?? false,
+      handleContextMenu,
+      hasLayoutSize: widget.hasLayoutSize ?? false,
+      hasError: hasWidgetError(widget, nodeExecId, nodeErrors),
+      hidden: mergedOptions.hidden ?? false,
+      id: String(bareWidgetId),
       name: widget.name,
+      renderKey,
       type: widget.type,
       vueComponent,
       simplified,
-      value: widget.value,
+      value,
       updateHandler,
       tooltipConfig,
       slotMetadata
@@ -187,5 +454,15 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   }
 
   return result
+})
+
+const gridTemplateRows = computed((): string => {
+  // Use processedWidgets directly since it already has store-based hidden/advanced
+  return toValue(processedWidgets)
+    .filter((w) => !w.hidden && (!w.advanced || showAdvanced.value))
+    .map((w) =>
+      shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
+    )
+    .join(' ')
 })
 </script>

@@ -12,6 +12,7 @@ type ManagerQueueStatus = components['schemas']['QueueStatus']
 type InstallPackParams = components['schemas']['InstallPackParams']
 type InstalledPacksResponse = components['schemas']['InstalledPacksResponse']
 type UpdateAllPacksParams = components['schemas']['UpdateAllPacksParams']
+type UpdateComfyUIParams = components['schemas']['UpdateComfyUIParams']
 type ManagerTaskHistory = components['schemas']['HistoryResponse']
 type QueueTaskItem = components['schemas']['QueueTaskItem']
 
@@ -26,6 +27,7 @@ enum ManagerRoute {
   RESET_QUEUE = 'manager/queue/reset',
   QUEUE_STATUS = 'manager/queue/status',
   UPDATE_ALL = 'manager/queue/update_all',
+  UPDATE_COMFYUI = 'manager/queue/update_comfyui',
   LIST_INSTALLED = 'customnode/installed',
   GET_NODES = 'customnode/getmappings',
   IMPORT_FAIL_INFO = 'customnode/import_fail_info',
@@ -154,7 +156,7 @@ export const useComfyManagerService = () => {
   const getImportFailInfo = async (signal?: AbortSignal) => {
     const errorContext = 'Fetching import failure information'
 
-    return executeRequest<any>(
+    return executeRequest<Record<string, unknown>>(
       () => managerApiClient.get(ManagerRoute.IMPORT_FAIL_INFO, { signal }),
       { errorContext }
     )
@@ -271,6 +273,33 @@ export const useComfyManagerService = () => {
     )
   }
 
+  const updateComfyUI = async (
+    params: UpdateComfyUIParams = { is_stable: true },
+    ui_id?: string,
+    signal?: AbortSignal
+  ) => {
+    const errorContext = 'Updating ComfyUI'
+    const routeSpecificErrors = {
+      400: 'Bad Request: Missing required parameters',
+      403: 'Forbidden: To use this action, a security_level of `middle or below` is required'
+    }
+
+    const queryParams = {
+      client_id: api.clientId ?? api.initialClientId ?? 'unknown',
+      ui_id: ui_id || uuidv4(),
+      ...params
+    }
+
+    return executeRequest<null>(
+      () =>
+        managerApiClient.get(ManagerRoute.UPDATE_COMFYUI, {
+          params: queryParams,
+          signal
+        }),
+      { errorContext, routeSpecificErrors, isQueueOperation: true }
+    )
+  }
+
   const rebootComfyUI = async (signal?: AbortSignal) => {
     const errorContext = 'Rebooting ComfyUI'
     const routeSpecificErrors = {
@@ -335,6 +364,7 @@ export const useComfyManagerService = () => {
     updateAllPacks,
 
     // System operations
+    updateComfyUI,
     rebootComfyUI,
     isLegacyManagerUI
   }

@@ -1,21 +1,21 @@
 <template>
   <BaseViewTemplate dark>
     <div
-      class="min-w-full min-h-full font-sans w-screen h-screen grid justify-around text-neutral-300 bg-neutral-900 dark-theme overflow-y-auto"
+      class="dark-theme grid h-screen min-h-full w-screen min-w-full justify-around overflow-y-auto bg-neutral-900 font-sans text-neutral-300"
     >
-      <div class="max-w-(--breakpoint-sm) w-screen m-8 relative">
+      <div class="relative m-8 w-screen max-w-(--breakpoint-sm)">
         <!-- Header -->
         <h1 class="backspan pi-wrench text-4xl font-bold">
           {{ t('maintenance.title') }}
         </h1>
 
         <!-- Toolbar -->
-        <div class="w-full flex flex-wrap gap-4 items-center">
+        <div class="flex w-full flex-wrap items-center gap-4">
           <span class="grow">
             {{ t('maintenance.status') }}:
             <StatusTag :refreshing="isRefreshing" :error="anyErrors" />
           </span>
-          <div class="flex gap-4 items-center">
+          <div class="flex items-center gap-4">
             <SelectButton
               v-model="displayAsList"
               :options="[PrimeIcons.LIST, PrimeIcons.TH_LARGE]"
@@ -47,16 +47,37 @@
           </div>
         </div>
 
+        <!-- Unsafe migration warning -->
+        <div v-if="taskStore.unsafeBasePath" class="my-4">
+          <p class="flex items-start gap-3 text-neutral-300">
+            <Tag
+              icon="pi pi-exclamation-triangle"
+              severity="warn"
+              :value="t('icon.exclamation-triangle')"
+            />
+            <span>
+              <strong class="mb-1 block">
+                {{ t('maintenance.unsafeMigration.title') }}
+              </strong>
+              <span class="mb-1 block">
+                {{ unsafeReasonText }}
+              </span>
+              <span class="block text-sm text-neutral-400">
+                {{ t('maintenance.unsafeMigration.action') }}
+              </span>
+            </span>
+          </p>
+        </div>
+
         <!-- Tasks -->
         <TaskListPanel
-          class="border-neutral-700 border-solid border-x-0 border-y"
+          class="border-x-0 border-y border-solid border-neutral-700"
           :filter
           :display-as-list
-          :is-refreshing
         />
 
         <!-- Actions -->
-        <div class="flex justify-between gap-4 flex-row">
+        <div class="flex flex-row justify-between gap-4">
           <Button
             :label="t('maintenance.consoleLogs')"
             icon="pi pi-desktop"
@@ -89,16 +110,16 @@
 import { PrimeIcons } from '@primevue/core/api'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
+import Tag from 'primevue/tag'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import RefreshButton from '@/components/common/RefreshButton.vue'
 import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
-import { t } from '@/i18n'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
@@ -108,6 +129,7 @@ import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 
 const electron = electronAPI()
 const toast = useToast()
+const { t } = useI18n()
 const taskStore = useMaintenanceTaskStore()
 const { clearResolved, processUpdate, refreshDesktopTasks } = taskStore
 
@@ -139,6 +161,27 @@ const filterOptions = ref([
 /** Filter binding; can be set to show all tasks, or only errors. */
 const filter = ref<MaintenanceFilter>(filterOptions.value[0])
 
+const unsafeReasonText = computed(() => {
+  const reason = taskStore.unsafeBasePathReason
+  if (!reason) {
+    return t('maintenance.unsafeMigration.generic')
+  }
+
+  if (reason === 'appInstallDir') {
+    return t('maintenance.unsafeMigration.appInstallDir')
+  }
+
+  if (reason === 'updaterCache') {
+    return t('maintenance.unsafeMigration.updaterCache')
+  }
+
+  if (reason === 'oneDrive') {
+    return t('maintenance.unsafeMigration.oneDrive')
+  }
+
+  return t('maintenance.unsafeMigration.generic')
+})
+
 /** If valid, leave the validation window. */
 const completeValidation = async () => {
   const isValid = await electron.Validation.complete()
@@ -146,8 +189,7 @@ const completeValidation = async () => {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: t('maintenance.error.cannotContinue'),
-      life: 5_000
+      detail: t('maintenance.error.cannotContinue')
     })
   }
 }
@@ -178,14 +220,14 @@ onUnmounted(() => electron.Validation.dispose())
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
 :deep(.p-tag) {
   --p-tag-gap: 0.375rem;
 }
 
 .backspan::before {
-  @apply m-0 absolute text-muted;
+  position: absolute;
+  margin: 0;
+  color: var(--muted-foreground);
   font-family: 'primeicons', sans-serif;
   top: -2rem;
   right: -2rem;

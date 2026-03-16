@@ -3,10 +3,13 @@ import type { DownloadState } from '@comfyorg/comfyui-electron-types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
+import { electronAPI } from '@/utils/envUtil'
 
-export interface ElectronDownload
-  extends Pick<DownloadState, 'url' | 'filename'> {
+export interface ElectronDownload extends Pick<
+  DownloadState,
+  'url' | 'filename'
+> {
   progress?: number
   savePath?: string
   status?: DownloadStatus
@@ -15,35 +18,34 @@ export interface ElectronDownload
 /** Electron downloads store handler */
 export const useElectronDownloadStore = defineStore('downloads', () => {
   const downloads = ref<ElectronDownload[]>([])
-  const { DownloadManager } = electronAPI()
+  const DownloadManager = isDesktop ? electronAPI().DownloadManager : undefined
 
   const findByUrl = (url: string) =>
     downloads.value.find((download) => url === download.url)
 
   const initialize = async () => {
-    if (isElectron()) {
-      const allDownloads = await DownloadManager.getAllDownloads()
+    if (!isDesktop || !DownloadManager) return
 
-      for (const download of allDownloads) {
-        downloads.value.push(download)
+    const allDownloads = await DownloadManager.getAllDownloads()
+
+    for (const download of allDownloads) {
+      downloads.value.push(download)
+    }
+
+    DownloadManager.onDownloadProgress((data) => {
+      if (!findByUrl(data.url)) {
+        downloads.value.push(data)
       }
 
-      // ToDO: replace with ElectronDownload type
-      DownloadManager.onDownloadProgress((data) => {
-        if (!findByUrl(data.url)) {
-          downloads.value.push(data)
-        }
+      const download = findByUrl(data.url)
 
-        const download = findByUrl(data.url)
-
-        if (download) {
-          download.progress = data.progress
-          download.status = data.status
-          download.filename = data.filename
-          download.savePath = data.savePath
-        }
-      })
-    }
+      if (download) {
+        download.progress = data.progress
+        download.status = data.status
+        download.filename = data.filename
+        download.savePath = data.savePath
+      }
+    })
   }
 
   void initialize()
@@ -56,10 +58,10 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     url: string
     savePath: string
     filename: string
-  }) => DownloadManager.startDownload(url, savePath, filename)
-  const pause = (url: string) => DownloadManager.pauseDownload(url)
-  const resume = (url: string) => DownloadManager.resumeDownload(url)
-  const cancel = (url: string) => DownloadManager.cancelDownload(url)
+  }) => DownloadManager!.startDownload(url, savePath, filename)
+  const pause = (url: string) => DownloadManager!.pauseDownload(url)
+  const resume = (url: string) => DownloadManager!.resumeDownload(url)
+  const cancel = (url: string) => DownloadManager!.cancelDownload(url)
 
   return {
     downloads,

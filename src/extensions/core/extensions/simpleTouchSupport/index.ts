@@ -82,6 +82,26 @@ app.registerExtension({
       }
     )
 
+    const resetTouchState = () => {
+      touchCount = 0
+      touchZooming = false
+      touchTime = null
+      lastTouch = null
+      lastScale = null
+      touchDist = null
+    }
+
+    // Reset touch state when page loses visibility (e.g., switching apps on iPad)
+    // This prevents touchCount from getting stuck when touchend events are missed
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        resetTouchState()
+      }
+    })
+
+    // Also handle touchcancel which fires when touch is interrupted
+    app.canvasEl.parentElement?.addEventListener('touchcancel', resetTouchState)
+
     app.canvasEl.parentElement?.addEventListener(
       'touchmove',
       (e) => {

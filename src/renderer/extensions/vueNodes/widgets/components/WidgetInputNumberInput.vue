@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
+import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
@@ -13,24 +14,65 @@ import {
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
+const { locale } = useI18n()
+
 const props = defineProps<{
   widget: SimplifiedWidget<number>
-  modelValue: number
+  rootClass?: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number]
-}>()
+function formatNumber(value: number, options?: Intl.NumberFormatOptions) {
+  return new Intl.NumberFormat(locale.value, options).format(value)
+}
 
-const { localValue, onChange } = useNumberWidgetValue(
-  props.widget,
-  props.modelValue,
-  emit
+const decimalSeparator = computed(() =>
+  formatNumber(1.1).replace(/\p{Number}/gu, '')
 )
+const groupSeparator = computed(() =>
+  formatNumber(11111).replace(/\p{Number}/gu, '')
+)
+function unformatValue(value: string) {
+  return value
+    .replaceAll(groupSeparator.value, '')
+    .replaceAll(decimalSeparator.value, '.')
+}
 
-const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
-)
+const modelValue = defineModel<number>({ default: 0 })
+
+const formattedValue = computed(() => {
+  const value = modelValue.value
+  if ((value as unknown) === '' || !isFinite(value)) return `${value}`
+
+  const options: Intl.NumberFormatOptions = {
+    useGrouping: useGrouping.value
+  }
+  if (precision.value !== undefined) {
+    options.minimumFractionDigits = precision.value
+    options.maximumFractionDigits = precision.value
+  }
+  return formatNumber(value, options)
+})
+
+function parseWidgetValue(raw: string): number | undefined {
+  return evaluateInput(unformatValue(raw))
+}
+
+interface NumericWidgetOptions {
+  min: number
+  max: number
+  step?: number
+  step2?: number
+  precision?: number
+  disabled?: boolean
+  useGrouping?: boolean
+}
+
+const filteredProps = computed(() => {
+  const filtered = filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
+  return filtered as Partial<NumericWidgetOptions>
+})
+
+const isDisabled = computed(() => props.widget.options?.disabled ?? false)
 
 // Get the precision value for proper number formatting
 const precision = computed(() => {
@@ -41,9 +83,16 @@ const precision = computed(() => {
 
 // Calculate the step value based on precision or widget options
 const stepValue = computed(() => {
-  // Use step2 (correct input spec value) instead of step (legacy 10x value)
+  // Use step2 (correct input spec value) if available
   if (props.widget.options?.step2 !== undefined) {
     return Number(props.widget.options.step2)
+  }
+  // Use step / 10 for custom large step values (> 10) to match litegraph behavior
+  // This is important for extensions like Impact Pack that use custom step values (e.g., 640)
+  // We skip default step values (1, 10) to avoid affecting normal widgets
+  const step = props.widget.options?.step as number | undefined
+  if (step !== undefined && step > 10) {
+    return Number(step) / 10
   }
   // Otherwise, derive from precision
   if (precision.value !== undefined) {
@@ -65,7 +114,7 @@ const useGrouping = computed(() => {
 
 // Check if increment/decrement buttons should be disabled due to precision limits
 const buttonsDisabled = computed(() => {
-  const currentValue = localValue.value ?? 0
+  const currentValue = modelValue.value ?? 0
   return (
     !Number.isFinite(currentValue) ||
     Math.abs(currentValue) > Number.MAX_SAFE_INTEGER
@@ -78,50 +127,56 @@ const buttonTooltip = computed(() => {
   }
   return null
 })
+
+const sliderWidth = computed(() => {
+  const { max, min, step } = filteredProps.value
+  if (
+    min === undefined ||
+    max === undefined ||
+    step === undefined ||
+    (max - min) / step >= 100
+  )
+    return 0
+  const ratio = (modelValue.value - min) / (max - min)
+  return (ratio * 100).toFixed(0)
+})
+
+const inputAriaAttrs = computed(() => ({
+  'aria-valuenow': modelValue.value,
+  'aria-valuemin': filteredProps.value.min,
+  'aria-valuemax': filteredProps.value.max,
+  role: 'spinbutton',
+  tabindex: 0
+}))
 </script>
 
 <template>
-  <WidgetLayoutField :widget>
-    <InputNumber
-      v-model="localValue"
+  <WidgetLayoutField :widget :root-class="props.rootClass">
+    <ScrubableNumberInput
+      v-model="modelValue"
       v-tooltip="buttonTooltip"
-      v-bind="filteredProps"
-      fluid
-      button-layout="horizontal"
-      size="small"
-      variant="outlined"
-      :step="stepValue"
-      :use-grouping="useGrouping"
-      :class="cn(WidgetInputBaseClass, 'grow text-xs')"
       :aria-label="widget.name"
-      :show-buttons="!buttonsDisabled"
-      :pt="{
-        root: {
-          class: '[&>input]:bg-transparent [&>input]:border-0'
-        },
-        decrementButton: {
-          class: 'w-8 border-0'
-        },
-        incrementButton: {
-          class: 'w-8 border-0'
-        }
-      }"
-      @update:model-value="onChange"
+      :min="filteredProps.min"
+      :max="filteredProps.max"
+      :step="stepValue"
+      :display-value="formattedValue"
+      :disabled="isDisabled"
+      :hide-buttons="buttonsDisabled"
+      :parse-value="parseWidgetValue"
+      :input-attrs="inputAriaAttrs"
+      :class="cn(WidgetInputBaseClass, 'relative flex h-7 grow text-xs')"
     >
-      <template #incrementicon>
-        <span class="pi pi-plus text-sm" />
+      <template #background>
+        <div
+          class="pointer-events-none absolute size-full overflow-clip rounded-lg"
+        >
+          <div
+            class="size-full bg-primary-background/15"
+            :style="{ width: `${sliderWidth}%` }"
+          />
+        </div>
       </template>
-      <template #decrementicon>
-        <span class="pi pi-minus text-sm" />
-      </template>
-    </InputNumber>
+      <slot />
+    </ScrubableNumberInput>
   </WidgetLayoutField>
 </template>
-
-<style scoped>
-:deep(.p-inputnumber-input) {
-  height: 1.625rem;
-  margin: 1px 0;
-  box-shadow: none;
-}
-</style>

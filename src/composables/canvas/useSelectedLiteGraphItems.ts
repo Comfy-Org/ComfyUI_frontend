@@ -2,10 +2,7 @@ import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, Reroute } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import {
-  collectFromNodes,
-  traverseNodesDepthFirst
-} from '@/utils/graphTraversalUtil'
+import { collectFromNodes } from '@/utils/graphTraversalUtil'
 
 /**
  * Composable for handling selected LiteGraph items filtering and operations.
@@ -97,16 +94,10 @@ export function useSelectedLiteGraphItems() {
   }
 
   /**
-   * Toggle the execution mode of all selected nodes with unified subgraph behavior.
+   * Toggle the execution mode of all selected nodes
    *
-   * Top-level behavior (selected nodes): Standard toggle logic
-   * - If the selected node is already in the specified mode → set to ALWAYS
-   * - Otherwise → set to the specified mode
-   *
-   * Subgraph behavior (children of selected subgraph nodes): Unified state application
-   * - All children inherit the same mode that their parent subgraph node was set to
-   * - This creates predictable behavior: if you toggle a subgraph to "mute",
-   *   ALL nodes inside become muted, regardless of their previous individual states
+   * - If any nodes are not already the specified node mode → all are set to specified mode
+   * - Otherwise → set all nodes to ALWAYS
    *
    * @param mode - The LGraphEventMode to toggle to (e.g., NEVER for mute, BYPASS for bypass)
    */
@@ -124,27 +115,8 @@ export function useSelectedLiteGraphItems() {
     )
     const newModeForSelectedNode = allNodesMatch ? LGraphEventMode.ALWAYS : mode
 
-    // Process each selected node independently to determine its target state and apply to children
-    selectedNodeArray.forEach((selectedNode) => {
-      // Apply standard toggle logic to the selected node itself
-
+    for (const selectedNode of selectedNodeArray)
       selectedNode.mode = newModeForSelectedNode
-
-      // If this selected node is a subgraph, apply the same mode uniformly to all its children
-      // This ensures predictable behavior: all children get the same state as their parent
-      if (selectedNode.isSubgraphNode?.() && selectedNode.subgraph) {
-        traverseNodesDepthFirst([selectedNode], {
-          visitor: (node) => {
-            // Skip the parent node since we already handled it above
-            if (node === selectedNode) return undefined
-
-            // Apply the parent's new mode to all children uniformly
-            node.mode = newModeForSelectedNode
-            return undefined
-          }
-        })
-      }
-    })
   }
 
   return {

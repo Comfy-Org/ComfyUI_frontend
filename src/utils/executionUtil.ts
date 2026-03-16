@@ -63,11 +63,18 @@ export const graphToPrompt = async (
       ? new ExecutableGroupNodeDTO(node, [], nodeDtoMap)
       : new ExecutableNodeDTO(node, [], nodeDtoMap)
 
+    nodeDtoMap.set(dto.id, dto)
+
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    ) {
+      continue
+    }
+
     for (const innerNode of dto.getInnerNodes()) {
       nodeDtoMap.set(innerNode.id, innerNode)
     }
-
-    nodeDtoMap.set(dto.id, dto)
   }
 
   const output: ComfyApiWorkflow = {}
@@ -85,7 +92,9 @@ export const graphToPrompt = async (
     const inputs: ComfyApiWorkflow[string]['inputs'] = {}
     const { widgets } = node
 
-    // Store all widget values
+    // Store all widget values in the API prompt.
+    // Note: widget.options.serialize controls prompt inclusion (checked here).
+    // widget.serialize controls workflow persistence (checked by LGraphNode).
     if (widgets) {
       for (const [i, widget] of widgets.entries()) {
         if (!widget.name || widget.options?.serialize === false) continue
@@ -99,9 +108,9 @@ export const graphToPrompt = async (
         // The backend automatically unwraps the object to an array during
         // execution.
         inputs[widget.name] = Array.isArray(widgetValue)
-          ? {
-              __value__: widgetValue
-            }
+          ? widget.type === 'curve'
+            ? { __type__: 'CURVE', __value__: widgetValue }
+            : { __value__: widgetValue }
           : widgetValue
       }
     }

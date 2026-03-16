@@ -14,13 +14,15 @@ app.registerExtension({
       static collapsable: boolean
       static title_mode: number
 
-      override color = LGraphCanvas.node_colors.yellow.color
-      override bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
       override isVirtualNode: boolean
 
       constructor(title: string) {
         super(title)
+
+        this.color = LGraphCanvas.node_colors.yellow.color
+        this.bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
+
         if (!this.properties) {
           this.properties = { text: '' }
         }
@@ -53,12 +55,14 @@ app.registerExtension({
     class MarkdownNoteNode extends LGraphNode {
       static override title = 'Markdown Note'
 
-      override color = LGraphCanvas.node_colors.yellow.color
-      override bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
 
       constructor(title: string) {
         super(title)
+
+        this.color = LGraphCanvas.node_colors.yellow.color
+        this.bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
+
         if (!this.properties) {
           this.properties = { text: '' }
         }

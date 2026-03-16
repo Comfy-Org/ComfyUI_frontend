@@ -1,7 +1,5 @@
 import { mount } from '@vue/test-utils'
-import Button from 'primevue/button'
 import PrimeVue from 'primevue/config'
-import OverlayBadge from 'primevue/overlaybadge'
 import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -34,31 +32,29 @@ describe('SidebarIcon', () => {
     return mount(SidebarIcon, {
       global: {
         plugins: [PrimeVue, i18n],
-        directives: { tooltip: Tooltip },
-        components: { OverlayBadge, Button }
+        directives: { tooltip: Tooltip }
       },
       props: { ...exampleProps, ...props },
       ...options
     })
   }
 
-  it('renders label', () => {
+  it('renders button element', () => {
     const wrapper = mountSidebarIcon({})
-    expect(wrapper.find('.p-button.p-component').exists()).toBe(true)
-    expect(wrapper.find('.p-button-label').exists()).toBe(true)
+    expect(wrapper.find('button.side-bar-button').exists()).toBe(true)
   })
 
   it('renders icon', () => {
     const wrapper = mountSidebarIcon({})
-    expect(wrapper.find('.p-button-icon-only').exists()).toBe(true)
+    expect(wrapper.find('.side-bar-button-icon').exists()).toBe(true)
   })
 
   it('creates badge when iconBadge prop is set', () => {
     const badge = '2'
     const wrapper = mountSidebarIcon({ iconBadge: badge })
-    const badgeEl = wrapper.findComponent(OverlayBadge)
+    const badgeEl = wrapper.find('.sidebar-icon-badge')
     expect(badgeEl.exists()).toBe(true)
-    expect(badgeEl.find('.p-badge').text()).toEqual(badge)
+    expect(badgeEl.text()).toEqual(badge)
   })
 
   it('shows tooltip on hover', async () => {

@@ -1,3 +1,5 @@
+import { isCloud } from '@/platform/distribution/types'
+
 export const CORE_MENU_COMMANDS = [
   [[], ['Comfy.NewBlankWorkflow']],
   [[], []], // Separator after New
@@ -12,15 +14,26 @@ export const CORE_MENU_COMMANDS = [
     ]
   ],
   [['Edit'], ['Comfy.Undo', 'Comfy.Redo']],
+  [
+    ['Edit'],
+    [
+      'Comfy.Canvas.CopySelected',
+      'Comfy.Canvas.PasteFromClipboard',
+      'Comfy.Canvas.SelectAll'
+    ]
+  ],
   [['Edit'], ['Comfy.ClearWorkflow']],
   [['Edit'], ['Comfy.OpenClipspace']],
-  [['Edit'], ['Comfy.RefreshNodeDefinitions']],
   [
     ['Edit'],
     [
       'Comfy.RefreshNodeDefinitions',
-      'Comfy.Memory.UnloadModels',
-      'Comfy.Memory.UnloadModelsAndExecutionCache'
+      ...(isCloud
+        ? []
+        : [
+            'Comfy.Memory.UnloadModels',
+            'Comfy.Memory.UnloadModelsAndExecutionCache'
+          ])
     ]
   ],
   [['View'], []],

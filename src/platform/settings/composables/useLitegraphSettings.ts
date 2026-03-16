@@ -94,6 +94,12 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
+    const liveSelection = settingStore.get('Comfy.Graph.LiveSelection')
+    const { canvas } = canvasStore
+    if (canvas) canvas.liveSelection = liveSelection
+  })
+
+  watchEffect(() => {
     CanvasPointer.doubleClickTime = settingStore.get(
       'Comfy.Pointer.DoubleClickTime'
     )
@@ -155,5 +161,13 @@ export const useLitegraphSettings = () => {
     LiteGraph.saveViewportWithGraph = settingStore.get(
       'Comfy.EnableWorkflowViewRestore'
     )
+  })
+
+  watchEffect(() => {
+    const selectChildren = settingStore.get(
+      'LiteGraph.Group.SelectChildrenOnClick'
+    )
+    if (canvasStore.canvas)
+      canvasStore.canvas.groupSelectChildren = selectChildren
   })
 }

@@ -7,20 +7,6 @@ const meta: Meta<typeof LeftSidePanel> = {
   title: 'Components/Widget/Panel/LeftSidePanel',
   component: LeftSidePanel,
   argTypes: {
-    'header-icon': {
-      table: {
-        type: { summary: 'slot' },
-        defaultValue: { summary: 'undefined' }
-      },
-      control: false
-    },
-    'header-title': {
-      table: {
-        type: { summary: 'slot' },
-        defaultValue: { summary: 'undefined' }
-      },
-      control: false
-    },
     'onUpdate:modelValue': {
       table: { disable: true }
     }
@@ -59,14 +45,7 @@ export const Default: Story = {
     },
     template: `
       <div style="height: 500px; width: 256px;">
-        <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems">
-          <template #header-icon>
-            <i class="icon-[lucide--puzzle] size-4 text-neutral" />
-          </template>
-          <template #header-title>
-            <span class="text-neutral text-base">Navigation</span>
-          </template>
-        </LeftSidePanel>
+        <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems" />
       </div>
     `
   })
@@ -126,14 +105,7 @@ export const WithGroups: Story = {
     },
     template: `
       <div style="height: 500px; width: 256px;">
-        <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems">
-          <template #header-icon>
-            <i class="icon-[lucide--puzzle] size-4 text-neutral" />
-          </template>
-          <template #header-title>
-            <span class="text-neutral text-base">Model Selector</span>
-          </template>
-        </LeftSidePanel>
+        <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems" />
         <div class="mt-4 p-2 text-sm">
           Selected: {{ selectedItem }}
         </div>
@@ -176,14 +148,7 @@ export const DefaultIcons: Story = {
     },
     template: `
       <div style="height: 400px; width: 256px;">
-        <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems">
-          <template #header-icon>
-            <i class="icon-[lucide--folder] size-4 text-neutral" />
-          </template>
-          <template #header-title>
-            <span class="text-neutral text-base">Files</span>
-          </template>
-        </LeftSidePanel>
+        <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems" />
       </div>
     `
   })
@@ -228,14 +193,7 @@ export const LongLabels: Story = {
     },
     template: `
       <div style="height: 500px; width: 256px;">
-        <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems">
-          <template #header-icon>
-            <i class="icon-[lucide--settings] size-4 text-neutral" />
-          </template>
-          <template #header-title>
-            <span class="text-neutral text-base">Settings</span>
-          </template>
-        </LeftSidePanel>
+        <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems" />
       </div>
     `
   })

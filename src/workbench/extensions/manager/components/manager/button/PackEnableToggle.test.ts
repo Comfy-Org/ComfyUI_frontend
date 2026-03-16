@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,7 +17,7 @@ vi.mock('es-toolkit/compat', async () => {
   const actual = await vi.importActual('es-toolkit/compat')
   return {
     ...actual,
-    debounce: <T extends (...args: any[]) => any>(fn: T) => fn
+    debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
   }
 })
 
@@ -33,12 +33,20 @@ const mockNodePack = {
 const mockIsPackEnabled = vi.fn()
 const mockEnablePack = vi.fn().mockResolvedValue(undefined)
 const mockDisablePack = vi.fn().mockResolvedValue(undefined)
+const mockGetConflictsForPackageByID = vi.fn()
+
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn(() => ({
     isPackEnabled: mockIsPackEnabled,
     enablePack: mockEnablePack,
     disablePack: mockDisablePack,
     installedPacks: {}
+  }))
+}))
+
+vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore', () => ({
+  useConflictDetectionStore: vi.fn(() => ({
+    getConflictsForPackageByID: mockGetConflictsForPackageByID
   }))
 }))
 
@@ -53,7 +61,10 @@ describe('PackEnableToggle', () => {
   const mountComponent = ({
     props = {},
     installedPacks = {}
-  }: Record<string, any> = {}): VueWrapper => {
+  }: {
+    props?: Record<string, unknown>
+    installedPacks?: Record<string, unknown>
+  } = {}): VueWrapper => {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -65,7 +76,9 @@ describe('PackEnableToggle', () => {
       enablePack: mockEnablePack,
       disablePack: mockDisablePack,
       installedPacks
-    } as any)
+    } as Partial<ReturnType<typeof useComfyManagerStore>> as ReturnType<
+      typeof useComfyManagerStore
+    >)
 
     return mount(PackEnableToggle, {
       props: {
@@ -73,7 +86,7 @@ describe('PackEnableToggle', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createPinia(), i18n]
+        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n]
       }
     })
   }
@@ -162,5 +175,42 @@ describe('PackEnableToggle', () => {
     // Check that the toggle is enabled after the operation completes
     await nextTick()
     expect(wrapper.findComponent(ToggleSwitch).props('disabled')).toBe(false)
+  })
+
+  describe('conflict warning icon', () => {
+    it('should show warning icon when package has conflicts', () => {
+      mockGetConflictsForPackageByID.mockReturnValue({
+        package_id: 'test-pack',
+        package_name: 'Test Pack',
+        has_conflict: true,
+        conflicts: [
+          {
+            type: 'import_failed',
+            current_value: 'installed',
+            required_value: 'error message'
+          }
+        ],
+        is_compatible: false
+      })
+
+      mockIsPackEnabled.mockReturnValue(true)
+      const wrapper = mountComponent()
+
+      // Check if warning icon exists
+      const warningIcon = wrapper.find('.icon-\\[lucide--triangle-alert\\]')
+      expect(warningIcon.exists()).toBe(true)
+      expect(warningIcon.classes()).toContain('text-warning-background')
+    })
+
+    it('should not show warning icon when package has no conflicts', () => {
+      mockGetConflictsForPackageByID.mockReturnValue(null)
+
+      mockIsPackEnabled.mockReturnValue(true)
+      const wrapper = mountComponent()
+
+      // Check if warning icon does not exist
+      const warningIcon = wrapper.find('.icon-\\[lucide--triangle-alert\\]')
+      expect(warningIcon.exists()).toBe(false)
+    })
   })
 })

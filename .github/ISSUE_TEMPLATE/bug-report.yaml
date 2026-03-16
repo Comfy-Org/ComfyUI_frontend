@@ -10,10 +10,7 @@ body:
       options:
         - label: I am running the latest version of ComfyUI
           required: true
-        - label: I have searched existing issues to make sure this isn't a duplicate
-          required: true
-        - label: I have tested with all custom nodes disabled ([see how](https://docs.comfy.org/troubleshooting/custom-node-issues#step-1%3A-test-with-all-custom-nodes-disabled))
-          required: true
+        - label: I have custom nodes enabled
 
   - type: textarea
     id: description
@@ -60,7 +57,7 @@ body:
     attributes:
       label: ComfyUI Frontend Version
       description: Found in Settings > About (e.g., "1.3.45")
-      placeholder: "1.3.45"
+      placeholder: '1.3.45'
     validations:
       required: true
 

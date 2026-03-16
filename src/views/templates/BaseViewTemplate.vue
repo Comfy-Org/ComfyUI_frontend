@@ -22,7 +22,8 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
 
-import { electronAPI, isElectron, isNativeWindow } from '@/utils/envUtil'
+import { electronAPI, isNativeWindow } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
 
 const { dark = false } = defineProps<{
   dark?: boolean
@@ -40,7 +41,7 @@ const lightTheme = {
 
 const topMenuRef = ref<HTMLDivElement | null>(null)
 onMounted(async () => {
-  if (isElectron()) {
+  if (isDesktop) {
     await nextTick()
 
     electronAPI().changeTheme({

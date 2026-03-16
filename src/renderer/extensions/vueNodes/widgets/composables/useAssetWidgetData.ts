@@ -1,9 +1,8 @@
 import { computed, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { DropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
+import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -34,34 +33,17 @@ export function useAssetWidgetData(
 
     const assets = computed<AssetItem[]>(() => {
       const resolvedType = toValue(nodeType)
-      return resolvedType
-        ? (assetsStore.modelAssetsByNodeType.get(resolvedType) ?? [])
-        : []
+      return resolvedType ? (assetsStore.getAssets(resolvedType) ?? []) : []
     })
 
     const isLoading = computed(() => {
       const resolvedType = toValue(nodeType)
-      return resolvedType
-        ? (assetsStore.modelLoadingByNodeType.get(resolvedType) ?? false)
-        : false
+      return resolvedType ? assetsStore.isModelLoading(resolvedType) : false
     })
 
     const error = computed<Error | null>(() => {
       const resolvedType = toValue(nodeType)
-      return resolvedType
-        ? (assetsStore.modelErrorByNodeType.get(resolvedType) ?? null)
-        : null
-    })
-
-    const dropdownItems = computed<DropdownItem[]>(() => {
-      return assets.value.map((asset) => ({
-        id: asset.id,
-        name:
-          (asset.user_metadata?.filename as string | undefined) ?? asset.name,
-        label: asset.name,
-        mediaSrc: asset.preview_url ?? '',
-        metadata: ''
-      }))
+      return resolvedType ? (assetsStore.getError(resolvedType) ?? null) : null
     })
 
     watch(
@@ -71,9 +53,10 @@ export function useAssetWidgetData(
           return
         }
 
-        const hasData = assetsStore.modelAssetsByNodeType.has(currentNodeType)
+        const isLoading = assetsStore.isModelLoading(currentNodeType)
+        const hasBeenInitialized = assetsStore.hasAssetKey(currentNodeType)
 
-        if (!hasData) {
+        if (!isLoading && !hasBeenInitialized) {
           await assetsStore.updateModelsForNodeType(currentNodeType)
         }
       },
@@ -83,7 +66,6 @@ export function useAssetWidgetData(
     return {
       category,
       assets,
-      dropdownItems,
       isLoading,
       error
     }
@@ -91,8 +73,7 @@ export function useAssetWidgetData(
 
   return {
     category: computed(() => undefined),
-    assets: computed(() => []),
-    dropdownItems: computed(() => []),
+    assets: computed<AssetItem[]>(() => []),
     isLoading: computed(() => false),
     error: computed(() => null)
   }

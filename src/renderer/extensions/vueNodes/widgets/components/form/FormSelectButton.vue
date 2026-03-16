@@ -1,10 +1,7 @@
 <template>
   <div
     :class="
-      cn(
-        WidgetInputBaseClass,
-        'p-1 inline-flex justify-center items-center gap-1'
-      )
+      cn(WidgetInputBaseClass, 'flex w-full min-w-0 items-center gap-1 p-1')
     "
   >
     <button
@@ -12,22 +9,24 @@
       :key="getOptionValue(option, index)"
       :class="
         cn(
-          'flex-1 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out',
-          'bg-transparent border-none',
+          'flex h-6 min-w-0 flex-1 items-center justify-center gap-1 truncate rounded-sm px-5 py-[5px] transition-all duration-150 ease-in-out',
+          'border-none bg-transparent',
           'text-center text-xs font-normal',
           {
             'bg-interface-menu-component-surface-selected':
-              isSelected(option) && !disabled,
-            'hover:bg-interface-menu-component-surface-hovered':
-              !isSelected(option) && !disabled,
-            'opacity-50 cursor-not-allowed': disabled,
+              isSelected(index) && !disabled,
+            'hover:bg-interface-menu-component-surface-selected/50':
+              !isSelected(index) && !disabled,
+            'cursor-not-allowed opacity-50': disabled,
             'cursor-pointer': !disabled
           },
-          isSelected(option) && !disabled ? 'text-primary' : 'text-secondary'
+          isSelected(index) && !disabled
+            ? 'text-text-primary'
+            : 'text-text-secondary'
         )
       "
       :disabled="disabled"
-      @click="handleSelect(option)"
+      @click="handleSelect(index)"
     >
       {{ getOptionLabel(option) }}
     </button>
@@ -37,14 +36,18 @@
 <script
   setup
   lang="ts"
-  generic="T extends string | number | { label: string; value: any }"
+  generic="
+    T extends string | number | { label: string; value: string | number }
+  "
 >
 import { cn } from '@/utils/tailwindUtil'
 
 import { WidgetInputBaseClass } from '../layout'
 
+type ModelValue = T extends object ? T['value'] : T
+
 interface Props {
-  modelValue: string | null | undefined
+  modelValue: ModelValue | null | undefined
   options: T[]
   optionLabel?: string // PrimeVue compatible prop
   optionValue?: string // PrimeVue compatible prop
@@ -52,56 +55,61 @@ interface Props {
 }
 
 interface Emits {
-  'update:modelValue': [value: string]
+  'update:modelValue': [value: ModelValue]
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  disabled: false,
-  optionLabel: 'label',
-  optionValue: 'value'
-})
+const {
+  modelValue,
+  options,
+  optionLabel = 'label',
+  optionValue = 'value',
+  disabled
+} = defineProps<Props>()
 
 const emit = defineEmits<Emits>()
 
 // handle both string/number arrays and object arrays with PrimeVue compatibility
-const getOptionValue = (option: T, index: number): string => {
-  if (typeof option === 'object' && option !== null) {
-    const valueField = props.optionValue
-    const value =
-      (option as any)[valueField] ??
-      (option as any).value ??
-      (option as any).name ??
-      (option as any).label ??
-      index
-    return String(value)
+const getOptionValue = (option: T, index: number): ModelValue => {
+  if (typeof option !== 'object') {
+    return option as ModelValue
   }
-  return String(option)
+
+  const valueField = optionValue
+  const optionRecord = option as Record<string, unknown>
+  const value =
+    optionRecord[valueField] ??
+    option.value ??
+    optionRecord.name ??
+    option.label ??
+    index
+  return value as ModelValue
 }
 
 // for display with PrimeVue compatibility
 const getOptionLabel = (option: T): string => {
   if (typeof option === 'object' && option !== null) {
-    const labelField = props.optionLabel
-    return (
-      (option as any)[labelField] ??
-      (option as any).label ??
-      (option as any).name ??
-      (option as any).value ??
-      String(option)
+    const labelField = optionLabel
+    const optionRecord = option as Record<string, unknown>
+    return String(
+      optionRecord[labelField] ??
+        option.label ??
+        optionRecord.name ??
+        option.value ??
+        option
     )
   }
   return String(option)
 }
 
-const isSelected = (option: T): boolean => {
-  const optionValue = getOptionValue(option, props.options.indexOf(option))
-  return optionValue === String(props.modelValue ?? '')
+const isSelected = (index: number): boolean => {
+  const optVal = getOptionValue(options[index], index)
+  return String(optVal) === String(modelValue ?? '')
 }
 
-const handleSelect = (option: T) => {
-  if (props.disabled) return
+const handleSelect = (index: number) => {
+  if (disabled) return
 
-  const optionValue = getOptionValue(option, props.options.indexOf(option))
-  emit('update:modelValue', optionValue)
+  const optVal = getOptionValue(options[index], index)
+  emit('update:modelValue', optVal)
 }
 </script>

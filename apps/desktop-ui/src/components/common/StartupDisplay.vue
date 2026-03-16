@@ -22,7 +22,11 @@
         <h1 v-if="title" class="font-inter font-bold text-3xl text-neutral-300">
           {{ title }}
         </h1>
-        <p v-if="statusText" class="text-lg text-neutral-400">
+        <p
+          v-if="statusText"
+          class="text-lg text-neutral-400"
+          data-testid="startup-status-text"
+        >
           {{ statusText }}
         </p>
       </div>

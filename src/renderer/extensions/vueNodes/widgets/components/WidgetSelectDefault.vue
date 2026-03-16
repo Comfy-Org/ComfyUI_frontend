@@ -1,8 +1,10 @@
 <template>
   <WidgetLayoutField :widget>
-    <Select
-      v-model="localValue"
+    <SelectPlus
+      v-model="modelValue"
       :invalid
+      :filter="selectOptions.length > 4"
+      auto-filter-focus
       :options="selectOptions"
       v-bind="combinedProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
@@ -10,19 +12,30 @@
       size="small"
       :pt="{
         option: 'text-xs',
-        dropdown: 'w-8'
+        dropdown: 'w-8',
+        label: cn('min-w-[4ch] truncate', $slots.default && 'mr-5'),
+        overlay: 'w-fit min-w-full'
       }"
       data-capture-wheel="true"
-      @update:model-value="onChange"
-    />
+      @show="refreshOptions"
+      @filter="refreshOptions"
+    >
+      <template #dropdownicon>
+        <i
+          class="icon-[lucide--chevron-down] size-4 text-component-node-foreground-secondary"
+        />
+      </template>
+    </SelectPlus>
+    <div class="absolute top-5 right-8 flex h-4 w-7 -translate-y-4/5">
+      <slot />
+    </div>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import Select from 'primevue/select'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
-import { useWidgetValue } from '@/composables/graph/useWidgetValue'
+import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -34,43 +47,44 @@ import {
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const props = defineProps<{
-  widget: SimplifiedWidget<string | number | undefined>
-  modelValue: string | number | undefined
-}>()
+interface Props {
+  widget: SimplifiedWidget<string | undefined>
+}
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string | number | undefined]
-}>()
+const props = defineProps<Props>()
 
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useWidgetValue({
-  widget: props.widget,
-  modelValue: props.modelValue,
-  defaultValue: props.widget.options?.values?.[0] || '',
-  emit
+function resolveValues(values: unknown): string[] {
+  if (typeof values === 'function') return values()
+  if (Array.isArray(values)) return values
+  return []
+}
+
+const modelValue = defineModel<string | undefined>({
+  default(props: Props) {
+    const values = props.widget.options?.values
+    const resolved = typeof values === 'function' ? values() : values
+    return Array.isArray(resolved) ? (resolved[0] ?? '') : ''
+  }
 })
 
 // Transform compatibility props for overlay positioning
 const transformCompatProps = useTransformCompatOverlayProps()
 
-// Extract select options from widget options
+const refreshTrigger = ref(0)
+function refreshOptions() {
+  refreshTrigger.value++
+}
 const selectOptions = computed(() => {
-  const options = props.widget.options
-
-  if (options?.values && Array.isArray(options.values)) {
-    return options.values
-  }
-
-  return []
+  void refreshTrigger.value
+  return resolveValues(props.widget.options?.values)
 })
 const invalid = computed(
-  () => !!localValue.value && !selectOptions.value.includes(localValue.value)
+  () => !!modelValue.value && !selectOptions.value.includes(modelValue.value)
 )
 
 const combinedProps = computed(() => ({
   ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
   ...transformCompatProps.value,
-  ...(invalid.value ? { placeholder: `${localValue.value}` } : {})
+  ...(invalid.value ? { placeholder: `${modelValue.value}` } : {})
 }))
 </script>

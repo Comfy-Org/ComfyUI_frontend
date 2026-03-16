@@ -13,7 +13,78 @@
     option-label="name"
     unstyled
     :max-selected-labels="0"
-    :pt="pt"
+    :pt="{
+      root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
+        class: cn(
+          'relative inline-flex cursor-pointer select-none',
+          size === 'md' ? 'h-8' : 'h-10',
+          'rounded-lg bg-secondary-background text-base-foreground',
+          'transition-all duration-200 ease-in-out',
+          'hover:bg-secondary-background-hover',
+          'border-[2.5px] border-solid',
+          selectedCount > 0 ? 'border-base-foreground' : 'border-transparent',
+          'focus-within:border-base-foreground',
+          props.disabled &&
+            'cursor-default opacity-30 hover:bg-secondary-background'
+        )
+      }),
+      labelContainer: {
+        class: cn(
+          'flex flex-1 items-center overflow-hidden py-2 whitespace-nowrap',
+          size === 'md' ? 'pl-3' : 'pl-4'
+        )
+      },
+      label: {
+        class: 'p-0'
+      },
+      dropdown: {
+        class: 'flex shrink-0 cursor-pointer items-center justify-center px-3'
+      },
+      header: () => ({
+        class:
+          showSearchBox || showSelectedCount || showClearButton
+            ? 'block'
+            : 'hidden'
+      }),
+      // Overlay & list visuals unchanged
+      overlay: {
+        class: cn(
+          'mt-2 rounded-lg p-2',
+          'bg-base-background',
+          'text-base-foreground',
+          'border border-solid border-border-default'
+        )
+      },
+      listContainer: () => ({
+        style: { maxHeight: `min(${listMaxHeight}, 50vh)` },
+        class: 'scrollbar-custom'
+      }),
+      list: {
+        class: 'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
+      },
+      // Option row hover and focus tone
+      option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
+        class: cn(
+          'flex h-10 cursor-pointer items-center gap-2 rounded-lg px-2',
+          'hover:bg-secondary-background-hover',
+          // Add focus/highlight state for keyboard navigation
+          context?.focused &&
+            'bg-secondary-background-selected hover:bg-secondary-background-selected'
+        )
+      }),
+      // Hide built-in checkboxes entirely via PT (no :deep)
+      pcHeaderCheckbox: {
+        root: { class: 'hidden' },
+        style: { display: 'none' }
+      },
+      pcOptionCheckbox: {
+        root: { class: 'hidden' },
+        style: { display: 'none' }
+      },
+      emptyMessage: {
+        class: 'px-3 pb-4 text-sm text-muted-foreground'
+      }
+    }"
     :aria-label="label || t('g.multiSelectDropdown')"
     role="combobox"
     :aria-expanded="false"
@@ -25,13 +96,12 @@
       #header
     >
       <div class="flex flex-col px-2 pt-2 pb-0">
-        <SearchBox
+        <SearchInput
           v-if="showSearchBox"
           v-model="searchQuery"
           :class="showSelectedCount || showClearButton ? 'mb-2' : ''"
-          :show-order="true"
-          :show-border="true"
-          :place-holder="searchPlaceholder"
+          :placeholder="searchPlaceholder"
+          size="sm"
         />
         <div
           v-if="showSelectedCount || showClearButton"
@@ -39,7 +109,7 @@
         >
           <span
             v-if="showSelectedCount"
-            class="px-1 text-sm text-neutral-400 dark-theme:text-zinc-500"
+            class="px-1 text-sm text-base-foreground"
           >
             {{
               selectedCount > 0
@@ -47,27 +117,27 @@
                 : $t('g.itemSelected', { selectedCount })
             }}
           </span>
-          <TextButton
+          <Button
             v-if="showClearButton"
-            :label="$t('g.clearAll')"
-            type="transparent"
-            size="fit-content"
-            class="text-sm text-blue-500 dark-theme:text-blue-600"
+            variant="textonly"
+            size="md"
             @click.stop="selectedItems = []"
-          />
+          >
+            {{ $t('g.clearAll') }}
+          </Button>
         </div>
-        <div class="my-4 h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
+        <div class="my-4 h-px bg-border-default"></div>
       </div>
     </template>
 
     <!-- Trigger value (keep text scale identical) -->
     <template #value>
-      <span class="text-sm text-zinc-700 dark-theme:text-smoke-200">
+      <span :class="size === 'md' ? 'text-xs' : 'text-sm'">
         {{ label }}
       </span>
       <span
         v-if="selectedCount > 0"
-        class="pointer-events-none absolute -top-2 -right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 text-xs font-semibold text-white dark-theme:bg-blue-500"
+        class="pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 items-center justify-center rounded-full bg-base-foreground text-xs font-semibold text-base-background"
       >
         {{ selectedCount }}
       </span>
@@ -75,30 +145,32 @@
 
     <!-- Chevron size identical to current -->
     <template #dropdownicon>
-      <i class="icon-[lucide--chevron-down] text-lg text-neutral-400" />
+      <i class="icon-[lucide--chevron-down] text-muted-foreground" />
     </template>
 
     <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->
     <template #option="slotProps">
-      <div class="flex items-center gap-2" :style="popoverStyle">
+      <div
+        role="button"
+        class="flex cursor-pointer items-center gap-2"
+        :style="popoverStyle"
+      >
         <div
-          class="flex h-4 w-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+          class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
           :class="
             slotProps.selected
-              ? 'bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
-              : 'bg-neutral-100 dark-theme:bg-zinc-700'
+              ? 'bg-primary-background'
+              : 'bg-secondary-background'
           "
         >
           <i
             v-if="slotProps.selected"
-            class="text-bold icon-[lucide--check] text-xs text-white"
+            class="text-bold icon-[lucide--check] text-xs text-base-foreground"
           />
         </div>
-        <Button
-          class="border-none bg-transparent text-left outline-none"
-          unstyled
-          >{{ slotProps.option.name }}</Button
-        >
+        <span>
+          {{ slotProps.option.name }}
+        </span>
       </div>
     </template>
   </MultiSelect>
@@ -107,17 +179,16 @@
 <script setup lang="ts">
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
-import Button from 'primevue/button'
 import type { MultiSelectPassThroughMethodOptions } from 'primevue/multiselect'
 import MultiSelect from 'primevue/multiselect'
 import { computed, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/input/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
-import TextButton from '../button/TextButton.vue'
 import type { SelectOption } from './types'
 
 type Option = SelectOption
@@ -129,6 +200,8 @@ defineOptions({
 interface Props {
   /** Input label shown on the trigger button */
   label?: string
+  /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
+  size?: 'lg' | 'md'
   /** Show search box in the panel header */
   showSearchBox?: boolean
   /** Show selected count text in the panel header */
@@ -148,6 +221,7 @@ interface Props {
 }
 const {
   label,
+  size = 'lg',
   showSearchBox = false,
   showSelectedCount = false,
   showClearButton = false,
@@ -203,70 +277,4 @@ const filteredOptions = computed(() => {
 
   return [...selectedButNotInResults, ...searchResults]
 })
-
-const pt = computed(() => ({
-  root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
-    class: cn(
-      'h-10 relative inline-flex cursor-pointer select-none',
-      'rounded-lg bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
-      'transition-all duration-200 ease-in-out',
-      'border-[2.5px] border-solid',
-      selectedCount.value > 0
-        ? 'border-blue-400 dark-theme:border-blue-500'
-        : 'border-transparent',
-      'focus-within:border-blue-400 dark-theme:focus-within:border-blue-500',
-      { 'opacity-60 cursor-default': props.disabled }
-    )
-  }),
-  labelContainer: {
-    class:
-      'flex-1 flex items-center overflow-hidden whitespace-nowrap pl-4 py-2 '
-  },
-  label: {
-    class: 'p-0'
-  },
-  dropdown: {
-    class: 'flex shrink-0 cursor-pointer items-center justify-center px-3'
-  },
-  header: () => ({
-    class:
-      showSearchBox || showSelectedCount || showClearButton ? 'block' : 'hidden'
-  }),
-  // Overlay & list visuals unchanged
-  overlay: {
-    class: cn(
-      'mt-2 rounded-lg py-2 px-2',
-      'bg-white dark-theme:bg-zinc-800',
-      'text-neutral dark-theme:text-white',
-      'border border-solid border-neutral-200 dark-theme:border-zinc-700'
-    )
-  },
-  listContainer: () => ({
-    style: { maxHeight: `min(${listMaxHeight}, 50vh)` },
-    class: 'scrollbar-custom'
-  }),
-  list: {
-    class: 'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
-  },
-  // Option row hover and focus tone
-  option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
-    class: [
-      'flex gap-2 items-center h-10 px-2 rounded-lg',
-      'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
-      // Add focus/highlight state for keyboard navigation
-      {
-        'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context?.focused
-      }
-    ]
-  }),
-  // Hide built-in checkboxes entirely via PT (no :deep)
-  pcHeaderCheckbox: {
-    root: { class: 'hidden' },
-    style: { display: 'none' }
-  },
-  pcOptionCheckbox: {
-    root: { class: 'hidden' },
-    style: { display: 'none' }
-  }
-}))
 </script>

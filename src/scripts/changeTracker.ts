@@ -2,6 +2,7 @@ import _ from 'es-toolkit/compat'
 import * as jsondiffpatch from 'jsondiffpatch'
 import log from 'loglevel'
 
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   ComfyWorkflow,
@@ -10,7 +11,7 @@ import {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 import { api } from './api'
@@ -28,6 +29,14 @@ logger.setLevel('info')
 export class ChangeTracker {
   static MAX_HISTORY = 50
   /**
+   * Guard flag to prevent checkState from running during loadGraphData.
+   * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
+   * contains the NEW workflow's data while activeWorkflow still points to
+   * the OLD workflow. Any checkState call in that window would serialize
+   * the wrong graph into the old workflow's activeState, corrupting it.
+   */
+  static isLoadingGraph = false
+  /**
    * The active state of the workflow.
    */
   activeState: ComfyWorkflowJSON
@@ -40,7 +49,7 @@ export class ChangeTracker {
   _restoringState: boolean = false
 
   ds?: { scale: number; offset: [number, number] }
-  nodeOutputs?: Record<string, any>
+  nodeOutputs?: Record<string, ExecutedWsMessage['output']>
 
   private subgraphState?: {
     navigation: string[]
@@ -76,6 +85,7 @@ export class ChangeTracker {
       scale: app.canvas.ds.scale,
       offset: [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
     }
+    this.nodeOutputs = useNodeOutputStore().snapshotOutputs()
     const navigation = useSubgraphNavigationStore().exportState()
     // Always store the navigation state, even if empty (root level)
     this.subgraphState = { navigation }
@@ -96,13 +106,13 @@ export class ChangeTracker {
       const activeId = navigation.at(-1)
       if (activeId) {
         // Navigate to the saved subgraph
-        const subgraph = app.graph.subgraphs.get(activeId)
+        const subgraph = app.rootGraph.subgraphs.get(activeId)
         if (subgraph) {
           app.canvas.setGraph(subgraph)
         }
       } else {
         // Empty navigation array means root level
-        app.canvas.setGraph(app.graph)
+        app.canvas.setGraph(app.rootGraph)
       }
     }
   }
@@ -129,8 +139,8 @@ export class ChangeTracker {
   }
 
   checkState() {
-    if (!app.graph || this.changeCount) return
-    const currentState = clone(app.graph.serialize()) as ComfyWorkflowJSON
+    if (!app.graph || this.changeCount || ChangeTracker.isLoadingGraph) return
+    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
     if (!this.activeState) {
       this.activeState = currentState
       return
@@ -303,11 +313,11 @@ export class ChangeTracker {
     const prompt = LGraphCanvas.prototype.prompt
     LGraphCanvas.prototype.prompt = function (
       title: string,
-      value: any,
-      callback: (v: any) => void,
-      event: any
+      value: string | number,
+      callback: (v: string) => void,
+      event: CanvasPointerEvent
     ) {
-      const extendedCallback = (v: any) => {
+      const extendedCallback = (v: string) => {
         callback(v)
         checkState()
       }
@@ -338,7 +348,7 @@ export class ChangeTracker {
     api.addEventListener('executed', (e: CustomEvent<ExecutedWsMessage>) => {
       const detail = e.detail
       const workflow =
-        useExecutionStore().queuedPrompts[detail.prompt_id]?.workflow
+        useExecutionStore().queuedJobs[detail.prompt_id]?.workflow
       const changeTracker = workflow?.changeTracker
       if (!changeTracker) return
       changeTracker.nodeOutputs ??= {}

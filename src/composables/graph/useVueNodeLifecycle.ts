@@ -4,26 +4,19 @@ import { shallowRef, watch } from 'vue'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { useVueNodesMigrationDismissed } from '@/composables/useVueNodesMigrationDismissed'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
-import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { app as comfyApp } from '@/scripts/app'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
   const layoutMutations = useLayoutMutations()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
-
-  const { startSync } = useLayoutSync()
-
-  const isVueNodeToastDismissed = useVueNodesMigrationDismissed()
+  const { startSync, stopSync } = useLayoutSync()
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -61,11 +54,13 @@ function useVueNodeLifecycleIndividual() {
       )
     }
 
-    // Initialize layout sync (one-way: Layout Store → LiteGraph)
+    // Start sync AFTER seeding so bootstrap operations don't trigger
+    // the Layout→LiteGraph writeback loop redundantly.
     startSync(canvasStore.canvas)
   }
 
   const disposeNodeManagerAndSyncs = () => {
+    stopSync()
     if (!nodeManager.value) return
 
     try {
@@ -79,19 +74,9 @@ function useVueNodeLifecycleIndividual() {
   // Watch for Vue nodes enabled state changes
   watch(
     () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
-    (enabled, wasEnabled) => {
+    (enabled) => {
       if (enabled) {
         initializeNodeManager()
-        ensureCorrectLayoutScale(
-          comfyApp.canvas?.graph?.extra.workflowRendererVersion
-        )
-        if (!wasEnabled && !isVueNodeToastDismissed.value) {
-          useToastStore().add({
-            group: 'vue-nodes-migration',
-            severity: 'info',
-            life: 0
-          })
-        }
       }
     },
     { immediate: true }
@@ -100,26 +85,17 @@ function useVueNodeLifecycleIndividual() {
   whenever(
     () => !shouldRenderVueNodes.value,
     () => {
-      ensureCorrectLayoutScale(
-        comfyApp.canvas?.graph?.extra.workflowRendererVersion
-      )
       disposeNodeManagerAndSyncs()
       comfyApp.canvas?.setDirty(true, true)
     }
   )
 
-  // Consolidated watch for slot layout sync management
+  // Clear stale slot layouts when switching modes
   watch(
     () => shouldRenderVueNodes.value,
-    (vueMode, oldVueMode) => {
-      const modeChanged = vueMode !== oldVueMode
-
-      // Clear stale slot layouts when switching modes
-      if (modeChanged) {
-        layoutStore.clearAllSlotLayouts()
-      }
-    },
-    { immediate: true, flush: 'sync' }
+    () => {
+      layoutStore.clearAllSlotLayouts()
+    }
   )
 
   // Handle case where Vue nodes are enabled but graph starts empty

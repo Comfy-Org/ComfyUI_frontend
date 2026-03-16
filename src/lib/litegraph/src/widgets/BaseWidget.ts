@@ -1,6 +1,9 @@
+import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
+import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   CanvasPointer,
   LGraphCanvas,
@@ -9,13 +12,24 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  NodeBindable,
+  TWidgetType
+} from '@/lib/litegraph/src/types/widgets'
+import { usePromotionStore } from '@/stores/promotionStore'
+import type { WidgetState } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
   width: number
   /** Synonym for "low quality". */
   showText?: boolean
+  /** When true, suppresses the promoted outline color (e.g. for projected copies on SubgraphNode). */
+  suppressPromotedOutline?: boolean
+  /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
+  previewImages?: HTMLImageElement[]
 }
 
 interface DrawTruncatingTextOptions extends DrawWidgetOptions {
@@ -34,7 +48,7 @@ export interface WidgetEventOptions {
 }
 
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
-  implements IBaseWidget
+  implements IBaseWidget, NodeBindable
 {
   /** From node edge to widget edge */
   static margin = 15
@@ -56,29 +70,45 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     maxWidth?: number
   }
 
-  #node: LGraphNode
+  private _node: LGraphNode
   /** The node that this widget belongs to. */
   get node() {
-    return this.#node
+    return this._node
   }
 
   linkedWidgets?: IBaseWidget[]
   name: string
   options: TWidget['options']
-  label?: string
   type: TWidget['type']
   y: number = 0
   last_y?: number
   width?: number
-  disabled?: boolean
   computedDisabled?: boolean
+  tooltip?: string
+
+  private _state: Omit<WidgetState, 'nodeId'> &
+    Partial<Pick<WidgetState, 'nodeId'>>
+
+  get label(): string | undefined {
+    return this._state.label
+  }
+  set label(value: string | undefined) {
+    this._state.label = value
+  }
+
   hidden?: boolean
   advanced?: boolean
-  promoted?: boolean
-  tooltip?: string
+
+  get disabled(): boolean | undefined {
+    return this._state.disabled
+  }
+  set disabled(value: boolean | undefined) {
+    this._state.disabled = value ?? false
+  }
+
   element?: HTMLElement
   callback?(
-    value: any,
+    value: TWidget['value'],
     canvas?: LGraphCanvas,
     node?: LGraphNode,
     pos?: Point,
@@ -96,20 +126,36 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     canvas: LGraphCanvas
   ): boolean
 
-  #value?: TWidget['value']
   get value(): TWidget['value'] {
-    return this.#value
+    return this._state.value as TWidget['value']
+  }
+  set value(value: TWidget['value']) {
+    this._state.value = value
   }
 
-  set value(value: TWidget['value']) {
-    this.#value = value
+  /**
+   * Associates this widget with a node ID and registers it in the WidgetValueStore.
+   * Once set, value reads/writes will be delegated to the store.
+   */
+  setNodeId(nodeId: NodeId): void {
+    const graphId = this.node.graph?.rootGraph.id
+    if (!graphId) return
+
+    this._state = useWidgetValueStore().registerWidget(graphId, {
+      ...this._state,
+      // BaseWidget: this.value getter returns this._state.value. So value: this.value === value: this._state.value.
+      // BaseDOMWidgetImpl: this.value getter returns options.getValue?.() ?? ''. Resolves the correct initial value instead of undefined.
+      // I.e., calls overriden getter -> options.getValue() -> correct value (https://github.com/Comfy-Org/ComfyUI_frontend/issues/9194).
+      value: this.value,
+      nodeId
+    })
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
   constructor(widget: TWidget, node: LGraphNode)
   constructor(widget: TWidget & { node: LGraphNode }, node?: LGraphNode) {
     // Private fields
-    this.#node = node ?? widget.node
+    this._node = node ?? widget.node
 
     // The set and get functions for DOM widget values are hacked on to the options object;
     // attempting to set value before options will throw.
@@ -140,18 +186,45 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       displayValue,
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
-      promoted,
+      label,
+      disabled,
+      value,
+      linkedWidgets,
       ...safeValues
     } = widget
 
     Object.assign(this, safeValues)
+
+    this._state = {
+      name: this.name,
+      type: this.type as TWidgetType,
+      value,
+      label,
+      disabled: disabled ?? false,
+      serialize: this.serialize,
+      options: this.options
+    }
   }
 
-  get outline_color() {
-    if (this.promoted) return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
+  getOutlineColor(suppressPromotedOutline = false) {
+    const graphId = this.node.graph?.rootGraph.id
+    if (
+      graphId &&
+      !suppressPromotedOutline &&
+      usePromotionStore().isPromotedByAny(
+        graphId,
+        String(this.node.id),
+        this.name
+      )
+    )
+      return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
     return this.advanced
       ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
       : LiteGraph.WIDGET_OUTLINE_COLOR
+  }
+
+  get outline_color() {
+    return this.getOutlineColor()
   }
 
   get background_color() {
@@ -208,13 +281,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   protected drawWidgetShape(
     ctx: CanvasRenderingContext2D,
-    { width, showText }: DrawWidgetOptions
+    { width, showText, suppressPromotedOutline }: DrawWidgetOptions
   ): void {
     const { height, y } = this
     const { margin } = BaseWidget
 
     ctx.textAlign = 'left'
-    ctx.strokeStyle = this.outline_color
+    ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
     ctx.fillStyle = this.background_color
     ctx.beginPath()
 
@@ -225,6 +298,41 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     }
     ctx.fill()
     if (showText && !this.computedDisabled) ctx.stroke()
+  }
+
+  /**
+   * Draws a placeholder for widgets that only have a Vue implementation.
+   * @param ctx The canvas context
+   * @param options The options for drawing the widget
+   * @param label The label to display (e.g., "ImageCrop", "BoundingBox")
+   */
+  protected drawVueOnlyWarning(
+    ctx: CanvasRenderingContext2D,
+    { width, suppressPromotedOutline }: DrawWidgetOptions,
+    label: string
+  ): void {
+    const { y, height } = this
+
+    ctx.save()
+
+    ctx.fillStyle = this.background_color
+    ctx.fillRect(15, y, width - 30, height)
+
+    ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+    ctx.strokeRect(15, y, width - 30, height)
+
+    ctx.fillStyle = this.text_color
+    ctx.font = '11px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+
+    ctx.fillText(
+      `${label}: ${t('widgets.node2only')}`,
+      width / 2,
+      y + height / 2
+    )
+
+    ctx.restore()
   }
 
   /**
@@ -242,8 +350,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     // Measure label and value
     const { displayName, _displayValue } = this
-    const labelWidth = ctx.measureText(displayName).width
-    const valueWidth = ctx.measureText(_displayValue).width
+    const labelWidth = cachedMeasureText(ctx, displayName)
+    const valueWidth = cachedMeasureText(ctx, _displayValue)
 
     const gap = BaseWidget.labelValueGap
     const x = margin * 2 + leftPadding

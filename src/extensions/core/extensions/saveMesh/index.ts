@@ -6,7 +6,15 @@ import { createExportMenuItems } from '../load3d/exportMenuHelper'
 import Load3DConfiguration from '../load3d/Load3DConfiguration'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import { api } from '@/scripts/api'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+
+type SaveMeshOutput = NodeOutputWith<{
+  '3d'?: ResultItem[]
+}>
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { persistThumbnail } from '@/platform/assets/utils/assetPreviewUtil'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
@@ -20,7 +28,10 @@ const inputSpec: CustomInputSpec = {
 useExtensionService().registerExtension({
   name: 'Comfy.SaveGLB',
 
-  async beforeRegisterNodeDef(_nodeType, nodeData) {
+  async beforeRegisterNodeDef(
+    _nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if ('SaveGLB' === nodeData.name) {
       // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D']
@@ -54,10 +65,12 @@ useExtensionService().registerExtension({
     const load3d = useLoad3dService().getLoad3d(node)
     if (!load3d) return []
 
+    if (load3d.isSplatModel()) return []
+
     return createExportMenuItems(load3d)
   },
 
-  async nodeCreated(node) {
+  async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'SaveGLB') return
 
     const [oldWidth, oldHeight] = node.size
@@ -68,22 +81,40 @@ useExtensionService().registerExtension({
 
     const onExecuted = node.onExecuted
 
-    node.onExecuted = function (message: any) {
-      onExecuted?.apply(this, arguments as any)
+    node.onExecuted = function (output: SaveMeshOutput) {
+      onExecuted?.call(this, output)
 
-      const fileInfo = message['3d'][0]
+      const fileInfo = output['3d']?.[0]
+
+      if (!fileInfo) return
 
       useLoad3d(node).waitForLoad3d((load3d) => {
         const modelWidget = node.widgets?.find((w) => w.name === 'image')
 
         if (load3d && modelWidget) {
-          const filePath = fileInfo['subfolder'] + '/' + fileInfo['filename']
+          const filePath =
+            (fileInfo.subfolder ?? '') + '/' + (fileInfo.filename ?? '')
 
           modelWidget.value = filePath
 
-          const config = new Load3DConfiguration(load3d)
+          const config = new Load3DConfiguration(load3d, node.properties)
 
-          config.configureForSaveMesh(fileInfo['type'], filePath)
+          const loadFolder = fileInfo.type as 'input' | 'output'
+
+          config.configureForSaveMesh(loadFolder, filePath)
+
+          if (api.getServerFeature('assets', false)) {
+            const filename = fileInfo.filename ?? ''
+            const onModelLoaded = () => {
+              load3d.removeEventListener('modelLoadingEnd', onModelLoaded)
+              load3d
+                .captureThumbnail(256, 256)
+                .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+                .then((blob) => persistThumbnail(filename, blob))
+                .catch(() => {})
+            }
+            load3d.addEventListener('modelLoadingEnd', onModelLoaded)
+          }
         }
       })
     }

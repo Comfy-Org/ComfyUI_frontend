@@ -1,0 +1,63 @@
+<template>
+  <div class="flex h-full flex-col">
+    <!-- Assets Grid -->
+    <VirtualGrid
+      class="flex-1"
+      :items="assetItems"
+      :grid-style="gridStyle"
+      @approach-end="emit('approach-end')"
+    >
+      <template #item="{ item }">
+        <MediaAssetCard
+          :asset="item.asset"
+          :selected="isSelected(item.asset.id)"
+          :show-output-count="showOutputCount(item.asset)"
+          :output-count="getOutputCount(item.asset)"
+          @click="emit('select-asset', item.asset)"
+          @context-menu="emit('context-menu', $event, item.asset)"
+          @zoom="emit('zoom', item.asset)"
+          @output-count-click="emit('output-count-click', item.asset)"
+        />
+      </template>
+    </VirtualGrid>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+
+const { assets, isSelected, showOutputCount, getOutputCount } = defineProps<{
+  assets: AssetItem[]
+  isSelected: (assetId: string) => boolean
+  showOutputCount: (asset: AssetItem) => boolean
+  getOutputCount: (asset: AssetItem) => number
+}>()
+
+const emit = defineEmits<{
+  (e: 'select-asset', asset: AssetItem): void
+  (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
+  (e: 'approach-end'): void
+  (e: 'zoom', asset: AssetItem): void
+  (e: 'output-count-click', asset: AssetItem): void
+}>()
+
+type AssetGridItem = { key: string; asset: AssetItem }
+
+const assetItems = computed<AssetGridItem[]>(() =>
+  assets.map((asset) => ({
+    key: `asset-${asset.id}`,
+    asset
+  }))
+)
+
+const gridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 30vw), 1fr))',
+  padding: '0 0.5rem',
+  gap: '0.5rem'
+}
+</script>

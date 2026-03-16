@@ -1,21 +1,25 @@
 <template>
   <Button
     ref="buttonRef"
-    severity="secondary"
+    variant="secondary"
     class="group h-8 rounded-none! bg-comfy-menu-bg p-0 transition-none! hover:rounded-lg! hover:bg-interface-button-hover-surface!"
     :style="buttonStyles"
+    :aria-label="$t('graphCanvasMenu.canvasMode')"
+    aria-haspopup="menu"
+    :aria-expanded="isOpen"
     @click="toggle"
   >
-    <template #default>
-      <div class="flex items-center gap-1 pr-0.5">
-        <div
-          class="rounded-lg bg-interface-panel-selected-surface p-2 group-hover:bg-interface-button-hover-surface"
-        >
-          <i :class="currentModeIcon" class="block h-4 w-4" />
-        </div>
-        <i class="icon-[lucide--chevron-down] block h-4 w-4 pr-1.5" />
+    <div class="flex items-center gap-1 pr-0.5">
+      <div
+        class="rounded-lg bg-interface-panel-selected-surface p-2 group-hover:bg-interface-button-hover-surface"
+      >
+        <i :class="currentModeIcon" class="block size-4" aria-hidden="true" />
       </div>
-    </template>
+      <i
+        class="icon-[lucide--chevron-down] block size-4 pr-1.5"
+        aria-hidden="true"
+      />
+    </div>
   </Button>
 
   <Popover
@@ -26,40 +30,64 @@
     :close-on-escape="true"
     unstyled
     :pt="popoverPt"
+    @show="onPopoverShow"
+    @hide="onPopoverHide"
   >
-    <div class="flex flex-col gap-1">
-      <div
-        class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+    <div
+      ref="menuRef"
+      class="flex flex-col gap-1"
+      role="menu"
+      :aria-label="$t('graphCanvasMenu.canvasMode')"
+    >
+      <button
+        type="button"
+        role="menuitemradio"
+        :aria-checked="!isCanvasReadOnly"
+        :tabindex="!isCanvasReadOnly ? 0 : -1"
+        class="flex w-full cursor-pointer items-center justify-between rounded-sm border-none bg-transparent px-3 py-2 text-sm text-text-primary outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered"
+        :aria-label="$t('graphCanvasMenu.select')"
         @click="setMode('select')"
+        @keydown.arrow-down.prevent="focusNextItem"
+        @keydown.arrow-up.prevent="focusPrevItem"
+        @keydown.escape.prevent="closeAndRestoreFocus"
       >
         <div class="flex items-center gap-2">
-          <i class="icon-[lucide--mouse-pointer-2] h-4 w-4" />
+          <i class="icon-[lucide--mouse-pointer-2] size-4" aria-hidden="true" />
           <span>{{ $t('graphCanvasMenu.select') }}</span>
         </div>
         <span class="text-[9px] text-text-primary">{{
           unlockCommandText
         }}</span>
-      </div>
+      </button>
 
-      <div
-        class="flex cursor-pointer items-center justify-between rounded px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+      <button
+        type="button"
+        role="menuitemradio"
+        :aria-checked="isCanvasReadOnly"
+        :tabindex="isCanvasReadOnly ? 0 : -1"
+        class="flex w-full cursor-pointer items-center justify-between rounded-sm border-none bg-transparent px-3 py-2 text-sm text-text-primary outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered"
+        :aria-label="$t('graphCanvasMenu.hand')"
         @click="setMode('hand')"
+        @keydown.arrow-down.prevent="focusNextItem"
+        @keydown.arrow-up.prevent="focusPrevItem"
+        @keydown.escape.prevent="closeAndRestoreFocus"
       >
         <div class="flex items-center gap-2">
-          <i class="icon-[lucide--hand] h-4 w-4" />
+          <i class="icon-[lucide--hand] size-4" aria-hidden="true" />
           <span>{{ $t('graphCanvasMenu.hand') }}</span>
         </div>
         <span class="text-[9px] text-text-primary">{{ lockCommandText }}</span>
-      </div>
+      </button>
     </div>
   </Popover>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Popover from 'primevue/popover'
-import { computed, ref } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -68,8 +96,10 @@ interface Props {
 }
 
 defineProps<Props>()
-const buttonRef = ref<InstanceType<typeof Button>>()
+const buttonRef = ref<ComponentPublicInstance | null>(null)
 const popover = ref<InstanceType<typeof Popover>>()
+const menuRef = ref<HTMLElement | null>(null)
+const isOpen = ref(false)
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 
@@ -94,7 +124,7 @@ const lockCommandText = computed(() =>
 )
 
 const toggle = (event: Event) => {
-  const el = (buttonRef.value as any)?.$el || buttonRef.value
+  const el = buttonRef.value?.$el || buttonRef.value
   popover.value?.toggle(event, el)
 }
 
@@ -105,6 +135,43 @@ const setMode = (mode: 'select' | 'hand') => {
     void commandStore.execute('Comfy.Canvas.Lock')
   }
   popover.value?.hide()
+}
+
+async function onPopoverShow() {
+  isOpen.value = true
+  await nextTick()
+  const checkedItem = menuRef.value?.querySelector<HTMLElement>(
+    '[aria-checked="true"]'
+  )
+  checkedItem?.focus()
+}
+
+function onPopoverHide() {
+  isOpen.value = false
+}
+
+function closeAndRestoreFocus() {
+  popover.value?.hide()
+  const el = buttonRef.value?.$el || buttonRef.value
+  ;(el as HTMLElement)?.focus()
+}
+
+function focusNextItem(event: KeyboardEvent) {
+  const items = getMenuItems(event)
+  const index = items.indexOf(event.target as HTMLElement)
+  items[(index + 1) % items.length]?.focus()
+}
+
+function focusPrevItem(event: KeyboardEvent) {
+  const items = getMenuItems(event)
+  const index = items.indexOf(event.target as HTMLElement)
+  items[(index - 1 + items.length) % items.length]?.focus()
+}
+
+function getMenuItems(event: KeyboardEvent): HTMLElement[] {
+  const menu = (event.target as HTMLElement).closest('[role="menu"]')
+  if (!menu) return []
+  return Array.from(menu.querySelectorAll('[role="menuitemradio"]'))
 }
 
 const popoverPt = computed(() => ({

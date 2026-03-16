@@ -34,8 +34,25 @@ class Load3dUtils {
     return await resp.json()
   }
 
+  static readonly MAX_UPLOAD_SIZE_MB = 100
+
   static async uploadFile(file: File, subfolder: string) {
     let uploadPath
+
+    const fileSizeMB = file.size / 1024 / 1024
+    if (fileSizeMB > this.MAX_UPLOAD_SIZE_MB) {
+      const message = t('toastMessages.fileTooLarge', {
+        size: fileSizeMB.toFixed(1),
+        maxSize: this.MAX_UPLOAD_SIZE_MB
+      })
+      console.warn(
+        '[Load3D] uploadFile: file too large',
+        fileSizeMB.toFixed(2),
+        'MB'
+      )
+      useToastStore().addAlert(message)
+      return undefined
+    }
 
     try {
       const body = new FormData()
@@ -61,7 +78,7 @@ class Load3dUtils {
         useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
       }
     } catch (error) {
-      console.error('Upload error:', error)
+      console.error('[Load3D] uploadFile: exception', error)
       useToastStore().addAlert(
         error instanceof Error
           ? error.message

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import IconButton from '../button/IconButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import SquareChip from '../chip/SquareChip.vue'
 import CardBottom from './CardBottom.vue'
 import CardContainer from './CardContainer.vue'
@@ -173,7 +173,7 @@ const createCardTemplate = (args: CardStoryArgs) => ({
     CardBottom,
     CardTitle,
     CardDescription,
-    IconButton,
+    Button,
     SquareChip
   },
   setup() {
@@ -222,19 +222,19 @@ const createCardTemplate = (args: CardStoryArgs) => ({
             </template>
             
             <template v-if="args.showTopRight" #top-right>
-              <IconButton
+              <Button
                 class="!bg-white/90 !text-neutral-900"
                 @click="() => console.log('Info clicked')"
               >
                 <i class="icon-[lucide--info] size-4" />
-              </IconButton>
-              <IconButton
+              </Button>
+              <Button
                 class="!bg-white/90"
                 :class="favorited ? '!text-red-500' : '!text-neutral-900'"
                 @click="toggleFavorite"
               >
                 <i class="icon-[lucide--heart] size-4" :class="favorited ? 'fill-current' : ''" />
-              </IconButton>
+              </Button>
             </template>
             
             <template v-if="args.showBottomLeft" #bottom-left>

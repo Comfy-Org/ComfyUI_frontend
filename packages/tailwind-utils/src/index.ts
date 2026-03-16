@@ -1,4 +1,5 @@
-import clsx, { type ClassArray } from 'clsx'
+import { clsx } from 'clsx'
+import type { ClassArray } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
 export type { ClassValue } from 'clsx'

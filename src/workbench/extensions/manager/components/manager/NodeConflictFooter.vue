@@ -2,44 +2,43 @@
   <div class="flex w-full items-center justify-between px-3 py-4">
     <div class="flex w-full items-center justify-between gap-2 pr-1">
       <Button
-        :label="$t('manager.conflicts.conflictInfoTitle')"
-        text
-        severity="secondary"
-        size="small"
-        icon="pi pi-info-circle"
-        :pt="{
-          label: { class: 'text-sm' }
-        }"
+        variant="muted-textonly"
+        size="sm"
+        class="text-sm"
         @click="handleConflictInfoClick"
-      />
+      >
+        <i class="pi pi-info-circle" />
+        {{ $t('manager.conflicts.conflictInfoTitle') }}
+      </Button>
       <Button
-        v-if="props.buttonText"
-        :label="props.buttonText"
-        severity="secondary"
-        size="small"
+        v-if="buttonText"
+        variant="secondary"
+        size="sm"
         @click="handleButtonClick"
-      />
+      >
+        {{ buttonText }}
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-
+import Button from '@/components/ui/button/Button.vue'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useDialogStore } from '@/stores/dialogStore'
 
 interface Props {
   buttonText?: string
   onButtonClick?: () => void
 }
-const props = withDefaults(defineProps<Props>(), {
-  buttonText: undefined,
-  onButtonClick: undefined
-})
+const { buttonText, onButtonClick } = defineProps<Props>()
+const { buildDocsUrl } = useExternalLink()
 const dialogStore = useDialogStore()
 const handleConflictInfoClick = () => {
   window.open(
-    'https://docs.comfy.org/troubleshooting/custom-node-issues',
+    buildDocsUrl('/troubleshooting/custom-node-issues', {
+      includeLocale: true
+    }),
     '_blank'
   )
 }
@@ -47,8 +46,8 @@ const handleButtonClick = () => {
   // Close the conflict dialog
   dialogStore.closeDialog({ key: 'global-node-conflict' })
   // Execute the custom button action if provided
-  if (props.onButtonClick) {
-    props.onButtonClick()
+  if (onButtonClick) {
+    onButtonClick()
   }
 }
 </script>

@@ -10,6 +10,7 @@ import type { ComputedRef, Ref } from 'vue'
 export enum LayoutSource {
   Canvas = 'canvas',
   Vue = 'vue',
+  DOM = 'dom',
   External = 'external'
 }
 
@@ -301,7 +302,6 @@ export interface LayoutStore {
   deleteLinkLayout(linkId: LinkId): void
   deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void
   deleteSlotLayout(key: string): void
-  deleteNodeSlotLayouts(nodeId: NodeId): void
   deleteRerouteLayout(rerouteId: RerouteId): void
   clearAllSlotLayouts(): void
 
@@ -318,6 +318,10 @@ export interface LayoutStore {
 
   // Change subscription
   onChange(callback: (change: LayoutChange) => void): () => void
+  onNodeChange(
+    nodeId: NodeId,
+    callback: (change: LayoutChange) => void
+  ): () => void
 
   // Initialization
   initializeFromLiteGraph(

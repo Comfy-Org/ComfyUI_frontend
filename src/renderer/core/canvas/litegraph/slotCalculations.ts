@@ -45,7 +45,7 @@ export interface SlotPositionContext {
  * @param slot The input slot index
  * @returns Position of the input slot center in graph coordinates
  */
-export function calculateInputSlotPos(
+function calculateInputSlotPos(
   context: SlotPositionContext,
   slot: number
 ): Point {
@@ -93,7 +93,7 @@ export function calculateInputSlotPosFromSlot(
  * @param slot The output slot index
  * @returns Position of the output slot center in graph coordinates
  */
-export function calculateOutputSlotPos(
+function calculateOutputSlotPos(
   context: SlotPositionContext,
   slot: number
 ): Point {
@@ -138,38 +138,41 @@ export function getSlotPosition(
   slotIndex: number,
   isInput: boolean
 ): Point {
-  // Try to get precise position from slot layout (DOM-registered)
-  const slotKey = getSlotKey(String(node.id), slotIndex, isInput)
-  const slotLayout = layoutStore.getSlotLayout(slotKey)
-  if (slotLayout) {
-    return [slotLayout.position.x, slotLayout.position.y]
-  }
-
-  // Fallback: derive position from node layout tree and slot model
-  const nodeLayout = layoutStore.getNodeLayoutRef(String(node.id)).value
-
-  if (nodeLayout) {
-    // Create context from layout tree data
-    const context: SlotPositionContext = {
-      nodeX: nodeLayout.position.x,
-      nodeY: nodeLayout.position.y,
-      nodeWidth: nodeLayout.size.width,
-      nodeHeight: nodeLayout.size.height,
-      collapsed: node.flags.collapsed || false,
-      collapsedWidth: node._collapsed_width,
-      slotStartY: node.constructor.slot_start_y,
-      inputs: node.inputs,
-      outputs: node.outputs,
-      widgets: node.widgets
+  // Only use DOM-registered slot positions when Vue nodes mode is enabled
+  if (LiteGraph.vueNodesMode) {
+    // Try to get precise position from slot layout (DOM-registered)
+    const slotKey = getSlotKey(String(node.id), slotIndex, isInput)
+    const slotLayout = layoutStore.getSlotLayout(slotKey)
+    if (slotLayout) {
+      return [slotLayout.position.x, slotLayout.position.y]
     }
 
-    // Use helper to calculate position
-    return isInput
-      ? calculateInputSlotPos(context, slotIndex)
-      : calculateOutputSlotPos(context, slotIndex)
+    // Fallback: derive position from node layout tree and slot model
+    const nodeLayout = layoutStore.getNodeLayoutRef(String(node.id)).value
+
+    if (nodeLayout) {
+      // Create context from layout tree data
+      const context: SlotPositionContext = {
+        nodeX: nodeLayout.position.x,
+        nodeY: nodeLayout.position.y,
+        nodeWidth: nodeLayout.size.width,
+        nodeHeight: nodeLayout.size.height,
+        collapsed: node.flags.collapsed || false,
+        collapsedWidth: node._collapsed_width,
+        slotStartY: node.constructor.slot_start_y,
+        inputs: node.inputs,
+        outputs: node.outputs,
+        widgets: node.widgets
+      }
+
+      // Use helper to calculate position
+      return isInput
+        ? calculateInputSlotPos(context, slotIndex)
+        : calculateOutputSlotPos(context, slotIndex)
+    }
   }
 
-  // Fallback: calculate directly from node properties if layout not available
+  // Fallback: calculate directly from node properties (legacy litegraph behavior)
   const context: SlotPositionContext = {
     nodeX: node.pos[0],
     nodeY: node.pos[1],

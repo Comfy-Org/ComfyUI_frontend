@@ -5,6 +5,7 @@ import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { DrawTitleBoxOptions } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import type {
   ISubgraphInput,
@@ -26,17 +27,45 @@ import type {
   ExportedSubgraphInstance,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import {
+  createPromotedWidgetView,
+  isPromotedWidgetView
+} from '@/core/graph/subgraph/promotedWidgetView'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
+import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
+import { PromotedWidgetViewManager } from './PromotedWidgetViewManager'
 import type { SubgraphInput } from './SubgraphInput'
+import { createBitmapCache } from './svgBitmapCache'
 
 const workflowSvg = new Image()
 workflowSvg.src =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='white' stroke-linecap='round' stroke-width='1.3' d='M9.18613 3.09999H6.81377M9.18613 12.9H7.55288c-3.08678 0-5.35171-2.99581-4.60305-6.08843l.3054-1.26158M14.7486 2.1721l-.5931 2.45c-.132.54533-.6065.92789-1.1508.92789h-2.2993c-.77173 0-1.33797-.74895-1.1508-1.5221l.5931-2.45c.132-.54533.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.74896 1.1508 1.52211Zm-8.3033 0-.59309 2.45c-.13201.54533-.60646.92789-1.15076.92789H2.4021c-.7717 0-1.33793-.74895-1.15077-1.5221l.59309-2.45c.13201-.54533.60647-.9279 1.15077-.9279h2.29935c.77169 0 1.33792.74896 1.15076 1.52211Zm8.3033 9.8-.5931 2.45c-.132.5453-.6065.9279-1.1508.9279h-2.2993c-.77173 0-1.33797-.749-1.1508-1.5221l.5931-2.45c.132-.5453.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.7489 1.1508 1.5221Z'/%3E%3C/svg%3E %3C/svg%3E"
+
+type LinkedPromotionEntry = {
+  inputName: string
+  inputKey: string
+  interiorNodeId: string
+  widgetName: string
+}
+
+type PromotionEntry = {
+  interiorNodeId: string
+  widgetName: string
+}
+// Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
+// the SVG's internal stylesheet on every ctx.drawImage() call per frame.
+const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
@@ -46,8 +75,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override readonly type: UUID
   override readonly isVirtualNode = true as const
+  override graph: GraphOrSubgraph | null
 
   get rootGraph(): LGraph {
+    if (!this.graph)
+      throw new NullGraphError(`SubgraphNode ${this.id} has no graph`)
     return this.graph.rootGraph
   }
 
@@ -59,41 +91,556 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return true
   }
 
-  override widgets: IBaseWidget[] = []
+  private _promotedViewManager =
+    new PromotedWidgetViewManager<PromotedWidgetView>()
+  /**
+   * Promotions buffered before this node is attached to a graph (`id === -1`).
+   * They are flushed in `_flushPendingPromotions()` from `_setWidget()` and
+   * `onAdded()`, so construction-time promotions require normal add-to-graph
+   * lifecycle to persist.
+   */
+  private _pendingPromotions: PromotionEntry[] = []
+  private _cacheVersion = 0
+  private _linkedEntriesCache?: {
+    version: number
+    hasMissingBoundSourceWidget: boolean
+    entries: LinkedPromotionEntry[]
+  }
+  private _promotedViewsCache?: {
+    version: number
+    entriesRef: PromotionEntry[]
+    hasMissingBoundSourceWidget: boolean
+    views: PromotedWidgetView[]
+  }
+
+  // Declared as accessor via Object.defineProperty in constructor.
+  // TypeScript doesn't allow overriding a property with get/set syntax,
+  // so we use declare + defineProperty instead.
+  declare widgets: IBaseWidget[]
+
+  private _resolveLinkedPromotionBySubgraphInput(
+    subgraphInput: SubgraphInput
+  ): { interiorNodeId: string; widgetName: string } | undefined {
+    // Preserve deterministic representative selection for multi-linked inputs:
+    // the first connected source remains the promoted linked view.
+    for (const linkId of subgraphInput.linkIds) {
+      const link = this.subgraph.getLink(linkId)
+      if (!link) continue
+
+      const { inputNode } = link.resolve(this.subgraph)
+      if (!inputNode || !Array.isArray(inputNode.inputs)) continue
+
+      const targetInput = inputNode.inputs.find(
+        (entry) => entry.link === linkId
+      )
+      if (!targetInput) continue
+
+      const targetWidget = inputNode.getWidgetFromSlot(targetInput)
+      if (!targetWidget) continue
+
+      if (inputNode.isSubgraphNode())
+        return {
+          interiorNodeId: String(inputNode.id),
+          widgetName: targetInput.name
+        }
+
+      return {
+        interiorNodeId: String(inputNode.id),
+        widgetName: targetWidget.name
+      }
+    }
+  }
+
+  private _getLinkedPromotionEntries(cache = true): LinkedPromotionEntry[] {
+    const hasMissingBoundSourceWidget = this._hasMissingBoundSourceWidget()
+    const cached = this._linkedEntriesCache
+    if (
+      cache &&
+      cached?.version === this._cacheVersion &&
+      cached.hasMissingBoundSourceWidget === hasMissingBoundSourceWidget
+    )
+      return cached.entries
+
+    const linkedEntries: LinkedPromotionEntry[] = []
+
+    for (const input of this.inputs) {
+      const subgraphInput = input._subgraphSlot
+      if (!subgraphInput) continue
+
+      const boundWidget =
+        input._widget && isPromotedWidgetView(input._widget)
+          ? input._widget
+          : undefined
+      if (boundWidget) {
+        const boundNode = this.subgraph.getNodeById(boundWidget.sourceNodeId)
+        const hasBoundSourceWidget =
+          boundNode?.widgets?.some(
+            (widget) => widget.name === boundWidget.sourceWidgetName
+          ) === true
+        if (hasBoundSourceWidget) {
+          linkedEntries.push({
+            inputName: input.label ?? input.name,
+            inputKey: String(subgraphInput.id),
+            interiorNodeId: boundWidget.sourceNodeId,
+            widgetName: boundWidget.sourceWidgetName
+          })
+          continue
+        }
+      }
+
+      const resolved =
+        this._resolveLinkedPromotionBySubgraphInput(subgraphInput)
+      if (!resolved) continue
+
+      linkedEntries.push({
+        inputName: input.label ?? input.name,
+        inputKey: String(subgraphInput.id),
+        ...resolved
+      })
+    }
+
+    const seenEntryKeys = new Set<string>()
+    const deduplicatedEntries = linkedEntries.filter((entry) => {
+      const entryKey = this._makePromotionViewKey(
+        entry.inputKey,
+        entry.interiorNodeId,
+        entry.widgetName,
+        entry.inputName
+      )
+      if (seenEntryKeys.has(entryKey)) return false
+
+      seenEntryKeys.add(entryKey)
+      return true
+    })
+
+    if (cache)
+      this._linkedEntriesCache = {
+        version: this._cacheVersion,
+        hasMissingBoundSourceWidget,
+        entries: deduplicatedEntries
+      }
+
+    return deduplicatedEntries
+  }
+
+  private _hasMissingBoundSourceWidget(): boolean {
+    return this.inputs.some((input) => {
+      const boundWidget =
+        input._widget && isPromotedWidgetView(input._widget)
+          ? input._widget
+          : undefined
+      if (!boundWidget) return false
+
+      const boundNode = this.subgraph.getNodeById(boundWidget.sourceNodeId)
+      return (
+        boundNode?.widgets?.some(
+          (widget) => widget.name === boundWidget.sourceWidgetName
+        ) !== true
+      )
+    })
+  }
+
+  private _getPromotedViews(): PromotedWidgetView[] {
+    const store = usePromotionStore()
+    const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
+    const hasMissingBoundSourceWidget = this._hasMissingBoundSourceWidget()
+    const cachedViews = this._promotedViewsCache
+    if (
+      cachedViews?.version === this._cacheVersion &&
+      cachedViews.entriesRef === entries &&
+      cachedViews.hasMissingBoundSourceWidget === hasMissingBoundSourceWidget
+    )
+      return cachedViews.views
+
+    const linkedEntries = this._getLinkedPromotionEntries()
+
+    const { displayNameByViewKey, reconcileEntries } =
+      this._buildPromotionReconcileState(entries, linkedEntries)
+
+    const views = this._promotedViewManager.reconcile(
+      reconcileEntries,
+      (entry) =>
+        createPromotedWidgetView(
+          this,
+          entry.interiorNodeId,
+          entry.widgetName,
+          entry.viewKey ? displayNameByViewKey.get(entry.viewKey) : undefined
+        )
+    )
+
+    this._promotedViewsCache = {
+      version: this._cacheVersion,
+      entriesRef: entries,
+      hasMissingBoundSourceWidget,
+      views
+    }
+
+    return views
+  }
+
+  private _invalidatePromotedViewsCache(): void {
+    this._cacheVersion++
+  }
+
+  private _syncPromotions(): void {
+    if (this.id === -1) return
+
+    const store = usePromotionStore()
+    const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
+    const linkedEntries = this._getLinkedPromotionEntries(false)
+    // Intentionally preserve independent store promotions when linked coverage is partial;
+    // tests assert that mixed linked/independent states must not collapse to linked-only.
+    const { mergedEntries } = this._buildPromotionPersistenceState(
+      entries,
+      linkedEntries
+    )
+
+    const hasChanged =
+      mergedEntries.length !== entries.length ||
+      mergedEntries.some(
+        (entry, index) =>
+          entry.interiorNodeId !== entries[index]?.interiorNodeId ||
+          entry.widgetName !== entries[index]?.widgetName
+      )
+    if (!hasChanged) return
+
+    store.setPromotions(this.rootGraph.id, this.id, mergedEntries)
+  }
+
+  private _buildPromotionReconcileState(
+    entries: PromotionEntry[],
+    linkedEntries: LinkedPromotionEntry[]
+  ): {
+    displayNameByViewKey: Map<string, string>
+    reconcileEntries: Array<{
+      interiorNodeId: string
+      widgetName: string
+      viewKey?: string
+    }>
+  } {
+    const { fallbackStoredEntries } = this._collectLinkedAndFallbackEntries(
+      entries,
+      linkedEntries
+    )
+    const linkedReconcileEntries =
+      this._buildLinkedReconcileEntries(linkedEntries)
+    const shouldPersistLinkedOnly = this._shouldPersistLinkedOnly(
+      linkedEntries,
+      fallbackStoredEntries
+    )
+    const reconcileEntries = shouldPersistLinkedOnly
+      ? linkedReconcileEntries
+      : [...linkedReconcileEntries, ...fallbackStoredEntries]
+
+    return {
+      displayNameByViewKey: this._buildDisplayNameByViewKey(linkedEntries),
+      reconcileEntries
+    }
+  }
+
+  private _buildPromotionPersistenceState(
+    entries: PromotionEntry[],
+    linkedEntries: LinkedPromotionEntry[]
+  ): {
+    mergedEntries: PromotionEntry[]
+  } {
+    const { linkedPromotionEntries, fallbackStoredEntries } =
+      this._collectLinkedAndFallbackEntries(entries, linkedEntries)
+    const shouldPersistLinkedOnly = this._shouldPersistLinkedOnly(
+      linkedEntries,
+      fallbackStoredEntries
+    )
+
+    return {
+      mergedEntries: shouldPersistLinkedOnly
+        ? linkedPromotionEntries
+        : [...linkedPromotionEntries, ...fallbackStoredEntries]
+    }
+  }
+
+  private _collectLinkedAndFallbackEntries(
+    entries: PromotionEntry[],
+    linkedEntries: LinkedPromotionEntry[]
+  ): {
+    linkedPromotionEntries: PromotionEntry[]
+    fallbackStoredEntries: PromotionEntry[]
+  } {
+    const linkedPromotionEntries = this._toPromotionEntries(linkedEntries)
+    const excludedEntryKeys = new Set(
+      linkedPromotionEntries.map((entry) =>
+        this._makePromotionEntryKey(entry.interiorNodeId, entry.widgetName)
+      )
+    )
+    const connectedEntryKeys = this._getConnectedPromotionEntryKeys()
+    for (const key of connectedEntryKeys) {
+      excludedEntryKeys.add(key)
+    }
+
+    const prePruneFallbackStoredEntries = this._getFallbackStoredEntries(
+      entries,
+      excludedEntryKeys
+    )
+    const fallbackStoredEntries = this._pruneStaleAliasFallbackEntries(
+      prePruneFallbackStoredEntries,
+      linkedPromotionEntries
+    )
+
+    return {
+      linkedPromotionEntries,
+      fallbackStoredEntries
+    }
+  }
+
+  private _shouldPersistLinkedOnly(
+    linkedEntries: LinkedPromotionEntry[],
+    fallbackStoredEntries: PromotionEntry[]
+  ): boolean {
+    if (
+      !(this.inputs.length > 0 && linkedEntries.length === this.inputs.length)
+    )
+      return false
+
+    const linkedWidgetNames = new Set(
+      linkedEntries.map((entry) => entry.widgetName)
+    )
+
+    const hasFallbackToKeep = fallbackStoredEntries.some((entry) => {
+      const sourceNode = this.subgraph.getNodeById(entry.interiorNodeId)
+      const hasSourceWidget =
+        sourceNode?.widgets?.some(
+          (widget) => widget.name === entry.widgetName
+        ) === true
+      if (hasSourceWidget) return true
+
+      // If the fallback widget name overlaps a linked widget name, keep it
+      // until aliasing can be positively proven.
+      return linkedWidgetNames.has(entry.widgetName)
+    })
+
+    return !hasFallbackToKeep
+  }
+
+  private _toPromotionEntries(
+    linkedEntries: LinkedPromotionEntry[]
+  ): PromotionEntry[] {
+    return linkedEntries.map(({ interiorNodeId, widgetName }) => ({
+      interiorNodeId,
+      widgetName
+    }))
+  }
+
+  private _getFallbackStoredEntries(
+    entries: PromotionEntry[],
+    excludedEntryKeys: Set<string>
+  ): PromotionEntry[] {
+    return entries.filter(
+      (entry) =>
+        !excludedEntryKeys.has(
+          this._makePromotionEntryKey(entry.interiorNodeId, entry.widgetName)
+        )
+    )
+  }
+
+  private _pruneStaleAliasFallbackEntries(
+    fallbackStoredEntries: PromotionEntry[],
+    linkedPromotionEntries: PromotionEntry[]
+  ): PromotionEntry[] {
+    if (
+      fallbackStoredEntries.length === 0 ||
+      linkedPromotionEntries.length === 0
+    )
+      return fallbackStoredEntries
+
+    const linkedConcreteKeys = new Set(
+      linkedPromotionEntries
+        .map((entry) => this._resolveConcretePromotionEntryKey(entry))
+        .filter((key): key is string => key !== undefined)
+    )
+    if (linkedConcreteKeys.size === 0) return fallbackStoredEntries
+
+    const prunedEntries: PromotionEntry[] = []
+
+    for (const entry of fallbackStoredEntries) {
+      const concreteKey = this._resolveConcretePromotionEntryKey(entry)
+      if (concreteKey && linkedConcreteKeys.has(concreteKey)) continue
+
+      prunedEntries.push(entry)
+    }
+
+    return prunedEntries
+  }
+
+  private _resolveConcretePromotionEntryKey(
+    entry: PromotionEntry
+  ): string | undefined {
+    const result = resolveConcretePromotedWidget(
+      this,
+      entry.interiorNodeId,
+      entry.widgetName
+    )
+    if (result.status !== 'resolved') return undefined
+
+    return this._makePromotionEntryKey(
+      String(result.resolved.node.id),
+      result.resolved.widget.name
+    )
+  }
+
+  private _getConnectedPromotionEntryKeys(): Set<string> {
+    const connectedEntryKeys = new Set<string>()
+
+    for (const input of this.inputs) {
+      const subgraphInput = input._subgraphSlot
+      if (!subgraphInput) continue
+
+      const connectedWidgets = subgraphInput.getConnectedWidgets()
+
+      for (const widget of connectedWidgets) {
+        if (!hasWidgetNode(widget)) continue
+
+        connectedEntryKeys.add(
+          this._makePromotionEntryKey(String(widget.node.id), widget.name)
+        )
+      }
+    }
+
+    return connectedEntryKeys
+  }
+
+  private _buildLinkedReconcileEntries(
+    linkedEntries: LinkedPromotionEntry[]
+  ): Array<{ interiorNodeId: string; widgetName: string; viewKey: string }> {
+    return linkedEntries.map(
+      ({ inputKey, inputName, interiorNodeId, widgetName }) => ({
+        interiorNodeId,
+        widgetName,
+        viewKey: this._makePromotionViewKey(
+          inputKey,
+          interiorNodeId,
+          widgetName,
+          inputName
+        )
+      })
+    )
+  }
+
+  private _buildDisplayNameByViewKey(
+    linkedEntries: LinkedPromotionEntry[]
+  ): Map<string, string> {
+    return new Map(
+      linkedEntries.map((entry) => [
+        this._makePromotionViewKey(
+          entry.inputKey,
+          entry.interiorNodeId,
+          entry.widgetName,
+          entry.inputName
+        ),
+        entry.inputName
+      ])
+    )
+  }
+
+  private _makePromotionEntryKey(
+    interiorNodeId: string,
+    widgetName: string
+  ): string {
+    return `${interiorNodeId}:${widgetName}`
+  }
+
+  private _makePromotionViewKey(
+    inputKey: string,
+    interiorNodeId: string,
+    widgetName: string,
+    inputName = ''
+  ): string {
+    return JSON.stringify([inputKey, interiorNodeId, widgetName, inputName])
+  }
+
+  private _resolveLegacyEntry(
+    widgetName: string
+  ): [string, string] | undefined {
+    // Legacy -1 entries use the slot name as the widget name.
+    // Find the input with that name, then trace to the connected interior widget.
+    const input = this.inputs.find((i) => i.name === widgetName)
+    if (!input?._widget) return undefined
+
+    const widget = input._widget
+    if (isPromotedWidgetView(widget)) {
+      return [widget.sourceNodeId, widget.sourceWidgetName]
+    }
+
+    // Fallback: find via subgraph input slot connection
+    const resolvedTarget = resolveSubgraphInputTarget(this, widgetName)
+    if (!resolvedTarget) return undefined
+
+    return [resolvedTarget.nodeId, resolvedTarget.widgetName]
+  }
 
   /** Manages lifecycle of all subgraph event listeners */
-  #eventAbortController = new AbortController()
+  private _eventAbortController = new AbortController()
 
   constructor(
     /** The (sub)graph that contains this subgraph instance. */
-    override readonly graph: GraphOrSubgraph,
+    graph: GraphOrSubgraph,
     /** The definition of this subgraph; how its nodes are configured, etc. */
     readonly subgraph: Subgraph,
     instanceData: ExportedSubgraphInstance
   ) {
     super(subgraph.name, subgraph.id)
+    this.graph = graph
+
+    // Synthetic widgets getter — SubgraphNodes have no native widgets.
+    Object.defineProperty(this, 'widgets', {
+      get: () => this._getPromotedViews(),
+      set: () => {
+        if (import.meta.env.DEV)
+          console.warn(
+            'Cannot manually set widgets on SubgraphNode; use the promotion system.'
+          )
+      },
+      configurable: true,
+      enumerable: true
+    })
 
     // Update this node when the subgraph input / output slots are changed
     const subgraphEvents = this.subgraph.events
-    const { signal } = this.#eventAbortController
+    const { signal } = this._eventAbortController
 
     subgraphEvents.addEventListener(
       'input-added',
       (e) => {
         const subgraphInput = e.detail.input
         const { name, type } = subgraphInput
-        const existingInput = this.inputs.find((i) => i.name == name)
+        const existingInput = this.inputs.find(
+          (input) => input._subgraphSlot === subgraphInput
+        )
         if (existingInput) {
           const linkId = subgraphInput.linkIds[0]
-          const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
-          const widget = inputNode?.widgets?.find?.((w) => w.name == name)
+          if (linkId === undefined) return
+
+          const link = this.subgraph.getLink(linkId)
+          if (!link) return
+
+          const { inputNode, input } = link.resolve(subgraph)
+          if (!inputNode || !input) return
+
+          const widget = inputNode.getWidgetFromSlot(input)
           if (widget)
-            this.#setWidget(subgraphInput, existingInput, widget, input?.widget)
+            this._setWidget(
+              subgraphInput,
+              existingInput,
+              widget,
+              input.widget,
+              inputNode
+            )
           return
         }
-        const input = this.addInput(name, type)
+        const input = this.addInput(name, type, {
+          _subgraphSlot: subgraphInput
+        })
+        this._invalidatePromotedViewsCache()
 
-        this.#addSubgraphInputListeners(subgraphInput, input)
+        this._addSubgraphInputListeners(subgraphInput, input)
       },
       { signal }
     )
@@ -105,6 +652,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (widget) this.ensureWidgetRemoved(widget)
 
         this.removeInput(e.detail.index)
+        this._invalidatePromotedViewsCache()
+        this._syncPromotions()
         this.setDirtyCanvas(true, true)
       },
       { signal }
@@ -139,6 +688,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (input._widget) {
           input._widget.label = newName
         }
+        this._invalidatePromotedViewsCache()
+        this.graph?.trigger('node:slot-label:changed', {
+          nodeId: this.id,
+          slotType: NodeSlotType.INPUT
+        })
       },
       { signal }
     )
@@ -151,6 +705,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!output) throw new Error('Subgraph output not found')
 
         output.label = newName
+        this.graph?.trigger('node:slot-label:changed', {
+          nodeId: this.id,
+          slotType: NodeSlotType.OUTPUT
+        })
       },
       { signal }
     )
@@ -178,10 +736,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  #addSubgraphInputListeners(
+  private _addSubgraphInputListeners(
     subgraphInput: SubgraphInput,
     input: INodeInputSlot & Partial<ISubgraphInput>
   ) {
+    input._subgraphSlot = subgraphInput
+
     if (
       input._listenerController &&
       typeof input._listenerController.abort === 'function'
@@ -194,13 +754,40 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput.events.addEventListener(
       'input-connected',
       (e) => {
-        if (input._widget) return
+        this._invalidatePromotedViewsCache()
 
-        const widget = subgraphInput._widget
-        if (!widget) return
+        // `SubgraphInput.connect()` dispatches before appending to `linkIds`,
+        // so resolve by current links would miss this new connection.
+        // Keep the earliest bound view once present, and only bind from event
+        // payload when this input has no representative yet.
+        const nodeId = String(e.detail.node.id)
+        if (
+          usePromotionStore().isPromoted(
+            this.rootGraph.id,
+            this.id,
+            nodeId,
+            e.detail.widget.name
+          )
+        ) {
+          usePromotionStore().demote(
+            this.rootGraph.id,
+            this.id,
+            nodeId,
+            e.detail.widget.name
+          )
+        }
 
-        const widgetLocator = e.detail.input.widget
-        this.#setWidget(subgraphInput, input, widget, widgetLocator)
+        const didSetWidgetFromEvent = !input._widget
+        if (didSetWidgetFromEvent)
+          this._setWidget(
+            subgraphInput,
+            input,
+            e.detail.widget,
+            e.detail.input.widget,
+            e.detail.node
+          )
+
+        this._syncPromotions()
       },
       { signal }
     )
@@ -208,18 +795,81 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput.events.addEventListener(
       'input-disconnected',
       () => {
-        // If the input is connected to more than one widget, don't remove the widget
-        const connectedWidgets = subgraphInput.getConnectedWidgets()
-        if (connectedWidgets.length > 0) return
+        this._invalidatePromotedViewsCache()
 
-        this.removeWidgetByName(input.name)
+        // If links remain, rebind to the current representative.
+        const connectedWidgets = subgraphInput.getConnectedWidgets()
+        if (connectedWidgets.length > 0) {
+          this._resolveInputWidget(subgraphInput, input)
+          this._syncPromotions()
+          return
+        }
+
+        if (input._widget) this.ensureWidgetRemoved(input._widget)
 
         delete input.pos
         delete input.widget
         input._widget = undefined
+        this._syncPromotions()
       },
       { signal }
     )
+  }
+
+  private _rebindInputSubgraphSlots(): void {
+    this._invalidatePromotedViewsCache()
+
+    const subgraphSlots = [...this.subgraph.inputNode.slots]
+    const slotsBySignature = new Map<string, SubgraphInput[]>()
+    const slotsByName = new Map<string, SubgraphInput[]>()
+
+    for (const slot of subgraphSlots) {
+      const signature = `${slot.name}:${String(slot.type)}`
+      const signatureSlots = slotsBySignature.get(signature)
+      if (signatureSlots) {
+        signatureSlots.push(slot)
+      } else {
+        slotsBySignature.set(signature, [slot])
+      }
+
+      const nameSlots = slotsByName.get(slot.name)
+      if (nameSlots) {
+        nameSlots.push(slot)
+      } else {
+        slotsByName.set(slot.name, [slot])
+      }
+    }
+
+    const assignedSlotIds = new Set<string>()
+    const takeUnassignedSlot = (
+      slots: SubgraphInput[] | undefined
+    ): SubgraphInput | undefined => {
+      if (!slots) return undefined
+      return slots.find((slot) => !assignedSlotIds.has(String(slot.id)))
+    }
+
+    for (const input of this.inputs) {
+      const existingSlot = input._subgraphSlot
+      if (
+        existingSlot &&
+        this.subgraph.inputNode.slots.some((slot) => slot === existingSlot)
+      ) {
+        assignedSlotIds.add(String(existingSlot.id))
+        continue
+      }
+
+      const signature = `${input.name}:${String(input.type)}`
+      const matchedSlot =
+        takeUnassignedSlot(slotsBySignature.get(signature)) ??
+        takeUnassignedSlot(slotsByName.get(input.name))
+
+      if (matchedSlot) {
+        input._subgraphSlot = matchedSlot
+        assignedSlotIds.add(String(matchedSlot.id))
+      } else {
+        delete input._subgraphSlot
+      }
+    }
   }
 
   override configure(info: ExportedSubgraphInstance): void {
@@ -234,8 +884,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     this.inputs.length = 0
     this.inputs.push(
-      ...this.subgraph.inputNode.slots.map(
-        (slot) =>
+      ...this.subgraph.inputNode.slots.map((slot) =>
+        Object.assign(
           new NodeInputSlot(
             {
               name: slot.name,
@@ -245,7 +895,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
               link: null
             },
             this
-          )
+          ),
+          {
+            _subgraphSlot: slot
+          }
+        )
       )
     )
 
@@ -270,14 +924,51 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override _internalConfigureAfterSlots() {
-    // Reset widgets
-    this.widgets.length = 0
+    this._rebindInputSubgraphSlots()
+
+    // Ensure proxyWidgets is initialized so it serializes
+    this.properties.proxyWidgets ??= []
+
+    // Clear view cache — forces re-creation on next getter access.
+    // Do NOT clear properties.proxyWidgets — it was already populated
+    // from serialized data by super.configure(info) before this runs.
+    this._promotedViewManager.clear()
+    this._invalidatePromotedViewsCache()
+
+    // Hydrate the store from serialized properties.proxyWidgets
+    const raw = parseProxyWidgets(this.properties.proxyWidgets)
+    const store = usePromotionStore()
+
+    const entries = raw
+      .map(([nodeId, widgetName]) => {
+        if (nodeId === '-1') {
+          const resolved = this._resolveLegacyEntry(widgetName)
+          if (resolved)
+            return { interiorNodeId: resolved[0], widgetName: resolved[1] }
+          if (import.meta.env.DEV) {
+            console.warn(
+              `[SubgraphNode] Failed to resolve legacy -1 entry for widget "${widgetName}"`
+            )
+          }
+          return null
+        }
+        return { interiorNodeId: nodeId, widgetName }
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null)
+
+    store.setPromotions(this.rootGraph.id, this.id, entries)
+
+    // Write back resolved entries so legacy -1 format doesn't persist
+    if (raw.some(([id]) => id === '-1')) {
+      this.properties.proxyWidgets = entries.map((e) => [
+        e.interiorNodeId,
+        e.widgetName
+      ])
+    }
 
     // Check all inputs for connected widgets
     for (const input of this.inputs) {
-      const subgraphInput = this.subgraph.inputNode.slots.find(
-        (slot) => slot.name === input.name
-      )
+      const subgraphInput = input._subgraphSlot
       if (!subgraphInput) {
         // Skip inputs that don't exist in the subgraph definition
         // This can happen when loading workflows with dynamically added inputs
@@ -287,98 +978,123 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         continue
       }
 
-      this.#addSubgraphInputListeners(subgraphInput, input)
+      this._addSubgraphInputListeners(subgraphInput, input)
+      this._resolveInputWidget(subgraphInput, input)
+    }
 
-      // Find the first widget that this slot is connected to
-      for (const linkId of subgraphInput.linkIds) {
-        const link = this.subgraph.getLink(linkId)
-        if (!link) {
-          console.warn(
-            `[SubgraphNode.configure] No link found for link ID ${linkId}`,
-            this
-          )
-          continue
-        }
+    this._syncPromotions()
+  }
 
-        const resolved = link.resolve(this.subgraph)
-        if (!resolved.input || !resolved.inputNode) {
-          console.warn('Invalid resolved link', resolved, this)
-          continue
-        }
-
-        // No widget - ignore this link
-        const widget = resolved.inputNode.getWidgetFromSlot(resolved.input)
-        if (!widget) continue
-
-        this.#setWidget(subgraphInput, input, widget, resolved.input.widget)
-        break
+  private _resolveInputWidget(
+    subgraphInput: SubgraphInput,
+    input: INodeInputSlot
+  ) {
+    for (const linkId of subgraphInput.linkIds) {
+      const link = this.subgraph.getLink(linkId)
+      if (!link) {
+        console.warn(
+          `[SubgraphNode.configure] No link found for link ID ${linkId}`,
+          this
+        )
+        continue
       }
+
+      const { inputNode } = link.resolve(this.subgraph)
+      if (!inputNode) {
+        console.warn('Failed to resolve inputNode', link, this)
+        continue
+      }
+
+      const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
+      if (!targetInput) {
+        console.warn('Failed to find corresponding input', link, inputNode)
+        continue
+      }
+
+      const widget = inputNode.getWidgetFromSlot(targetInput)
+      if (!widget) continue
+
+      this._setWidget(
+        subgraphInput,
+        input,
+        widget,
+        targetInput.widget,
+        inputNode
+      )
+      break
     }
   }
 
-  #setWidget(
+  private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
-    widget: Readonly<IBaseWidget>,
-    inputWidget: IWidgetLocator | undefined
+    interiorWidget: Readonly<IBaseWidget>,
+    inputWidget: IWidgetLocator | undefined,
+    interiorNode: LGraphNode
   ) {
-    // Use the first matching widget
-    const promotedWidget = toConcreteWidget(widget, this).createCopyForNode(
-      this
-    )
+    this._invalidatePromotedViewsCache()
+    this._flushPendingPromotions()
 
-    Object.assign(promotedWidget, {
-      get name() {
-        return subgraphInput.name
-      },
-      set name(value) {
-        console.warn(
-          'Promoted widget: setting name is not allowed',
-          this,
-          value
+    const nodeId = String(interiorNode.id)
+    const widgetName = interiorWidget.name
+
+    const previousView = input._widget
+
+    if (
+      previousView &&
+      isPromotedWidgetView(previousView) &&
+      (previousView.sourceNodeId !== nodeId ||
+        previousView.sourceWidgetName !== widgetName)
+    ) {
+      usePromotionStore().demote(
+        this.rootGraph.id,
+        this.id,
+        previousView.sourceNodeId,
+        previousView.sourceWidgetName
+      )
+      this._removePromotedView(previousView)
+    }
+
+    if (this.id === -1) {
+      if (
+        !this._pendingPromotions.some(
+          (entry) =>
+            entry.interiorNodeId === nodeId && entry.widgetName === widgetName
         )
-      },
-      get localized_name() {
-        return subgraphInput.localized_name
-      },
-      set localized_name(value) {
-        console.warn(
-          'Promoted widget: setting localized_name is not allowed',
-          this,
-          value
-        )
-      },
-      get label() {
-        return subgraphInput.label
-      },
-      set label(value) {
-        console.warn(
-          'Promoted widget: setting label is not allowed',
-          this,
-          value
-        )
-      },
-      get tooltip() {
-        // Preserve the original widget's tooltip for promoted widgets
-        return widget.tooltip
-      },
-      set tooltip(value) {
-        console.warn(
-          'Promoted widget: setting tooltip is not allowed',
-          this,
-          value
-        )
+      ) {
+        this._pendingPromotions.push({
+          interiorNodeId: nodeId,
+          widgetName
+        })
       }
-    })
+    } else {
+      // Add to promotion store
+      usePromotionStore().promote(
+        this.rootGraph.id,
+        this.id,
+        nodeId,
+        widgetName
+      )
+    }
 
-    const widgetCount = this.inputs.filter((i) => i.widget).length
-    this.widgets.splice(widgetCount, 0, promotedWidget)
-
-    // Dispatch widget-promoted event
-    this.subgraph.events.dispatch('widget-promoted', {
-      widget: promotedWidget,
-      subgraphNode: this
-    })
+    // Create/retrieve the view from cache
+    const view = this._promotedViewManager.getOrCreate(
+      nodeId,
+      widgetName,
+      () =>
+        createPromotedWidgetView(
+          this,
+          nodeId,
+          widgetName,
+          input.label ?? subgraphInput.name
+        ),
+      this._makePromotionViewKey(
+        String(subgraphInput.id),
+        nodeId,
+        widgetName,
+        input.label ?? input.name
+      )
+    )
 
     // NOTE: This code creates linked chains of prototypes for passing across
     // multiple levels of subgraphs. As part of this, it intentionally avoids
@@ -387,7 +1103,33 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
-    input._widget = promotedWidget
+    input._widget = view
+
+    // Dispatch widget-promoted event
+    this.subgraph.events.dispatch('widget-promoted', {
+      widget: view,
+      subgraphNode: this
+    })
+  }
+
+  private _flushPendingPromotions() {
+    if (this.id === -1 || this._pendingPromotions.length === 0) return
+
+    for (const entry of this._pendingPromotions) {
+      usePromotionStore().promote(
+        this.rootGraph.id,
+        this.id,
+        entry.interiorNodeId,
+        entry.widgetName
+      )
+    }
+
+    this._pendingPromotions = []
+  }
+
+  override onAdded(_graph: LGraph): void {
+    this._flushPendingPromotions()
+    this._syncPromotions()
   }
 
   /**
@@ -405,6 +1147,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ): INodeInputSlot & TInput {
     // Bypasses type narrowing on this.inputs
     return super.addInput(name, type, inputProperties)
+  }
+
+  override getSlotFromWidget(
+    widget: IBaseWidget | undefined
+  ): INodeInputSlot | undefined {
+    if (!widget || !isPromotedWidgetView(widget))
+      return super.getSlotFromWidget(widget)
+
+    return this.inputs.find((input) => input._widget === widget)
+  }
+
+  override getWidgetFromSlot(slot: INodeInputSlot): IBaseWidget | undefined {
+    if (slot._widget) return slot._widget
+    return super.getWidgetFromSlot(slot)
   }
 
   override getInputLink(slot: number): LLink | null {
@@ -485,7 +1241,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const subgraphInstanceIdPath = [...subgraphNodePath, this.id]
 
     // Store the subgraph node DTO
-    const parentSubgraphNode = this.graph.rootGraph
+    const parentSubgraphNode = this.rootGraph
       .resolveSubgraphIdPath(subgraphNodePath)
       .at(-1)
     const subgraphNodeDto = new ExecutableNodeDTO(
@@ -519,39 +1275,93 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return nodes
   }
 
+  /** Clear the DOM position override for a promoted view's interior widget. */
+  private _clearDomOverrideForView(view: PromotedWidgetView): void {
+    const node = this.subgraph.getNodeById(view.sourceNodeId)
+    if (!node) return
+    const interiorWidget = node.widgets?.find(
+      (w: IBaseWidget) => w.name === view.sourceWidgetName
+    )
+    if (
+      interiorWidget &&
+      'id' in interiorWidget &&
+      ('element' in interiorWidget || 'component' in interiorWidget)
+    ) {
+      useDomWidgetStore().clearPositionOverride(String(interiorWidget.id))
+    }
+  }
+
+  private _removePromotedView(view: PromotedWidgetView): void {
+    this._invalidatePromotedViewsCache()
+
+    this._promotedViewManager.remove(view.sourceNodeId, view.sourceWidgetName)
+    for (const input of this.inputs) {
+      if (input._widget !== view || !input._subgraphSlot) continue
+      const inputName = input.label ?? input.name
+
+      this._promotedViewManager.removeByViewKey(
+        view.sourceNodeId,
+        view.sourceWidgetName,
+        this._makePromotionViewKey(
+          String(input._subgraphSlot.id),
+          view.sourceNodeId,
+          view.sourceWidgetName,
+          inputName
+        )
+      )
+    }
+  }
+
+  override removeWidget(widget: IBaseWidget): void {
+    this.ensureWidgetRemoved(widget)
+  }
+
   override removeWidgetByName(name: string): void {
     const widget = this.widgets.find((w) => w.name === name)
-    if (widget) {
-      this.subgraph.events.dispatch('widget-demoted', {
-        widget,
-        subgraphNode: this
-      })
-    }
-    super.removeWidgetByName(name)
+    if (widget) this.ensureWidgetRemoved(widget)
   }
 
   override ensureWidgetRemoved(widget: IBaseWidget): void {
-    if (this.widgets.includes(widget)) {
-      this.subgraph.events.dispatch('widget-demoted', {
-        widget,
-        subgraphNode: this
-      })
+    if (isPromotedWidgetView(widget)) {
+      this._clearDomOverrideForView(widget)
+      usePromotionStore().demote(
+        this.rootGraph.id,
+        this.id,
+        widget.sourceNodeId,
+        widget.sourceWidgetName
+      )
+      this._removePromotedView(widget)
     }
-    super.ensureWidgetRemoved(widget)
+    for (const input of this.inputs) {
+      if (input._widget === widget) {
+        input._widget = undefined
+        input.widget = undefined
+      }
+    }
+    this.subgraph.events.dispatch('widget-demoted', {
+      widget,
+      subgraphNode: this
+    })
+
+    this._syncPromotions()
   }
 
   override onRemoved(): void {
-    // Clean up all subgraph event listeners
-    this.#eventAbortController.abort()
+    this._eventAbortController.abort()
+    this._invalidatePromotedViewsCache()
 
-    // Clean up all promoted widgets
     for (const widget of this.widgets) {
-      if ('isProxyWidget' in widget && widget.isProxyWidget) continue
+      if (isPromotedWidgetView(widget)) {
+        this._clearDomOverrideForView(widget)
+      }
       this.subgraph.events.dispatch('widget-demoted', {
         widget,
         subgraphNode: this
       })
     }
+
+    usePromotionStore().setPromotions(this.rootGraph.id, this.id, [])
+    this._promotedViewManager.clear()
 
     for (const input of this.inputs) {
       if (
@@ -583,7 +1393,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (!low_quality) {
       ctx.translate(25, 23)
       ctx.scale(-1.5, 1.5)
-      ctx.drawImage(workflowSvg, 0, -title_height, box_size, box_size)
+      ctx.drawImage(
+        workflowBitmapCache.get(),
+        0,
+        -title_height,
+        box_size,
+        box_size
+      )
     }
     ctx.restore()
   }
@@ -594,36 +1410,36 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    * This ensures nested subgraph widget values are preserved when saving.
    */
   override serialize(): ISerialisedNode {
-    // Sync widget values to subgraph definition before serialization
-    for (let i = 0; i < this.widgets.length; i++) {
-      const widget = this.widgets[i]
-      const input = this.inputs.find((inp) => inp.name === widget.name)
+    // Sync widget values to subgraph definition before serialization.
+    // Only sync for inputs that are linked to a promoted widget via _widget.
+    for (const input of this.inputs) {
+      if (!input._widget) continue
 
-      if (input) {
-        const subgraphInput = this.subgraph.inputNode.slots.find(
-          (slot) => slot.name === input.name
-        )
+      const subgraphInput =
+        input._subgraphSlot ??
+        this.subgraph.inputNode.slots.find((slot) => slot.name === input.name)
+      if (!subgraphInput) continue
 
-        if (subgraphInput) {
-          // Find all widgets connected to this subgraph input
-          const connectedWidgets = subgraphInput.getConnectedWidgets()
-
-          // Update the value of all connected widgets
-          for (const connectedWidget of connectedWidgets) {
-            connectedWidget.value = widget.value
-          }
-        }
+      const connectedWidgets = subgraphInput.getConnectedWidgets()
+      for (const connectedWidget of connectedWidgets) {
+        connectedWidget.value = input._widget.value
       }
     }
 
-    // Call parent serialize method
+    // Write promotion store state back to properties for serialization
+    const entries = usePromotionStore().getPromotions(
+      this.rootGraph.id,
+      this.id
+    )
+    this.properties.proxyWidgets = entries.map((e) => [
+      e.interiorNodeId,
+      e.widgetName
+    ])
+
     return super.serialize()
   }
   override clone() {
     const clone = super.clone()
-    // force reasign so domWidgets reset ownership
-
-    this.properties.proxyWidgets = this.properties.proxyWidgets
 
     //TODO: Consider deep cloning subgraphs here.
     //It's the safest place to prevent creation of linked subgraphs

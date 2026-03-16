@@ -3,7 +3,9 @@ import { nextTick } from 'vue'
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
+import { SUPPORTED_EXTENSIONS_ACCEPT } from './constants'
 import { createExportMenuItems } from './exportMenuHelper'
+import type { CameraConfig, CameraState } from './interfaces'
 import Load3DConfiguration from './Load3DConfiguration'
 import Load3dUtils from './Load3dUtils'
 import { t } from '@/i18n'
@@ -11,7 +13,13 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { NodeOutputWith } from '@/schemas/apiSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+
+type Load3dPreviewOutput = NodeOutputWith<{
+  result?: [string?, CameraState?, string?]
+}>
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { ComfyApp, app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
@@ -32,12 +40,12 @@ const inputSpecPreview3D: CustomInputSpec = {
   isPreview: true
 }
 
-async function handleModelUpload(files: FileList, node: any) {
+async function handleModelUpload(files: FileList, node: LGraphNode) {
   if (!files?.length) return
 
-  const modelWidget = node.widgets?.find(
-    (w: any) => w.name === 'model_file'
-  ) as IStringWidget
+  const modelWidget = node.widgets?.find((w) => w.name === 'model_file') as
+    | IStringWidget
+    | undefined
 
   try {
     const resourceFolder = (node.properties['Resource Folder'] as string) || ''
@@ -81,7 +89,7 @@ async function handleModelUpload(files: FileList, node: any) {
   }
 }
 
-async function handleResourcesUpload(files: FileList, node: any) {
+async function handleResourcesUpload(files: FileList, node: LGraphNode) {
   if (!files?.length) return
 
   try {
@@ -198,6 +206,17 @@ useExtensionService().registerExtension({
       type: 'boolean',
       defaultValue: false,
       experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.PLYEngine',
+      category: ['3D', 'PLY', 'PLY Engine'],
+      name: 'PLY Engine',
+      tooltip:
+        'Select the engine for loading PLY files. "threejs" uses the native Three.js PLYLoader (best for mesh PLY files). "fastply" uses an optimized loader for ASCII point cloud PLY files. "sparkjs" uses Spark.js for 3D Gaussian Splatting PLY files.',
+      type: 'combo',
+      options: ['threejs', 'fastply', 'sparkjs'],
+      defaultValue: 'threejs',
+      experimental: true
     }
   ],
   commands: [
@@ -238,7 +257,7 @@ useExtensionService().registerExtension({
   getCustomWidgets() {
     return {
       LOAD_3D(node) {
-        const fileInput = createFileInput('.gltf,.glb,.obj,.fbx,.stl', false)
+        const fileInput = createFileInput(SUPPORTED_EXTENSIONS_ACCEPT, false)
 
         node.properties['Resource Folder'] = ''
 
@@ -301,10 +320,12 @@ useExtensionService().registerExtension({
     const load3d = useLoad3dService().getLoad3d(node)
     if (!load3d) return []
 
+    if (load3d.isSplatModel()) return []
+
     return createExportMenuItems(load3d)
   },
 
-  async nodeCreated(node) {
+  async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'Load3D') return
 
     const [oldWidth, oldHeight] = node.size
@@ -314,10 +335,12 @@ useExtensionService().registerExtension({
     await nextTick()
 
     useLoad3d(node).waitForLoad3d((load3d) => {
-      const cameraConfig = node.properties['Camera Config'] as any
+      const cameraConfig = node.properties['Camera Config'] as
+        | CameraConfig
+        | undefined
       const cameraState = cameraConfig?.state
 
-      const config = new Load3DConfiguration(load3d)
+      const config = new Load3DConfiguration(load3d, node.properties)
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
       const width = node.widgets?.find((w) => w.name === 'width')
@@ -341,7 +364,9 @@ useExtensionService().registerExtension({
             return null
           }
 
-          const cameraConfig = (node.properties['Camera Config'] as any) || {
+          const cameraConfig: CameraConfig = (node.properties[
+            'Camera Config'
+          ] as CameraConfig | undefined) || {
             cameraType: currentLoad3d.getCurrentCameraType(),
             fov: currentLoad3d.cameraManager.perspectiveCamera.fov
           }
@@ -372,7 +397,8 @@ useExtensionService().registerExtension({
             mask: `threed/${dataMask.name} [temp]`,
             normal: `threed/${dataNormal.name} [temp]`,
             camera_info:
-              (node.properties['Camera Config'] as any)?.state || null,
+              (node.properties['Camera Config'] as CameraConfig | undefined)
+                ?.state || null,
             recording: ''
           }
 
@@ -395,7 +421,10 @@ useExtensionService().registerExtension({
 useExtensionService().registerExtension({
   name: 'Comfy.Preview3D',
 
-  async beforeRegisterNodeDef(_nodeType, nodeData) {
+  async beforeRegisterNodeDef(
+    _nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if ('Preview3D' === nodeData.name) {
       // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D']
@@ -408,6 +437,8 @@ useExtensionService().registerExtension({
 
     const load3d = useLoad3dService().getLoad3d(node)
     if (!load3d) return []
+
+    if (load3d.isSplatModel()) return []
 
     return createExportMenuItems(load3d)
   },
@@ -432,7 +463,7 @@ useExtensionService().registerExtension({
     }
   },
 
-  async nodeCreated(node) {
+  async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'Preview3D') return
 
     const [oldWidth, oldHeight] = node.size
@@ -444,7 +475,7 @@ useExtensionService().registerExtension({
     const onExecuted = node.onExecuted
 
     useLoad3d(node).waitForLoad3d((load3d) => {
-      const config = new Load3DConfiguration(load3d)
+      const config = new Load3DConfiguration(load3d, node.properties)
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
@@ -454,7 +485,9 @@ useExtensionService().registerExtension({
         if (lastTimeModelFile) {
           modelWidget.value = lastTimeModelFile
 
-          const cameraConfig = node.properties['Camera Config'] as any
+          const cameraConfig = node.properties['Camera Config'] as
+            | CameraConfig
+            | undefined
           const cameraState = cameraConfig?.state
 
           const settings = {
@@ -466,10 +499,11 @@ useExtensionService().registerExtension({
           config.configure(settings)
         }
 
-        node.onExecuted = function (message: any) {
-          onExecuted?.apply(this, arguments as any)
+        node.onExecuted = function (output: Load3dPreviewOutput) {
+          onExecuted?.call(this, output)
 
-          let filePath = message.result[0]
+          const result = output.result
+          const filePath = result?.[0]
 
           if (!filePath) {
             const msg = t('toastMessages.unableToGetModelFilePath')
@@ -477,10 +511,10 @@ useExtensionService().registerExtension({
             useToastStore().addAlert(msg)
           }
 
-          let cameraState = message.result[1]
-          let bgImagePath = message.result[2]
+          const cameraState = result?.[1]
+          const bgImagePath = result?.[2]
 
-          modelWidget.value = filePath.replaceAll('\\', '/')
+          modelWidget.value = filePath?.replaceAll('\\', '/')
 
           node.properties['Last Time Model File'] = modelWidget.value
 

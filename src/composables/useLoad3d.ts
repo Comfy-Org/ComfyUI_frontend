@@ -1,13 +1,17 @@
+import type { MaybeRef } from 'vue'
+
 import { toRef } from '@vueuse/core'
-import type { MaybeRef } from '@vueuse/core'
 import { nextTick, ref, toRaw, watch } from 'vue'
 
 import Load3d from '@/extensions/core/extensions/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/extensions/load3d/Load3dUtils'
+import { persistThumbnail } from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
   CameraConfig,
+  CameraState,
   CameraType,
+  EventCallback,
   LightConfig,
   MaterialMode,
   ModelConfig,
@@ -16,8 +20,10 @@ import type {
 } from '@/extensions/core/extensions/load3d/interfaces'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/services/load3dService'
 
 type Load3dReadyCallback = (load3d: Load3d) => void
@@ -37,8 +43,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const modelConfig = ref<ModelConfig>({
     upDirection: 'original',
-    materialMode: 'original'
+    materialMode: 'original',
+    showSkeleton: false
   })
+
+  const hasSkeleton = ref(false)
 
   const cameraConfig = ref<CameraConfig>({
     cameraType: 'perspective',
@@ -57,9 +66,13 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const playing = ref(false)
   const selectedSpeed = ref(1)
   const selectedAnimation = ref(0)
+  const animationProgress = ref(0)
+  const animationDuration = ref(0)
   const loading = ref(false)
   const loadingMessage = ref('')
   const isPreview = ref(false)
+  const isSplatModel = ref(false)
+  const isPlyModel = ref(false)
 
   const initializeLoad3d = async (containerRef: HTMLElement) => {
     const rawNode = toRaw(nodeRef.value)
@@ -68,16 +81,33 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     const node = rawNode as LGraphNode
 
     try {
-      load3d = new Load3d(containerRef, {
-        node
-      })
-
       const widthWidget = node.widgets?.find((w) => w.name === 'width')
       const heightWidget = node.widgets?.find((w) => w.name === 'height')
 
       if (!(widthWidget && heightWidget)) {
         isPreview.value = true
       }
+
+      load3d = new Load3d(containerRef, {
+        width: widthWidget?.value as number | undefined,
+        height: heightWidget?.value as number | undefined,
+        // Provide dynamic dimension getter for reactive updates
+        getDimensions:
+          widthWidget && heightWidget
+            ? () => ({
+                width: widthWidget.value as number,
+                height: heightWidget.value as number
+              })
+            : undefined,
+        onContextMenu: (event) => {
+          const menuOptions = app.canvas.getNodeMenuOptions(node)
+          new LiteGraph.ContextMenu(menuOptions, {
+            event,
+            title: node.type,
+            extra: node
+          })
+        }
+      })
 
       await restoreConfigurationsFromNode(node)
 
@@ -190,14 +220,15 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         return modelPath
       }
 
-      const [subfolder, filename] = Load3dUtils.splitFilePath(modelPath)
-      return api.apiURL(
-        Load3dUtils.getResourceURL(
-          subfolder,
-          filename,
-          isPreview.value ? 'output' : 'input'
-        )
-      )
+      const trimmed = modelPath.trim()
+      const hasOutputSuffix = trimmed.endsWith('[output]')
+      const cleanPath = hasOutputSuffix
+        ? trimmed.replace(/\s*\[output\]$/, '')
+        : trimmed
+      const type = hasOutputSuffix || isPreview.value ? 'output' : 'input'
+
+      const [subfolder, filename] = Load3dUtils.splitFilePath(cleanPath)
+      return api.apiURL(Load3dUtils.getResourceURL(subfolder, filename, type))
     } catch (error) {
       console.error('Failed to construct model URL:', error)
       return null
@@ -249,6 +280,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         nodeRef.value.properties['Model Config'] = newValue
         load3d.setUpDirection(newValue.upDirection)
         load3d.setMaterialMode(newValue.materialMode)
+        load3d.setShowSkeleton(newValue.showSkeleton)
       }
     },
     { deep: true }
@@ -332,6 +364,13 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       load3d.clearRecording()
       hasRecording.value = false
       recordingDuration.value = 0
+    }
+  }
+
+  const handleSeek = (progress: number) => {
+    if (load3d && animationDuration.value > 0) {
+      const time = (progress / 100) * animationDuration.value
+      load3d.setAnimationTime(time)
     }
   }
 
@@ -470,6 +509,32 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     modelLoadingEnd: () => {
       loadingMessage.value = ''
       loading.value = false
+      isSplatModel.value = load3d?.isSplatModel() ?? false
+      isPlyModel.value = load3d?.isPlyModel() ?? false
+      hasSkeleton.value = load3d?.hasSkeleton() ?? false
+      // Reset skeleton visibility when loading new model
+      modelConfig.value.showSkeleton = false
+
+      if (load3d && api.getServerFeature('assets', false)) {
+        const node = nodeRef.value
+
+        const modelWidget = node?.widgets?.find(
+          (w) => w.name === 'model_file' || w.name === 'image'
+        )
+        const value = modelWidget?.value
+        if (typeof value === 'string' && value) {
+          const filename = value.trim().replace(/\s*\[output\]$/, '')
+          const modelName = Load3dUtils.splitFilePath(filename)[1]
+          load3d
+            .captureThumbnail(256, 256)
+            .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+            .then((blob) => persistThumbnail(modelName, blob))
+            .catch(() => {})
+        }
+      }
+    },
+    skeletonVisibilityChange: (value: boolean) => {
+      modelConfig.value.showSkeleton = value
     },
     exportLoadingStart: (message: string) => {
       loadingMessage.value = message || t('load3d.exportingModel')
@@ -487,15 +552,41 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         hasRecording.value = recordingDuration.value > 0
       }
     },
-    animationListChange: (newValue: any) => {
+    animationListChange: (newValue: AnimationItem[]) => {
       animations.value = newValue
+    },
+    animationProgressChange: (data: {
+      progress: number
+      currentTime: number
+      duration: number
+    }) => {
+      animationProgress.value = data.progress
+      animationDuration.value = data.duration
+    },
+    cameraChanged: (cameraState: CameraState) => {
+      const rawNode = toRaw(nodeRef.value)
+      if (rawNode) {
+        const node = rawNode as LGraphNode
+        if (!node.properties) node.properties = {}
+        const cameraConfigProp = node.properties['Camera Config']
+
+        if (cameraConfigProp) {
+          ;(cameraConfigProp as CameraConfig).state = cameraState
+        } else {
+          node.properties['Camera Config'] = {
+            cameraType: cameraConfig.value.cameraType,
+            fov: cameraConfig.value.fov,
+            state: cameraState
+          }
+        }
+      }
     }
   } as const
 
   const handleEvents = (action: 'add' | 'remove') => {
     Object.entries(eventConfig).forEach(([event, handler]) => {
       const method = `${action}EventListener` as const
-      load3d?.[method](event, handler)
+      load3d?.[method](event, handler as EventCallback)
     })
   }
 
@@ -523,12 +614,17 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     lightConfig,
     isRecording,
     isPreview,
+    isSplatModel,
+    isPlyModel,
+    hasSkeleton,
     hasRecording,
     recordingDuration,
     animations,
     playing,
     selectedSpeed,
     selectedAnimation,
+    animationProgress,
+    animationDuration,
     loading,
     loadingMessage,
 
@@ -541,6 +637,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     handleStopRecording,
     handleExportRecording,
     handleClearRecording,
+    handleSeek,
     handleBackgroundImageUpdate,
     handleExportModel,
     handleModelDrop,

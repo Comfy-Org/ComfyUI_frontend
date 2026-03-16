@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -8,6 +8,18 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CurrentUserButton from './CurrentUserButton.vue'
+
+const mockFeatureFlags = vi.hoisted(() => ({
+  teamWorkspacesEnabled: false
+}))
+
+const mockTeamWorkspaceStore = vi.hoisted(() => ({
+  workspaceName: { value: '' },
+  initState: { value: 'idle' },
+  isInPersonalWorkspace: { value: false }
+}))
+
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
 // Mock all firebase modules
 vi.mock('firebase/app', () => ({
@@ -25,7 +37,27 @@ vi.mock('firebase/auth', () => ({
 }))
 
 // Mock pinia
-vi.mock('pinia')
+vi.mock('pinia', () => ({
+  storeToRefs: vi.fn((store) => store)
+}))
+
+// Mock the useFeatureFlags composable
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: vi.fn(() => ({
+    flags: mockFeatureFlags
+  }))
+}))
+
+// Mock the useTeamWorkspaceStore
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: vi.fn(() => mockTeamWorkspaceStore)
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
 
 // Mock the useCurrentUser composable
 vi.mock('@/composables/auth/useCurrentUser', () => ({
@@ -47,10 +79,20 @@ vi.mock('@/components/common/UserAvatar.vue', () => ({
   }
 }))
 
-// Mock the CurrentUserPopover component
-vi.mock('./CurrentUserPopover.vue', () => ({
+// Mock the WorkspaceProfilePic component
+vi.mock('@/platform/workspace/components/WorkspaceProfilePic.vue', () => ({
   default: {
-    name: 'CurrentUserPopoverMock',
+    name: 'WorkspaceProfilePicMock',
+    render() {
+      return h('div', 'WorkspaceProfilePic')
+    }
+  }
+}))
+
+// Mock the CurrentUserPopoverLegacy component
+vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
+  default: {
+    name: 'CurrentUserPopoverLegacyMock',
     render() {
       return h('div', 'Popover Content')
     },
@@ -61,9 +103,15 @@ vi.mock('./CurrentUserPopover.vue', () => ({
 describe('CurrentUserButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFeatureFlags.teamWorkspacesEnabled = false
+    mockTeamWorkspaceStore.workspaceName.value = ''
+    mockTeamWorkspaceStore.initState.value = 'idle'
+    mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
+    mockIsCloud.value = false
   })
 
-  const mountComponent = (): VueWrapper => {
+  const mountComponent = (options?: { stubButton?: boolean }): VueWrapper => {
+    const { stubButton = true } = options ?? {}
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -82,7 +130,7 @@ describe('CurrentUserButton', () => {
               hide: vi.fn()
             }
           },
-          Button: true
+          ...(stubButton ? { Button: true } : {})
         }
       }
     })
@@ -119,5 +167,28 @@ describe('CurrentUserButton', () => {
 
     // Verify that popover.hide was called
     expect(popoverHideSpy).toHaveBeenCalled()
+  })
+
+  it('shows UserAvatar in personal workspace', () => {
+    mockIsCloud.value = true
+    mockFeatureFlags.teamWorkspacesEnabled = true
+    mockTeamWorkspaceStore.initState.value = 'ready'
+    mockTeamWorkspaceStore.isInPersonalWorkspace.value = true
+
+    const wrapper = mountComponent({ stubButton: false })
+    expect(wrapper.html()).toContain('Avatar')
+    expect(wrapper.html()).not.toContain('WorkspaceProfilePic')
+  })
+
+  it('shows WorkspaceProfilePic in team workspace', () => {
+    mockIsCloud.value = true
+    mockFeatureFlags.teamWorkspacesEnabled = true
+    mockTeamWorkspaceStore.initState.value = 'ready'
+    mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
+    mockTeamWorkspaceStore.workspaceName.value = 'My Team'
+
+    const wrapper = mountComponent({ stubButton: false })
+    expect(wrapper.html()).toContain('WorkspaceProfilePic')
+    expect(wrapper.html()).not.toContain('Avatar')
   })
 })

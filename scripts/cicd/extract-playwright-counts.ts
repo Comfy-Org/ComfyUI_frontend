@@ -10,8 +10,48 @@ interface TestStats {
   finished?: number
 }
 
+interface TestResult {
+  status: string
+  duration?: number
+  error?: {
+    message?: string
+    stack?: string
+  }
+  attachments?: Array<{
+    name: string
+    path?: string
+    contentType: string
+  }>
+}
+
+interface TestCase {
+  title: string
+  ok: boolean
+  outcome: string
+  results: TestResult[]
+}
+
+interface Suite {
+  title: string
+  file: string
+  suites?: Suite[]
+  tests?: TestCase[]
+}
+
+interface FullReportData {
+  stats?: TestStats
+  suites?: Suite[]
+}
+
 interface ReportData {
   stats?: TestStats
+}
+
+interface FailedTest {
+  name: string
+  file: string
+  traceUrl?: string
+  error?: string
 }
 
 interface TestCounts {
@@ -20,27 +60,108 @@ interface TestCounts {
   flaky: number
   skipped: number
   total: number
+  failures?: FailedTest[]
+}
+
+/**
+ * Extract failed test details from Playwright report
+ */
+function extractFailedTests(
+  reportData: FullReportData,
+  baseUrl?: string
+): FailedTest[] {
+  const failures: FailedTest[] = []
+
+  function processTest(test: TestCase, file: string, suitePath: string[]) {
+    // Check if test failed or is flaky
+    const hasFailed = test.results.some(
+      (r) => r.status === 'failed' || r.status === 'timedOut'
+    )
+    const isFlaky = test.outcome === 'flaky'
+
+    if (hasFailed || isFlaky) {
+      const fullTestName = [...suitePath, test.title]
+        .filter(Boolean)
+        .join(' › ')
+      const failedResult = test.results.find(
+        (r) => r.status === 'failed' || r.status === 'timedOut'
+      )
+
+      // Find trace attachment
+      let traceUrl: string | undefined
+      if (failedResult?.attachments) {
+        const traceAttachment = failedResult.attachments.find(
+          (a) => a.name === 'trace' && a.contentType === 'application/zip'
+        )
+        if (traceAttachment?.path) {
+          // Convert local path to URL path
+          const tracePath = traceAttachment.path.replace(/\\/g, '/')
+          const traceFile = path.basename(tracePath)
+          if (baseUrl) {
+            // Construct trace viewer URL
+            const traceDataUrl = `${baseUrl}/data/${traceFile}`
+            traceUrl = `${baseUrl}/trace/?trace=${encodeURIComponent(traceDataUrl)}`
+          }
+        }
+      }
+
+      failures.push({
+        name: fullTestName,
+        file: file,
+        traceUrl,
+        error: failedResult?.error?.message
+      })
+    }
+  }
+
+  function processSuite(suite: Suite, parentPath: string[] = []) {
+    const suitePath = suite.title ? [...parentPath, suite.title] : parentPath
+
+    // Process tests in this suite
+    if (suite.tests) {
+      for (const test of suite.tests) {
+        processTest(test, suite.file, suitePath)
+      }
+    }
+
+    // Recursively process nested suites
+    if (suite.suites) {
+      for (const childSuite of suite.suites) {
+        processSuite(childSuite, suitePath)
+      }
+    }
+  }
+
+  if (reportData.suites) {
+    for (const suite of reportData.suites) {
+      processSuite(suite)
+    }
+  }
+
+  return failures
 }
 
 /**
  * Extract test counts from Playwright HTML report
  * @param reportDir - Path to the playwright-report directory
- * @returns Test counts { passed, failed, flaky, skipped, total }
+ * @param baseUrl - Base URL of the deployed report (for trace links)
+ * @returns Test counts { passed, failed, flaky, skipped, total, failures }
  */
-function extractTestCounts(reportDir: string): TestCounts {
+function extractTestCounts(reportDir: string, baseUrl?: string): TestCounts {
   const counts: TestCounts = {
     passed: 0,
     failed: 0,
     flaky: 0,
     skipped: 0,
-    total: 0
+    total: 0,
+    failures: []
   }
 
   try {
     // First, try to find report.json which Playwright generates with JSON reporter
     const jsonReportFile = path.join(reportDir, 'report.json')
     if (fs.existsSync(jsonReportFile)) {
-      const reportJson: ReportData = JSON.parse(
+      const reportJson: FullReportData = JSON.parse(
         fs.readFileSync(jsonReportFile, 'utf-8')
       )
       if (reportJson.stats) {
@@ -54,6 +175,12 @@ function extractTestCounts(reportDir: string): TestCounts {
         counts.failed = stats.unexpected || 0
         counts.flaky = stats.flaky || 0
         counts.skipped = stats.skipped || 0
+
+        // Extract detailed failure information
+        if (counts.failed > 0 || counts.flaky > 0) {
+          counts.failures = extractFailedTests(reportJson, baseUrl)
+        }
+
         return counts
       }
     }
@@ -169,15 +296,18 @@ function extractTestCounts(reportDir: string): TestCounts {
 
 // Main execution
 const reportDir = process.argv[2]
+const baseUrl = process.argv[3] // Optional: base URL for trace links
 
 if (!reportDir) {
-  console.error('Usage: extract-playwright-counts.ts <report-directory>')
+  console.error(
+    'Usage: extract-playwright-counts.ts <report-directory> [base-url]'
+  )
   process.exit(1)
 }
 
-const counts = extractTestCounts(reportDir)
+const counts = extractTestCounts(reportDir, baseUrl)
 
 // Output as JSON for easy parsing in shell script
-console.log(JSON.stringify(counts))
+process.stdout.write(JSON.stringify(counts) + '\n')
 
-export { extractTestCounts }
+export { extractTestCounts, extractFailedTests }

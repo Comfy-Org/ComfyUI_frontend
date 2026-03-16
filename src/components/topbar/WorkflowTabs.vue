@@ -1,18 +1,20 @@
 <template>
   <div
     ref="containerRef"
-    class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden border-b border-[var(--interface-stroke)] shadow-interface"
+    class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden"
     :class="{ 'workflow-tabs-container-desktop': isDesktop }"
   >
     <Button
       v-if="showOverflowArrows"
-      icon="pi pi-chevron-left"
-      text
-      severity="secondary"
-      class="overflow-arrow overflow-arrow-left"
+      variant="muted-textonly"
+      size="icon"
+      class="overflow-arrow overflow-arrow-left aspect-square h-full w-auto"
+      :aria-label="$t('g.scrollLeft')"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
-    />
+    >
+      <i class="icon-[lucide--chevron-left] size-full" />
+    </Button>
     <ScrollPanel
       class="no-drag overflow-hidden"
       :pt:content="{
@@ -30,64 +32,95 @@
         data-key="value"
         @update:model-value="onWorkflowChange"
       >
-        <template #option="{ option }">
+        <template #option="{ option, index }">
           <WorkflowTab
             :workflow-option="option"
-            @contextmenu="showContextMenu($event, option)"
+            :is-first="index === 0"
+            :is-last="index === options.length - 1"
             @click.middle="onCloseWorkflow(option)"
+            @close-to-left="closeWorkflows(options.slice(0, index))"
+            @close-to-right="closeWorkflows(options.slice(index + 1))"
+            @close-others="
+              closeWorkflows([
+                ...options.slice(index + 1),
+                ...options.slice(0, index)
+              ])
+            "
           />
         </template>
       </SelectButton>
     </ScrollPanel>
     <Button
       v-if="showOverflowArrows"
-      icon="pi pi-chevron-right"
-      text
-      severity="secondary"
-      class="overflow-arrow overflow-arrow-right"
+      variant="muted-textonly"
+      size="icon"
+      class="overflow-arrow overflow-arrow-right aspect-square h-full w-auto"
+      :aria-label="$t('g.scrollRight')"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
-    />
+    >
+      <i class="icon-[lucide--chevron-right] size-full" />
+    </Button>
     <WorkflowOverflowMenu
       v-if="showOverflowArrows"
       :workflows="workflowStore.openWorkflows"
       :active-workflow="workflowStore.activeWorkflow"
     />
     <Button
-      v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-      class="new-blank-workflow-button no-drag shrink-0 rounded-none"
-      icon="pi pi-plus"
-      text
-      severity="secondary"
+      v-tooltip="{
+        value: $t('sideToolbar.newBlankWorkflow'),
+        showDelay: 300
+      }"
+      class="new-blank-workflow-button no-drag aspect-square h-full w-auto shrink-0 rounded-none"
+      variant="muted-textonly"
+      size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
       @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
-    />
-    <ContextMenu ref="menu" :model="contextMenuItems" />
+    >
+      <i class="pi pi-plus" />
+    </Button>
+    <div
+      v-if="isIntegratedTabBar"
+      class="ml-auto flex shrink-0 items-center gap-2 px-2"
+    >
+      <Button
+        v-if="isCloud || isNightly"
+        v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
+        variant="muted-textonly"
+        size="icon"
+        class="shrink-0 text-base-foreground"
+        :aria-label="$t('actionbar.feedback')"
+        @click="openFeedback"
+      >
+        <i class="icon-[lucide--message-square-text]" />
+      </Button>
+      <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
+      <LoginButton v-else-if="isDesktop" class="p-1" />
+    </div>
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useScroll } from '@vueuse/core'
-import Button from 'primevue/button'
-import ContextMenu from 'primevue/contextmenu'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
-import { useI18n } from 'vue-i18n'
-
+import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
+import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { buildFeedbackUrl } from '@/platform/support/config'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import {
-  useWorkflowBookmarkStore,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isElectron } from '@/utils/envUtil'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
@@ -101,20 +134,27 @@ const props = defineProps<{
   class?: string
 }>()
 
-const { t } = useI18n()
+const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
-const workflowBookmarkStore = useWorkflowBookmarkStore()
 const workflowService = useWorkflowService()
+const commandStore = useCommandStore()
+const { isLoggedIn } = useCurrentUser()
 
-const rightClickedTab = ref<WorkflowOption | undefined>()
-const menu = ref()
+const isIntegratedTabBar = computed(
+  () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
+)
+const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
+
+const feedbackUrl = buildFeedbackUrl()
+function openFeedback() {
+  window.open(feedbackUrl, '_blank', 'noopener,noreferrer')
+}
+
 const containerRef = ref<HTMLElement | null>(null)
 const showOverflowArrows = ref(false)
 const leftArrowEnabled = ref(false)
 const rightArrowEnabled = ref(false)
-
-const isDesktop = isElectron()
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -159,59 +199,6 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
 const onCloseWorkflow = async (option: WorkflowOption) => {
   await closeWorkflows([option])
 }
-
-const showContextMenu = (event: MouseEvent, option: WorkflowOption) => {
-  rightClickedTab.value = option
-  menu.value.show(event)
-}
-const contextMenuItems = computed(() => {
-  const tab = rightClickedTab.value as WorkflowOption
-  if (!tab) return []
-  const index = options.value.findIndex((v) => v.workflow === tab.workflow)
-
-  return [
-    {
-      label: t('tabMenu.duplicateTab'),
-      command: async () => {
-        await workflowService.duplicateWorkflow(tab.workflow)
-      }
-    },
-    {
-      separator: true
-    },
-    {
-      label: t('tabMenu.closeTab'),
-      command: () => onCloseWorkflow(tab)
-    },
-    {
-      label: t('tabMenu.closeTabsToLeft'),
-      command: () => closeWorkflows(options.value.slice(0, index)),
-      disabled: index <= 0
-    },
-    {
-      label: t('tabMenu.closeTabsToRight'),
-      command: () => closeWorkflows(options.value.slice(index + 1)),
-      disabled: index === options.value.length - 1
-    },
-    {
-      label: t('tabMenu.closeOtherTabs'),
-      command: () =>
-        closeWorkflows([
-          ...options.value.slice(index + 1),
-          ...options.value.slice(0, index)
-        ]),
-      disabled: options.value.length <= 1
-    },
-    {
-      label: workflowBookmarkStore.isBookmarked(tab.workflow.path)
-        ? t('tabMenu.removeFromBookmarks')
-        : t('tabMenu.addToBookmarks'),
-      command: () => workflowBookmarkStore.toggleBookmarked(tab.workflow.path),
-      disabled: tab.workflow.isTemporary
-    }
-  ]
-})
-const commandStore = useCommandStore()
 
 // Horizontal scroll on wheel
 const handleWheel = (event: WheelEvent) => {
@@ -323,63 +310,72 @@ onUpdated(() => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .workflow-tabs-container {
   background-color: var(--comfy-menu-bg);
 }
 
 :deep(.p-togglebutton) {
-  @apply p-0 bg-transparent rounded-none shrink relative border-0 border-r border-solid;
+  position: relative;
+  flex-shrink: 1;
+  border: 0;
+  border-right-style: solid;
+  border-right-width: 1px;
+  border-radius: 0;
+  background-color: transparent;
+  padding: 0;
   border-right-color: var(--border-color);
   min-width: 90px;
 }
 
 .overflow-arrow {
-  @apply px-2 rounded-none;
+  border-radius: 0;
+  padding-inline: calc(var(--spacing) * 2);
 }
 
 .overflow-arrow[disabled] {
-  @apply opacity-25;
+  opacity: 0.25;
 }
 
 :deep(.p-togglebutton > .p-togglebutton-content) {
-  @apply max-w-full;
+  max-width: 100%;
 }
 
 :deep(.workflow-tab) {
-  @apply max-w-full;
+  max-width: 100%;
 }
 
 :deep(.p-togglebutton::before) {
-  @apply hidden;
+  display: none;
 }
 
 :deep(.p-togglebutton:first-child) {
-  @apply border-l border-solid;
+  border-left-style: solid;
+  border-left-width: 1px;
   border-left-color: var(--border-color);
 }
 
 :deep(.p-togglebutton:not(:first-child)) {
-  @apply border-l-0;
+  border-left-width: 0;
 }
 
 :deep(.p-togglebutton.p-togglebutton-checked) {
-  @apply border-b border-solid h-full;
+  height: 100%;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
   border-bottom-color: var(--p-button-text-primary-color);
 }
 
 :deep(.p-togglebutton:not(.p-togglebutton-checked)) {
-  @apply opacity-75;
+  opacity: 0.75;
 }
 
 :deep(.p-togglebutton-checked) .close-button,
 :deep(.p-togglebutton:hover) .close-button {
-  @apply visible;
+  visibility: visible;
 }
 
 :deep(.p-scrollpanel-content) {
-  @apply h-full;
+  height: 100%;
 }
 
 :deep(.workflow-tabs) {
@@ -389,11 +385,12 @@ onUpdated(() => {
 /* Scrollbar half opacity to avoid blocking the active tab bottom border */
 :deep(.p-scrollpanel:hover .p-scrollpanel-bar),
 :deep(.p-scrollpanel:active .p-scrollpanel-bar) {
-  @apply opacity-50;
+  opacity: 0.5;
 }
 
 :deep(.p-selectbutton) {
-  @apply rounded-none h-full;
+  height: 100%;
+  border-radius: 0;
 }
 
 .workflow-tabs-container-desktop {
@@ -401,7 +398,7 @@ onUpdated(() => {
 }
 
 .window-actions-spacer {
-  @apply flex-auto;
+  flex: auto;
   /* If we are using custom titlebar, then we need to add a gap for the user to drag the window */
   --window-actions-spacer-width: min(75px, env(titlebar-area-width, 0) * 9999);
   min-width: var(--window-actions-spacer-width);

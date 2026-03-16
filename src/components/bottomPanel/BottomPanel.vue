@@ -10,12 +10,12 @@
         class="bg-transparent"
       >
         <div class="flex w-full justify-between">
-          <div class="tabs-container">
+          <div class="tabs-container font-inter">
             <Tab
               v-for="tab in bottomPanelStore.bottomPanelTabs"
               :key="tab.id"
               :value="tab.id"
-              class="m-1 mx-2 border-none"
+              class="m-1 mx-2 border-none font-inter"
               :class="{
                 'tab-list-single-item':
                   bottomPanelStore.bottomPanelTabs.length === 1
@@ -25,15 +25,13 @@
                   class: {
                     'p-3 rounded-lg': true,
                     'pointer-events-none':
-                      bottomPanelStore.bottomPanelTabs.length === 1
-                  },
-                  style: {
-                    color: 'var(--fg-color)',
-                    backgroundColor:
+                      bottomPanelStore.bottomPanelTabs.length === 1,
+                    'bg-secondary-background text-secondary-foreground':
+                      x.context.active &&
+                      bottomPanelStore.bottomPanelTabs.length > 1,
+                    'text-muted-foreground':
                       !x.context.active ||
-                      bottomPanelStore.bottomPanelTabs.length === 1
-                        ? ''
-                        : 'var(--bg-color)'
+                      bottomPanelStore.bottomPanelTabs.length <= 1
                   }
                 })
               "
@@ -46,21 +44,22 @@
           <div class="flex items-center gap-2">
             <Button
               v-if="isShortcutsTabActive"
-              :label="$t('shortcuts.manageShortcuts')"
-              icon="pi pi-cog"
-              severity="secondary"
-              size="small"
-              text
+              variant="muted-textonly"
+              size="sm"
               @click="openKeybindingSettings"
-            />
+            >
+              <i class="pi pi-cog" />
+              {{ $t('shortcuts.manageShortcuts') }}
+            </Button>
             <Button
               class="justify-self-end"
-              icon="pi pi-times"
-              severity="secondary"
-              size="small"
-              text
+              variant="muted-textonly"
+              size="sm"
+              :aria-label="t('g.close')"
               @click="closeBottomPanel"
-            />
+            >
+              <i class="pi pi-times" />
+            </Button>
           </div>
         </div>
       </TabList>
@@ -79,7 +78,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Tab from 'primevue/tab'
 import type { TabPassThroughMethodOptions } from 'primevue/tab'
 import TabList from 'primevue/tablist'
@@ -88,12 +86,13 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
-import { useDialogService } from '@/services/dialogService'
+import Button from '@/components/ui/button/Button.vue'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
 const bottomPanelStore = useBottomPanelStore()
-const dialogService = useDialogService()
+const settingsDialog = useSettingsDialog()
 const { t } = useI18n()
 
 const isShortcutsTabActive = computed(() => {
@@ -114,7 +113,7 @@ const getTabDisplayTitle = (tab: BottomPanelExtension): string => {
 }
 
 const openKeybindingSettings = async () => {
-  dialogService.showSettingsDialog('keybinding')
+  settingsDialog.show('keybinding')
 }
 
 const closeBottomPanel = () => {
@@ -125,5 +124,9 @@ const closeBottomPanel = () => {
 <style scoped>
 :deep(.p-tablist-active-bar) {
   display: none;
+}
+
+:deep(.p-tab-active) {
+  color: inherit;
 }
 </style>

@@ -10,6 +10,7 @@
 ## Technical Process (Confirmed Working)
 
 ### Prerequisites
+
 - Node.js installed
 - Git/GitHub knowledge
 - OpenAI API key (optional - CI will handle translations)
@@ -19,6 +20,7 @@
 **Time required: ~10 minutes**
 
 #### 1.1 Update `.i18nrc.cjs`
+
 Add your language code to the `outputLocales` array:
 
 ```javascript
@@ -30,10 +32,11 @@ module.exports = defineConfig({
   'mask' is in the context of image processing.
   Note: For Traditional Chinese (Taiwan), use Taiwan-specific terminology and traditional characters.
   `
-});
+})
 ```
 
 #### 1.2 Update `src/constants/coreSettings.ts`
+
 Add your language to the dropdown options:
 
 ```typescript
@@ -56,6 +59,7 @@ Add your language to the dropdown options:
 ```
 
 #### 1.3 Update `src/i18n.ts`
+
 Add imports for your new language files:
 
 ```typescript
@@ -69,7 +73,7 @@ import zhTWSettings from './locales/zh-TW/settings.json'
 const messages = {
   en: buildLocale(en, enNodes, enCommands, enSettings),
   zh: buildLocale(zh, zhNodes, zhCommands, zhSettings),
-  'zh-TW': buildLocale(zhTW, zhTWNodes, zhTWCommands, zhTWSettings), // Add this line
+  'zh-TW': buildLocale(zhTW, zhTWNodes, zhTWCommands, zhTWSettings) // Add this line
   // ... other languages
 }
 ```
@@ -77,12 +81,14 @@ const messages = {
 ### Step 2: Generate Translation Files
 
 #### Option A: Local Generation (Optional)
+
 ```bash
 # Only if you have OpenAI API key configured
 pnpm locale
 ```
 
 #### Option B: Let CI Handle It (Recommended)
+
 - Create your PR with the configuration changes above
 - **Important**: Translation files will be generated during release PRs, not feature PRs
 - Empty JSON files are fine - they'll be populated during the next release workflow
@@ -96,6 +102,7 @@ pnpm dev        # Start development server
 ```
 
 **Testing checklist:**
+
 - [ ] Language appears in ComfyUI Settings > Locale dropdown
 - [ ] Can select the new language without errors
 - [ ] Partial translations display correctly
@@ -111,27 +118,32 @@ pnpm dev        # Start development server
 
 ## What Happens in CI
 
-Our automated translation workflow now runs on release PRs (version-bump-* branches) to improve development performance:
+Our automated translation workflow now runs on release PRs (version-bump-\* branches) to improve development performance:
 
 ### For Feature PRs (Regular Development)
+
 - **No automatic translations** - faster reviews and fewer conflicts
 - **English-only development** - new strings show in English until release
 - **Focus on functionality** - reviewers see only your actual changes
 
-### For Release PRs (version-bump-* branches)
+### For Release PRs (version-bump-\* branches)
+
 1. **Collects strings**: Scans the UI for translatable text
-2. **Updates English files**: Ensures all strings are captured  
+2. **Updates English files**: Ensures all strings are captured
 3. **Generates translations**: Uses OpenAI API to translate to all configured languages
 4. **Commits back**: Automatically updates the release PR with complete translations
 
 ### Manual Translation Updates
+
 If urgent translation updates are needed outside of releases, maintainers can:
+
 - Trigger the "Update Locales" workflow manually from GitHub Actions
 - The workflow supports manual dispatch for emergency translation updates
 
 ## File Structure
 
 Each language has 4 translation files:
+
 - `main.json` - Main UI text (~2000+ entries)
 - `commands.json` - Command descriptions (~200+ entries)
 - `settings.json` - Settings panel (~400+ entries)
@@ -147,20 +159,25 @@ Each language has 4 translation files:
 ## Common Issues & Solutions
 
 ### Issue: TypeScript errors on imports
+
 **Solution**: Ensure your language code matches exactly in all three files
 
 ### Issue: Empty translation files
+
 **Solution**: This is normal - CI will populate them when you create a PR
 
 ### Issue: Language not appearing in dropdown
+
 **Solution**: Check that the language code in `coreSettings.ts` matches your other files exactly
 
 ### Issue: Rate limits during local translation
+
 **Solution**: This is expected - let CI handle the translation generation
 
 ## Regional Variants
 
 For regional variants (like zh-TW for Taiwan), use:
+
 - **Language-region codes**: `zh-TW`, `pt-BR`, `en-US`
 - **Specific terminology**: Add region-specific context to the reference string
 - **Native display names**: Use the local language name in the dropdown
@@ -175,6 +192,7 @@ For regional variants (like zh-TW for Taiwan), use:
 ## Becoming a Language Maintainer
 
 After your language is added:
+
 1. **Get added to CODEOWNERS** for your language files
 2. **Review future PRs** affecting your language
 3. **Coordinate with other native speakers** for quality improvements
@@ -182,4 +200,4 @@ After your language is added:
 
 ---
 
-*This process was tested and confirmed working with Traditional Chinese (Taiwan) addition.*
+_This process was tested and confirmed working with Traditional Chinese (Taiwan) addition._

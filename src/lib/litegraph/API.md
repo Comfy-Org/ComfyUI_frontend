@@ -90,11 +90,11 @@ Example usage:
 ```typescript
 const { pointer } = this
 // Click / double click - executed on pointerup
-pointer.onClick = e => node.executeClick(e)
+pointer.onClick = (e) => node.executeClick(e)
 pointer.onDoubleClick = node.gotDoubleClick
 
 // Drag events - executed on pointermove
-pointer.onDragStart = e => {
+pointer.onDragStart = (e) => {
   node.isBeingDragged = true
   canvas.startedDragging(e)
 }
@@ -124,20 +124,20 @@ widget.onPointerDown = function (pointer, node, canvas) {
   const offsetFromNode = [e.canvasX - node.pos[0], e.canvasY - node.pos[1]]
 
   // Click events - no overlap with drag events
-  pointer.onClick = upEvent => {
+  pointer.onClick = (upEvent) => {
     // Provides access to the whole lifecycle of events in every callback
     console.log(pointer.eDown)
     console.log(pointer.eMove ?? "Pointer didn't move")
     console.log(pointer.eUp)
   }
-  pointer.onDoubleClick = upEvent => this.customFunction(upEvent)
+  pointer.onDoubleClick = (upEvent) => this.customFunction(upEvent)
 
   // Runs once before the first onDrag event
   pointer.onDragStart = () => {}
   // Receives every movement event
-  pointer.onDrag = moveEvent => {}
+  pointer.onDrag = (moveEvent) => {}
   // The pointerup event of a drag
-  pointer.onDragEnd = upEvent => {}
+  pointer.onDragEnd = (upEvent) => {}
 
   // Semantics of a "finally" block (try/catch).  Once set, the block always executes.
   pointer.finally = () => {}
@@ -191,7 +191,6 @@ if (canvas.state.hoveringOver & CanvasItem.ResizeSe) element.style.cursor = 'se-
 All are unused and incomplete. Have bugs beyond just typescript typing, and are (currently) not worth maintaining. If any of these features are desired down the track, they can be reimplemented.
 
 - Live mode
-- Subgraph
 - `dragged_node`
 
 ## LiteGraph

@@ -235,15 +235,7 @@
             "properties": {
               "Node name for S&R": "KSampler"
             },
-            "widgets_values": [
-              0,
-              "randomize",
-              20,
-              8,
-              "euler",
-              "normal",
-              1
-            ],
+            "widgets_values": [0, "randomize", 20, 8, "euler", "normal", 1],
             "index": 1
           }
         ],

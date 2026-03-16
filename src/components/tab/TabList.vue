@@ -1,17 +1,22 @@
 <template>
-  <div role="tablist" class="flex w-full items-center gap-2 pb-1">
+  <div role="tablist" class="flex w-full items-center gap-2">
     <slot />
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends string = string">
 import { provide } from 'vue'
 
-const modelValue = defineModel<string>({ required: true })
+import { TAB_LIST_INJECTION_KEY } from './tabKeys'
 
-// Provide for child Tab components
-provide('tabs-value', modelValue)
-provide('tabs-update', (value: string) => {
-  modelValue.value = value
+const modelValue = defineModel<T>({ required: true })
+
+function select(value: string) {
+  modelValue.value = value as T
+}
+
+provide(TAB_LIST_INJECTION_KEY, {
+  modelValue,
+  select
 })
 </script>
