@@ -322,4 +322,10 @@ export class SubgraphHelper {
     )
     await this.comfyPage.nextFrame()
   }
+
+  async getNodeCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      return window.app!.canvas.graph!.nodes?.length || 0
+    })
+  }
 }

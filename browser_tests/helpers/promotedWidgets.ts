@@ -75,6 +75,26 @@ export async function getPromotedWidgetCount(
   return promotedWidgets.length
 }
 
+export function isPseudoPreviewEntry(entry: PromotedWidgetEntry): boolean {
+  return entry[1].startsWith('$$')
+}
+
+export async function getPseudoPreviewWidgets(
+  comfyPage: ComfyPage,
+  nodeId: string
+): Promise<PromotedWidgetEntry[]> {
+  const widgets = await getPromotedWidgets(comfyPage, nodeId)
+  return widgets.filter(isPseudoPreviewEntry)
+}
+
+export async function getNonPreviewPromotedWidgets(
+  comfyPage: ComfyPage,
+  nodeId: string
+): Promise<PromotedWidgetEntry[]> {
+  const widgets = await getPromotedWidgets(comfyPage, nodeId)
+  return widgets.filter((entry) => !isPseudoPreviewEntry(entry))
+}
+
 export async function getPromotedWidgetCountByName(
   comfyPage: ComfyPage,
   nodeId: string,

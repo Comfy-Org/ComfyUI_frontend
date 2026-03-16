@@ -654,6 +654,28 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
       expect(await isInSubgraph(comfyPage)).toBe(false)
     })
+
+    test('Breadcrumb disappears after switching workflows while inside subgraph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.nextFrame()
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+      await comfyPage.nextFrame()
+
+      await expect(
+        comfyPage.page.locator(SELECTORS.breadcrumb)
+      ).toBeVisible()
+
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.nextFrame()
+
+      await expect(
+        comfyPage.page.locator(SELECTORS.breadcrumb)
+      ).not.toBeVisible()
+    })
   })
 
   test.describe('DOM Widget Promotion', () => {

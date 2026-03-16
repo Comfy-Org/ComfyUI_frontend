@@ -564,6 +564,34 @@ test.describe(
         expect(widgetCount).toBeGreaterThan(0)
       })
 
+      test('Multi-link input representative stays stable through save/reload', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-multiple-promoted-widgets'
+        )
+        await comfyPage.nextFrame()
+
+        const beforeSnapshot = await getPromotedWidgets(comfyPage, '11')
+        expect(beforeSnapshot.length).toBeGreaterThan(0)
+        const beforeNames = beforeSnapshot.map(([, name]) => name)
+
+        const serialized = await comfyPage.page.evaluate(() => {
+          return window.app!.graph!.serialize()
+        })
+
+        await comfyPage.page.evaluate((workflow: ComfyWorkflowJSON) => {
+          return window.app!.loadGraphData(workflow)
+        }, serialized as ComfyWorkflowJSON)
+        await comfyPage.nextFrame()
+
+        const afterSnapshot = await getPromotedWidgets(comfyPage, '11')
+        const afterNames = afterSnapshot.map(([, name]) => name)
+
+        expect(afterNames).toEqual(beforeNames)
+        expect(afterSnapshot.length).toBe(beforeSnapshot.length)
+      })
+
       test('Cloning a subgraph node keeps promoted widget entries on original and clone', async ({
         comfyPage
       }) => {
@@ -719,6 +747,33 @@ test.describe(
           return !!window.app!.canvas.graph!.getNodeById('11')
         })
         expect(nodeExists).toBe(false)
+      })
+
+      test('Nested promoted widget entries reflect interior changes after slot removal', async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-nested-promotion'
+        )
+        await comfyPage.nextFrame()
+
+        const initialNames = await getPromotedWidgetNames(comfyPage, '5')
+        expect(initialNames.length).toBeGreaterThan(0)
+        const initialCount = initialNames.length
+
+        const outerSubgraph = await comfyPage.nodeOps.getNodeRefById('5')
+        await outerSubgraph.navigateIntoSubgraph()
+
+        await comfyPage.subgraph.rightClickInputSlot()
+        await comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
+        await comfyPage.nextFrame()
+
+        await exitSubgraphViaBreadcrumb(comfyPage)
+
+        const finalCount = await getPromotedWidgetCount(comfyPage, '5')
+        expect(finalCount).toBeLessThan(initialCount)
       })
 
       test('Removing I/O slot removes associated promoted widget', async ({
