@@ -153,7 +153,10 @@ describe('ComfyApp', () => {
     it('should create audio nodes and select them', async () => {
       const mockNode1 = createMockNode({ id: 1, type: 'LoadAudio' })
       const mockNode2 = createMockNode({ id: 2, type: 'LoadAudio' })
-      vi.mocked(pasteAudioNodes).mockResolvedValue([mockNode1, mockNode2])
+      vi.mocked(pasteAudioNodes).mockResolvedValue({
+        nodes: [mockNode1, mockNode2],
+        completion: Promise.resolve()
+      })
 
       const file1 = createTestFile('test1.mp3', 'audio/mpeg')
       const file2 = createTestFile('test2.wav', 'audio/wav')
@@ -165,14 +168,21 @@ describe('ComfyApp', () => {
         mockNode1,
         mockNode2
       ])
+      expect(mockCanvas.emitBeforeChange).toHaveBeenCalled()
+      expect(mockCanvas.emitAfterChange).toHaveBeenCalled()
     })
 
     it('should not select when no nodes created', async () => {
-      vi.mocked(pasteAudioNodes).mockResolvedValue([])
+      vi.mocked(pasteAudioNodes).mockResolvedValue({
+        nodes: [],
+        completion: Promise.resolve()
+      })
 
       await app.handleAudioFileList([createTestFile('test.mp3', 'audio/mpeg')])
 
       expect(mockCanvas.selectItems).not.toHaveBeenCalled()
+      expect(mockCanvas.emitBeforeChange).toHaveBeenCalled()
+      expect(mockCanvas.emitAfterChange).toHaveBeenCalled()
     })
   })
 
@@ -180,7 +190,10 @@ describe('ComfyApp', () => {
     it('should create video nodes and select them', async () => {
       const mockNode1 = createMockNode({ id: 1, type: 'LoadVideo' })
       const mockNode2 = createMockNode({ id: 2, type: 'LoadVideo' })
-      vi.mocked(pasteVideoNodes).mockResolvedValue([mockNode1, mockNode2])
+      vi.mocked(pasteVideoNodes).mockResolvedValue({
+        nodes: [mockNode1, mockNode2],
+        completion: Promise.resolve()
+      })
 
       const file1 = createTestFile('test1.mp4', 'video/mp4')
       const file2 = createTestFile('test2.webm', 'video/webm')
@@ -192,14 +205,21 @@ describe('ComfyApp', () => {
         mockNode1,
         mockNode2
       ])
+      expect(mockCanvas.emitBeforeChange).toHaveBeenCalled()
+      expect(mockCanvas.emitAfterChange).toHaveBeenCalled()
     })
 
     it('should not select when no nodes created', async () => {
-      vi.mocked(pasteVideoNodes).mockResolvedValue([])
+      vi.mocked(pasteVideoNodes).mockResolvedValue({
+        nodes: [],
+        completion: Promise.resolve()
+      })
 
       await app.handleVideoFileList([createTestFile('test.mp4', 'video/mp4')])
 
       expect(mockCanvas.selectItems).not.toHaveBeenCalled()
+      expect(mockCanvas.emitBeforeChange).toHaveBeenCalled()
+      expect(mockCanvas.emitAfterChange).toHaveBeenCalled()
     })
   })
 

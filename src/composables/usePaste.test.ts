@@ -287,20 +287,21 @@ describe('pasteAudioNodes', () => {
     const file2 = createAudioFile('file2.wav', 'audio/wav')
 
     const result = await pasteAudioNodes(mockCanvas, [file1, file2])
+    await result.completion
 
     expect(createNode).toHaveBeenCalledTimes(2)
     expect(createNode).toHaveBeenNthCalledWith(1, mockCanvas, 'LoadAudio')
     expect(createNode).toHaveBeenNthCalledWith(2, mockCanvas, 'LoadAudio')
     expect(mockNode1.pasteFile).toHaveBeenCalledWith(file1)
     expect(mockNode2.pasteFile).toHaveBeenCalledWith(file2)
-    expect(result).toEqual([mockNode1, mockNode2])
+    expect(result.nodes).toEqual([mockNode1, mockNode2])
   })
 
   it('should handle empty file list', async () => {
     const result = await pasteAudioNodes(mockCanvas, [])
 
     expect(createNode).not.toHaveBeenCalled()
-    expect(result).toEqual([])
+    expect(result.nodes).toEqual([])
   })
 
   it('should handle single audio file', async () => {
@@ -311,7 +312,7 @@ describe('pasteAudioNodes', () => {
     const result = await pasteAudioNodes(mockCanvas, [file])
 
     expect(createNode).toHaveBeenCalledTimes(1)
-    expect(result).toEqual([mockNode])
+    expect(result.nodes).toEqual([mockNode])
   })
 })
 
@@ -383,20 +384,21 @@ describe('pasteVideoNodes', () => {
     const file2 = createVideoFile('file2.webm', 'video/webm')
 
     const result = await pasteVideoNodes(mockCanvas, [file1, file2])
+    await result.completion
 
     expect(createNode).toHaveBeenCalledTimes(2)
     expect(createNode).toHaveBeenNthCalledWith(1, mockCanvas, 'LoadVideo')
     expect(createNode).toHaveBeenNthCalledWith(2, mockCanvas, 'LoadVideo')
     expect(mockNode1.pasteFile).toHaveBeenCalledWith(file1)
     expect(mockNode2.pasteFile).toHaveBeenCalledWith(file2)
-    expect(result).toEqual([mockNode1, mockNode2])
+    expect(result.nodes).toEqual([mockNode1, mockNode2])
   })
 
   it('should handle empty file list', async () => {
     const result = await pasteVideoNodes(mockCanvas, [])
 
     expect(createNode).not.toHaveBeenCalled()
-    expect(result).toEqual([])
+    expect(result.nodes).toEqual([])
   })
 
   it('should handle single video file', async () => {
@@ -407,7 +409,7 @@ describe('pasteVideoNodes', () => {
     const result = await pasteVideoNodes(mockCanvas, [file])
 
     expect(createNode).toHaveBeenCalledTimes(1)
-    expect(result).toEqual([mockNode])
+    expect(result.nodes).toEqual([mockNode])
   })
 })
 

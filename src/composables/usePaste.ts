@@ -139,20 +139,25 @@ export async function pasteAudioNode(
 export async function pasteAudioNodes(
   canvas: LGraphCanvas,
   fileList: File[]
-): Promise<LGraphNode[]> {
+): Promise<PasteNodesResult> {
   const nodes: LGraphNode[] = []
+  const uploads: Promise<void>[] = []
 
   for (const file of fileList) {
+    const node = await createNode(canvas, 'LoadAudio')
+    if (!node) continue
+
+    nodes.push(node)
+
     const transfer = new DataTransfer()
     transfer.items.add(file)
-    const node = await pasteAudioNode(canvas, transfer.items)
-
-    if (node) {
-      nodes.push(node)
-    }
+    uploads.push(pasteItemsOnNode(transfer.items, node, 'audio'))
   }
 
-  return nodes
+  return {
+    nodes,
+    completion: Promise.all(uploads).then(() => {})
+  }
 }
 
 export async function pasteVideoNode(
@@ -170,20 +175,25 @@ export async function pasteVideoNode(
 export async function pasteVideoNodes(
   canvas: LGraphCanvas,
   fileList: File[]
-): Promise<LGraphNode[]> {
+): Promise<PasteNodesResult> {
   const nodes: LGraphNode[] = []
+  const uploads: Promise<void>[] = []
 
   for (const file of fileList) {
+    const node = await createNode(canvas, 'LoadVideo')
+    if (!node) continue
+
+    nodes.push(node)
+
     const transfer = new DataTransfer()
     transfer.items.add(file)
-    const node = await pasteVideoNode(canvas, transfer.items)
-
-    if (node) {
-      nodes.push(node)
-    }
+    uploads.push(pasteItemsOnNode(transfer.items, node, 'video'))
   }
 
-  return nodes
+  return {
+    nodes,
+    completion: Promise.all(uploads).then(() => {})
+  }
 }
 
 /**

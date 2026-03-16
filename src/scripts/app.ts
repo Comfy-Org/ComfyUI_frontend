@@ -1746,19 +1746,31 @@ export class ComfyApp {
   }
 
   async handleAudioFileList(fileList: File[]) {
-    const audioNodes = await pasteAudioNodes(this.canvas, fileList)
-    if (audioNodes.length === 0) return
+    this.canvas.emitBeforeChange()
+    try {
+      const { nodes, completion } = await pasteAudioNodes(this.canvas, fileList)
+      if (nodes.length === 0) return
 
-    this.positionNodes(audioNodes)
-    this.canvas.selectItems(audioNodes)
+      this.positionNodes(nodes)
+      this.canvas.selectItems(nodes)
+      await completion
+    } finally {
+      this.canvas.emitAfterChange()
+    }
   }
 
   async handleVideoFileList(fileList: File[]) {
-    const videoNodes = await pasteVideoNodes(this.canvas, fileList)
-    if (videoNodes.length === 0) return
+    this.canvas.emitBeforeChange()
+    try {
+      const { nodes, completion } = await pasteVideoNodes(this.canvas, fileList)
+      if (nodes.length === 0) return
 
-    this.positionNodes(videoNodes)
-    this.canvas.selectItems(videoNodes)
+      this.positionNodes(nodes)
+      this.canvas.selectItems(nodes)
+      await completion
+    } finally {
+      this.canvas.emitAfterChange()
+    }
   }
 
   /**
@@ -1769,7 +1781,7 @@ export class ComfyApp {
   positionNodes(nodes: LGraphNode[]): void {
     if (nodes.length <= 1) return
 
-    const [x, y] = nodes[0].getBounding()
+    const [x, y] = nodes[0].pos
     const nodeHeight = 150
 
     nodes.forEach((node, index) => {
