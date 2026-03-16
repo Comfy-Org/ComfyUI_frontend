@@ -84,7 +84,7 @@ export type {
   LGraphTriggerParam
 } from './types/graphTriggers'
 
-export type RendererType = 'LG' | 'Vue'
+export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
 export interface LGraphState {
   lastGroupId: number
