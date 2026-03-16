@@ -2,8 +2,6 @@ import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
-import DeletePresetContent from '@/components/dialog/content/setting/keybinding/DeletePresetContent.vue'
-import DeletePresetHeader from '@/components/dialog/content/setting/keybinding/DeletePresetHeader.vue'
 import UnsavedChangesContent from '@/components/dialog/content/setting/keybinding/UnsavedChangesContent.vue'
 import UnsavedChangesHeader from '@/components/dialog/content/setting/keybinding/UnsavedChangesHeader.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -67,27 +65,7 @@ export function useKeybindingPresetService() {
     await settingStore.set('Comfy.Keybinding.CurrentPreset', 'default')
   }
 
-  const DELETE_DIALOG_KEY = 'delete-keybinding-preset'
   const UNSAVED_DIALOG_KEY = 'unsaved-keybinding-changes'
-
-  function showDeletePresetDialog(): Promise<boolean> {
-    return new Promise((resolve) => {
-      dialogService.showSmallLayoutDialog({
-        key: DELETE_DIALOG_KEY,
-        headerComponent: DeletePresetHeader,
-        component: DeletePresetContent,
-        props: {
-          onResult: (result: boolean) => {
-            resolve(result)
-            dialogStore.closeDialog({ key: DELETE_DIALOG_KEY })
-          }
-        },
-        dialogComponentProps: {
-          onClose: () => resolve(false)
-        }
-      })
-    })
-  }
 
   function showUnsavedChangesDialog(
     presetName: string
@@ -159,12 +137,17 @@ export function useKeybindingPresetService() {
     await settingStore.set('Comfy.Keybinding.CurrentPreset', name)
     toast.add({
       severity: 'success',
-      summary: t('g.keybindingPresets.presetSaved', { name })
+      summary: t('g.keybindingPresets.presetSaved', { name }),
+      life: 3000
     })
   }
 
   async function deletePreset(name: string) {
-    const confirmed = await showDeletePresetDialog()
+    const confirmed = await dialogService.confirm({
+      title: t('g.keybindingPresets.deletePresetTitle'),
+      message: t('g.keybindingPresets.deletePresetWarning'),
+      type: 'delete'
+    })
     if (!confirmed) return
 
     const resp = await api.deleteUserData(presetFilePath(name))
@@ -178,7 +161,8 @@ export function useKeybindingPresetService() {
 
     toast.add({
       severity: 'info',
-      summary: t('g.keybindingPresets.presetDeleted', { name })
+      summary: t('g.keybindingPresets.presetDeleted', { name }),
+      life: 3000
     })
   }
 
@@ -226,7 +210,8 @@ export function useKeybindingPresetService() {
 
     toast.add({
       severity: 'success',
-      summary: t('g.keybindingPresets.presetImported')
+      summary: t('g.keybindingPresets.presetImported'),
+      life: 3000
     })
   }
 

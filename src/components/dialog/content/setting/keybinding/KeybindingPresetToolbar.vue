@@ -34,7 +34,7 @@
               {{ $t('g.keybindingPresets.importKeybindingPreset') }}
             </span>
             <i
-              class="icon-[lucide--download] shrink-0 text-base-foreground"
+              class="icon-[lucide--file-input] shrink-0 text-base-foreground"
               aria-hidden="true"
             />
           </button>
