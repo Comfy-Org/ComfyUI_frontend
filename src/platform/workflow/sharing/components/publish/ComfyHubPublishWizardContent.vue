@@ -38,6 +38,19 @@
             @update:example-images="onUpdateFormData({ exampleImages: $event })"
           />
         </div>
+        <div
+          v-else-if="currentStep === 'finish' && isProfileLoading"
+          class="flex min-h-0 flex-1 flex-col gap-4 px-6 py-4"
+        >
+          <Skeleton class="h-4 w-1/4" />
+          <Skeleton class="h-20 w-full rounded-2xl" />
+        </div>
+        <ComfyHubFinishStep
+          v-else-if="currentStep === 'finish' && hasProfile && profile"
+          ref="finishStepRef"
+          v-model:acknowledged="assetsAcknowledged"
+          :profile
+        />
         <ComfyHubProfilePromptPanel
           v-else-if="currentStep === 'finish'"
           @request-profile="onRequireProfile"
@@ -66,8 +79,10 @@ import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/
 import ComfyHubCreateProfileForm from '@/platform/workflow/sharing/components/profile/ComfyHubCreateProfileForm.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
 import ComfyHubExamplesStep from './ComfyHubExamplesStep.vue'
+import ComfyHubFinishStep from './ComfyHubFinishStep.vue'
 import ComfyHubProfilePromptPanel from './ComfyHubProfilePromptPanel.vue'
 import ComfyHubThumbnailStep from './ComfyHubThumbnailStep.vue'
 import ComfyHubPublishFooter from './ComfyHubPublishFooter.vue'
@@ -104,7 +119,13 @@ const {
 
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
-const { checkProfile, hasProfile } = useComfyHubProfileGate()
+const { checkProfile, hasProfile, isFetchingProfile, profile } =
+  useComfyHubProfileGate()
+const isProfileLoading = computed(
+  () => hasProfile.value === null || isFetchingProfile.value
+)
+const finishStepRef = ref<InstanceType<typeof ComfyHubFinishStep> | null>(null)
+const assetsAcknowledged = ref(false)
 const isResolvingPublishAccess = ref(false)
 const isPublishInFlight = computed(
   () => isPublishing || isResolvingPublishAccess.value
@@ -112,7 +133,8 @@ const isPublishInFlight = computed(
 const isPublishDisabled = computed(
   () =>
     isPublishInFlight.value ||
-    (flags.comfyHubProfileGateEnabled && hasProfile.value !== true)
+    (flags.comfyHubProfileGateEnabled && hasProfile.value !== true) ||
+    (finishStepRef.value !== null && !finishStepRef.value.isReady)
 )
 
 async function handlePublish() {

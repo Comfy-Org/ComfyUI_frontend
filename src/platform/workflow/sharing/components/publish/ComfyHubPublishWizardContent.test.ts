@@ -8,13 +8,20 @@ import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/
 const mockCheckProfile = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockHasProfile = ref<boolean | null>(true)
+const mockIsFetchingProfile = ref(false)
+const mockProfile = ref<{ username: string; name?: string } | null>({
+  username: 'testuser',
+  name: 'Test User'
+})
 
 vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
   () => ({
     useComfyHubProfileGate: () => ({
       checkProfile: mockCheckProfile,
-      hasProfile: mockHasProfile
+      hasProfile: mockHasProfile,
+      isFetchingProfile: mockIsFetchingProfile,
+      profile: mockProfile
     })
   })
 )
@@ -63,6 +70,8 @@ describe('ComfyHubPublishWizardContent', () => {
     onPublish.mockResolvedValue(undefined)
     mockCheckProfile.mockResolvedValue(true)
     mockHasProfile.value = true
+    mockIsFetchingProfile.value = false
+    mockProfile.value = { username: 'testuser', name: 'Test User' }
     mockFlags.comfyHubProfileGateEnabled = true
   })
 
@@ -100,8 +109,18 @@ describe('ComfyHubPublishWizardContent', () => {
             template: '<div data-testid="publish-gate-flow" />',
             props: ['onProfileCreated', 'onClose', 'showCloseButton']
           },
+          Skeleton: {
+            template: '<div class="skeleton" />'
+          },
           ComfyHubDescribeStep: {
             template: '<div data-testid="describe-step" />'
+          },
+          ComfyHubFinishStep: {
+            template: '<div data-testid="finish-step" />',
+            props: ['profile', 'acknowledged'],
+            setup() {
+              return { isReady: true }
+            }
           },
           ComfyHubExamplesStep: {
             template: '<div data-testid="examples-step" />'
