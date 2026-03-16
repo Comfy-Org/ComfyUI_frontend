@@ -114,13 +114,20 @@ export const useSubscriptionDialog = () => {
    */
   function startTeamWorkspaceUpgradeFlow() {
     hide()
-    void dialogService.showTeamWorkspacesDialog(() => {
-      try {
-        sessionStorage.setItem(RESUME_PRICING_KEY, '1')
-      } catch {
-        // sessionStorage may be unavailable
-      }
-    })
+    dialogService
+      .showTeamWorkspacesDialog(() => {
+        try {
+          sessionStorage.setItem(RESUME_PRICING_KEY, '1')
+        } catch {
+          // sessionStorage may be unavailable
+        }
+      })
+      .catch((error) => {
+        console.error(
+          '[useSubscriptionDialog] Failed to open team workspaces dialog:',
+          error
+        )
+      })
   }
 
   /**

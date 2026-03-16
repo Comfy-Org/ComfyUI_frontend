@@ -16,7 +16,7 @@ vi.mock(
 const mockRouteQuery = vi.hoisted(() => ({
   value: {} as Record<string, string>
 }))
-const mockRouterReplace = vi.hoisted(() => vi.fn())
+const mockRouterReplace = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
@@ -27,7 +27,9 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-const mockShowCreateWorkspaceDialog = vi.hoisted(() => vi.fn())
+const mockShowCreateWorkspaceDialog = vi.hoisted(() =>
+  vi.fn().mockResolvedValue(undefined)
+)
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({

@@ -559,7 +559,14 @@ onMounted(async () => {
 
   // Open create workspace dialog from URL if present (e.g., ?create_workspace=1)
   if (createWorkspaceUrlLoader && flags.teamWorkspacesEnabled) {
-    await createWorkspaceUrlLoader.loadCreateWorkspaceFromUrl()
+    try {
+      await createWorkspaceUrlLoader.loadCreateWorkspaceFromUrl()
+    } catch (error) {
+      console.error(
+        '[GraphCanvas] Failed to load create workspace from URL:',
+        error
+      )
+    }
   }
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)

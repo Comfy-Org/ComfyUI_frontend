@@ -90,7 +90,12 @@ async function initialize(): Promise<void> {
     await initializeWorkspaceMode()
 
     // Step 6: Resume any pending pricing flow from team workspace creation
-    subscriptionDialog.resumePendingPricingFlow()
+    // Only safe after workspace store initialized successfully — the pricing
+    // dialog reads workspace state to decide which variant to show.
+    const workspaceStore = useTeamWorkspaceStore()
+    if (workspaceStore.initState === 'ready') {
+      subscriptionDialog.resumePendingPricingFlow()
+    }
   } catch (error) {
     console.error('[WorkspaceAuthGate] Initialization failed:', error)
   } finally {

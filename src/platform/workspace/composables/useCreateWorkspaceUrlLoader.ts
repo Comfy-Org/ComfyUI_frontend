@@ -39,7 +39,12 @@ export function useCreateWorkspaceUrlLoader() {
   const cleanupUrlParams = () => {
     const newQuery = { ...route.query }
     delete newQuery.create_workspace
-    void router.replace({ query: newQuery })
+    router.replace({ query: newQuery }).catch((error) => {
+      console.warn(
+        '[useCreateWorkspaceUrlLoader] Failed to clean URL params:',
+        error
+      )
+    })
   }
 
   /**
@@ -59,7 +64,14 @@ export function useCreateWorkspaceUrlLoader() {
     cleanupUrlParams()
     clearPreservedQuery(NAMESPACE)
 
-    dialogService.showCreateWorkspaceDialog()
+    try {
+      await dialogService.showCreateWorkspaceDialog()
+    } catch (error) {
+      console.error(
+        '[useCreateWorkspaceUrlLoader] Failed to open create workspace dialog:',
+        error
+      )
+    }
   }
 
   return {
