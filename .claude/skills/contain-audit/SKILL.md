@@ -57,12 +57,14 @@ Rank | Selector                        | Subtree | Score | DRecalcs | DLayouts |
 ## Candidate Scoring
 
 An element is a good containment candidate when:
+
 1. **Large subtree** -- many descendants that the browser can skip recalculating
 2. **Externally constrained size** -- width/height determined by CSS variables, flex, or explicit values (not by content)
 3. **No existing containment** -- `contain` is not already applied
 4. **Not a leaf** -- has at least a few child elements
 
 Elements that should NOT get containment:
+
 - Elements whose children overflow visually beyond bounds (e.g., absolute-positioned overlays with negative inset)
 - Elements whose height is determined by content and affects sibling layout
 - Very small subtrees (overhead of containment context outweighs benefit)
@@ -88,10 +90,10 @@ The actual change was a single line: adding `'contain-layout contain-style'` to 
 
 ## Reference
 
-| Resource          | Path                                                  |
-| ----------------- | ----------------------------------------------------- |
-| Audit test        | `browser_tests/tests/containAudit.spec.ts`            |
-| PerformanceHelper | `browser_tests/fixtures/helpers/PerformanceHelper.ts` |
-| Perf tests        | `browser_tests/tests/performance.spec.ts`             |
-| Large workflow    | `browser_tests/assets/large-graph-workflow.json`      |
+| Resource          | Path                                                    |
+| ----------------- | ------------------------------------------------------- |
+| Audit test        | `browser_tests/tests/containAudit.spec.ts`              |
+| PerformanceHelper | `browser_tests/fixtures/helpers/PerformanceHelper.ts`   |
+| Perf tests        | `browser_tests/tests/performance.spec.ts`               |
+| Large workflow    | `browser_tests/assets/large-graph-workflow.json`        |
 | Example PR        | https://github.com/Comfy-Org/ComfyUI_frontend/pull/9946 |
