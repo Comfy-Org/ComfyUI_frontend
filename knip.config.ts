@@ -29,10 +29,12 @@ const config: KnipConfig = {
     },
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}'],
-      entry: ['src/index.ts']
+      entry: ['src/index.ts', 'openapi-ts.config.ts'],
+      // openapi-ts binary is provided by @hey-api/openapi-ts devDependency
+      ignoreBinaries: ['openapi-ts']
     }
   },
-  ignoreBinaries: ['python3', 'gh', 'generate'],
+  ignoreBinaries: ['python3', 'gh'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify-json/lucide',
@@ -40,9 +42,7 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons',
-    // Used by lucideStrokePlugin.js (CSS @plugin)
-    '@iconify/utils'
+    '@primevue/icons'
   ],
   ignore: [
     // Auto generated API types
@@ -50,7 +50,6 @@ const config: KnipConfig = {
     'packages/registry-types/src/comfyRegistryTypes.ts',
     'packages/ingest-types/src/types.gen.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    'packages/ingest-types/openapi-ts.config.ts',
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts',
     // Used by stacked PR (feat/glsl-live-preview)
