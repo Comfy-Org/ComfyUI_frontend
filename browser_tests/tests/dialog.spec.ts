@@ -53,7 +53,15 @@ test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
       TestIds.dialogs.missingNodeCard
     )
     await expect(missingNodeCard).toBeVisible()
-    await expect(missingNodeCard).toContainText('MISSING_NODE_TYPE_IN_SUBGRAPH')
+
+    // Expand the pack group row to reveal node type names
+    await missingNodeCard
+      .getByRole('button', { name: /expand/i })
+      .first()
+      .click()
+    await expect(
+      missingNodeCard.getByText('MISSING_NODE_TYPE_IN_SUBGRAPH')
+    ).toBeVisible()
   })
 
   test('Should show MissingNodeCard in errors tab when clicking See Errors', async ({
