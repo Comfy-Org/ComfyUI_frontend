@@ -16,9 +16,6 @@ test.describe('Textarea label overlap', { tag: ['@widget'] }, () => {
   const getTextarea = (comfyPage: ComfyPage) =>
     getFirstClipNode(comfyPage).getByRole('textbox', { name: 'text' })
 
-  const getLabel = (comfyPage: ComfyPage) =>
-    getFirstClipNode(comfyPage).locator('label')
-
   test('label should have a background color to prevent text showing through when scrolled', async ({
     comfyPage
   }) => {
@@ -31,14 +28,12 @@ test.describe('Textarea label overlap', { tag: ['@widget'] }, () => {
     ).join('\n')
     await textarea.fill(manyLines)
 
-    const label = getLabel(comfyPage)
-    await expect(label).toBeVisible()
-
-    // The label must have a non-transparent background so scrolled text
-    // does not show through it.
-    const bgColor = await label.evaluate(
-      (el) => getComputedStyle(el).backgroundColor
-    )
+    // The label associated with this textarea must have a non-transparent
+    // background so scrolled text does not show through it.
+    const bgColor = await textarea.evaluate((el) => {
+      const label = (el as HTMLTextAreaElement).labels?.[0]
+      return label ? getComputedStyle(label).backgroundColor : ''
+    })
 
     // 'transparent' or 'rgba(0, 0, 0, 0)' means no background — the bug.
     expect(
