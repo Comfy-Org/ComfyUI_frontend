@@ -74,6 +74,18 @@ Elements that should NOT get containment:
 - Only tests idle and pan scenarios; widget interactions may differ
 - The audit modifies styles at runtime via JS, which doesn't account for Tailwind purging or build-time optimizations
 
+## Example PR
+
+[#9946 — fix: add CSS contain:layout contain:style to node inner wrapper](https://github.com/Comfy-Org/ComfyUI_frontend/pull/9946)
+
+This PR added `contain-layout contain-style` to the node inner wrapper div in `LGraphNode.vue`. The audit tool would have flagged this element as a high-scoring candidate because:
+
+- **Large subtree** (18+ descendants: header, slots, widgets, content, badges)
+- **Externally constrained size** (`w-(--node-width)`, `flex-1` — dimensions set by CSS variables and flex parent)
+- **Natural isolation boundary** between frequently-changing content (widgets) and infrequently-changing overlays (selection outlines, borders)
+
+The actual change was a single line: adding `'contain-layout contain-style'` to the inner wrapper's class list at `src/renderer/extensions/vueNodes/components/LGraphNode.vue:79`.
+
 ## Reference
 
 | Resource          | Path                                                  |
@@ -82,3 +94,4 @@ Elements that should NOT get containment:
 | PerformanceHelper | `browser_tests/fixtures/helpers/PerformanceHelper.ts` |
 | Perf tests        | `browser_tests/tests/performance.spec.ts`             |
 | Large workflow    | `browser_tests/assets/large-graph-workflow.json`      |
+| Example PR        | https://github.com/Comfy-Org/ComfyUI_frontend/pull/9946 |
