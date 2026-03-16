@@ -219,6 +219,7 @@ describe(useOutputHistory, () => {
     })
 
     it('returns outputs from metadata allOutputs when count matches', () => {
+      useAppModeStore().selectedOutputs.push('1')
       const results = [makeResult('a.png'), makeResult('b.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
@@ -255,7 +256,7 @@ describe(useOutputHistory, () => {
       expect(outputs[0].filename).toBe('b.png')
     })
 
-    it('returns all outputs when no output nodes are selected', () => {
+    it('returns empty when no output nodes are selected', () => {
       const results = [makeResult('a.png', '1'), makeResult('b.png', '2')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
@@ -265,7 +266,7 @@ describe(useOutputHistory, () => {
       const { allOutputs } = useOutputHistory()
       const outputs = allOutputs(asset)
 
-      expect(outputs).toHaveLength(2)
+      expect(outputs).toHaveLength(0)
     })
 
     it('returns consistent filtered outputs across repeated calls', () => {
@@ -288,6 +289,7 @@ describe(useOutputHistory, () => {
     })
 
     it('returns in-progress outputs for pending resolve jobs', () => {
+      useAppModeStore().selectedOutputs.push('1')
       pendingResolveRef.value = new Set(['job-1'])
       inProgressItemsRef.value = [
         {
@@ -314,6 +316,7 @@ describe(useOutputHistory, () => {
     })
 
     it('fetches full job detail for multi-output jobs', async () => {
+      useAppModeStore().selectedOutputs.push('1')
       jobDetailResults.set('job-1', {
         outputs: {
           '1': {
@@ -342,6 +345,7 @@ describe(useOutputHistory, () => {
 
   describe('watchEffect resolve loop', () => {
     it('resolves pending jobs when history outputs load', async () => {
+      useAppModeStore().selectedOutputs.push('1')
       const results = [makeResult('a.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
@@ -360,6 +364,7 @@ describe(useOutputHistory, () => {
     })
 
     it('does not select first history when a selection exists', async () => {
+      useAppModeStore().selectedOutputs.push('1')
       const results = [makeResult('a.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,

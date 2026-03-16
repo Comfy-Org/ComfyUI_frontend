@@ -8,14 +8,15 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import MobileError from '@/renderer/extensions/linearMode/MobileError.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -31,6 +32,7 @@ const canvasStore = useCanvasStore()
 const colorPaletteService = useColorPaletteService()
 const colorPaletteStore = useColorPaletteStore()
 const { isLoggedIn } = useCurrentUser()
+const executionErrorStore = useExecutionErrorStore()
 const { t } = useI18n()
 const { commandIdToMenuItem } = useMenuItemStore()
 const queueStore = useQueueStore()
@@ -40,7 +42,7 @@ const { toggle: toggleFullscreen } = useFullscreen(undefined, {
   autoExit: true
 })
 
-const activeIndex = ref(2)
+const activeIndex = ref(1)
 const sliderPaneRef = useTemplateRef('sliderPaneRef')
 const sliderWidth = computed(() => sliderPaneRef.value?.offsetWidth)
 
@@ -73,13 +75,16 @@ function onClick(index: number) {
 }
 
 const workflowsEntries = computed(() => {
-  return workflowStore.openWorkflows.map((w) => ({
-    label: w.filename,
-    icon: w.activeState?.extra?.linearMode
-      ? 'icon-[lucide--panels-top-left] bg-primary-background'
-      : undefined,
-    command: () => workflowService.openWorkflow(w)
-  }))
+  return [
+    ...workflowStore.openWorkflows.map((w) => ({
+      label: w.filename,
+      icon: w.activeState?.extra?.linearMode
+        ? 'icon-[lucide--panels-top-left] bg-primary-background'
+        : undefined,
+      command: () => workflowService.openWorkflow(w),
+      checked: workflowStore.activeWorkflow === w
+    }))
+  ]
 })
 
 const menuEntries = computed<MenuItem[]>(() => [
@@ -154,9 +159,9 @@ const menuEntries = computed<MenuItem[]>(() => [
       class="flex h-16 w-full items-center gap-3 border-b border-border-subtle bg-base-background px-4 py-3"
     >
       <DropdownMenu :entries="menuEntries" />
-      <Popover
+      <DropdownMenu
         :entries="workflowsEntries"
-        class="w-(--reka-popover-content-available-width)"
+        class="max-h-[40vh] w-(--reka-dropdown-menu-content-available-width)"
         :collision-padding="20"
       >
         <template #button>
@@ -176,7 +181,7 @@ const menuEntries = computed<MenuItem[]>(() => [
             />
           </div>
         </template>
-      </Popover>
+      </DropdownMenu>
       <CurrentUserButton v-if="isLoggedIn" :show-arrow="false" />
     </header>
     <div class="size-full rounded-b-4xl contain-content">
@@ -192,7 +197,11 @@ const menuEntries = computed<MenuItem[]>(() => [
         <div
           class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
         >
-          <LinearPreview mobile />
+          <MobileError
+            v-if="executionErrorStore.isErrorOverlayOpen"
+            @navigate-controls="activeIndex = 0"
+          />
+          <LinearPreview v-else mobile @navigate-controls="activeIndex = 0" />
         </div>
         <AssetsSidebarTab
           class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"
@@ -213,7 +222,11 @@ const menuEntries = computed<MenuItem[]>(() => [
         <div class="relative size-4">
           <i :class="cn('size-4', icon)" />
           <div
-            v-if="
+            v-if="index === 1 && executionErrorStore.isErrorOverlayOpen"
+            class="absolute -top-1 -right-1 size-2 rounded-full bg-error"
+          />
+          <div
+            v-else-if="
               index === 1 &&
               (queueStore.runningTasks.length > 0 ||
                 queueStore.pendingTasks.length > 0)

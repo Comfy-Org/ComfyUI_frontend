@@ -1,5 +1,5 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
@@ -1159,7 +1159,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering.',
     defaultValue: false,
-    defaultsByInstallVersion: { '1.41.0': isCloud },
+    defaultsByInstallVersion: { '1.41.0': isCloud || isDesktop },
     sortOrder: 100,
     experimental: true,
     versionAdded: '1.27.1'
@@ -1201,10 +1201,10 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Queue.QPOV2',
     category: ['Comfy', 'Queue', 'Layout'],
-    name: 'Use the unified job queue in the Assets side panel',
+    name: 'Docked job history/queue panel',
     type: 'boolean',
     tooltip:
-      'Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout.',
+      'Replaces the floating job queue panel with an equivalent job queue embedded in the job history side panel. You can disable this to return to the floating panel layout.',
     defaultValue: false,
     experimental: true
   },
@@ -1258,5 +1258,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
+  },
+  {
+    id: 'LiteGraph.Group.SelectChildrenOnClick',
+    category: ['LiteGraph', 'Group', 'SelectChildrenOnClick'],
+    name: 'Select group children on click',
+    tooltip:
+      'When enabled, clicking a group selects all nodes and items inside it',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.42.0'
   }
 ]

@@ -1,3 +1,5 @@
+import type { PostHogConfig } from 'posthog-js'
+
 import type { TelemetryEventName } from '@/platform/telemetry/types'
 
 /**
@@ -31,6 +33,7 @@ export type RemoteConfig = {
   mixpanel_token?: string
   posthog_project_token?: string
   posthog_api_host?: string
+  posthog_config?: Partial<PostHogConfig>
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
   max_upload_size?: number

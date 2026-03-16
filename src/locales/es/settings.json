@@ -400,7 +400,7 @@
     "name": "Diseño de barra de pestañas",
     "options": {
       "Default": "Predeterminado",
-      "Integrated": "Integrado"
+      "Legacy": "Clásico"
     },
     "tooltip": "Controla el diseño de la barra de pestañas. \"Integrado\" mueve los controles de Ayuda y Usuario al área de la barra de pestañas."
   },
@@ -480,6 +480,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Escala los menús de widgets combinados de nodos (listas) al acercar"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "Seleccionar los elementos del grupo al hacer clic",
+    "tooltip": "Cuando está activado, al hacer clic en un grupo se seleccionan todos los nodos y elementos dentro de él"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "Reducir siempre los nuevos nodos",

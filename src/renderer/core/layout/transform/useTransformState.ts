@@ -79,7 +79,9 @@ function useTransformStateIndividual() {
     // ctx.scale(scale); ctx.translate(offset)
     // CSS applies right-to-left, so "scale() translate()" -> translate first, then scale
     // Effective mapping: screen = (canvas + offset) * scale
-    transform: `scale(${camera.z}) translate(${camera.x}px, ${camera.y}px)`,
+    // Using the 3D versions of scale and translate can provide a smoother experience
+    // when dealing with a large number of nodes.
+    transform: `scale3d(${camera.z}, ${camera.z}, ${camera.z}) translate3d(${camera.x}px, ${camera.y}px, 0)`,
     transformOrigin: '0 0'
   }))
 

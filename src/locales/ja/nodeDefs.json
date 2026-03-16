@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Fluxファミリーモデルの参照画像に対してKVキャッシュ最適化を有効にします。",
+    "display_name": "Flux KVキャッシュ",
+    "inputs": {
+      "model": {
+        "name": "モデル",
+        "tooltip": "KVキャッシュを使用するモデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KVキャッシュが有効になったパッチ済みモデル。"
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "このノードは、Flux Kontextに最適なサイズに画像をリサイズします。",
     "display_name": "FluxKontextImageScale",
@@ -11291,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "背景色"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "上から描画するための任意のベース画像"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "ペア条件付け組み合わせ",
     "inputs": {
@@ -12852,6 +12896,133 @@
       "1": {
         "name": "高さ",
         "tooltip": "計算された高さ（ピクセル単位、8の倍数）。"
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Reveを使用してテキスト説明から画像を生成します。",
+    "display_name": "Reve画像生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "生成に使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成したい画像のテキスト説明。最大2560文字。"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Reveを使って自然言語指示で画像を編集します。",
+    "display_name": "Reve画像編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "edit_instruction": {
+        "name": "編集指示",
+        "tooltip": "画像の編集方法のテキスト説明。最大2560文字。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "編集する画像。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "編集に使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "参照画像とテキストプロンプトを組み合わせてReveで新しい画像を作成します。",
+    "display_name": "Reve画像リミックス",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "リミックスに使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成したい画像のテキスト説明。特定の画像をインデックスで参照するXML imgタグ（例：<img>0</img>, <img>1</img>など）を含めることができます。"
+      },
+      "reference_images": {
+        "name": "参照画像"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15080,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "3Dモデルを入力後、3Dモデルのテクスチャを再描画します。",
+    "display_name": "Hunyuan3D: 3Dテクスチャ編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX形式の3Dモデル。モデルの面数は100,000未満である必要があります。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "テクスチャ編集内容を記述します。最大1024文字のUTF-8文字列がサポートされています。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: 画像からモデルへ (Pro)",
     "inputs": {
@@ -15127,6 +15333,22 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
         "tooltip": null
       }
     }
@@ -15228,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }
