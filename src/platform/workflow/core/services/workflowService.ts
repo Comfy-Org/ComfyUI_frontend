@@ -239,7 +239,7 @@ export const useWorkflowService = () => {
       workflow,
       {
         showMissingModels: loadFromRemote,
-        showMissingNodes: loadFromRemote,
+        showMissingNodes: true,
         checkForRerouteMigration: false,
         deferWarnings: true
       }
@@ -535,14 +535,11 @@ export const useWorkflowService = () => {
     const wf = workflow ?? workflowStore.activeWorkflow
     if (!wf?.pendingWarnings) return
 
-    const { missingNodeTypes, missingModelCandidates } = wf.pendingWarnings
+    const { missingNodeTypes } = wf.pendingWarnings
     wf.pendingWarnings = null
 
     if (missingNodeTypes?.length) {
       executionErrorStore.surfaceMissingNodes(missingNodeTypes)
-    }
-    if (missingModelCandidates?.length) {
-      executionErrorStore.surfaceMissingModels(missingModelCandidates)
     }
   }
 
