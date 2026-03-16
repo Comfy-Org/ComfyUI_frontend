@@ -116,6 +116,23 @@ const modelValue = defineModel<Bounds>({
   default: () => ({ x: 0, y: 0, width: 512, height: 512 })
 })
 
+const isDisabled = computed(() => !!widget.options?.disabled)
+
+const upstreamValue = useUpstreamValue(
+  () => widget.linkedUpstream,
+  boundsExtractor()
+)
+
+const effectiveBounds = computed({
+  get: () =>
+    isDisabled.value && upstreamValue.value
+      ? upstreamValue.value
+      : modelValue.value,
+  set: (v) => {
+    if (!isDisabled.value) modelValue.value = v
+  }
+})
+
 const imageEl = useTemplateRef<HTMLImageElement>('imageEl')
 const containerEl = useTemplateRef<HTMLDivElement>('containerEl')
 
