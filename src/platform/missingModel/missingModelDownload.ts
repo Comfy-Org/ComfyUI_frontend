@@ -8,6 +8,9 @@ const ALLOWED_SOURCES = [
   'http://localhost:'
 ] as const
 
+// Intentionally restrictive subset of model extensions permitted for download.
+// Does not include .bin, .onnx, .gguf — see MODEL_FILE_EXTENSIONS in
+// missingModelScan.ts for the broader scanning set.
 const ALLOWED_SUFFIXES = [
   '.safetensors',
   '.sft',
@@ -22,15 +25,7 @@ const WHITE_LISTED_URLS: ReadonlySet<string> = new Set([
   'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
 ])
 
-const DIRECTORY_BADGE_MAP = {
-  vae: 'VAE',
-  diffusion_models: 'DIFFUSION',
-  text_encoders: 'TEXT ENCODER',
-  loras: 'LORA',
-  checkpoints: 'CHECKPOINT'
-} as const
-
-export interface ModelWithUrl {
+interface ModelWithUrl {
   name: string
   url: string
   directory: string
@@ -43,20 +38,6 @@ export function isModelDownloadable(model: ModelWithUrl): boolean {
   if (!ALLOWED_SUFFIXES.some((suffix) => model.name.endsWith(suffix)))
     return false
   return true
-}
-
-export function hasValidDirectory(
-  model: ModelWithUrl,
-  paths: Record<string, string[]>
-): boolean {
-  return !!paths[model.directory]
-}
-
-export function getBadgeLabel(directory: string): string {
-  if (directory in DIRECTORY_BADGE_MAP) {
-    return DIRECTORY_BADGE_MAP[directory as keyof typeof DIRECTORY_BADGE_MAP]
-  }
-  return directory.toUpperCase()
 }
 
 export function downloadModel(
@@ -115,9 +96,14 @@ async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
     if (!res.ok) return { fileSize: null, gatedRepoUrl: null }
 
     const data: CivitaiModelVersionResponse = await res.json()
-    const matchingFile = data.files?.find(
-      (file) => file.downloadUrl && file.downloadUrl.startsWith(url)
-    )
+    const matchingFile = data.files?.find((file) => {
+      const downloadUrl = file.downloadUrl
+      return (
+        typeof downloadUrl === 'string' &&
+        downloadUrl.length > 0 &&
+        downloadUrl.startsWith(url)
+      )
+    })
     const fileSize = matchingFile?.sizeKB ? matchingFile.sizeKB * 1024 : null
     return { fileSize, gatedRepoUrl: null }
   } catch {
@@ -140,8 +126,10 @@ async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
       return { fileSize: null, gatedRepoUrl: null }
     }
     const size = response.headers.get('content-length')
+    const parsedSize = size ? parseInt(size, 10) : null
     return {
-      fileSize: size ? parseInt(size, 10) : null,
+      fileSize:
+        parsedSize !== null && !Number.isNaN(parsedSize) ? parsedSize : null,
       gatedRepoUrl: null
     }
   } catch {

@@ -16,10 +16,6 @@ async function checkTemplateFileExists(
 test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.ShowMissingModelsWarning',
-      false
-    )
   })
 
   test('should have a JSON workflow file for each template', async ({
