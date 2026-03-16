@@ -98,6 +98,7 @@ vi.mock('@/stores/toastStore', () => ({
 
 // Mock useDialogService
 vi.mock('@/services/dialogService')
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
 // Mock apiKeyAuthStore
 const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
@@ -185,7 +186,6 @@ describe('useFirebaseAuthStore', () => {
   describe('token refresh events', () => {
     beforeEach(async () => {
       vi.resetModules()
-      vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
       vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
         (_auth, callback) => {
