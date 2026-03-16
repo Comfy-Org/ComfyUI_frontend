@@ -49,6 +49,7 @@
             <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
             <div
               ref="legacyCommandsContainerRef"
+              data-testid="legacy-topbar-container"
               class="[&:not(:has(*>*:not(:empty)))]:hidden"
             ></div>
 
@@ -125,7 +126,7 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -233,11 +234,47 @@ const rightSidePanelTooltipConfig = computed(() =>
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
+const hasLegacyContent = ref(false)
+let legacyContentCheckRafId: number | null = null
+
+function checkLegacyContent() {
+  const el = legacyCommandsContainerRef.value
+  if (!el) {
+    hasLegacyContent.value = false
+    return
+  }
+  // Mirror the CSS: [&:not(:has(*>*:not(:empty)))]:hidden
+  hasLegacyContent.value =
+    el.querySelector(':scope > * > *:not(:empty)') !== null
+}
+
+function scheduleLegacyContentCheck() {
+  if (legacyContentCheckRafId !== null) return
+
+  legacyContentCheckRafId = requestAnimationFrame(() => {
+    legacyContentCheckRafId = null
+    checkLegacyContent()
+  })
+}
+
+useMutationObserver(legacyCommandsContainerRef, scheduleLegacyContentCheck, {
+  childList: true,
+  subtree: true
+})
+
 onMounted(() => {
   if (legacyCommandsContainerRef.value) {
     app.menu.element.style.width = 'fit-content'
     legacyCommandsContainerRef.value.appendChild(app.menu.element)
+    checkLegacyContent()
   }
+})
+
+onBeforeUnmount(() => {
+  if (legacyContentCheckRafId === null) return
+
+  cancelAnimationFrame(legacyContentCheckRafId)
+  legacyContentCheckRafId = null
 })
 
 const openCustomNodeManager = async () => {
