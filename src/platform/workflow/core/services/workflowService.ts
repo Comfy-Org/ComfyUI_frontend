@@ -535,11 +535,14 @@ export const useWorkflowService = () => {
     const wf = workflow ?? workflowStore.activeWorkflow
     if (!wf?.pendingWarnings) return
 
-    const { missingNodeTypes } = wf.pendingWarnings
+    const { missingNodeTypes, missingModelCandidates } = wf.pendingWarnings
     wf.pendingWarnings = null
 
     if (missingNodeTypes?.length) {
       executionErrorStore.surfaceMissingNodes(missingNodeTypes)
+    }
+    if (missingModelCandidates?.length) {
+      executionErrorStore.surfaceMissingModels(missingModelCandidates)
     }
   }
 

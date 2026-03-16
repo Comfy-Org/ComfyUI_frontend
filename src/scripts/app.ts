@@ -1454,22 +1454,28 @@ export class ComfyApp {
         hash_type: c.hashType
       }))
 
+    const confirmedCandidates = enrichedCandidates.filter(
+      (c) => c.isMissing === true
+    )
+
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
     if (activeWf) {
       const warnings: PendingWarnings = {}
       if (missingNodeTypes.length && showMissingNodes) {
         warnings.missingNodeTypes = missingNodeTypes
       }
-      if (missingModels.length && showMissingModels) {
-        const paths = await api.getFolderPaths()
-        warnings.missingModels = { missingModels, paths }
+      if (confirmedCandidates.length && showMissingModels) {
+        warnings.missingModelCandidates = confirmedCandidates
       }
-      if (warnings.missingNodeTypes || warnings.missingModels) {
+      if (warnings.missingNodeTypes || warnings.missingModelCandidates) {
         activeWf.pendingWarnings = warnings
       }
     }
 
-    if (showMissingModels && enrichedCandidates.length) {
+    // Intentionally runs on every graph load (including tab switches and
+    // undo/redo) because missing model state depends on external asset data
+    // that may change between workflow activations.
+    if (enrichedCandidates.length) {
       if (isCloud) {
         const controller = missingModelStore.createVerificationAbortController()
         verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
