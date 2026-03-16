@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 pb-2">
+  <div data-testid="missing-node-card" class="px-4 pb-2">
     <!-- Core node version warning (OSS only) -->
     <div
       v-if="!isCloud && hasMissingCoreNodes"

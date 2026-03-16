@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -38,7 +39,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     await comfyPage.workflow.loadWorkflow('inputs/only_optional_inputs')
     expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
-      comfyPage.page.locator('.comfy-missing-nodes')
+      comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     ).not.toBeVisible()
 
     // If the node's multiline text widget is visible, then it was loaded successfully
