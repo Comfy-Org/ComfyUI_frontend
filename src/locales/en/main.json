@@ -3136,6 +3136,7 @@
     "uploadExampleImage": "Upload example image",
     "removeExampleImage": "Remove example image",
     "exampleImage": "Example image {index}",
+    "exampleImagePosition": "Example image {index} of {total}",
     "videoPreview": "Video thumbnail preview",
     "maxExamples": "You can select up to {max} examples",
     "createProfileToPublish": "Create a profile to publish to ComfyHub",
