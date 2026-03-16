@@ -38,6 +38,7 @@ pnpm eslint src/base/ src/platform/ src/workbench/ --no-error-on-unmatched-patte
 ## How to Read Results
 
 Each violation line shows:
+
 - The **file** containing the bad import
 - The **import path** crossing the boundary
 - The **message** identifying which layer pair is violated
@@ -46,13 +47,13 @@ Each violation line shows:
 
 After collecting violations, group them by the layer pair pattern:
 
-| Layer pair | Meaning |
-|---|---|
-| base -> platform | base/ importing from platform/ |
-| base -> workbench | base/ importing from workbench/ |
-| base -> renderer | base/ importing from renderer/ |
+| Layer pair            | Meaning                             |
+| --------------------- | ----------------------------------- |
+| base -> platform      | base/ importing from platform/      |
+| base -> workbench     | base/ importing from workbench/     |
+| base -> renderer      | base/ importing from renderer/      |
 | platform -> workbench | platform/ importing from workbench/ |
-| platform -> renderer | platform/ importing from renderer/ |
+| platform -> renderer  | platform/ importing from renderer/  |
 | workbench -> renderer | workbench/ importing from renderer/ |
 
 ## When to Use
@@ -72,10 +73,10 @@ Common strategies to resolve a layer violation:
 
 ## Reference
 
-| Resource | Path |
-|---|---|
+| Resource                        | Path               |
+| ------------------------------- | ------------------ |
 | ESLint config (rule definition) | `eslint.config.ts` |
-| Base layer | `src/base/` |
-| Platform layer | `src/platform/` |
-| Workbench layer | `src/workbench/` |
-| Renderer layer | `src/renderer/` |
+| Base layer                      | `src/base/`        |
+| Platform layer                  | `src/platform/`    |
+| Workbench layer                 | `src/workbench/`   |
+| Renderer layer                  | `src/renderer/`    |
