@@ -126,6 +126,11 @@ export function useMinimapGraph(
     if (cachedDataSource && cachedDataSourceGraph === g) {
       return cachedDataSource
     }
+    nodeStatesCache.clear()
+    currentNodeIds.clear()
+    lastNodeCount.value = 0
+    lastLinkCount = 0
+    lastGraphVersion = -1
     cachedDataSource = MinimapDataSourceFactory.create(g)
     cachedDataSourceGraph = g
     return cachedDataSource
