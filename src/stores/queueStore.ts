@@ -99,6 +99,7 @@ export class ResultItemImpl {
   }
 
   get url(): string {
+    if (!this.filename) return ''
     return api.apiURL('/view?' + this.urlParams)
   }
 
