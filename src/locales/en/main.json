@@ -2570,6 +2570,15 @@
       "failedToFetchWorkspaces": "Failed to load workspaces"
     }
   },
+  "teamWorkspacesDialog": {
+    "title": "Team Workspaces",
+    "subtitle": "Switch to an existing one or create a new workspace",
+    "yourTeamWorkspaces": "Your team workspaces",
+    "switch": "Switch",
+    "newWorkspace": "New workspace",
+    "namePlaceholder": "e.g. Marketing Team",
+    "createWorkspace": "Create workspace"
+  },
   "workspaceSwitcher": {
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",

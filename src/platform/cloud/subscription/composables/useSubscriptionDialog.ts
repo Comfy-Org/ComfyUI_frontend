@@ -114,7 +114,7 @@ export const useSubscriptionDialog = () => {
    */
   function startTeamWorkspaceUpgradeFlow() {
     hide()
-    dialogService.showCreateWorkspaceDialog(() => {
+    void dialogService.showTeamWorkspacesDialog(() => {
       try {
         sessionStorage.setItem(RESUME_PRICING_KEY, '1')
       } catch {
