@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -98,7 +98,7 @@ describe('bootstrapStore', () => {
       mockDistributionTypes.isCloud = true
     })
 
-    it('proceeds with bootstrap when user is authenticated after Firebase init', async () => {
+    it('waits for Firebase auth before loading stores', async () => {
       const store = useBootstrapStore()
       const settingStore = useSettingStore()
       const bootstrapPromise = store.startStoreBootstrap()
@@ -106,7 +106,14 @@ describe('bootstrapStore', () => {
       expect(store.isI18nReady).toBe(false)
       expect(settingStore.isReady).toBe(false)
 
+      // Firebase initialized but user not yet authenticated
       mockIsFirebaseInitialized.value = true
+      await nextTick()
+
+      expect(store.isI18nReady).toBe(false)
+      expect(settingStore.isReady).toBe(false)
+
+      // User authenticates (e.g. signs in on login page)
       mockIsFirebaseAuthenticated.value = true
       await bootstrapPromise
 
@@ -114,19 +121,6 @@ describe('bootstrapStore', () => {
         expect(store.isI18nReady).toBe(true)
         expect(settingStore.isReady).toBe(true)
       })
-    })
-
-    it('bails out without loading stores when user is not authenticated', async () => {
-      const store = useBootstrapStore()
-      const settingStore = useSettingStore()
-
-      mockIsFirebaseInitialized.value = true
-      mockIsFirebaseAuthenticated.value = false
-
-      await store.startStoreBootstrap()
-
-      expect(store.isI18nReady).toBe(false)
-      expect(settingStore.isReady).toBe(false)
     })
   })
 })

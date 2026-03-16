@@ -41,7 +41,7 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
         useFirebaseAuthStore()
       )
       await until(isInitialized).toBe(true)
-      if (!isAuthenticated.value) return
+      await until(isAuthenticated).toBe(true)
     }
 
     const userStore = useUserStore()
