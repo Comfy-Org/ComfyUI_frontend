@@ -430,7 +430,7 @@ const isUnresolvedTab = computed(
 )
 
 // Map of tab IDs to their empty state i18n key suffixes
-const tabEmptyStateKeys: Partial<Record<ManagerTab, string>> = {
+const tabEmptyStateKeys: Record<string, string> = {
   [ManagerTab.AllInstalled]: 'allInstalled',
   [ManagerTab.UpdateAvailable]: 'updateAvailable',
   [ManagerTab.Conflicting]: 'conflicting',
@@ -438,12 +438,27 @@ const tabEmptyStateKeys: Partial<Record<ManagerTab, string>> = {
   [ManagerTab.Missing]: 'missing'
 }
 
+const managerApiDependentTabs = new Set<string>([
+  ManagerTab.AllInstalled,
+  ManagerTab.UpdateAvailable,
+  ManagerTab.Conflicting,
+  ManagerTab.NotInstalled,
+  ManagerTab.Missing
+])
+
+const isManagerErrorRelevant = computed(() => {
+  const tabId = selectedTab.value?.id
+  return (
+    !!comfyManagerStore.error && !!tabId && managerApiDependentTabs.has(tabId)
+  )
+})
+
 // Empty state messages based on current tab and search state
 const emptyStateTitle = computed(() => {
-  if (comfyManagerStore.error) return t('manager.errorConnecting')
+  if (isManagerErrorRelevant.value) return t('manager.errorConnecting')
   if (searchQuery.value) return t('manager.noResultsFound')
 
-  const tabId = selectedTab.value?.id as ManagerTab | undefined
+  const tabId = selectedTab.value?.id
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
 
   return emptyStateKey
@@ -452,7 +467,7 @@ const emptyStateTitle = computed(() => {
 })
 
 const emptyStateMessage = computed(() => {
-  if (comfyManagerStore.error) return t('manager.tryAgainLater')
+  if (isManagerErrorRelevant.value) return t('manager.tryAgainLater')
   if (searchQuery.value) {
     const baseMessage = t('manager.tryDifferentSearch')
     if (isLegacyManagerSearch.value) {
@@ -461,7 +476,7 @@ const emptyStateMessage = computed(() => {
     return baseMessage
   }
 
-  const tabId = selectedTab.value?.id as ManagerTab | undefined
+  const tabId = selectedTab.value?.id
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
 
   return emptyStateKey
