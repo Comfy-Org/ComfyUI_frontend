@@ -143,7 +143,7 @@ describe('TeamWorkspacesDialogContent', () => {
   })
 
   describe('workspace switching', () => {
-    it('calls switchWorkspace with workspace id', async () => {
+    it('calls switchWorkspace with workspace id and closes dialog on success', async () => {
       mockSwitchWorkspace.mockResolvedValue(true)
       setOwnedWorkspaces()
       const wrapper = mountComponent()
@@ -151,13 +151,13 @@ describe('TeamWorkspacesDialogContent', () => {
       const switchButton = wrapper.find('li button')
       await switchButton.trigger('click')
 
+      expect(mockSwitchWorkspace).toHaveBeenCalledWith('ws-1')
       expect(mockCloseDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'
       })
-      expect(mockSwitchWorkspace).toHaveBeenCalledWith('ws-1')
     })
 
-    it('shows error toast when switch fails', async () => {
+    it('shows error toast and keeps dialog open when switch fails', async () => {
       mockSwitchWorkspace.mockRejectedValue(new Error('Network error'))
       setOwnedWorkspaces()
       const wrapper = mountComponent()
@@ -165,6 +165,7 @@ describe('TeamWorkspacesDialogContent', () => {
       const switchButton = wrapper.find('li button')
       await switchButton.trigger('click')
 
+      expect(mockCloseDialog).not.toHaveBeenCalled()
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',

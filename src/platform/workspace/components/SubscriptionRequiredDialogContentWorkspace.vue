@@ -24,8 +24,10 @@
     </Button>
 
     <div class="flex flex-col items-center gap-3">
+      <!-- Decorative initial for "Team" workspace icon; not user-facing text -->
       <div
         class="flex size-10 items-center justify-center rounded-xl bg-primary-background text-lg font-semibold text-white"
+        aria-hidden="true"
       >
         T
       </div>

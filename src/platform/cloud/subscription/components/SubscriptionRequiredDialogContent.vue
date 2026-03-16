@@ -15,6 +15,7 @@
     <div class="flex flex-col items-center gap-3">
       <div
         class="flex size-10 items-center justify-center rounded-xl bg-muted-foreground/30 text-lg font-semibold text-white"
+        aria-hidden="true"
       >
         <!-- Decorative initial for "Personal" workspace icon; not user-facing text -->
         P

@@ -66,7 +66,7 @@
             </div>
             <span class="text-primary-foreground shrink-0 text-sm font-medium">
               {{ $t('teamWorkspacesDialog.switch') }}
-              <i class="pi pi-arrow-right text-xs" />
+              <i class="pi pi-arrow-right text-xs" aria-hidden="true" />
             </span>
           </button>
         </li>
@@ -110,7 +110,7 @@
         :disabled="!isValidName"
         @click="onCreate"
       >
-        <i class="pi pi-plus text-xs" />
+        <i class="pi pi-plus text-xs" aria-hidden="true" />
         {{ $t('teamWorkspacesDialog.createWorkspace') }}
       </Button>
     </section>
@@ -170,8 +170,8 @@ function onCancel() {
 
 async function handleSwitch(workspaceId: string) {
   try {
-    dialogStore.closeDialog({ key: DIALOG_KEY })
     await switchWorkspace(workspaceId)
+    dialogStore.closeDialog({ key: DIALOG_KEY })
   } catch (error) {
     toast.add({
       severity: 'error',
