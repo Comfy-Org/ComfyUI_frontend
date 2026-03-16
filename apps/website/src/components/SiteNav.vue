@@ -53,6 +53,8 @@ const navLinks = [
       <button
         class="flex flex-col gap-1.5 md:hidden"
         aria-label="Toggle menu"
+        aria-controls="site-mobile-menu"
+        :aria-expanded="mobileMenuOpen"
         @click="mobileMenuOpen = !mobileMenuOpen"
       >
         <span
@@ -73,6 +75,7 @@ const navLinks = [
     <!-- Mobile menu -->
     <div
       v-if="mobileMenuOpen"
+      id="site-mobile-menu"
       class="border-t border-white/10 bg-black px-6 pb-6 md:hidden"
     >
       <div class="flex flex-col gap-4 pt-4">

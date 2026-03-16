@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from 'astro:transitions'
+import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
 
 interface Props {
@@ -14,7 +15,9 @@ const {
   ogImage = '/og-default.png',
 } = Astro.props
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://comfy.org')
+const siteBase = Astro.site ?? 'https://comfy.org'
+const canonicalURL = new URL(Astro.url.pathname, siteBase)
+const ogImageURL = new URL(ogImage, siteBase)
 const locale = Astro.currentLocale ?? 'en'
 ---
 
@@ -32,7 +35,7 @@ const locale = Astro.currentLocale ?? 'en'
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={ogImage} />
+    <meta property="og:image" content={ogImageURL.href} />
     <meta property="og:url" content={canonicalURL.href} />
     <meta property="og:locale" content={locale} />
     <meta property="og:site_name" content="Comfy" />
@@ -41,7 +44,7 @@ const locale = Astro.currentLocale ?? 'en'
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Google Tag Manager -->
     <script is:inline>
@@ -72,10 +75,6 @@ const locale = Astro.currentLocale ?? 'en'
 
     <slot />
 
-    <!-- Vercel Analytics -->
-    <script>
-      import { inject } from '@vercel/analytics'
-      inject()
-    </script>
+    <Analytics />
   </body>
 </html>
