@@ -26,15 +26,18 @@ function toggle() {
         v-if="visible"
         role="status"
         aria-live="polite"
-        class="fixed inset-x-4 bottom-6 z-9999 mx-auto w-auto max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg transition-all duration-300 sm:inset-x-0 sm:w-min sm:min-w-0"
+        :class="
+          cn(
+            'fixed inset-x-4 bottom-6 z-9999 mx-auto w-auto max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg transition-all duration-300 sm:inset-x-0',
+            isExpanded ? 'sm:w-[max(400px,40vw)]' : 'sm:w-fit'
+          )
+        "
       >
         <div
           :class="
             cn(
-              'overflow-hidden transition-all duration-300 min-w-0 max-w-full',
-              isExpanded
-                ? 'w-full max-h-100 sm:w-[max(400px,40vw)]'
-                : 'w-0 max-h-0'
+              'max-w-full min-w-0 overflow-hidden transition-all duration-300',
+              isExpanded ? 'max-h-100 w-full' : 'max-h-0 w-0'
             )
           "
         >

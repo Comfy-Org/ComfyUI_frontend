@@ -1,8 +1,8 @@
 <template>
-  <div class="flex flex-col h-full min-w-0">
+  <div class="flex h-full min-w-0 flex-col">
     <!-- Search bar + collapse toggle -->
     <div
-      class="px-4 pt-1 pb-4 flex items-center border-b border-interface-stroke shrink-0 min-w-0"
+      class="flex min-w-0 shrink-0 items-center border-b border-interface-stroke px-4 pt-1 pb-4"
     >
       <FormSearchInput v-model="searchQuery" class="flex-1" />
       <CollapseToggleButton
@@ -12,12 +12,12 @@
     </div>
 
     <!-- Scrollable content -->
-    <div class="flex-1 overflow-y-auto min-w-0">
+    <div class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
       <TransitionGroup tag="div" name="list-scale" class="relative">
         <div
           v-if="filteredGroups.length === 0"
           key="empty"
-          class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15"
+          class="px-4 pt-5 pb-15 text-center text-sm text-muted-foreground"
         >
           {{
             searchQuery.trim()
@@ -32,20 +32,16 @@
           :key="group.title"
           :collapse="isSectionCollapsed(group.title) && !isSearching"
           class="border-b border-interface-stroke"
-          :size="
-            group.type === 'missing_node' || group.type === 'swap_nodes'
-              ? 'lg'
-              : 'default'
-          "
+          :size="getGroupSize(group)"
           @update:collapse="setSectionCollapsed(group.title, $event)"
         >
           <template #label>
-            <div class="flex items-center gap-2 flex-1 min-w-0">
-              <span class="flex-1 flex items-center gap-2 min-w-0">
+            <div class="flex min-w-0 flex-1 items-center gap-2">
+              <span class="flex min-w-0 flex-1 items-center gap-2">
                 <i
-                  class="icon-[lucide--octagon-alert] size-4 text-destructive-background-hover shrink-0"
+                  class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive-background-hover"
                 />
-                <span class="text-destructive-background-hover truncate">
+                <span class="truncate text-destructive-background-hover">
                   {{
                     group.type === 'missing_node'
                       ? `${group.title} (${missingPackGroups.length})`
@@ -69,7 +65,7 @@
                 "
                 variant="secondary"
                 size="sm"
-                class="shrink-0 mr-2 h-8 rounded-lg text-sm"
+                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
                 :disabled="isInstallingAll"
                 @click.stop="installAll"
               >
@@ -81,6 +77,18 @@
                 }}
               </Button>
               <Button
+                v-else-if="
+                  group.type === 'missing_model' &&
+                  downloadableModels.length > 0
+                "
+                variant="secondary"
+                size="sm"
+                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
+                @click.stop="downloadAllModels"
+              >
+                {{ downloadAllLabel }}
+              </Button>
+              <Button
                 v-else-if="group.type === 'swap_nodes'"
                 v-tooltip.top="
                   t(
@@ -90,7 +98,7 @@
                 "
                 variant="secondary"
                 size="sm"
-                class="shrink-0 mr-2 h-8 rounded-lg text-sm"
+                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
                 @click.stop="handleReplaceAll()"
               >
                 {{ t('nodeReplacement.replaceAll', 'Replace All') }}
@@ -118,7 +126,7 @@
           />
 
           <!-- Execution Errors -->
-          <div v-else-if="group.type === 'execution'" class="px-4 space-y-3">
+          <div v-else-if="group.type === 'execution'" class="space-y-3 px-4">
             <ErrorNodeCard
               v-for="card in group.cards"
               :key="card.id"
@@ -130,22 +138,30 @@
               @copy-to-clipboard="copyToClipboard"
             />
           </div>
+
+          <!-- Missing Models -->
+          <MissingModelCard
+            v-else-if="group.type === 'missing_model'"
+            :missing-model-groups="missingModelGroups"
+            :show-node-id-badge="showNodeIdBadge"
+            @locate-model="handleLocateModel"
+          />
         </PropertiesAccordionItem>
       </TransitionGroup>
     </div>
 
     <!-- Fixed Footer: Help Links -->
-    <div class="shrink-0 border-t border-interface-stroke p-4 min-w-0">
+    <div class="min-w-0 shrink-0 border-t border-interface-stroke p-4">
       <i18n-t
         keypath="rightSidePanel.errorHelp"
         tag="p"
-        class="m-0 text-sm text-muted-foreground leading-tight break-words"
+        class="m-0 text-sm/tight wrap-break-word text-muted-foreground"
       >
         <template #github>
           <Button
             variant="textonly"
             size="unset"
-            class="inline underline text-inherit text-sm whitespace-nowrap"
+            class="inline text-sm whitespace-nowrap text-inherit underline"
             @click="openGitHubIssues"
           >
             {{ t('rightSidePanel.errorHelpGithub') }}
@@ -155,7 +171,7 @@
           <Button
             variant="textonly"
             size="unset"
-            class="inline underline text-inherit text-sm whitespace-nowrap"
+            class="inline text-sm whitespace-nowrap text-inherit underline"
             @click="contactSupport"
           >
             {{ t('rightSidePanel.errorHelpSupport') }}
@@ -187,12 +203,21 @@ import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/f
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
+import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
+import { isCloud } from '@/platform/distribution/types'
+import {
+  downloadModel,
+  isModelDownloadable
+} from '@/platform/missingModel/missingModelDownload'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { formatSize } from '@/utils/formatUtil'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
+import type { ErrorGroup } from './types'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 
 const { t } = useI18n()
@@ -211,6 +236,15 @@ const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 
+const fullSizeGroupTypes = new Set([
+  'missing_node',
+  'swap_nodes',
+  'missing_model'
+])
+function getGroupSize(group: ErrorGroup) {
+  return fullSizeGroupTypes.has(group.type) ? 'lg' : 'default'
+}
+
 const showNodeIdBadge = computed(
   () =>
     (settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode) !==
@@ -226,8 +260,48 @@ const {
   errorNodeCache,
   missingNodeCache,
   missingPackGroups,
+  missingModelGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
+
+const missingModelStore = useMissingModelStore()
+
+const downloadableModels = computed(() => {
+  if (isCloud) return []
+  return missingModelGroups.value.flatMap((group) =>
+    group.models
+      .filter(
+        (m) =>
+          m.representative.url &&
+          m.representative.directory &&
+          isModelDownloadable({
+            name: m.representative.name,
+            url: m.representative.url,
+            directory: m.representative.directory
+          })
+      )
+      .map((m) => ({
+        name: m.representative.name,
+        url: m.representative.url!,
+        directory: m.representative.directory!
+      }))
+  )
+})
+
+const downloadAllLabel = computed(() => {
+  const base = t('rightSidePanel.missingModels.downloadAll')
+  const total = downloadableModels.value.reduce(
+    (sum, m) => sum + (missingModelStore.fileSizes[m.url] ?? 0),
+    0
+  )
+  return total > 0 ? `${base} (${formatSize(total)})` : base
+})
+
+function downloadAllModels() {
+  for (const model of downloadableModels.value) {
+    downloadModel(model, missingModelStore.folderPaths)
+  }
+}
 
 const isAllCollapsed = computed({
   get() {
@@ -281,6 +355,10 @@ function handleLocateNode(nodeId: string) {
 
 function handleLocateMissingNode(nodeId: string) {
   focusNode(nodeId, missingNodeCache.value)
+}
+
+function handleLocateModel(nodeId: string) {
+  focusNode(nodeId)
 }
 
 function handleOpenManagerInfo(packId: string) {

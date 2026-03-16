@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'group relative rounded-lg focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted hover:bg-component-node-widget-background-hovered',
         widget.borderStyle
       )
     "
@@ -10,7 +10,7 @@
     <label
       v-if="!hideLayoutField"
       :for="id"
-      class="pointer-events-none absolute left-3 top-1.5 z-10 text-xxs text-muted-foreground"
+      class="pointer-events-none absolute top-1.5 left-3 z-10 text-xxs text-muted-foreground"
     >
       {{ displayName }}
     </label>
@@ -21,7 +21,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full text-xs resize-none',
+          'size-full resize-none text-xs',
           !hideLayoutField && 'pt-5'
         )
       "
@@ -31,19 +31,19 @@
       @pointerdown.capture.stop
       @pointermove.capture.stop
       @pointerup.capture.stop
-      @contextmenu.capture.stop
+      @contextmenu.capture="handleContextMenu"
     />
     <Button
       v-if="isReadOnly"
       variant="textonly"
       size="icon"
-      class="invisible absolute top-1.5 right-1.5 z-10 hover:bg-base-foreground/10 group-hover:visible"
+      class="invisible absolute top-1.5 right-1.5 z-10 group-focus-within:visible group-hover:visible hover:bg-base-foreground/10"
       :title="$t('g.copyToClipboard')"
       :aria-label="$t('g.copyToClipboard')"
       @click="handleCopy"
       @pointerdown.capture.stop
     >
-      <i class="icon-[lucide--copy] size-4" />
+      <i class="icon-[lucide--copy] size-4 text-component-node-foreground" />
     </Button>
   </div>
 </template>
@@ -54,6 +54,7 @@ import { computed, useId } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
@@ -81,9 +82,17 @@ const filteredProps = computed(() =>
 const displayName = computed(() => widget.label || widget.name)
 const id = useId()
 
-const isReadOnly = computed(
-  () => widget.options?.read_only ?? widget.options?.disabled ?? false
+const isReadOnly = computed(() =>
+  Boolean(widget.options?.read_only || widget.options?.disabled)
 )
+
+function handleContextMenu(e: MouseEvent) {
+  if (isNodeOptionsOpen()) {
+    e.stopPropagation()
+    return
+  }
+  e.preventDefault()
+}
 
 function handleCopy() {
   copyToClipboard(modelValue.value)

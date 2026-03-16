@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/vue'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type {
@@ -57,6 +58,11 @@ export function promoteWidget(
   for (const parent of parents) {
     store.promote(parent.rootGraph.id, parent.id, nodeId, widgetName)
   }
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Promoted widget "${widgetName}" on node ${node.id}`,
+    level: 'info'
+  })
 }
 
 export function demoteWidget(
@@ -72,6 +78,11 @@ export function demoteWidget(
   for (const parent of parents) {
     store.demote(parent.rootGraph.id, parent.id, nodeId, widgetName)
   }
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Demoted widget "${widgetName}" on node ${node.id}`,
+    level: 'info'
+  })
 }
 
 function getParentNodes(): SubgraphNode[] {
@@ -81,8 +92,7 @@ function getParentNodes(): SubgraphNode[] {
     useToastStore().add({
       severity: 'error',
       summary: t('g.error'),
-      detail: t('subgraphStore.promoteOutsideSubgraph'),
-      life: 2000
+      detail: t('subgraphStore.promoteOutsideSubgraph')
     })
     return []
   }
@@ -305,4 +315,9 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
   }
 
   store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, validEntries)
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Pruned ${removedEntries.length} disconnected promotion(s) from subgraph node ${subgraphNode.id}`,
+    level: 'info'
+  })
 }

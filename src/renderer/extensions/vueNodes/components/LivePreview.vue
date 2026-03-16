@@ -2,7 +2,7 @@
   <template v-if="imageUrl">
     <div
       v-if="imageError"
-      class="text-pure-white flex h-full w-full flex-col items-center justify-center text-center"
+      class="text-pure-white flex size-full flex-col items-center justify-center text-center"
     >
       <i-lucide:image-off class="mb-1 size-8 text-smoke-500" />
       <p class="text-xs text-smoke-400">{{ $t('g.imageFailedToLoad') }}</p>
@@ -11,7 +11,7 @@
       v-else
       :src="imageUrl"
       :alt="$t('g.liveSamplingPreview')"
-      class="pointer-events-none w-full object-contain contain-size min-h-55 flex-1"
+      class="pointer-events-none min-h-55 w-full flex-1 object-contain contain-size"
       @load="handleImageLoad"
       @error="handleImageError"
     />
@@ -40,8 +40,8 @@ const imageError = ref(false)
 watch(
   () => props.imageUrl,
   () => {
-    // Reset states when URL changes
-    actualDimensions.value = null
+    // Reset error state when URL changes, but keep previous dimensions
+    // to avoid flickering "Calculating dimensions" text during live preview
     imageError.value = false
   }
 )

@@ -7,22 +7,22 @@
     >
       <span
         v-if="showNodeIdBadge"
-        class="shrink-0 rounded-md bg-secondary-background-selected px-2 py-0.5 text-xs font-mono text-muted-foreground font-bold"
+        class="shrink-0 rounded-md bg-secondary-background-selected px-2 py-0.5 font-mono text-xs font-bold text-muted-foreground"
       >
         #{{ card.nodeId }}
       </span>
       <span
         v-if="card.nodeTitle"
-        class="flex-1 text-sm text-muted-foreground truncate font-medium"
+        class="flex-1 truncate text-sm font-medium text-muted-foreground"
       >
         {{ card.nodeTitle }}
       </span>
-      <div class="flex items-center shrink-0">
+      <div class="flex shrink-0 items-center">
         <Button
           v-if="card.isSubgraphNode"
           variant="secondary"
           size="sm"
-          class="rounded-lg text-sm shrink-0 h-8"
+          class="h-8 shrink-0 rounded-lg text-sm"
           @click.stop="handleEnterSubgraph"
         >
           {{ t('rightSidePanel.enterSubgraph') }}
@@ -30,7 +30,7 @@
         <Button
           variant="textonly"
           size="icon-sm"
-          class="size-8 text-muted-foreground hover:text-base-foreground shrink-0"
+          class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
           :aria-label="t('rightSidePanel.locateNode')"
           @click.stop="handleLocateNode"
         >
@@ -40,7 +40,7 @@
     </div>
 
     <!-- Multiple Errors within one Card -->
-    <div class="divide-y divide-interface-stroke/20 space-y-4">
+    <div class="space-y-4 divide-y divide-interface-stroke/20">
       <!-- Card Content -->
       <div
         v-for="(error, idx) in card.errors"
@@ -49,8 +49,8 @@
       >
         <!-- Error Message -->
         <p
-          v-if="error.message && !compact"
-          class="m-0 text-sm break-words whitespace-pre-wrap leading-relaxed px-0.5 max-h-[4lh] overflow-y-auto"
+          v-if="error.message"
+          class="m-0 max-h-[4lh] overflow-y-auto px-0.5 text-sm/relaxed wrap-break-word whitespace-pre-wrap"
         >
           {{ error.message }}
         </p>
@@ -60,13 +60,13 @@
           v-if="error.details"
           :class="
             cn(
-              'rounded-lg bg-secondary-background-hover p-2.5 overflow-y-auto border border-interface-stroke/30',
+              'overflow-y-auto rounded-lg border border-interface-stroke/30 bg-secondary-background-hover p-2.5',
               error.isRuntimeError ? 'max-h-[10lh]' : 'max-h-[6lh]'
             )
           "
         >
           <p
-            class="m-0 text-xs text-muted-foreground break-words whitespace-pre-wrap font-mono leading-relaxed"
+            class="m-0 font-mono text-xs/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
           >
             {{ error.details }}
           </p>
@@ -75,7 +75,7 @@
         <Button
           variant="secondary"
           size="sm"
-          class="w-full justify-center gap-2 h-8 text-xs"
+          class="h-8 w-full justify-center gap-2 text-xs"
           @click="handleCopyError(error)"
         >
           <i class="icon-[lucide--copy] size-3.5" />

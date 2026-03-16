@@ -2,7 +2,7 @@
   <div class="image-upload-wrapper">
     <div class="flex items-center gap-2">
       <div
-        class="preview-box flex h-16 w-16 items-center justify-center rounded-sm border p-2"
+        class="preview-box flex size-16 items-center justify-center rounded-sm border p-2"
         :class="{ 'bg-base-background': !modelValue }"
       >
         <img

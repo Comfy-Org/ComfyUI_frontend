@@ -10,6 +10,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
+  actions: read
 
 jobs:
   comment:
@@ -25,7 +26,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
 
       - name: Download PR metadata
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
@@ -73,7 +74,28 @@ jobs:
             core.setOutput('number', String(pr.number));
             core.setOutput('base', trustedBase);
 
+      - name: Check if results are still current
+        id: sha-check
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const prNumber = Number('${{ steps.pr-meta.outputs.number }}');
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            const runSha = context.payload.workflow_run.head_sha;
+            const currentSha = pr.head.sha;
+            if (runSha !== currentSha) {
+              core.info(`Skipping stale report: run SHA ${runSha} != current PR SHA ${currentSha}`);
+              core.setOutput('stale', 'true');
+            } else {
+              core.setOutput('stale', 'false');
+            }
+
       - name: Download PR perf metrics
+        if: steps.sha-check.outputs.stale != 'true'
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
           name: perf-metrics
@@ -81,6 +103,7 @@ jobs:
           path: test-results/
 
       - name: Download baseline perf metrics
+        if: steps.sha-check.outputs.stale != 'true'
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
           branch: ${{ steps.pr-meta.outputs.base }}
@@ -90,10 +113,33 @@ jobs:
           path: temp/perf-baseline/
           if_no_artifact_found: warn
 
+      - name: Load historical baselines from perf-data branch
+        if: steps.sha-check.outputs.stale != 'true'
+        continue-on-error: true
+        run: |
+          mkdir -p temp/perf-history
+
+          git fetch origin perf-data 2>/dev/null || {
+            echo "perf-data branch not found, skipping historical data"
+            exit 0
+          }
+
+          INDEX=0
+          for file in $(git ls-tree --name-only origin/perf-data baselines/ 2>/dev/null | sort -r | head -5); do
+            DIR="temp/perf-history/$INDEX"
+            mkdir -p "$DIR"
+            git show "origin/perf-data:${file}" > "$DIR/perf-metrics.json" 2>/dev/null || true
+            INDEX=$((INDEX + 1))
+          done
+
+          echo "Loaded $INDEX historical baselines"
+
       - name: Generate perf report
+        if: steps.sha-check.outputs.stale != 'true'
         run: npx --yes tsx scripts/perf-report.ts > perf-report.md
 
       - name: Post PR comment
+        if: steps.sha-check.outputs.stale != 'true'
         uses: ./.github/actions/post-pr-report-comment
         with:
           pr-number: ${{ steps.pr-meta.outputs.number }}

@@ -109,8 +109,15 @@ function createMockNode(comfyClass = 'TestNode'): LGraphNode {
 
   // Spy on the addWidget method
   vi.spyOn(node, 'addWidget').mockImplementation(
-    (type, name, value, callback) => {
-      const widget = createMockWidget({ type, name, value })
+    (type, name, value, callback, options = {}) => {
+      const normalizedOptions =
+        typeof options === 'string' ? { property: options } : options
+      const widget = createMockWidget({
+        type,
+        name,
+        value,
+        options: normalizedOptions
+      })
       // Store the callback function on the widget for testing
       if (typeof callback === 'function') {
         widget.callback = callback
@@ -320,13 +327,30 @@ describe('useComboWidget', () => {
           HASH_FILENAME,
           expect.any(Function),
           expect.objectContaining({
-            values: [], // Empty initially, populated dynamically by Proxy
+            values: [], // Empty initially, populated via dynamic getter
             getOptionLabel: expect.any(Function)
           })
         )
         expect(widget).toBe(mockWidget)
       }
     )
+
+    it('should keep the original options object for cloud input mappings', () => {
+      mockDistributionState.isCloud = true
+
+      const constructor = useComboWidget()
+      const mockNode = createMockNode('LoadImage')
+      const inputSpec = createMockInputSpec({
+        name: 'image',
+        options: [HASH_FILENAME]
+      })
+
+      const widget = constructor(mockNode, inputSpec)
+      const addWidgetCall = vi.mocked(mockNode.addWidget).mock.calls[0]
+      const options = addWidgetCall[4]
+
+      expect(widget.options).toBe(options)
+    })
 
     it("should format option labels using store's getInputName function", () => {
       mockDistributionState.isCloud = true

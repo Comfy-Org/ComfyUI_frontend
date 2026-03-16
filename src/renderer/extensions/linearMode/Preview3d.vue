@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useTemplateRef, watch } from 'vue'
+import { onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
@@ -19,12 +19,16 @@ watch([containerRef, () => modelUrl], async () => {
   await viewer.value.initializeStandaloneViewer(containerRef.value, modelUrl)
 })
 
+onUnmounted(() => {
+  viewer.value.cleanup()
+})
+
 //TODO: refactor to add control buttons
 </script>
 <template>
   <div
     ref="containerRef"
-    class="relative w-full md:w-[calc(100%-150px)] h-full self-center"
+    class="relative size-full self-center md:w-[calc(100%-150px)]"
     @mouseenter="viewer.handleMouseEnter"
     @mouseleave="viewer.handleMouseLeave"
     @resize="viewer.handleResize"

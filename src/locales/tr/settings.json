@@ -400,7 +400,7 @@
     "name": "Sekme Çubuğu Düzeni",
     "options": {
       "Default": "Varsayılan",
-      "Integrated": "Entegre"
+      "Legacy": "Klasik"
     },
     "tooltip": "Sekme çubuğu düzenini kontrol eder. \"Entegre\" seçeneği, Yardım ve Kullanıcı kontrollerini sekme çubuğu alanına taşır."
   },
@@ -480,6 +480,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Yakınlaştırıldığında düğüm birleşik widget menülerini (listeleri) ölçeklendir"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "Grup çocuklarını tıklayınca seç",
+    "tooltip": "Etkinleştirildiğinde, bir gruba tıklamak içindeki tüm düğüm ve öğeleri seçer"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "Yeni düğümleri her zaman küçült",

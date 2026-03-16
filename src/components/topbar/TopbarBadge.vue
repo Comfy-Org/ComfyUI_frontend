@@ -37,7 +37,7 @@
         >
           {{ badge.label }}
         </div>
-        <div class="text-sm font-inter">{{ badge.text }}</div>
+        <div class="font-inter text-sm">{{ badge.text }}</div>
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>
@@ -90,7 +90,7 @@
         >
           {{ badge.label }}
         </div>
-        <div class="text-sm font-inter">{{ badge.text }}</div>
+        <div class="font-inter text-sm">{{ badge.text }}</div>
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>

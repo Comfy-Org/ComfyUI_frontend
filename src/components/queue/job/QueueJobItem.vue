@@ -66,17 +66,17 @@
       <div class="relative z-1 flex items-center gap-1">
         <div class="relative inline-flex items-center justify-center">
           <div
-            class="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2"
+            class="absolute top-1/2 left-1/2 size-10 -translate-1/2"
             @mouseenter.stop="onIconEnter"
             @mouseleave.stop="onIconLeave"
           />
           <div
-            class="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-[6px]"
+            class="inline-flex size-6 items-center justify-center overflow-hidden rounded-[6px]"
           >
             <img
               v-if="iconImageUrl"
               :src="iconImageUrl"
-              class="h-full w-full object-cover"
+              class="size-full object-cover"
             />
             <i
               v-else

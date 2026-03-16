@@ -10,7 +10,7 @@
         {{ $t('workspacePanel.deleteDialog.title') }}
       </h2>
       <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary-foreground"
+        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -19,7 +19,7 @@
     </div>
 
     <!-- Body -->
-    <div class="px-4 py-4">
+    <div class="p-4">
       <p class="m-0 text-sm text-muted-foreground">
         {{
           workspaceName
@@ -32,7 +32,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="flex items-center justify-end gap-4 px-4 py-4">
+    <div class="flex items-center justify-end gap-4 p-4">
       <Button variant="muted-textonly" @click="onCancel">
         {{ $t('g.cancel') }}
       </Button>
@@ -79,8 +79,7 @@ async function onDelete() {
     toast.add({
       severity: 'error',
       summary: t('workspacePanel.toast.failedToDeleteWorkspace'),
-      detail: error instanceof Error ? error.message : t('g.unknownError'),
-      life: 5000
+      detail: error instanceof Error ? error.message : t('g.unknownError')
     })
   } finally {
     loading.value = false

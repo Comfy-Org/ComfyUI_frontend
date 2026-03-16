@@ -15,6 +15,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { app } from '@/scripts/app'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 import {
+  isBoundsEqual,
   isPointEqual,
   isSizeEqual
 } from '@/renderer/core/layout/utils/geometry'
@@ -30,6 +31,30 @@ const raf = createRafBatch(() => {
 function scheduleSlotLayoutSync(nodeId: string) {
   pendingNodes.add(nodeId)
   raf.schedule()
+}
+
+function createSlotLayout(options: {
+  nodeId: string
+  index: number
+  type: 'input' | 'output'
+  centerCanvas: { x: number; y: number }
+}): SlotLayout {
+  const { nodeId, index, type, centerCanvas } = options
+  const size = LiteGraph.NODE_SLOT_HEIGHT
+  const half = size / 2
+
+  return {
+    nodeId,
+    index,
+    type,
+    position: { x: centerCanvas.x, y: centerCanvas.y },
+    bounds: {
+      x: centerCanvas.x - half,
+      y: centerCanvas.y - half,
+      width: size,
+      height: size
+    }
+  }
 }
 
 export function flushScheduledSlotLayoutSync() {
@@ -71,15 +96,15 @@ export function syncNodeSlotLayoutsFromDOM(
 
   const batch: Array<{ key: string; layout: SlotLayout }> = []
 
+  const positionConv = conv ?? useSharedCanvasPositionConversion()
+
   for (const [slotKey, entry] of node.slots) {
     const rect = entry.el.getBoundingClientRect()
     const screenCenter: [number, number] = [
       rect.left + rect.width / 2,
       rect.top + rect.height / 2
     ]
-    const [x, y] = (
-      conv ?? useSharedCanvasPositionConversion()
-    ).clientPosToCanvasPos(screenCenter)
+    const [x, y] = positionConv.clientPosToCanvasPos(screenCenter)
     const centerCanvas = { x, y }
 
     // Cache offset relative to node position for fast updates later
@@ -88,23 +113,24 @@ export function syncNodeSlotLayoutsFromDOM(
       y: centerCanvas.y - nodeLayout.position.y
     }
 
-    // Persist layout in canvas coordinates
-    const size = LiteGraph.NODE_SLOT_HEIGHT
-    const half = size / 2
+    const nextLayout = createSlotLayout({
+      nodeId,
+      index: entry.index,
+      type: entry.type,
+      centerCanvas
+    })
+    const existingSlotLayout = layoutStore.getSlotLayout(slotKey)
+    if (
+      existingSlotLayout &&
+      isPointEqual(existingSlotLayout.position, nextLayout.position) &&
+      isBoundsEqual(existingSlotLayout.bounds, nextLayout.bounds)
+    ) {
+      continue
+    }
+
     batch.push({
       key: slotKey,
-      layout: {
-        nodeId,
-        index: entry.index,
-        type: entry.type,
-        position: { x: centerCanvas.x, y: centerCanvas.y },
-        bounds: {
-          x: centerCanvas.x - half,
-          y: centerCanvas.y - half,
-          width: size,
-          height: size
-        }
-      }
+      layout: nextLayout
     })
   }
   if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
@@ -130,22 +156,15 @@ function updateNodeSlotsFromCache(nodeId: string) {
       x: nodeLayout.position.x + entry.cachedOffset.x,
       y: nodeLayout.position.y + entry.cachedOffset.y
     }
-    const size = LiteGraph.NODE_SLOT_HEIGHT
-    const half = size / 2
+
     batch.push({
       key: slotKey,
-      layout: {
+      layout: createSlotLayout({
         nodeId,
         index: entry.index,
         type: entry.type,
-        position: { x: centerCanvas.x, y: centerCanvas.y },
-        bounds: {
-          x: centerCanvas.x - half,
-          y: centerCanvas.y - half,
-          width: size,
-          height: size
-        }
-      }
+        centerCanvas
+      })
     })
   }
 

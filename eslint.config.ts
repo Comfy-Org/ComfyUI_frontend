@@ -24,6 +24,7 @@ const extraFileExtensions = ['.vue']
 const commonGlobals = {
   ...globals.browser,
   __COMFYUI_FRONTEND_VERSION__: 'readonly',
+  __COMFYUI_FRONTEND_COMMIT__: 'readonly',
   __DISTRIBUTION__: 'readonly',
   __IS_NIGHTLY__: 'readonly'
 } as const
@@ -127,10 +128,8 @@ export default defineConfig([
       // Off: may conflict with oxfmt formatting
       'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
       // Off: large batch change, enable and apply with `eslint --fix`
-      'better-tailwindcss/enforce-consistent-class-order': 'off',
-      // Off: large batch change (v3→v4 renames like rounded→rounded-sm),
-      // enable and apply with `eslint --fix` in a follow-up PR
-      'better-tailwindcss/enforce-canonical-classes': 'off',
+      'better-tailwindcss/enforce-consistent-class-order': 'error',
+      'better-tailwindcss/enforce-canonical-classes': 'error',
       'better-tailwindcss/no-deprecated-classes': 'error'
     }
   },

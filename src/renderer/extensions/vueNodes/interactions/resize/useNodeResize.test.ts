@@ -2,6 +2,7 @@ import type { MockInstance } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 import type { ResizeCallbackPayload } from './useNodeResize'
 
@@ -66,7 +67,7 @@ function createMockNodeElement(
 ): HTMLElement {
   const element = document.createElement('div')
   element.setAttribute('data-node-id', 'test-node')
-  element.style.setProperty('min-width', '225px')
+  element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
   element.getBoundingClientRect = () => {
     // When --node-height is '0px', return the content-driven minimum height
     const nodeHeight = element.style.getPropertyValue('--node-height')
@@ -194,7 +195,7 @@ describe('useNodeResize', () => {
       simulateMove(-200, 0)
 
       const payload: ResizeCallbackPayload = callback.mock.calls[0][0]
-      expect(payload.size.width).toBe(225)
+      expect(payload.size.width).toBe(MIN_NODE_WIDTH)
     })
   })
 
@@ -235,8 +236,9 @@ describe('useNodeResize', () => {
       simulateMove(200, 0)
 
       const payload: ResizeCallbackPayload = callback.mock.calls[0][0]
-      expect(payload.size.width).toBe(225)
-      expect(payload.position!.x).toBe(175)
+      expect(payload.size.width).toBe(MIN_NODE_WIDTH)
+      // x = startX + startWidth - minWidth = 100 + 300 - MIN_NODE_WIDTH
+      expect(payload.position!.x).toBe(100 + 300 - MIN_NODE_WIDTH)
     })
   })
 
@@ -255,8 +257,9 @@ describe('useNodeResize', () => {
       simulateMove(200, 0)
 
       const payload: ResizeCallbackPayload = callback.mock.calls[0][0]
-      expect(payload.size.width).toBe(225)
-      expect(payload.position!.x).toBe(175)
+      expect(payload.size.width).toBe(MIN_NODE_WIDTH)
+      // x = startX + startWidth - minWidth = 100 + 300 - MIN_NODE_WIDTH
+      expect(payload.position!.x).toBe(100 + 300 - MIN_NODE_WIDTH)
     })
 
     it('clamps height to content minimum and fixes bottom edge', () => {

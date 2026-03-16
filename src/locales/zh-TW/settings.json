@@ -400,7 +400,7 @@
     "name": "分頁列佈局",
     "options": {
       "Default": "預設",
-      "Integrated": "整合"
+      "Legacy": "傳統"
     },
     "tooltip": "控制分頁列的佈局。「整合」會將說明和使用者控制項移至分頁列區域。"
   },
@@ -480,6 +480,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大時縮放節點組合小工具選單（清單）"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "點擊時選取群組內的子項目",
+    "tooltip": "啟用後，點擊群組會選取群組內的所有節點與項目"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "新增節點時自動縮小",

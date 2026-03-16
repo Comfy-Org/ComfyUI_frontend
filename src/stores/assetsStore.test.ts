@@ -71,7 +71,22 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   })
 }))
 
+type MockOutput = {
+  supportsPreview: boolean
+  filename: string
+  subfolder: string
+  type: string
+  url: string
+}
+
+// Per-test override for mock outputs (defaults to single output)
+const mockOutputOverrides = vi.hoisted(() => ({
+  value: null as MockOutput[] | null
+}))
+
 // Mock TaskItemImpl
+const PREVIEWABLE_MEDIA_TYPES = new Set(['images', 'video', 'audio'])
+
 vi.mock('@/stores/queueStore', () => ({
   TaskItemImpl: class {
     public flatOutputs: Array<{
@@ -91,19 +106,37 @@ vi.mock('@/stores/queueStore', () => ({
         }
       | undefined
     public jobId: string
+    public outputsCount: number | null
 
     constructor(public job: JobListItem) {
       this.jobId = job.id
-      this.flatOutputs = [
-        {
-          supportsPreview: true,
-          filename: 'test.png',
-          subfolder: '',
-          type: 'output',
-          url: 'http://test.com/test.png'
+      this.outputsCount = job.outputs_count ?? null
+      if (mockOutputOverrides.value) {
+        this.flatOutputs = mockOutputOverrides.value
+        const previewable = mockOutputOverrides.value.filter(
+          (o) => o.supportsPreview
+        )
+        this.previewOutput =
+          previewable.findLast((o) => o.type === 'output') ?? previewable.at(-1)
+      } else {
+        const preview = job.preview_output
+        const isPreviewable =
+          !!preview?.filename && PREVIEWABLE_MEDIA_TYPES.has(preview.mediaType)
+        if (preview && isPreviewable) {
+          const item = {
+            supportsPreview: true,
+            filename: preview.filename!,
+            subfolder: preview.subfolder ?? '',
+            type: preview.type ?? 'output',
+            url: `http://test.com/${preview.filename}`
+          }
+          this.flatOutputs = [item]
+          this.previewOutput = item
+        } else {
+          this.flatOutputs = []
+          this.previewOutput = undefined
         }
-      ]
-      this.previewOutput = this.flatOutputs[0]
+      }
     }
 
     get previewableOutputs() {
@@ -199,6 +232,33 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(store.historyAssets).toHaveLength(0)
       expect(store.historyError).toBe(error)
       expect(store.historyLoading).toBe(false)
+    })
+
+    it('should skip text-only jobs without breaking sibling image jobs', async () => {
+      const mockHistory: JobListItem[] = [
+        createMockJobItem(0),
+        {
+          id: 'text-only-job',
+          status: 'completed',
+          create_time: 2000,
+          priority: 2000,
+          preview_output: {
+            content: 'some generated text',
+            nodeId: '5',
+            mediaType: 'text'
+          } satisfies JobListItem['preview_output']
+        },
+        createMockJobItem(2)
+      ]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(2)
+      expect(store.historyAssets.map((a) => a.id)).toEqual([
+        'prompt_0',
+        'prompt_2'
+      ])
     })
   })
 
@@ -492,6 +552,130 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(asset.user_metadata).toHaveProperty('outputCount')
       expect(asset.user_metadata).toHaveProperty('allOutputs')
       expect(Array.isArray(asset.user_metadata!.allOutputs)).toBe(true)
+    })
+  })
+
+  describe('Cover Image Selection', () => {
+    afterEach(() => {
+      mockOutputOverrides.value = null
+    })
+
+    it('should use the last saved output as cover for multi-output batches', async () => {
+      mockOutputOverrides.value = [
+        {
+          supportsPreview: true,
+          filename: 'batch_00001.png',
+          subfolder: '',
+          type: 'output',
+          url: 'http://test.com/batch_00001.png'
+        },
+        {
+          supportsPreview: true,
+          filename: 'batch_00005.png',
+          subfolder: '',
+          type: 'output',
+          url: 'http://test.com/batch_00005.png'
+        },
+        {
+          supportsPreview: true,
+          filename: 'batch_00010.png',
+          subfolder: '',
+          type: 'output',
+          url: 'http://test.com/batch_00010.png'
+        }
+      ]
+
+      const mockHistory = [createMockJobItem(0)]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(1)
+      // Cover should be the last output (most recent in batch)
+      expect(store.historyAssets[0].name).toBe('batch_00010.png')
+    })
+
+    it('should prefer last saved output over temp previews', async () => {
+      mockOutputOverrides.value = [
+        {
+          supportsPreview: true,
+          filename: 'saved_first.png',
+          subfolder: '',
+          type: 'output',
+          url: 'http://test.com/saved_first.png'
+        },
+        {
+          supportsPreview: true,
+          filename: 'saved_last.png',
+          subfolder: '',
+          type: 'output',
+          url: 'http://test.com/saved_last.png'
+        },
+        {
+          supportsPreview: true,
+          filename: 'temp_preview.png',
+          subfolder: '',
+          type: 'temp',
+          url: 'http://test.com/temp_preview.png'
+        }
+      ]
+
+      const mockHistory = [createMockJobItem(0)]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(1)
+      // Should pick last saved output, not the temp preview
+      expect(store.historyAssets[0].name).toBe('saved_last.png')
+    })
+
+    it('should fall back to last temp output when no saved outputs exist', async () => {
+      mockOutputOverrides.value = [
+        {
+          supportsPreview: true,
+          filename: 'temp_first.png',
+          subfolder: '',
+          type: 'temp',
+          url: 'http://test.com/temp_first.png'
+        },
+        {
+          supportsPreview: true,
+          filename: 'temp_last.png',
+          subfolder: '',
+          type: 'temp',
+          url: 'http://test.com/temp_last.png'
+        }
+      ]
+
+      const mockHistory = [createMockJobItem(0)]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(1)
+      // No saved outputs, should fall back to last previewable
+      expect(store.historyAssets[0].name).toBe('temp_last.png')
+    })
+
+    it('should skip jobs with no previewable outputs', async () => {
+      mockOutputOverrides.value = [
+        {
+          supportsPreview: false,
+          filename: 'not_previewable.dat',
+          subfolder: '',
+          type: 'output',
+          url: 'http://test.com/not_previewable.dat'
+        }
+      ]
+
+      const mockHistory = [createMockJobItem(0)]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+
+      await store.updateHistory()
+
+      // No previewable outputs → job should be skipped
+      expect(store.historyAssets).toHaveLength(0)
     })
   })
 })

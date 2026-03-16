@@ -1,11 +1,10 @@
 <template>
-  <ComboboxRoot :ignore-filter="true" :open="false" :disabled="disabled">
+  <ComboboxRoot :open="false" ignore-filter :disabled :class="className">
     <ComboboxAnchor
       :class="
         cn(
           searchInputVariants({ size }),
-          disabled && 'opacity-50 pointer-events-none',
-          className
+          disabled && 'pointer-events-none opacity-50'
         )
       "
       @click="focus"
@@ -24,7 +23,7 @@
         v-else-if="loading"
         :class="
           cn(
-            'icon-[lucide--loader-circle] absolute animate-spin pointer-events-none',
+            'pointer-events-none absolute icon-[lucide--loader-circle] animate-spin',
             sizeConfig.iconPos,
             sizeConfig.icon
           )
@@ -34,7 +33,7 @@
         v-else
         :class="
           cn(
-            'absolute pointer-events-none',
+            'pointer-events-none absolute',
             sizeConfig.iconPos,
             sizeConfig.icon,
             icon

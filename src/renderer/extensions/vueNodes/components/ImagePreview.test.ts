@@ -101,7 +101,7 @@ describe('ImagePreview', () => {
   it('shows navigation dots for multiple images', () => {
     const wrapper = mountImagePreview()
 
-    const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
+    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
     expect(navigationDots).toHaveLength(2)
   })
 
@@ -110,7 +110,7 @@ describe('ImagePreview', () => {
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
-    const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
+    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
     expect(navigationDots).toHaveLength(0)
   })
 
@@ -249,7 +249,7 @@ describe('ImagePreview', () => {
     )
 
     // Click second navigation dot
-    const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
+    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
     await navigationDots[1].trigger('click')
     await nextTick()
 
@@ -259,22 +259,22 @@ describe('ImagePreview', () => {
     expect(imgElement.attributes('src')).toBe(defaultProps.imageUrls[1])
   })
 
-  it('applies correct classes to navigation dots based on current image', async () => {
+  it('marks active navigation dot with aria-current', async () => {
     const wrapper = mountImagePreview()
 
-    const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
+    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
 
-    // First dot should be active (has bg-white class)
-    expect(navigationDots[0].classes()).toContain('bg-base-foreground')
-    expect(navigationDots[1].classes()).toContain('bg-base-foreground/50')
+    // First dot should be active
+    expect(navigationDots[0].attributes('aria-current')).toBe('true')
+    expect(navigationDots[1].attributes('aria-current')).toBeUndefined()
 
     // Switch to second image
     await navigationDots[1].trigger('click')
     await nextTick()
 
     // Second dot should now be active
-    expect(navigationDots[0].classes()).toContain('bg-base-foreground/50')
-    expect(navigationDots[1].classes()).toContain('bg-base-foreground')
+    expect(navigationDots[0].attributes('aria-current')).toBeUndefined()
+    expect(navigationDots[1].attributes('aria-current')).toBe('true')
   })
 
   it('loads image without errors', async () => {
@@ -301,7 +301,7 @@ describe('ImagePreview', () => {
     expect(wrapper.find('img').attributes('alt')).toBe('Node output 1')
 
     // Switch to second image
-    const navigationDots = wrapper.findAll('.w-2.h-2.rounded-full')
+    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
     await navigationDots[1].trigger('click')
     await nextTick()
 
@@ -309,6 +309,37 @@ describe('ImagePreview', () => {
     const imgElement = wrapper.find('img')
     expect(imgElement.exists()).toBe(true)
     expect(imgElement.attributes('alt')).toBe('Node output 2')
+  })
+
+  describe('batch cycling with identical URLs', () => {
+    it('should not enter persistent loading state when cycling through identical images', async () => {
+      vi.useFakeTimers()
+      try {
+        const sameUrl = '/api/view?filename=test.png&type=output'
+        const wrapper = mountImagePreview({
+          imageUrls: [sameUrl, sameUrl, sameUrl]
+        })
+
+        // Simulate initial image load
+        await wrapper.find('img').trigger('load')
+        await nextTick()
+        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+
+        // Click second navigation dot to cycle
+        const dots = wrapper.findAll('[aria-label*="View image"]')
+        await dots[1].trigger('click')
+        await nextTick()
+
+        // Advance past the delayed loader timeout
+        await vi.advanceTimersByTimeAsync(300)
+        await nextTick()
+
+        // Should NOT be in loading state since URL didn't change
+        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
   })
 
   describe('URL change detection', () => {
@@ -343,30 +374,33 @@ describe('ImagePreview', () => {
     })
 
     it('should reset loading state when imageUrls prop changes to different URLs', async () => {
-      const urls = ['/api/view?filename=test.png&type=output']
-      const wrapper = mountImagePreview({ imageUrls: urls })
+      vi.useFakeTimers()
+      try {
+        const urls = ['/api/view?filename=test.png&type=output']
+        const wrapper = mountImagePreview({ imageUrls: urls })
 
-      // Simulate image load completing
-      const img = wrapper.find('img')
-      await img.trigger('load')
-      await nextTick()
+        // Simulate image load completing
+        const img = wrapper.find('img')
+        await img.trigger('load')
+        await nextTick()
 
-      // Verify loader is hidden
-      expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+        // Verify loader is hidden
+        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
 
-      // Change to different URL
-      await wrapper.setProps({
-        imageUrls: ['/api/view?filename=different.png&type=output']
-      })
-      await nextTick()
+        // Change to different URL
+        await wrapper.setProps({
+          imageUrls: ['/api/view?filename=different.png&type=output']
+        })
+        await nextTick()
 
-      // After 250ms timeout, loading state should be reset (aria-busy="true")
-      // We can check the internal state via the Skeleton appearing
-      // or wait for the timeout
-      await new Promise((resolve) => setTimeout(resolve, 300))
-      await nextTick()
+        // Advance past the 250ms delayed loader timeout
+        await vi.advanceTimersByTimeAsync(300)
+        await nextTick()
 
-      expect(wrapper.find('[aria-busy="true"]').exists()).toBe(true)
+        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(true)
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('should handle empty to non-empty URL transitions correctly', async () => {

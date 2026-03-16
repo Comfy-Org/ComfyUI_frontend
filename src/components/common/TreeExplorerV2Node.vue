@@ -8,6 +8,7 @@
     <!-- Node -->
     <div
       v-if="item.value.type === 'node'"
+      v-bind="$attrs"
       :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
       :style="rowStyle"
       draggable="true"
@@ -19,7 +20,7 @@
       @dragend="handleDragEnd"
     >
       <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
-      <span class="min-w-0 flex-1 truncate text-sm text-foreground">
+      <span class="text-foreground min-w-0 flex-1 truncate text-sm">
         <slot name="node" :node="item.value">
           {{ item.value.label }}
         </slot>
@@ -27,7 +28,7 @@
       <button
         :class="
           cn(
-            'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent text-muted-foreground hover:text-foreground',
+            'hover:text-foreground flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent text-muted-foreground',
             'opacity-0 group-hover/tree-node:opacity-100'
           )
         "
@@ -48,6 +49,7 @@
     <!-- Folder -->
     <div
       v-else
+      v-bind="$attrs"
       :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
       :style="rowStyle"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
@@ -64,7 +66,7 @@
       <i
         :class="cn(item.value.icon, 'size-4 shrink-0 text-muted-foreground')"
       />
-      <span class="min-w-0 flex-1 truncate text-sm text-foreground">
+      <span class="text-foreground min-w-0 flex-1 truncate text-sm">
         <slot name="folder" :node="item.value">
           {{ item.value.label }}
         </slot>
@@ -98,8 +100,12 @@ import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
 
+defineOptions({
+  inheritAttrs: false
+})
+
 const ROW_CLASS =
-  'group/tree-node flex cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-comfy-input mx-2 rounded'
+  'group/tree-node flex w-full min-w-0 cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-comfy-input mx-2 rounded'
 
 const { item } = defineProps<{
   item: FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>

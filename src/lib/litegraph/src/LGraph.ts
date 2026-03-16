@@ -45,7 +45,8 @@ import { LiteGraph, SubgraphNode } from './litegraph'
 import {
   alignOutsideContainer,
   alignToContainer,
-  createBounds
+  createBounds,
+  snapPoint
 } from './measure'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
@@ -77,13 +78,14 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
+import { deduplicateSubgraphNodeIds } from './utils/subgraphDeduplication'
 
 export type {
   LGraphTriggerAction,
   LGraphTriggerParam
 } from './types/graphTriggers'
 
-export type RendererType = 'LG' | 'Vue'
+export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
 export interface LGraphState {
   lastGroupId: number
@@ -162,6 +164,11 @@ export class LGraph
 
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
+
+  /** Generates a unique string key for a link's connection tuple. */
+  static _linkTupleKey(link: LLink): string {
+    return `${link.origin_id}\0${link.origin_slot}\0${link.target_id}\0${link.target_slot}`
+  }
 
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
@@ -1330,7 +1337,8 @@ export class LGraph
     const validEventTypes = new Set([
       'node:slot-links:changed',
       'node:slot-errors:changed',
-      'node:property:changed'
+      'node:property:changed',
+      'node:slot-label:changed'
     ])
 
     if (validEventTypes.has(action) && param && typeof param === 'object') {
@@ -1608,6 +1616,52 @@ export class LGraph
     node?.disconnectInput(link.target_slot, false)
 
     link.disconnect(this)
+  }
+
+  /**
+   * Removes duplicate links that share the same connection tuple
+   * (origin_id, origin_slot, target_id, target_slot). Keeps the link
+   * referenced by input.link and removes orphaned duplicates from
+   * output.links and the graph's _links map.
+   */
+  _removeDuplicateLinks(): void {
+    const seen = new Map<string, LinkId>()
+    const toRemove: LinkId[] = []
+
+    for (const [id, link] of this._links) {
+      const key = LGraph._linkTupleKey(link)
+      if (seen.has(key)) {
+        const existingId = seen.get(key)!
+        // Keep the link that the input side references
+        const node = this.getNodeById(link.target_id)
+        const input = node?.inputs?.[link.target_slot]
+        if (input?.link === id) {
+          toRemove.push(existingId)
+          seen.set(key, id)
+        } else {
+          toRemove.push(id)
+        }
+      } else {
+        seen.set(key, id)
+      }
+    }
+
+    for (const id of toRemove) {
+      const link = this._links.get(id)
+      if (!link) continue
+
+      // Remove from origin node's output.links array
+      const originNode = this.getNodeById(link.origin_id)
+      if (originNode) {
+        const output = originNode.outputs?.[link.origin_slot]
+        if (output?.links) {
+          const idx = output.links.indexOf(id)
+          if (idx !== -1) output.links.splice(idx, 1)
+        }
+      }
+
+      this._links.delete(id)
+    }
   }
 
   /**
@@ -2071,7 +2125,7 @@ export class LGraph
     // disconnect/reconnect cycles on widget inputs that can shift slot indices.
     const seenLinks = new Set<string>()
     const dedupedNewLinks = newLinks.filter((link) => {
-      const key = `${link.oid}:${link.oslot}:${link.tid}:${link.tslot}`
+      const key = `${link.oid}\0${link.oslot}\0${link.tid}\0${link.tslot}`
       if (seenLinks.has(key)) return false
       seenLinks.add(key)
       return true
@@ -2475,19 +2529,40 @@ export class LGraph
         this[i] = data[i]
       }
 
-      // Subgraph definitions
+      // Subgraph definitions — deduplicate node IDs before configuring.
+      // deduplicateSubgraphNodeIds clones internally to avoid mutating
+      // the caller's data (e.g. reactive Pinia state).
       const subgraphs = data.definitions?.subgraphs
+      let effectiveNodesData = nodesData
       if (subgraphs) {
-        for (const subgraph of subgraphs) this.createSubgraph(subgraph)
-        for (const subgraph of subgraphs)
-          this.subgraphs.get(subgraph.id)?.configure(subgraph)
-      }
+        const reservedNodeIds = new Set<number>()
+        for (const node of this._nodes) {
+          if (typeof node.id === 'number') reservedNodeIds.add(node.id)
+        }
+        for (const sg of this.subgraphs.values()) {
+          for (const node of sg.nodes) {
+            if (typeof node.id === 'number') reservedNodeIds.add(node.id)
+          }
+        }
+        for (const n of nodesData ?? []) {
+          if (typeof n.id === 'number') reservedNodeIds.add(n.id)
+        }
 
-      if (this.isRootGraph) {
-        const reservedNodeIds = nodesData
-          ?.map((n) => n.id)
-          .filter((id): id is number => typeof id === 'number')
-        this.ensureGlobalIdUniqueness(reservedNodeIds)
+        const deduplicated = this.isRootGraph
+          ? deduplicateSubgraphNodeIds(
+              subgraphs,
+              reservedNodeIds,
+              this.state,
+              nodesData
+            )
+          : undefined
+
+        const finalSubgraphs = deduplicated?.subgraphs ?? subgraphs
+        effectiveNodesData = deduplicated?.rootNodes ?? nodesData
+
+        for (const subgraph of finalSubgraphs) this.createSubgraph(subgraph)
+        for (const subgraph of finalSubgraphs)
+          this.subgraphs.get(subgraph.id)?.configure(subgraph)
       }
 
       let error = false
@@ -2495,8 +2570,8 @@ export class LGraph
 
       // create nodes
       this._nodes = []
-      if (nodesData) {
-        for (const n_info of nodesData) {
+      if (effectiveNodesData) {
+        for (const n_info of effectiveNodesData) {
           // stored info
           let node = LiteGraph.createNode(String(n_info.type), n_info.title)
           if (!node) {
@@ -2520,7 +2595,18 @@ export class LGraph
 
         // configure nodes afterwards so they can reach each other
         for (const [id, nodeData] of nodeDataMap) {
-          this.getNodeById(id)?.configure(nodeData)
+          const node = this.getNodeById(id)
+          node?.configure(nodeData)
+
+          if (LiteGraph.alwaysSnapToGrid && node) {
+            const snapTo = this.getSnapToGridSize()
+            if (node.snapToGrid(snapTo)) {
+              // snapToGrid mutates the internal _pos array in-place, bypassing the setter
+              // This reassignment triggers the pos setter to sync to the Vue layout store
+              node.pos = [node.pos[0], node.pos[1]]
+            }
+            snapPoint(node.size, snapTo, 'ceil')
+          }
         }
       }
 
@@ -2545,6 +2631,12 @@ export class LGraph
           layoutMutations.deleteReroute(reroute.id)
         }
       }
+
+      // Remove duplicate links: links in output.links that share the same
+      // (origin_id, origin_slot, target_id, target_slot) tuple.
+      // This repairs corrupted data where extra link objects were created
+      // without proper cleanup of the previous connection.
+      this._removeDuplicateLinks()
 
       // groups
       this._groups.length = 0

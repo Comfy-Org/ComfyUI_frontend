@@ -400,7 +400,7 @@
     "name": "탭 바 레이아웃",
     "options": {
       "Default": "기본값",
-      "Integrated": "통합"
+      "Legacy": "레거시"
     },
     "tooltip": "탭 바의 레이아웃을 제어합니다. \"통합\"을 선택하면 도움말과 사용자 컨트롤이 탭 바 영역으로 이동합니다."
   },
@@ -480,6 +480,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "확대시 노드 콤보 위젯 메뉴 (목록) 스케일링"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "그룹 클릭 시 자식 선택",
+    "tooltip": "활성화하면 그룹을 클릭할 때 그룹 안의 모든 노드와 항목이 선택됩니다"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "새 노드를 항상 축소",
