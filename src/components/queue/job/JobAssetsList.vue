@@ -11,7 +11,6 @@
       <div
         v-for="job in group.items"
         :key="job.id"
-        class="relative"
         :data-job-id="job.id"
         @mouseenter="onJobEnter(job, $event)"
         @mouseleave="onJobLeave(job.id)"
@@ -104,7 +103,7 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
 
-const props = defineProps<{ displayedJobGroups: JobGroup[] }>()
+const { displayedJobGroups } = defineProps<{ displayedJobGroups: JobGroup[] }>()
 
 const emit = defineEmits<{
   (e: 'cancelItem', item: JobListItem): void
@@ -274,7 +273,7 @@ const getJobIconClass = (job: JobListItem): string | undefined => {
 }
 
 watch(
-  () => props.displayedJobGroups,
+  () => displayedJobGroups,
   (groups) => {
     const activeJobId = activeDetails.value?.jobId
     if (!activeJobId) return

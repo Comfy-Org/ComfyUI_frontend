@@ -320,7 +320,6 @@ describe('JobAssetsList', () => {
     const popover = wrapper.find('.job-details-popover')
     expect(popover.attributes('style')).toContain('left: 672px;')
   })
-
   it('clears the previous popover when hovering a new row briefly and leaving the list', async () => {
     vi.useFakeTimers()
     const firstJob = buildJob({ id: 'job-1' })
