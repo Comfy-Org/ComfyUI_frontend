@@ -12,9 +12,14 @@ test.describe('Paste Image context menu option', { tag: ['@node'] }, () => {
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     )[0]
 
-    const menuOptions = await loadImageNode.getContextMenuOptionNames()
+    await loadImageNode.click('title', { button: 'right' })
+    const menu = comfyPage.page.locator('.p-contextmenu')
+    await menu.waitFor({ state: 'visible' })
+    const menuLabels = await menu
+      .locator('[role="menuitem"] span.flex-1')
+      .allInnerTexts()
 
-    expect(menuOptions).toContain('Paste Image')
+    expect(menuLabels).toContain('Paste Image')
   })
 
   test('does not show Paste Image on output-only image nodes', async ({
@@ -26,9 +31,14 @@ test.describe('Paste Image context menu option', { tag: ['@node'] }, () => {
       await comfyPage.nodeOps.getNodeRefsByType('SaveImage')
     )[0]
 
-    const menuOptions = await saveImageNode.getContextMenuOptionNames()
+    await saveImageNode.click('title', { button: 'right' })
+    const menu = comfyPage.page.locator('.p-contextmenu')
+    await menu.waitFor({ state: 'visible' })
+    const menuLabels = await menu
+      .locator('[role="menuitem"] span.flex-1')
+      .allInnerTexts()
 
-    expect(menuOptions).not.toContain('Paste Image')
-    expect(menuOptions).not.toContain('Open Image')
+    expect(menuLabels).not.toContain('Paste Image')
+    expect(menuLabels).not.toContain('Open Image')
   })
 })
