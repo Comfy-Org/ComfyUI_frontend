@@ -1,5 +1,5 @@
 # Request team review for PRs from external contributors.
-name: Request Team Review
+name: PR:Request Team Review
 
 on:
   pull_request_target:
