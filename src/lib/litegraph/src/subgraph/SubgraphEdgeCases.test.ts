@@ -48,7 +48,7 @@ describe.skip('SubgraphEdgeCases - Recursion Detection', () => {
     expect(firstLevel.isSubgraphNode()).toBe(true)
   })
 
-  it.todo('should use WeakSet for cycle detection', () => {
+  it.skip('should use WeakSet for cycle detection', () => {
     // TODO: This test is currently skipped because cycle detection has a bug
     // The fix is to pass 'visited' directly instead of 'new Set(visited)' in SubgraphNode.ts:299
     const subgraph = createTestSubgraph({ nodeCount: 1 })
