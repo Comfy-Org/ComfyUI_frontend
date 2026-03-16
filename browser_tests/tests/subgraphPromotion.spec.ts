@@ -654,26 +654,33 @@ test.describe(
         // Step 4: Find the inner subgraph node and its promoted widgets.
         // After wrapping, the inner node's seed promotion is preserved via
         // the SubgraphNode widgets getter as a PromotedWidgetView.
-        const innerInfo = await comfyPage.page.evaluate(() => {
-          const graph = window.app!.canvas.graph!
-          const subgraphNodes = graph.nodes.filter(
-            (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
-          )
-          if (subgraphNodes.length === 0)
-            throw new Error('No subgraph nodes found inside outer subgraph')
-          const node = subgraphNodes[0]
-          const widgetNames = (node.widgets ?? []).map((w) => w.name)
-          // The seed widget may appear under its original name or a
-          // display name assigned by the subgraph input slot.
-          const seedIdx = widgetNames.findIndex((n) => n.includes('seed'))
-          return {
-            nodeId: String(node.id),
-            widgetNames,
-            seedIndex: seedIdx >= 0 ? seedIdx : 0,
-            hasWidgets: widgetNames.length > 0
-          }
-        })
-        expect(innerInfo.hasWidgets).toBe(true)
+        // Widgets may be created lazily after navigation, so poll until ready.
+        const getInnerInfo = () =>
+          comfyPage.page.evaluate(() => {
+            const graph = window.app!.canvas.graph!
+            const subgraphNodes = graph.nodes.filter(
+              (n) =>
+                typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+            )
+            if (subgraphNodes.length === 0) return null
+            const node = subgraphNodes[0]
+            const widgetNames = (node.widgets ?? []).map((w) => w.name)
+            if (widgetNames.length === 0) return null
+            const seedIdx = widgetNames.findIndex((n) => n.includes('seed'))
+            return {
+              nodeId: String(node.id),
+              widgetNames,
+              seedIndex: seedIdx >= 0 ? seedIdx : 0,
+              hasWidgets: widgetNames.length > 0
+            }
+          })
+        await expect
+          .poll(getInnerInfo, {
+            timeout: 5000,
+            message: 'Inner subgraph node should have widgets'
+          })
+          .toBeTruthy()
+        const innerInfo = (await getInnerInfo())!
 
         // Step 5: Right-click on a widget and promote it to the outer level
         const interiorNode = await comfyPage.nodeOps.getNodeRefById(
