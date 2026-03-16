@@ -340,7 +340,8 @@
       "conflicting": "Conflicting",
       "inWorkflowSection": "IN WORKFLOW",
       "allInWorkflow": "All in: {workflowName}",
-      "missingNodes": "Missing Nodes"
+      "missingNodes": "Missing Nodes",
+      "unresolvedNodes": "Unresolved Nodes"
     },
     "infoPanelEmpty": "Click an item to see the info",
     "applyChanges": "Apply Changes",
@@ -405,6 +406,10 @@
     "noDescription": "No description available",
     "installSelected": "Install Selected",
     "installAllMissingNodes": "Install All",
+    "unresolvedNodes": {
+      "title": "Unresolved Missing Nodes",
+      "message": "The following nodes are not installed and could not be found in the registry."
+    },
     "allMissingNodesInstalled": "All missing nodes have been successfully installed",
     "packsSelected": "packs selected",
     "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
