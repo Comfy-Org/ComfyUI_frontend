@@ -113,14 +113,10 @@ test('Does not resurface missing nodes on undo/redo', async ({ comfyPage }) => {
 
   // Undo and redo should not resurface the error overlay
   await comfyPage.keyboard.undo()
-  await expect(async () => {
-    await expect(errorOverlay).not.toBeVisible()
-  }).toPass({ timeout: 5000 })
+  await expect(errorOverlay).not.toBeVisible({ timeout: 5000 })
 
   await comfyPage.keyboard.redo()
-  await expect(async () => {
-    await expect(errorOverlay).not.toBeVisible()
-  }).toPass({ timeout: 5000 })
+  await expect(errorOverlay).not.toBeVisible({ timeout: 5000 })
 })
 
 test.describe('Execution error', () => {

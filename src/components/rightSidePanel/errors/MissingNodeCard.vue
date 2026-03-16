@@ -28,7 +28,7 @@
           <span class="font-medium">
             {{
               t('loadWorkflowWarning.coreNodesFromVersion', {
-                version: version || 'unknown'
+                version: version || t('loadWorkflowWarning.unknownVersion')
               })
             }}
           </span>
@@ -145,8 +145,11 @@ const currentComfyUIVersion = computed<string | null>(() => {
 
 const sortedMissingCoreNodes = computed(() =>
   Object.entries(missingCoreNodes.value).sort(([a], [b]) => {
-    if (!valid(a)) return 1
-    if (!valid(b)) return -1
+    const aValid = valid(a)
+    const bValid = valid(b)
+    if (!aValid && !bValid) return 0
+    if (!aValid) return 1
+    if (!bValid) return -1
     return compare(b, a)
   })
 )

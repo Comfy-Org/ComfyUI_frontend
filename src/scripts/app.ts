@@ -1469,7 +1469,7 @@ export class ComfyApp {
       }
     }
 
-    if (enrichedCandidates.length) {
+    if (showMissingModels && enrichedCandidates.length) {
       if (isCloud) {
         const controller = missingModelStore.createVerificationAbortController()
         verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
