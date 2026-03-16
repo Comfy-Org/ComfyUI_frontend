@@ -117,7 +117,7 @@
 <script setup lang="ts">
 import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -289,13 +289,6 @@ onMounted(() => {
     legacyCommandsContainerRef.value.appendChild(app.menu.element)
     checkLegacyContent()
   }
-})
-
-onBeforeUnmount(() => {
-  if (legacyContentCheckRafId === null) return
-
-  cancelAnimationFrame(legacyContentCheckRafId)
-  legacyContentCheckRafId = null
 })
 
 const openCustomNodeManager = async () => {
