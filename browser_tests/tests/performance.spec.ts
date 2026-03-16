@@ -222,6 +222,45 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test('PrimeVue dialog open style recalculations', async ({ comfyPage }) => {
+    // Load workflow first so the page is settled
+    await comfyPage.workflow.loadWorkflow('default')
+
+    // Wait for initial load to stabilize
+    for (let i = 0; i < 30; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    await comfyPage.perf.startMeasuring()
+
+    // Open the settings dialog — triggers mounting of many PrimeVue
+    // components (Dialog, InputText, Select, ToggleSwitch, etc.),
+    // each of which injects <style> tags via PrimeVue's useStyle.
+    await comfyPage.command.executeCommand('Comfy.ShowSettingsDialog')
+    await comfyPage.page
+      .getByTestId('settings-dialog')
+      .waitFor({ state: 'visible', timeout: 5000 })
+
+    // Let it settle so all component styles are injected
+    for (let i = 0; i < 30; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    // Close the dialog
+    await comfyPage.page.keyboard.press('Escape')
+    for (let i = 0; i < 10; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring(
+      'primevue-dialog-open-close'
+    )
+    recordMeasurement(m)
+    console.log(
+      `PrimeVue dialog: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.styleRecalcDurationMs.toFixed(1)}ms recalc time`
+    )
+  })
+
   test('workflow execution', async ({ comfyPage }) => {
     // Uses lightweight PrimitiveString → PreviewAny workflow (no GPU needed)
     await comfyPage.workflow.loadWorkflow('execution/partial_execution')
