@@ -321,6 +321,21 @@ describe('MissingNodeCard', () => {
       expect(wrapper.text().match(/ZebraNode/g)?.length).toBe(1)
     })
 
+    it('sorts versions in descending order', () => {
+      mockMissingCoreNodes.value = {
+        '1.1.0': [{ type: 'Node1' }],
+        '1.3.0': [{ type: 'Node3' }],
+        '1.2.0': [{ type: 'Node2' }]
+      }
+      const wrapper = mountCard()
+      const text = wrapper.text()
+      const v13 = text.indexOf('1.3.0')
+      const v12 = text.indexOf('1.2.0')
+      const v11 = text.indexOf('1.1.0')
+      expect(v13).toBeLessThan(v12)
+      expect(v12).toBeLessThan(v11)
+    })
+
     it('handles empty string version key without crashing', () => {
       mockMissingCoreNodes.value = {
         '': [{ type: 'NoVersionNode' }],

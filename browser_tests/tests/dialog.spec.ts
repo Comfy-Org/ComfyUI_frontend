@@ -44,6 +44,16 @@ test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
 
     const missingNodesTitle = comfyPage.page.getByText(/Missing Node Packs/)
     await expect(missingNodesTitle).toBeVisible()
+
+    // Click "See Errors" to open the errors tab and verify subgraph node content
+    await errorOverlay.getByRole('button', { name: 'See Errors' }).click()
+    await expect(errorOverlay).not.toBeVisible()
+
+    const missingNodeCard = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodeCard
+    )
+    await expect(missingNodeCard).toBeVisible()
+    await expect(missingNodeCard).toContainText('MISSING_NODE_TYPE_IN_SUBGRAPH')
   })
 
   test('Should show MissingNodeCard in errors tab when clicking See Errors', async ({

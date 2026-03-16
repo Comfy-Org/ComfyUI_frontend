@@ -74,10 +74,6 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('simple_slider.png')
   })
   test('unknown converted widget', async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.ShowMissingNodesWarning',
-      false
-    )
     await comfyPage.workflow.loadWorkflow(
       'missing/missing_nodes_converted_widget'
     )

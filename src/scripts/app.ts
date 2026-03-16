@@ -1112,16 +1112,16 @@ export class ComfyApp {
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
     options: {
-      showMissingNodesDialog?: boolean
-      showMissingModelsDialog?: boolean
+      showMissingNodes?: boolean
+      showMissingModels?: boolean
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
       deferWarnings?: boolean
     } = {}
   ) {
     const {
-      showMissingNodesDialog = true,
-      showMissingModelsDialog = true,
+      showMissingNodes = true,
+      showMissingModels = true,
       checkForRerouteMigration = false,
       openSource,
       deferWarnings = false
@@ -1390,8 +1390,8 @@ export class ComfyApp {
       await this.runMissingModelPipeline(
         graphData,
         missingNodeTypes,
-        showMissingNodesDialog,
-        showMissingModelsDialog
+        showMissingNodes,
+        showMissingModels
       )
 
       if (!deferWarnings) {
@@ -1409,8 +1409,8 @@ export class ComfyApp {
   private async runMissingModelPipeline(
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: MissingNodeType[],
-    showMissingNodesDialog: boolean,
-    showMissingModelsDialog: boolean
+    showMissingNodes: boolean,
+    showMissingModels: boolean
   ): Promise<{ missingModels: ModelFile[] }> {
     const missingModelStore = useMissingModelStore()
 
@@ -1457,10 +1457,10 @@ export class ComfyApp {
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
     if (activeWf) {
       const warnings: PendingWarnings = {}
-      if (missingNodeTypes.length && showMissingNodesDialog) {
+      if (missingNodeTypes.length && showMissingNodes) {
         warnings.missingNodeTypes = missingNodeTypes
       }
-      if (missingModels.length && showMissingModelsDialog) {
+      if (missingModels.length && showMissingModels) {
         const paths = await api.getFolderPaths()
         warnings.missingModels = { missingModels, paths }
       }

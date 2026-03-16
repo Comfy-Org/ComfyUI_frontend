@@ -90,7 +90,11 @@
       @click="applyChanges()"
     >
       <DotSpinner v-if="isRestarting" duration="1s" :size="14" />
-      <i v-else class="icon-[lucide--refresh-cw] size-4 shrink-0" />
+      <i
+        v-else
+        aria-hidden="true"
+        class="icon-[lucide--refresh-cw] size-4 shrink-0"
+      />
       <span class="min-w-0 truncate">{{
         t('rightSidePanel.missingNodePacks.applyChanges')
       }}</span>
