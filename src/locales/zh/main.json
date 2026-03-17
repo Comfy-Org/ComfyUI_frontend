@@ -653,6 +653,7 @@
     "Open in Mask Editor": "用遮罩编辑器打开",
     "Outputs": "输出",
     "Paste": "粘贴",
+    "Paste Image": "粘贴图像",
     "Pin": "固定",
     "Properties": "属性",
     "Properties Panel": "属性面板",
@@ -1602,7 +1603,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "核心节点来源于 {version} 版本。",
     "outdatedVersion": "这个工作流由新版 ComfyUI（{version}）创建，部分节点可能无法正常运行。",
-    "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。"
+    "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。",
+    "unknownVersion": "未知"
   },
   "maintenance": {
     "None": "无",

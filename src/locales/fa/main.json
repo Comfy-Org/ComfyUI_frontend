@@ -653,6 +653,7 @@
     "Open in Mask Editor": "باز کردن در Mask Editor",
     "Outputs": "خروجی‌ها",
     "Paste": "چسباندن",
+    "Paste Image": "چسباندن تصویر",
     "Pin": "سنجاق کردن",
     "Properties": "ویژگی‌ها",
     "Properties Panel": "پنل ویژگی‌ها",
@@ -1602,7 +1603,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "nodeهای اصلی از نسخه {version}:",
     "outdatedVersion": "این workflow با نسخه جدیدتری از ComfyUI ({version}) ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
-    "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند."
+    "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
+    "unknownVersion": "نامشخص"
   },
   "maintenance": {
     "None": "هیچ‌کدام",
@@ -3472,7 +3474,7 @@
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteFailed": "پذیرش دعوت ناموفق بود",
     "switchFailed": "تغییر ورک‌اسپیس ناموفق بود. لطفاً دوباره تلاش کنید.",
-    "viewWorkspace": "مشاهده workspace"
+    "viewWorkspace": "مشاهده فضای کاری"
   },
   "workspaceAuth": {
     "errors": {
@@ -3522,11 +3524,11 @@
       "title": "دعوت یک نفر به این فضای کاری"
     },
     "inviteUpsellDialog": {
-      "messageNotSubscribed": "برای افزودن اعضای تیم به این workspace، به پلن Creator یا بالاتر نیاز دارید. پلن Standard فقط یک نفر (مالک) را پشتیبانی می‌کند.",
-      "messageSingleSeat": "پلن Standard فقط یک صندلی برای مالک workspace دارد. برای دعوت اعضای بیشتر، به پلن Creator یا بالاتر ارتقا دهید تا امکان افزودن چندین نفر فعال شود.",
-      "titleNotSubscribed": "برای دعوت اعضا نیاز به اشتراک دارید",
-      "titleSingleSeat": "پلن فعلی شما فقط یک نفر را پشتیبانی می‌کند",
-      "upgradeToCreator": "ارتقا به Creator",
+      "messageNotSubscribed": "برای افزودن اعضای تیم به این فضای کاری، باید پلن Creator یا بالاتر را تهیه کنید. پلن Standard فقط یک کاربر (مالک) را پشتیبانی می‌کند.",
+      "messageSingleSeat": "پلن Standard فقط یک صندلی برای مالک فضای کاری دارد. برای دعوت اعضای بیشتر، پلن خود را به Creator یا بالاتر ارتقاء دهید تا امکان افزودن چندین کاربر فعال شود.",
+      "titleNotSubscribed": "برای دعوت اعضا نیاز به اشتراک است",
+      "titleSingleSeat": "پلن فعلی شما فقط یک کاربر را پشتیبانی می‌کند",
+      "upgradeToCreator": "ارتقاء به Creator",
       "viewPlans": "مشاهده پلن‌ها"
     },
     "leaveDialog": {
@@ -3555,8 +3557,8 @@
         "active": "فعال",
         "pendingCount": "در انتظار ({count})"
       },
-      "upsellBannerSubscribe": "برای دعوت اعضای تیم به این workspace، به پلن Creator یا بالاتر اشتراک تهیه کنید.",
-      "upsellBannerUpgrade": "برای دعوت اعضای بیشتر به این workspace، به پلن Creator یا بالاتر ارتقا دهید.",
+      "upsellBannerSubscribe": "برای دعوت اعضای تیم به این فضای کاری، به پلن Creator یا بالاتر اشتراک تهیه کنید.",
+      "upsellBannerUpgrade": "برای دعوت اعضای بیشتر به تیم، پلن خود را به Creator یا بالاتر ارتقاء دهید.",
       "viewPlans": "مشاهده پلن‌ها"
     },
     "menu": {

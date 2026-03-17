@@ -653,6 +653,7 @@
     "Open in Mask Editor": "Abrir no Editor de Máscara",
     "Outputs": "Saídas",
     "Paste": "Colar",
+    "Paste Image": "Colar imagem",
     "Pin": "Fixar",
     "Properties": "Propriedades",
     "Properties Panel": "Painel de Propriedades",
@@ -1602,7 +1603,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nós principais da versão {version}:",
     "outdatedVersion": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI ({version}). Alguns nós podem não funcionar corretamente.",
-    "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente."
+    "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente.",
+    "unknownVersion": "desconhecida"
   },
   "maintenance": {
     "None": "Nenhum",

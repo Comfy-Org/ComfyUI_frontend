@@ -653,6 +653,7 @@
     "Open in Mask Editor": "افتح في محرر القناع",
     "Outputs": "المخرجات",
     "Paste": "لصق",
+    "Paste Image": "لصق الصورة",
     "Pin": "تثبيت",
     "Properties": "الخصائص",
     "Properties Panel": "لوحة الخصائص",
@@ -1602,7 +1603,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "العقد الأساسية من الإصدار {version}:",
     "outdatedVersion": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI ({version}). قد لا تعمل بعض العقد بشكل صحيح.",
-    "outdatedVersionGeneric": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI. قد لا تعمل بعض العقد بشكل صحيح."
+    "outdatedVersionGeneric": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI. قد لا تعمل بعض العقد بشكل صحيح.",
+    "unknownVersion": "غير معروف"
   },
   "maintenance": {
     "None": "لا شيء",
