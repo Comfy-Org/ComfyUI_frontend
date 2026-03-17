@@ -30,6 +30,9 @@ function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'
 }
 
+// Full set of model file extensions used for scanning candidate widgets.
+// Intentionally broader than ALLOWED_SUFFIXES in missingModelDownload.ts,
+// which restricts which files are eligible for download.
 export const MODEL_FILE_EXTENSIONS = new Set([
   '.safetensors',
   '.ckpt',
@@ -43,10 +46,7 @@ export const MODEL_FILE_EXTENSIONS = new Set([
 
 export function isModelFileName(name: string): boolean {
   const lower = name.toLowerCase()
-  for (const ext of MODEL_FILE_EXTENSIONS) {
-    if (lower.endsWith(ext)) return true
-  }
-  return false
+  return Array.from(MODEL_FILE_EXTENSIONS).some((ext) => lower.endsWith(ext))
 }
 
 function resolveComboOptions(widget: IComboWidget): string[] {
@@ -76,6 +76,9 @@ export function scanAllModelCandidates(
 
   for (const node of allNodes) {
     if (!node.widgets?.length) continue
+    // Skip subgraph container nodes: their promoted widgets are synthetic
+    // views of interior widgets, which are already scanned via recursion.
+    if (node.isSubgraphNode?.()) continue
 
     const executionId = getExecutionIdByNode(rootGraph, node)
     if (!executionId) continue

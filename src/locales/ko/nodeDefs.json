@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Flux 계열 모델에서 참조 이미지에 대한 KV 캐시 최적화를 활성화합니다.",
+    "display_name": "Flux KV 캐시",
+    "inputs": {
+      "model": {
+        "name": "모델",
+        "tooltip": "KV 캐시를 사용할 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KV 캐시가 활성화된 패치된 모델입니다."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "이 노드는 이미지를 Flux Kontext에 더 최적화된 크기로 조정합니다.",
     "display_name": "Flux Kontext 이미지 스케일",
@@ -11291,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "배경색"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "덧칠할 선택적 기본 이미지"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "조건 쌍 (결합)",
     "inputs": {
@@ -12852,6 +12896,133 @@
       "1": {
         "name": "높이",
         "tooltip": "계산된 픽셀 단위 높이 (8의 배수)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Reve를 사용하여 텍스트 설명으로부터 이미지를 생성합니다.",
+    "display_name": "Reve 이미지 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "생성에 사용할 모델 버전입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_test_time_scaling": {
+        "name": "테스트 타임 스케일링"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 이미지에 대한 텍스트 설명입니다. 최대 2560자까지 입력할 수 있습니다."
+      },
+      "remove_background": {
+        "name": "배경 제거",
+        "tooltip": "생성된 이미지에서 배경을 제거합니다. 추가 비용이 발생할 수 있습니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "upscale": {
+        "name": "업스케일",
+        "tooltip": "생성된 이미지를 업스케일합니다. 추가 비용이 발생할 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Reve를 사용하여 자연어 지시로 이미지를 편집합니다.",
+    "display_name": "Reve 이미지 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "edit_instruction": {
+        "name": "편집 지시",
+        "tooltip": "이미지를 어떻게 편집할지에 대한 텍스트 설명입니다. 최대 2560자까지 입력할 수 있습니다."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "편집할 이미지입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "편집에 사용할 모델 버전입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_test_time_scaling": {
+        "name": "테스트 타임 스케일링"
+      },
+      "remove_background": {
+        "name": "배경 제거",
+        "tooltip": "생성된 이미지에서 배경을 제거합니다. 추가 비용이 발생할 수 있습니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "upscale": {
+        "name": "업스케일",
+        "tooltip": "생성된 이미지를 업스케일합니다. 추가 비용이 발생할 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "참고 이미지를 텍스트 프롬프트와 결합하여 Reve로 새로운 이미지를 만듭니다.",
+    "display_name": "Reve 이미지 리믹스",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "리믹스에 사용할 모델 버전입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_test_time_scaling": {
+        "name": "테스트 타임 스케일링"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 이미지에 대한 텍스트 설명입니다. 특정 이미지를 인덱스로 참조하려면 XML img 태그를 사용할 수 있습니다. 예: <img>0</img>, <img>1</img> 등."
+      },
+      "reference_images": {
+        "name": "참고 이미지"
+      },
+      "remove_background": {
+        "name": "배경 제거",
+        "tooltip": "생성된 이미지에서 배경을 제거합니다. 추가 비용이 발생할 수 있습니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "upscale": {
+        "name": "업스케일",
+        "tooltip": "생성된 이미지를 업스케일합니다. 추가 비용이 발생할 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15080,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "3D 모델을 입력한 후, 3D 모델 텍스처를 다시 그립니다.",
+    "display_name": "Hunyuan3D: 3D 텍스처 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX 형식의 3D 모델입니다. 모델은 100,000개 미만의 면을 가져야 합니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "텍스처 편집을 설명합니다. 최대 1024자의 UTF-8 문자를 지원합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: 이미지 → 모델 (Pro)",
     "inputs": {
@@ -15127,6 +15333,22 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
         "tooltip": null
       }
     }
@@ -15228,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }

@@ -12,6 +12,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { app } from '@/scripts/app'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
@@ -56,20 +57,8 @@ function makeWorkflowData(
   }
 }
 
-const { mockShowMissingNodes, mockShowMissingModels, mockConfirm } = vi.hoisted(
-  () => ({
-    mockShowMissingNodes: vi.fn(),
-    mockShowMissingModels: vi.fn(),
-    mockConfirm: vi.fn()
-  })
-)
-
-vi.mock('@/composables/useMissingNodesDialog', () => ({
-  useMissingNodesDialog: () => ({ show: mockShowMissingNodes, hide: vi.fn() })
-}))
-
-vi.mock('@/composables/useMissingModelsDialog', () => ({
-  useMissingModelsDialog: () => ({ show: mockShowMissingModels, hide: vi.fn() })
+const { mockConfirm } = vi.hoisted(() => ({
+  mockConfirm: vi.fn()
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -130,13 +119,6 @@ vi.mock('@/stores/workspaceStore', () => ({
   })
 }))
 
-const MISSING_MODELS: PendingWarnings['missingModels'] = {
-  missingModels: [
-    { name: 'model.safetensors', url: '', directory: 'checkpoints' }
-  ],
-  paths: { checkpoints: ['/models/checkpoints'] }
-}
-
 function createWorkflow(
   warnings: PendingWarnings | null = null,
   options: { loadable?: boolean; path?: string } = {}
@@ -156,7 +138,6 @@ function createWorkflow(
 function enableWarningSettings() {
   vi.spyOn(useSettingStore(), 'get').mockImplementation(
     (key: string): boolean => {
-      if (key === 'Comfy.Workflow.ShowMissingNodesWarning') return true
       if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
       return false
     }
@@ -178,43 +159,35 @@ describe('useWorkflowService', () => {
       const workflow = createWorkflow(null)
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(mockShowMissingNodes).not.toHaveBeenCalled()
-      expect(mockShowMissingModels).not.toHaveBeenCalled()
+      expect(
+        useExecutionErrorStore().surfaceMissingNodes
+      ).not.toHaveBeenCalled()
     })
 
-    it('should show missing nodes dialog and clear warnings', () => {
+    it('should surface missing nodes and clear warnings', () => {
       const missingNodeTypes = ['CustomNode1', 'CustomNode2']
       const workflow = createWorkflow({ missingNodeTypes })
 
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(mockShowMissingNodes).toHaveBeenCalledWith({
+      expect(useExecutionErrorStore().surfaceMissingNodes).toHaveBeenCalledWith(
         missingNodeTypes
-      })
+      )
       expect(workflow.pendingWarnings).toBeNull()
     })
 
-    it('should show missing models dialog and clear warnings', () => {
-      const workflow = createWorkflow({ missingModels: MISSING_MODELS })
-
-      useWorkflowService().showPendingWarnings(workflow)
-
-      expect(mockShowMissingModels).toHaveBeenCalledWith(MISSING_MODELS)
-      expect(workflow.pendingWarnings).toBeNull()
-    })
-
-    it('should not show dialogs when settings are disabled', () => {
+    it('should always surface missing nodes regardless of settings', () => {
       vi.spyOn(useSettingStore(), 'get').mockReturnValue(false)
 
       const workflow = createWorkflow({
-        missingNodeTypes: ['CustomNode1'],
-        missingModels: MISSING_MODELS
+        missingNodeTypes: ['CustomNode1']
       })
 
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(mockShowMissingNodes).not.toHaveBeenCalled()
-      expect(mockShowMissingModels).not.toHaveBeenCalled()
+      expect(useExecutionErrorStore().surfaceMissingNodes).toHaveBeenCalledWith(
+        ['CustomNode1']
+      )
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -227,7 +200,9 @@ describe('useWorkflowService', () => {
       service.showPendingWarnings(workflow)
       service.showPendingWarnings(workflow)
 
-      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
+      expect(
+        useExecutionErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -250,7 +225,9 @@ describe('useWorkflowService', () => {
         { loadable: true }
       )
 
-      expect(mockShowMissingNodes).not.toHaveBeenCalled()
+      expect(
+        useExecutionErrorStore().surfaceMissingNodes
+      ).not.toHaveBeenCalled()
 
       await useWorkflowService().openWorkflow(workflow)
 
@@ -261,9 +238,9 @@ describe('useWorkflowService', () => {
         workflow,
         expect.objectContaining({ deferWarnings: true })
       )
-      expect(mockShowMissingNodes).toHaveBeenCalledWith({
-        missingNodeTypes: ['CustomNode1']
-      })
+      expect(useExecutionErrorStore().surfaceMissingNodes).toHaveBeenCalledWith(
+        ['CustomNode1']
+      )
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -280,18 +257,22 @@ describe('useWorkflowService', () => {
       const service = useWorkflowService()
 
       await service.openWorkflow(workflow1)
-      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
-      expect(mockShowMissingNodes).toHaveBeenCalledWith({
-        missingNodeTypes: ['MissingNodeA']
-      })
+      expect(
+        useExecutionErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledTimes(1)
+      expect(useExecutionErrorStore().surfaceMissingNodes).toHaveBeenCalledWith(
+        ['MissingNodeA']
+      )
       expect(workflow1.pendingWarnings).toBeNull()
       expect(workflow2.pendingWarnings).not.toBeNull()
 
       await service.openWorkflow(workflow2)
-      expect(mockShowMissingNodes).toHaveBeenCalledTimes(2)
-      expect(mockShowMissingNodes).toHaveBeenLastCalledWith({
-        missingNodeTypes: ['MissingNodeB']
-      })
+      expect(
+        useExecutionErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledTimes(2)
+      expect(
+        useExecutionErrorStore().surfaceMissingNodes
+      ).toHaveBeenLastCalledWith(['MissingNodeB'])
       expect(workflow2.pendingWarnings).toBeNull()
     })
 
@@ -304,10 +285,14 @@ describe('useWorkflowService', () => {
       const service = useWorkflowService()
 
       await service.openWorkflow(workflow, { force: true })
-      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
+      expect(
+        useExecutionErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledTimes(1)
 
       await service.openWorkflow(workflow, { force: true })
-      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
+      expect(
+        useExecutionErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledTimes(1)
     })
   })
 

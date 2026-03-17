@@ -206,7 +206,7 @@ describe.skip('Subgraph Serialization', () => {
 })
 
 describe.skip('Subgraph Known Issues', () => {
-  it.todo('should enforce MAX_NESTED_SUBGRAPHS limit', () => {
+  it.skip('should enforce MAX_NESTED_SUBGRAPHS limit', () => {
     // This test documents that MAX_NESTED_SUBGRAPHS = 1000 is defined
     // but not actually enforced anywhere in the code.
     //

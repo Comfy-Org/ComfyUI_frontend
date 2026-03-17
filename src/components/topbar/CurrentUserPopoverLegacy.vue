@@ -29,8 +29,11 @@
       </span>
     </div>
 
-    <!-- Credits Section -->
-    <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-2">
+    <!-- Credits Section (cloud only) -->
+    <div
+      v-if="isCloud && isActiveSubscription"
+      class="flex items-center gap-2 px-4 py-2"
+    >
       <i class="icon-[lucide--component] text-sm text-amber-400" />
       <Skeleton
         v-if="authStore.isFetchingBalance"
@@ -66,7 +69,7 @@
       </Button>
     </div>
 
-    <div v-else class="flex justify-center px-4">
+    <div v-else-if="isCloud" class="flex justify-center px-4">
       <SubscribeButton
         :fluid="false"
         :label="$t('subscription.subscribeToComfyCloud')"
@@ -79,7 +82,7 @@
     <Divider class="mx-0 my-2" />
 
     <div
-      v-if="isActiveSubscription"
+      v-if="isCloud && isActiveSubscription"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
@@ -91,6 +94,7 @@
     </div>
 
     <div
+      v-if="isCloud"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
@@ -108,7 +112,7 @@
     </div>
 
     <div
-      v-if="isActiveSubscription"
+      v-if="isCloud && isActiveSubscription"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
