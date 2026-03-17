@@ -138,5 +138,14 @@ describe('useWorkspaceTierLabel', () => {
       })
       expect(result).toBe('Standard Yearly')
     })
+
+    it('parses FOUNDERS_EDITION from plan slug fallback', () => {
+      const result = getTierLabel({
+        isSubscribed: true,
+        subscriptionPlan: 'FOUNDERS_EDITION_MONTHLY',
+        subscriptionTier: null
+      })
+      expect(result).toBe("Founder's Edition")
+    })
   })
 })

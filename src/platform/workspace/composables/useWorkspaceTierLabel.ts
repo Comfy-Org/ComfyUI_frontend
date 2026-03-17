@@ -57,10 +57,9 @@ export function useWorkspaceTierLabel() {
     if (!workspace.subscriptionPlan) return null
 
     const planSlug = workspace.subscriptionPlan
-    const planTokens = planSlug.split(/[-_.]/)
-    const tierMatch = Object.keys(TIER_KEY_MAP).find((tier) =>
-      planTokens.includes(tier)
-    )
+    const tierMatch = Object.keys(TIER_KEY_MAP)
+      .sort((a, b) => b.length - a.length)
+      .find((tier) => planSlug.startsWith(tier))
     if (!tierMatch) return null
 
     return formatTierName(tierMatch, isYearlyPlan(planSlug))
