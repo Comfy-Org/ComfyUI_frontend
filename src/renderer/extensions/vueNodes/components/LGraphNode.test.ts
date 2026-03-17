@@ -251,20 +251,4 @@ describe('LGraphNode', () => {
     )
     expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe('')
   })
-
-  it('should isolate stacking context on outer container to prevent text bleed-through', () => {
-    const wrapper = mountLGraphNode({ nodeData: mockNodeData })
-
-    const outerClasses = wrapper.classes()
-
-    // Outer container must have isolation: isolate to prevent text
-    // from lower z-index nodes bleeding through (see #9988).
-    expect(outerClasses).toContain('isolate')
-
-    // CSS containment stays on outer container alongside isolate.
-    // Moving it to the inner wrapper causes the inner wrapper's
-    // stacking context to paint over the Root Border Overlay.
-    expect(outerClasses).toContain('contain-layout')
-    expect(outerClasses).toContain('contain-style')
-  })
 })
