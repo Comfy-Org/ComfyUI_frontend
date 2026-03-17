@@ -1974,6 +1974,10 @@
     "width": "Width",
     "height": "Height"
   },
+  "curveWidget": {
+    "monotone_cubic": "Smooth",
+    "linear": "Linear"
+  },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
