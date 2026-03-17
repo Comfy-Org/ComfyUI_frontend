@@ -5,7 +5,7 @@
       v-if="contain"
       :src="src"
       :data-test="src"
-      class="absolute top-0 left-0 size-full object-cover"
+      class="absolute inset-0 object-cover"
       :style="{ 'background-image': `url(${src})` }"
       :alt="alt"
       @error="handleImageError"
