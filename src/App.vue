@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
 
 import { useI18n } from 'vue-i18n'
 
@@ -134,11 +134,20 @@ onMounted(() => {
     const settingStore = useSettingStore()
     if (!settingStore.get('Comfy.Desktop.CloudNotificationShown')) {
       const dialogService = useDialogService()
-      setTimeout(async () => {
-        await dialogService.showCloudNotification()
+      cloudNotificationTimer = setTimeout(async () => {
+        try {
+          await dialogService.showCloudNotification()
+        } catch (e) {
+          console.warn('[CloudNotification] Failed to show', e)
+        }
         await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
       }, 2000)
     }
   }
+})
+
+let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
+onUnmounted(() => {
+  if (cloudNotificationTimer) clearTimeout(cloudNotificationTimer)
 })
 </script>
