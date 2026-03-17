@@ -37,6 +37,7 @@ import {
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -987,6 +988,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     this._syncPromotions()
+
+    // Discover and register any promotable widgets not already in the store.
+    // This covers blueprint subgraphs and old workflows whose serialized
+    // proxyWidgets may lack entries for virtual preview widgets (e.g.
+    // $$canvas-image-preview for GLSLShader nodes).
+    promoteRecommendedWidgets(this)
   }
 
   private _resolveInputWidget(
