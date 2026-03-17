@@ -2,9 +2,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
 
-// Maps API tier identifiers to i18n key segments.
-// FOUNDERS_EDITION is a legacy alias for FOUNDER — both resolve to the same label.
-const TIER_KEY_MAP: Record<string, string> = {
+const tierKeyMap: Record<string, string> = {
   FREE: 'free',
   STANDARD: 'standard',
   CREATOR: 'creator',
@@ -13,20 +11,12 @@ const TIER_KEY_MAP: Record<string, string> = {
   FOUNDERS_EDITION: 'founder'
 }
 
-const SORTED_TIER_KEYS = Object.keys(TIER_KEY_MAP).sort(
-  (a, b) => b.length - a.length
-)
-
 interface WorkspaceSubscriptionInfo {
   isSubscribed: boolean
   subscriptionPlan: string | null
   subscriptionTier: SubscriptionTier | null
 }
 
-/**
- * Provides helpers for deriving human-readable subscription tier labels
- * from workspace subscription info, with support for yearly plan suffixes.
- */
 export function useWorkspaceTierLabel() {
   const { t } = useI18n()
 
@@ -35,36 +25,30 @@ export function useWorkspaceTierLabel() {
     isYearly: boolean
   ): string {
     if (!tier) return ''
-    const key = TIER_KEY_MAP[tier]
-    if (!key) return ''
+    const key = tierKeyMap[tier] ?? 'standard'
     const baseName = t(`subscription.tiers.${key}.name`)
     return isYearly
       ? t('subscription.tierNameYearly', { name: baseName })
       : baseName
   }
 
-  function isYearlyPlan(planSlug: string | null): boolean {
-    if (!planSlug) return false
-    return planSlug.includes('YEARLY') || planSlug.includes('ANNUAL')
-  }
-
   function getTierLabel(workspace: WorkspaceSubscriptionInfo): string | null {
     if (!workspace.isSubscribed) return null
 
     if (workspace.subscriptionTier) {
-      return formatTierName(
-        workspace.subscriptionTier,
-        isYearlyPlan(workspace.subscriptionPlan)
-      )
+      return formatTierName(workspace.subscriptionTier, false)
     }
 
     if (!workspace.subscriptionPlan) return null
 
     const planSlug = workspace.subscriptionPlan
-    const tierMatch = SORTED_TIER_KEYS.find((tier) => planSlug.startsWith(tier))
+    const tierMatch = Object.keys(tierKeyMap).find((tier) =>
+      planSlug.startsWith(tier)
+    )
     if (!tierMatch) return null
 
-    return formatTierName(tierMatch, isYearlyPlan(planSlug))
+    const isYearly = planSlug.includes('YEARLY') || planSlug.includes('ANNUAL')
+    return formatTierName(tierMatch, isYearly)
   }
 
   return { formatTierName, getTierLabel }

@@ -52,8 +52,8 @@ describe('useWorkspaceTierLabel', () => {
       )
     })
 
-    it('returns empty string for unknown tier', () => {
-      expect(formatTierName('UNKNOWN_TIER', false)).toBe('')
+    it('falls back to standard for unknown tier', () => {
+      expect(formatTierName('UNKNOWN_TIER', false)).toBe('Standard')
     })
   })
 
@@ -76,22 +76,13 @@ describe('useWorkspaceTierLabel', () => {
       expect(result).toBe('Creator')
     })
 
-    it('detects yearly plan from subscriptionPlan containing YEARLY', () => {
+    it('ignores plan slug yearly when subscriptionTier is present', () => {
       const result = getTierLabel({
         isSubscribed: true,
         subscriptionPlan: 'PRO_YEARLY',
         subscriptionTier: 'PRO'
       })
-      expect(result).toBe('Pro Yearly')
-    })
-
-    it('detects yearly plan from subscriptionPlan containing ANNUAL', () => {
-      const result = getTierLabel({
-        isSubscribed: true,
-        subscriptionPlan: 'PRO_ANNUAL',
-        subscriptionTier: 'PRO'
-      })
-      expect(result).toBe('Pro Yearly')
+      expect(result).toBe('Pro')
     })
 
     it('falls back to parsing subscriptionPlan when tier is null', () => {
