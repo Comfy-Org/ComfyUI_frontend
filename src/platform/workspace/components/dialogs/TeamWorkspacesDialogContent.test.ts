@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { nextTick } from 'vue'
@@ -163,6 +163,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       const switchButton = wrapper.find('li button')
       await switchButton.trigger('click')
+      await flushPromises()
 
       expect(mockSwitchWorkspace).toHaveBeenCalledWith('ws-1')
       expect(mockCloseDialog).toHaveBeenCalledWith({
@@ -177,6 +178,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       const switchButton = wrapper.find('li button')
       await switchButton.trigger('click')
+      await flushPromises()
 
       expect(mockCloseDialog).not.toHaveBeenCalled()
       expect(mockToastAdd).toHaveBeenCalledWith(
@@ -230,7 +232,7 @@ describe('TeamWorkspacesDialogContent', () => {
       await wrapper.find('#workspace-name-input').setValue(name)
       await nextTick()
       findCreateButton(wrapper).vm.$emit('click')
-      await nextTick()
+      await flushPromises()
     }
 
     it('calls createWorkspace and onConfirm on success', async () => {

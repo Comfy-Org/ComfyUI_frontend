@@ -57,8 +57,9 @@ export function useWorkspaceTierLabel() {
     if (!workspace.subscriptionPlan) return null
 
     const planSlug = workspace.subscriptionPlan
+    const planTokens = planSlug.split(/[-_.]/)
     const tierMatch = Object.keys(TIER_KEY_MAP).find((tier) =>
-      planSlug.startsWith(tier)
+      planTokens.includes(tier)
     )
     if (!tierMatch) return null
 
