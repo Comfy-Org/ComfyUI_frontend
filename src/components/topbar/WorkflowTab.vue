@@ -21,8 +21,26 @@
           {{ workflowOption.workflow.filename }}
         </span>
         <div class="relative">
+          <i
+            v-if="jobState"
+            aria-hidden="true"
+            data-testid="job-state-indicator"
+            :data-state="jobState"
+            :class="
+              cn(
+                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
+                jobState === 'running' &&
+                  'icon-[lucide--loader-circle] animate-spin text-muted-foreground',
+                jobState === 'success' &&
+                  'icon-[lucide--circle-check] text-success-background',
+                jobState === 'error' &&
+                  'icon-[lucide--octagon-alert] text-destructive-background'
+              )
+            "
+          />
           <span
-            v-if="shouldShowStatusIndicator"
+            v-else-if="shouldShowStatusIndicator"
+            data-testid="unsaved-indicator"
             class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
             >•</span
           >
@@ -68,7 +86,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from 'reka-ui'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
@@ -84,8 +102,10 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
+import { cn } from '@/utils/tailwindUtil'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
 
@@ -112,6 +132,7 @@ const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
+const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
 const popoverRef = ref<InstanceType<typeof WorkflowTabPopover> | null>(null)
 const workflowThumbnail = useWorkflowThumbnail()
@@ -157,6 +178,17 @@ const isBuilderState = computed(() => {
 
 const isActiveTab = computed(() => {
   return workflowStore.activeWorkflow?.key === props.workflowOption.workflow.key
+})
+
+const jobState = computed(() => {
+  const path = props.workflowOption.workflow.path
+  if (!path || isActiveTab.value) return null
+  return executionStore.workflowStatus.get(path) ?? null
+})
+
+watch(isActiveTab, (isActive) => {
+  const path = props.workflowOption.workflow.path
+  if (isActive && path) executionStore.clearWorkflowStatus(path)
 })
 
 const thumbnailUrl = computed(() => {

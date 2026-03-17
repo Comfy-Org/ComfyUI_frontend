@@ -53,6 +53,8 @@ interface QueuedJob {
  */
 export const MAX_PROGRESS_JOBS = 1000
 
+export type WorkflowStatus = 'running' | 'success' | 'error'
+
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
@@ -79,6 +81,27 @@ export const useExecutionStore = defineStore('execution', () => {
   const jobIdToSessionWorkflowPath = shallowRef<Map<string, string>>(new Map())
 
   const initializingJobIds = ref<Set<string>>(new Set())
+
+  /**
+   * Per-workflow-path execution status for the current session.
+   * Updated by WebSocket event handlers; cleared by the UI when viewed.
+   */
+  const workflowStatus = shallowRef<Map<string, WorkflowStatus>>(new Map())
+
+  function setWorkflowStatus(jobId: string, status: WorkflowStatus) {
+    const path = jobIdToSessionWorkflowPath.value.get(jobId)
+    if (!path) return
+    const next = new Map(workflowStatus.value)
+    next.set(path, status)
+    workflowStatus.value = next
+  }
+
+  function clearWorkflowStatus(path: string) {
+    if (!workflowStatus.value.has(path)) return
+    const next = new Map(workflowStatus.value)
+    next.delete(path)
+    workflowStatus.value = next
+  }
 
   /**
    * Cache for executionIdToNodeLocatorId lookups.
@@ -257,6 +280,7 @@ export const useExecutionStore = defineStore('execution', () => {
       const path = queuedJobs.value[activeJobId.value]?.workflow?.path
       if (path) ensureSessionWorkflowPath(activeJobId.value, path)
     }
+    setWorkflowStatus(activeJobId.value, 'running')
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
@@ -270,6 +294,7 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
+    setWorkflowStatus(jobId, 'error')
     if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
     resetExecutionState(jobId)
   }
@@ -286,6 +311,7 @@ export const useExecutionStore = defineStore('execution', () => {
       })
     }
     const jobId = e.detail.prompt_id
+    setWorkflowStatus(jobId, 'success')
     resetExecutionState(jobId)
   }
 
@@ -383,6 +409,8 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
+    setWorkflowStatus(e.detail.prompt_id, 'error')
+
     if (isCloud) {
       useTelemetry()?.trackExecutionError({
         jobId: e.detail.prompt_id,
@@ -652,6 +680,8 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeLocatorIdToExecutionId,
     jobIdToWorkflowId,
     jobIdToSessionWorkflowPath,
-    ensureSessionWorkflowPath
+    ensureSessionWorkflowPath,
+    workflowStatus,
+    clearWorkflowStatus
   }
 })
