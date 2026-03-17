@@ -856,9 +856,9 @@
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
       "sections": {
-        "favorites": "Favorites",
-        "favoriteNode": "Favorite Node",
-        "unfavoriteNode": "Unfavorite Node",
+        "favorites": "Bookmarks",
+        "favoriteNode": "Bookmark Node",
+        "unfavoriteNode": "Unbookmark Node",
         "bookmarked": "Bookmarked",
         "subgraphBlueprints": "Subgraph Blueprints",
         "myBlueprints": "My Blueprints",
@@ -867,7 +867,7 @@
         "comfyNodes": "Comfy Nodes",
         "extensions": "Extensions"
       },
-      "noBookmarkedNodes": "No favorites yet"
+      "noBookmarkedNodes": "No bookmarks yet"
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
@@ -3567,9 +3567,9 @@
     "removeBackground": "Remove Background",
     "imageCompare": "Image compare",
     "extractFrame": "Extract frame",
-    "loadStyleLora": "Load style (LoRA)",
+    "loadStyleLora": "Load style",
     "lipsync": "Lipsync",
-    "textGenerationLLM": "Text generation (LLM)",
+    "textGenerationLLM": "Text generation",
     "textTo3DModel": "Text to 3D model",
     "imageTo3DModel": "Image to 3D Model",
     "musicGeneration": "Music generation",
