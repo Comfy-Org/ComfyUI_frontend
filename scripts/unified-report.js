@@ -19,10 +19,16 @@ const lines = []
 
 // --- Size section ---
 if (sizeStatus === 'ready') {
-  const sizeReport = execFileSync('node', ['scripts/size-report.js'], {
-    encoding: 'utf-8'
-  }).trimEnd()
-  lines.push(sizeReport)
+  try {
+    const sizeReport = execFileSync('node', ['scripts/size-report.js'], {
+      encoding: 'utf-8'
+    }).trimEnd()
+    lines.push(sizeReport)
+  } catch {
+    lines.push('## 📦 Bundle Size')
+    lines.push('')
+    lines.push('> ⚠️ Failed to render bundle size report. Check the CI workflow logs.')
+  }
 } else if (sizeStatus === 'failed') {
   lines.push('## 📦 Bundle Size')
   lines.push('')
@@ -37,13 +43,22 @@ lines.push('')
 
 // --- Perf section ---
 if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
-  const perfReport = execFileSync(
-    'pnpm',
-    ['exec', 'tsx', 'scripts/perf-report.ts'],
-    { encoding: 'utf-8' }
-  ).trimEnd()
-  lines.push(perfReport)
-} else if (perfStatus === 'failed') {
+  try {
+    const perfReport = execFileSync(
+      'pnpm',
+      ['exec', 'tsx', 'scripts/perf-report.ts'],
+      { encoding: 'utf-8' }
+    ).trimEnd()
+    lines.push(perfReport)
+  } catch {
+    lines.push('## ⚡ Performance')
+    lines.push('')
+    lines.push('> ⚠️ Failed to render performance report. Check the CI workflow logs.')
+  }
+} else if (
+  perfStatus === 'failed' ||
+  (perfStatus === 'ready' && !existsSync('test-results/perf-metrics.json'))
+) {
   lines.push('## ⚡ Performance')
   lines.push('')
   lines.push('> ⚠️ Performance tests failed. Check the CI workflow logs.')
