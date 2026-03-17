@@ -534,7 +534,9 @@ describe('useLoad3dViewer', () => {
 
   describe('handleBackgroundImageUpdate', () => {
     it('should upload and set background image', async () => {
-      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded-image.jpg')
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        'uploaded-image.jpg'
+      )
 
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
@@ -551,7 +553,9 @@ describe('useLoad3dViewer', () => {
 
     it('should use resource folder for upload', async () => {
       mockNode.properties['Resource Folder'] = 'subfolder'
-      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded-image.jpg')
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        'uploaded-image.jpg'
+      )
 
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
@@ -598,6 +602,9 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should work in standalone mode without a node', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        'uploaded-image.jpg'
+      )
       const viewer = useLoad3dViewer()
       const containerRef = document.createElement('div')
       await viewer.initializeStandaloneViewer(containerRef, 'model.glb')
