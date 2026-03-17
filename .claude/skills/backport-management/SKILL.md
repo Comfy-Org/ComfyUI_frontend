@@ -18,12 +18,12 @@ Cherry-pick backport management for Comfy-Org/ComfyUI_frontend stable release br
 
 ## System Context
 
-| Item           | Value                                             |
-| -------------- | ------------------------------------------------- |
-| Repo           | `~/ComfyUI_frontend` (Comfy-Org/ComfyUI_frontend) |
+| Item           | Value                                                                       |
+| -------------- | --------------------------------------------------------------------------- |
+| Repo           | `~/ComfyUI_frontend` (Comfy-Org/ComfyUI_frontend)                           |
 | Merge strategy | Auto-merge via workflow (`--auto --squash`); `--admin` only after CI passes |
 | Automation     | `pr-backport.yaml` GitHub Action (label-driven, auto-merge enabled)         |
-| Tracking dir   | `~/temp/backport-session/`                        |
+| Tracking dir   | `~/temp/backport-session/`                                                  |
 
 ## CI Safety Rules
 

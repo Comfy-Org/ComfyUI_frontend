@@ -5,8 +5,8 @@
 Maintain `execution-log.md` with per-branch tables:
 
 ```markdown
-| PR#   | Title | CI Status              | Status                            | Backport PR | Notes   |
-| ----- | ----- | ---------------------- | --------------------------------- | ----------- | ------- |
+| PR#   | Title | CI Status                      | Status                            | Backport PR | Notes   |
+| ----- | ----- | ------------------------------ | --------------------------------- | ----------- | ------- |
 | #XXXX | Title | ✅ Pass / ❌ Fail / ⏳ Pending | ✅ Merged / ⏭️ Skip / ⏸️ Deferred | #YYYY       | Details |
 ```
 

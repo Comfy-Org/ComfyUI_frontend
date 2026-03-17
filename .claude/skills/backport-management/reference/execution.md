@@ -183,6 +183,7 @@ When CI fails on a backport PR, present failures to the user using this template
 
 ```markdown
 ### PR #XXXX — CI Failed
+
 - **Failing check:** test / lint / typecheck
 - **Error:** (summary of the failure message)
 - **Likely cause:** test backported without implementation / missing dependency / flaky test / snapshot mismatch
@@ -191,12 +192,12 @@ When CI fails on a backport PR, present failures to the user using this template
 
 Common failure categories:
 
-| Category | Example | Resolution |
-| --- | --- | --- |
-| Test without implementation | Test references function not on branch | Backport the implementation PR first |
-| Missing dependency | Import from module not on branch | Backport the dependency PR first, or skip |
-| Snapshot mismatch | Screenshot test differs | Usually safe — update snapshots on branch |
-| Flaky test | Passes on retry | Re-run CI, merge if green on retry |
-| Type error | Interface changed on main but not branch | May need manual adaptation |
+| Category                    | Example                                  | Resolution                                |
+| --------------------------- | ---------------------------------------- | ----------------------------------------- |
+| Test without implementation | Test references function not on branch   | Backport the implementation PR first      |
+| Missing dependency          | Import from module not on branch         | Backport the dependency PR first, or skip |
+| Snapshot mismatch           | Screenshot test differs                  | Usually safe — update snapshots on branch |
+| Flaky test                  | Passes on retry                          | Re-run CI, merge if green on retry        |
+| Type error                  | Interface changed on main but not branch | May need manual adaptation                |
 
 **Never assume a failure is safe to skip.** Present all failures to the user with analysis.
