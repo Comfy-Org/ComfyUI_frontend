@@ -308,7 +308,9 @@ describe('LGraphNode', () => {
       const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
       const parentListener = vi.fn()
-      wrapper.element.parentElement?.addEventListener('drop', parentListener)
+      const parent = wrapper.element.parentElement
+      expect(parent).not.toBeNull()
+      parent!.addEventListener('drop', parentListener)
 
       wrapper.element.dispatchEvent(
         new Event('drop', { bubbles: true, cancelable: true })
@@ -329,7 +331,9 @@ describe('LGraphNode', () => {
       const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
       const parentListener = vi.fn()
-      wrapper.element.parentElement?.addEventListener('drop', parentListener)
+      const parent = wrapper.element.parentElement
+      expect(parent).not.toBeNull()
+      parent!.addEventListener('drop', parentListener)
 
       wrapper.element.dispatchEvent(
         new Event('drop', { bubbles: true, cancelable: true })
