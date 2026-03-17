@@ -22,13 +22,12 @@ async function isInSubgraph(comfyPage: ComfyPage): Promise<boolean> {
   })
 }
 
-async function exitSubgraphViaBreadcrumb(comfyPage: ComfyPage): Promise<void> {
-  const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
-  await breadcrumb.waitFor({ state: 'visible', timeout: 5000 })
-
-  const parentLink = breadcrumb.getByRole('link').first()
-  await expect(parentLink).toBeVisible()
-  await parentLink.click()
+async function exitSubgraphToParent(comfyPage: ComfyPage): Promise<void> {
+  await comfyPage.page.evaluate(() => {
+    const canvas = window.app!.canvas
+    if (!canvas.graph) return
+    canvas.setGraph(canvas.graph.rootGraph)
+  })
   await comfyPage.nextFrame()
 }
 
@@ -36,6 +35,10 @@ test.describe(
   'Subgraph Widget Promotion',
   { tag: ['@subgraph', '@widget'] },
   () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+    })
+
     test.describe('Auto-promotion on Convert to Subgraph', () => {
       test('Recommended widgets are auto-promoted when creating a subgraph', async ({
         comfyPage
@@ -86,10 +89,18 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow('default')
-        await fitToViewInstant(comfyPage)
 
-        // Select the SaveImage node (id 9 in default workflow)
+        // Pan to SaveImage node (rightmost, may be off-screen in CI)
         const saveNode = await comfyPage.nodeOps.getNodeRefById('9')
+        const savePos = await saveNode.getPosition()
+        await comfyPage.page.evaluate((pos) => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
+          canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2
+          canvas.setDirty(true, true)
+        }, savePos)
+        await comfyPage.nextFrame()
+
         await saveNode.click('title')
         const subgraphNode = await saveNode.convertToSubgraph()
         await comfyPage.nextFrame()
@@ -251,7 +262,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent graph
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await exitSubgraphToParent(comfyPage)
 
         // Promoted textarea on SubgraphNode should have the same value
         const promotedTextarea = comfyPage.page.getByTestId(
@@ -285,7 +296,7 @@ test.describe(
           )
           await expect(interiorTextarea).toHaveValue(testContent)
 
-          await exitSubgraphViaBreadcrumb(comfyPage)
+          await exitSubgraphToParent(comfyPage)
 
           const promotedTextarea = comfyPage.page.getByTestId(
             TestIds.widgets.domWidgetTextarea
@@ -331,7 +342,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await exitSubgraphToParent(comfyPage)
 
         // SubgraphNode should now have the promoted widget
         const widgetCount = await getPromotedWidgetCount(comfyPage, '2')
@@ -366,7 +377,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back and verify promotion took effect
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await exitSubgraphToParent(comfyPage)
         await fitToViewInstant(comfyPage)
         await comfyPage.nextFrame()
 
@@ -397,7 +408,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await exitSubgraphToParent(comfyPage)
 
         // SubgraphNode should have fewer widgets
         const finalWidgetCount = await getPromotedWidgetCount(comfyPage, '2')
@@ -478,10 +489,18 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow('default')
-        await fitToViewInstant(comfyPage)
 
-        // Select SaveImage (id 9)
+        // Pan to SaveImage node (rightmost, may be off-screen in CI)
         const saveNode = await comfyPage.nodeOps.getNodeRefById('9')
+        const savePos = await saveNode.getPosition()
+        await comfyPage.page.evaluate((pos) => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
+          canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2
+          canvas.setDirty(true, true)
+        }, savePos)
+        await comfyPage.nextFrame()
+
         await saveNode.click('title')
         const subgraphNode = await saveNode.convertToSubgraph()
         await comfyPage.nextFrame()

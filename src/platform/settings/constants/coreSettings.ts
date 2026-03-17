@@ -281,12 +281,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
-    id: 'Comfy.Workflow.ShowMissingNodesWarning',
-    name: 'Show missing nodes warning',
-    type: 'boolean',
-    defaultValue: true
-  },
-  {
     id: 'Comfy.Workflow.ShowMissingModelsWarning',
     name: 'Show missing models warning',
     type: isCloud ? 'hidden' : 'boolean',
@@ -298,6 +292,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Require confirmation to overwrite an existing subgraph blueprint',
     type: 'boolean',
     defaultValue: true
+  },
+  {
+    id: 'Comfy.Desktop.CloudNotificationShown',
+    name: 'Cloud notification shown',
+    type: 'hidden',
+    defaultValue: false
   },
   {
     id: 'Comfy.Graph.ZoomSpeed',

@@ -424,8 +424,8 @@ export default defineConfig({
       : []),
 
     // Sentry sourcemap upload plugin
-    // Only runs during cloud production builds when all Sentry env vars are present
-    // Requires: SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT env vars
+    // Uploads sourcemaps to both staging and prod Sentry projects so that
+    // error stack traces are readable in both environments.
     ...(DISTRIBUTION === 'cloud' &&
     process.env.SENTRY_AUTH_TOKEN &&
     process.env.SENTRY_ORG &&
@@ -437,10 +437,23 @@ export default defineConfig({
             project: process.env.SENTRY_PROJECT,
             authToken: process.env.SENTRY_AUTH_TOKEN,
             sourcemaps: {
-              // Delete source maps after upload to prevent public access
-              filesToDeleteAfterUpload: ['**/*.map']
+              filesToDeleteAfterUpload: process.env.SENTRY_PROJECT_PROD
+                ? []
+                : ['**/*.map']
             }
-          })
+          }),
+          ...(process.env.SENTRY_PROJECT_PROD
+            ? [
+                sentryVitePlugin({
+                  org: process.env.SENTRY_ORG,
+                  project: process.env.SENTRY_PROJECT_PROD,
+                  authToken: process.env.SENTRY_AUTH_TOKEN,
+                  sourcemaps: {
+                    filesToDeleteAfterUpload: ['**/*.map']
+                  }
+                })
+              ]
+            : [])
         ]
       : [])
   ],
