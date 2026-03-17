@@ -67,7 +67,7 @@ import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useN
 import {
   hasAnySlotAction,
   showSlotMenu
-} from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
+} from '@/renderer/extensions/vueNodes/composables/slotMenuService'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { cn } from '@comfyorg/tailwind-utils'
