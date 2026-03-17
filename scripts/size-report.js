@@ -428,8 +428,7 @@ function renderCategoryBlock(category, hasBaseline) {
     statusParts.push(`${category.counts.increased} grew`)
   if (category.counts.decreased)
     statusParts.push(`${category.counts.decreased} shrank`)
-  if (unchangedCount > 0)
-    statusParts.push(`${unchangedCount} unchanged`)
+  if (unchangedCount > 0) statusParts.push(`${unchangedCount} unchanged`)
 
   if (statusParts.length > 0) {
     lines.push(`_Status:_ ${statusParts.join(' / ')}`)

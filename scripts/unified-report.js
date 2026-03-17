@@ -27,7 +27,9 @@ if (sizeStatus === 'ready') {
   } catch {
     lines.push('## 📦 Bundle Size')
     lines.push('')
-    lines.push('> ⚠️ Failed to render bundle size report. Check the CI workflow logs.')
+    lines.push(
+      '> ⚠️ Failed to render bundle size report. Check the CI workflow logs.'
+    )
   }
 } else if (sizeStatus === 'failed') {
   lines.push('## 📦 Bundle Size')
@@ -53,7 +55,9 @@ if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
   } catch {
     lines.push('## ⚡ Performance')
     lines.push('')
-    lines.push('> ⚠️ Failed to render performance report. Check the CI workflow logs.')
+    lines.push(
+      '> ⚠️ Failed to render performance report. Check the CI workflow logs.'
+    )
   }
 } else if (
   perfStatus === 'failed' ||
