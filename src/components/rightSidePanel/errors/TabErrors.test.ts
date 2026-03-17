@@ -209,11 +209,10 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    // Find the copy button (rendered inside ErrorNodeCard)
-    const copyButtons = wrapper.findAll('button')
-    const copyButton = copyButtons.find((btn) => btn.text().includes('Copy'))
-    expect(copyButton).toBeTruthy()
-    await copyButton!.trigger('click')
+    // Find the copy button by aria-label (rendered inside ErrorNodeCard)
+    const copyButton = wrapper.find('button[aria-label="Copy"]')
+    expect(copyButton.exists()).toBe(true)
+    await copyButton.trigger('click')
 
     expect(mockCopy).toHaveBeenCalledWith('Test message\n\nTest details')
   })
