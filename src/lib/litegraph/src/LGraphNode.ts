@@ -4219,10 +4219,9 @@ export class LGraphNode
     for (const [i, slot] of this._concreteInputs.entries()) {
       if (!isWidgetInputSlot(slot)) continue
 
-      // Match by slot.widget.name (standard path). Fall back to the slot's
-      // bound _widget reference for SubgraphNode promoted inputs whose display
-      // name differs from slot.widget.name (e.g. renamed labels).
-      const widget = widgetByName.get(slot.widget.name) ?? slot._widget
+      // Prefer the slot's direct _widget binding (1:1 for promoted inputs).
+      // Fall back to name-map lookup for regular nodes without _widget set.
+      const widget = slot._widget ?? widgetByName.get(slot.widget.name)
       if (!widget) continue
 
       const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5

@@ -207,7 +207,7 @@ describe('drawConnections widget-input slot positioning', () => {
     const input = targetNode.addInput('renamed_label', 'STRING')
     input.widget = { name: 'original_name' }
 
-    // Bind the widget as the slot's _widget so the fallback path works
+    // Bind the widget as the slot's _widget (preferred over name-map lookup)
     input._widget = widget
 
     graph.add(targetNode)
