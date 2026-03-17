@@ -103,6 +103,16 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
+  override serialize() {
+    const o = super.serialize()
+    // PrimitiveNode creates widgets dynamically on connection. When
+    // disconnected, this.widgets is empty so the base serialize() omits
+    // widgets_values. Fall back to the snapshot saved during configure().
+    if (!o.widgets_values && this.widgets_values)
+      o.widgets_values = [...this.widgets_values]
+    return o
+  }
+
   override onAfterGraphConfigured() {
     if (this.outputs[0].links?.length && !this.widgets?.length) {
       this._onFirstConnection()

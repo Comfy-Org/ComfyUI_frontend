@@ -34,7 +34,7 @@ export interface WidgetState<
   nodeId: NodeId
 }
 
-export type HydrationCallback = () => void
+type HydrationCallback = () => void
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgetStates = ref(new Map<UUID, Map<WidgetKey, WidgetState>>())

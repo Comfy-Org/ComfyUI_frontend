@@ -91,13 +91,6 @@ function onCustomComboCreated(this: LGraphNode) {
       set(v: string) {
         const store = useWidgetValueStore()
 
-        if (
-          !store.isHydrating(node.id) &&
-          !store.getWidget(app.rootGraph.id, node.id, widgetName)
-        ) {
-          store.beginHydration(node.id)
-        }
-
         store.getOrCreateWidget(
           app.rootGraph.id,
           node.id,
@@ -139,11 +132,7 @@ function onCustomComboCreated(this: LGraphNode) {
   this.onConfigure = useChainCallback(
     this.onConfigure,
     function (this: LGraphNode) {
-      const store = useWidgetValueStore()
-      if (store.isHydrating(this.id)) {
-        store.commitHydration(this.id)
-        updateCombo()
-      }
+      useWidgetValueStore().onHydrationComplete(this.id, updateCombo)
     }
   )
 }
