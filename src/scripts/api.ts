@@ -380,6 +380,7 @@ export class ComfyApi extends EventTarget {
   }
 
   apiURL(route: string): string {
+    if (route.startsWith('/api')) return this.api_base + route
     return this.api_base + '/api' + route
   }
 
