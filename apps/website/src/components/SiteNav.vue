@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 const mobileMenuOpen = ref(false)
 
@@ -9,10 +9,30 @@ const navLinks = [
   { label: 'ABOUT', href: '/about' },
   { label: 'CAREERS', href: '/careers' }
 ]
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && mobileMenuOpen.value) {
+    mobileMenuOpen.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', onKeydown)
+  document.addEventListener('astro:after-swap', () => {
+    mobileMenuOpen.value = false
+  })
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydown)
+})
 </script>
 
 <template>
-  <nav class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md">
+  <nav
+    class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md"
+    aria-label="Main navigation"
+  >
     <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
       <!-- Logo -->
       <a href="/" class="text-2xl font-bold italic text-brand-yellow">
@@ -72,7 +92,7 @@ const navLinks = [
 
     <!-- Mobile menu -->
     <div
-      v-if="mobileMenuOpen"
+      v-show="mobileMenuOpen"
       id="site-mobile-menu"
       class="border-t border-white/10 bg-black px-6 pb-6 md:hidden"
     >
@@ -82,6 +102,7 @@ const navLinks = [
           :key="link.href"
           :href="link.href"
           class="text-sm font-medium tracking-wide text-white transition-colors hover:text-brand-yellow"
+          @click="mobileMenuOpen = false"
         >
           {{ link.label }}
         </a>
@@ -89,13 +110,13 @@ const navLinks = [
         <div class="flex flex-col gap-3 pt-2">
           <a
             href="https://app.comfy.org"
-            class="rounded-full bg-brand-yellow px-5 py-2 text-center text-sm font-semibold text-black"
+            class="rounded-full bg-brand-yellow px-5 py-2 text-center text-sm font-semibold text-black transition-opacity hover:opacity-90"
           >
             COMFY CLOUD
           </a>
           <a
             href="https://hub.comfy.org"
-            class="rounded-full border border-brand-yellow px-5 py-2 text-center text-sm font-semibold text-brand-yellow"
+            class="rounded-full border border-brand-yellow px-5 py-2 text-center text-sm font-semibold text-brand-yellow transition-colors hover:bg-brand-yellow hover:text-black"
           >
             COMFY HUB
           </a>

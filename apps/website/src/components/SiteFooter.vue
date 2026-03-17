@@ -85,9 +85,10 @@ const socials = [
       </div>
 
       <!-- Link columns -->
-      <div
+      <nav
         v-for="column in columns"
         :key="column.title"
+        :aria-label="column.title"
         class="flex flex-col gap-3"
       >
         <h3 class="text-sm font-semibold text-white">{{ column.title }}</h3>
@@ -99,7 +100,7 @@ const socials = [
         >
           {{ link.label }}
         </a>
-      </div>
+      </nav>
     </div>
 
     <!-- Bottom bar -->
