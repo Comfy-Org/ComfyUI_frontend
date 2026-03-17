@@ -692,6 +692,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           nodeId: this.id,
           slotType: NodeSlotType.INPUT
         })
+        this._invalidatePromotedViewsCache()
       },
       { signal }
     )
