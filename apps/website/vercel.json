@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter @comfyorg/website build",
+  "outputDirectory": "apps/website/dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": null
+}

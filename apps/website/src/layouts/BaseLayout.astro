@@ -21,6 +21,29 @@ const ogImageURL = new URL(ogImage, siteBase)
 const locale = Astro.currentLocale ?? 'en'
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Comfy Org',
+  url: 'https://comfy.org',
+  logo: 'https://comfy.org/favicon.svg',
+  sameAs: [
+    'https://github.com/comfyanonymous/ComfyUI',
+    'https://discord.gg/comfyorg',
+    'https://x.com/comaboratory',
+    'https://reddit.com/r/comfyui',
+    'https://linkedin.com/company/comfyorg',
+    'https://instagram.com/comfyorg',
+  ],
+}
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Comfy',
+  url: 'https://comfy.org',
+}
 ---
 
 <!doctype html>
@@ -48,6 +71,10 @@ const gtmEnabled = import.meta.env.PROD
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageURL.href} />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
 
     <!-- Google Tag Manager -->
     {gtmEnabled && (
