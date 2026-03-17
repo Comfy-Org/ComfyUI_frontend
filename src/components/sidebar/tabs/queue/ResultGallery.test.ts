@@ -1,7 +1,9 @@
-import { mount } from '@vue/test-utils'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+enableAutoUnmount(afterEach)
 
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ResultItemImpl } from '@/stores/queueStore'
@@ -15,6 +17,7 @@ const i18n = createI18n({
     en: {
       g: {
         close: 'Close',
+        gallery: 'Gallery',
         previous: 'Previous',
         next: 'Next'
       }

@@ -2,8 +2,11 @@
   <Teleport to="body">
     <div
       v-if="galleryVisible"
+      ref="dialogRef"
       role="dialog"
       aria-modal="true"
+      :aria-label="$t('g.gallery')"
+      tabindex="-1"
       class="fixed inset-0 z-9999 flex items-center justify-center bg-black/90"
       data-mask
       @mousedown="onMaskMouseDown"
@@ -65,7 +68,7 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -84,6 +87,8 @@ const props = defineProps<{
 }>()
 
 const galleryVisible = ref(false)
+const dialogRef = ref<HTMLElement>()
+let previouslyFocusedElement: HTMLElement | null = null
 const hasMultiple = computed(() => props.allGalleryItems.length > 1)
 const activeItem = computed(() => props.allGalleryItems[props.activeIndex])
 
@@ -91,6 +96,10 @@ watch(
   () => props.activeIndex,
   (index) => {
     galleryVisible.value = index !== -1
+    if (index !== -1) {
+      previouslyFocusedElement = document.activeElement as HTMLElement | null
+      void nextTick(() => dialogRef.value?.focus())
+    }
   },
   { immediate: true }
 )
@@ -98,6 +107,8 @@ watch(
 function close() {
   galleryVisible.value = false
   emit('update:activeIndex', -1)
+  previouslyFocusedElement?.focus()
+  previouslyFocusedElement = null
 }
 
 function navigateImage(direction: number) {
