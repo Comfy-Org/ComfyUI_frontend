@@ -73,5 +73,5 @@ export function useCanvasAnchoredPosition(isOpen: Ref<boolean>) {
     }
   })
 
-  return { screenPosition, anchorToEvent, canvasLeft, canvasTop, lgCanvas }
+  return { screenPosition, anchorToEvent }
 }
