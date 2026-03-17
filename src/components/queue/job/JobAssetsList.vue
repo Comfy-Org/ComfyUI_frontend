@@ -67,12 +67,32 @@
       </AssetsListItem>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div
+      v-if="activeDetails && popoverPosition"
+      class="job-details-popover fixed z-50"
+      :style="{
+        top: `${popoverPosition.top}px`,
+        left: `${popoverPosition.left}px`
+      }"
+      @mouseenter="onPopoverEnter"
+      @mouseleave="onPopoverLeave"
+    >
+      <JobDetailsPopover
+        :job-id="activeDetails.jobId"
+        :workflow-id="activeDetails.workflowId"
+      />
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { ref } from 'vue'
 
+import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
+import { getHoverPopoverPosition } from '@/components/queue/job/getHoverPopoverPosition'
 import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
@@ -90,8 +110,34 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const hoveredJobId = ref<string | null>(null)
+const activeRowElement = ref<HTMLElement | null>(null)
+const popoverPosition = ref<{ top: number; left: number } | null>(null)
+const {
+  activeDetails,
+  clearHoverTimers,
+  resetActiveDetails,
+  scheduleDetailsHide,
+  scheduleDetailsShow
+} = useJobDetailsHover<{ jobId: string; workflowId?: string }>({
+  getActiveId: (details) => details.jobId,
+  getDisplayedJobGroups: () => displayedJobGroups,
+  onReset: clearPopoverAnchor
+})
 
-const onJobLeave = (jobId: string) => {
+function clearPopoverAnchor() {
+  activeRowElement.value = null
+  popoverPosition.value = null
+}
+
+function updatePopoverPosition() {
+  const rowElement = activeRowElement.value
+  if (!rowElement) return
+
+  const rect = rowElement.getBoundingClientRect()
+  popoverPosition.value = getHoverPopoverPosition(rect, window.innerWidth)
+}
+
+function onJobLeave(jobId: string) {
   if (hoveredJobId.value === jobId) {
     hoveredJobId.value = null
   }
