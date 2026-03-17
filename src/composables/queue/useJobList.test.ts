@@ -264,7 +264,7 @@ describe('useJobList', () => {
     const { jobItems } = initComposable()
     await flush()
 
-    jobItems.value
+    void jobItems.value
     expect(buildJobDisplay).toHaveBeenCalledWith(
       expect.anything(),
       'pending',
@@ -275,7 +275,7 @@ describe('useJobList', () => {
     await vi.advanceTimersByTimeAsync(3000)
     await flush()
 
-    jobItems.value
+    void jobItems.value
     expect(buildJobDisplay).toHaveBeenCalledWith(
       expect.anything(),
       'pending',
@@ -292,7 +292,7 @@ describe('useJobList', () => {
 
     const { jobItems } = initComposable()
     await flush()
-    jobItems.value
+    void jobItems.value
 
     queueStoreMock.pendingTasks = []
     await flush()
@@ -303,7 +303,7 @@ describe('useJobList', () => {
       createTask({ jobId: taskId, job: { priority: 2 }, mockState: 'pending' })
     ]
     await flush()
-    jobItems.value
+    void jobItems.value
     expect(buildJobDisplay).toHaveBeenCalledWith(
       expect.anything(),
       'pending',
