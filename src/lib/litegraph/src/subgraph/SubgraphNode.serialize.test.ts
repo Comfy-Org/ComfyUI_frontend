@@ -17,17 +17,18 @@ import { setActivePinia } from 'pinia'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type {
-  ExportedSubgraph,
-  ExportedSubgraphInstance
-} from '@/lib/litegraph/src/types/serialisation'
-import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
+import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { usePromotionStore } from '@/stores/promotionStore'
+
+import { createTestSubgraph } from './__fixtures__/subgraphHelpers'
 
 /**
  * Creates a subgraph with a single interior node that has a widget,
  * wired through a subgraph input. This creates the promotion binding
  * that serialize() captures in proxyWidgets.
+ *
+ * Builds on the shared createTestSubgraph helper, adding widget wiring
+ * that the base helper doesn't support.
  */
 function createSubgraphWithWidgetNode(): {
   rootGraph: LGraph
@@ -35,32 +36,8 @@ function createSubgraphWithWidgetNode(): {
   interiorNode: LGraphNode
   subgraphNode: SubgraphNode
 } {
-  const rootGraph = new LGraph()
-  const subgraphId = createUuidv4()
-
-  const subgraphData: ExportedSubgraph = {
-    id: subgraphId,
-    version: 1,
-    revision: 0,
-    state: {
-      lastNodeId: 0,
-      lastLinkId: 0,
-      lastGroupId: 0,
-      lastRerouteId: 0
-    },
-    config: {},
-    name: 'Test Subgraph',
-    inputNode: { id: -10, bounding: [0, 0, 10, 10] },
-    outputNode: { id: -20, bounding: [0, 0, 10, 10] },
-    inputs: [],
-    outputs: [],
-    widgets: [],
-    nodes: [],
-    links: [],
-    groups: []
-  }
-
-  const subgraph = rootGraph.createSubgraph(subgraphData)
+  const subgraph = createTestSubgraph({ name: 'Test Subgraph' })
+  const rootGraph = subgraph.rootGraph
 
   // Interior node with a widget
   const interiorNode = new LGraphNode('TestInterior')
@@ -77,7 +54,7 @@ function createSubgraphWithWidgetNode(): {
 
   const instanceData: ExportedSubgraphInstance = {
     id: 1,
-    type: subgraphId,
+    type: subgraph.id,
     pos: [0, 0],
     size: [200, 100],
     inputs: [],
@@ -125,7 +102,7 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
     ])
   })
 
-  it('serialize() with wrong node id returns empty proxyWidgets (demonstrates clone bug)', () => {
+  it('clone with different id still gets proxyWidgets from construction, not original', () => {
     const { rootGraph, subgraph, subgraphNode } = createSubgraphWithWidgetNode()
 
     const store = usePromotionStore()
