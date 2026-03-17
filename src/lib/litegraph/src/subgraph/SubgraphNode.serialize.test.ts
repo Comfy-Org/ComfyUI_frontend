@@ -3,9 +3,9 @@
  *
  * Verifies:
  * 1. serialize() correctly captures instance-scoped promotion metadata
- * 2. The _serializeItems copy path should not use clone() for SubgraphNodes
- *    (clone creates a transient node with wrong id, whose serialize() queries
- *     promotionStore with the wrong key → empty/stale proxyWidgets)
+ * 2. Direct serialization (without clone()) preserves correct state — the
+ *    _serializeItems path uses item.serialize() for all nodes, avoiding the
+ *    clone→serialize gap where transient nodes lose external state
  * 3. Subgraph definition serialization preserves modified widget values
  *
  * @see https://github.com/Comfy-Org/ComfyUI_frontend/issues/9976
@@ -181,14 +181,12 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
     expect(serializedNode?.widgets_values?.[0]).toBe(777)
   })
 
-  it('_serializeItems should not use clone().serialize() for SubgraphNodes', () => {
+  it('direct serialize() preserves proxyWidgets and widget values', () => {
     const { subgraph, interiorNode, subgraphNode } =
       createSubgraphWithWidgetNode()
 
-    // The correct approach: serialize the ORIGINAL node directly
+    // Direct serialization captures correct proxyWidgets
     const originalSerialized = subgraphNode.serialize()
-
-    // proxyWidgets should reflect the original node's promotions
     expect(originalSerialized.properties?.proxyWidgets).toEqual([
       [String(interiorNode.id), 'seed']
     ])
