@@ -359,12 +359,14 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   trackWorkflowImported(metadata: WorkflowImportMetadata): void {
-    this.trackEvent(TelemetryEvents.WORKFLOW_IMPORTED, metadata)
+    const { missing_node_count, missing_node_types, ...rest } = metadata
+    this.trackEvent(TelemetryEvents.WORKFLOW_IMPORTED, rest)
     this.reportMissingNodesToClickHouse(metadata)
   }
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
-    this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
+    const { missing_node_count, missing_node_types, ...rest } = metadata
+    this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, rest)
     this.reportMissingNodesToClickHouse(metadata)
   }
 
