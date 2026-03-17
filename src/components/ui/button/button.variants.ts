@@ -29,6 +29,7 @@ export const buttonVariants = cva({
       md: 'h-8 rounded-lg p-2 text-xs',
       lg: 'h-10 rounded-lg px-4 py-2 text-sm',
       icon: 'size-8',
+      'icon-lg': 'size-10',
       'icon-sm': 'size-5 p-0',
       unset: ''
     }
@@ -54,7 +55,7 @@ const variants = [
   'overlay-white',
   'gradient'
 ] as const satisfies Array<ButtonVariants['variant']>
-const sizes = ['sm', 'md', 'lg', 'icon', 'icon-sm'] as const satisfies Array<
+const sizes = ['sm', 'md', 'lg', 'icon', 'icon-lg', 'icon-sm'] as const satisfies Array<
   ButtonVariants['size']
 >
 
