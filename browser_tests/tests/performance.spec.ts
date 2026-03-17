@@ -277,7 +277,6 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     // (triggers size-based culling in isNodeInViewport)
     for (let i = 0; i < 20; i++) {
       await comfyPage.canvasOps.zoom(100)
-      await comfyPage.nextFrame()
     }
 
     // Idle at extreme zoom-out — most nodes should be culled
@@ -288,7 +287,6 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     // Zoom back in
     for (let i = 0; i < 20; i++) {
       await comfyPage.canvasOps.zoom(-100)
-      await comfyPage.nextFrame()
     }
 
     const m = await comfyPage.perf.stopMeasuring('vue-zoom-culling')
