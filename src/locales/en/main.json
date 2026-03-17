@@ -3625,5 +3625,16 @@
   "builderMenu": {
     "enterAppMode": "Enter app mode",
     "exitAppBuilder": "Exit app builder"
+  },
+  "cloudNotification": {
+    "title": "Run ComfyUI in the Cloud",
+    "message": "From setup to creation in seconds. Popular models, extensions, and powerful GPUs — ready when you are.",
+    "feature1Title": "400 Free Credits Monthly",
+    "feature2Title": "Works Anywhere, Instantly",
+    "feature3Title": "Models Ready to Use",
+    "feature4Title": "Top Custom Node Packs Pre-installed",
+    "footer": "ComfyUI stays free and open source. Cloud is optional.",
+    "continueLocally": "Continue Locally",
+    "exploreCloud": "Try Cloud for Free"
   }
 }
