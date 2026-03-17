@@ -9,4 +9,4 @@
 # This trigger was created to fix missing subscription.* translations
 # that were added after the last automatic locale update.
 #
-# Re-triggering after rebase to latest main (2026-02-12)
+# Use this file to re-trigger the workflow after rebasing onto the latest main branch.
