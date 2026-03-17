@@ -18,8 +18,7 @@
         loop
         muted
         playsinline
-        class="h-full min-w-5/4 object-cover p-0"
-        style="margin-left: -20%"
+        class="-ml-[20%] h-full min-w-5/4 object-cover p-0"
       >
         <source
           src="/assets/images/cloud-subscription.webm"
