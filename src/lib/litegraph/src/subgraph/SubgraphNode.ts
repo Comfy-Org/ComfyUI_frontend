@@ -616,9 +616,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const subgraphInput = e.detail.input
         const { name, type } = subgraphInput
         const existingInput = this.inputs.find(
-          (input) => input._subgraphSlot === subgraphInput
+          (input) =>
+            input._subgraphSlot === subgraphInput ||
+            (input._subgraphSlot && input._subgraphSlot.id === subgraphInput.id)
         )
         if (existingInput) {
+          // Rebind to the new SubgraphInput object and re-register listeners
+          // (configure recreates SubgraphInput objects with the same id)
+          this._addSubgraphInputListeners(subgraphInput, existingInput)
           const linkId = subgraphInput.linkIds[0]
           if (linkId === undefined) return
 
