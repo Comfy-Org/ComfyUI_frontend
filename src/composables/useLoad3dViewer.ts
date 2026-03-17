@@ -580,13 +580,17 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     useLoad3dService().handleViewportRefresh(load3d)
   }
 
+  const getUploadSubfolder = () => {
+    const resourceFolder = String(
+      node?.properties?.['Resource Folder'] ?? ''
+    ).trim()
+    return resourceFolder ? `3d/${resourceFolder}` : '3d'
+  }
+
   const handleBackgroundImageUpdate = async (file: File | null) => {
     if (!file) {
       backgroundImage.value = ''
       hasBackgroundImage.value = false
-      if (isStandaloneMode.value) {
-        saveStandaloneConfig()
-      }
       return
     }
 
@@ -595,21 +599,15 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       return
     }
 
-    const resourceFolder =
-      (node?.properties?.['Resource Folder'] as string) || ''
-    const subfolder = resourceFolder.trim()
-      ? `3d/${resourceFolder.trim()}`
-      : '3d'
-
     try {
-      const uploadPath = await Load3dUtils.uploadFile(file, subfolder)
+      const uploadPath = await Load3dUtils.uploadFile(
+        file,
+        getUploadSubfolder()
+      )
 
       if (uploadPath) {
         backgroundImage.value = uploadPath
         hasBackgroundImage.value = true
-        if (isStandaloneMode.value) {
-          saveStandaloneConfig()
-        }
       }
     } catch (error) {
       console.error('Error uploading background image:', error)
@@ -623,14 +621,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       return
     }
 
-    const resourceFolder =
-      (node?.properties?.['Resource Folder'] as string) || ''
-    const subfolder = resourceFolder.trim()
-      ? `3d/${resourceFolder.trim()}`
-      : '3d'
-
     try {
-      const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
+      const uploadedPath = await Load3dUtils.uploadFile(
+        file,
+        getUploadSubfolder()
+      )
 
       if (!uploadedPath) {
         useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
