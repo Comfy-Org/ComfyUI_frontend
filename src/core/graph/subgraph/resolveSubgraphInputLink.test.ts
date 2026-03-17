@@ -6,7 +6,8 @@ import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphI
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -61,6 +62,7 @@ function addLinkedInteriorInput(
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
   vi.clearAllMocks()
 })
 

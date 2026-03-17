@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 // Barrel import must come first to avoid circular dependency
 // (promotedWidgetView → widgetMap → BaseWidget → LegacyWidget → barrel)
@@ -27,9 +27,9 @@ import {
 } from '@/stores/widgetValueStore'
 
 import {
-  cleanupComplexPromotionFixtureNodeType,
   createTestSubgraph,
   createTestSubgraphNode,
+  resetSubgraphFixtureState,
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
@@ -98,13 +98,10 @@ function callSyncPromotions(node: SubgraphNode) {
   )._syncPromotions()
 }
 
-afterEach(() => {
-  cleanupComplexPromotionFixtureNodeType()
-})
-
 describe(createPromotedWidgetView, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    resetSubgraphFixtureState()
     mockDomWidgetStore.widgetStates.clear()
     vi.clearAllMocks()
   })

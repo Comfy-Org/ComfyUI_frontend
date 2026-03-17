@@ -8,7 +8,8 @@ import { usePromotionStore } from '@/stores/promotionStore'
 
 import {
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -42,6 +43,7 @@ function setupSubgraph(
 describe('Subgraph proxyWidgets', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    resetSubgraphFixtureState()
   })
 
   test('Can add simple widget', () => {
