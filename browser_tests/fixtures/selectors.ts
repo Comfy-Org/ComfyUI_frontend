@@ -28,6 +28,7 @@ export const TestIds = {
     settingsTabAbout: 'settings-tab-about',
     confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
+    runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section'
