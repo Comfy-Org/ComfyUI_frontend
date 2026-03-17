@@ -240,7 +240,7 @@ export const useWorkflowService = () => {
       workflow,
       {
         showMissingModels: loadFromRemote,
-        showMissingNodes: true,
+        showMissingNodes: loadFromRemote,
         checkForRerouteMigration: false,
         deferWarnings: true
       }
