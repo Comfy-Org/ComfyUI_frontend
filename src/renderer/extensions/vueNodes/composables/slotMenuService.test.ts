@@ -26,7 +26,7 @@ import {
   hasAnySlotAction,
   removeSlot,
   renameSlot
-} from './useSlotContextMenu'
+} from './slotMenuService'
 
 describe(canRenameSlot, () => {
   beforeEach(() => {
