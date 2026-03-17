@@ -55,8 +55,13 @@ const variants = [
   'overlay-white',
   'gradient'
 ] as const satisfies Array<ButtonVariants['variant']>
-const sizes = ['sm', 'md', 'lg', 'icon', 'icon-lg', 'icon-sm'] as const satisfies Array<
-  ButtonVariants['size']
->
+const sizes = [
+  'sm',
+  'md',
+  'lg',
+  'icon',
+  'icon-lg',
+  'icon-sm'
+] as const satisfies Array<ButtonVariants['size']>
 
 export const FOR_STORIES = { variants, sizes } as const
