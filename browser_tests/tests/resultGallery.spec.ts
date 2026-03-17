@@ -21,8 +21,7 @@ test.describe('ResultGallery', { tag: ['@smoke'] }, () => {
     }
 
     // Open Assets sidebar tab
-    const assetsTabButton = comfyPage.page.locator('.assets-tab-button')
-    await assetsTabButton.click()
+    await comfyPage.page.locator('.assets-tab-button').click()
 
     // Wait for at least one image asset card to appear
     const assetCard = comfyPage.page
@@ -34,46 +33,41 @@ test.describe('ResultGallery', { tag: ['@smoke'] }, () => {
     return { assetCard }
   }
 
-  test('opens gallery when clicking zoom on asset card', async ({
-    comfyPage
-  }) => {
+  async function openGallery(comfyPage: ComfyPage) {
     const { assetCard } = await runWorkflowAndOpenAssets(comfyPage)
 
-    // Hover to reveal zoom button
+    // Hover to reveal zoom button, then click it
     await assetCard.hover()
-    const zoomButton = comfyPage.page.getByLabel('Zoom in').first()
+    const zoomButton = assetCard.getByLabel('Zoom in')
     await expect(zoomButton).toBeVisible()
     await zoomButton.click()
 
-    // Gallery dialog should be visible
     const gallery = comfyPage.page.getByRole('dialog')
     await expect(gallery).toBeVisible()
 
-    // Close button should be visible
-    await expect(comfyPage.page.getByLabel('Close').first()).toBeVisible()
+    return { gallery }
+  }
+
+  test('opens gallery when clicking zoom on asset card', async ({
+    comfyPage
+  }) => {
+    const { gallery } = await openGallery(comfyPage)
+
+    // Close button should be visible within the gallery
+    await expect(gallery.getByLabel('Close')).toBeVisible()
   })
 
   test('closes gallery on Escape key', async ({ comfyPage }) => {
-    const { assetCard } = await runWorkflowAndOpenAssets(comfyPage)
+    await openGallery(comfyPage)
 
-    await assetCard.hover()
-    await comfyPage.page.getByLabel('Zoom in').first().click()
-    await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
-
-    // Press Escape to close
     await comfyPage.page.keyboard.press('Escape')
     await expect(comfyPage.page.getByRole('dialog')).not.toBeVisible()
   })
 
   test('closes gallery when clicking close button', async ({ comfyPage }) => {
-    const { assetCard } = await runWorkflowAndOpenAssets(comfyPage)
+    const { gallery } = await openGallery(comfyPage)
 
-    await assetCard.hover()
-    await comfyPage.page.getByLabel('Zoom in').first().click()
-    await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
-
-    // Click close button
-    await comfyPage.page.getByLabel('Close').first().click()
+    await gallery.getByLabel('Close').click()
     await expect(comfyPage.page.getByRole('dialog')).not.toBeVisible()
   })
 })
