@@ -562,7 +562,7 @@ export const useDialogService = () => {
       dialogComponentProps: {
         closable: false,
         pt: {
-          root: { class: 'h-[420px] w-[680px]' }
+          root: { class: 'w-[680px] max-h-[85vh]' }
         }
       }
     })
