@@ -7,7 +7,7 @@
       aria-modal="true"
       :aria-label="$t('g.gallery')"
       tabindex="-1"
-      class="fixed inset-0 z-9999 flex items-center justify-center bg-black/90"
+      class="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 outline-none"
       data-mask
       @mousedown="onMaskMouseDown"
       @mouseup="onMaskMouseUp"
