@@ -64,6 +64,7 @@ jobs:
           mkdir -p temp/perf-meta
           echo "${{ github.event.number }}" > temp/perf-meta/number.txt
           echo "${{ github.event.pull_request.base.ref }}" > temp/perf-meta/base.txt
+          echo "${{ github.event.pull_request.head.sha }}" > temp/perf-meta/head-sha.txt
 
       - name: Upload PR metadata
         if: github.event_name == 'pull_request'
