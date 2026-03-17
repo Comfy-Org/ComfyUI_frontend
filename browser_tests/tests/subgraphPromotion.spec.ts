@@ -770,7 +770,7 @@ test.describe(
         await comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
         await comfyPage.nextFrame()
 
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await exitSubgraphToParent(comfyPage)
 
         const finalCount = await getPromotedWidgetCount(comfyPage, '5')
         expect(finalCount).toBeLessThan(initialCount)
