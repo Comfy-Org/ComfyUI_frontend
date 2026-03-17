@@ -131,18 +131,10 @@ function handleOptOut() {
         />
 
         <div class="mt-3 flex items-center justify-center gap-2">
-          <Button
-            variant="textonly"
-            size="sm"
-            @click="handleDismiss"
-          >
+          <Button variant="textonly" size="sm" @click="handleDismiss">
             {{ t('nightlySurvey.notNow') }}
           </Button>
-          <Button
-            variant="muted-textonly"
-            size="sm"
-            @click="handleOptOut"
-          >
+          <Button variant="muted-textonly" size="sm" @click="handleOptOut">
             {{ t('nightlySurvey.dontAskAgain') }}
           </Button>
         </div>
