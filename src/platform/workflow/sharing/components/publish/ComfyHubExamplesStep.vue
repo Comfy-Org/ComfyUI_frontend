@@ -130,7 +130,7 @@ function moveImage(id: string, direction: number) {
 
 function removeImage(id: string) {
   const image = exampleImages.value.find((img) => img.id === id)
-  if (image) {
+  if (image?.file) {
     URL.revokeObjectURL(image.url)
   }
   exampleImages.value = exampleImages.value.filter((img) => img.id !== id)
@@ -166,7 +166,9 @@ function insertImagesAt(index: number, files: FileList) {
 
   if (remaining <= 0) {
     const replacedImages = updated.splice(index, newImages.length, ...newImages)
-    for (const img of replacedImages) URL.revokeObjectURL(img.url)
+    for (const img of replacedImages) {
+      if (img.file) URL.revokeObjectURL(img.url)
+    }
   } else {
     updated.splice(index, 0, ...newImages.slice(0, remaining))
   }

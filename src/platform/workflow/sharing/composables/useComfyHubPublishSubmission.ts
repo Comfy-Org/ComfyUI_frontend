@@ -22,10 +22,8 @@ function getFileContentType(file: File): string {
   return file.type || 'application/octet-stream'
 }
 
-function getExampleFiles(formData: ComfyHubPublishFormData): File[] {
-  return formData.exampleImages
-    .map((image) => image.file)
-    .filter((file): file is File => Boolean(file))
+function hasExampleContent(formData: ComfyHubPublishFormData): boolean {
+  return formData.exampleImages.length > 0
 }
 
 function getUsername(profile: ComfyHubProfile | null): string {
@@ -93,13 +91,13 @@ export function useComfyHubPublishSubmission() {
         ? await uploadFileAndGetToken(formData.comparisonAfterFile)
         : undefined
 
-    const selectedSampleFiles = getExampleFiles(formData)
-    const sampleImageTokensOrUrls =
-      selectedSampleFiles.length > 0
-        ? await Promise.all(
-            selectedSampleFiles.map((file) => uploadFileAndGetToken(file))
+    const sampleImageTokensOrUrls = hasExampleContent(formData)
+      ? await Promise.all(
+          formData.exampleImages.map((image) =>
+            image.file ? uploadFileAndGetToken(image.file) : image.url
           )
-        : undefined
+        )
+      : undefined
 
     await comfyHubService.publishWorkflow({
       username,

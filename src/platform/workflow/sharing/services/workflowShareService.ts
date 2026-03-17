@@ -1,12 +1,15 @@
 import type {
+  PublishPrefill,
   SharedWorkflowPayload,
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
+import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { AssetInfo } from '@/schemas/apiSchema'
 import {
+  zHubWorkflowPrefillResponse,
   zPublishRecordResponse,
   zSharedWorkflowResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
@@ -28,6 +31,45 @@ class SharedWorkflowLoadError extends Error {
   }
 }
 
+function mapApiThumbnailType(
+  value: 'image' | 'video' | 'image_comparison' | null | undefined
+): ThumbnailType | undefined {
+  if (!value) return undefined
+  if (value === 'image_comparison') return 'imageComparison'
+  return value
+}
+
+interface PrefillMetadataFields {
+  description?: string | null
+  tags?: string[] | null
+  thumbnail_type?: 'image' | 'video' | 'image_comparison' | null
+  sample_image_urls?: string[] | null
+}
+
+function extractPrefill(fields: PrefillMetadataFields): PublishPrefill | null {
+  const description = fields.description ?? undefined
+  const tags = fields.tags ?? undefined
+  const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
+  const sampleImageUrls = fields.sample_image_urls ?? undefined
+
+  if (
+    !description &&
+    !tags?.length &&
+    !thumbnailType &&
+    !sampleImageUrls?.length
+  ) {
+    return null
+  }
+
+  return { description, tags, thumbnailType, sampleImageUrls }
+}
+
+function decodeHubWorkflowPrefill(payload: unknown): PublishPrefill | null {
+  const result = zHubWorkflowPrefillResponse.safeParse(payload)
+  if (!result.success) return null
+  return extractPrefill(result.data)
+}
+
 function decodePublishRecord(payload: unknown) {
   const result = zPublishRecordResponse.safeParse(payload)
   if (!result.success) return null
@@ -37,7 +79,8 @@ function decodePublishRecord(payload: unknown) {
     shareId: r.share_id ?? undefined,
     listed: r.listed,
     publishedAt: parsePublishedAt(r.publish_time),
-    shareUrl: r.share_id ? normalizeShareUrl(r.share_id) : undefined
+    shareUrl: r.share_id ? normalizeShareUrl(r.share_id) : undefined,
+    prefill: null
   }
 }
 
@@ -81,10 +124,27 @@ const UNPUBLISHED = {
   isPublished: false,
   shareId: null,
   shareUrl: null,
-  publishedAt: null
+  publishedAt: null,
+  prefill: null
 } as const satisfies WorkflowPublishStatus
 
 export function useWorkflowShareService() {
+  async function fetchHubWorkflowPrefill(
+    shareId: string
+  ): Promise<PublishPrefill | null> {
+    const response = await api.fetchApi(
+      `/hub/workflows/${encodeURIComponent(shareId)}`
+    )
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch hub workflow details: ${response.status}`
+      )
+    }
+
+    const prefill = decodeHubWorkflowPrefill(await response.json())
+    return prefill
+  }
+
   async function publishWorkflow(
     workflowPath: string,
     shareableAssets: AssetInfo[]
@@ -132,11 +192,21 @@ export function useWorkflowShareService() {
     const record = decodePublishRecord(json)
     if (!record || !record.shareId || !record.publishedAt) return UNPUBLISHED
 
+    let prefill: PublishPrefill | null = record.prefill
+    if (!prefill && record.listed) {
+      try {
+        prefill = await fetchHubWorkflowPrefill(record.shareId)
+      } catch {
+        prefill = null
+      }
+    }
+
     return {
       isPublished: true,
       shareId: record.shareId,
       shareUrl: normalizeShareUrl(record.shareId),
-      publishedAt: record.publishedAt
+      publishedAt: record.publishedAt,
+      prefill
     }
   }
 

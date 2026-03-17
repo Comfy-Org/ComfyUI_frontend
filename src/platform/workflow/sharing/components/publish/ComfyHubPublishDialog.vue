@@ -43,8 +43,14 @@ import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import ComfyHubPublishNav from '@/platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue'
 import ComfyHubPublishWizardContent from '@/platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue'
 import { useComfyHubPublishSubmission } from '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission'
-import { useComfyHubPublishWizard } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
+import {
+  cachePublishPrefill,
+  getCachedPrefill,
+  useComfyHubPublishWizard
+} from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
+import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 
@@ -54,6 +60,8 @@ const { onClose } = defineProps<{
 
 const { fetchProfile } = useComfyHubProfileGate()
 const { submitToComfyHub } = useComfyHubPublishSubmission()
+const shareService = useWorkflowShareService()
+const workflowStore = useWorkflowStore()
 const {
   currentStep,
   formData,
@@ -63,7 +71,8 @@ const {
   goNext,
   goBack,
   openProfileCreationStep,
-  closeProfileCreationStep
+  closeProfileCreationStep,
+  applyPrefill
 } = useComfyHubPublishWizard()
 const isPublishing = ref(false)
 
@@ -88,6 +97,10 @@ async function handlePublish(): Promise<void> {
   isPublishing.value = true
   try {
     await submitToComfyHub(formData.value)
+    const path = workflowStore.activeWorkflow?.path
+    if (path) {
+      cachePublishPrefill(path, formData.value)
+    }
     onClose()
   } finally {
     isPublishing.value = false
@@ -98,14 +111,36 @@ function updateFormData(patch: Partial<ComfyHubPublishFormData>) {
   formData.value = { ...formData.value, ...patch }
 }
 
+async function fetchPublishPrefill() {
+  const path = workflowStore.activeWorkflow?.path
+  if (!path) return
+
+  try {
+    const status = await shareService.getPublishStatus(path)
+    const prefill = status.isPublished
+      ? (status.prefill ?? getCachedPrefill(path))
+      : getCachedPrefill(path)
+    if (prefill) {
+      applyPrefill(prefill)
+    }
+  } catch {
+    const cached = getCachedPrefill(path)
+    if (cached) {
+      applyPrefill(cached)
+    }
+  }
+}
+
 onMounted(() => {
-  // Prefetch profile data in the background so finish-step profile context is ready.
   void fetchProfile()
+  void fetchPublishPrefill()
 })
 
 onBeforeUnmount(() => {
   for (const image of formData.value.exampleImages) {
-    URL.revokeObjectURL(image.url)
+    if (image.file) {
+      URL.revokeObjectURL(image.url)
+    }
   }
 })
 

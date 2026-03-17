@@ -10,7 +10,11 @@ const mockGoNext = vi.hoisted(() => vi.fn())
 const mockGoBack = vi.hoisted(() => vi.fn())
 const mockOpenProfileCreationStep = vi.hoisted(() => vi.fn())
 const mockCloseProfileCreationStep = vi.hoisted(() => vi.fn())
+const mockApplyPrefill = vi.hoisted(() => vi.fn())
+const mockCachePublishPrefill = vi.hoisted(() => vi.fn())
+const mockGetCachedPrefill = vi.hoisted(() => vi.fn())
 const mockSubmitToComfyHub = vi.hoisted(() => vi.fn())
+const mockGetPublishStatus = vi.hoisted(() => vi.fn())
 
 vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
@@ -42,8 +46,11 @@ vi.mock(
       goNext: mockGoNext,
       goBack: mockGoBack,
       openProfileCreationStep: mockOpenProfileCreationStep,
-      closeProfileCreationStep: mockCloseProfileCreationStep
-    })
+      closeProfileCreationStep: mockCloseProfileCreationStep,
+      applyPrefill: mockApplyPrefill
+    }),
+    cachePublishPrefill: mockCachePublishPrefill,
+    getCachedPrefill: mockGetCachedPrefill
   })
 )
 
@@ -56,6 +63,18 @@ vi.mock(
   })
 )
 
+vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
+  useWorkflowShareService: () => ({
+    getPublishStatus: mockGetPublishStatus
+  })
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    activeWorkflow: { path: 'workflows/test.json' }
+  })
+}))
+
 describe('ComfyHubPublishDialog', () => {
   const onClose = vi.fn()
 
@@ -63,6 +82,14 @@ describe('ComfyHubPublishDialog', () => {
     vi.clearAllMocks()
     mockFetchProfile.mockResolvedValue(null)
     mockSubmitToComfyHub.mockResolvedValue(undefined)
+    mockGetCachedPrefill.mockReturnValue(null)
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: false,
+      shareId: null,
+      shareUrl: null,
+      publishedAt: null,
+      prefill: null
+    })
   })
 
   function createWrapper() {
@@ -158,5 +185,62 @@ describe('ComfyHubPublishDialog', () => {
 
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
     expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('applies prefill when workflow is already published with metadata', async () => {
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: true,
+      shareId: 'abc123',
+      shareUrl: 'http://localhost/?share=abc123',
+      publishedAt: new Date(),
+      prefill: {
+        description: 'Existing description',
+        tags: ['art', 'upscale'],
+        thumbnailType: 'video',
+        sampleImageUrls: ['https://example.com/img1.png']
+      }
+    })
+
+    createWrapper()
+    await flushPromises()
+
+    expect(mockApplyPrefill).toHaveBeenCalledWith({
+      description: 'Existing description',
+      tags: ['art', 'upscale'],
+      thumbnailType: 'video',
+      sampleImageUrls: ['https://example.com/img1.png']
+    })
+  })
+
+  it('does not apply prefill when workflow is not published', async () => {
+    createWrapper()
+    await flushPromises()
+
+    expect(mockApplyPrefill).not.toHaveBeenCalled()
+  })
+
+  it('does not apply prefill when status has no prefill data', async () => {
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: true,
+      shareId: 'abc123',
+      shareUrl: 'http://localhost/?share=abc123',
+      publishedAt: new Date(),
+      prefill: null
+    })
+
+    createWrapper()
+    await flushPromises()
+
+    expect(mockApplyPrefill).not.toHaveBeenCalled()
+  })
+
+  it('silently ignores prefill fetch errors', async () => {
+    mockGetPublishStatus.mockRejectedValue(new Error('Network error'))
+
+    createWrapper()
+    await flushPromises()
+
+    expect(mockApplyPrefill).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
   })
 })
