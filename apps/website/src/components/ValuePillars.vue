@@ -1,34 +1,37 @@
 <script setup lang="ts">
-const pillars = [
+import { computed } from 'vue'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const pillars = computed(() => [
   {
     icon: '⚡',
-    title: 'Build',
-    description:
-      'Design complex AI workflows visually with our node-based editor'
+    title: t('pillars.build', locale),
+    description: t('pillars.build.desc', locale)
   },
   {
     icon: '🎨',
-    title: 'Customize',
-    description: 'Fine-tune every parameter across any model architecture'
+    title: t('pillars.customize', locale),
+    description: t('pillars.customize.desc', locale)
   },
   {
     icon: '🔧',
-    title: 'Refine',
-    description:
-      'Iterate on outputs with precision controls and real-time preview'
+    title: t('pillars.refine', locale),
+    description: t('pillars.refine.desc', locale)
   },
   {
     icon: '⚙️',
-    title: 'Automate',
-    description:
-      'Scale your workflows with batch processing and API integration'
+    title: t('pillars.automate', locale),
+    description: t('pillars.automate.desc', locale)
   },
   {
     icon: '🚀',
-    title: 'Run',
-    description: 'Deploy locally or in the cloud with identical results'
+    title: t('pillars.run', locale),
+    description: t('pillars.run.desc', locale)
   }
-]
+])
 </script>
 
 <template>
@@ -36,10 +39,10 @@ const pillars = [
     <div class="mx-auto max-w-7xl">
       <header class="mb-16 text-center">
         <h2 class="text-3xl font-bold text-white md:text-4xl">
-          The Building Blocks of AI Production
+          {{ t('pillars.heading', locale) }}
         </h2>
         <p class="mt-4 text-smoke-700">
-          Five powerful capabilities that give you complete control
+          {{ t('pillars.subheading', locale) }}
         </p>
       </header>
 

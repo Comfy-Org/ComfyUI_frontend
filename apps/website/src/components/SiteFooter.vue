@@ -1,39 +1,52 @@
 <script setup lang="ts">
-const columns = [
+import { computed } from 'vue'
+
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const columns = computed(() => [
   {
-    title: 'Product',
+    title: t('footer.product', locale),
     links: [
-      { label: 'Comfy Desktop', href: '/download' },
-      { label: 'Comfy Cloud', href: 'https://app.comfy.org' },
-      { label: 'ComfyHub', href: 'https://hub.comfy.org' },
-      { label: 'Pricing', href: '/pricing' }
+      { label: t('footer.comfyDesktop', locale), href: '/download' },
+      { label: t('footer.comfyCloud', locale), href: 'https://app.comfy.org' },
+      { label: t('footer.comfyHub', locale), href: 'https://hub.comfy.org' },
+      { label: t('footer.pricing', locale), href: '/pricing' }
     ]
   },
   {
-    title: 'Resources',
+    title: t('footer.resources', locale),
     links: [
-      { label: 'Documentation', href: 'https://docs.comfy.org' },
-      { label: 'Blog', href: 'https://blog.comfy.org' },
-      { label: 'Gallery', href: '/gallery' },
-      { label: 'GitHub', href: 'https://github.com/comfyanonymous/ComfyUI' }
+      {
+        label: t('footer.documentation', locale),
+        href: 'https://docs.comfy.org'
+      },
+      { label: t('footer.blog', locale), href: 'https://blog.comfy.org' },
+      { label: t('footer.gallery', locale), href: '/gallery' },
+      {
+        label: t('footer.github', locale),
+        href: 'https://github.com/comfyanonymous/ComfyUI'
+      }
     ]
   },
   {
-    title: 'Company',
+    title: t('footer.company', locale),
     links: [
-      { label: 'About', href: '/about' },
-      { label: 'Careers', href: '/careers' },
-      { label: 'Enterprise', href: '/enterprise' }
+      { label: t('footer.about', locale), href: '/about' },
+      { label: t('footer.careers', locale), href: '/careers' },
+      { label: t('footer.enterprise', locale), href: '/enterprise' }
     ]
   },
   {
-    title: 'Legal',
+    title: t('footer.legal', locale),
     links: [
-      { label: 'Terms of Service', href: '/terms-of-service' },
-      { label: 'Privacy Policy', href: '/privacy-policy' }
+      { label: t('footer.terms', locale), href: '/terms-of-service' },
+      { label: t('footer.privacy', locale), href: '/privacy-policy' }
     ]
   }
-]
+])
 
 const socials = [
   {
@@ -80,7 +93,7 @@ const socials = [
           Comfy
         </a>
         <p class="mt-4 text-sm text-smoke-700">
-          Professional control of visual AI.
+          {{ t('footer.tagline', locale) }}
         </p>
       </div>
 
@@ -113,7 +126,8 @@ const socials = [
         class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 p-6 sm:flex-row"
       >
         <p class="text-sm text-smoke-700">
-          &copy; {{ new Date().getFullYear() }} Comfy Org. All rights reserved.
+          &copy; {{ new Date().getFullYear() }}
+          {{ t('footer.copyright', locale) }}
         </p>
 
         <!-- Social icons -->
