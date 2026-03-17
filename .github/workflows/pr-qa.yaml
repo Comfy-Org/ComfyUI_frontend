@@ -520,7 +520,7 @@ jobs:
               --artifacts-dir qa-artifacts \
               --output-dir video-reviews \
               --video-file "$vid" \
-              --model gpt-5.4 || true
+              --model gpt-4o || true
             echo "::endgroup::"
           done
 
