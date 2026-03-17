@@ -104,7 +104,8 @@ describe('useLoad3dViewer', () => {
       }),
       forceRender: vi.fn(),
       remove: vi.fn(),
-      setTargetSize: vi.fn()
+      setTargetSize: vi.fn(),
+      loadModel: vi.fn().mockResolvedValue(undefined)
     }
 
     mockSourceLoad3d = {
@@ -652,6 +653,59 @@ describe('useLoad3dViewer', () => {
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       expect(viewer.lightIntensity.value).toBe(1) // Default value
+    })
+  })
+
+  describe('standalone mode persistence', () => {
+    it('should save and restore configuration in standalone mode', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      const model1 = 'model1.glb'
+      const model2 = 'model2.glb'
+
+      // Initialize with model1
+      await viewer.initializeStandaloneViewer(containerRef, model1)
+      expect(viewer.isStandaloneMode.value).toBe(true)
+
+      // Change some state for model1
+      viewer.backgroundColor.value = '#ff0000'
+      viewer.showGrid.value = false
+      await nextTick()
+
+      // Load model2 - should save model1 config and restore model2 defaults
+      await viewer.initializeStandaloneViewer(containerRef, model2)
+      expect(viewer.backgroundColor.value).toBe('#282828') // Default
+      expect(viewer.showGrid.value).toBe(true) // Default
+
+      // Change some state for model2
+      viewer.backgroundColor.value = '#00ff00'
+      await nextTick()
+
+      // Load model1 again - should restore model1 config
+      await viewer.initializeStandaloneViewer(containerRef, model1)
+      expect(viewer.backgroundColor.value).toBe('#ff0000')
+      expect(viewer.showGrid.value).toBe(false)
+
+      // Load model2 again - should restore model2 config
+      await viewer.initializeStandaloneViewer(containerRef, model2)
+      expect(viewer.backgroundColor.value).toBe('#00ff00')
+    })
+
+    it('should save configuration during cleanup in standalone mode', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      const modelUrl = 'model_cleanup.glb'
+
+      await viewer.initializeStandaloneViewer(containerRef, modelUrl)
+      viewer.backgroundColor.value = '#0000ff'
+      await nextTick()
+
+      viewer.cleanup()
+
+      // Re-initialize and check if config was restored from cache
+      const newViewer = useLoad3dViewer()
+      await newViewer.initializeStandaloneViewer(containerRef, modelUrl)
+      expect(newViewer.backgroundColor.value).toBe('#0000ff')
     })
   })
 })

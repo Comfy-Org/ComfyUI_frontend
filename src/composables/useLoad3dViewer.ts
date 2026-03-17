@@ -33,6 +33,21 @@ interface Load3dViewerState {
   materialMode: MaterialMode
 }
 
+const DEFAULT_STANDALONE_CONFIG: Load3dViewerState = {
+  backgroundColor: '#282828',
+  showGrid: true,
+  cameraType: 'perspective',
+  fov: 75,
+  lightIntensity: 1,
+  cameraState: null,
+  backgroundImage: '',
+  backgroundRenderMode: 'tiled',
+  upDirection: 'original',
+  materialMode: 'original'
+}
+
+const standaloneConfigCache = new Map<string, Load3dViewerState>()
+
 /**
  * @param node Optional node - if provided, viewer works in node mode with apply/restore
  *             If not provided, viewer works in standalone mode for asset preview
@@ -64,6 +79,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
   let load3d: Load3d | null = null
   let sourceLoad3d: Load3d | null = null
+  let currentModelUrl: string | null = null
 
   const initialState = ref<Load3dViewerState>({
     backgroundColor: '#282828',
@@ -381,15 +397,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       })
 
       await load3d.loadModel(modelUrl)
-
-      backgroundColor.value = '#282828'
-      showGrid.value = true
-      cameraType.value = 'perspective'
-      fov.value = 75
-      lightIntensity.value = 1
-      backgroundRenderMode.value = 'tiled'
-      upDirection.value = 'original'
-      materialMode.value = 'original'
+      currentModelUrl = modelUrl
+      restoreStandaloneConfig(modelUrl)
       isSplatModel.value = load3d.isSplatModel()
       isPlyModel.value = load3d.isPlyModel()
 
@@ -410,12 +419,47 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     if (!load3d) return
 
     try {
+      saveStandaloneConfig()
       await load3d.loadModel(modelUrl)
+      currentModelUrl = modelUrl
+      restoreStandaloneConfig(modelUrl)
       isSplatModel.value = load3d.isSplatModel()
       isPlyModel.value = load3d.isPlyModel()
     } catch (error) {
       console.error('Error loading model in standalone viewer:', error)
       useToastStore().addAlert('Failed to load 3D model')
+    }
+  }
+
+  function saveStandaloneConfig() {
+    if (!currentModelUrl) return
+    standaloneConfigCache.set(currentModelUrl, {
+      backgroundColor: backgroundColor.value,
+      showGrid: showGrid.value,
+      cameraType: cameraType.value,
+      fov: fov.value,
+      lightIntensity: lightIntensity.value,
+      cameraState: load3d?.getCameraState() ?? null,
+      backgroundImage: backgroundImage.value,
+      backgroundRenderMode: backgroundRenderMode.value,
+      upDirection: upDirection.value,
+      materialMode: materialMode.value
+    })
+  }
+
+  function restoreStandaloneConfig(modelUrl: string) {
+    const cached = standaloneConfigCache.get(modelUrl)
+    const config = cached ?? DEFAULT_STANDALONE_CONFIG
+    backgroundColor.value = config.backgroundColor
+    showGrid.value = config.showGrid
+    cameraType.value = config.cameraType
+    fov.value = config.fov
+    lightIntensity.value = config.lightIntensity
+    backgroundRenderMode.value = config.backgroundRenderMode
+    upDirection.value = config.upDirection
+    materialMode.value = config.materialMode
+    if (cached?.cameraState && load3d) {
+      load3d.setCameraState(cached.cameraState)
     }
   }
 
@@ -609,9 +653,13 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   }
 
   const cleanup = () => {
+    if (isStandaloneMode.value) {
+      saveStandaloneConfig()
+    }
     load3d?.remove()
     load3d = null
     sourceLoad3d = null
+    currentModelUrl = null
   }
 
   return {
