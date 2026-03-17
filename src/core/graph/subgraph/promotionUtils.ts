@@ -10,7 +10,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
-} from '@/composables/node/useNodeCanvasImagePreview'
+} from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePromotionStore } from '@/stores/promotionStore'
