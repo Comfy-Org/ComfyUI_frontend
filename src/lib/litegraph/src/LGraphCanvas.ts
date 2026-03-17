@@ -5962,6 +5962,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // canvas, which may render before drawNode has executed for this frame.
     // In Vue mode, promoted widget inputs lack DOM-registered slot positions
     // (NodeSlots filters them out), so the fallback needs input.pos set here.
+    // TODO: Add a dirty flag (e.g. node._widgetSlotsArranged) to avoid the
+    // per-frame .some() scan once slots have been positioned.
     for (const node of nodes) {
       if (node.flags.collapsed || !node.widgets?.length) continue
       if (!node.inputs?.some((inp) => isWidgetInputSlot(inp) && !inp.pos))

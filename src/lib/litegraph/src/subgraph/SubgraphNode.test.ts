@@ -9,7 +9,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
-import { LGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -195,6 +195,50 @@ describe('SubgraphNode Synchronization', () => {
     })
 
     expect(subgraphNode.outputs[0].label).toBe('newOutput')
+  })
+
+  it('should keep input.widget.name in sync with widgets after rename (onGraphConfigured safety)', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+
+    // Create interior node with a widget
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'STRING')
+    interiorNode.addWidget('text', 'value', '', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    // Verify promoted widget exists and names match
+    const promotedInput = subgraphNode.inputs[0]
+    expect(promotedInput.widget).toBeDefined()
+    const originalWidgetName = promotedInput.widget!.name
+    const matchingWidget = subgraphNode.widgets?.find(
+      (w) => w.name === originalWidgetName
+    )
+    expect(matchingWidget).toBeDefined()
+
+    // Rename the subgraph input label
+    subgraph.inputs[0].label = 'my_custom_prompt'
+    subgraph.events.dispatch('renaming-input', {
+      input: subgraph.inputs[0],
+      index: 0,
+      oldName: 'text',
+      newName: 'my_custom_prompt'
+    })
+
+    // After rename, input.widget.name must still match a widget in
+    // node.widgets. If it doesn't, onGraphConfigured (widgetInputs.ts)
+    // would remove the input — a destructive silent failure.
+    const renamedWidgetName = promotedInput.widget!.name
+    const stillMatchingWidget = subgraphNode.widgets?.find(
+      (w) => w.name === renamedWidgetName
+    )
+    expect(stillMatchingWidget).toBeDefined()
   })
 })
 

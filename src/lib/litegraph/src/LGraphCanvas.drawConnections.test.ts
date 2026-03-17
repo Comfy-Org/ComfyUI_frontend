@@ -9,6 +9,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
@@ -25,27 +26,15 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   }
 }))
 
-/** Creates a stub CanvasRenderingContext2D with all required methods mocked. */
 function createMockCtx(): CanvasRenderingContext2D {
-  return {
-    save: vi.fn(),
-    restore: vi.fn(),
+  return createMockCanvas2DContext({
     translate: vi.fn(),
     scale: vi.fn(),
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
     fillText: vi.fn(),
     measureText: vi.fn().mockReturnValue({ width: 50 }),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
     closePath: vi.fn(),
-    arc: vi.fn(),
     rect: vi.fn(),
     clip: vi.fn(),
-    clearRect: vi.fn(),
     setTransform: vi.fn(),
     roundRect: vi.fn(),
     getTransform: vi
@@ -57,10 +46,6 @@ function createMockCtx(): CanvasRenderingContext2D {
     bezierCurveTo: vi.fn(),
     quadraticCurveTo: vi.fn(),
     isPointInStroke: vi.fn().mockReturnValue(false),
-    font: '',
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
     globalAlpha: 1,
     textAlign: 'left' as CanvasTextAlign,
     textBaseline: 'alphabetic' as CanvasTextBaseline,
@@ -69,7 +54,7 @@ function createMockCtx(): CanvasRenderingContext2D {
     shadowOffsetX: 0,
     shadowOffsetY: 0,
     imageSmoothingEnabled: true
-  } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
+  })
 }
 
 /**

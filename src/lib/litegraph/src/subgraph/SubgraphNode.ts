@@ -780,6 +780,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!input) throw new Error('Subgraph input not found')
 
         input.label = newName
+        // input.widget is the IWidgetLocator — a lightweight proxy whose
+        // .name must stay in sync with the PromotedWidgetView.name that
+        // the widgets getter rebuilds. onGraphConfigured (widgetInputs.ts)
+        // uses this name to match inputs to widgets; a mismatch would
+        // silently remove the input.
         if (input.widget) input.widget.name = newName
         if (input._widget) input._widget.label = newName
         this._invalidatePromotedViewsCache()
@@ -1193,7 +1198,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       })
     }
 
-    // Create/retrieve the view from cache
+    // The user-facing display name: label if renamed, otherwise the
+    // interior widget's original name.
+    const displayWidgetName = input.label ?? subgraphInput.name
+
+    // Create/retrieve the view from cache.
+    // The cache key uses `input.name` (the slot's internal name) rather
+    // than `subgraphInput.name` because nested subgraphs may remap
+    // the internal name independently of the interior node.
     const view = this._promotedViewManager.getOrCreate(
       nodeId,
       widgetName,
@@ -1202,7 +1214,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           this,
           nodeId,
           widgetName,
-          input.label ?? subgraphInput.name,
+          displayWidgetName,
           sourceNodeId
         ),
       this._makePromotionViewKey(
@@ -1217,9 +1229,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // NOTE: This code creates linked chains of prototypes for passing across
     // multiple levels of subgraphs. As part of this, it intentionally avoids
     // creating new objects. Have care when making changes.
-    // Use the display name (label ?? internal name) so that slot.widget.name
-    // stays in sync with PromotedWidgetView.name after label renames.
-    const displayWidgetName = input.label ?? subgraphInput.name
     input.widget ??= { name: displayWidgetName }
     input.widget.name = displayWidgetName
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)

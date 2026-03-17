@@ -1,46 +1,13 @@
-import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
-
-/**
- * Returns the widget-input slot Y position and the node title height
- * for the promoted "text" input on the SubgraphNode.
- *
- * The slot Y should be at the widget row, not the header. A value near
- * zero or negative indicates the slot is positioned at the header (the bug).
- */
-async function getTextSlotPosition(page: Page, nodeId: string) {
-  return page.evaluate((id) => {
-    const node = window.app!.canvas.graph!.getNodeById(id)
-    if (!node) return null
-
-    const titleHeight = window.LiteGraph!['NODE_TITLE_HEIGHT'] as number
-    const slotHeight = window.LiteGraph!['NODE_SLOT_HEIGHT'] as number
-
-    for (const input of node.inputs) {
-      if (!input.widget || input.type !== 'STRING') continue
-      return {
-        hasPos: !!input.pos,
-        posY: input.pos?.[1] ?? null,
-        widgetName: input.widget.name,
-        titleHeight,
-        slotHeight
-      }
-    }
-    return null
-  }, nodeId)
-}
+import { getTextSlotPosition } from '../helpers/subgraphTestUtils'
 
 test.describe(
   'Subgraph promoted widget-input slot position',
   { tag: '@subgraph' },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    })
-
     test('Promoted text widget slot is positioned at widget row, not header', async ({
       comfyPage
     }) => {

@@ -4221,6 +4221,8 @@ export class LGraphNode
 
       // Prefer the slot's direct _widget binding (1:1 for promoted inputs).
       // Fall back to name-map lookup for regular nodes without _widget set.
+      // Note: the name-map is ambiguous if two promoted inputs share a label;
+      // _widget avoids this since it is a direct reference.
       const widget = slot._widget ?? widgetByName.get(slot.widget.name)
       if (!widget) continue
 
