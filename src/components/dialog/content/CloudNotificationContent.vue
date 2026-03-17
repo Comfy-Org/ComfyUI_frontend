@@ -112,10 +112,10 @@ function onExplore() {
 
   const url = new URL('https://www.comfy.org/cloud')
   url.searchParams.set('utm_source', 'desktop')
-  url.searchParams.set('utm_medium', 'notification')
-  url.searchParams.set('utm_campaign', 'macos_first_launch')
-  url.searchParams.set('utm_id', 'desktop_cloud_notification')
-  url.searchParams.set('utm_source_platform', 'electron')
+  url.searchParams.set('utm_medium', 'onload-modal')
+  url.searchParams.set('utm_campaign', 'local-to-cloud-conversion')
+  url.searchParams.set('utm_id', 'desktop-onload-modal')
+  url.searchParams.set('utm_source_platform', 'mac-desktop')
 
   window.open(url.toString(), '_blank')
   useDialogStore().closeDialog()
