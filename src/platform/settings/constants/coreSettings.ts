@@ -577,15 +577,15 @@ export const CORE_SETTINGS: SettingParams[] = [
       value === 'Integrated' ? 'Default' : value
   },
   {
-    id: 'Comfy.Appearance.ReduceAnimations',
+    id: 'Comfy.Appearance.DisableAnimations',
     category: ['Appearance', 'General'],
     name: 'Disable animations',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     tooltip:
-      'Turns off all UI animations. Speeds up inference when the display GPU is also used for generation.',
+      'Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation.',
     onChange: (value: unknown) => {
-      document.body.classList.toggle('reduce-animations', !!value)
+      document.body.classList.toggle('disable-animations', !!value)
     },
     versionAdded: '1.43.0'
   },

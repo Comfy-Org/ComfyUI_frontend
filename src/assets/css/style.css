@@ -1,8 +1,10 @@
 @import '@comfyorg/design-system/css/style.css';
 
-.reduce-animations *,
-.reduce-animations *::before,
-.reduce-animations *::after {
+/* Use 0.001ms instead of 0s so transitionend/animationend events still fire
+   and JS listeners aren't broken. */
+.disable-animations *,
+.disable-animations *::before,
+.disable-animations *::after {
   animation-duration: 0.001ms !important;
   transition-duration: 0.001ms !important;
 }
