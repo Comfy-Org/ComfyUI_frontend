@@ -29,7 +29,7 @@ const lazyUpdatePasswordContent = () =>
 const lazyComfyOrgHeader = () =>
   import('@/components/dialog/header/ComfyOrgHeader.vue')
 const lazyCloudNotificationContent = () =>
-  import('@/components/dialog/content/CloudNotificationContent.vue')
+  import('@/platform/cloud/notification/components/CloudNotificationContent.vue')
 
 export type ConfirmationDialogType =
   | 'default'
