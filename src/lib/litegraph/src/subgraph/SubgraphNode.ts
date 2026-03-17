@@ -1629,10 +1629,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return serialized
   }
   override clone() {
-    // Note: _serializeItems bypasses clone() for SubgraphNodes to avoid
-    // promotionStore identity mismatch (#9976). This clone path is still
-    // used by alt+drag and other operations.
-    return super.clone()
+    const clone = super.clone()
+
+    //TODO: Consider deep cloning subgraphs here.
+    //It's the safest place to prevent creation of linked subgraphs
+    //But the frequency of clone().serialize() calls is likely to result in
+    //pollution of rootGraph.subgraphs
+
+    return clone
   }
   getSlotShape(slot: SubgraphInput, extraInput?: INodeInputSlot) {
     const shapes = slot.linkIds.map(
