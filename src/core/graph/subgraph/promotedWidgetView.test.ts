@@ -263,6 +263,41 @@ describe(createPromotedWidgetView, () => {
     expect(view.linkedWidgets?.[0].name).toBe('control_after_generate')
   })
 
+  test('linkedWidgets is suppressed when input has an external link', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    const seedWidget = innerNode.addWidget('number', 'seed', 1, () => {})
+    const controlWidget = innerNode.addWidget(
+      'combo',
+      'control_after_generate',
+      'randomize',
+      () => {},
+      {
+        values: ['fixed', 'increment', 'decrement', 'randomize']
+      }
+    )
+    seedWidget.linkedWidgets = [controlWidget]
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'seed'
+    )
+
+    // Add an input slot and bind the view to it
+    const input = subgraphNode.addInput('seed', 'INT')
+    input._widget = view
+
+    // No external link — linkedWidgets should delegate normally
+    expect(view.linkedWidgets?.[0].name).toBe('control_after_generate')
+
+    // Simulate an external link connected to this input
+    input.link = 42
+
+    // With an active link, linkedWidgets should be suppressed
+    expect(view.linkedWidgets).toBeUndefined()
+  })
+
   test('value is store-backed via widgetValueStore', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
