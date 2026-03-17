@@ -113,6 +113,9 @@ const isHighlightEnabled = computed(() => {
   const isEnabled = settingStore.get(
     'Comfy.TextareaWidget.HighlightClipComments'
   )
+  if (isReadOnly.value) {
+    return false
+  }
   return isEnabled && nodeType.includes('CLIPTextEncode')
 })
 
