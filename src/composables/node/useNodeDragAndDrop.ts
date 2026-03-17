@@ -11,6 +11,7 @@ interface DragAndDropOptions<T> {
 
 /**
  * Adds drag and drop file handling to a node
+ * Will also resolve 'text/uri-list' to a file before passing
  */
 export const useNodeDragAndDrop = <T>(
   node: LGraphNode,
@@ -39,7 +40,7 @@ export const useNodeDragAndDrop = <T>(
     if (e?.dataTransfer?.files?.length)
       return hasValidFiles(e.dataTransfer.files)
 
-    return e?.dataTransfer?.getData('text/uri-list')
+    return !!e?.dataTransfer?.getData('text/uri-list')
   }
 
   node.onDragOver = isDraggingFiles
@@ -53,19 +54,23 @@ export const useNodeDragAndDrop = <T>(
       return true
     }
 
-    const uri = e?.dataTransfer?.getData('text/uri-list')
-    if (!uri) return false
+    const uri = URL.parse(e?.dataTransfer?.getData('text/uri-list') ?? '')
+    if (!uri || uri.origin !== location.origin) return false
 
-    const resp = await fetch(uri)
-    const fileName = URL.parse(uri)?.searchParams?.get('filename')
-    if (!fileName) return false
+    try {
+      const resp = await fetch(uri)
+      const fileName = uri?.searchParams?.get('filename')
+      if (!fileName || !resp.ok) return false
 
-    const blob = await resp.blob()
-    const file = new File([blob], fileName, { type: blob.type })
-    const uriFiles = filterFiles([file])
-    if (!uriFiles.length) return false
+      const blob = await resp.blob()
+      const file = new File([blob], fileName, { type: blob.type })
+      const uriFiles = filterFiles([file])
+      if (!uriFiles.length) return false
 
-    await onDrop([file])
+      await onDrop(uriFiles)
+    } catch {
+      return false
+    }
     return true
   }
 }

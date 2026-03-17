@@ -278,7 +278,7 @@ export class TaskItemImpl {
     return parseTaskOutput(this.outputs)
   }
 
-  /** All outputs that support preview (images, videos, audio, 3D) */
+  /** All outputs that support preview (images, videos, audio, 3D, text) */
   get previewableOutputs(): readonly ResultItemImpl[] {
     return ResultItemImpl.filterPreviewable(this.flatOutputs)
   }

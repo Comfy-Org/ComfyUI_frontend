@@ -71,14 +71,16 @@ async function runButtonClick(e: Event) {
   }
 }
 
-function handleDragDrop(e: DragEvent) {
+async function handleDragDrop(e: DragEvent) {
   for (const nodeData of mappedSelections.value) {
     if (!nodeData?.onDragOver?.(e)) continue
 
-    nodeData?.onDragDrop?.(e)
+    const rawResult = nodeData?.onDragDrop?.(e)
+    if (rawResult === false) continue
+
     e.stopPropagation()
     e.preventDefault()
-    return
+    if ((await rawResult) === true) return
   }
 }
 

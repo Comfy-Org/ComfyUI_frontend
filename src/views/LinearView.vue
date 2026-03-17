@@ -96,8 +96,6 @@ function dragDrop(e: DragEvent) {
   const { dataTransfer } = e
   if (!dataTransfer) return
 
-  //XXX: Needs further disucssion
-  //When should we open workflow/use as input?
   linearWorkflowRef.value?.handleDragDrop(e)
 }
 </script>
