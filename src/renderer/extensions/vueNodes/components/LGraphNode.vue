@@ -11,7 +11,7 @@
     :class="
       cn(
         'group/node lg-node absolute isolate text-sm',
-        'flex min-w-(--min-node-width) flex-col',
+        'flex min-w-(--min-node-width) flex-col contain-layout contain-style',
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
@@ -75,7 +75,7 @@
       :class="
         cn(
           'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
-          'min-h-(--node-height) w-(--node-width) min-w-(--min-node-width) contain-layout contain-style',
+          'min-h-(--node-height) w-(--node-width) min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
           {
