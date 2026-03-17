@@ -105,7 +105,12 @@ describe('useLoad3dViewer', () => {
       forceRender: vi.fn(),
       remove: vi.fn(),
       setTargetSize: vi.fn(),
-      loadModel: vi.fn().mockResolvedValue(undefined)
+      loadModel: vi.fn().mockResolvedValue(undefined),
+      setCameraState: vi.fn(),
+      addEventListener: vi.fn(),
+      hasAnimations: vi.fn().mockReturnValue(false),
+      isSplatModel: vi.fn().mockReturnValue(false),
+      isPlyModel: vi.fn().mockReturnValue(false)
     }
 
     mockSourceLoad3d = {
