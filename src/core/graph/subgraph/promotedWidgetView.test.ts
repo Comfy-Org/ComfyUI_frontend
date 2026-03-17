@@ -48,6 +48,11 @@ vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
+})
+
 function setupSubgraph(
   innerNodeCount: number = 0
 ): [SubgraphNode, LGraphNode[], string[]] {
@@ -100,8 +105,6 @@ function callSyncPromotions(node: SubgraphNode) {
 
 describe(createPromotedWidgetView, () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    resetSubgraphFixtureState()
     mockDomWidgetStore.widgetStates.clear()
     vi.clearAllMocks()
   })
@@ -425,10 +428,6 @@ describe(createPromotedWidgetView, () => {
 })
 
 describe('SubgraphNode.widgets getter', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   test('defers promotions while subgraph node id is -1 and flushes on add', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'picker_input', type: '*' }]
@@ -1425,10 +1424,6 @@ describe('SubgraphNode.widgets getter', () => {
 })
 
 describe('widgets getter caching', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   test('reconciles at most once per canvas frame across repeated widgets reads', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
@@ -1611,10 +1606,6 @@ describe('widgets getter caching', () => {
 })
 
 describe('promote/demote cycle', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   test('promoting adds to store and widgets reflects it', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
@@ -1675,10 +1666,6 @@ describe('promote/demote cycle', () => {
 })
 
 describe('disconnected state', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   test('view resolves type when interior widget exists', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('number', 'numWidget', 42, () => {})
@@ -1785,10 +1772,6 @@ function createTwoLevelNestedSubgraph() {
 }
 
 describe('promoted combo rendering', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   test('draw shows value even when interior combo is computedDisabled', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
@@ -2105,7 +2088,6 @@ describe('promoted combo rendering', () => {
 
 describe('DOM widget promotion', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
   })
 
