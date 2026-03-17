@@ -26,16 +26,18 @@
     @update:active-index="handleActiveIndexChange"
   >
     <template #item="{ item }">
-      <ComfyImage
-        v-if="item.isImage"
-        :key="item.url"
-        :src="item.url"
-        :contain="false"
-        :alt="item.filename"
-        class="size-auto max-h-screen max-w-screen object-contain"
-      />
-      <ResultVideo v-else-if="item.isVideo" :result="item" />
-      <ResultAudio v-else-if="item.isAudio" :result="item" />
+      <div class="max-h-[90vh] max-w-[90vw]">
+        <ComfyImage
+          v-if="item.isImage"
+          :key="item.url"
+          :src="item.url"
+          :contain="false"
+          :alt="item.filename"
+          class="size-auto object-contain"
+        />
+        <ResultVideo v-else-if="item.isVideo" :result="item" />
+        <ResultAudio v-else-if="item.isAudio" :result="item" />
+      </div>
     </template>
   </Galleria>
 </template>
