@@ -154,7 +154,6 @@ const resetActiveDetails = () => {
 
 const scheduleDetailsShow = (job: JobListItem, rowElement: HTMLElement) => {
   clearShowTimer()
-  activeRowElement.value = rowElement
   showTimer.value = window.setTimeout(() => {
     activeRowElement.value = rowElement
     activeDetails.value = {
