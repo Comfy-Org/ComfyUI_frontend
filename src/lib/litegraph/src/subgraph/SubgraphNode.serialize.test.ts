@@ -15,8 +15,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
 import type { Subgraph, LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { usePromotionStore } from '@/stores/promotionStore'
 
@@ -102,8 +101,9 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
     ])
   })
 
-  it('clone with different id still gets proxyWidgets from construction, not original', () => {
-    const { rootGraph, subgraph, subgraphNode } = createSubgraphWithWidgetNode()
+  it('second instance gets its own proxyWidgets from construction', () => {
+    const { rootGraph, subgraph, interiorNode, subgraphNode } =
+      createSubgraphWithWidgetNode()
 
     const store = usePromotionStore()
 
@@ -127,16 +127,12 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
     const cloneNode = new SubgraphNode(rootGraph, subgraph, cloneInstanceData)
     rootGraph.add(cloneNode)
 
-    // The clone's serialize() queries promotionStore with id=999
+    // The clone gets proxyWidgets because _resolveInputWidget ran during
+    // construction, registering promotions under its own id (999).
     const cloneSerialized = cloneNode.serialize()
-
-    // The clone DOES get proxyWidgets because _resolveInputWidget ran during
-    // construction. But the critical issue is:
-    // In _serializeItems, the clone is created, serialize() runs, then
-    // the serialized data has cloneNode.id, NOT the original node's id.
-    // Then _serializeItems sets `cloned.id = item.id` (L3908),
-    // but the proxyWidgets were already captured with the wrong id context.
-    expect(cloneSerialized.properties?.proxyWidgets).toBeDefined()
+    expect(cloneSerialized.properties?.proxyWidgets).toEqual([
+      [String(interiorNode.id), 'seed']
+    ])
   })
 
   it('serialize() preserves modified interior widget values', () => {
