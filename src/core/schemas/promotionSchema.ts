@@ -16,14 +16,10 @@ export function parseProxyWidgets(
     )
     if (result.success) return result.data
 
-    if (import.meta.env.DEV) {
-      const error = fromZodError(result.error)
-      console.warn(`Invalid assignment for properties.proxyWidgets:\n${error}`)
-    }
+    const error = fromZodError(result.error)
+    console.warn(`Invalid assignment for properties.proxyWidgets:\n${error}`)
   } catch (e) {
-    if (import.meta.env.DEV) {
-      console.warn('Failed to parse properties.proxyWidgets:', e)
-    }
+    console.warn('Failed to parse properties.proxyWidgets:', e)
   }
   return []
 }
