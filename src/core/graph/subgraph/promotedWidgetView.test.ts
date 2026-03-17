@@ -1734,10 +1734,7 @@ function createThreeLevelNestedSubgraph() {
   })
   subgraphB.add(subgraphNodeC)
   subgraphNodeC._internalConfigureAfterSlots()
-  subgraphB.inputNode.slots[0].connect(
-    subgraphNodeC.inputs[0],
-    subgraphNodeC
-  )
+  subgraphB.inputNode.slots[0].connect(subgraphNodeC.inputs[0], subgraphNodeC)
 
   const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 502 })
 
@@ -1747,10 +1744,7 @@ function createThreeLevelNestedSubgraph() {
   })
   subgraphA.add(subgraphNodeB)
   subgraphNodeB._internalConfigureAfterSlots()
-  subgraphA.inputNode.slots[0].connect(
-    subgraphNodeB.inputs[0],
-    subgraphNodeB
-  )
+  subgraphA.inputNode.slots[0].connect(subgraphNodeB.inputs[0], subgraphNodeB)
 
   const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 503 })
   return { concreteNode, concreteWidget, subgraphNodeA }

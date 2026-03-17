@@ -665,9 +665,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
       await comfyPage.nextFrame()
 
-      await expect(
-        comfyPage.page.locator(SELECTORS.breadcrumb)
-      ).toBeVisible()
+      await expect(comfyPage.page.locator(SELECTORS.breadcrumb)).toBeVisible()
 
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()

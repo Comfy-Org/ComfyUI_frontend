@@ -57,8 +57,7 @@ test.describe(
           window.app!.graph!.serialize()
         )
         await comfyPage.page.evaluate(
-          (workflow: ComfyWorkflowJSON) =>
-            window.app!.loadGraphData(workflow),
+          (workflow: ComfyWorkflowJSON) => window.app!.loadGraphData(workflow),
           serialized1 as ComfyWorkflowJSON
         )
         await comfyPage.nextFrame()
@@ -69,8 +68,7 @@ test.describe(
           window.app!.graph!.serialize()
         )
         await comfyPage.page.evaluate(
-          (workflow: ComfyWorkflowJSON) =>
-            window.app!.loadGraphData(workflow),
+          (workflow: ComfyWorkflowJSON) => window.app!.loadGraphData(workflow),
           serialized2 as ComfyWorkflowJSON
         )
         await comfyPage.nextFrame()
