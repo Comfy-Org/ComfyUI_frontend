@@ -4,7 +4,7 @@ Date: 2026-02-22
 
 ## Status
 
-Proposed
+Accepted (Option A)
 
 ## Context
 
@@ -42,4 +42,8 @@ Primitives act as a synchronization mechanism — no own state, just a projectio
 
 ## Decision
 
-Pending. Option A is the most pragmatic first step. Option B can be revisited after Option A ships and stabilizes.
+Option A. Override `serialize()` on PrimitiveNode to preserve `widgets_values` through copy-paste. This is the lowest-risk fix with no change to connection lifecycle semantics.
+
+Prerequisite: PR [#10010](https://github.com/Comfy-Org/ComfyUI_frontend/pull/10010) replaced `clone().serialize()` with direct serialization in `_serializeItems`, eliminating the code path that dropped `widgets_values` for widget-less clones. Option A provides the PrimitiveNode-specific fallback for any remaining edge cases.
+
+Option B can be revisited after Option A ships and stabilizes.

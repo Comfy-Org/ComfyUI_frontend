@@ -4075,46 +4075,39 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         nodeInfo.type = subgraphIdMap[nodeInfo.type]
     remapClipboardSubgraphNodeIds(parsed, graph.rootGraph)
 
-    // Suppress derived-state side effects (e.g. CustomCombo's updateCombo)
-    // while nodes are being configured during paste.
-    graph.beginConfigure()
-    try {
-      // Subgraphs
-      for (const info of parsed.subgraphs) {
-        const subgraph = graph.createSubgraph(info)
-        results.subgraphs.set(info.id, subgraph)
+    // Subgraphs
+    for (const info of parsed.subgraphs) {
+      const subgraph = graph.createSubgraph(info)
+      results.subgraphs.set(info.id, subgraph)
+    }
+    for (const info of parsed.subgraphs)
+      results.subgraphs.get(info.id)?.configure(info)
+
+    // Groups
+    for (const info of parsed.groups) {
+      info.id = -1
+
+      const group = new LGraphGroup()
+      group.configure(info)
+      graph.add(group)
+      created.push(group)
+    }
+
+    // Nodes
+    for (const info of parsed.nodes) {
+      const node = info.type == null ? null : LiteGraph.createNode(info.type)
+      if (!node) {
+        // failedNodes.push(info)
+        continue
       }
-      for (const info of parsed.subgraphs)
-        results.subgraphs.get(info.id)?.configure(info)
 
-      // Groups
-      for (const info of parsed.groups) {
-        info.id = -1
+      nodes.set(info.id, node)
+      info.id = -1
 
-        const group = new LGraphGroup()
-        group.configure(info)
-        graph.add(group)
-        created.push(group)
-      }
+      graph.add(node)
+      node.configure(info)
 
-      // Nodes
-      for (const info of parsed.nodes) {
-        const node = info.type == null ? null : LiteGraph.createNode(info.type)
-        if (!node) {
-          // failedNodes.push(info)
-          continue
-        }
-
-        nodes.set(info.id, node)
-        info.id = -1
-
-        graph.add(node)
-        node.configure(info)
-
-        created.push(node)
-      }
-    } finally {
-      graph.endConfigure()
+      created.push(node)
     }
 
     // Reroutes

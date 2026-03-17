@@ -34,8 +34,12 @@ export interface WidgetState<
   nodeId: NodeId
 }
 
+export type HydrationCallback = () => void
+
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgetStates = ref(new Map<UUID, Map<WidgetKey, WidgetState>>())
+  const hydratingNodes = new Set<NodeId>()
+  const hydrationCallbacks = new Map<NodeId, HydrationCallback[]>()
 
   function getWidgetStateMap(graphId: UUID): Map<WidgetKey, WidgetState> {
     const widgetStates = graphWidgetStates.value.get(graphId)
@@ -98,6 +102,33 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return widgetStates.get(key) as WidgetState
   }
 
+  function beginHydration(nodeId: NodeId): void {
+    hydratingNodes.add(nodeId)
+  }
+
+  function commitHydration(nodeId: NodeId): void {
+    hydratingNodes.delete(nodeId)
+    const callbacks = hydrationCallbacks.get(nodeId)
+    if (callbacks) {
+      hydrationCallbacks.delete(nodeId)
+      for (const cb of callbacks) cb()
+    }
+  }
+
+  function isHydrating(nodeId: NodeId): boolean {
+    return hydratingNodes.has(nodeId)
+  }
+
+  function onHydrationComplete(nodeId: NodeId, callback: HydrationCallback) {
+    if (!hydratingNodes.has(nodeId)) {
+      callback()
+      return
+    }
+    const existing = hydrationCallbacks.get(nodeId) ?? []
+    existing.push(callback)
+    hydrationCallbacks.set(nodeId, existing)
+  }
+
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
   }
@@ -107,6 +138,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     getOrCreateWidget,
     getNodeWidgets,
+    beginHydration,
+    commitHydration,
+    isHydrating,
+    onHydrationComplete,
     clearGraph
   }
 })

@@ -257,22 +257,6 @@ export class LGraph
   nodes_executedAction: string[] = []
   extra: LGraphExtra = {}
 
-  /**
-   * Level-counted flag indicating that nodes are being configured
-   * (e.g. during paste or undo/redo). Extensions should suppress
-   * derived-state side effects while this is > 0.
-   */
-  private _configuringCount = 0
-  get configuring(): boolean {
-    return this._configuringCount > 0
-  }
-  beginConfigure(): void {
-    this._configuringCount++
-  }
-  endConfigure(): void {
-    this._configuringCount--
-  }
-
   /** @deprecated Deserialising a workflow sets this unused property. */
   version?: number
 

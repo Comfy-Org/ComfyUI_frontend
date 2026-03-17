@@ -188,6 +188,62 @@ describe('useWidgetValueStore', () => {
     })
   })
 
+  describe('hydration transactions', () => {
+    it('beginHydration / isHydrating / commitHydration lifecycle', () => {
+      const store = useWidgetValueStore()
+
+      expect(store.isHydrating('node-1')).toBe(false)
+
+      store.beginHydration('node-1')
+      expect(store.isHydrating('node-1')).toBe(true)
+      expect(store.isHydrating('node-2')).toBe(false)
+
+      store.commitHydration('node-1')
+      expect(store.isHydrating('node-1')).toBe(false)
+    })
+
+    it('commitHydration fires registered callbacks', () => {
+      const store = useWidgetValueStore()
+      const calls: string[] = []
+
+      store.beginHydration('node-1')
+      store.onHydrationComplete('node-1', () => calls.push('a'))
+      store.onHydrationComplete('node-1', () => calls.push('b'))
+
+      expect(calls).toHaveLength(0)
+
+      store.commitHydration('node-1')
+      expect(calls).toEqual(['a', 'b'])
+    })
+
+    it('onHydrationComplete fires immediately when not hydrating', () => {
+      const store = useWidgetValueStore()
+      const calls: string[] = []
+
+      store.onHydrationComplete('node-1', () => calls.push('immediate'))
+      expect(calls).toEqual(['immediate'])
+    })
+
+    it('commitHydration is safe to call when not hydrating', () => {
+      const store = useWidgetValueStore()
+      expect(() => store.commitHydration('node-1')).not.toThrow()
+    })
+
+    it('hydration is node-scoped — independent per node', () => {
+      const store = useWidgetValueStore()
+
+      store.beginHydration('node-1')
+      store.beginHydration('node-2')
+
+      store.commitHydration('node-1')
+      expect(store.isHydrating('node-1')).toBe(false)
+      expect(store.isHydrating('node-2')).toBe(true)
+
+      store.commitHydration('node-2')
+      expect(store.isHydrating('node-2')).toBe(false)
+    })
+  })
+
   describe('graph isolation', () => {
     it('isolates widget states by graph', () => {
       const store = useWidgetValueStore()
