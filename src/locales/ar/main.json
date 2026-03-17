@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "تم إرسال إعادة تعيين كلمة المرور",
   "cloudForgotPassword_sendResetLink": "إرسال رابط إعادة التعيين",
   "cloudForgotPassword_title": "نسيت كلمة المرور",
+  "cloudNotification": {
+    "continueLocally": "المتابعة محليًا",
+    "exploreCloud": "جرّب السحابة مجانًا",
+    "feature1Title": "٤٠٠ رصيد مجاني شهريًا",
+    "feature2Title": "يعمل في أي مكان، فورًا",
+    "feature3Title": "نماذج جاهزة للاستخدام",
+    "feature4Title": "أفضل حزم العقد المخصصة مثبتة مسبقًا",
+    "footer": "ComfyUI يبقى مجانيًا ومفتوح المصدر. السحابة اختيارية.",
+    "message": "من الإعداد إلى الإنشاء في ثوانٍ. النماذج الشائعة، الإضافات، ومعالجات الرسوميات القوية — جاهزة متى احتجت إليها.",
+    "title": "تشغيل ComfyUI على السحابة"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -653,6 +664,7 @@
     "Open in Mask Editor": "افتح في محرر القناع",
     "Outputs": "المخرجات",
     "Paste": "لصق",
+    "Paste Image": "لصق الصورة",
     "Pin": "تثبيت",
     "Properties": "الخصائص",
     "Properties Panel": "لوحة الخصائص",
@@ -736,6 +748,10 @@
       "tooltip": "لقد قمنا بتوحيد المدفوعات عبر Comfy. كل شيء يعمل الآن على رصيد Comfy:\n- عقد الشركاء (كانت تُسمى سابقًا عقد API)\n- سير العمل السحابي\n\nتم تحويل رصيد عقد الشركاء الحالي إلى رصيد."
     },
     "yourCreditBalance": "رصيدك الحالي"
+  },
+  "curveWidget": {
+    "linear": "خطّي",
+    "monotone_cubic": "ناعم"
   },
   "dataTypes": {
     "*": "*",
@@ -1602,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "العقد الأساسية من الإصدار {version}:",
     "outdatedVersion": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI ({version}). قد لا تعمل بعض العقد بشكل صحيح.",
-    "outdatedVersionGeneric": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI. قد لا تعمل بعض العقد بشكل صحيح."
+    "outdatedVersionGeneric": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI. قد لا تعمل بعض العقد بشكل صحيح.",
+    "unknownVersion": "غير معروف"
   },
   "maintenance": {
     "None": "لا شيء",

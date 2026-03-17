@@ -12,7 +12,7 @@
         class="fixed z-50"
         :style="{
           top: `${popoverPosition.top}px`,
-          right: `${popoverPosition.right}px`
+          left: `${popoverPosition.left}px`
         }"
         @mouseenter="onPopoverEnter"
         @mouseleave="onPopoverLeave"
@@ -26,7 +26,7 @@
         class="fixed z-50"
         :style="{
           top: `${popoverPosition.top}px`,
-          right: `${popoverPosition.right}px`
+          left: `${popoverPosition.left}px`
         }"
         @mouseenter="onPreviewEnter"
         @mouseleave="onPreviewLeave"
@@ -191,6 +191,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
+import { getHoverPopoverPosition } from '@/components/queue/job/getHoverPopoverPosition'
 import QueueAssetPreview from '@/components/queue/job/QueueAssetPreview.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
@@ -298,17 +299,13 @@ const onIconLeave = () => scheduleHidePreview()
 const onPreviewEnter = () => scheduleShowPreview()
 const onPreviewLeave = () => scheduleHidePreview()
 
-const popoverPosition = ref<{ top: number; right: number } | null>(null)
+const popoverPosition = ref<{ top: number; left: number } | null>(null)
 
 const updatePopoverPosition = () => {
   const el = rowRef.value
   if (!el) return
   const rect = el.getBoundingClientRect()
-  const gap = 8
-  popoverPosition.value = {
-    top: rect.top,
-    right: window.innerWidth - rect.left + gap
-  }
+  popoverPosition.value = getHoverPopoverPosition(rect, window.innerWidth)
 }
 
 const isAnyPopoverVisible = computed(

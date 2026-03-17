@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: size-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -28,11 +32,12 @@ jobs:
       - name: Collect size data
         run: node scripts/size-collect.js
 
-      - name: Save PR number & base branch
+      - name: Save PR metadata
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           echo ${{ github.event.number }} > ./temp/size/number.txt
           echo ${{ github.base_ref }} > ./temp/size/base.txt
+          echo ${{ github.event.pull_request.head.sha }} > ./temp/size/head-sha.txt
 
       - name: Upload size data
         uses: actions/upload-artifact@v6

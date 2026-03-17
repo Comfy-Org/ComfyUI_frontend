@@ -7,6 +7,7 @@ import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { getCnrIdFromNode } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
 
 /** Scan the live graph for unregistered node types and build a full MissingNodeType list. */

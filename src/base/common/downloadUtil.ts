@@ -2,7 +2,9 @@
  * Utility functions for downloading files
  */
 import { t } from '@/i18n'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { isCloud } from '@/platform/distribution/types'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 // Constants

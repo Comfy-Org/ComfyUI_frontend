@@ -30,6 +30,14 @@ browser_tests/
 └── tests/            - Test files (*.spec.ts)
 ```
 
+## Gotchas
+
+| Symptom                                            | Cause                                       | Fix                                                                                                     |
+| -------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `subtree intercepts pointer events` on DOM widgets | Canvas `z-999` overlay intercepts `click()` | Use Playwright's `locator.dispatchEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 })` |
+| Context menu empty or wrong items                  | Node not selected                           | Select node first: `vueNodes.selectNode()` or `nodeRef.click('title')`                                  |
+| `navigateIntoSubgraph` timeout                     | Node too small in test asset JSON           | Use node size `[400, 200]` minimum                                                                      |
+
 ## After Making Changes
 
 - Run `pnpm typecheck:browser` after modifying TypeScript files in this directory
