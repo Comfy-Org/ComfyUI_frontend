@@ -387,7 +387,6 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
     expect(store.nodeProgressStatesByJob).toHaveProperty('job-0')
   })
 })
-
 describe('useExecutionStore - reconcileInitializingJobs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
