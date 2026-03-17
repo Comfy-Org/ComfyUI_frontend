@@ -596,6 +596,18 @@ describe('useLoad3dViewer', () => {
         'toastMessages.failedToUploadBackgroundImage'
       )
     })
+
+    it('should work in standalone mode without a node', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      await viewer.initializeStandaloneViewer(containerRef, 'model.glb')
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await viewer.handleBackgroundImageUpdate(file)
+
+      expect(Load3dUtils.uploadFile).toHaveBeenCalledWith(file, '3d')
+      expect(viewer.backgroundImage.value).toBe('uploaded-image.jpg')
+    })
   })
 
   describe('cleanup', () => {
@@ -690,7 +702,7 @@ describe('useLoad3dViewer', () => {
       expect(viewer.lightIntensity.value).toBe(2)
       expect(viewer.backgroundImage.value).toBe('test.jpg')
       expect(viewer.hasBackgroundImage.value).toBe(true)
-      expect(viewer.backgroundRenderMode.value).toBe('contain')
+      expect(viewer.backgroundRenderMode.value).toBe('tiled')
       expect(viewer.upDirection.value).toBe('+y')
       expect(viewer.materialMode.value).toBe('wireframe')
 

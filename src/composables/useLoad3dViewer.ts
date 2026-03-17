@@ -584,25 +584,32 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     if (!file) {
       backgroundImage.value = ''
       hasBackgroundImage.value = false
+      if (isStandaloneMode.value) {
+        saveStandaloneConfig()
+      }
       return
     }
 
-    if (!node) {
+    if (!load3d) {
+      useToastStore().addAlert(t('toastMessages.no3dScene'))
       return
     }
+
+    const resourceFolder =
+      (node?.properties?.['Resource Folder'] as string) || ''
+    const subfolder = resourceFolder.trim()
+      ? `3d/${resourceFolder.trim()}`
+      : '3d'
 
     try {
-      const resourceFolder =
-        (node.properties['Resource Folder'] as string) || ''
-      const subfolder = resourceFolder.trim()
-        ? `3d/${resourceFolder.trim()}`
-        : '3d'
-
       const uploadPath = await Load3dUtils.uploadFile(file, subfolder)
 
       if (uploadPath) {
         backgroundImage.value = uploadPath
         hasBackgroundImage.value = true
+        if (isStandaloneMode.value) {
+          saveStandaloneConfig()
+        }
       }
     } catch (error) {
       console.error('Error uploading background image:', error)
@@ -616,17 +623,13 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       return
     }
 
-    if (!node) {
-      return
-    }
+    const resourceFolder =
+      (node?.properties?.['Resource Folder'] as string) || ''
+    const subfolder = resourceFolder.trim()
+      ? `3d/${resourceFolder.trim()}`
+      : '3d'
 
     try {
-      const resourceFolder =
-        (node.properties['Resource Folder'] as string) || ''
-      const subfolder = resourceFolder.trim()
-        ? `3d/${resourceFolder.trim()}`
-        : '3d'
-
       const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
 
       if (!uploadedPath) {
@@ -643,7 +646,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       await load3d.loadModel(modelUrl)
 
-      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      const modelWidget = node?.widgets?.find((w) => w.name === 'model_file')
       if (modelWidget) {
         const options = modelWidget.options as { values?: string[] } | undefined
         if (options?.values && !options.values.includes(uploadedPath)) {
