@@ -653,6 +653,7 @@
     "Open in Mask Editor": "Maske Düzenleyicide Aç",
     "Outputs": "Çıktılar",
     "Paste": "Yapıştır",
+    "Paste Image": "Görseli Yapıştır",
     "Pin": "Sabitle",
     "Properties": "Özellikler",
     "Properties Panel": "Özellikler Paneli",
@@ -1602,7 +1603,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Sürüm {version} çekirdek düğümleri:",
     "outdatedVersion": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş ({version}). Bazı düğümler düzgün çalışmayabilir.",
-    "outdatedVersionGeneric": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş. Bazı düğümler düzgün çalışmayabilir."
+    "outdatedVersionGeneric": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş. Bazı düğümler düzgün çalışmayabilir.",
+    "unknownVersion": "bilinmeyen"
   },
   "maintenance": {
     "None": "Yok",
@@ -3460,11 +3462,7 @@
     "inviteAccepted": "Davet kabul edildi",
     "inviteFailed": "Davet kabul edilemedi",
     "switchFailed": "Çalışma alanı değiştirilemedi. Lütfen tekrar deneyin.",
-    "viewWorkspace": "Çalışma alanını görüntüle",
-    "unsavedChanges": {
-      "message": "Kaydedilmemiş değişiklikleriniz var. Bunları iptal edip çalışma alanlarını değiştirmek istiyor musunuz?",
-      "title": "Kaydedilmemiş Değişiklikler"
-    }
+    "viewWorkspace": "Çalışma alanını görüntüle"
   },
   "workspaceAuth": {
     "errors": {

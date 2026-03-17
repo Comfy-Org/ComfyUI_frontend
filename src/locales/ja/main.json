@@ -653,6 +653,7 @@
     "Open in Mask Editor": "マスクエディタで開く",
     "Outputs": "出力",
     "Paste": "貼り付け",
+    "Paste Image": "画像を貼り付け",
     "Pin": "ピン",
     "Properties": "プロパティ",
     "Properties Panel": "プロパティパネル",
@@ -1602,7 +1603,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "バージョン{version}のコアノード:",
     "outdatedVersion": "このワークフローは新しいバージョンのComfyUI（{version}）で作成されました。一部のノードが正しく動作しない場合があります。",
-    "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。"
+    "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。",
+    "unknownVersion": "不明"
   },
   "maintenance": {
     "None": "なし",
@@ -3460,11 +3462,7 @@
     "inviteAccepted": "招待を承諾しました",
     "inviteFailed": "招待の承諾に失敗しました",
     "switchFailed": "ワークスペースの切り替えに失敗しました。もう一度お試しください。",
-    "viewWorkspace": "ワークスペースを見る",
-    "unsavedChanges": {
-      "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
-      "title": "未保存の変更"
-    }
+    "viewWorkspace": "ワークスペースを見る"
   },
   "workspaceAuth": {
     "errors": {

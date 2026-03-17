@@ -653,6 +653,7 @@
     "Open in Mask Editor": "باز کردن در Mask Editor",
     "Outputs": "خروجی‌ها",
     "Paste": "چسباندن",
+    "Paste Image": "چسباندن تصویر",
     "Pin": "سنجاق کردن",
     "Properties": "ویژگی‌ها",
     "Properties Panel": "پنل ویژگی‌ها",
@@ -1602,7 +1603,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "nodeهای اصلی از نسخه {version}:",
     "outdatedVersion": "این workflow با نسخه جدیدتری از ComfyUI ({version}) ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
-    "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند."
+    "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
+    "unknownVersion": "نامشخص"
   },
   "maintenance": {
     "None": "هیچ‌کدام",
@@ -3472,11 +3474,7 @@
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteFailed": "پذیرش دعوت ناموفق بود",
     "switchFailed": "تغییر ورک‌اسپیس ناموفق بود. لطفاً دوباره تلاش کنید.",
-    "viewWorkspace": "مشاهده فضای کاری",
-    "unsavedChanges": {
-      "message": "شما تغییرات ذخیره‌نشده دارید. آیا می‌خواهید آن‌ها را رها کرده و فضای کاری را تغییر دهید؟",
-      "title": "تغییرات ذخیره‌نشده"
-    }
+    "viewWorkspace": "مشاهده فضای کاری"
   },
   "workspaceAuth": {
     "errors": {

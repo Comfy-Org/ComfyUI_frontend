@@ -653,6 +653,7 @@
     "Open in Mask Editor": "Abrir en Editor de Máscara",
     "Outputs": "Salidas",
     "Paste": "Pegar",
+    "Paste Image": "Pegar imagen",
     "Pin": "Anclar",
     "Properties": "Propiedades",
     "Properties Panel": "Panel de Propiedades",
@@ -1602,7 +1603,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nodos principales de la versión {version}:",
     "outdatedVersion": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI ({version}). Es posible que algunos nodos no funcionen correctamente.",
-    "outdatedVersionGeneric": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI. Es posible que algunos nodos no funcionen correctamente."
+    "outdatedVersionGeneric": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI. Es posible que algunos nodos no funcionen correctamente.",
+    "unknownVersion": "desconocido"
   },
   "maintenance": {
     "None": "Ninguno",
@@ -3460,11 +3462,7 @@
     "inviteAccepted": "Invitación aceptada",
     "inviteFailed": "No se pudo aceptar la invitación",
     "switchFailed": "No se pudo cambiar de espacio de trabajo. Por favor, inténtalo de nuevo.",
-    "viewWorkspace": "Ver espacio de trabajo",
-    "unsavedChanges": {
-      "message": "Tienes cambios no guardados. ¿Quieres descartarlos y cambiar de espacio de trabajo?",
-      "title": "Cambios no guardados"
-    }
+    "viewWorkspace": "Ver espacio de trabajo"
   },
   "workspaceAuth": {
     "errors": {

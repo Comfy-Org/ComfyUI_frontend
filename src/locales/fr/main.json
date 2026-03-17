@@ -653,6 +653,7 @@
     "Open in Mask Editor": "Ouvrir dans l'éditeur de masque",
     "Outputs": "Sorties",
     "Paste": "Coller",
+    "Paste Image": "Coller l’image",
     "Pin": "Épingler",
     "Properties": "Propriétés",
     "Properties Panel": "Panneau des Propriétés",
@@ -1602,7 +1603,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nœuds principaux de la version {version} :",
     "outdatedVersion": "Ce workflow a été créé avec une version plus récente de ComfyUI ({version}). Certains nœuds peuvent ne pas fonctionner correctement.",
-    "outdatedVersionGeneric": "Ce workflow a été créé avec une version plus récente de ComfyUI. Certains nœuds peuvent ne pas fonctionner correctement."
+    "outdatedVersionGeneric": "Ce workflow a été créé avec une version plus récente de ComfyUI. Certains nœuds peuvent ne pas fonctionner correctement.",
+    "unknownVersion": "inconnue"
   },
   "maintenance": {
     "None": "Aucun",
@@ -3460,11 +3462,7 @@
     "inviteAccepted": "Invitation acceptée",
     "inviteFailed": "Échec de l'acceptation de l'invitation",
     "switchFailed": "Échec du changement d’espace de travail. Veuillez réessayer.",
-    "viewWorkspace": "Voir l’espace de travail",
-    "unsavedChanges": {
-      "message": "Vous avez des modifications non enregistrées. Voulez-vous les abandonner et changer d’espace de travail ?",
-      "title": "Modifications non enregistrées"
-    }
+    "viewWorkspace": "Voir l’espace de travail"
   },
   "workspaceAuth": {
     "errors": {
