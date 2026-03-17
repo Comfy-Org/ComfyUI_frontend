@@ -264,4 +264,28 @@ describe('promoteRecommendedWidgets', () => {
     ).toBe(true)
     expect(updatePreviewsMock).not.toHaveBeenCalled()
   })
+
+  it('registers $$canvas-image-preview on configure for GLSLShader in saved workflow', () => {
+    // Simulate loading a saved workflow where proxyWidgets does NOT contain
+    // the $$canvas-image-preview entry (e.g. blueprint authored before the
+    // promotion system, or old workflow save).
+    const subgraph = createTestSubgraph()
+    const glslNode = new LGraphNode('GLSLShader')
+    glslNode.type = 'GLSLShader'
+    subgraph.add(glslNode)
+
+    // Create subgraphNode — constructor calls configure → _internalConfigureAfterSlots
+    // which eagerly registers $$canvas-image-preview for supported node types
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    const store = usePromotionStore()
+    expect(
+      store.isPromoted(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id,
+        String(glslNode.id),
+        CANVAS_IMAGE_PREVIEW_WIDGET
+      )
+    ).toBe(true)
+  })
 })
