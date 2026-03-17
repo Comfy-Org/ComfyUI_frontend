@@ -54,6 +54,7 @@ watch(
 
     showTimeout = setTimeout(() => {
       showTimeout = null
+      if (!isValidTypeformId.value) return
       isVisible.value = true
       markSurveyShown()
       emit('shown')
