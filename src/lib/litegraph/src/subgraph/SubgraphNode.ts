@@ -1133,6 +1133,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
+  /**
+   * Binds a promoted widget view to a subgraph input slot.
+   *
+   * Creates or retrieves a {@link PromotedWidgetView}, registers it in the
+   * promotion store, sets up the prototype chain for multi-level subgraph
+   * nesting, and dispatches the `widget-promoted` event.
+   */
   private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,

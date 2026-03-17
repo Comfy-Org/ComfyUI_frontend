@@ -25,6 +25,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   }
 }))
 
+/** Creates a stub CanvasRenderingContext2D with all required methods mocked. */
 function createMockCtx(): CanvasRenderingContext2D {
   return {
     save: vi.fn(),
