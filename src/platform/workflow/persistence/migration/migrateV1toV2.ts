@@ -154,8 +154,13 @@ function migrateV1TabState(workspaceId: string, clientId?: string): void {
     if (!Array.isArray(paths) || paths.length === 0) return
 
     const indexJson = localStorage.getItem(V1_KEYS.activeIndex)
-    const activeIndex =
-      indexJson !== null ? Math.max(0, JSON.parse(indexJson)) : 0
+    let activeIndex = 0
+    if (indexJson !== null) {
+      const parsed = JSON.parse(indexJson)
+      if (typeof parsed === 'number' && Number.isFinite(parsed)) {
+        activeIndex = Math.min(Math.max(0, parsed), paths.length - 1)
+      }
+    }
 
     writeOpenPaths(clientId, { workspaceId, paths, activeIndex })
   } catch {
