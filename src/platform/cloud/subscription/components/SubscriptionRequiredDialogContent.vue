@@ -10,7 +10,7 @@
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
-      <i class="pi pi-times text-xl" />
+      <i class="pi pi-times text-xl" aria-hidden="true" />
     </Button>
     <div class="flex flex-col items-center gap-3">
       <div
@@ -70,7 +70,7 @@
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
-      <i class="pi pi-times" />
+      <i class="pi pi-times" aria-hidden="true" />
     </Button>
 
     <div
