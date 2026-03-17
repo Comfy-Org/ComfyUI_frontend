@@ -146,11 +146,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get linkedWidgets(): IBaseWidget[] | undefined {
-    // When an external link drives this input, suppress the interior
-    // control_after_generate widget — the external node owns the value.
-    const input = matchPromotedInput(this.subgraphNode.inputs, this)
-    if (input && 'link' in input && input.link != null) return undefined
-
     return this.resolveDeepest()?.widget.linkedWidgets
   }
 
