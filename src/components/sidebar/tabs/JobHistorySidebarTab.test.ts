@@ -121,8 +121,8 @@ const SidebarTabTemplateStub = {
     '<div><slot name="alt-title" /><slot name="header" /><slot name="body" /></div>'
 }
 
-const mountComponent = () =>
-  mount(JobHistorySidebarTab, {
+function mountComponent() {
+  return mount(JobHistorySidebarTab, {
     global: {
       plugins: [i18n],
       stubs: {
@@ -137,6 +137,7 @@ const mountComponent = () =>
       }
     }
   })
+}
 
 afterEach(() => {
   vi.useRealTimers()
