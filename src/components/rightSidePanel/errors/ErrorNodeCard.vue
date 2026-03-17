@@ -84,23 +84,23 @@
             v-tooltip.top="t('g.findOnGithub')"
             variant="secondary"
             size="sm"
-            class="h-8 w-2/3 justify-center gap-2 text-xs"
+            class="h-8 w-2/3 justify-center gap-1 text-xs"
             :aria-label="t('g.findOnGithub')"
             @click="handleCheckGithub(error)"
           >
-            <i class="icon-[lucide--github] size-3.5" />
             {{ t('g.findOnGithub') }}
+            <i class="icon-[lucide--github] size-3.5" />
           </Button>
           <Button
             v-tooltip.top="t('g.copy')"
             variant="secondary"
             size="sm"
-            class="h-8 w-1/3 justify-center gap-2 text-xs"
+            class="h-8 w-1/3 justify-center gap-1 text-xs"
             :aria-label="t('g.copy')"
             @click="handleCopyError(idx)"
           >
-            <i class="icon-[lucide--copy] size-3.5" />
             {{ t('g.copy') }}
+            <i class="icon-[lucide--copy] size-3.5" />
           </Button>
         </div>
       </div>
