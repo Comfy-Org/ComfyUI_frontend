@@ -925,6 +925,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override _internalConfigureAfterSlots() {
     this._rebindInputSubgraphSlots()
 
+    // Prune inputs that don't map to any subgraph slot definition.
+    // This prevents stale/duplicate serialized inputs from persisting (#9977).
+    this.inputs = this.inputs.filter((input) => input._subgraphSlot)
+
     // Ensure proxyWidgets is initialized so it serializes
     this.properties.proxyWidgets ??= []
 
