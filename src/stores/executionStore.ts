@@ -602,6 +602,15 @@ export const useExecutionStore = defineStore('execution', () => {
       else break
     }
     jobIdToSessionWorkflowPath.value = next
+
+    // If this job is still executing, mark the workflow as running.
+    // Handles the race where handleExecutionStart fired before the path
+    // mapping existed (WebSocket arrived before the HTTP response).
+    if (activeJobId.value === jobId && !workflowStatus.value.has(path)) {
+      const nextStatus = new Map(workflowStatus.value)
+      nextStatus.set(path, 'running')
+      workflowStatus.value = nextStatus
+    }
   }
 
   /**

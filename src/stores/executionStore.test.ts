@@ -430,6 +430,114 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
   })
 })
 
+describe('useExecutionStore - workflowStatus', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function fireExecutionStart(jobId: string) {
+    const handler = apiEventHandlers.get('execution_start')
+    if (!handler) throw new Error('execution_start handler not bound')
+    handler(
+      new CustomEvent('execution_start', { detail: { prompt_id: jobId } })
+    )
+  }
+
+  function fireExecutionSuccess(jobId: string) {
+    const handler = apiEventHandlers.get('execution_success')
+    if (!handler) throw new Error('execution_success handler not bound')
+    handler(
+      new CustomEvent('execution_success', { detail: { prompt_id: jobId } })
+    )
+  }
+
+  function fireExecutionError(jobId: string) {
+    const handler = apiEventHandlers.get('execution_error')
+    if (!handler) throw new Error('execution_error handler not bound')
+    handler(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: jobId,
+          node_id: '1',
+          node_type: 'TestNode',
+          exception_message: 'fail',
+          exception_type: 'Error',
+          traceback: []
+        }
+      })
+    )
+  }
+
+  function callStoreJob(jobId: string, workflowPath: string) {
+    store.storeJob({
+      nodes: ['1'],
+      id: jobId,
+      workflow: { path: workflowPath } as Parameters<
+        typeof store.storeJob
+      >[0]['workflow']
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('sets running on execution_start when path mapping exists', () => {
+    callStoreJob('job-1', '/workflows/a.json')
+    fireExecutionStart('job-1')
+
+    expect(store.workflowStatus.get('/workflows/a.json')).toBe('running')
+  })
+
+  it('sets running via ensureSessionWorkflowPath when WS fires before HTTP', () => {
+    // WS fires first — no path mapping yet, setWorkflowStatus no-ops
+    fireExecutionStart('job-1')
+    expect(store.workflowStatus.get('/workflows/a.json')).toBeUndefined()
+
+    // HTTP response arrives — ensureSessionWorkflowPath sees activeJobId match
+    callStoreJob('job-1', '/workflows/a.json')
+    expect(store.workflowStatus.get('/workflows/a.json')).toBe('running')
+  })
+
+  it('does not set running when job already completed before HTTP arrives', () => {
+    // WS: start and success both fire before HTTP response
+    fireExecutionStart('job-1')
+    fireExecutionSuccess('job-1')
+
+    // HTTP arrives late — job is no longer active
+    callStoreJob('job-1', '/workflows/a.json')
+    expect(store.workflowStatus.get('/workflows/a.json')).toBeUndefined()
+  })
+
+  it('sets success on execution_success', () => {
+    callStoreJob('job-1', '/workflows/a.json')
+    fireExecutionStart('job-1')
+    fireExecutionSuccess('job-1')
+
+    expect(store.workflowStatus.get('/workflows/a.json')).toBe('success')
+  })
+
+  it('sets error on execution_error', () => {
+    callStoreJob('job-1', '/workflows/a.json')
+    fireExecutionStart('job-1')
+    fireExecutionError('job-1')
+
+    expect(store.workflowStatus.get('/workflows/a.json')).toBe('error')
+  })
+
+  it('clearWorkflowStatus removes the entry', () => {
+    callStoreJob('job-1', '/workflows/a.json')
+    fireExecutionStart('job-1')
+    fireExecutionSuccess('job-1')
+    expect(store.workflowStatus.get('/workflows/a.json')).toBe('success')
+
+    store.clearWorkflowStatus('/workflows/a.json')
+    expect(store.workflowStatus.has('/workflows/a.json')).toBe(false)
+  })
+})
+
 describe('useExecutionErrorStore - Node Error Lookups', () => {
   let store: ReturnType<typeof useExecutionErrorStore>
 
