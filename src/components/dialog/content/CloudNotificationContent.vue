@@ -75,12 +75,14 @@
         >
           {{ t('cloudNotification.exploreCloud') }}
         </Button>
-        <button
-          class="w-full cursor-pointer border-none bg-transparent py-1.5 text-xs text-text-secondary hover:text-text-primary"
+        <Button
+          variant="textonly"
+          size="sm"
+          class="w-full"
           @click="onDismiss"
         >
           {{ t('cloudNotification.continueLocally') }}
-        </button>
+        </Button>
         <p class="m-0 text-center text-xs text-text-secondary">
           {{ t('cloudNotification.footer') }}
         </p>
