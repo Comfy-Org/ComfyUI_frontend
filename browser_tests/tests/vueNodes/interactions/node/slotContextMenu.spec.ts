@@ -18,8 +18,7 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     const inputSlot = ksamplerNode.locator('.lg-slot--input').first()
     await expect(inputSlot).toBeVisible()
 
-    // Click on the left edge where the SlotConnectionDot is
-    await inputSlot.click({ button: 'right', position: { x: 6, y: 12 } })
+    await inputSlot.locator('.slot-dot').click({ button: 'right' })
 
     // The custom slot context menu should appear (role="menu" is on the
     // teleported menu, not on the PrimeVue node context menu)
@@ -61,12 +60,7 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     const outputSlot = checkpointNode.locator('.lg-slot--output').first()
     await expect(outputSlot).toBeVisible()
 
-    // Click on the right edge where the output SlotConnectionDot is
-    const box = await outputSlot.boundingBox()
-    await outputSlot.click({
-      button: 'right',
-      position: { x: (box?.width ?? 24) - 6, y: 12 }
-    })
+    await outputSlot.locator('.slot-dot').click({ button: 'right' })
 
     const slotMenu = comfyPage.page.locator(
       'div[role="menu"]:not(.p-contextmenu)'
@@ -85,7 +79,7 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     const inputSlot = ksamplerNode.locator('.lg-slot--input').first()
     await expect(inputSlot).toBeVisible()
 
-    await inputSlot.click({ button: 'right', position: { x: 6, y: 12 } })
+    await inputSlot.locator('.slot-dot').click({ button: 'right' })
 
     const slotMenu = comfyPage.page.locator(
       'div[role="menu"]:not(.p-contextmenu)'
@@ -124,7 +118,7 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     await expect(inputSlot).toBeVisible()
 
     // Right-click to open slot context menu
-    await inputSlot.click({ button: 'right', position: { x: 6, y: 12 } })
+    await inputSlot.locator('.slot-dot').click({ button: 'right' })
 
     const slotMenu = comfyPage.page.locator(
       'div[role="menu"]:not(.p-contextmenu)'
@@ -164,23 +158,30 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     comfyPage
   }) => {
     // Use page.evaluate to find a KSampler input with an active link
-    const slotIndex = await comfyPage.page.evaluate(() => {
+    const connectedSlot = await comfyPage.page.evaluate(() => {
       const graph = window.app!.graph!
       const nodes = graph.findNodesByType('KSampler', [])
       const ksamplerNode = nodes.find((n) =>
         n.inputs?.some((i) => i.link != null)
       )
-      if (!ksamplerNode) return -1
-      return ksamplerNode.inputs!.findIndex((i) => i.link != null)
+      if (!ksamplerNode) return null
+      const slotIndex = ksamplerNode.inputs!.findIndex(
+        (i) => i.link != null
+      )
+      return { nodeId: ksamplerNode.id, slotIndex }
     })
-    expect(slotIndex).toBeGreaterThanOrEqual(0)
+    expect(connectedSlot).not.toBeNull()
 
-    // Find the corresponding Vue input slot
-    const ksamplerNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
-    const inputSlot = ksamplerNode.locator('.lg-slot--input').nth(slotIndex)
+    // Find the corresponding Vue input slot by node ID
+    const ksamplerNode = comfyPage.page.locator(
+      `[data-node-id="${connectedSlot!.nodeId}"]`
+    )
+    const inputSlot = ksamplerNode
+      .locator('.lg-slot--input')
+      .nth(connectedSlot!.slotIndex)
     await expect(inputSlot).toBeVisible()
 
-    await inputSlot.click({ button: 'right', position: { x: 6, y: 12 } })
+    await inputSlot.locator('.slot-dot').click({ button: 'right' })
 
     const slotMenu = comfyPage.page.locator(
       'div[role="menu"]:not(.p-contextmenu)'
@@ -197,11 +198,14 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
     await expect(slotMenu).not.toBeVisible()
 
     // Verify the link was removed in the graph
-    const linkRemoved = await comfyPage.page.evaluate((idx) => {
-      const graph = window.app!.graph!
-      const node = graph.findNodesByType('KSampler', [])[0]
-      return node?.inputs?.[idx]?.link == null
-    }, slotIndex)
+    const linkRemoved = await comfyPage.page.evaluate(
+      ({ nodeId, slotIndex }) => {
+        const graph = window.app!.graph!
+        const node = graph.getNodeById(nodeId)
+        return node?.inputs?.[slotIndex]?.link == null
+      },
+      connectedSlot!
+    )
     expect(linkRemoved).toBe(true)
   })
 })
