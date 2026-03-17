@@ -1,4 +1,5 @@
 import { ref, toRaw, watch } from 'vue'
+import QuickLRU from '@alloc/quick-lru'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
@@ -46,7 +47,9 @@ const DEFAULT_STANDALONE_CONFIG: Load3dViewerState = {
   materialMode: 'original'
 }
 
-const standaloneConfigCache = new Map<string, Load3dViewerState>()
+const standaloneConfigCache = new QuickLRU<string, Load3dViewerState>({
+  maxSize: 50
+})
 
 /**
  * @param node Optional node - if provided, viewer works in node mode with apply/restore
@@ -455,6 +458,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     cameraType.value = config.cameraType
     fov.value = config.fov
     lightIntensity.value = config.lightIntensity
+    backgroundImage.value = config.backgroundImage
+    hasBackgroundImage.value = !!config.backgroundImage
     backgroundRenderMode.value = config.backgroundRenderMode
     upDirection.value = config.upDirection
     materialMode.value = config.materialMode

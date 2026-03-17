@@ -668,21 +668,34 @@ describe('useLoad3dViewer', () => {
 
       viewer.backgroundColor.value = '#ff0000'
       viewer.showGrid.value = false
+      viewer.cameraType.value = 'orthographic'
+      viewer.fov.value = 45
+      viewer.lightIntensity.value = 2
+      viewer.backgroundImage.value = 'test.jpg'
+      viewer.backgroundRenderMode.value = 'tiled'
+      viewer.upDirection.value = '+y'
+      viewer.materialMode.value = 'wireframe'
       await nextTick()
 
       await viewer.initializeStandaloneViewer(containerRef, model2)
       expect(viewer.backgroundColor.value).toBe('#282828')
       expect(viewer.showGrid.value).toBe(true)
-
-      viewer.backgroundColor.value = '#00ff00'
-      await nextTick()
+      expect(viewer.backgroundImage.value).toBe('')
 
       await viewer.initializeStandaloneViewer(containerRef, model1)
       expect(viewer.backgroundColor.value).toBe('#ff0000')
       expect(viewer.showGrid.value).toBe(false)
+      expect(viewer.cameraType.value).toBe('orthographic')
+      expect(viewer.fov.value).toBe(45)
+      expect(viewer.lightIntensity.value).toBe(2)
+      expect(viewer.backgroundImage.value).toBe('test.jpg')
+      expect(viewer.hasBackgroundImage.value).toBe(true)
+      expect(viewer.backgroundRenderMode.value).toBe('contain')
+      expect(viewer.upDirection.value).toBe('+y')
+      expect(viewer.materialMode.value).toBe('wireframe')
 
       await viewer.initializeStandaloneViewer(containerRef, model2)
-      expect(viewer.backgroundColor.value).toBe('#00ff00')
+      expect(viewer.backgroundColor.value).toBe('#282828')
     })
 
     it('should save configuration during cleanup in standalone mode', async () => {
