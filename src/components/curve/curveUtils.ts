@@ -1,4 +1,50 @@
-import type { CurvePoint } from './types'
+import type { CurveInterpolation, CurvePoint } from './types'
+
+/**
+ * Piecewise linear interpolation through sorted control points.
+ * Returns a function that evaluates y for any x in [0, 1].
+ */
+export function createLinearInterpolator(
+  points: CurvePoint[]
+): (x: number) => number {
+  if (points.length === 0) return () => 0
+  if (points.length === 1) return () => points[0][1]
+
+  const sorted = [...points].sort((a, b) => a[0] - b[0])
+  const n = sorted.length
+  const xs = sorted.map((p) => p[0])
+  const ys = sorted.map((p) => p[1])
+
+  return (x: number): number => {
+    if (x <= xs[0]) return ys[0]
+    if (x >= xs[n - 1]) return ys[n - 1]
+
+    let lo = 0
+    let hi = n - 1
+    while (lo < hi - 1) {
+      const mid = (lo + hi) >> 1
+      if (xs[mid] <= x) lo = mid
+      else hi = mid
+    }
+
+    const dx = xs[hi] - xs[lo]
+    if (dx === 0) return ys[lo]
+    const t = (x - xs[lo]) / dx
+    return ys[lo] + t * (ys[hi] - ys[lo])
+  }
+}
+
+/**
+ * Factory that dispatches to the correct interpolator based on type.
+ */
+export function createInterpolator(
+  points: CurvePoint[],
+  interpolation: CurveInterpolation
+): (x: number) => number {
+  return interpolation === 'linear'
+    ? createLinearInterpolator(points)
+    : createMonotoneInterpolator(points)
+}
 
 /**
  * Monotone cubic Hermite interpolation.
@@ -106,9 +152,12 @@ export function histogramToPath(histogram: Uint32Array): string {
   return parts.join(' ')
 }
 
-export function curvesToLUT(points: CurvePoint[]): Uint8Array {
+export function curvesToLUT(
+  points: CurvePoint[],
+  interpolation: CurveInterpolation = 'monotone_cubic'
+): Uint8Array {
   const lut = new Uint8Array(256)
-  const interpolate = createMonotoneInterpolator(points)
+  const interpolate = createInterpolator(points, interpolation)
 
   for (let i = 0; i < 256; i++) {
     const x = i / 255
