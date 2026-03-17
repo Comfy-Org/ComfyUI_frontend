@@ -1,50 +1,75 @@
+import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
-
-import { assetService } from '../services/assetService'
 
 interface AssetRecord {
   id: string
   name: string
+  asset_hash?: string
   preview_url?: string
-  preview_id?: string
+  preview_id?: string | null
 }
 
-async function fetchAssetsByName(name: string): Promise<AssetRecord[]> {
-  const params = new URLSearchParams({ name_contains: name })
-  const res = await api.fetchApi(`/assets?${params}`)
+export function isAssetPreviewSupported(): boolean {
+  return (
+    assetService.isAssetAPIEnabled() || api.getServerFeature('assets', false)
+  )
+}
+
+async function fetchAssets(
+  params: Record<string, string>
+): Promise<AssetRecord[]> {
+  const query = new URLSearchParams(params)
+  const res = await api.fetchApi(`/assets?${query}`)
   if (!res.ok) return []
   const data = await res.json()
   return data.assets ?? []
+}
+
+function resolvePreviewUrl(asset: AssetRecord): string {
+  if (asset.preview_url) return api.apiURL(asset.preview_url)
+
+  const contentId = asset.preview_id ?? asset.id
+  return api.apiURL(`/assets/${contentId}/content`)
+}
+
+/**
+ * Find an output asset record by content hash, falling back to name.
+ * On cloud, output filenames are content-hashed; use asset_hash to match.
+ * On local, filenames are not hashed; use name_contains to match.
+ */
+export async function findOutputAsset(
+  name: string
+): Promise<AssetRecord | undefined> {
+  const byHash = await fetchAssets({ asset_hash: name })
+  const hashMatch = byHash.find((a) => a.asset_hash === name)
+  if (hashMatch) return hashMatch
+
+  const byName = await fetchAssets({ name_contains: name })
+  return byName.find((a) => a.name === name)
 }
 
 export async function findServerPreviewUrl(
   name: string
 ): Promise<string | null> {
   try {
-    const assets = await fetchAssetsByName(name)
+    const asset = await findOutputAsset(name)
+    if (!asset?.preview_id) return null
 
-    const modelAsset = assets.find((a) => a.name === name)
-    if (!modelAsset?.preview_id) return null
-
-    const previewAsset = assets.find((a) => a.id === modelAsset.preview_id)
-    if (!previewAsset?.preview_url) return null
-
-    return api.api_base + previewAsset.preview_url
+    return resolvePreviewUrl(asset)
   } catch {
     return null
   }
 }
 
 export async function persistThumbnail(
-  modelName: string,
+  name: string,
   blob: Blob
 ): Promise<void> {
   try {
-    const assets = await fetchAssetsByName(modelName)
-    const modelAsset = assets.find((a) => a.name === modelName)
-    if (!modelAsset || modelAsset.preview_id) return
+    const asset = await findOutputAsset(name)
+    if (!asset || asset.preview_id) return
 
-    const previewFilename = `${modelName}_preview.png`
+    const previewFilename = `${asset.name}_preview.png`
     const uploaded = await assetService.uploadAssetFromBase64({
       data: await blobToDataUrl(blob),
       name: previewFilename,
@@ -52,7 +77,7 @@ export async function persistThumbnail(
       user_metadata: { filename: previewFilename }
     })
 
-    await assetService.updateAsset(modelAsset.id, {
+    await assetService.updateAsset(asset.id, {
       preview_id: uploaded.id
     })
   } catch {
