@@ -13,6 +13,10 @@ const TIER_KEY_MAP: Record<string, string> = {
   FOUNDERS_EDITION: 'founder'
 }
 
+const SORTED_TIER_KEYS = Object.keys(TIER_KEY_MAP).sort(
+  (a, b) => b.length - a.length
+)
+
 interface WorkspaceSubscriptionInfo {
   isSubscribed: boolean
   subscriptionPlan: string | null
@@ -57,9 +61,7 @@ export function useWorkspaceTierLabel() {
     if (!workspace.subscriptionPlan) return null
 
     const planSlug = workspace.subscriptionPlan
-    const tierMatch = Object.keys(TIER_KEY_MAP)
-      .sort((a, b) => b.length - a.length)
-      .find((tier) => planSlug.startsWith(tier))
+    const tierMatch = SORTED_TIER_KEYS.find((tier) => planSlug.startsWith(tier))
     if (!tierMatch) return null
 
     return formatTierName(tierMatch, isYearlyPlan(planSlug))
