@@ -16,7 +16,12 @@
         @mouseleave="onJobLeave(job.id)"
       >
         <AssetsListItem
-          class="w-full shrink-0 cursor-default text-text-primary transition-colors hover:bg-secondary-background-hover"
+          :class="
+            cn(
+              'w-full shrink-0 cursor-default text-text-primary transition-colors hover:bg-secondary-background-hover',
+              job.state === 'running' && 'bg-secondary-background'
+            )
+          "
           :preview-url="getJobPreviewUrl(job)"
           :is-video-preview="isVideoPreviewJob(job)"
           :preview-alt="job.title"
@@ -99,6 +104,7 @@ import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import { cn } from '@/utils/tailwindUtil'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
 
