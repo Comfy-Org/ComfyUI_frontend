@@ -84,7 +84,7 @@
             v-tooltip.top="t('g.findOnGithub')"
             variant="secondary"
             size="sm"
-            class="h-8 w-2/3 justify-center gap-1 text-xs"
+            class="h-8 w-2/3 justify-center gap-1 rounded-lg text-xs"
             :aria-label="t('g.findOnGithub')"
             @click="handleCheckGithub(error)"
           >
@@ -95,7 +95,7 @@
             v-tooltip.top="t('g.copy')"
             variant="secondary"
             size="sm"
-            class="h-8 w-1/3 justify-center gap-1 text-xs"
+            class="h-8 w-1/3 justify-center gap-1 rounded-lg text-xs"
             :aria-label="t('g.copy')"
             @click="handleCopyError(idx)"
           >

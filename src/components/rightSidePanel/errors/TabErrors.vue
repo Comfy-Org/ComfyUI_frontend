@@ -23,6 +23,7 @@
         {{ singleRuntimeErrorGroup?.title }}
       </div>
       <ErrorNodeCard
+        :key="singleRuntimeErrorCard.id"
         :card="singleRuntimeErrorCard"
         :show-node-id-badge="showNodeIdBadge"
         class="min-h-0 flex-1"
