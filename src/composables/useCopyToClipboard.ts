@@ -29,7 +29,7 @@ export function useCopyToClipboard() {
     try {
       if (isSupported.value) {
         await copy(text)
-        success = copied.value
+        success = true
       }
     } catch {
       // Modern clipboard API failed, fall through to legacy
