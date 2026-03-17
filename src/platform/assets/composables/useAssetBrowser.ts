@@ -21,6 +21,7 @@ import {
   getAssetBaseModels,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -123,9 +124,10 @@ export function useAssetBrowser(
 
   const typeCategories = computed<NavItemData[]>(() => {
     const categories = assets.value
-      .filter((asset) => asset.tags[0] === 'models')
-      .map((asset) => asset.tags[1])
-      .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
+      .filter((asset) => asset.tags.includes(MODELS_TAG))
+      .flatMap((asset) =>
+        asset.tags.filter((tag) => tag !== MODELS_TAG && tag.length > 0)
+      )
       .map((tag) => tag.split('/')[0])
 
     return Array.from(new Set(categories))
