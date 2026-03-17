@@ -151,26 +151,37 @@ function addImages(files: FileList) {
   const remaining = MAX_EXAMPLES - exampleImages.value.length
   if (remaining <= 0) return
 
-  const newImages = createExampleImages(files).slice(0, remaining)
+  const created = createExampleImages(files)
+  const newImages = created.slice(0, remaining)
+  for (const img of created.slice(remaining)) {
+    URL.revokeObjectURL(img.url)
+  }
   if (newImages.length > 0) {
     exampleImages.value = [...newImages, ...exampleImages.value]
   }
 }
 
 function insertImagesAt(index: number, files: FileList) {
-  const newImages = createExampleImages(files)
-  if (newImages.length === 0) return
+  const created = createExampleImages(files)
+  if (created.length === 0) return
 
-  const remaining = MAX_EXAMPLES - exampleImages.value.length
   const updated = [...exampleImages.value]
+  const remaining = MAX_EXAMPLES - exampleImages.value.length
+  const maxInsert =
+    remaining <= 0 ? Math.max(updated.length - index, 0) : remaining
+  const newImages = created.slice(0, maxInsert)
+  for (const img of created.slice(maxInsert)) {
+    URL.revokeObjectURL(img.url)
+  }
 
+  if (newImages.length === 0) return
   if (remaining <= 0) {
     const replacedImages = updated.splice(index, newImages.length, ...newImages)
     for (const img of replacedImages) {
       if (img.file) URL.revokeObjectURL(img.url)
     }
   } else {
-    updated.splice(index, 0, ...newImages.slice(0, remaining))
+    updated.splice(index, 0, ...newImages)
   }
 
   exampleImages.value = updated

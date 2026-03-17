@@ -22,9 +22,9 @@ export type ComfyHubPublishStep = (typeof PUBLISH_STEPS)[number]
 const cachedPrefills = new Map<string, PublishPrefill>()
 
 function createDefaultFormData(): ComfyHubPublishFormData {
-  const { activeWorkflow } = useWorkflowStore()
+  const workflowStore = useWorkflowStore()
   return {
-    name: activeWorkflow?.filename ?? '',
+    name: workflowStore.activeWorkflow?.filename ?? '',
     description: '',
     tags: [],
     thumbnailType: 'image',
@@ -88,15 +88,26 @@ export function useComfyHubPublishWizard() {
   }
 
   function applyPrefill(prefill: PublishPrefill) {
+    const defaults = createDefaultFormData()
     const current = formData.value
     formData.value = {
       ...current,
-      description: prefill.description ?? current.description,
-      tags: prefill.tags?.length ? prefill.tags : current.tags,
-      thumbnailType: prefill.thumbnailType ?? current.thumbnailType,
-      exampleImages: prefill.sampleImageUrls?.length
-        ? createExampleImagesFromUrls(prefill.sampleImageUrls)
-        : current.exampleImages
+      description:
+        current.description === defaults.description
+          ? (prefill.description ?? current.description)
+          : current.description,
+      tags:
+        current.tags.length === 0 && prefill.tags?.length
+          ? prefill.tags
+          : current.tags,
+      thumbnailType:
+        current.thumbnailType === defaults.thumbnailType
+          ? (prefill.thumbnailType ?? current.thumbnailType)
+          : current.thumbnailType,
+      exampleImages:
+        current.exampleImages.length === 0 && prefill.sampleImageUrls?.length
+          ? createExampleImagesFromUrls(prefill.sampleImageUrls)
+          : current.exampleImages
     }
   }
 

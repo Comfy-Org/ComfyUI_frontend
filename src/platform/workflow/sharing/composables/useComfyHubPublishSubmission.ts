@@ -50,7 +50,7 @@ function getAssetIds(assets: AssetInfo[]): string[] {
 
 export function useComfyHubPublishSubmission() {
   const { profile } = useComfyHubProfileGate()
-  const { activeWorkflow } = useWorkflowStore()
+  const workflowStore = useWorkflowStore()
   const workflowShareService = useWorkflowShareService()
   const comfyHubService = useComfyHubService()
 
@@ -74,7 +74,9 @@ export function useComfyHubPublishSubmission() {
     formData: ComfyHubPublishFormData
   ): Promise<void> {
     const username = getUsername(profile.value)
-    const workflowFilename = getWorkflowFilename(activeWorkflow?.path)
+    const workflowFilename = getWorkflowFilename(
+      workflowStore.activeWorkflow?.path
+    )
     const assetIds = getAssetIds(
       await workflowShareService.getShareableAssets()
     )
