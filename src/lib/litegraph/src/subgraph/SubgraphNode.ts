@@ -994,7 +994,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Note: we inline the check instead of importing promoteRecommendedWidgets
     // to avoid a circular dependency (promotionUtils → canvasStore → app).
     const PREVIEW_WIDGET = '$$canvas-image-preview'
-    const PREVIEW_NODE_TYPES = new Set(['PreviewImage', 'SaveImage', 'GLSLShader'])
+    const PREVIEW_NODE_TYPES = new Set([
+      'PreviewImage',
+      'SaveImage',
+      'GLSLShader'
+    ])
     for (const node of this.subgraph.nodes) {
       if (!PREVIEW_NODE_TYPES.has(node.type)) continue
       if (
@@ -1006,12 +1010,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         )
       )
         continue
-      store.promote(
-        this.rootGraph.id,
-        this.id,
-        String(node.id),
-        PREVIEW_WIDGET
-      )
+      store.promote(this.rootGraph.id, this.id, String(node.id), PREVIEW_WIDGET)
     }
   }
 
