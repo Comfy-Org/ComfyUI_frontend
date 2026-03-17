@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "Réinitialisation du mot de passe envoyée",
   "cloudForgotPassword_sendResetLink": "Envoyer le lien de réinitialisation",
   "cloudForgotPassword_title": "Mot de passe oublié",
+  "cloudNotification": {
+    "continueLocally": "Continuer localement",
+    "exploreCloud": "Essayer le cloud gratuitement",
+    "feature1Title": "400 crédits gratuits par mois",
+    "feature2Title": "Fonctionne partout, instantanément",
+    "feature3Title": "Modèles prêts à l’emploi",
+    "feature4Title": "Packs de nœuds personnalisés préinstallés",
+    "footer": "ComfyUI reste gratuit et open source. Le cloud est optionnel.",
+    "message": "De la configuration à la création en quelques secondes. Modèles populaires, extensions et GPU puissants — prêts quand vous l’êtes.",
+    "title": "Exécutez ComfyUI dans le Cloud"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -653,6 +664,7 @@
     "Open in Mask Editor": "Ouvrir dans l'éditeur de masque",
     "Outputs": "Sorties",
     "Paste": "Coller",
+    "Paste Image": "Coller l’image",
     "Pin": "Épingler",
     "Properties": "Propriétés",
     "Properties Panel": "Panneau des Propriétés",
@@ -736,6 +748,10 @@
       "tooltip": "Nous avons unifié les paiements sur Comfy. Tout fonctionne désormais avec les Comfy Credits :\n- Nœuds partenaires (anciennement nœuds API)\n- Workflows cloud\n\nVotre solde de nœuds partenaires a été converti en crédits."
     },
     "yourCreditBalance": "Votre solde de crédits"
+  },
+  "curveWidget": {
+    "linear": "Linéaire",
+    "monotone_cubic": "Lisse"
   },
   "dataTypes": {
     "*": "*",
@@ -1602,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nœuds principaux de la version {version} :",
     "outdatedVersion": "Ce workflow a été créé avec une version plus récente de ComfyUI ({version}). Certains nœuds peuvent ne pas fonctionner correctement.",
-    "outdatedVersionGeneric": "Ce workflow a été créé avec une version plus récente de ComfyUI. Certains nœuds peuvent ne pas fonctionner correctement."
+    "outdatedVersionGeneric": "Ce workflow a été créé avec une version plus récente de ComfyUI. Certains nœuds peuvent ne pas fonctionner correctement.",
+    "unknownVersion": "inconnue"
   },
   "maintenance": {
     "None": "Aucun",

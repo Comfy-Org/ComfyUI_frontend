@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "Parola sıfırlama gönderildi",
   "cloudForgotPassword_sendResetLink": "Sıfırlama bağlantısını gönder",
   "cloudForgotPassword_title": "Şifremi Unuttum",
+  "cloudNotification": {
+    "continueLocally": "Yerelde Devam Et",
+    "exploreCloud": "Bulutu Ücretsiz Dene",
+    "feature1Title": "Aylık 400 Ücretsiz Kredi",
+    "feature2Title": "Her Yerde, Anında Çalışır",
+    "feature3Title": "Kullanıma Hazır Modeller",
+    "feature4Title": "En İyi Özel Node Paketleri Önceden Yüklü",
+    "footer": "ComfyUI ücretsiz ve açık kaynak olarak kalır. Bulut seçime bağlıdır.",
+    "message": "Kurulumdan üretime saniyeler içinde. Popüler modeller, eklentiler ve güçlü GPU'lar — hazır olduğunuzda kullanıma hazır.",
+    "title": "ComfyUI'yi Bulutta Çalıştırın"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -653,6 +664,7 @@
     "Open in Mask Editor": "Maske Düzenleyicide Aç",
     "Outputs": "Çıktılar",
     "Paste": "Yapıştır",
+    "Paste Image": "Görseli Yapıştır",
     "Pin": "Sabitle",
     "Properties": "Özellikler",
     "Properties Panel": "Özellikler Paneli",
@@ -736,6 +748,10 @@
       "tooltip": "Comfy genelinde ödemeleri birleştirdik. Artık her şey Comfy Kredileri ile çalışıyor:\n- Partner Düğümleri (eski adıyla API düğümleri)\n- Bulut iş akışları\n\nMevcut Partner düğümü bakiyeniz kredilere dönüştürüldü."
     },
     "yourCreditBalance": "Kredi bakiyeniz"
+  },
+  "curveWidget": {
+    "linear": "Doğrusal",
+    "monotone_cubic": "Yumuşak"
   },
   "dataTypes": {
     "*": "*",
@@ -1602,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Sürüm {version} çekirdek düğümleri:",
     "outdatedVersion": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş ({version}). Bazı düğümler düzgün çalışmayabilir.",
-    "outdatedVersionGeneric": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş. Bazı düğümler düzgün çalışmayabilir."
+    "outdatedVersionGeneric": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş. Bazı düğümler düzgün çalışmayabilir.",
+    "unknownVersion": "bilinmeyen"
   },
   "maintenance": {
     "None": "Yok",

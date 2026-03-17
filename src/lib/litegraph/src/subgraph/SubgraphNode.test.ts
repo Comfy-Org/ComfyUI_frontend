@@ -8,8 +8,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
-import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
+import { LGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -543,6 +543,135 @@ describe('SubgraphNode Cleanup', () => {
     // Verify abort was called on each controller
     expect(abortSpy1).toHaveBeenCalledTimes(1)
     expect(abortSpy2).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('SubgraphNode duplicate input pruning (#9977)', () => {
+  it('should prune inputs that have no matching subgraph slot after configure', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'a', type: 'STRING' },
+        { name: 'b', type: 'NUMBER' }
+      ]
+    })
+
+    const parentGraph = new LGraph()
+    const instanceData = {
+      id: 1 as const,
+      type: subgraph.id,
+      pos: [0, 0] as [number, number],
+      size: [200, 100] as [number, number],
+      inputs: [
+        { name: 'a', type: 'STRING', link: null },
+        { name: 'b', type: 'NUMBER', link: null },
+        { name: 'a', type: 'STRING', link: null },
+        { name: 'b', type: 'NUMBER', link: null }
+      ],
+      outputs: [],
+      properties: {},
+      flags: {},
+      mode: 0,
+      order: 0
+    }
+
+    const node = new SubgraphNode(
+      parentGraph,
+      subgraph,
+      instanceData as ExportedSubgraphInstance
+    )
+
+    expect(node.inputs).toHaveLength(2)
+    expect(node.inputs.every((i) => i._subgraphSlot)).toBe(true)
+  })
+
+  it('should not accumulate duplicate inputs on reconfigure', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'a', type: 'STRING' },
+        { name: 'b', type: 'NUMBER' }
+      ]
+    })
+
+    const node = createTestSubgraphNode(subgraph)
+    expect(node.inputs).toHaveLength(2)
+
+    const serialized = node.serialize()
+    node.configure(serialized)
+    expect(node.inputs).toHaveLength(2)
+
+    const serialized2 = node.serialize()
+    node.configure(serialized2)
+    expect(node.inputs).toHaveLength(2)
+  })
+
+  it('should serialize with exactly the subgraph-defined inputs', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'x', type: 'IMAGE' },
+        { name: 'y', type: 'VAE' }
+      ]
+    })
+
+    const node = createTestSubgraphNode(subgraph)
+    const serialized = node.serialize()
+
+    expect(serialized.inputs).toHaveLength(2)
+    expect(serialized.inputs?.map((i) => i.name)).toEqual(['x', 'y'])
+  })
+})
+
+describe('Nested SubgraphNode duplicate input prevention', () => {
+  it('should not duplicate inputs when the referenced subgraph is reconfigured', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'a', type: 'STRING' },
+        { name: 'b', type: 'NUMBER' }
+      ]
+    })
+
+    const node = createTestSubgraphNode(subgraph)
+    expect(node.inputs).toHaveLength(2)
+
+    // Simulate what happens during nested subgraph configure:
+    // B.configure() calls _configureSubgraph(), which recreates SubgraphInput
+    // objects and dispatches 'input-added' events with new references.
+    const serialized = subgraph.asSerialisable()
+    subgraph.configure(serialized)
+
+    // The SubgraphNode's event listener should recognize existing inputs
+    // by ID and NOT add duplicates.
+    expect(node.inputs).toHaveLength(2)
+    expect(node.inputs.every((i) => i._subgraphSlot)).toBe(true)
+  })
+
+  it('should not accumulate inputs across multiple reconfigure cycles', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'x', type: 'IMAGE' },
+        { name: 'y', type: 'VAE' }
+      ]
+    })
+
+    const node = createTestSubgraphNode(subgraph)
+    expect(node.inputs).toHaveLength(2)
+
+    for (let i = 0; i < 5; i++) {
+      const serialized = subgraph.asSerialisable()
+      subgraph.configure(serialized)
+    }
+
+    expect(node.inputs).toHaveLength(2)
+    expect(node.inputs.map((i) => i.name)).toEqual(['x', 'y'])
   })
 })
 

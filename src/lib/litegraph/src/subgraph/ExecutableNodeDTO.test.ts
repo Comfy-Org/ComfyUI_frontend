@@ -387,6 +387,102 @@ describe('ALWAYS mode node output resolution', () => {
   })
 })
 
+describe('Virtual node resolveVirtualOutput', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('should resolve through resolveVirtualOutput when implemented', () => {
+    const graph = new LGraph()
+
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.addOutput('out', 'IMAGE')
+    graph.add(sourceNode)
+
+    const virtualNode = new LGraphNode('Virtual Get')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    virtualNode.resolveVirtualOutput = () => ({ node: sourceNode, slot: 0 })
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map()
+    const sourceDto = new ExecutableNodeDTO(
+      sourceNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(sourceDto.id, sourceDto)
+
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    const resolved = virtualDto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeDefined()
+    expect(resolved?.node).toBe(sourceDto)
+    expect(resolved?.origin_slot).toBe(0)
+  })
+
+  it('should throw when resolveVirtualOutput returns a node with no matching DTO', () => {
+    const graph = new LGraph()
+
+    const unmappedNode = new LGraphNode('Unmapped Source')
+    unmappedNode.addOutput('out', 'IMAGE')
+    graph.add(unmappedNode)
+
+    const virtualNode = new LGraphNode('Virtual Get')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    virtualNode.resolveVirtualOutput = () => ({
+      node: unmappedNode,
+      slot: 0
+    })
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map()
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    expect(() => virtualDto.resolveOutput(0, 'IMAGE', new Set())).toThrow(
+      'No DTO found for virtual source node'
+    )
+  })
+
+  it('should fall through to getInputLink when resolveVirtualOutput returns undefined', () => {
+    const graph = new LGraph()
+
+    const virtualNode = new LGraphNode('Virtual Passthrough')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    virtualNode.resolveVirtualOutput = () => undefined
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map()
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    const spy = vi.spyOn(virtualNode, 'getInputLink')
+    const resolved = virtualDto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeUndefined()
+    expect(spy).toHaveBeenCalledWith(0)
+  })
+})
+
 describe('ExecutableNodeDTO Properties', () => {
   it('should provide access to basic properties', () => {
     const graph = new LGraph()

@@ -4,8 +4,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { Bounds } from '@/renderer/core/layout/types'
-import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 type ResizeDirection =
   | 'top'
@@ -558,10 +558,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
 
   const initialize = () => {
     if (nodeId != null) {
-      node.value =
-        app.canvas?.graph?.getNodeById(nodeId) ||
-        app.rootGraph?.getNodeById(nodeId) ||
-        null
+      node.value = resolveNode(nodeId) ?? null
     }
 
     updateImageUrl()

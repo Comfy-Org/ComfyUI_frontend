@@ -10,8 +10,9 @@
     :data-collapsed="isCollapsed || undefined"
     :class="
       cn(
-        'group/node lg-node absolute text-sm',
-        'flex min-w-(--min-node-width) flex-col contain-layout contain-style',
+        'group/node lg-node absolute isolate text-sm',
+        'flex flex-col contain-layout contain-style',
+        isRerouteNode ? 'h-(--node-height)' : 'min-w-(--min-node-width)',
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
@@ -75,7 +76,8 @@
       :class="
         cn(
           'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
-          'min-h-(--node-height) w-(--node-width) min-w-(--min-node-width)',
+          'w-(--node-width)',
+          !isRerouteNode && 'min-h-(--node-height) min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
           {
@@ -129,7 +131,11 @@
         :style="{ width: `${Math.min(progress * 100, 100)}%` }"
       />
 
-      <template v-if="!isCollapsed">
+      <template v-if="!isCollapsed && isRerouteNode">
+        <NodeSlots :node-data="nodeData" />
+      </template>
+
+      <template v-else-if="!isCollapsed">
         <div class="relative">
           <!-- Progress bar for executing state -->
           <div
@@ -186,6 +192,7 @@
       </template>
     </div>
     <NodeFooter
+      v-if="!isRerouteNode"
       :is-subgraph="!!lgraphNode?.isSubgraphNode()"
       :has-any-error="hasAnyError"
       :show-errors-tab-enabled="showErrorsTabEnabled"
@@ -199,7 +206,12 @@
       @toggle-advanced="handleToggleAdvanced"
     />
     <template
-      v-if="!isCollapsed && nodeData.resizable !== false && !isSelectMode"
+      v-if="
+        !isCollapsed &&
+        !isRerouteNode &&
+        nodeData.resizable !== false &&
+        !isSelectMode
+      "
     >
       <div
         v-for="handle in RESIZE_HANDLES"
@@ -366,6 +378,8 @@ const showErrorsTabEnabled = computed(() =>
 )
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
+
+const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(

@@ -612,9 +612,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const subgraphInput = e.detail.input
         const { name, type } = subgraphInput
         const existingInput = this.inputs.find(
-          (input) => input._subgraphSlot === subgraphInput
+          (input) =>
+            input._subgraphSlot === subgraphInput ||
+            (input._subgraphSlot && input._subgraphSlot.id === subgraphInput.id)
         )
         if (existingInput) {
+          // Rebind to the new SubgraphInput object and re-register listeners
+          // (configure recreates SubgraphInput objects with the same id)
+          this._addSubgraphInputListeners(subgraphInput, existingInput)
           const linkId = subgraphInput.linkIds[0]
           if (linkId === undefined) return
 
@@ -925,6 +930,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override _internalConfigureAfterSlots() {
     this._rebindInputSubgraphSlots()
+
+    // Prune inputs that don't map to any subgraph slot definition.
+    // This prevents stale/duplicate serialized inputs from persisting (#9977).
+    this.inputs = this.inputs.filter((input) => input._subgraphSlot)
 
     // Ensure proxyWidgets is initialized so it serializes
     this.properties.proxyWidgets ??= []
