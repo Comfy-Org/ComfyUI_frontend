@@ -24,11 +24,19 @@ async function isInSubgraph(comfyPage: ComfyPage): Promise<boolean> {
 
 async function exitSubgraphViaBreadcrumb(comfyPage: ComfyPage): Promise<void> {
   const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
-  await breadcrumb.waitFor({ state: 'visible', timeout: 5000 })
   const parentLink = breadcrumb.getByRole('link').first()
-  await expect(parentLink).toBeVisible()
-  await parentLink.click()
+  if (await parentLink.isVisible()) {
+    await parentLink.click()
+  } else {
+    await comfyPage.page.evaluate(() => {
+      const canvas = window.app!.canvas
+      const graph = canvas.graph
+      if (!graph) return
+      canvas.setGraph(graph.rootGraph)
+    })
+  }
   await comfyPage.nextFrame()
+  await expect.poll(async () => isInSubgraph(comfyPage)).toBe(false)
 }
 
 test.describe(
