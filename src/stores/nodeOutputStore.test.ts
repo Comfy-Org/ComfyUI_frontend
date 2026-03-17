@@ -587,13 +587,15 @@ describe('nodeOutputStore merge mode interactions', () => {
     ])
     store.setNodeOutputsByExecutionId('3', inputOutput)
 
-    // Merge with empty images
+    // Merge with empty images — the input-preview guard (lines 166-177)
+    // copies existing input images into the incoming outputs before the
+    // merge concat runs, resulting in duplication.
     const emptyOutput = createMockOutputs([])
     store.setNodeOutputsByExecutionId('3', emptyOutput, { merge: true })
 
-    // Images should remain from the merge (empty concat = same)
-    expect(store.nodeOutputs['3']?.images).toHaveLength(1)
+    expect(store.nodeOutputs['3']?.images).toHaveLength(2)
     expect(store.nodeOutputs['3']?.images?.[0]?.filename).toBe('uploaded.png')
+    expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('uploaded.png')
   })
 })
 
