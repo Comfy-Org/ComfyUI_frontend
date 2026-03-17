@@ -19,7 +19,8 @@ export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>
 const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
-  type: resultItemType.optional()
+  type: resultItemType.optional(),
+  display_name: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 const zOutputs = z
@@ -111,7 +112,8 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
 
 const zProgressTextWsMessage = z.object({
   nodeId: zNodeId,
-  text: z.string()
+  text: z.string(),
+  prompt_id: z.string().optional()
 })
 
 const zNotificationWsMessage = z.object({
@@ -297,7 +299,6 @@ const zSettings = z.object({
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
   'Comfy.UI.TabBarLayout': z.enum(['Default', 'Legacy']),
-  'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
   'Comfy.DisableFloatRounding': z.boolean(),
@@ -463,7 +464,8 @@ const zSettings = z.object({
   'Comfy.VersionCompatibility.DisableWarnings': z.boolean(),
   'Comfy.RightSidePanel.IsOpen': z.boolean(),
   'Comfy.RightSidePanel.ShowErrorsTab': z.boolean(),
-  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean()
+  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean(),
+  'LiteGraph.Group.SelectChildrenOnClick': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>

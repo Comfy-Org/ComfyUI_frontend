@@ -20,14 +20,17 @@ import {
   getNodeByLocatorId,
   getRootGraph,
   getSubgraphPathFromExecutionId,
+  getExecutionIdFromNodeData,
   mapAllNodes,
   mapSubgraphNodes,
   parseExecutionId,
   traverseNodesDepthFirst,
   traverseSubgraphPath,
   triggerCallbackOnAllNodes,
-  visitGraphNodes
+  visitGraphNodes,
+  getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
 // Mock node factory
@@ -593,6 +596,89 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph([createMockNode('123')])
         const found = getNodeByExecutionId(graph, '')
         expect(found).toBeNull()
+      })
+    })
+
+    describe('getExecutionIdByNode', () => {
+      it('should return node id if graph is rootGraph', () => {
+        const node = createMockNode('123')
+        const graph = createMockGraph([node])
+        node.graph = graph
+        const execId = getExecutionIdByNode(graph, node)
+        expect(execId).toBe('123')
+      })
+
+      it('should return path using subgraph nodes if deeply nested', () => {
+        const targetNode = createMockNode('999')
+        const deepSubgraph = createMockSubgraph('deep-uuid', [targetNode])
+
+        const midNode = createMockNode('456', {
+          isSubgraph: true,
+          subgraph: deepSubgraph
+        })
+        const midSubgraph = createMockSubgraph('mid-uuid', [midNode])
+
+        const topNode = createMockNode('123', {
+          isSubgraph: true,
+          subgraph: midSubgraph
+        })
+
+        const rootGraph = createMockGraph([topNode])
+
+        // set up parent graphs
+        ;(midSubgraph as Subgraph & { rootGraph: LGraph }).rootGraph = rootGraph
+        ;(
+          deepSubgraph as Subgraph & { rootGraph: LGraph | Subgraph }
+        ).rootGraph = midSubgraph
+
+        // also need a way for nodes to point to their parent graphs
+        // assuming node.graph === graph
+        targetNode.graph = deepSubgraph
+        midNode.graph = midSubgraph
+        topNode.graph = rootGraph
+
+        const execId = getExecutionIdByNode(rootGraph, targetNode)
+        expect(execId).toBe('123:456:999')
+      })
+    })
+
+    describe('getExecutionIdFromNodeData', () => {
+      it('should return the correct execution ID for a normal node', () => {
+        const node = createMockNode('123')
+        const graph = createMockGraph([node])
+        node.graph = graph
+        const nodeData = { id: 123 }
+
+        const execId = getExecutionIdFromNodeData(graph, nodeData)
+        expect(execId).toBe('123')
+      })
+
+      it('should fallback to stringified nodeData id if node cannot be resolved', () => {
+        const graph = createMockGraph([])
+        const nodeData = { id: 777 }
+
+        const execId = getExecutionIdFromNodeData(graph, nodeData)
+        expect(execId).toBe('777')
+      })
+
+      it('should return full execution ID for node inside a subgraph', () => {
+        const targetNode = createMockNode('999')
+        const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        const subgraph = createMockSubgraph(subgraphUuid, [targetNode])
+        const topNode = createMockNode('123', {
+          isSubgraph: true,
+          subgraph
+        })
+        const rootGraph = createMockGraph([topNode])
+
+        ;(subgraph as Subgraph & { rootGraph: LGraph }).rootGraph = rootGraph
+        targetNode.graph = subgraph
+        topNode.graph = rootGraph
+
+        const nodeData = { id: 999, subgraphId: subgraphUuid }
+        const execId = getExecutionIdFromNodeData(rootGraph, nodeData)
+
+        expect(execId).toBe('123:999')
       })
     })
 

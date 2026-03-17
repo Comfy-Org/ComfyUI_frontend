@@ -220,22 +220,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   {
     combo: {
       ctrl: true,
-      key: 'c'
-    },
-    commandId: 'Comfy.Canvas.CopySelected',
-    targetElementId: 'graph-canvas-container'
-  },
-  {
-    combo: {
-      ctrl: true,
-      key: 'v'
-    },
-    commandId: 'Comfy.Canvas.PasteFromClipboard',
-    targetElementId: 'graph-canvas-container'
-  },
-  {
-    combo: {
-      ctrl: true,
       shift: true,
       key: 'v'
     },

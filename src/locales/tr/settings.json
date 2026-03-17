@@ -481,6 +481,10 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Yakınlaştırıldığında düğüm birleşik widget menülerini (listeleri) ölçeklendir"
   },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "Grup çocuklarını tıklayınca seç",
+    "tooltip": "Etkinleştirildiğinde, bir gruba tıklamak içindeki tüm düğüm ve öğeleri seçer"
+  },
   "LiteGraph_Node_DefaultPadding": {
     "name": "Yeni düğümleri her zaman küçült",
     "tooltip": "Oluşturulduğunda düğümleri mümkün olan en küçük boyuta yeniden boyutlandırın. Devre dışı bırakıldığında, yeni eklenen bir düğüm widget değerlerini göstermek için biraz genişletilecektir."

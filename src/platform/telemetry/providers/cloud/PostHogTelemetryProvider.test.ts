@@ -40,11 +40,21 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
+const mockRemoteConfig = vi.hoisted(
+  () => ({ value: null }) as { value: Record<string, unknown> | null }
+)
+
 vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: { value: null }
+  remoteConfig: mockRemoteConfig
 }))
 
 vi.mock('posthog-js', () => hoisted.mockPosthog)
+
+vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
+  useSubscription: () => ({
+    subscriptionTier: { value: null }
+  })
+}))
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 
@@ -61,6 +71,7 @@ function createProvider(
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRemoteConfig.value = null
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     } as typeof window.__CONFIG__
@@ -76,30 +87,39 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).not.toHaveBeenCalled()
     })
 
-    it('calls posthog.init with the token and default api_host', async () => {
+    it('calls posthog.init with the token and default config', async () => {
       createProvider()
-      await vi.dynamicImportSettled()
-
-      expect(hoisted.mockInit).toHaveBeenCalledWith('phc_test_token', {
-        api_host: 'https://ph.comfy.org',
-        autocapture: false,
-        capture_pageview: false,
-        capture_pageleave: false,
-        persistence: 'localStorage+cookie'
-      })
-    })
-
-    it('uses custom api_host from config when provided', async () => {
-      window.__CONFIG__ = {
-        posthog_project_token: 'phc_test_token',
-        posthog_api_host: 'https://custom.host.com'
-      } as typeof window.__CONFIG__
-      new PostHogTelemetryProvider()
       await vi.dynamicImportSettled()
 
       expect(hoisted.mockInit).toHaveBeenCalledWith(
         'phc_test_token',
-        expect.objectContaining({ api_host: 'https://custom.host.com' })
+        expect.objectContaining({
+          api_host: 'https://t.comfy.org',
+          ui_host: 'https://us.posthog.com',
+          autocapture: false,
+          capture_pageview: false,
+          capture_pageleave: false,
+          persistence: 'localStorage+cookie'
+        })
+      )
+    })
+
+    it('applies posthog_config overrides from remote config', async () => {
+      mockRemoteConfig.value = {
+        posthog_config: {
+          debug: true,
+          api_host: 'https://custom.host.com'
+        }
+      }
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({
+          debug: true,
+          api_host: 'https://custom.host.com'
+        })
       )
     })
 

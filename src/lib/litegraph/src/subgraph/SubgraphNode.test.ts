@@ -6,10 +6,12 @@
  * IO synchronization, and edge cases.
  */
 import { describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 
-import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, Subgraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -613,5 +615,117 @@ describe.skip('SubgraphNode Cleanup', () => {
     // Verify abort was called on each controller
     expect(abortSpy1).toHaveBeenCalledTimes(1)
     expect(abortSpy2).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('SubgraphNode duplicate input pruning (#9977)', () => {
+  it('should prune inputs that have no matching subgraph slot after configure', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'a', type: 'STRING' },
+        { name: 'b', type: 'NUMBER' }
+      ]
+    })
+
+    const parentGraph = new LGraph()
+    const instanceData = {
+      id: 1 as const,
+      type: subgraph.id,
+      pos: [0, 0] as [number, number],
+      size: [200, 100] as [number, number],
+      inputs: [
+        { name: 'a', type: 'STRING', link: null },
+        { name: 'b', type: 'NUMBER', link: null },
+        { name: 'a', type: 'STRING', link: null },
+        { name: 'b', type: 'NUMBER', link: null }
+      ],
+      outputs: [],
+      properties: {},
+      flags: {},
+      mode: 0,
+      order: 0
+    }
+
+    const node = new SubgraphNode(
+      parentGraph,
+      subgraph,
+      instanceData as ExportedSubgraphInstance
+    )
+
+    expect(node.inputs).toHaveLength(2)
+    expect(node.inputs.every((i) => i._subgraphSlot)).toBe(true)
+  })
+
+  it('should not accumulate duplicate inputs on reconfigure', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'a', type: 'STRING' },
+        { name: 'b', type: 'NUMBER' }
+      ]
+    })
+
+    const node = createTestSubgraphNode(subgraph)
+    expect(node.inputs).toHaveLength(2)
+
+    const serialized = node.serialize()
+    node.configure(serialized)
+    expect(node.inputs).toHaveLength(2)
+
+    const serialized2 = node.serialize()
+    node.configure(serialized2)
+    expect(node.inputs).toHaveLength(2)
+  })
+
+  it('should serialize with exactly the subgraph-defined inputs', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'x', type: 'IMAGE' },
+        { name: 'y', type: 'VAE' }
+      ]
+    })
+
+    const node = createTestSubgraphNode(subgraph)
+    const serialized = node.serialize()
+
+    expect(serialized.inputs).toHaveLength(2)
+    expect(serialized.inputs?.map((i) => i.name)).toEqual(['x', 'y'])
+  })
+})
+
+describe('SubgraphNode promotion view keys', () => {
+  it('distinguishes tuples that differ only by colon placement', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const nodeWithKeyBuilder = subgraphNode as unknown as {
+      _makePromotionViewKey: (
+        inputKey: string,
+        interiorNodeId: string,
+        widgetName: string,
+        inputName?: string
+      ) => string
+    }
+
+    const firstKey = nodeWithKeyBuilder._makePromotionViewKey(
+      '65',
+      '18',
+      'a:b',
+      'c'
+    )
+    const secondKey = nodeWithKeyBuilder._makePromotionViewKey(
+      '65',
+      '18',
+      'a',
+      'b:c'
+    )
+
+    expect(firstKey).not.toBe(secondKey)
   })
 })

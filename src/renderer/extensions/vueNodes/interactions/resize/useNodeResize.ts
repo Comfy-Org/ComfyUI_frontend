@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import type { Point, Size } from '@/renderer/core/layout/types'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -156,7 +157,7 @@ export function useNodeResize(
       // Enforce minimum size with position compensation (matching litegraph)
       const minWidth =
         parseFloat(nodeElement.style.getPropertyValue('min-width') || '0') ||
-        225
+        MIN_NODE_WIDTH
       if (newWidth < minWidth) {
         if (activeCorner.includes('W')) {
           newX =

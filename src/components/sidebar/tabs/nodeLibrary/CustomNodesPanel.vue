@@ -1,5 +1,5 @@
 <template>
-  <TabsContent value="custom" class="flex h-full flex-1 flex-col">
+  <div class="flex h-full flex-1 flex-col">
     <div
       v-for="(section, index) in sections"
       :key="section.title ?? index"
@@ -30,12 +30,10 @@
         {{ $t('g.manageExtensions') }}
       </Button>
     </div>
-  </TabsContent>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { TabsContent } from 'reka-ui'
-
 import TreeExplorerV2 from '@/components/common/TreeExplorerV2.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'

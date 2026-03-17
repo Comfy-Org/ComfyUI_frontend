@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { computed, provide, ref, toValue } from 'vue'
+import { computed, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import WidgetItem from '@/components/rightSidePanel/parameters/WidgetItem.vue'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -27,9 +28,8 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
-import { resolveNode } from '@/utils/litegraphUtil'
+import { resolveNodeWidget } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
@@ -45,25 +45,11 @@ const { isSelectMode, isSelectInputsMode, isSelectOutputsMode, isArrangeMode } =
   useAppMode()
 const hoveringSelectable = ref(false)
 
-provide(HideLayoutFieldKey, true)
-
 workflowStore.activeWorkflow?.changeTracker?.reset()
-
-const arrangeInputs = computed(() =>
-  appModeStore.selectedInputs
-    .map(([nodeId, widgetName]) => {
-      const node = resolveNode(nodeId)
-      if (!node) return null
-      const widget = node.widgets?.find((w) => w.name === widgetName)
-      return { nodeId, widgetName, node, widget }
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== null)
-)
 
 const inputsWithState = computed(() =>
   appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
-    const node = resolveNode(nodeId)
-    const widget = node?.widgets?.find((w) => w.name === widgetName)
+    const [node, widget] = resolveNodeWidget(nodeId, widgetName)
     if (!node || !widget) {
       return {
         nodeId,
@@ -108,7 +94,7 @@ function getHovered(
 
 function getBounding(nodeId: NodeId, widgetName?: string) {
   if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
-  const node = app.rootGraph.getNodeById(nodeId)
+  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
   if (!node) return
 
   const titleOffset =
@@ -121,7 +107,6 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
       left: `${node.pos[0]}px`,
       top: `${node.pos[1] - titleOffset}px`
     }
-  const widget = node.widgets?.find((w) => w.name === widgetName)
   if (!widget) return
 
   const margin = widget instanceof DOMWidgetImpl ? widget.margin : undefined
@@ -160,12 +145,16 @@ function handleClick(e: MouseEvent) {
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
-  if (!isSelectInputsMode.value) return
+  if (!isSelectInputsMode.value || widget.options.canvasOnly) return
 
+  const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+  const storeName = isPromotedWidgetView(widget)
+    ? widget.sourceWidgetName
+    : widget.name
   const index = appModeStore.selectedInputs.findIndex(
-    ([nodeId, widgetName]) => node.id == nodeId && widget.name === widgetName
+    ([nodeId, widgetName]) => storeId == nodeId && storeName === widgetName
   )
-  if (index === -1) appModeStore.selectedInputs.push([node.id, widget.name])
+  if (index === -1) appModeStore.selectedInputs.push([storeId, storeName])
   else appModeStore.selectedInputs.splice(index, 1)
 }
 
@@ -200,7 +189,9 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 </script>
 <template>
   <div class="flex h-full flex-col">
-    <div class="flex items-center border-b border-border-subtle p-2 font-bold">
+    <div
+      class="flex h-12 items-center border-b border-border-subtle px-4 font-bold"
+    >
       {{
         isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
       }}
@@ -208,34 +199,10 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <DraggableList
         v-if="isArrangeMode"
-        v-slot="{ dragClass }"
         v-model="appModeStore.selectedInputs"
         class="overflow-x-clip"
       >
-        <div
-          v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
-          :key="`${nodeId}: ${widgetName}`"
-          :class="cn(dragClass, 'pointer-events-auto my-2 p-2')"
-          :aria-label="`${widget?.label ?? widgetName} — ${node.title}`"
-        >
-          <div v-if="widget" class="pointer-events-none" inert>
-            <WidgetItem
-              :widget="widget"
-              :node="node"
-              show-node-name
-              hidden-widget-actions
-            />
-          </div>
-          <div
-            v-else
-            class="pointer-events-none p-1 text-sm text-muted-foreground"
-          >
-            {{ widgetName }}
-            <p class="text-xs italic">
-              ({{ t('linearMode.builder.unknownWidget') }})
-            </p>
-          </div>
-        </div>
+        <AppModeWidgetList builder-mode />
       </DraggableList>
       <PropertiesAccordionItem
         v-if="isSelectInputsMode"
