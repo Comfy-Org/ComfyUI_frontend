@@ -53,7 +53,7 @@ interface QueuedJob {
  */
 export const MAX_PROGRESS_JOBS = 1000
 
-export type WorkflowStatus = 'running' | 'success' | 'error'
+export type WorkflowStatus = 'running' | 'completed' | 'failed'
 
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
@@ -294,7 +294,7 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
-    setWorkflowStatus(jobId, 'error')
+    setWorkflowStatus(jobId, 'failed')
     if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
     resetExecutionState(jobId)
   }
@@ -311,7 +311,7 @@ export const useExecutionStore = defineStore('execution', () => {
       })
     }
     const jobId = e.detail.prompt_id
-    setWorkflowStatus(jobId, 'success')
+    setWorkflowStatus(jobId, 'completed')
     resetExecutionState(jobId)
   }
 
@@ -409,7 +409,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
-    setWorkflowStatus(e.detail.prompt_id, 'error')
+    setWorkflowStatus(e.detail.prompt_id, 'failed')
 
     if (isCloud) {
       useTelemetry()?.trackExecutionError({

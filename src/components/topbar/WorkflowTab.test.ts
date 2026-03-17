@@ -141,7 +141,7 @@ describe('WorkflowTab - job state indicator', () => {
     mockExecutionStore.clearWorkflowStatus.mockClear()
   })
 
-  it.for(['running', 'success', 'error'] as const)(
+  it.for(['running', 'completed', 'failed'] as const)(
     'shows %s indicator from store',
     (status) => {
       mockExecutionStore.workflowStatus = new Map([
@@ -167,7 +167,7 @@ describe('WorkflowTab - job state indicator', () => {
 
   it('does not show job indicator on active tab', () => {
     mockExecutionStore.workflowStatus = new Map([
-      ['/workflows/test.json', 'success']
+      ['/workflows/test.json', 'completed']
     ])
 
     const wrapper = mountTab({ activeWorkflowKey: 'test-key' })
@@ -189,7 +189,7 @@ describe('WorkflowTab - job state indicator', () => {
 
   it('clears workflow status when tab becomes active', async () => {
     mockExecutionStore.workflowStatus = new Map([
-      ['/workflows/test.json', 'success']
+      ['/workflows/test.json', 'completed']
     ])
 
     const wrapper = mountTab()

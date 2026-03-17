@@ -23,17 +23,17 @@
         <div class="relative">
           <i
             v-if="jobState"
-            aria-hidden="true"
             data-testid="job-state-indicator"
             :data-state="jobState"
+            :aria-label="jobStateLabel"
             :class="
               cn(
                 'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
                 jobState === 'running' &&
                   'icon-[lucide--loader-circle] animate-spin text-muted-foreground',
-                jobState === 'success' &&
+                jobState === 'completed' &&
                   'icon-[lucide--circle-check] text-success-background',
-                jobState === 'error' &&
+                jobState === 'failed' &&
                   'icon-[lucide--octagon-alert] text-destructive-background'
               )
             "
@@ -185,6 +185,16 @@ const jobState = computed(() => {
   if (!path || isActiveTab.value) return null
   return executionStore.workflowStatus.get(path) ?? null
 })
+
+const jobStateLabelMap: Record<string, string> = {
+  running: 'g.running',
+  completed: 'g.completed',
+  failed: 'g.failed'
+}
+
+const jobStateLabel = computed(() =>
+  jobState.value ? t(jobStateLabelMap[jobState.value]) : undefined
+)
 
 watch(isActiveTab, (isActive) => {
   const path = props.workflowOption.workflow.path

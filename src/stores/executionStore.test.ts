@@ -511,27 +511,27 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.workflowStatus.get('/workflows/a.json')).toBeUndefined()
   })
 
-  it('sets success on execution_success', () => {
+  it('sets completed on execution_success', () => {
     callStoreJob('job-1', '/workflows/a.json')
     fireExecutionStart('job-1')
     fireExecutionSuccess('job-1')
 
-    expect(store.workflowStatus.get('/workflows/a.json')).toBe('success')
+    expect(store.workflowStatus.get('/workflows/a.json')).toBe('completed')
   })
 
-  it('sets error on execution_error', () => {
+  it('sets failed on execution_error', () => {
     callStoreJob('job-1', '/workflows/a.json')
     fireExecutionStart('job-1')
     fireExecutionError('job-1')
 
-    expect(store.workflowStatus.get('/workflows/a.json')).toBe('error')
+    expect(store.workflowStatus.get('/workflows/a.json')).toBe('failed')
   })
 
   it('clearWorkflowStatus removes the entry', () => {
     callStoreJob('job-1', '/workflows/a.json')
     fireExecutionStart('job-1')
     fireExecutionSuccess('job-1')
-    expect(store.workflowStatus.get('/workflows/a.json')).toBe('success')
+    expect(store.workflowStatus.get('/workflows/a.json')).toBe('completed')
 
     store.clearWorkflowStatus('/workflows/a.json')
     expect(store.workflowStatus.has('/workflows/a.json')).toBe(false)
