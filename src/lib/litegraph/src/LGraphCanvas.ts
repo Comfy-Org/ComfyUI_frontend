@@ -82,6 +82,7 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
+import { isWidgetInputSlot } from './node/slotUtils'
 import type { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
@@ -5954,6 +5955,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.globalAlpha = this.editor_alpha
     // for every node
     const nodes = graph._nodes
+
+    // Ensure widget-input slot positions are computed before rendering links.
+    // arrange() sets input.pos for widget-backed slots, but is normally called
+    // in drawNode (foreground canvas). drawConnections runs on the background
+    // canvas, which may render before drawNode has executed for this frame.
+    // In Vue mode, promoted widget inputs lack DOM-registered slot positions
+    // (NodeSlots filters them out), so the fallback needs input.pos set here.
+    for (const node of nodes) {
+      if (node.flags.collapsed || !node.widgets?.length) continue
+      if (!node.inputs?.some((inp) => isWidgetInputSlot(inp) && !inp.pos))
+        continue
+
+      node._setConcreteSlots()
+      node.arrange()
+    }
+
     for (const node of nodes) {
       // for every input (we render just inputs because it is easier as every slot can only have one input)
       const { inputs } = node

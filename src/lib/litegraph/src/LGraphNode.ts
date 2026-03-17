@@ -4206,40 +4206,28 @@ export class LGraphNode
    * Arranges the layout of the node's widget input slots.
    */
   private _arrangeWidgetInputSlots(): void {
-    if (!this.widgets) return
+    if (!this.widgets?.length) return
 
-    const slotByWidgetName = new Map<
-      string,
-      INodeInputSlot & { index: number }
-    >()
+    // Build a name→widget map for fast lookup.
+    const widgetByName = new Map<string, IBaseWidget>()
+    for (const w of this.widgets) widgetByName.set(w.name, w)
 
-    for (const [i, slot] of this.inputs.entries()) {
+    // Set widget-backed slot positions from widget Y coordinates.
+    // In Vue mode, promoted widget inputs are not rendered as <InputSlot>
+    // components (NodeSlots filters them out), so they have no DOM-registered
+    // position. input.pos serves as the fallback for getSlotPosition().
+    for (const [i, slot] of this._concreteInputs.entries()) {
       if (!isWidgetInputSlot(slot)) continue
 
-      slotByWidgetName.set(slot.widget.name, { ...slot, index: i })
-    }
-    if (!slotByWidgetName.size) return
+      // Match by slot.widget.name (standard path). Fall back to the slot's
+      // bound _widget reference for SubgraphNode promoted inputs whose display
+      // name differs from slot.widget.name (e.g. renamed labels).
+      const widget = widgetByName.get(slot.widget.name) ?? slot._widget
+      if (!widget) continue
 
-    // Only set custom pos if not using Vue positioning
-    // Vue positioning calculates widget slot positions dynamically
-    if (!LiteGraph.vueNodesMode) {
-      for (const widget of this.widgets) {
-        const slot = slotByWidgetName.get(widget.name)
-        if (!slot) continue
-
-        const actualSlot = this._concreteInputs[slot.index]
-        const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-        actualSlot.pos = [offset, widget.y + offset]
-        this._measureSlot(actualSlot, slot.index, true)
-      }
-    } else {
-      // For Vue positioning, just measure the slots without setting pos
-      for (const widget of this.widgets) {
-        const slot = slotByWidgetName.get(widget.name)
-        if (!slot) continue
-
-        this._measureSlot(this._concreteInputs[slot.index], slot.index, true)
-      }
+      const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+      slot.pos = [offset, widget.y + offset]
+      this._measureSlot(slot, i, true)
     }
   }
 
