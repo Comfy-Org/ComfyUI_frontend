@@ -7,6 +7,18 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 
+export function extractWidgetStringValue(value: unknown): string | undefined {
+  if (typeof value === 'string') return value
+  if (
+    value &&
+    typeof value === 'object' &&
+    'filename' in value &&
+    typeof value.filename === 'string'
+  )
+    return value.filename
+  return undefined
+}
+
 // Private image utility functions
 interface ImageLayerFilenames {
   maskedImage: string
@@ -85,22 +97,10 @@ export function useMaskEditorLoader() {
 
       let nodeImageRef = parseImageRef(nodeImageUrl)
 
-      let widgetFilename: string | undefined
-      if (node.widgets) {
-        const imageWidget = node.widgets.find((w) => w.name === 'image')
-        if (imageWidget) {
-          if (typeof imageWidget.value === 'string') {
-            widgetFilename = imageWidget.value
-          } else if (
-            typeof imageWidget.value === 'object' &&
-            imageWidget.value &&
-            'filename' in imageWidget.value &&
-            typeof imageWidget.value.filename === 'string'
-          ) {
-            widgetFilename = imageWidget.value.filename
-          }
-        }
-      }
+      const imageWidget = node.widgets?.find((w) => w.name === 'image')
+      const widgetFilename = imageWidget
+        ? extractWidgetStringValue(imageWidget.value)
+        : undefined
 
       // If we have a widget filename, we should prioritize it over the node image
       // because the node image might be stale (e.g. from a previous save)

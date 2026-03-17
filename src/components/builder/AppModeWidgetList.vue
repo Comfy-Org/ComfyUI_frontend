@@ -11,6 +11,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
@@ -100,8 +101,11 @@ const mappedSelections = computed((): WidgetEntry[] => {
 function getDropIndicator(node: LGraphNode) {
   if (node.type !== 'LoadImage') return undefined
 
-  const rawValue = node.widgets?.[0]?.value
-  const { filename, subfolder, type } = parseImageWidgetValue(`${rawValue}`)
+  const stringValue = extractWidgetStringValue(node.widgets?.[0]?.value)
+
+  const { filename, subfolder, type } = stringValue
+    ? parseImageWidgetValue(stringValue)
+    : { filename: '', subfolder: '', type: 'input' }
 
   const buildImageUrl = () => {
     if (!filename) return undefined
