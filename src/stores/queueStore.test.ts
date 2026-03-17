@@ -350,6 +350,119 @@ describe('useQueueStore', () => {
     })
   })
 
+  describe('update() - single-flight coalescing', () => {
+    it('should coalesce concurrent calls into one re-fetch', async () => {
+      let resolveQueue!: QueueResolver
+      mockGetQueue.mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
+      mockGetHistory.mockResolvedValue([])
+
+      // First call starts the in-flight request
+      const first = store.update()
+      expect(mockGetQueue).toHaveBeenCalledTimes(1)
+
+      // These calls arrive while the first is in flight — they should coalesce
+      void store.update()
+      void store.update()
+      void store.update()
+
+      // No additional HTTP requests fired
+      expect(mockGetQueue).toHaveBeenCalledTimes(1)
+
+      // Resolve the in-flight request
+      resolveQueue({ Running: [], Pending: [] })
+      await first
+
+      // A single re-fetch should fire because dirty was set
+      expect(mockGetQueue).toHaveBeenCalledTimes(2)
+    })
+
+    it('should apply every response (no starvation)', async () => {
+      const firstRunning = createRunningJob(1, 'run-1')
+      const secondRunning = createRunningJob(2, 'run-2')
+
+      let resolveQueue!: QueueResolver
+      mockGetQueue.mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
+      mockGetHistory.mockResolvedValue([])
+
+      // First call
+      const first = store.update()
+
+      // Second call coalesces
+      void store.update()
+
+      // Resolve first — data should be applied (not discarded)
+      resolveQueue({ Running: [firstRunning], Pending: [] })
+      await first
+
+      expect(store.runningTasks).toHaveLength(1)
+      expect(store.runningTasks[0].jobId).toBe('run-1')
+
+      // The coalesced re-fetch fires; resolve it with new data
+      resolveQueue({ Running: [secondRunning], Pending: [] })
+      // Wait for the re-fetch to complete
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(store.runningTasks).toHaveLength(1)
+      expect(store.runningTasks[0].jobId).toBe('run-2')
+    })
+
+    it('should not fire duplicate requests when no calls arrive during flight', async () => {
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([])
+
+      await store.update()
+
+      expect(mockGetQueue).toHaveBeenCalledTimes(1)
+      expect(mockGetHistory).toHaveBeenCalledTimes(1)
+    })
+
+    it('should clear loading state after coalesced re-fetch completes', async () => {
+      let resolveQueue!: QueueResolver
+      mockGetQueue.mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
+      mockGetHistory.mockResolvedValue([])
+
+      const first = store.update()
+      void store.update() // coalesce
+
+      resolveQueue({ Running: [], Pending: [] })
+      await first
+
+      // isLoading should be true again for the re-fetch
+      expect(store.isLoading).toBe(true)
+
+      resolveQueue({ Running: [], Pending: [] })
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(store.isLoading).toBe(false)
+    })
+
+    it('should allow new requests after coalesced re-fetch completes', async () => {
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([])
+
+      await store.update()
+      expect(mockGetQueue).toHaveBeenCalledTimes(1)
+
+      await store.update()
+      expect(mockGetQueue).toHaveBeenCalledTimes(2)
+    })
+  })
+
   describe('update() - sorting', () => {
     it('should sort tasks by job.priority descending', async () => {
       const job1 = createHistoryJob(1, 'hist-1')
