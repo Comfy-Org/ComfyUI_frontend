@@ -137,6 +137,21 @@ function nodeToNodeData(node: LGraphNode) {
     onDragOver: node.onDragOver
   }
 }
+
+async function handleDragDrop(e: DragEvent) {
+  for (const { nodeData } of mappedSelections.value) {
+    if (!nodeData?.onDragOver?.(e)) continue
+
+    const rawResult = nodeData?.onDragDrop?.(e)
+    if (rawResult === false) continue
+
+    e.stopPropagation()
+    e.preventDefault()
+    if ((await rawResult) === true) return
+  }
+}
+
+defineExpose({ handleDragDrop })
 </script>
 <template>
   <div
