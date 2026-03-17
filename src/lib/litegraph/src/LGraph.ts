@@ -3052,13 +3052,13 @@ export class Subgraph
    * @param input The input slot to remove.
    */
   removeInput(input: SubgraphInput): void {
-    input.disconnect()
-
     const index = this.inputs.indexOf(input)
     if (index === -1) throw new Error('Input not found')
 
     const mayContinue = this.events.dispatch('removing-input', { input, index })
     if (!mayContinue) return
+
+    input.disconnect()
 
     this.inputs.splice(index, 1)
 
@@ -3073,8 +3073,6 @@ export class Subgraph
    * @param output The output slot to remove.
    */
   removeOutput(output: SubgraphOutput): void {
-    output.disconnect()
-
     const index = this.outputs.indexOf(output)
     if (index === -1) throw new Error('Output not found')
 
@@ -3083,6 +3081,8 @@ export class Subgraph
       index
     })
     if (!mayContinue) return
+
+    output.disconnect()
 
     this.outputs.splice(index, 1)
 
