@@ -926,6 +926,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override _internalConfigureAfterSlots() {
     this._rebindInputSubgraphSlots()
 
+    // Prune inputs that don't map to any subgraph slot definition.
+    // This prevents stale/duplicate serialized inputs from persisting (#9977).
+    this.inputs = this.inputs.filter((input) => input._subgraphSlot)
+
     // Ensure proxyWidgets is initialized so it serializes
     this.properties.proxyWidgets ??= []
 
@@ -1439,9 +1443,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return super.serialize()
   }
   override clone() {
-    // Note: _serializeItems bypasses clone() for SubgraphNodes to avoid
-    // promotionStore identity mismatch (#9976). This clone path is still
-    // used by alt+drag and other operations.
-    return super.clone()
+    const clone = super.clone()
+
+    //TODO: Consider deep cloning subgraphs here.
+    //It's the safest place to prevent creation of linked subgraphs
+    //But the frequency of clone().serialize() calls is likely to result in
+    //pollution of rootGraph.subgraphs
+
+    return clone
   }
 }
