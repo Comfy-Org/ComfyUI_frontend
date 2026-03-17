@@ -698,6 +698,55 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
   })
 })
 
+describe('Nested SubgraphNode duplicate input prevention', () => {
+  it('should not duplicate inputs when the referenced subgraph is reconfigured', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'a', type: 'STRING' },
+        { name: 'b', type: 'NUMBER' }
+      ]
+    })
+
+    const node = createTestSubgraphNode(subgraph)
+    expect(node.inputs).toHaveLength(2)
+
+    // Simulate what happens during nested subgraph configure:
+    // B.configure() calls _configureSubgraph(), which recreates SubgraphInput
+    // objects and dispatches 'input-added' events with new references.
+    const serialized = subgraph.asSerialisable()
+    subgraph.configure(serialized)
+
+    // The SubgraphNode's event listener should recognize existing inputs
+    // by ID and NOT add duplicates.
+    expect(node.inputs).toHaveLength(2)
+    expect(node.inputs.every((i) => i._subgraphSlot)).toBe(true)
+  })
+
+  it('should not accumulate inputs across multiple reconfigure cycles', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'x', type: 'IMAGE' },
+        { name: 'y', type: 'VAE' }
+      ]
+    })
+
+    const node = createTestSubgraphNode(subgraph)
+    expect(node.inputs).toHaveLength(2)
+
+    for (let i = 0; i < 5; i++) {
+      const serialized = subgraph.asSerialisable()
+      subgraph.configure(serialized)
+    }
+
+    expect(node.inputs).toHaveLength(2)
+    expect(node.inputs.map((i) => i.name)).toEqual(['x', 'y'])
+  })
+})
+
 describe('SubgraphNode promotion view keys', () => {
   it('distinguishes tuples that differ only by colon placement', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
