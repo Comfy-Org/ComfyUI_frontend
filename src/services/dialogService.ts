@@ -553,18 +553,22 @@ export const useDialogService = () => {
     })
   }
 
-  async function showCloudNotification() {
+  /** Shows one-time cloud notification modal for macOS desktop users. */
+  async function showCloudNotification(): Promise<void> {
     const { default: component } = await lazyCloudNotificationContent()
-    showLayoutDialog({
-      key: 'global-cloud-notification',
-      component,
-      props: {},
-      dialogComponentProps: {
-        closable: false,
-        pt: {
-          root: { class: 'w-[680px] max-h-[85vh]' }
+    return new Promise<void>((resolve) => {
+      showLayoutDialog({
+        key: 'global-cloud-notification',
+        component,
+        props: {},
+        dialogComponentProps: {
+          closable: false,
+          pt: {
+            root: { class: 'w-170 max-h-[85vh]' }
+          },
+          onClose: () => resolve()
         }
-      }
+      })
     })
   }
 
