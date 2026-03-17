@@ -2,7 +2,6 @@ import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 import { fitToViewInstant } from '../helpers/fitToView'
@@ -11,33 +10,6 @@ import {
   getPromotedWidgetCount,
   getPromotedWidgets
 } from '../helpers/promotedWidgets'
-
-/**
- * Check whether we're currently in a subgraph.
- */
-async function isInSubgraph(comfyPage: ComfyPage): Promise<boolean> {
-  return comfyPage.page.evaluate(() => {
-    const graph = window.app!.canvas.graph
-    return !!graph && 'inputNode' in graph
-  })
-}
-
-async function exitSubgraphViaBreadcrumb(comfyPage: ComfyPage): Promise<void> {
-  const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
-  const parentLink = breadcrumb.getByRole('link').first()
-  if (await parentLink.isVisible()) {
-    await parentLink.click()
-  } else {
-    await comfyPage.page.evaluate(() => {
-      const canvas = window.app!.canvas
-      const graph = canvas.graph
-      if (!graph) return
-      canvas.setGraph(graph.rootGraph)
-    })
-  }
-  await comfyPage.nextFrame()
-  await expect.poll(async () => isInSubgraph(comfyPage)).toBe(false)
-}
 
 test.describe(
   'Subgraph Widget Promotion',
@@ -198,7 +170,7 @@ test.describe(
         await comfyPage.vueNodes.enterSubgraph('11')
         await comfyPage.nextFrame()
 
-        expect(await isInSubgraph(comfyPage)).toBe(true)
+        expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
       })
 
       test('Multiple promoted widgets render on SubgraphNode in Vue mode', async ({
@@ -270,7 +242,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent graph
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await comfyPage.subgraph.exitViaBreadcrumb()
 
         // Promoted textarea on SubgraphNode should have the same value
         const promotedTextarea = comfyPage.page.getByTestId(
@@ -304,7 +276,7 @@ test.describe(
           )
           await expect(interiorTextarea).toHaveValue(testContent)
 
-          await exitSubgraphViaBreadcrumb(comfyPage)
+          await comfyPage.subgraph.exitViaBreadcrumb()
 
           const promotedTextarea = comfyPage.page.getByTestId(
             TestIds.widgets.domWidgetTextarea
@@ -350,7 +322,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await comfyPage.subgraph.exitViaBreadcrumb()
 
         // SubgraphNode should now have the promoted widget
         const widgetCount = await getPromotedWidgetCount(comfyPage, '2')
@@ -385,7 +357,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back and verify promotion took effect
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await comfyPage.subgraph.exitViaBreadcrumb()
         await fitToViewInstant(comfyPage)
         await comfyPage.nextFrame()
 
@@ -416,7 +388,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await comfyPage.subgraph.exitViaBreadcrumb()
 
         // SubgraphNode should have fewer widgets
         const finalWidgetCount = await getPromotedWidgetCount(comfyPage, '2')
@@ -582,7 +554,6 @@ test.describe(
 
         const beforeSnapshot = await getPromotedWidgets(comfyPage, '11')
         expect(beforeSnapshot.length).toBeGreaterThan(0)
-        const beforeNames = beforeSnapshot.map(([, name]) => name)
 
         const serialized = await comfyPage.page.evaluate(() => {
           return window.app!.graph!.serialize()
@@ -594,10 +565,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         const afterSnapshot = await getPromotedWidgets(comfyPage, '11')
-        const afterNames = afterSnapshot.map(([, name]) => name)
-
-        expect(afterNames).toEqual(beforeNames)
-        expect(afterSnapshot.length).toBe(beforeSnapshot.length)
+        expect(afterSnapshot).toEqual(beforeSnapshot)
       })
 
       test('Cloning a subgraph node keeps promoted widget entries on original and clone', async ({
@@ -769,19 +737,30 @@ test.describe(
 
         const initialNames = await getPromotedWidgetNames(comfyPage, '5')
         expect(initialNames.length).toBeGreaterThan(0)
-        const initialCount = initialNames.length
 
         const outerSubgraph = await comfyPage.nodeOps.getNodeRefById('5')
         await outerSubgraph.navigateIntoSubgraph()
+
+        const removedSlotName = await comfyPage.page.evaluate(() => {
+          const graph = window.app!.canvas.graph
+          if (!graph || !('inputNode' in graph)) return null
+          return graph.inputs?.[0]?.name ?? null
+        })
+        expect(removedSlotName).not.toBeNull()
 
         await comfyPage.subgraph.rightClickInputSlot()
         await comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
         await comfyPage.nextFrame()
 
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await comfyPage.subgraph.exitViaBreadcrumb()
 
-        const finalCount = await getPromotedWidgetCount(comfyPage, '5')
-        expect(finalCount).toBeLessThan(initialCount)
+        const finalNames = await getPromotedWidgetNames(comfyPage, '5')
+        const expectedNames = [...initialNames]
+        const removedIndex = expectedNames.indexOf(removedSlotName!)
+        expect(removedIndex).toBeGreaterThanOrEqual(0)
+        expectedNames.splice(removedIndex, 1)
+
+        expect(finalNames).toEqual(expectedNames)
       })
 
       test('Removing I/O slot removes associated promoted widget', async ({

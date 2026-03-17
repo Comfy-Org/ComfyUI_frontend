@@ -111,14 +111,16 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()
 
-      const progressAfter = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph!
-        const subgraphNode = graph.nodes.find(
-          (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
-        )
-        return subgraphNode?.progress
-      })
-      expect(progressAfter).toBeUndefined()
+      await expect(async () => {
+        const progressAfter = await comfyPage.page.evaluate(() => {
+          const graph = window.app!.canvas.graph!
+          const subgraphNode = graph.nodes.find(
+            (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+          )
+          return subgraphNode?.progress
+        })
+        expect(progressAfter).toBeUndefined()
+      }).toPass({ timeout: 5_000 })
     })
   }
 )

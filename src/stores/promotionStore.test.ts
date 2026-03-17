@@ -316,7 +316,7 @@ describe(usePromotionStore, () => {
       expect(store.isPromotedByAny(graphA, '10', 'seed')).toBe(true)
       expect(store.isPromotedByAny(graphA, '11', 'steps')).toBe(true)
 
-      store.clearGraph(graphA)
+      store.setPromotions(graphA, nodeId, [])
 
       expect(store.isPromotedByAny(graphA, '10', 'seed')).toBe(false)
       expect(store.isPromotedByAny(graphA, '11', 'steps')).toBe(false)

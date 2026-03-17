@@ -7,7 +7,10 @@ import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import {
+  useSubgraphNavigationStore,
+  VIEWPORT_CACHE_MAX_SIZE
+} from '@/stores/subgraphNavigationStore'
 
 const { mockSetDirty } = vi.hoisted(() => ({
   mockSetDirty: vi.fn()
@@ -292,10 +295,11 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
     it('should evict oldest viewport entry when LRU cache exceeds capacity', () => {
       const navigationStore = useSubgraphNavigationStore()
+      const overflowEntryCount = VIEWPORT_CACHE_MAX_SIZE * 2 + 1
 
       // QuickLRU uses double-buffering: effective capacity is up to 2 * maxSize.
-      // Fill 65 entries (maxSize=32) so the earliest ones are fully evicted.
-      for (let i = 0; i < 65; i++) {
+      // Fill enough entries so the earliest ones are fully evicted.
+      for (let i = 0; i < overflowEntryCount; i++) {
         navigationStore.viewportCache.set(`sub-${i}`, {
           scale: i + 1,
           offset: [i * 10, i * 20]
@@ -304,7 +308,9 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       expect(navigationStore.viewportCache.has('sub-0')).toBe(false)
 
-      expect(navigationStore.viewportCache.has('sub-64')).toBe(true)
+      expect(
+        navigationStore.viewportCache.has(`sub-${overflowEntryCount - 1}`)
+      ).toBe(true)
 
       mockCanvas.ds.scale = 99
       mockCanvas.ds.offset = [999, 999]

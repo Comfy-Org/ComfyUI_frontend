@@ -2,7 +2,6 @@ import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 import {
@@ -11,29 +10,7 @@ import {
   getNonPreviewPromotedWidgets
 } from '../helpers/promotedWidgets'
 
-async function isInSubgraph(comfyPage: ComfyPage): Promise<boolean> {
-  return comfyPage.page.evaluate(() => {
-    const graph = window.app!.canvas.graph
-    return !!graph && 'inputNode' in graph
-  })
-}
-
-async function exitSubgraphViaBreadcrumb(comfyPage: ComfyPage): Promise<void> {
-  const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
-  const parentLink = breadcrumb.getByRole('link').first()
-  if (await parentLink.isVisible()) {
-    await parentLink.click()
-  } else {
-    await comfyPage.page.evaluate(() => {
-      const canvas = window.app!.canvas
-      const graph = canvas.graph
-      if (!graph) return
-      canvas.setGraph(graph.rootGraph)
-    })
-  }
-  await comfyPage.nextFrame()
-  await expect.poll(async () => isInSubgraph(comfyPage)).toBe(false)
-}
+const domPreviewSelector = '.image-preview'
 
 test.describe(
   'Subgraph Lifecycle Edge Behaviors',
@@ -135,7 +112,7 @@ test.describe(
         await comfyPage.page.keyboard.press('Delete')
         await comfyPage.nextFrame()
 
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await comfyPage.subgraph.exitViaBreadcrumb()
 
         await expect
           .poll(async () => {
@@ -177,7 +154,7 @@ test.describe(
         await comfyPage.page.keyboard.press('Delete')
         await comfyPage.nextFrame()
 
-        await exitSubgraphViaBreadcrumb(comfyPage)
+        await comfyPage.subgraph.exitViaBreadcrumb()
 
         await expect(
           comfyPage.page.getByTestId(TestIds.widgets.domWidgetTextarea)
@@ -246,6 +223,10 @@ test.describe(
           return graph.nodes.filter((n) => n.isSubgraphNode()).length
         })
         expect(subgraphNodeCount).toBe(0)
+
+        await expect
+          .poll(async () => comfyPage.subgraph.countGraphPseudoPreviewEntries())
+          .toBe(0)
       })
 
       test('Removing subgraph node clears pseudo-preview DOM elements', async ({
@@ -255,6 +236,9 @@ test.describe(
           'subgraphs/subgraph-with-preview-node'
         )
         await comfyPage.nextFrame()
+
+        const beforePseudo = await getPseudoPreviewWidgets(comfyPage, '5')
+        expect(beforePseudo.length).toBeGreaterThan(0)
 
         const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
         expect(await subgraphNode.exists()).toBe(true)
@@ -267,6 +251,42 @@ test.describe(
           return !!window.app!.canvas.graph!.getNodeById('5')
         })
         expect(nodeExists).toBe(false)
+
+        await expect
+          .poll(async () => comfyPage.subgraph.countGraphPseudoPreviewEntries())
+          .toBe(0)
+        await expect(comfyPage.page.locator(domPreviewSelector)).toHaveCount(0)
+      })
+
+      test('Unpacking one subgraph does not clear sibling pseudo-preview entries', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-multiple-promoted-previews'
+        )
+        await comfyPage.nextFrame()
+
+        const firstNodeBefore = await getPseudoPreviewWidgets(comfyPage, '7')
+        const secondNodeBefore = await getPseudoPreviewWidgets(comfyPage, '8')
+
+        expect(firstNodeBefore.length).toBeGreaterThan(0)
+        expect(secondNodeBefore.length).toBeGreaterThan(0)
+
+        await comfyPage.page.evaluate(() => {
+          const graph = window.app!.graph!
+          const subgraphNode = graph.getNodeById('7')
+          if (!subgraphNode || !subgraphNode.isSubgraphNode()) return
+          graph.unpackSubgraph(subgraphNode)
+        })
+        await comfyPage.nextFrame()
+
+        const firstNodeExists = await comfyPage.page.evaluate(() => {
+          return !!window.app!.graph!.getNodeById('7')
+        })
+        expect(firstNodeExists).toBe(false)
+
+        const secondNodeAfter = await getPseudoPreviewWidgets(comfyPage, '8')
+        expect(secondNodeAfter).toEqual(secondNodeBefore)
       })
     })
   }

@@ -7,7 +7,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 
@@ -90,93 +89,116 @@ describe('useSubgraphNavigationStore', () => {
   it('should preserve navigation stack per workflow', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
-
-    // Mock first workflow
-    const workflow1 = {
-      path: 'workflow1.json',
-      filename: 'workflow1.json',
-      changeTracker: createMockChangeTracker({
-        restore: vi.fn(),
-        store: vi.fn()
-      })
-    } as Partial<ComfyWorkflow> as ComfyWorkflow
-
-    // Set the active workflow
-    workflowStore.activeWorkflow =
-      workflow1 as typeof workflowStore.activeWorkflow
-
-    // Simulate the restore process that happens when loading a workflow
-    // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
-    navigationStore.restoreState(['subgraph-1', 'subgraph-2'])
-
-    // Verify navigation was set
-    expect(navigationStore.exportState()).toHaveLength(2)
-    expect(navigationStore.exportState()).toEqual(['subgraph-1', 'subgraph-2'])
-
-    // Switch to a different workflow with no subgraph state (root level)
-    const workflow2 = {
-      path: 'workflow2.json',
-      filename: 'workflow2.json',
-      changeTracker: createMockChangeTracker({
-        restore: vi.fn(),
-        store: vi.fn()
-      })
-    } as Partial<ComfyWorkflow> as ComfyWorkflow
-
-    workflowStore.activeWorkflow =
-      workflow2 as typeof workflowStore.activeWorkflow
-
-    // Simulate the restore process for workflow2
-    // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
-    navigationStore.restoreState([])
-
-    // The navigation stack should be empty for workflow2 (at root level)
-    expect(navigationStore.exportState()).toHaveLength(0)
-
-    // Switch back to workflow1
-    workflowStore.activeWorkflow =
-      workflow1 as typeof workflowStore.activeWorkflow
-
-    // Simulate the restore process for workflow1 again
-    // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
-    navigationStore.restoreState(['subgraph-1', 'subgraph-2'])
-
-    // The navigation stack should be restored for workflow1
-    expect(navigationStore.exportState()).toHaveLength(2)
-    expect(navigationStore.exportState()).toEqual(['subgraph-1', 'subgraph-2'])
-  })
-
-  it('should reset navigation on workflow switch and restore on switch back', async () => {
-    const navigationStore = useSubgraphNavigationStore()
-    const workflowStore = useWorkflowStore()
+    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
 
     const workflow1 = {
       path: 'workflow1.json',
       filename: 'workflow1.json'
     } as ComfyWorkflow
 
+    const workflow2 = {
+      path: 'workflow2.json',
+      filename: 'workflow2.json'
+    } as ComfyWorkflow
+
+    const sub1 = {
+      id: 'sub-1',
+      rootGraph: app.rootGraph,
+      _nodes: [],
+      nodes: []
+    } as Partial<Subgraph> as Subgraph
+
+    const sub2 = {
+      id: 'sub-2',
+      rootGraph: app.rootGraph,
+      _nodes: [],
+      nodes: []
+    } as Partial<Subgraph> as Subgraph
+
+    app.rootGraph.subgraphs.set(sub1.id, sub1)
+    app.rootGraph.subgraphs.set(sub2.id, sub2)
+
+    vi.mocked(findSubgraphPathById).mockImplementation((_rootGraph, id) => {
+      if (id === sub1.id) return [sub1.id]
+      if (id === sub2.id) return [sub1.id, sub2.id]
+      return null
+    })
+
+    // Workflow1 is in a nested subgraph (sub-1 -> sub-2)
+    app.canvas.subgraph = sub2
     workflowStore.activeWorkflow =
       workflow1 as typeof workflowStore.activeWorkflow
+    await nextTick()
 
-    navigationStore.restoreState(['sub-1', 'sub-2'])
-    expect(navigationStore.exportState()).toEqual(['sub-1', 'sub-2'])
+    expect(navigationStore.exportState()).toEqual([sub1.id, sub2.id])
+
+    // Switch to workflow2 at root level
+    app.canvas.subgraph = undefined
+    workflowStore.activeWorkflow =
+      workflow2 as typeof workflowStore.activeWorkflow
+    await nextTick()
+
+    expect(navigationStore.exportState()).toEqual([])
+
+    // Switch back to workflow1 in its subgraph
+    app.canvas.subgraph = sub2
+    workflowStore.activeWorkflow =
+      workflow1 as typeof workflowStore.activeWorkflow
+    await nextTick()
+
+    expect(navigationStore.exportState()).toEqual([sub1.id, sub2.id])
+  })
+
+  it('should reset navigation on workflow switch and restore on switch back', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const workflowStore = useWorkflowStore()
+    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
+
+    const workflow1 = {
+      path: 'workflow1.json',
+      filename: 'workflow1.json'
+    } as ComfyWorkflow
+
+    const workflow1Subgraph = {
+      id: 'sub-1',
+      rootGraph: app.rootGraph,
+      _nodes: [],
+      nodes: []
+    } as Partial<Subgraph> as Subgraph
+
+    app.rootGraph.subgraphs.set(workflow1Subgraph.id, workflow1Subgraph)
+    vi.mocked(findSubgraphPathById).mockImplementation((_rootGraph, id) =>
+      id === workflow1Subgraph.id ? [workflow1Subgraph.id] : null
+    )
+
+    app.canvas.subgraph = workflow1Subgraph
+
+    workflowStore.activeWorkflow =
+      workflow1 as typeof workflowStore.activeWorkflow
+    await nextTick()
+
+    expect(navigationStore.exportState()).toEqual([workflow1Subgraph.id])
 
     const workflow2 = {
       path: 'workflow2.json',
       filename: 'workflow2.json'
     } as ComfyWorkflow
 
+    app.canvas.subgraph = undefined
+
     workflowStore.activeWorkflow =
       workflow2 as typeof workflowStore.activeWorkflow
+    await nextTick()
 
-    navigationStore.restoreState([])
-    expect(navigationStore.exportState()).toHaveLength(0)
+    expect(navigationStore.exportState()).toEqual([])
+
+    app.canvas.subgraph = workflow1Subgraph
 
     workflowStore.activeWorkflow =
       workflow1 as typeof workflowStore.activeWorkflow
+    await nextTick()
 
-    navigationStore.restoreState(['sub-1', 'sub-2'])
-    expect(navigationStore.exportState()).toEqual(['sub-1', 'sub-2'])
+    expect(navigationStore.exportState()).toEqual([workflow1Subgraph.id])
   })
 
   it('should handle restoreState with unreachable subgraph IDs', () => {
