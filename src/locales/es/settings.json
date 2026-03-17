@@ -19,15 +19,15 @@
   },
   "Comfy-Desktop_WindowStyle": {
     "name": "Estilo de ventana",
+    "tooltip": "Personalizado: Reemplaza la barra de título del sistema con el menú superior de ComfyUI",
     "options": {
-      "custom": "personalizado",
-      "default": "predeterminado"
-    },
-    "tooltip": "Personalizado: Reemplace la barra de título del sistema con el menú superior de ComfyUI"
+      "default": "predeterminado",
+      "custom": "personalizado"
+    }
   },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Imagen de fondo del lienzo",
-    "tooltip": "URL de la imagen para el fondo del lienzo. Puedes hacer clic derecho en una imagen del panel de resultados y seleccionar \"Establecer como fondo\" para usarla."
+    "tooltip": "URL de la imagen para el fondo del lienzo. Puedes hacer clic derecho en una imagen del panel de resultados y seleccionar \"Establecer como fondo\" para usarla, o subir tu propia imagen usando el botón de subida."
   },
   "Comfy_Canvas_LeftMouseClickBehavior": {
     "name": "Comportamiento del clic izquierdo del ratón",
@@ -46,9 +46,9 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "Modo de navegación del lienzo",
     "options": {
-      "Custom": "Personalizado",
+      "Standard (New)": "Estándar (Nuevo)",
       "Drag Navigation": "Navegación por arrastre",
-      "Standard (New)": "Estándar (Nuevo)"
+      "Custom": "Personalizado"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -58,41 +58,41 @@
   "Comfy_ConfirmClear": {
     "name": "Requerir confirmación al borrar el flujo de trabajo"
   },
-  "Comfy_DOMClippingEnabled": {
-    "name": "Habilitar el recorte de elementos DOM (la habilitación puede reducir el rendimiento)"
-  },
   "Comfy_DevMode": {
     "name": "Habilitar opciones de modo de desarrollo (guardar API, etc.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Desactivar el redondeo predeterminado del widget flotante.",
+    "name": "Desactivar el redondeo predeterminado del widget float.",
     "tooltip": "(requiere recargar la página) No se puede desactivar el redondeo cuando el redondeo está establecido por el nodo en el backend."
   },
   "Comfy_DisableSliders": {
     "name": "Desactivar los deslizadores del widget del nodo"
   },
+  "Comfy_DOMClippingEnabled": {
+    "name": "Habilitar el recorte de elementos DOM (la habilitación puede reducir el rendimiento)"
+  },
   "Comfy_EditAttention_Delta": {
     "name": "Precisión Ctrl+arriba/abajo"
   },
   "Comfy_EnableTooltips": {
-    "name": "Habilitar Tooltips"
+    "name": "Habilitar tooltips"
   },
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Guardar y restaurar la posición del lienzo y el nivel de zoom en los flujos de trabajo"
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "Método de vista previa en vivo",
+    "tooltip": "Método de vista previa en vivo durante la generación de imágenes. \"default\" utiliza la configuración CLI del servidor.",
     "options": {
-      "auto": "auto",
       "default": "default",
-      "latent2rgb": "latent2rgb",
       "none": "ninguno",
+      "auto": "auto",
+      "latent2rgb": "latent2rgb",
       "taesd": "taesd"
-    },
-    "tooltip": "Método de vista previa en vivo durante la generación de imágenes. \"default\" utiliza la configuración CLI del servidor."
+    }
   },
   "Comfy_FloatRoundingPrecision": {
-    "name": "Decimales de redondeo del widget flotante [0 = automático].",
+    "name": "Decimales de redondeo del widget float [0 = automático].",
     "tooltip": "(requiere recargar la página)"
   },
   "Comfy_Graph_CanvasInfo": {
@@ -111,9 +111,9 @@
   "Comfy_Graph_LinkMarkers": {
     "name": "Marcadores de punto medio de enlace",
     "options": {
-      "Arrow": "Flecha",
+      "None": "Ninguno",
       "Circle": "Círculo",
-      "None": "Ninguno"
+      "Arrow": "Flecha"
     }
   },
   "Comfy_Graph_LiveSelection": {
@@ -123,37 +123,37 @@
   "Comfy_Graph_ZoomSpeed": {
     "name": "Velocidad de zoom del lienzo"
   },
+  "Comfy_Group_DoubleClickTitleToEdit": {
+    "name": "Doble clic en el título del grupo para editar"
+  },
   "Comfy_GroupSelectedNodes_Padding": {
     "name": "Relleno de nodos seleccionados en grupo"
   },
-  "Comfy_Group_DoubleClickTitleToEdit": {
-    "name": "Haga doble clic en el título del grupo para editar"
-  },
   "Comfy_LinkRelease_Action": {
-    "name": "Acción al soltar el enlace (Sin modificador)",
+    "name": "Acción al soltar el enlace (sin modificador)",
     "options": {
       "context menu": "menú contextual",
-      "no action": "sin acción",
-      "search box": "caja de búsqueda"
+      "search box": "caja de búsqueda",
+      "no action": "sin acción"
     }
   },
   "Comfy_LinkRelease_ActionShift": {
     "name": "Acción al soltar el enlace (Shift)",
     "options": {
       "context menu": "menú contextual",
-      "no action": "sin acción",
-      "search box": "caja de búsqueda"
+      "search box": "caja de búsqueda",
+      "no action": "sin acción"
     }
   },
   "Comfy_LinkRenderMode": {
     "name": "Modo de renderizado de enlace",
+    "tooltip": "Controla la apariencia y visibilidad de los enlaces de conexión entre nodos en el lienzo.",
     "options": {
-      "Hidden": "Oculto",
+      "Straight": "Recto",
       "Linear": "Lineal",
       "Spline": "Spline",
-      "Straight": "Recto"
-    },
-    "tooltip": "Controla la apariencia y visibilidad de los enlaces de conexión entre nodos en el lienzo."
+      "Hidden": "Oculto"
+    }
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "Habilitar visor 3D (Beta)",
@@ -165,11 +165,11 @@
   },
   "Comfy_Load3D_CameraType": {
     "name": "Tipo de cámara inicial",
+    "tooltip": "Controla si la cámara es perspectiva u ortográfica por defecto cuando se crea un nuevo widget 3D. Este valor predeterminado aún puede cambiarse individualmente para cada widget después de su creación.",
     "options": {
-      "orthographic": "ortográfica",
-      "perspective": "perspectiva"
-    },
-    "tooltip": "Controla si la cámara es perspectiva u ortográfica por defecto cuando se crea un nuevo widget 3D. Este valor predeterminado aún puede cambiarse individualmente para cada widget después de su creación."
+      "perspective": "perspectiva",
+      "orthographic": "ortográfica"
+    }
   },
   "Comfy_Load3D_LightAdjustmentIncrement": {
     "name": "Incremento de ajuste de luz",
@@ -189,12 +189,12 @@
   },
   "Comfy_Load3D_PLYEngine": {
     "name": "Motor PLY",
+    "tooltip": "Selecciona el motor para cargar archivos PLY. \"threejs\" utiliza el cargador nativo Three.js PLYLoader (mejor para archivos PLY de malla). \"fastply\" utiliza un cargador optimizado para archivos PLY de nube de puntos ASCII. \"sparkjs\" utiliza Spark.js para archivos PLY de Gaussian Splatting 3D.",
     "options": {
+      "threejs": "threejs",
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
-      "threejs": "threejs"
-    },
-    "tooltip": "Selecciona el motor para cargar archivos PLY. \"threejs\" utiliza el cargador nativo Three.js PLYLoader (mejor para archivos PLY de malla). \"fastply\" utiliza un cargador optimizado para archivos PLY de nube de puntos ASCII. \"sparkjs\" utiliza Spark.js para archivos PLY de Gaussian Splatting 3D."
+      "sparkjs": "sparkjs"
+    }
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "Visibilidad inicial de la cuadrícula",
@@ -217,11 +217,47 @@
   },
   "Comfy_ModelLibrary_NameFormat": {
     "name": "Qué nombre mostrar en la vista de árbol de la biblioteca de modelos",
+    "tooltip": "Selecciona \"nombre de archivo\" para renderizar una vista simplificada del nombre de archivo bruto (sin directorio o extensión \".safetensors\") en la lista de modelos. Selecciona \"título\" para mostrar el título de metadatos del modelo configurable.",
     "options": {
       "filename": "nombre de archivo",
       "title": "título"
-    },
-    "tooltip": "Selecciona \"nombre de archivo\" para renderizar una vista simplificada del nombre de archivo bruto (sin directorio o extensión \".safetensors\") en la lista de modelos. Selecciona \"título\" para mostrar el título de metadatos del modelo configurable."
+    }
+  },
+  "Comfy_Node_AllowImageSizeDraw": {
+    "name": "Mostrar ancho × altura debajo de la vista previa de la imagen"
+  },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "Mostrar siempre los widgets avanzados en todos los nodos",
+    "tooltip": "Cuando está activado, los widgets avanzados siempre son visibles en todos los nodos sin necesidad de expandirlos individualmente."
+  },
+  "Comfy_Node_AutoSnapLinkToSlot": {
+    "name": "Ajuste automático de enlace a la ranura del nodo",
+    "tooltip": "Al arrastrar un enlace sobre un nodo, el enlace se ajustará automáticamente a una ranura de entrada viable en el nodo"
+  },
+  "Comfy_Node_BypassAllLinksOnDelete": {
+    "name": "Mantener todos los enlaces al eliminar nodos",
+    "tooltip": "Al eliminar un nodo, intenta reconectar todos sus enlaces de entrada y salida (eludiendo el nodo eliminado)"
+  },
+  "Comfy_Node_DoubleClickTitleToEdit": {
+    "name": "Doble clic en el título del nodo para editar"
+  },
+  "Comfy_Node_MiddleClickRerouteNode": {
+    "name": "El clic medio crea un nuevo nodo de reenrutamiento"
+  },
+  "Comfy_Node_Opacity": {
+    "name": "Opacidad del nodo"
+  },
+  "Comfy_Node_ShowDeprecated": {
+    "name": "Mostrar nodos obsoletos en la búsqueda",
+    "tooltip": "Los nodos obsoletos están ocultos por defecto en la interfaz de usuario, pero siguen siendo funcionales en los flujos de trabajo existentes que los utilizan."
+  },
+  "Comfy_Node_ShowExperimental": {
+    "name": "Mostrar nodos experimentales en la búsqueda",
+    "tooltip": "Los nodos experimentales están marcados como tales en la interfaz de usuario y pueden estar sujetos a cambios significativos o eliminación en futuras versiones. Úselos con precaución en flujos de trabajo de producción"
+  },
+  "Comfy_Node_SnapHighlightsNode": {
+    "name": "Resaltar nodo al ajustar enlace",
+    "tooltip": "Al arrastrar un enlace sobre un nodo con ranura de entrada viable, resalta el nodo"
   },
   "Comfy_NodeBadge_NodeIdBadgeMode": {
     "name": "Modo de insignia de ID de nodo",
@@ -240,9 +276,9 @@
   "Comfy_NodeBadge_NodeSourceBadgeMode": {
     "name": "Modo de insignia de fuente de nodo",
     "options": {
-      "Hide built-in": "Ocultar incorporado",
       "None": "Ninguno",
-      "Show all": "Mostrar todo"
+      "Show all": "Mostrar todo",
+      "Hide built-in": "Ocultar incorporados"
     }
   },
   "Comfy_NodeBadge_ShowApiPricing": {
@@ -253,15 +289,15 @@
     "tooltip": "Activa la barra lateral rediseñada de la biblioteca de nodos con pestañas (Esencial, Todo, Personalizado), búsqueda mejorada y vistas previas al pasar el cursor."
   },
   "Comfy_NodeReplacement_Enabled": {
-    "name": "Habilitar reemplazo automático de nodos",
-    "tooltip": "Cuando está habilitado, los nodos faltantes pueden ser reemplazados automáticamente por sus equivalentes más nuevos si existe un mapeo de reemplazo."
+    "name": "Habilitar sugerencias de reemplazo de nodos",
+    "tooltip": "Cuando está habilitado, los nodos faltantes con reemplazos conocidos se mostrarán como reemplazables en el diálogo de nodos faltantes, permitiéndote revisar y aplicar los reemplazos."
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Implementación de la caja de búsqueda de nodos",
     "options": {
       "default": "predeterminado",
-      "litegraph (legacy)": "litegraph (legado)",
-      "v1 (legacy)": "v1 (heredado)"
+      "v1 (legacy)": "v1 (heredado)",
+      "litegraph (legacy)": "litegraph (heredado)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
@@ -270,55 +306,19 @@
   },
   "Comfy_NodeSearchBoxImpl_ShowCategory": {
     "name": "Mostrar categoría de nodo en los resultados de búsqueda",
-    "tooltip": "Solo se aplica a la implementación predeterminada"
+    "tooltip": "Solo se aplica a v1 (heredado)"
   },
   "Comfy_NodeSearchBoxImpl_ShowIdName": {
-    "name": "Mostrar nombre de id de nodo en los resultados de búsqueda",
-    "tooltip": "Solo se aplica a la implementación predeterminada"
+    "name": "Mostrar nombre de ID de nodo en los resultados de búsqueda",
+    "tooltip": "No se aplica a litegraph (heredado)"
   },
   "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
     "name": "Mostrar frecuencia de nodos en los resultados de búsqueda",
-    "tooltip": "Solo se aplica a la implementación predeterminada"
+    "tooltip": "Solo se aplica a v1 (heredado)"
   },
   "Comfy_NodeSuggestions_number": {
     "name": "Número de sugerencias de nodos",
-    "tooltip": "Solo para el cuadro de búsqueda/contexto del menú de litegraph"
-  },
-  "Comfy_Node_AllowImageSizeDraw": {
-    "name": "Mostrar ancho × altura debajo de la vista previa de la imagen"
-  },
-  "Comfy_Node_AlwaysShowAdvancedWidgets": {
-    "name": "Mostrar siempre los widgets avanzados en todos los nodos",
-    "tooltip": "Cuando está activado, los widgets avanzados siempre son visibles en todos los nodos sin necesidad de expandirlos individualmente."
-  },
-  "Comfy_Node_AutoSnapLinkToSlot": {
-    "name": "Enlace de ajuste automático a la ranura del nodo",
-    "tooltip": "Al arrastrar un enlace sobre un nodo, el enlace se ajustará automáticamente a una ranura de entrada viable en el nodo"
-  },
-  "Comfy_Node_BypassAllLinksOnDelete": {
-    "name": "Mantener todos los enlaces al eliminar nodos",
-    "tooltip": "Al eliminar un nodo, intenta reconectar todos sus enlaces de entrada y salida (eludiendo el nodo eliminado)"
-  },
-  "Comfy_Node_DoubleClickTitleToEdit": {
-    "name": "Haz doble clic en el título del nodo para editarlo"
-  },
-  "Comfy_Node_MiddleClickRerouteNode": {
-    "name": "El clic medio crea un nuevo nodo de reenrutamiento"
-  },
-  "Comfy_Node_Opacity": {
-    "name": "Opacidad del nodo"
-  },
-  "Comfy_Node_ShowDeprecated": {
-    "name": "Mostrar nodos obsoletos en la búsqueda",
-    "tooltip": "Los nodos obsoletos están ocultos por defecto en la interfaz de usuario, pero siguen siendo funcionales en los flujos de trabajo existentes que los utilizan."
-  },
-  "Comfy_Node_ShowExperimental": {
-    "name": "Mostrar nodos experimentales en la búsqueda",
-    "tooltip": "Los nodos experimentales están marcados como tales en la interfaz de usuario y pueden estar sujetos a cambios significativos o eliminación en futuras versiones. Úselos con precaución en flujos de trabajo de producción"
-  },
-  "Comfy_Node_SnapHighlightsNode": {
-    "name": "Destacar nodo de ajuste",
-    "tooltip": "Al arrastrar un enlace sobre un nodo con ranura de entrada viable, resalta el nodo"
+    "tooltip": "Solo para el cuadro de búsqueda/menú contextual de litegraph"
   },
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "Mostrar actualizaciones de versión",
@@ -343,17 +343,17 @@
   "Comfy_PromptFilename": {
     "name": "Solicitar nombre de archivo al guardar el flujo de trabajo"
   },
-  "Comfy_QueueButton_BatchCountLimit": {
-    "name": "Límite de conteo de lotes",
-    "tooltip": "El número máximo de tareas añadidas a la cola con un solo clic de botón"
-  },
   "Comfy_Queue_MaxHistoryItems": {
     "name": "Tamaño del historial de la cola",
     "tooltip": "El número máximo de tareas que se muestran en el historial de la cola."
   },
   "Comfy_Queue_QPOV2": {
-    "name": "Usar la cola de trabajos unificada en el panel lateral de Activos",
-    "tooltip": "Reemplaza el panel flotante de la cola de trabajos por una cola de trabajos equivalente integrada en el panel lateral de Activos. Puedes desactivar esto para volver al diseño del panel flotante."
+    "name": "Panel acoplado de historial/cola de trabajos",
+    "tooltip": "Reemplaza el panel flotante de la cola de trabajos por una cola de trabajos equivalente integrada en el panel lateral de historial de trabajos. Puedes desactivar esto para volver al diseño del panel flotante."
+  },
+  "Comfy_QueueButton_BatchCountLimit": {
+    "name": "Límite de conteo de lotes",
+    "tooltip": "El número máximo de tareas añadidas a la cola con un solo clic de botón"
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
     "name": "Mostrar pestaña de errores en el panel lateral",
@@ -376,8 +376,8 @@
   "Comfy_Sidebar_Style": {
     "name": "Estilo de la barra lateral",
     "options": {
-      "connected": "conectada",
-      "floating": "flotante"
+      "floating": "flotante",
+      "connected": "conectada"
     }
   },
   "Comfy_Sidebar_UnifiedWidth": {
@@ -398,52 +398,52 @@
   },
   "Comfy_UI_TabBarLayout": {
     "name": "Diseño de barra de pestañas",
+    "tooltip": "Controla los elementos contenidos en la barra de pestañas integrada.",
     "options": {
       "Default": "Predeterminado",
       "Legacy": "Clásico"
-    },
-    "tooltip": "Controla el diseño de la barra de pestañas. \"Integrado\" mueve los controles de Ayuda y Usuario al área de la barra de pestañas."
+    }
   },
   "Comfy_UseNewMenu": {
     "name": "Usar nuevo menú",
+    "tooltip": "Habilita la barra de menú superior rediseñada.",
     "options": {
       "Disabled": "Deshabilitado",
       "Top": "Arriba"
-    },
-    "tooltip": "Posición de la barra de menú. En dispositivos móviles, el menú siempre se muestra en la parte superior."
+    }
   },
   "Comfy_Validation_Workflows": {
     "name": "Validar flujos de trabajo"
   },
   "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Escalado automático del diseño (nodos Vue)",
-    "tooltip": "Escala automáticamente las posiciones de los nodos al cambiar a renderizado Vue para evitar superposiciones"
+    "name": "Escalado automático del diseño (Nodos 2.0)",
+    "tooltip": "Escala automáticamente las posiciones de los nodos al cambiar al renderizado Nodos 2.0 para evitar superposiciones"
   },
   "Comfy_VueNodes_Enabled": {
-    "name": "Diseño moderno de nodos (nodos Vue)",
+    "name": "Diseño moderno de nodos (Nodos 2.0)",
     "tooltip": "Moderno: Renderizado basado en DOM con interactividad mejorada, funciones nativas del navegador y diseño visual actualizado. Clásico: Renderizado tradicional en lienzo."
   },
   "Comfy_WidgetControlMode": {
     "name": "Modo de control del widget",
+    "tooltip": "Controla cuándo se actualizan los valores del widget (aleatorizar/incrementar/decrementar), ya sea antes de que se encole el aviso o después.",
     "options": {
-      "after": "después",
-      "before": "antes"
-    },
-    "tooltip": "Controla cuándo se actualizan los valores del widget (aleatorizar/incrementar/decrementar), ya sea antes de que se encole el aviso o después."
+      "before": "antes",
+      "after": "después"
+    }
   },
   "Comfy_Window_UnloadConfirmation": {
     "name": "Mostrar confirmación al cerrar la ventana"
   },
   "Comfy_Workflow_AutoSave": {
-    "name": "Auto Guardar",
+    "name": "Auto guardar",
     "options": {
-      "after delay": "después de retraso",
-      "off": "desactivado"
+      "off": "desactivado",
+      "after delay": "después de retraso"
     }
   },
   "Comfy_Workflow_AutoSaveDelay": {
-    "name": "Retraso de Auto Guardar (ms)",
-    "tooltip": "Solo se aplica si Auto Guardar está configurado en \"después de retraso\"."
+    "name": "Retraso de auto guardar (ms)",
+    "tooltip": "Solo se aplica si auto guardar está configurado en \"después de retraso\"."
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Mostrar confirmación al eliminar flujos de trabajo"
@@ -475,11 +475,11 @@
     "tooltip": "La cantidad máxima de cuadros por segundo que se permite renderizar en el lienzo. Limita el uso de la GPU a costa de la suavidad. Si es 0, se utiliza la tasa de refresco de la pantalla. Predeterminado: 0"
   },
   "LiteGraph_Canvas_MinFontSizeForLOD": {
-    "name": "Nivel de Detalle del Nodo al Hacer Zoom - umbral de tamaño de fuente",
+    "name": "Nivel de detalle del nodo al hacer zoom - umbral de tamaño de fuente",
     "tooltip": "Controla cuándo los nodos cambian a renderizado LOD de baja calidad. Usa el tamaño de fuente en píxeles para determinar cuándo cambiar. Establece en 0 para deshabilitar. Los valores 1-24 establecen el umbral mínimo de tamaño de fuente para LOD - valores más altos (24px) = cambiar nodos a renderizado simplificado más pronto al alejar, valores más bajos (1px) = mantener calidad completa del nodo por más tiempo."
   },
   "LiteGraph_ContextMenu_Scaling": {
-    "name": "Escala los menús de widgets combinados de nodos (listas) al acercar"
+    "name": "Escalar menús de widgets combinados de nodos (listas) al acercar"
   },
   "LiteGraph_Group_SelectChildrenOnClick": {
     "name": "Seleccionar los elementos del grupo al hacer clic",
@@ -493,8 +493,8 @@
     "name": "Retraso de la información sobre herramientas"
   },
   "LiteGraph_Reroute_SplineOffset": {
-    "name": "Desvío de la compensación de la spline",
-    "tooltip": "El punto de control bezier desplazado desde el punto central de reenrutamiento"
+    "name": "Desplazamiento de spline de reenrutamiento",
+    "tooltip": "El punto de control bézier desplazado desde el punto central de reenrutamiento"
   },
   "pysssss_SnapToGrid": {
     "name": "Siempre ajustar a la cuadrícula",
