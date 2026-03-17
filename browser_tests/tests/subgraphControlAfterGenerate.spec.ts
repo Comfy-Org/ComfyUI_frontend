@@ -43,14 +43,15 @@ test.describe(
 
         return {
           targetId: String(target.id),
-          targetValue: targetWidget?.value as number
+          targetValue: targetWidget?.value as number,
+          controlConfigured: Boolean(controlWidget)
         }
       })
 
-      if (!setup) {
-        test.skip(true, 'Could not create Int nodes')
-        return
-      }
+      expect(setup, 'Could not create Int nodes').not.toBeNull()
+      if (!setup) return
+
+      expect(setup.controlConfigured).toBe(true)
 
       await comfyPage.nextFrame()
 
@@ -116,13 +117,16 @@ test.describe(
         // Disconnect
         target.disconnectInput(0)
 
-        return { targetId: String(target.id) }
+        return {
+          targetId: String(target.id),
+          controlConfigured: Boolean(controlWidget)
+        }
       })
 
-      if (!setup) {
-        test.skip(true, 'Could not create Int nodes')
-        return
-      }
+      expect(setup, 'Could not create Int nodes').not.toBeNull()
+      if (!setup) return
+
+      expect(setup.controlConfigured).toBe(true)
 
       await comfyPage.nextFrame()
 
