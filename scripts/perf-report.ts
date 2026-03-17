@@ -76,8 +76,11 @@ function groupByName(
 function loadHistoricalReports(): PerfReport[] {
   if (!existsSync(HISTORY_DIR)) return []
   const reports: PerfReport[] = []
-  for (const dir of readdirSync(HISTORY_DIR)) {
-    const filePath = join(HISTORY_DIR, dir, 'perf-metrics.json')
+  for (const entry of readdirSync(HISTORY_DIR)) {
+    const entryPath = join(HISTORY_DIR, entry)
+    const filePath = entry.endsWith('.json')
+      ? entryPath
+      : join(entryPath, 'perf-metrics.json')
     if (!existsSync(filePath)) continue
     try {
       reports.push(JSON.parse(readFileSync(filePath, 'utf-8')) as PerfReport)

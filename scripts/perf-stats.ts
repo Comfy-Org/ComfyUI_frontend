@@ -93,7 +93,7 @@ export function trendDirection(values: number[]): TrendDirection {
   const firstMean = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length
   const secondMean = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length
 
-  if (firstMean === 0) return 'stable'
+  if (firstMean === 0) return secondMean > 0 ? 'rising' : 'stable'
   const changePct = ((secondMean - firstMean) / firstMean) * 100
 
   if (changePct > 10) return 'rising'

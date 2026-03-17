@@ -182,6 +182,14 @@ describe('trendDirection', () => {
   it('returns stable for small fluctuations within 10%', () => {
     expect(trendDirection([100, 100, 100, 105, 105, 105])).toBe('stable')
   })
+
+  it('detects rising when baseline is zero but current is non-zero', () => {
+    expect(trendDirection([0, 0, 0, 5, 5, 5])).toBe('rising')
+  })
+
+  it('returns stable when both halves are zero', () => {
+    expect(trendDirection([0, 0, 0, 0, 0, 0])).toBe('stable')
+  })
 })
 
 describe('trendArrow', () => {
