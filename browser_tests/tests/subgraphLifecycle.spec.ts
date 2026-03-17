@@ -44,7 +44,11 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph', '@widget'] }, () => {
     const projection = await comfyPage.page.evaluate(() => {
       const graph = window.app!.graph!
       const hostNode = graph.getNodeById('11')
-      if (!hostNode || typeof hostNode.isSubgraphNode !== 'function')
+      if (
+        !hostNode ||
+        typeof hostNode.isSubgraphNode !== 'function' ||
+        !hostNode.isSubgraphNode()
+      )
         throw new Error('Expected host subgraph node 11')
 
       const beforeType = hostNode.widgets?.[0]?.type
@@ -126,7 +130,11 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph', '@widget'] }, () => {
 
       const before = invalidPseudoEntries()
       const hostNode = graph.getNodeById('7')
-      if (!hostNode || typeof hostNode.isSubgraphNode !== 'function')
+      if (
+        !hostNode ||
+        typeof hostNode.isSubgraphNode !== 'function' ||
+        !hostNode.isSubgraphNode()
+      )
         throw new Error('Expected preview host subgraph node 7')
 
       ;(
