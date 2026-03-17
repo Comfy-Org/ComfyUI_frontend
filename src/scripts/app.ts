@@ -234,7 +234,11 @@ export class ComfyApp {
 
   private configuringGraphLevel: number = 0
   get configuringGraph() {
-    return this.configuringGraphLevel > 0
+    return (
+      this.configuringGraphLevel > 0 ||
+      (this.rootGraphInternal?.configuring ?? false) ||
+      (this.canvas?.graph?.configuring ?? false)
+    )
   }
   ctx!: CanvasRenderingContext2D
   bodyTop: HTMLElement

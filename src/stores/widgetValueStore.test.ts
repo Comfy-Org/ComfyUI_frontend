@@ -155,6 +155,39 @@ describe('useWidgetValueStore', () => {
     })
   })
 
+  describe('getOrCreateWidget', () => {
+    it('creates a new entry when widget does not exist', () => {
+      const store = useWidgetValueStore()
+      const state = store.getOrCreateWidget(graphA, 'node-1', 'option1', 'foo')
+
+      expect(state.nodeId).toBe('node-1')
+      expect(state.name).toBe('option1')
+      expect(state.value).toBe('foo')
+    })
+
+    it('returns existing entry without overwriting value', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(graphA, widget('node-1', 'option1', 'string', 'bar'))
+
+      const state = store.getOrCreateWidget(
+        graphA,
+        'node-1',
+        'option1',
+        'should-not-overwrite'
+      )
+      expect(state.value).toBe('bar')
+    })
+
+    it('is idempotent — repeated calls return same reactive entry', () => {
+      const store = useWidgetValueStore()
+      const first = store.getOrCreateWidget(graphA, 'node-1', 'w', 'a')
+      const second = store.getOrCreateWidget(graphA, 'node-1', 'w', 'b')
+
+      expect(first).toBe(second)
+      expect(first.value).toBe('a')
+    })
+  })
+
   describe('graph isolation', () => {
     it('isolates widget states by graph', () => {
       const store = useWidgetValueStore()

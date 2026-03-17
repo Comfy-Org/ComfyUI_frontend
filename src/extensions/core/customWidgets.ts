@@ -88,12 +88,12 @@ function onCustomComboCreated(this: LGraphNode) {
         )?.value
       },
       set(v: string) {
-        const state = useWidgetValueStore().getWidget(
+        useWidgetValueStore().getOrCreateWidget(
           app.rootGraph.id,
           node.id,
-          widgetName
-        )
-        if (state) state.value = v
+          widgetName,
+          v
+        ).value = v
         updateCombo()
         if (!node.widgets) return
         const lastWidget = node.widgets.at(-1)

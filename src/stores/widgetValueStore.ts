@@ -76,6 +76,28 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
   }
 
+  function getOrCreateWidget(
+    graphId: UUID,
+    nodeId: NodeId,
+    widgetName: string,
+    defaultValue?: unknown
+  ): WidgetState {
+    const widgetStates = getWidgetStateMap(graphId)
+    const key = makeKey(nodeId, widgetName)
+    const existing = widgetStates.get(key)
+    if (existing) return existing
+
+    const state: WidgetState = {
+      nodeId,
+      name: widgetName,
+      type: 'string',
+      value: defaultValue,
+      options: {}
+    }
+    widgetStates.set(key, state)
+    return widgetStates.get(key) as WidgetState
+  }
+
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
   }
@@ -83,6 +105,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   return {
     registerWidget,
     getWidget,
+    getOrCreateWidget,
     getNodeWidgets,
     clearGraph
   }
