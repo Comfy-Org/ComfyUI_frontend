@@ -780,12 +780,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!input) throw new Error('Subgraph input not found')
 
         input.label = newName
-        if (input.widget) {
-          input.widget.name = newName
-        }
-        if (input._widget) {
-          input._widget.label = newName
-        }
+        if (input.widget) input.widget.name = newName
+        if (input._widget) input._widget.label = newName
         this._invalidatePromotedViewsCache()
         this.graph?.trigger('node:slot-label:changed', {
           nodeId: this.id,
