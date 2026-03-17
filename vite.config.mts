@@ -437,7 +437,9 @@ export default defineConfig({
             project: process.env.SENTRY_PROJECT,
             authToken: process.env.SENTRY_AUTH_TOKEN,
             sourcemaps: {
-              filesToDeleteAfterUpload: []
+              filesToDeleteAfterUpload: process.env.SENTRY_PROJECT_PROD
+                ? []
+                : ['**/*.map']
             }
           }),
           ...(process.env.SENTRY_PROJECT_PROD
