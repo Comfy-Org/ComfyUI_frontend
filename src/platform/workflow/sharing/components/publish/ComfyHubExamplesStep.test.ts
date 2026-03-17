@@ -41,7 +41,7 @@ describe('ComfyHubExamplesStep', () => {
     const wrapper = mountStep(createImages(3))
 
     const tiles = wrapper.findAll('[role="listitem"]')
-    await tiles[1].trigger('keydown', { key: 'ArrowLeft' })
+    await tiles[1].trigger('keydown', { key: 'ArrowLeft', shiftKey: true })
 
     const emitted = wrapper.emitted('update:exampleImages')
     expect(emitted).toBeTruthy()
@@ -53,7 +53,7 @@ describe('ComfyHubExamplesStep', () => {
     const wrapper = mountStep(createImages(3))
 
     const tiles = wrapper.findAll('[role="listitem"]')
-    await tiles[1].trigger('keydown', { key: 'ArrowRight' })
+    await tiles[1].trigger('keydown', { key: 'ArrowRight', shiftKey: true })
 
     const emitted = wrapper.emitted('update:exampleImages')
     expect(emitted).toBeTruthy()
