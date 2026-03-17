@@ -135,17 +135,23 @@ export interface EventCapture<TEventMap extends object> {
 export function createTestSubgraph(
   options: TestSubgraphOptions = {}
 ): Subgraph {
+  if (options.rootGraph && options.rootGraphId) {
+    throw new Error(
+      "Cannot specify both 'rootGraph' and 'rootGraphId'. Choose one."
+    )
+  }
+
   // Validate options - cannot specify both inputs array and inputCount
   if (options.inputs && options.inputCount) {
     throw new Error(
-      `Cannot specify both 'inputs' array and 'inputCount'. Choose one approach. Received options: ${JSON.stringify(options)}`
+      `Cannot specify both 'inputs' array and 'inputCount'. Choose one approach.`
     )
   }
 
   // Validate options - cannot specify both outputs array and outputCount
   if (options.outputs && options.outputCount) {
     throw new Error(
-      `Cannot specify both 'outputs' array and 'outputCount'. Choose one approach. Received options: ${JSON.stringify(options)}`
+      `Cannot specify both 'outputs' array and 'outputCount'. Choose one approach.`
     )
   }
   const rootGraph =
