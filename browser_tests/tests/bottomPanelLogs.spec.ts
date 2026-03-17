@@ -25,11 +25,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     await expect(bottomPanel.root).toBeVisible()
 
     const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    const hasLogs = await logsTab.isVisible().catch(() => false)
-
-    if (hasLogs) {
-      await expect(logsTab).toBeVisible()
-    }
+    await expect(logsTab).toBeVisible()
   })
 
   test('should close bottom panel via toggle button', async ({ comfyPage }) => {
@@ -56,14 +52,10 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     await bottomPanel.toggleButton.click()
 
     const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    const hasTerminalTabs = await logsTab.isVisible().catch(() => false)
-
-    if (hasTerminalTabs) {
-      await expect(logsTab).toBeVisible()
-      await expect(
-        comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
-      ).not.toBeVisible()
-    }
+    await expect(logsTab).toBeVisible()
+    await expect(
+      comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
+    ).not.toBeVisible()
   })
 
   test('should persist Logs tab content in bottom panel', async ({
@@ -75,22 +67,16 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     await expect(bottomPanel.root).toBeVisible()
 
     const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    const hasLogs = await logsTab.isVisible().catch(() => false)
+    await expect(logsTab).toBeVisible()
 
-    if (hasLogs) {
-      const isAlreadyActive =
-        (await logsTab.getAttribute('aria-selected')) === 'true'
-      if (!isAlreadyActive) {
-        await logsTab.click()
-      }
-
-      const xtermContainer = bottomPanel.root.locator('.xterm')
-      const hasXterm = await xtermContainer.isVisible().catch(() => false)
-
-      if (hasXterm) {
-        await expect(xtermContainer).toBeVisible()
-      }
+    const isAlreadyActive =
+      (await logsTab.getAttribute('aria-selected')) === 'true'
+    if (!isAlreadyActive) {
+      await logsTab.click()
     }
+
+    const xtermContainer = bottomPanel.root.locator('.xterm')
+    await expect(xtermContainer).toBeVisible()
   })
 
   test('should render xterm container in terminal panel', async ({
@@ -102,24 +88,15 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     await expect(bottomPanel.root).toBeVisible()
 
     const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    const hasLogs = await logsTab.isVisible().catch(() => false)
+    await expect(logsTab).toBeVisible()
 
-    if (hasLogs) {
-      const isAlreadyActive =
-        (await logsTab.getAttribute('aria-selected')) === 'true'
-      if (!isAlreadyActive) {
-        await logsTab.click()
-      }
-
-      const xtermScreen = bottomPanel.root.locator('.xterm, .xterm-screen')
-      const hasXterm = await xtermScreen
-        .first()
-        .isVisible()
-        .catch(() => false)
-
-      if (hasXterm) {
-        await expect(xtermScreen.first()).toBeVisible()
-      }
+    const isAlreadyActive =
+      (await logsTab.getAttribute('aria-selected')) === 'true'
+    if (!isAlreadyActive) {
+      await logsTab.click()
     }
+
+    const xtermScreen = bottomPanel.root.locator('.xterm, .xterm-screen')
+    await expect(xtermScreen.first()).toBeVisible()
   })
 })

@@ -112,7 +112,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       // Results should restore to unfiltered count
       await expect(searchBoxV2.results.first()).toBeVisible()
       const restoredCount = await searchBoxV2.results.count()
-      expect(restoredCount).toBeGreaterThanOrEqual(filteredCount)
+      expect(restoredCount).toBe(unfilteredCount)
     })
   })
 

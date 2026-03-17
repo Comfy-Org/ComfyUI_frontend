@@ -69,29 +69,23 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
     await expect(action).not.toBeVisible()
   })
 
-  test('Clicking show run progress bar toggles check icon', async ({
+  test('Clicking show run progress bar toggles setting', async ({
     comfyPage
   }) => {
+    const settingBefore = await comfyPage.settings.getSetting<boolean>(
+      'Comfy.Queue.ShowRunProgressBar'
+    )
+
     await openMoreOptionsPopover(comfyPage)
 
     const action = comfyPage.page.locator(
       '[data-testid="show-run-progress-bar-action"]'
     )
-    const checkIcon = action.locator('.icon-\\[lucide--check\\]')
-    const hadCheck = await checkIcon.isVisible()
-
     await action.click()
 
-    await openMoreOptionsPopover(comfyPage)
-
-    const checkIconAfter = comfyPage.page
-      .locator('[data-testid="show-run-progress-bar-action"]')
-      .locator('.icon-\\[lucide--check\\]')
-
-    if (hadCheck) {
-      await expect(checkIconAfter).not.toBeVisible()
-    } else {
-      await expect(checkIconAfter).toBeVisible()
-    }
+    const settingAfter = await comfyPage.settings.getSetting<boolean>(
+      'Comfy.Queue.ShowRunProgressBar'
+    )
+    expect(settingAfter).toBe(!settingBefore)
   })
 })
