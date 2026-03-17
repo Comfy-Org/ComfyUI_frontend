@@ -27,13 +27,13 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-const mockShowCreateWorkspaceDialog = vi.hoisted(() =>
+const mockShowTeamWorkspacesDialog = vi.hoisted(() =>
   vi.fn().mockResolvedValue(undefined)
 )
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
-    showCreateWorkspaceDialog: mockShowCreateWorkspaceDialog
+    showTeamWorkspacesDialog: mockShowTeamWorkspacesDialog
   })
 }))
 
@@ -55,7 +55,7 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(mockShowCreateWorkspaceDialog).not.toHaveBeenCalled()
+      expect(mockShowTeamWorkspacesDialog).not.toHaveBeenCalled()
       expect(mockRouterReplace).not.toHaveBeenCalled()
     })
 
@@ -65,7 +65,7 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(mockShowCreateWorkspaceDialog).toHaveBeenCalledOnce()
+      expect(mockShowTeamWorkspacesDialog).toHaveBeenCalledOnce()
     })
 
     it('restores preserved query and opens dialog', async () => {
@@ -83,7 +83,7 @@ describe('useCreateWorkspaceUrlLoader', () => {
       expect(mockRouterReplace).toHaveBeenCalledWith({
         query: { create_workspace: '1' }
       })
-      expect(mockShowCreateWorkspaceDialog).toHaveBeenCalledOnce()
+      expect(mockShowTeamWorkspacesDialog).toHaveBeenCalledOnce()
     })
 
     it('cleans up URL after processing', async () => {
@@ -114,7 +114,7 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(mockShowCreateWorkspaceDialog).not.toHaveBeenCalled()
+      expect(mockShowTeamWorkspacesDialog).not.toHaveBeenCalled()
     })
 
     it('ignores non-string param', async () => {
@@ -125,7 +125,7 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(mockShowCreateWorkspaceDialog).not.toHaveBeenCalled()
+      expect(mockShowTeamWorkspacesDialog).not.toHaveBeenCalled()
     })
   })
 })

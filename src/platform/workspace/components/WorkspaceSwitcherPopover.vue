@@ -47,10 +47,10 @@
                       }}
                     </span>
                     <span
-                      v-if="getTierLabel(workspace)"
+                      v-if="resolveTierLabel(workspace)"
                       class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
                     >
-                      {{ getTierLabel(workspace) }}
+                      {{ resolveTierLabel(workspace) }}
                     </span>
                   </div>
                   <span class="text-xs text-muted-foreground">
@@ -142,8 +142,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { switchWorkspace } = useWorkspaceSwitch()
 const { subscription } = useBillingContext()
-const { formatTierName, getTierLabel: getStoreTierLabel } =
-  useWorkspaceTierLabel()
+const { formatTierName, getTierLabel } = useWorkspaceTierLabel()
 
 const currentSubscriptionTierName = computed(() => {
   const tier = subscription.value?.tier
@@ -178,14 +177,12 @@ function getRoleLabel(role: AvailableWorkspace['role']): string {
   return ''
 }
 
-function getTierLabel(workspace: AvailableWorkspace): string | null {
-  // For the current/active workspace, use billing context directly
-  // This ensures we always have the most up-to-date subscription info
+function resolveTierLabel(workspace: AvailableWorkspace): string | null {
   if (isCurrentWorkspace(workspace)) {
     return currentSubscriptionTierName.value || null
   }
 
-  return getStoreTierLabel(workspace)
+  return getTierLabel(workspace)
 }
 
 async function handleSelectWorkspace(workspace: AvailableWorkspace) {

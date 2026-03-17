@@ -2579,7 +2579,8 @@
     "switch": "Switch",
     "newWorkspace": "New workspace",
     "namePlaceholder": "e.g. Marketing Team",
-    "createWorkspace": "Create workspace"
+    "createWorkspace": "Create workspace",
+    "nameValidationError": "Name must be 1–50 characters using letters, numbers, spaces, or common punctuation."
   },
   "workspaceSwitcher": {
     "switchWorkspace": "Switch workspace",

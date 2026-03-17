@@ -11,10 +11,10 @@ import { useDialogService } from '@/services/dialogService'
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE
 
 /**
- * Composable for opening the create workspace dialog via URL query parameter.
+ * Composable for opening the team workspaces dialog via URL query parameter.
  *
  * Supports URLs like:
- * - /?create_workspace=1 (opens the create workspace dialog)
+ * - /?create_workspace=1 (opens the team workspaces dialog)
  *
  * The parameter is preserved through login redirects via the
  * preserved query system (sessionStorage), following the same pattern
@@ -26,12 +26,12 @@ export function useCreateWorkspaceUrlLoader() {
   const dialogService = useDialogService()
 
   /**
-   * Opens the create workspace dialog if `?create_workspace=1` is present.
+   * Opens the team workspaces dialog if `?create_workspace=1` is present.
    *
    * Flow:
    * 1. Restore preserved query (for post-login redirect)
    * 2. Check for create_workspace param in route.query
-   * 3. Open the create workspace dialog
+   * 3. Open the team workspaces dialog
    * 4. Clean up URL and preserved query
    */
   async function loadCreateWorkspaceFromUrl() {
@@ -56,7 +56,7 @@ export function useCreateWorkspaceUrlLoader() {
     clearPreservedQuery(NAMESPACE)
 
     try {
-      await dialogService.showCreateWorkspaceDialog()
+      await dialogService.showTeamWorkspacesDialog()
     } catch (error) {
       console.error(
         '[useCreateWorkspaceUrlLoader] Failed to open create workspace dialog:',

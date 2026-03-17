@@ -103,8 +103,21 @@
           type="text"
           class="focus:ring-secondary-foreground w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:outline-none"
           :placeholder="$t('teamWorkspacesDialog.namePlaceholder')"
+          :aria-invalid="workspaceName.length > 0 && !isValidName"
+          :aria-describedby="
+            workspaceName.length > 0 && !isValidName
+              ? 'workspace-name-error'
+              : undefined
+          "
           @keydown.enter="isValidName && !loading && onCreate()"
         />
+        <p
+          v-if="workspaceName.length > 0 && !isValidName"
+          id="workspace-name-error"
+          class="text-danger m-0 text-xs"
+        >
+          {{ $t('teamWorkspacesDialog.nameValidationError') }}
+        </p>
       </div>
       <Button
         variant="secondary"
@@ -188,30 +201,28 @@ async function handleSwitch(workspaceId: string) {
 async function onCreate() {
   if (!isValidName.value || loading.value) return
   loading.value = true
+  const name = workspaceName.value.trim()
   try {
-    const name = workspaceName.value.trim()
-    try {
-      await workspaceStore.createWorkspace(name)
-    } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('workspacePanel.toast.failedToCreateWorkspace'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
-      })
-      return
-    }
-    try {
-      await onConfirm?.(name)
-    } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('teamWorkspacesDialog.confirmCallbackFailed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
-      })
-    }
-    dialogStore.closeDialog({ key: DIALOG_KEY })
-  } finally {
+    await workspaceStore.createWorkspace(name)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('workspacePanel.toast.failedToCreateWorkspace'),
+      detail: error instanceof Error ? error.message : t('g.unknownError')
+    })
     loading.value = false
+    return
   }
+  try {
+    await onConfirm?.(name)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('teamWorkspacesDialog.confirmCallbackFailed'),
+      detail: error instanceof Error ? error.message : t('g.unknownError')
+    })
+  }
+  dialogStore.closeDialog({ key: DIALOG_KEY })
+  loading.value = false
 }
 </script>

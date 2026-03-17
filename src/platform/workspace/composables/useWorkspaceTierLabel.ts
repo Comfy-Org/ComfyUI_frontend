@@ -25,7 +25,8 @@ export function useWorkspaceTierLabel() {
     isYearly: boolean
   ): string {
     if (!tier) return ''
-    const key = tierKeyMap[tier] ?? 'standard'
+    const key = tierKeyMap[tier]
+    if (!key) return ''
     const baseName = t(`subscription.tiers.${key}.name`)
     return isYearly
       ? t('subscription.tierNameYearly', { name: baseName })
@@ -42,9 +43,9 @@ export function useWorkspaceTierLabel() {
     if (!workspace.subscriptionPlan) return null
 
     const planSlug = workspace.subscriptionPlan
-    const tierMatch = Object.keys(tierKeyMap).find((tier) =>
-      planSlug.startsWith(tier)
-    )
+    const tierMatch = Object.keys(tierKeyMap)
+      .sort((a, b) => b.length - a.length)
+      .find((tier) => planSlug === tier || planSlug.startsWith(`${tier}_`))
     if (!tierMatch) return null
 
     const isYearly = planSlug.includes('YEARLY') || planSlug.includes('ANNUAL')
