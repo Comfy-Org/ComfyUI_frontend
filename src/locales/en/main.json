@@ -1840,7 +1840,8 @@
   "loadWorkflowWarning": {
     "outdatedVersion": "This workflow was created with a newer version of ComfyUI ({version}). Some nodes may not work correctly.",
     "outdatedVersionGeneric": "This workflow was created with a newer version of ComfyUI. Some nodes may not work correctly.",
-    "coreNodesFromVersion": "Core nodes from version {version}:"
+    "coreNodesFromVersion": "Core nodes from version {version}:",
+    "unknownVersion": "unknown"
   },
   "errorDialog": {
     "defaultTitle": "An error occurred",

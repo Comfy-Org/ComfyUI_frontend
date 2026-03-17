@@ -16,7 +16,6 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
-import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
@@ -39,7 +38,6 @@ export const useWorkflowService = () => {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
-  const missingNodesDialog = useMissingNodesDialog()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const executionErrorStore = useExecutionErrorStore()
@@ -240,8 +238,8 @@ export const useWorkflowService = () => {
       /* restore_view=*/ true,
       workflow,
       {
-        showMissingModelsDialog: loadFromRemote,
-        showMissingNodesDialog: loadFromRemote,
+        showMissingModels: loadFromRemote,
+        showMissingNodes: true,
         checkForRerouteMigration: false,
         deferWarnings: true
       }
@@ -541,10 +539,6 @@ export const useWorkflowService = () => {
     wf.pendingWarnings = null
 
     if (missingNodeTypes?.length) {
-      // Remove modal once Node Replacement is implemented in TabErrors.
-      if (settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')) {
-        missingNodesDialog.show({ missingNodeTypes })
-      }
       executionErrorStore.surfaceMissingNodes(missingNodeTypes)
     }
   }
