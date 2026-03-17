@@ -2,6 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -38,7 +39,7 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
 
     // Click on the title to enter edit mode
     await propertiesPanel.panelTitle.click()
-    const titleInput = propertiesPanel.root.getByTestId('node-title-input')
+    const titleInput = propertiesPanel.root.getByTestId(TestIds.node.titleInput)
     await expect(titleInput).toBeVisible()
 
     await titleInput.fill('My Custom Sampler')

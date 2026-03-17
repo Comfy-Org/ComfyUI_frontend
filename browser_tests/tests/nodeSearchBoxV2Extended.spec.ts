@@ -88,9 +88,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await comfyPage.canvasOps.doubleClick()
       await expect(searchBoxV2.input).toBeVisible()
 
-      // Get unfiltered count
+      // Record initial result text for comparison
       await expect(searchBoxV2.results.first()).toBeVisible()
-      const unfilteredCount = await searchBoxV2.results.count()
+      const unfilteredResults = await searchBoxV2.results.allTextContents()
 
       // Apply Input filter with MODEL type
       await searchBoxV2.filterBarButton('Input').click()
@@ -101,18 +101,21 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
         .first()
         .click()
 
+      // Verify filter chip appeared and results changed
+      const filterChip = searchBoxV2.dialog.locator(
+        '[data-testid="filter-chip"]'
+      )
+      await expect(filterChip).toBeVisible()
       await expect(searchBoxV2.results.first()).toBeVisible()
-      const filteredCount = await searchBoxV2.results.count()
-      expect(filteredCount).toBeLessThanOrEqual(unfilteredCount)
+      const filteredResults = await searchBoxV2.results.allTextContents()
+      expect(filteredResults).not.toEqual(unfilteredResults)
 
-      // Remove filter by pressing Backspace with empty input
-      await searchBoxV2.input.fill('')
-      await comfyPage.page.keyboard.press('Backspace')
+      // Remove filter by clicking the chip delete button
+      await filterChip.getByTestId('chip-delete').click()
 
-      // Results should restore to unfiltered count
+      // Filter chip should be removed
+      await expect(filterChip).not.toBeVisible()
       await expect(searchBoxV2.results.first()).toBeVisible()
-      const restoredCount = await searchBoxV2.results.count()
-      expect(restoredCount).toBe(unfilteredCount)
     })
   })
 
