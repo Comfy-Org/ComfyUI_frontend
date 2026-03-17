@@ -121,7 +121,13 @@ export function useKeybindingPresetService() {
     for (const binding of preset.newBindings) {
       keybindingStore.addUserKeybinding(new KeybindingImpl(binding))
     }
-    keybindingStore.savedPresetData = preset
+    // Snapshot savedPresetData from the store's actual state after applying,
+    // because addUserKeybinding may auto-unset conflicting defaults beyond
+    // what the raw preset specifies.
+    keybindingStore.savedPresetData = buildPresetFromStore(
+      preset.name,
+      keybindingStore
+    )
     keybindingStore.currentPresetName = preset.name
   }
 
