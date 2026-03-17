@@ -148,8 +148,8 @@ describe('SubgraphWidgetPromotion', () => {
     })
 
     // BUG: removeWidgetByName calls demote but widgets getter rebuilds from
-    // promotionStore which still has the entry. Production bug in promotion
-    // cleanup — tracked separately from CF-01.
+    // promotionStore which still has the entry.
+    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/10174
     it.skip('should fire widget-demoted event when removing promoted widget', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'input', type: 'number' }]
