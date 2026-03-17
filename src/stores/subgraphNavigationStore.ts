@@ -215,13 +215,12 @@ export const useSubgraphNavigationStore = defineStore(
         return
       }
 
-      if (!routeHash.value) await router.replace('#' + app.rootGraph.id)
       const newId = canvasStore.getCanvas().graph?.id ?? ''
+      if (!routeHash.value) await router.replace('#' + app.rootGraph.id)
       const currentId = routeHash.value?.slice(1)
-      if (!newId || newId === (currentId || app.rootGraph.id)) return
+      if (!newId || newId === currentId) return
 
       await router.push('#' + newId)
-      routeHash.value = '#' + newId
     }
     //update navigation hash
     //NOTE: Doesn't apply on workflow load
