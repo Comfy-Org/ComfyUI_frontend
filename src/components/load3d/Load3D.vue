@@ -80,7 +80,7 @@ import { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { app } from '@/scripts/app'
+import { resolveNode } from '@/utils/litegraphUtil'
 import type { ComponentWidget } from '@/scripts/domWidget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -101,7 +101,7 @@ if (isComponentWidget(props.widget)) {
   node.value = props.widget.node
 } else if (props.nodeId) {
   onMounted(() => {
-    node.value = app.rootGraph?.getNodeById(props.nodeId!) || null
+    node.value = resolveNode(props.nodeId!) ?? null
   })
 }
 
