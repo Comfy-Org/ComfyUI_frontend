@@ -308,7 +308,7 @@ export default defineConfig([
   // Layer architecture boundary enforcement
   // Layers (bottom to top): base → platform → workbench → renderer
   // Each layer may only import from layers below it.
-  // Set to 'warn' because there are existing violations being migrated gradually.
+  // Existing violations are suppressed with eslint-disable comments.
   {
     files: [
       'src/base/**/*.{ts,vue}',
@@ -317,42 +317,25 @@ export default defineConfig([
     ],
     rules: {
       'import-x/no-restricted-paths': [
-        'warn',
+        'error',
         {
           zones: [
-            // base cannot import from platform, workbench, or renderer
             {
               target: './src/base/**',
-              from: './src/platform/**',
+              from: [
+                './src/platform/**',
+                './src/workbench/**',
+                './src/renderer/**'
+              ],
               message:
-                'base/ cannot import from platform/ (violates layer architecture: base → platform → workbench → renderer)'
-            },
-            {
-              target: './src/base/**',
-              from: './src/workbench/**',
-              message:
-                'base/ cannot import from workbench/ (violates layer architecture: base → platform → workbench → renderer)'
-            },
-            {
-              target: './src/base/**',
-              from: './src/renderer/**',
-              message:
-                'base/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
-            },
-            // platform cannot import from workbench or renderer
-            {
-              target: './src/platform/**',
-              from: './src/workbench/**',
-              message:
-                'platform/ cannot import from workbench/ (violates layer architecture: base → platform → workbench → renderer)'
+                'base/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)'
             },
             {
               target: './src/platform/**',
-              from: './src/renderer/**',
+              from: ['./src/workbench/**', './src/renderer/**'],
               message:
-                'platform/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
+                'platform/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)'
             },
-            // workbench cannot import from renderer
             {
               target: './src/workbench/**',
               from: './src/renderer/**',
