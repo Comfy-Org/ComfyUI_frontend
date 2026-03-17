@@ -53,8 +53,8 @@ import {
   registerSlotMenuInstance,
   removeSlot,
   renameSlot
-} from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
-import type { SlotMenuContext } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
+} from '@/renderer/extensions/vueNodes/composables/slotMenuService'
+import type { SlotMenuContext } from '@/renderer/extensions/vueNodes/composables/slotMenuService'
 import { useDialogService } from '@/services/dialogService'
 
 const { t } = useI18n()
