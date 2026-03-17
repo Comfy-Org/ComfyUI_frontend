@@ -594,7 +594,6 @@ export const useQueueStore = defineStore('queue', () => {
       isLoading.value = false
       inFlight = false
       if (dirty) {
-        dirty = false
         void update()
       }
     }
