@@ -276,6 +276,12 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
         await comfyPage.canvasOps.zoom(100)
       }
 
+      // Verify we actually entered the culling regime.
+      // isNodeTooSmall triggers when max(width, height) * scale < 4px.
+      // Typical nodes are ~200px wide, so scale must be < 0.02.
+      const scale = await comfyPage.canvasOps.getScale()
+      expect(scale).toBeLessThan(0.02)
+
       // Idle at extreme zoom-out — most nodes should be culled
       for (let i = 0; i < 60; i++) {
         await comfyPage.nextFrame()
