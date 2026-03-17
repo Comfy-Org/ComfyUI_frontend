@@ -37,7 +37,6 @@ import {
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -989,11 +988,31 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     this._syncPromotions()
 
-    // Discover and register any promotable widgets not already in the store.
-    // This covers blueprint subgraphs and old workflows whose serialized
-    // proxyWidgets may lack entries for virtual preview widgets (e.g.
-    // $$canvas-image-preview for GLSLShader nodes).
-    promoteRecommendedWidgets(this)
+    // Eagerly register virtual $$canvas-image-preview promotions for interior
+    // nodes that support it (e.g. GLSLShader).  This covers blueprint subgraphs
+    // and old workflows whose serialized proxyWidgets lack the entry.
+    // Note: we inline the check instead of importing promoteRecommendedWidgets
+    // to avoid a circular dependency (promotionUtils → canvasStore → app).
+    const PREVIEW_WIDGET = '$$canvas-image-preview'
+    const PREVIEW_NODE_TYPES = new Set(['PreviewImage', 'SaveImage', 'GLSLShader'])
+    for (const node of this.subgraph.nodes) {
+      if (!PREVIEW_NODE_TYPES.has(node.type)) continue
+      if (
+        store.isPromoted(
+          this.rootGraph.id,
+          this.id,
+          String(node.id),
+          PREVIEW_WIDGET
+        )
+      )
+        continue
+      store.promote(
+        this.rootGraph.id,
+        this.id,
+        String(node.id),
+        PREVIEW_WIDGET
+      )
+    }
   }
 
   private _resolveInputWidget(

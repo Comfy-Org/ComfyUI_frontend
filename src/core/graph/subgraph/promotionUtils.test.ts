@@ -275,7 +275,7 @@ describe('promoteRecommendedWidgets', () => {
     subgraph.add(glslNode)
 
     // Create subgraphNode — constructor calls configure → _internalConfigureAfterSlots
-    // which should now call promoteRecommendedWidgets(this)
+    // which eagerly registers $$canvas-image-preview for supported node types
     const subgraphNode = createTestSubgraphNode(subgraph)
 
     const store = usePromotionStore()
