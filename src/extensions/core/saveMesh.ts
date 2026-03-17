@@ -18,6 +18,7 @@ import {
   persistThumbnail
 } from '@/platform/assets/utils/assetPreviewUtil'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
 
@@ -107,13 +108,13 @@ useExtensionService().registerExtension({
 
           if (isAssetPreviewSupported()) {
             const filename = fileInfo.filename ?? ''
-            const displayName = fileInfo.display_name
+            const jobId = useExecutionStore().activeJobId
             const onModelLoaded = () => {
               load3d.removeEventListener('modelLoadingEnd', onModelLoaded)
               load3d
                 .captureThumbnail(256, 256)
                 .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-                .then((blob) => persistThumbnail(filename, blob, displayName))
+                .then((blob) => persistThumbnail(filename, blob, jobId))
                 .catch(() => {})
             }
             load3d.addEventListener('modelLoadingEnd', onModelLoaded)

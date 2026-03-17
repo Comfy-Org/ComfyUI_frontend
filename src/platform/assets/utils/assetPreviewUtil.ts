@@ -4,6 +4,7 @@ import { api } from '@/scripts/api'
 interface AssetRecord {
   id: string
   name: string
+  asset_hash?: string
   preview_url?: string
   preview_id?: string
 }
@@ -14,53 +15,44 @@ export function isAssetPreviewSupported(): boolean {
   )
 }
 
-/**
- * Extract the filename portion from a path that may include subdirectories.
- * e.g. "mesh/ComfyUI_00003_.glb" -> "ComfyUI_00003_.glb"
- */
-function basename(path: string): string {
-  const i = path.lastIndexOf('/')
-  return i >= 0 ? path.slice(i + 1) : path
-}
-
-async function fetchAssetsByName(name: string): Promise<AssetRecord[]> {
-  const params = new URLSearchParams({ name_contains: name })
-  const res = await api.fetchApi(`/assets?${params}`)
+async function fetchAssets(
+  params: Record<string, string>
+): Promise<AssetRecord[]> {
+  const query = new URLSearchParams(params)
+  const res = await api.fetchApi(`/assets?${query}`)
   if (!res.ok) return []
   const data = await res.json()
   return data.assets ?? []
 }
 
 /**
- * Search for the model asset record by name.
- * On local, `name` (the raw filename) matches directly.
- * On cloud, `name` is a hash; fall back to `displayName` (original filename)
- * which may include a subfolder prefix.
+ * Find the model asset record.
+ * Tries name_contains first (works on local where filenames aren't hashed).
+ * Falls back to job_ids filter (works on cloud where output filenames are
+ * content-hashed but the asset record retains the original name + job ID).
  */
 async function findModelAsset(
   name: string,
-  displayName?: string
+  jobId?: string | null
 ): Promise<AssetRecord | undefined> {
-  let assets = await fetchAssetsByName(name)
-  let modelAsset = assets.find((a) => a.name === name)
+  const byName = await fetchAssets({ name_contains: name })
+  const modelAsset = byName.find((a) => a.name === name)
+  if (modelAsset) return modelAsset
 
-  if (!modelAsset && displayName) {
-    const base = basename(displayName)
-    assets = await fetchAssetsByName(base)
-    modelAsset =
-      assets.find((a) => a.name === base) ??
-      assets.find((a) => a.name === displayName)
+  if (jobId) {
+    const byJob = await fetchAssets({ job_ids: jobId })
+    return byJob.find((a) => a.asset_hash === name)
   }
 
-  return modelAsset
+  return undefined
 }
 
 export async function findServerPreviewUrl(
   name: string,
-  displayName?: string
+  jobId?: string | null
 ): Promise<string | null> {
   try {
-    const modelAsset = await findModelAsset(name, displayName)
+    const modelAsset = await findModelAsset(name, jobId)
 
     if (!modelAsset?.preview_id) return null
 
@@ -77,10 +69,10 @@ export async function findServerPreviewUrl(
 export async function persistThumbnail(
   modelName: string,
   blob: Blob,
-  displayName?: string
+  jobId?: string | null
 ): Promise<void> {
   try {
-    const modelAsset = await findModelAsset(modelName, displayName)
+    const modelAsset = await findModelAsset(modelName, jobId)
     if (!modelAsset || modelAsset.preview_id) return
 
     const previewFilename = `${modelAsset.name}_preview.png`

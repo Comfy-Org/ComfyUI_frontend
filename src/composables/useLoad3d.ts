@@ -9,6 +9,7 @@ import {
   isAssetPreviewSupported,
   persistThumbnail
 } from '@/platform/assets/utils/assetPreviewUtil'
+import { useExecutionStore } from '@/stores/executionStore'
 import type {
   AnimationItem,
   CameraConfig,
@@ -528,10 +529,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         if (typeof value === 'string' && value) {
           const filename = value.trim().replace(/\s*\[output\]$/, '')
           const modelName = Load3dUtils.splitFilePath(filename)[1]
+          const jobId = useExecutionStore().activeJobId
           load3d
             .captureThumbnail(256, 256)
             .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-            .then((blob) => persistThumbnail(modelName, blob))
+            .then((blob) => persistThumbnail(modelName, blob, jobId))
             .catch(() => {})
         }
       }
