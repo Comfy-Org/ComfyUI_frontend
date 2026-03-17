@@ -88,8 +88,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 const { t } = useI18n()
 
 onMounted(() => {
+  // Impression event — uses trackUiButtonClicked as no dedicated impression tracker exists
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'cloud_notification_modal_shown'
+    button_id: 'cloud_notification_modal_impression'
   })
 })
 
