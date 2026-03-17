@@ -2,7 +2,7 @@
   <FocusScope as-child loop>
     <div
       ref="dialogRef"
-      class="flex max-h-[min(80vh,750px)] min-h-[400px] w-full flex-col overflow-hidden rounded-lg border border-interface-stroke bg-base-background"
+      class="flex h-[min(80vh,750px)] w-full flex-col overflow-hidden rounded-lg border border-interface-stroke bg-base-background"
     >
       <!-- Search input row -->
       <NodeSearchInput
@@ -96,7 +96,7 @@
 
 <script setup lang="ts">
 import { FocusScope } from 'reka-ui'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
@@ -160,13 +160,6 @@ const nodeAvailability = computed(() => {
 
 const dialogRef = ref<HTMLElement>()
 const searchInputRef = ref<InstanceType<typeof NodeSearchInput>>()
-
-// Freeze dialog height to prevent layout shift when switching categories
-onMounted(() => {
-  if (dialogRef.value) {
-    dialogRef.value.style.height = `${dialogRef.value.offsetHeight}px`
-  }
-})
 
 const searchQuery = ref('')
 const selectedCategory = ref(DEFAULT_CATEGORY)
