@@ -50,7 +50,7 @@ async function loadThumbnail() {
   if (!asset?.src) return
 
   if (asset.name && isAssetPreviewSupported()) {
-    const serverPreviewUrl = await findServerPreviewUrl(asset.name, asset.id)
+    const serverPreviewUrl = await findServerPreviewUrl(asset.name)
     if (serverPreviewUrl) {
       thumbnailSrc.value = serverPreviewUrl
     }
