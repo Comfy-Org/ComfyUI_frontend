@@ -338,16 +338,16 @@ This skill uses **playwright-cli** (`@playwright/cli`) — a token-efficient CLI
 
 The key operations and their playwright-cli equivalents:
 
-| Action           | Command                                    |
-| ---------------- | ------------------------------------------ |
-| Navigate to URL  | `playwright-cli goto <url>`                |
-| Get element refs | `playwright-cli snapshot`                  |
-| Click element    | `playwright-cli click <ref>`               |
-| Type text        | `playwright-cli fill <ref> <text>`         |
-| Press shortcut   | `playwright-cli press <key>`               |
-| Take screenshot  | `playwright-cli screenshot --filename=f`   |
-| Hover element    | `playwright-cli hover <ref>`               |
-| Select dropdown  | `playwright-cli select <ref> <value>`      |
+| Action           | Command                                  |
+| ---------------- | ---------------------------------------- |
+| Navigate to URL  | `playwright-cli goto <url>`              |
+| Get element refs | `playwright-cli snapshot`                |
+| Click element    | `playwright-cli click <ref>`             |
+| Type text        | `playwright-cli fill <ref> <text>`       |
+| Press shortcut   | `playwright-cli press <key>`             |
+| Take screenshot  | `playwright-cli screenshot --filename=f` |
+| Hover element    | `playwright-cli hover <ref>`             |
+| Select dropdown  | `playwright-cli select <ref> <value>`    |
 
 Snapshots return element references (`e1`, `e2`, …). Always run `snapshot` after navigation or major interactions to refresh refs before acting.
 
