@@ -9,12 +9,12 @@
       }"
       class="fixed z-1700 min-w-[220px] rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm"
       role="menu"
-      @keydown.escape="hide"
     >
       <div
         v-if="showDisconnect"
         class="m-1 flex cursor-pointer items-center gap-1 rounded-lg p-2 leading-none hover:bg-secondary-background-hover"
         role="menuitem"
+        tabindex="0"
         @click="handleDisconnect"
       >
         {{ t('g.disconnectLinks') }}
@@ -23,6 +23,7 @@
         v-if="showRename"
         class="m-1 flex cursor-pointer items-center gap-1 rounded-lg p-2 leading-none hover:bg-secondary-background-hover"
         role="menuitem"
+        tabindex="0"
         @click="handleRename"
       >
         {{ t('g.rename') }}
@@ -31,6 +32,7 @@
         v-if="showRemove"
         class="m-1 flex cursor-pointer items-center gap-1 rounded-lg p-2 leading-none text-error hover:bg-secondary-background-hover"
         role="menuitem"
+        tabindex="0"
         @click="handleRemove"
       >
         {{ t('g.removeSlot') }}
@@ -97,10 +99,12 @@ async function handleRename() {
   const ctx = activeContext.value
   if (!ctx) return
   hide()
-  const newLabel = await dialogService.prompt({
-    title: t('g.rename'),
-    message: t('g.enterNewNamePrompt')
-  })
+  const newLabel = await dialogService
+    .prompt({
+      title: t('g.rename'),
+      message: t('g.enterNewNamePrompt')
+    })
+    .catch(() => null)
   if (!newLabel) return
   renameSlot(ctx, newLabel)
 }
