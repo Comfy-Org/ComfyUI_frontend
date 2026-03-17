@@ -114,7 +114,6 @@
         "no-console": "allow"
       }
     },
-
     {
       "files": ["browser_tests/**/*.ts"],
       "rules": {
