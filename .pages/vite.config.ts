@@ -10,8 +10,13 @@ const discoverHtmlEntries = () => {
   const topLevel = resolve(rootDir, 'index.html')
   if (fs.existsSync(topLevel)) entries.set('index', topLevel)
 
+  // Directories with pre-built assets (e.g. nx-graph) are copied directly
+  // in build-pages.sh to avoid CSS minification issues
+  const skipDirs = new Set(['nx-graph'])
+
   for (const dirent of fs.readdirSync(rootDir, { withFileTypes: true })) {
     if (!dirent.isDirectory() || dirent.name.startsWith('.')) continue
+    if (skipDirs.has(dirent.name)) continue
     const candidate = resolve(rootDir, dirent.name, 'index.html')
     if (fs.existsSync(candidate)) entries.set(dirent.name, candidate)
   }
@@ -21,7 +26,7 @@ const discoverHtmlEntries = () => {
 
 export default defineConfig({
   root: rootDir,
-  base: '/ComfyUI_frontend/',
+  base: '/',
   appType: 'mpa',
   logLevel: 'info',
   publicDir: false,

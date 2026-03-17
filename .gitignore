@@ -96,8 +96,3 @@ vitest.config.*.timestamp*
 # Generated reports in .pages (exclude generated, keep HTML templates)
 /.pages/*/**/*
 /.pages-dist/
-
-# Fetched artifacts for Vercel builds
-/.page/
-
-.vercel

@@ -1,0 +1,122 @@
+name: 'Deploy: Branch Status Pages'
+
+on:
+  workflow_run:
+    workflows:
+      - 'CI: Tests Storybook'
+      - 'CI: Tests E2E'
+    types:
+      - completed
+    branches-ignore:
+      - main
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-branch-status-${{ github.event.workflow_run.head_branch || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event.workflow_run.conclusion == 'success')
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Build status pages
+        run: pnpm pages:build
+
+      - name: Install wrangler
+        run: npm install -g wrangler@^4.0.0
+
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          BRANCH="${{ github.event.workflow_run.head_branch || github.ref_name }}"
+          CF_BRANCH=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+
+          echo "Deploying branch status pages for: $BRANCH (cf: $CF_BRANCH)"
+
+          OUTPUT=$(wrangler pages deploy .pages-dist \
+            --project-name="comfyui-frontend-reports" \
+            --branch="$CF_BRANCH" 2>&1) || {
+            echo "Deployment failed: $OUTPUT"
+            exit 1
+          }
+
+          URL=$(echo "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
+          URL="${URL:-https://${CF_BRANCH}.comfyui-frontend-reports.pages.dev}"
+
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "Deployed to: $URL"
+
+      - name: Find PR number
+        id: pr
+        if: github.event_name == 'workflow_run'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = '${{ steps.deploy.outputs.branch }}';
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${branch}`,
+              state: 'open'
+            });
+            return prs.length > 0 ? prs[0].number : null;
+
+      - name: Comment on PR
+        if: steps.pr.outputs.result && steps.pr.outputs.result != 'null'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- BRANCH_STATUS_DEPLOY -->';
+            const prNumber = ${{ steps.pr.outputs.result }};
+            const url = '${{ steps.deploy.outputs.url }}';
+
+            const body = `${marker}
+            **Branch Status Page** deployed: ${url}
+
+            Includes: Storybook links, Nx graph, Knip report, test report links`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const existing = comments.find(c => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body
+              });
+            }

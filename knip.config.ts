@@ -15,15 +15,11 @@ const config: KnipConfig = {
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
-    'packages/design-system': {
-      entry: ['src/**/*.ts'],
-      project: ['src/**/*.{js,ts}', '*.{js,ts,mts}']
-    },
     'packages/registry-types': {
       project: ['src/**/*.{js,ts}']
     }
   },
-  ignoreBinaries: ['python3'],
+  ignoreBinaries: ['python3', 'gh'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json',
@@ -31,11 +27,10 @@ const config: KnipConfig = {
     '@primeuix/styled',
     '@primeuix/utils',
     '@primevue/icons',
-    // Dev
-    '@trivago/prettier-plugin-sort-imports',
-    // 3D and collaboration libraries
-    'three',
-    '@types/three',
+    // Unused but kept for potential future use
+    '@sparkjsdev/spark',
+    'wwobjloader2',
+    '@iconify-json/lucide',
     'yjs'
   ],
   ignore: [
@@ -54,7 +49,22 @@ const config: KnipConfig = {
     'src/renderer/extensions/vueNodes/composables/slotLinkDragContext.ts',
     'src/types/spatialIndex.ts',
     'src/lib/litegraph/src/litegraph.ts',
-    'src/utils/vintageClipboard.ts'
+    'src/utils/vintageClipboard.ts',
+    'src/platform/auth/session/useSessionCookie.ts',
+    'src/platform/support/config.ts',
+    'src/renderer/utils/nodeTypeGuards.ts',
+    'src/schemas/nodeDefSchema.ts',
+    'src/scripts/defaultGraph.ts',
+    'src/scripts/ui.ts',
+    'src/scripts/widgets.ts',
+    'src/services/litegraphService.ts',
+    'src/storybook/mocks/useJobActions.ts',
+    'src/storybook/mocks/useJobList.ts',
+    'src/utils/executableGroupNodeDto.ts',
+    'src/utils/litegraphUtil.ts',
+    'src/lib/litegraph/src/LGraph.ts',
+    'src/schemas/apiSchema.ts',
+    'src/schemas/nodeDef/nodeDefSchemaV2.ts'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
