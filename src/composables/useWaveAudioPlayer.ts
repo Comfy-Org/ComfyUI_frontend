@@ -2,7 +2,9 @@ import { useMediaControls } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-export interface WaveformBar {
+import { api } from '@/scripts/api'
+
+interface WaveformBar {
   height: number
 }
 
@@ -60,7 +62,11 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
   async function decodeAudioSource(url: string) {
     loading.value = true
     try {
-      const response = await fetch(url)
+      const apiBase = api.apiURL('/')
+      const route = url.includes(apiBase)
+        ? url.slice(url.indexOf(apiBase) + api.apiURL('').length)
+        : url
+      const response = await api.fetchApi(route)
       const arrayBuffer = await response.arrayBuffer()
 
       const blob = new Blob([arrayBuffer.slice(0)], {

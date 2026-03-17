@@ -11,6 +11,15 @@ vi.mock('@vueuse/core', () => ({
   })
 }))
 
+const mockFetchApi = vi.fn()
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    apiURL: (route: string) => '/api' + route,
+    fetchApi: (...args: unknown[]) => mockFetchApi(...args)
+  }
+}))
+
 describe('formatTime', () => {
   it('returns 0:00 for zero', () => {
     expect(formatTime(0)).toBe('0:00')
@@ -91,18 +100,18 @@ describe('useWaveAudioPlayer', () => {
       close: mockClose
     })) as unknown as typeof AudioContext
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    mockFetchApi.mockResolvedValue({
       arrayBuffer: () => Promise.resolve(mockArrayBuffer),
       headers: { get: () => 'audio/wav' }
-    } as unknown as Response)
+    })
 
-    const src = ref('http://example.com/audio.wav')
+    const src = ref('/api/view?filename=audio.wav&type=output')
     const { bars } = useWaveAudioPlayer({ src, barCount: 10 })
 
     await vi.waitFor(() => {
       expect(bars.value).toHaveLength(10)
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        'http://example.com/audio.wav'
+      expect(mockFetchApi).toHaveBeenCalledWith(
+        '/view?filename=audio.wav&type=output'
       )
     })
   })
