@@ -74,17 +74,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed, toRef, useTemplateRef } from 'vue'
 
 import { useCurveEditor } from '@/composables/useCurveEditor'
 
-import type { CurvePoint } from './types'
+import type { CurveInterpolation, CurvePoint } from './types'
 
 import { histogramToPath } from './curveUtils'
 
-const { curveColor = 'white', histogram } = defineProps<{
+const {
+  curveColor = 'white',
+  histogram,
+  interpolation = 'monotone_cubic'
+} = defineProps<{
   curveColor?: string
   histogram?: Uint32Array | null
+  interpolation?: CurveInterpolation
 }>()
 
 const modelValue = defineModel<CurvePoint[]>({
@@ -95,7 +100,8 @@ const svgRef = useTemplateRef<SVGSVGElement>('svgRef')
 
 const { curvePath, handleSvgPointerDown, startDrag } = useCurveEditor({
   svgRef,
-  modelValue
+  modelValue,
+  interpolation: toRef(() => interpolation)
 })
 
 const histogramPath = computed(() =>
