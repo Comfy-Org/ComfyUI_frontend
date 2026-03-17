@@ -22,12 +22,12 @@ async function isInSubgraph(comfyPage: ComfyPage): Promise<boolean> {
   })
 }
 
-async function exitSubgraphToParent(comfyPage: ComfyPage): Promise<void> {
-  await comfyPage.page.evaluate(() => {
-    const canvas = window.app!.canvas
-    if (!canvas.graph) return
-    canvas.setGraph(canvas.graph.rootGraph)
-  })
+async function exitSubgraphViaBreadcrumb(comfyPage: ComfyPage): Promise<void> {
+  const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
+  await breadcrumb.waitFor({ state: 'visible', timeout: 5000 })
+  const parentLink = breadcrumb.getByRole('link').first()
+  await expect(parentLink).toBeVisible()
+  await parentLink.click()
   await comfyPage.nextFrame()
 }
 
@@ -262,7 +262,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent graph
-        await exitSubgraphToParent(comfyPage)
+        await exitSubgraphViaBreadcrumb(comfyPage)
 
         // Promoted textarea on SubgraphNode should have the same value
         const promotedTextarea = comfyPage.page.getByTestId(
@@ -296,7 +296,7 @@ test.describe(
           )
           await expect(interiorTextarea).toHaveValue(testContent)
 
-          await exitSubgraphToParent(comfyPage)
+          await exitSubgraphViaBreadcrumb(comfyPage)
 
           const promotedTextarea = comfyPage.page.getByTestId(
             TestIds.widgets.domWidgetTextarea
@@ -342,7 +342,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent
-        await exitSubgraphToParent(comfyPage)
+        await exitSubgraphViaBreadcrumb(comfyPage)
 
         // SubgraphNode should now have the promoted widget
         const widgetCount = await getPromotedWidgetCount(comfyPage, '2')
@@ -377,7 +377,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back and verify promotion took effect
-        await exitSubgraphToParent(comfyPage)
+        await exitSubgraphViaBreadcrumb(comfyPage)
         await fitToViewInstant(comfyPage)
         await comfyPage.nextFrame()
 
@@ -408,7 +408,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent
-        await exitSubgraphToParent(comfyPage)
+        await exitSubgraphViaBreadcrumb(comfyPage)
 
         // SubgraphNode should have fewer widgets
         const finalWidgetCount = await getPromotedWidgetCount(comfyPage, '2')
@@ -770,7 +770,7 @@ test.describe(
         await comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
         await comfyPage.nextFrame()
 
-        await exitSubgraphToParent(comfyPage)
+        await exitSubgraphViaBreadcrumb(comfyPage)
 
         const finalCount = await getPromotedWidgetCount(comfyPage, '5')
         expect(finalCount).toBeLessThan(initialCount)

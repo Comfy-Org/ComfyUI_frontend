@@ -7,7 +7,6 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 import {
   getPromotedWidgets,
-  getPromotedWidgetCount,
   getPseudoPreviewWidgets,
   getNonPreviewPromotedWidgets
 } from '../helpers/promotedWidgets'
@@ -102,7 +101,7 @@ test.describe(
         await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       })
 
-      test('Removing promoted source node inside subgraph reduces widget count on exterior', async ({
+      test('Removing promoted source node inside subgraph falls back to disconnected placeholder on exterior', async ({
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(
@@ -110,8 +109,8 @@ test.describe(
         )
         await comfyPage.nextFrame()
 
-        const initialCount = await getPromotedWidgetCount(comfyPage, '11')
-        expect(initialCount).toBeGreaterThan(0)
+        const initialWidgets = await getPromotedWidgets(comfyPage, '11')
+        expect(initialWidgets.length).toBeGreaterThan(0)
 
         const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
         await subgraphNode.navigateIntoSubgraph()
@@ -123,8 +122,23 @@ test.describe(
 
         await exitSubgraphViaBreadcrumb(comfyPage)
 
-        const finalCount = await getPromotedWidgetCount(comfyPage, '11')
-        expect(finalCount).toBeLessThan(initialCount)
+        await expect
+          .poll(async () => {
+            return await comfyPage.page.evaluate(() => {
+              const hostNode = window.app!.canvas.graph!.getNodeById('11')
+              const proxyWidgets = hostNode?.properties?.proxyWidgets
+              return {
+                proxyWidgetCount: Array.isArray(proxyWidgets)
+                  ? proxyWidgets.length
+                  : 0,
+                firstWidgetType: hostNode?.widgets?.[0]?.type
+              }
+            })
+          })
+          .toEqual({
+            proxyWidgetCount: initialWidgets.length,
+            firstWidgetType: 'button'
+          })
       })
 
       test('Promoted widget disappears from DOM after interior node deletion', async ({

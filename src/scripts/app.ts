@@ -1134,6 +1134,10 @@ export class ComfyApp {
       this.clean()
     }
 
+    // Reset canvas context before configuring a new graph so subgraph UI state
+    // from the previous workflow cannot leak into the newly loaded one.
+    this.canvas.setGraph(this.rootGraph)
+
     let reset_invalid_values = false
     // Use explicit validation instead of falsy check to avoid replacing
     // valid but falsy values (empty objects, 0, false, etc.)
