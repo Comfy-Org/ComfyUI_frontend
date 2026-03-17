@@ -100,7 +100,7 @@
     <TitleEditor />
     <SelectionToolbox v-if="selectionToolboxEnabled" />
     <NodeContextMenu />
-    <SlotContextMenu />
+    <SlotContextMenu v-if="shouldRenderVueNodes" />
     <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
     <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
