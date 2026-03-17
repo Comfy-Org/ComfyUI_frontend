@@ -939,101 +939,94 @@ describe('useQueueStore', () => {
     })
   })
 
-  describe('update deduplication', () => {
-    it('should discard stale responses when newer request completes first', async () => {
-      let resolveFirst: QueueResolver
-      let resolveSecond: QueueResolver
+  describe('update deduplication (coalescing)', () => {
+    it('should coalesce concurrent calls — second call does not fire its own request', async () => {
+      let resolveQueue!: QueueResolver
 
-      const firstQueuePromise = new Promise<QueueResponse>((resolve) => {
-        resolveFirst = resolve
-      })
-      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
-        resolveSecond = resolve
-      })
-
+      mockGetQueue.mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
       mockGetHistory.mockResolvedValue([])
-
-      mockGetQueue
-        .mockReturnValueOnce(firstQueuePromise)
-        .mockReturnValueOnce(secondQueuePromise)
 
       const firstUpdate = store.update()
       const secondUpdate = store.update()
 
-      resolveSecond!({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
+      // Only one HTTP request should have been made
+      expect(mockGetQueue).toHaveBeenCalledTimes(1)
+
+      // Second call returns immediately (coalesced)
       await secondUpdate
 
-      expect(store.pendingTasks).toHaveLength(1)
-      expect(store.pendingTasks[0].jobId).toBe('new-job')
-
-      resolveFirst!({
-        Running: [],
-        Pending: [createPendingJob(1, 'stale-job')]
-      })
+      // Resolve the in-flight request
+      resolveQueue({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
       await firstUpdate
 
       expect(store.pendingTasks).toHaveLength(1)
       expect(store.pendingTasks[0].jobId).toBe('new-job')
+
+      // A re-fetch fires because dirty was set
+      expect(mockGetQueue).toHaveBeenCalledTimes(2)
     })
 
-    it('should set isLoading to false only for the latest request', async () => {
-      let resolveFirst: QueueResolver
-      let resolveSecond: QueueResolver
+    it('should clear isLoading after in-flight request completes', async () => {
+      let resolveQueue!: QueueResolver
 
-      const firstQueuePromise = new Promise<QueueResponse>((resolve) => {
-        resolveFirst = resolve
-      })
-      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
-        resolveSecond = resolve
-      })
-
+      mockGetQueue.mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
       mockGetHistory.mockResolvedValue([])
-
-      mockGetQueue
-        .mockReturnValueOnce(firstQueuePromise)
-        .mockReturnValueOnce(secondQueuePromise)
 
       const firstUpdate = store.update()
       expect(store.isLoading).toBe(true)
 
-      const secondUpdate = store.update()
-      expect(store.isLoading).toBe(true)
+      // Second call coalesces and returns immediately
+      void store.update()
 
-      resolveSecond!({ Running: [], Pending: [] })
-      await secondUpdate
-
-      expect(store.isLoading).toBe(false)
-
-      resolveFirst!({ Running: [], Pending: [] })
+      resolveQueue({ Running: [], Pending: [] })
       await firstUpdate
 
+      // isLoading is true again because re-fetch was triggered
+      expect(store.isLoading).toBe(true)
+
+      // Resolve the re-fetch
+      resolveQueue({ Running: [], Pending: [] })
+      await new Promise((r) => setTimeout(r, 0))
+
       expect(store.isLoading).toBe(false)
     })
 
-    it('should handle stale request failure without affecting latest state', async () => {
-      let resolveSecond: QueueResolver
+    it('should handle in-flight failure and still trigger coalesced re-fetch', async () => {
+      let callCount = 0
+      let resolveSecond!: QueueResolver
 
-      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
-        resolveSecond = resolve
+      mockGetQueue.mockImplementation(() => {
+        callCount++
+        if (callCount === 1) {
+          return Promise.reject(new Error('network error'))
+        }
+        return new Promise<QueueResponse>((resolve) => {
+          resolveSecond = resolve
+        })
       })
-
       mockGetHistory.mockResolvedValue([])
 
-      mockGetQueue
-        .mockRejectedValueOnce(new Error('stale network error'))
-        .mockReturnValueOnce(secondQueuePromise)
-
       const firstUpdate = store.update()
-      const secondUpdate = store.update()
+      void store.update() // coalesces, sets dirty
 
-      resolveSecond!({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
-      await secondUpdate
+      // First call rejects — but dirty flag triggers re-fetch
+      await expect(firstUpdate).rejects.toThrow('network error')
 
-      expect(store.pendingTasks).toHaveLength(1)
-      expect(store.pendingTasks[0].jobId).toBe('new-job')
-      expect(store.isLoading).toBe(false)
+      // Re-fetch was triggered
+      expect(mockGetQueue).toHaveBeenCalledTimes(2)
 
-      await expect(firstUpdate).rejects.toThrow('stale network error')
+      resolveSecond({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
+      await new Promise((r) => setTimeout(r, 0))
 
       expect(store.pendingTasks).toHaveLength(1)
       expect(store.pendingTasks[0].jobId).toBe('new-job')
