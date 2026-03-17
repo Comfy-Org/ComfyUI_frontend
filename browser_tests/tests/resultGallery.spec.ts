@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
-test.describe('ResultGallery', { tag: ['@smoke'] }, () => {
+test.describe('ResultGallery', { tag: ['@slow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
@@ -23,14 +23,18 @@ test.describe('ResultGallery', { tag: ['@smoke'] }, () => {
       timeout: 30_000
     })
 
-    // Open Assets sidebar tab
+    // Open Assets sidebar tab and wait for it to load
     await comfyPage.page.locator('.assets-tab-button').click()
+    await comfyPage.page
+      .locator('.sidebar-content-container')
+      .waitFor({ state: 'visible' })
 
-    // Wait for asset card with image to appear
+    // Wait for asset card with image to appear (may need a refresh cycle)
     const assetCard = comfyPage.page
       .locator('[role="button"]')
       .filter({ has: comfyPage.page.locator('img') })
       .first()
+
     await expect(assetCard).toBeVisible({ timeout: 30_000 })
 
     // Hover to reveal zoom button, then click it
