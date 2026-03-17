@@ -56,9 +56,10 @@ vi.mock('@/composables/useWorkflowActionsMenu', () => ({
   })
 }))
 
+const mockCloseWorkflow = vi.fn().mockResolvedValue(true)
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
-    closeWorkflow: vi.fn()
+    closeWorkflow: mockCloseWorkflow
   })
 }))
 
@@ -120,7 +121,10 @@ function mountTab({
         i18n
       ],
       stubs: {
-        WorkflowActionsList: true
+        WorkflowActionsList: true,
+        Button: {
+          template: '<button v-bind="$attrs"><slot /></button>'
+        }
       }
     },
     props: {
@@ -201,6 +205,18 @@ describe('WorkflowTab - job state indicator', () => {
     } satisfies Partial<LoadedComfyWorkflow> as LoadedComfyWorkflow
     await nextTick()
 
+    expect(mockExecutionStore.clearWorkflowStatus).toHaveBeenCalledWith(
+      '/workflows/test.json'
+    )
+  })
+
+  it('clears workflow status when close succeeds', async () => {
+    mockCloseWorkflow.mockResolvedValue(true)
+
+    const wrapper = mountTab()
+    await wrapper.find('button[aria-label="Close"]').trigger('click')
+
+    expect(mockCloseWorkflow).toHaveBeenCalled()
     expect(mockExecutionStore.clearWorkflowStatus).toHaveBeenCalledWith(
       '/workflows/test.json'
     )

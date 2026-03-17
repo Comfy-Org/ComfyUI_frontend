@@ -233,6 +233,8 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
       // User clicked cancel
       break
     }
+    const path = opt.workflow.path
+    if (path) executionStore.clearWorkflowStatus(path)
   }
 }
 
