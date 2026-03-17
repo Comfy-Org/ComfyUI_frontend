@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
+import { clearReportCache } from './useErrorReport'
 
 const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
 const mockSerialize = vi.fn(() => ({ nodes: [] }))
@@ -49,6 +50,8 @@ describe('ErrorNodeCard.vue', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    cardIdCounter = 0
+    clearReportCache()
     mockGetLogs.mockResolvedValue('mock server logs')
     mockGenerateErrorReport.mockReturnValue('# ComfyUI Error Report\n...')
 
@@ -60,7 +63,7 @@ describe('ErrorNodeCard.vue', () => {
           g: {
             copy: 'Copy',
             findIssues: 'Find Issues',
-            findIssueOnGithub: 'Find Issue on Github'
+            findOnGithub: 'Find on Github'
           },
           rightSidePanel: {
             locateNode: 'Locate Node',
@@ -233,9 +236,7 @@ describe('ErrorNodeCard.vue', () => {
     const wrapper = mountCard(makeRuntimeErrorCard())
     await flushPromises()
 
-    const findIssuesButton = wrapper.find(
-      'button[aria-label="Find Issue on Github"]'
-    )
+    const findIssuesButton = wrapper.find('button[aria-label="Find on Github"]')
     expect(findIssuesButton.exists()).toBe(true)
 
     await findIssuesButton.trigger('click')

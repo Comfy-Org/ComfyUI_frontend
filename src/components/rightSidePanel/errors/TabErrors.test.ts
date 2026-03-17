@@ -240,9 +240,8 @@ describe('TabErrors.vue', () => {
     // Runtime error panel title should show class type
     expect(wrapper.text()).toContain('KSampler')
     expect(wrapper.text()).toContain('RuntimeError: Out of memory')
-    // Should not render inside accordion (PropertiesAccordionItem is stubbed as plain div)
-    // The runtime error panel has its own flex container with py-3
-    const runtimePanel = wrapper.find('.flex-col.overflow-hidden.px-4.py-3')
+    // Should render in the dedicated runtime error panel, not inside accordion
+    const runtimePanel = wrapper.find('[data-testid="runtime-error-panel"]')
     expect(runtimePanel.exists()).toBe(true)
   })
 })

@@ -81,25 +81,26 @@
 
         <div class="flex gap-2">
           <Button
-            v-tooltip.top="t('g.findIssueOnGithub')"
+            v-tooltip.top="t('g.findOnGithub')"
             variant="secondary"
             size="sm"
-            class="h-8 flex-1 justify-center gap-2 text-xs"
-            :aria-label="t('g.findIssueOnGithub')"
+            class="h-8 w-2/3 justify-center gap-2 text-xs"
+            :aria-label="t('g.findOnGithub')"
             @click="handleCheckGithub(error)"
           >
             <i class="icon-[lucide--github] size-3.5" />
-            {{ t('g.findIssueOnGithub') }}
+            {{ t('g.findOnGithub') }}
           </Button>
           <Button
             v-tooltip.top="t('g.copy')"
             variant="secondary"
-            size="icon"
-            class="size-8 shrink-0"
+            size="sm"
+            class="h-8 w-1/3 justify-center gap-2 text-xs"
             :aria-label="t('g.copy')"
             @click="handleCopyError(idx)"
           >
             <i class="icon-[lucide--copy] size-3.5" />
+            {{ t('g.copy') }}
           </Button>
         </div>
       </div>
@@ -138,7 +139,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const telemetry = useTelemetry()
 const { staticUrls } = useExternalLink()
-const { displayedDetailsMap } = useErrorReport(card)
+const { displayedDetailsMap } = useErrorReport(() => card)
 
 function handleLocateNode() {
   if (card.nodeId) {

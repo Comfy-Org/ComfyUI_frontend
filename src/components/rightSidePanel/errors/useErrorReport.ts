@@ -1,4 +1,6 @@
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, toValue } from 'vue'
+
+import type { MaybeRefOrGetter } from 'vue'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -10,24 +12,31 @@ import type { ErrorCardData } from './types'
 /** Module-level cache keyed by card ID + error index + error message to avoid stale entries. */
 const reportCache = new Map<string, string>()
 
+/** @internal Exposed for test cleanup only. */
+export function clearReportCache() {
+  reportCache.clear()
+}
+
 function cacheKey(cardId: string, idx: number, message: string): string {
   return `${cardId}-${idx}-${message}`
 }
 
-export function useErrorReport(card: ErrorCardData) {
+export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
   const systemStatsStore = useSystemStatsStore()
   const enrichedDetails = reactive<Record<number, string>>({})
 
-  const displayedDetailsMap = computed(() =>
-    Object.fromEntries(
+  const displayedDetailsMap = computed(() => {
+    const card = toValue(cardSource)
+    return Object.fromEntries(
       card.errors.map((error, idx) => [
         idx,
         enrichedDetails[idx] ?? error.details
       ])
     )
-  )
+  })
 
   onMounted(async () => {
+    const card = toValue(cardSource)
     const runtimeErrors = card.errors
       .map((error, idx) => ({ error, idx }))
       .filter(({ error }) => error.isRuntimeError)
