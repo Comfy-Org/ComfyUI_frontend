@@ -3624,18 +3624,14 @@
     "exitAppBuilder": "Exit app builder"
   },
   "cloudNotification": {
-    "badge": "Comfy Cloud",
     "title": "Run ComfyUI in the Cloud",
     "message": "From setup to creation in seconds. Popular models, extensions, and powerful GPUs — ready when you are.",
     "feature1Title": "400 Free Credits Monthly",
-    "feature1": "Sign up with Google. No card required.",
     "feature2Title": "Works Anywhere, Instantly",
-    "feature2": "No setup. Powered by RTX 6000 Pro. Pay only for GPU runtime.",
     "feature3Title": "Models Ready to Use",
-    "feature3": "Credits apply to GPU inference and Partner Nodes. Try Nano Banana, Seedream, Kling and more.",
     "feature4Title": "Top Custom Node Packs Pre-installed",
     "footer": "ComfyUI stays free and open source. Cloud is optional.",
     "continueLocally": "Continue Locally",
-    "exploreCloud": "Try Cloud Free"
+    "exploreCloud": "Try Cloud for Free"
   }
 }
