@@ -47,7 +47,12 @@
       <div
         v-for="(error, idx) in card.errors"
         :key="idx"
-        class="flex min-h-0 flex-1 flex-col gap-3"
+        :class="
+          cn(
+            'flex min-h-0 flex-col gap-3',
+            card.errors.length === 1 && error.isRuntimeError && 'flex-1'
+          )
+        "
       >
         <!-- Error Message -->
         <p
@@ -59,7 +64,7 @@
 
         <!-- Traceback / Details (enriched with full report for runtime errors) -->
         <div
-          v-if="getDisplayedDetails(error, idx)"
+          v-if="displayedDetailsMap[idx]"
           :class="
             cn(
               'overflow-y-auto rounded-lg border border-interface-stroke/30 bg-secondary-background-hover p-2.5',
@@ -70,7 +75,7 @@
           <p
             class="m-0 font-mono text-xs/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
           >
-            {{ getDisplayedDetails(error, idx) }}
+            {{ displayedDetailsMap[idx] }}
           </p>
         </div>
 
@@ -92,7 +97,7 @@
             size="icon"
             class="size-8 shrink-0"
             :aria-label="t('g.copy')"
-            @click="handleCopyError(error, idx)"
+            @click="handleCopyError(idx)"
           >
             <i class="icon-[lucide--copy] size-3.5" />
           </Button>
@@ -103,21 +108,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { generateErrorReport } from '@/utils/errorReportUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import type { ErrorCardData, ErrorItem } from './types'
-
-/** Module-level cache: persists across tab switches to avoid repeated async calls. */
-const reportCache = new Map<string, string>()
+import { useErrorReport } from './useErrorReport'
 
 const {
   card,
@@ -137,67 +136,9 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const systemStatsStore = useSystemStatsStore()
-
-const enrichedDetails = reactive<Record<number, string>>({})
-
-function getDisplayedDetails(
-  error: ErrorItem,
-  idx: number
-): string | undefined {
-  return enrichedDetails[idx] ?? error.details
-}
-
-onMounted(async () => {
-  const runtimeErrors = card.errors
-    .map((error, idx) => ({ error, idx }))
-    .filter(({ error }) => error.isRuntimeError)
-
-  if (runtimeErrors.length === 0) return
-
-  // Resolve cached entries first; collect uncached ones
-  const uncached: typeof runtimeErrors = []
-  for (const entry of runtimeErrors) {
-    const cacheKey = `${card.id}-${entry.idx}`
-    if (reportCache.has(cacheKey)) {
-      enrichedDetails[entry.idx] = reportCache.get(cacheKey)!
-    } else {
-      uncached.push(entry)
-    }
-  }
-
-  if (uncached.length === 0) return
-
-  if (!systemStatsStore.systemStats) {
-    await systemStatsStore.refetchSystemStats()
-  }
-
-  let logs: string
-  try {
-    logs = await api.getLogs()
-  } catch {
-    return
-  }
-
-  for (const { error, idx } of uncached) {
-    try {
-      const report = generateErrorReport({
-        exceptionType: card.title,
-        exceptionMessage: error.message,
-        traceback: error.details,
-        nodeId: card.nodeId,
-        nodeType: card.title,
-        systemStats: systemStatsStore.systemStats!,
-        serverLogs: logs,
-        workflow: app.rootGraph.serialize()
-      })
-      enrichedDetails[idx] = report
-      reportCache.set(`${card.id}-${idx}`, report)
-    } catch {
-      // Fallback: keep original error.details
-    }
-  }
-})
+const telemetry = useTelemetry()
+const { staticUrls } = useExternalLink()
+const { displayedDetailsMap } = useErrorReport(card)
 
 function handleLocateNode() {
   if (card.nodeId) {
@@ -211,18 +152,19 @@ function handleEnterSubgraph() {
   }
 }
 
-function handleCopyError(error: ErrorItem, idx: number) {
-  const details = getDisplayedDetails(error, idx)
-  emit('copyToClipboard', [error.message, details].filter(Boolean).join('\n\n'))
+function handleCopyError(idx: number) {
+  const details = displayedDetailsMap.value[idx]
+  const message = card.errors[idx]?.message
+  emit('copyToClipboard', [message, details].filter(Boolean).join('\n\n'))
 }
 
 function handleCheckGithub(error: ErrorItem) {
-  useTelemetry()?.trackUiButtonClicked({
+  telemetry?.trackUiButtonClicked({
     button_id: 'error_tab_find_existing_issues_clicked'
   })
   const query = encodeURIComponent(error.message + ' is:issue')
   window.open(
-    `https://github.com/comfyanonymous/ComfyUI/issues?q=${query}`,
+    `${staticUrls.githubIssues}?q=${query}`,
     '_blank',
     'noopener,noreferrer'
   )

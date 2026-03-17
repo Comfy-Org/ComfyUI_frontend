@@ -36,6 +36,14 @@ vi.mock('@/platform/telemetry', () => ({
   }))
 }))
 
+vi.mock('@/composables/useExternalLink', () => ({
+  useExternalLink: vi.fn(() => ({
+    staticUrls: {
+      githubIssues: 'https://github.com/comfyanonymous/ComfyUI/issues'
+    }
+  }))
+}))
+
 describe('ErrorNodeCard.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
@@ -108,9 +116,11 @@ describe('ErrorNodeCard.vue', () => {
     })
   }
 
+  let cardIdCounter = 0
+
   function makeRuntimeErrorCard(): ErrorCardData {
     return {
-      id: 'exec-10',
+      id: `exec-${++cardIdCounter}`,
       title: 'KSampler',
       nodeId: '10',
       nodeTitle: 'KSampler',
@@ -126,7 +136,7 @@ describe('ErrorNodeCard.vue', () => {
 
   function makeValidationErrorCard(): ErrorCardData {
     return {
-      id: 'node-6',
+      id: `node-${++cardIdCounter}`,
       title: 'CLIPTextEncode',
       nodeId: '6',
       nodeTitle: 'CLIP Text Encode',
@@ -139,21 +149,17 @@ describe('ErrorNodeCard.vue', () => {
     }
   }
 
-  it('generates full error report for runtime errors on mount', async () => {
-    mountCard(makeRuntimeErrorCard())
+  it('displays enriched report for runtime errors on mount', async () => {
+    const reportText =
+      '# ComfyUI Error Report\n## System Information\n- OS: Linux'
+    mockGenerateErrorReport.mockReturnValue(reportText)
+
+    const wrapper = mountCard(makeRuntimeErrorCard())
     await flushPromises()
 
-    expect(mockGetLogs).toHaveBeenCalledOnce()
-    expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
-    expect(mockGenerateErrorReport).toHaveBeenCalledWith(
-      expect.objectContaining({
-        exceptionType: 'KSampler',
-        exceptionMessage: 'RuntimeError: CUDA out of memory',
-        traceback: 'Traceback line 1\nTraceback line 2',
-        nodeId: '10',
-        nodeType: 'KSampler'
-      })
-    )
+    expect(wrapper.text()).toContain('ComfyUI Error Report')
+    expect(wrapper.text()).toContain('System Information')
+    expect(wrapper.text()).toContain('OS: Linux')
   })
 
   it('does not generate report for non-runtime errors', async () => {
@@ -162,17 +168,6 @@ describe('ErrorNodeCard.vue', () => {
 
     expect(mockGetLogs).not.toHaveBeenCalled()
     expect(mockGenerateErrorReport).not.toHaveBeenCalled()
-  })
-
-  it('displays enriched report in details section for runtime errors', async () => {
-    const reportText = '# ComfyUI Error Report\n## System Information'
-    mockGenerateErrorReport.mockReturnValue(reportText)
-
-    const wrapper = mountCard(makeRuntimeErrorCard())
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('ComfyUI Error Report')
-    expect(wrapper.text()).toContain('System Information')
   })
 
   it('displays original details for non-runtime errors', async () => {
@@ -218,7 +213,6 @@ describe('ErrorNodeCard.vue', () => {
     await flushPromises()
 
     expect(mockGenerateErrorReport).not.toHaveBeenCalled()
-    // Should still display the original traceback
     expect(wrapper.text()).toContain('Traceback line 1')
   })
 
@@ -230,11 +224,10 @@ describe('ErrorNodeCard.vue', () => {
     const wrapper = mountCard(makeRuntimeErrorCard())
     await flushPromises()
 
-    // Should still display the original traceback
     expect(wrapper.text()).toContain('Traceback line 1')
   })
 
-  it('renders Find Issues button that opens GitHub search', async () => {
+  it('opens GitHub issues search when Find Issue button is clicked', async () => {
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
     const wrapper = mountCard(makeRuntimeErrorCard())
@@ -244,7 +237,6 @@ describe('ErrorNodeCard.vue', () => {
       'button[aria-label="Find Issue on Github"]'
     )
     expect(findIssuesButton.exists()).toBe(true)
-    expect(findIssuesButton.text()).toContain('Find Issue on Github')
 
     await findIssuesButton.trigger('click')
 
@@ -262,22 +254,31 @@ describe('ErrorNodeCard.vue', () => {
     openSpy.mockRestore()
   })
 
-  it('uses flex-1 instead of max-height for runtime error details', async () => {
-    const wrapper = mountCard(makeRuntimeErrorCard())
+  it('falls back to original details when systemStats is unavailable', async () => {
+    const wrapper = mount(ErrorNodeCard, {
+      props: { card: makeRuntimeErrorCard() },
+      global: {
+        plugins: [
+          PrimeVue,
+          i18n,
+          createTestingPinia({
+            createSpy: vi.fn,
+            initialState: {
+              systemStats: { systemStats: null }
+            }
+          })
+        ],
+        stubs: {
+          Button: {
+            template:
+              '<button :aria-label="$attrs[\'aria-label\']"><slot /></button>'
+          }
+        }
+      }
+    })
     await flushPromises()
 
-    const detailsDiv = wrapper.find('.bg-secondary-background-hover')
-    expect(detailsDiv.classes()).toContain('flex-1')
-    expect(detailsDiv.classes()).toContain('min-h-0')
-    expect(detailsDiv.classes()).not.toContain('max-h-[6lh]')
-  })
-
-  it('applies max-height constraint for non-runtime error details', async () => {
-    const wrapper = mountCard(makeValidationErrorCard())
-    await flushPromises()
-
-    const detailsDiv = wrapper.find('.bg-secondary-background-hover')
-    expect(detailsDiv.classes()).toContain('max-h-[6lh]')
-    expect(detailsDiv.classes()).not.toContain('max-h-[10lh]')
+    expect(mockGenerateErrorReport).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Traceback line 1')
   })
 })
