@@ -165,9 +165,7 @@ test.describe('Vue Nodes - Slot Context Menu', () => {
         n.inputs?.some((i) => i.link != null)
       )
       if (!ksamplerNode) return null
-      const slotIndex = ksamplerNode.inputs!.findIndex(
-        (i) => i.link != null
-      )
+      const slotIndex = ksamplerNode.inputs!.findIndex((i) => i.link != null)
       return { nodeId: ksamplerNode.id, slotIndex }
     })
     expect(connectedSlot).not.toBeNull()
