@@ -14,8 +14,8 @@
       :src="src"
       :class="
         cn(
-          'size-full object-cover object-center z-1',
-          contain && 'object-contain backdrop-blur-[10px] absolute',
+          'z-1 size-full object-cover object-center',
+          contain && 'absolute object-contain backdrop-blur-[10px]',
           classProp
         )
       "
@@ -25,9 +25,9 @@
   </span>
   <div
     v-if="imageBroken"
-    class="flex flex-col items-center justify-center size-full m-8"
+    class="m-8 flex size-full flex-col items-center justify-center"
   >
-    <i class="pi pi-image text-5xl mb-2" />
+    <i class="pi pi-image mb-2 text-5xl" />
     <span>{{ $t('g.imageFailedToLoad') }}</span>
   </div>
 </template>

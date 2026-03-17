@@ -32,7 +32,7 @@
         :src="item.url"
         :contain="false"
         :alt="item.filename"
-        class="max-w-screen max-h-screen w-auto h-auto object-contain"
+        class="size-auto max-h-screen max-w-screen object-contain"
       />
       <ResultVideo v-else-if="item.isVideo" :result="item" />
       <ResultAudio v-else-if="item.isAudio" :result="item" />
