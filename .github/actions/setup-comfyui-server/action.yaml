@@ -44,12 +44,17 @@ runs:
         python -m pip install --upgrade pip
         pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         pip install -r requirements.txt
-        pip install wait-for-it
 
     - name: Start ComfyUI server
       if: ${{ inputs.launch_server == 'true' }}
       shell: bash
       working-directory: ComfyUI
+      env:
+        EXTRA_SERVER_PARAMS: ${{ inputs.extra_server_params }}
       run: |
-        python main.py --cpu --multi-user --front-end-root ../dist ${{ inputs.extra_server_params }} &
-        wait-for-it --service 127.0.0.1:8188 -t 600
+        python main.py --cpu --multi-user --front-end-root ../dist $EXTRA_SERVER_PARAMS &
+        for i in $(seq 1 300); do
+          curl -sf http://127.0.0.1:8188/api/system_stats >/dev/null 2>&1 && echo "Server ready" && exit 0
+          sleep 2
+        done
+        echo "::error::ComfyUI server did not start within 600s" && exit 1
