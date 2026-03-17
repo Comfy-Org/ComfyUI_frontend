@@ -29,10 +29,10 @@ test.describe('ResultGallery', { tag: ['@slow'] }, () => {
       .locator('.sidebar-content-container')
       .waitFor({ state: 'visible' })
 
-    // Wait for asset card with image to appear (may need a refresh cycle)
+    // Wait for any asset card to appear (may contain img or video)
     const assetCard = comfyPage.page
       .locator('[role="button"]')
-      .filter({ has: comfyPage.page.locator('img') })
+      .filter({ has: comfyPage.page.locator('img, video') })
       .first()
 
     await expect(assetCard).toBeVisible({ timeout: 30_000 })
