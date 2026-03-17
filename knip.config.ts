@@ -26,7 +26,10 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'packages/ingest-types': {
-      project: ['src/**/*.{js,ts}']
+      project: ['src/**/*.{js,ts}'],
+      entry: ['src/index.ts', 'openapi-ts.config.ts'],
+      // openapi-ts binary is provided by @hey-api/openapi-ts devDependency
+      ignoreBinaries: ['openapi-ts']
     },
     'apps/website': {
       entry: [
@@ -40,7 +43,7 @@ const config: KnipConfig = {
       ignoreDependencies: ['@comfyorg/design-system', '@vercel/analytics']
     }
   },
-  ignoreBinaries: ['python3'],
+  ignoreBinaries: ['python3', 'gh'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify-json/lucide',
@@ -54,6 +57,8 @@ const config: KnipConfig = {
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
+    // Used by a custom node (that should move off of this)
+    'src/scripts/ui/components/splitButton.ts',
     // Used by stacked PR (feat/glsl-live-preview)
     'src/renderer/glsl/useGLSLRenderer.ts',
     // Workflow files contain license names that knip misinterprets as binaries
