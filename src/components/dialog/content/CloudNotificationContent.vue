@@ -119,14 +119,19 @@ function onExplore() {
     button_id: 'cloud_notification_explore_cloud_clicked'
   })
 
-  const url = new URL('https://www.comfy.org/cloud')
-  url.searchParams.set('utm_source', 'desktop')
-  url.searchParams.set('utm_medium', 'onload-modal')
-  url.searchParams.set('utm_campaign', 'local-to-cloud-conversion')
-  url.searchParams.set('utm_id', 'desktop-onload-modal')
-  url.searchParams.set('utm_source_platform', 'mac-desktop')
+  const params = new URLSearchParams({
+    utm_source: 'desktop',
+    utm_medium: 'onload-modal',
+    utm_campaign: 'local-to-cloud-conversion',
+    utm_id: 'desktop-onload-modal',
+    utm_source_platform: 'mac-desktop'
+  })
 
-  window.open(url.toString(), '_blank', 'noopener,noreferrer')
+  window.open(
+    `https://www.comfy.org/cloud?${params}`,
+    '_blank',
+    'noopener,noreferrer'
+  )
   useDialogStore().closeDialog()
 }
 </script>
