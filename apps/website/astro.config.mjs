@@ -10,7 +10,9 @@ export default defineConfig({
     plugins: [tailwindcss()]
   },
   build: {
-    assetsPrefix: '/_website/'
+    assetsPrefix: process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : undefined
   },
   i18n: {
     locales: ['en', 'zh-CN'],
