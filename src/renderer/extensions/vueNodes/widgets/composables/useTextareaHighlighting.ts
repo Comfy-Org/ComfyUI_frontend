@@ -34,25 +34,65 @@ export function useTextareaHighlighting(
 
     let i = 0
     while (i < text.length) {
-      // Line Comments (//)
-      if (text.startsWith('//', i) && current.type !== 'block') {
+      let nextIndex = -1
+      let nextToken = ''
+
+      if (current.type === 'block') {
+        nextIndex = text.indexOf('*/', i)
+        if (nextIndex === -1) {
+          currentText += text.slice(i)
+          break
+        }
+        nextToken = '*/'
+      } else {
+        const lineCommentIdx = text.indexOf('//', i)
+        const blockCommentIdx = text.indexOf('/*', i)
+        const closeBlockIdx = text.indexOf('*/', i)
+
+        const indices = [
+          { token: '//', idx: lineCommentIdx },
+          { token: '/*', idx: blockCommentIdx },
+          { token: '*/', idx: closeBlockIdx }
+        ]
+          .filter((x) => x.idx !== -1)
+          .sort((a, b) => a.idx - b.idx)
+
+        if (indices.length > 0) {
+          nextIndex = indices[0].idx
+          nextToken = indices[0].token
+        } else {
+          currentText += text.slice(i)
+          break
+        }
+      }
+
+      if (nextIndex > i) {
+        currentText += text.slice(i, nextIndex)
+        i = nextIndex
+      }
+
+      if (nextToken === '//') {
         flushText()
         const node: AstNode = { type: 'line', value: '//', children: [] }
         current.children.push(node)
         i += 2
 
-        let lineText = ''
-        while (i < text.length && text[i] !== '\n') {
-          lineText += text[i]
-          i++
+        const endIdx = text.indexOf('\n', i)
+        if (endIdx !== -1) {
+          const lineText = text.slice(i, endIdx)
+          if (lineText)
+            node.children.push({ type: 'text', value: lineText, children: [] })
+          i = endIdx
+        } else {
+          const lineText = text.slice(i)
+          if (lineText)
+            node.children.push({ type: 'text', value: lineText, children: [] })
+          break
         }
-        if (lineText)
-          node.children.push({ type: 'text', value: lineText, children: [] })
         continue
       }
 
-      // Open Block Comment (/*)
-      if (text.startsWith('/*', i) && current.type !== 'block') {
+      if (nextToken === '/*') {
         flushText()
         const node: AstNode = { type: 'block', valid: false, children: [] }
         current.children.push(node)
@@ -64,33 +104,23 @@ export function useTextareaHighlighting(
         continue
       }
 
-      // Close Block Comment (*/)
-      if (text.startsWith('*/', i)) {
+      if (nextToken === '*/') {
+        flushText()
         if (parentStack.length > 0) {
-          flushText()
           current.children.push({ type: 'text', value: '*/', children: [] })
           current.valid = true
           current = parentStack.pop()!
-          i += 2
-          continue
         } else {
-          // Unmatched closing bracket
-          flushText()
           const node: AstNode = {
             type: 'block',
             valid: false,
-            children: [...current.children]
+            children: [{ type: 'text', value: '*/', children: [] }]
           }
-          node.children.push({ type: 'text', value: '*/', children: [] })
-          current.children = [node]
-          i += 2
-          continue
+          current.children.push(node)
         }
+        i += 2
+        continue
       }
-
-      // Normal character
-      currentText += text[i]
-      i++
     }
 
     flushText()

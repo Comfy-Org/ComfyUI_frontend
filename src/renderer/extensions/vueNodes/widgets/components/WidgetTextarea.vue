@@ -24,7 +24,8 @@
           WidgetInputBaseClass,
           'size-full resize-none text-xs',
           !hideLayoutField && 'pt-5',
-          showHighlight && 'selection:bg-blue-500/50 selection:text-transparent'
+          showHighlight &&
+            'font-[monospace] selection:bg-blue-500/50 selection:text-transparent'
         )
       "
       :placeholder
@@ -45,8 +46,8 @@
       aria-hidden="true"
       :class="
         cn(
-          'pointer-events-none absolute inset-0',
-          'overflow-y-auto font-[monospace] text-xs wrap-break-word whitespace-pre-wrap',
+          'pointer-events-none absolute inset-0 font-[monospace] text-component-node-foreground',
+          'overflow-y-auto text-xs wrap-break-word whitespace-pre-wrap',
           'border border-transparent px-2.75 pb-5',
           '[scrollbar-color:transparent_transparent] [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent',
           !hideLayoutField ? 'pt-5' : 'pt-2'
@@ -71,7 +72,7 @@
 
 <script setup lang="ts">
 import { computed, useId, ref, watch, nextTick } from 'vue'
-import dompurify from 'dompurify'
+import { default as DOMPurify } from 'dompurify'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -108,7 +109,7 @@ const settingStore = useSettingStore()
 
 const isComposing = ref(false)
 
-const isClipTextEncode = computed(() => {
+const isHighlightEnabled = computed(() => {
   const isEnabled = settingStore.get(
     'Comfy.TextareaWidget.HighlightClipComments'
   )
@@ -116,7 +117,7 @@ const isClipTextEncode = computed(() => {
 })
 
 const showHighlight = computed(
-  () => isClipTextEncode.value && !isComposing.value
+  () => isHighlightEnabled.value && !isComposing.value
 )
 
 const filteredProps = computed(() =>
@@ -132,10 +133,10 @@ const isReadOnly = computed(() =>
 
 const textareaRef = ref<InstanceType<typeof Textarea> | null>(null)
 const overlayRef = ref<HTMLElement | null>(null)
-const highlightedText = useTextareaHighlighting(modelValue, isClipTextEncode)
+const highlightedText = useTextareaHighlighting(modelValue, isHighlightEnabled)
 
 const sanitizedHighlightedText = computed(() => {
-  return dompurify.sanitize(highlightedText.value)
+  return DOMPurify.sanitize(highlightedText.value)
 })
 
 const syncScroll = (e?: Event) => {
