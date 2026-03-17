@@ -74,6 +74,12 @@
         >
           {{ t('cloudNotification.exploreCloud') }}
         </Button>
+        <button
+          class="w-full cursor-pointer border-none bg-transparent py-1.5 text-xs text-text-secondary hover:text-text-primary"
+          @click="onDismiss"
+        >
+          {{ t('cloudNotification.continueLocally') }}
+        </button>
         <p class="m-0 text-center text-xs text-text-secondary">
           {{ t('cloudNotification.footer') }}
         </p>
@@ -117,7 +123,7 @@ function onExplore() {
   url.searchParams.set('utm_id', 'desktop-onload-modal')
   url.searchParams.set('utm_source_platform', 'mac-desktop')
 
-  window.open(url.toString(), '_blank')
+  window.open(url.toString(), '_blank', 'noopener,noreferrer')
   useDialogStore().closeDialog()
 }
 </script>
