@@ -75,7 +75,7 @@ import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 import { useExtensionService } from './extensionService'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
-async function convertToPngBlob(
+async function reencodeAsPngBlob(
   blob: Blob,
   width: number,
   height: number
@@ -658,7 +658,7 @@ export const useLitegraphService = () => {
               } catch (error) {
                 // Chrome seems to only support PNG on write, convert and try again
                 if (blob.type !== 'image/png') {
-                  const pngBlob = await convertToPngBlob(
+                  const pngBlob = await reencodeAsPngBlob(
                     blob,
                     img.naturalWidth,
                     img.naturalHeight
