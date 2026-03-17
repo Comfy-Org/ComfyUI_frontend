@@ -332,7 +332,7 @@ describe('Subgraph proxyWidgets', () => {
   })
 
   test('3-level nested promotion resolves concrete widget type and value', () => {
-    const store = usePromotionStore()
+    usePromotionStore()
 
     // Level C: innermost subgraph with a concrete widget
     const subgraphC = createTestSubgraph({
@@ -353,10 +353,7 @@ describe('Subgraph proxyWidgets', () => {
     })
     subgraphB.add(subgraphNodeC)
     subgraphNodeC._internalConfigureAfterSlots()
-    subgraphB.inputNode.slots[0].connect(
-      subgraphNodeC.inputs[0],
-      subgraphNodeC
-    )
+    subgraphB.inputNode.slots[0].connect(subgraphNodeC.inputs[0], subgraphNodeC)
 
     const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 302 })
 
@@ -366,10 +363,7 @@ describe('Subgraph proxyWidgets', () => {
     })
     subgraphA.add(subgraphNodeB)
     subgraphNodeB._internalConfigureAfterSlots()
-    subgraphA.inputNode.slots[0].connect(
-      subgraphNodeB.inputs[0],
-      subgraphNodeB
-    )
+    subgraphA.inputNode.slots[0].connect(subgraphNodeB.inputs[0], subgraphNodeB)
 
     const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 303 })
 
