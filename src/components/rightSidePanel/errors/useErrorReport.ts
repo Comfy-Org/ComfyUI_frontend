@@ -65,7 +65,7 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
     try {
       logs = await api.getLogs()
     } catch {
-      return
+      logs = 'Failed to retrieve server logs'
     }
 
     const workflow = app.rootGraph.serialize()

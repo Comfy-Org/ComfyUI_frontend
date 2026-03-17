@@ -209,14 +209,15 @@ describe('ErrorNodeCard.vue', () => {
     expect(emitted![0][0]).toBe('Required input is missing\n\nInput: text')
   })
 
-  it('falls back to original details when getLogs fails', async () => {
+  it('generates report with fallback logs when getLogs fails', async () => {
     mockGetLogs.mockRejectedValue(new Error('Network error'))
 
     const wrapper = mountCard(makeRuntimeErrorCard())
     await flushPromises()
 
-    expect(mockGenerateErrorReport).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Traceback line 1')
+    // Report is still generated with fallback log message
+    expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
+    expect(wrapper.text()).toContain('ComfyUI Error Report')
   })
 
   it('falls back to original details when generateErrorReport throws', async () => {
