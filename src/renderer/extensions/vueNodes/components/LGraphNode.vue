@@ -832,6 +832,6 @@ function handleDrop(event: DragEvent) {
   if (!node?.onDragDrop) return
 
   const handled = node.onDragDrop(event)
-  if (handled) event.stopPropagation()
+  if (handled === true) event.stopPropagation()
 }
 </script>
