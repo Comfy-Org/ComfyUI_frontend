@@ -1,7 +1,7 @@
 <template>
   <div class="relative grid h-full grid-cols-5">
     <Button
-      size="icon"
+      size="unset"
       variant="muted-textonly"
       class="absolute top-2.5 right-2.5 z-10 size-8 rounded-full p-0 text-white hover:bg-white/20"
       :aria-label="t('g.close')"
