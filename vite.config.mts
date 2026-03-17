@@ -424,26 +424,34 @@ export default defineConfig({
       : []),
 
     // Sentry sourcemap upload plugin
-    // Only runs during cloud production builds when all Sentry env vars are present
-    // Requires: SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT env vars
+    // Uploads sourcemaps to both staging and prod Sentry projects so that
+    // error stack traces are readable in both environments.
     ...(DISTRIBUTION === 'cloud' &&
     process.env.SENTRY_AUTH_TOKEN &&
     process.env.SENTRY_ORG &&
-    (process.env.SENTRY_PROJECT || process.env.SENTRY_PROJECT_PROD) &&
+    process.env.SENTRY_PROJECT &&
     !IS_DEV
       ? [
           sentryVitePlugin({
             org: process.env.SENTRY_ORG,
-            project:
-              (process.env.USE_PROD_CONFIG === 'true'
-                ? process.env.SENTRY_PROJECT_PROD
-                : process.env.SENTRY_PROJECT) || '',
+            project: process.env.SENTRY_PROJECT,
             authToken: process.env.SENTRY_AUTH_TOKEN,
             sourcemaps: {
-              // Delete source maps after upload to prevent public access
-              filesToDeleteAfterUpload: ['**/*.map']
+              filesToDeleteAfterUpload: []
             }
-          })
+          }),
+          ...(process.env.SENTRY_PROJECT_PROD
+            ? [
+                sentryVitePlugin({
+                  org: process.env.SENTRY_ORG,
+                  project: process.env.SENTRY_PROJECT_PROD,
+                  authToken: process.env.SENTRY_AUTH_TOKEN,
+                  sourcemaps: {
+                    filesToDeleteAfterUpload: ['**/*.map']
+                  }
+                })
+              ]
+            : [])
         ]
       : [])
   ],
@@ -609,11 +617,7 @@ export default defineConfig({
     __SENTRY_ENABLED__: JSON.stringify(
       !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
     ),
-    __SENTRY_DSN__: JSON.stringify(
-      (process.env.USE_PROD_CONFIG === 'true'
-        ? process.env.SENTRY_DSN_PROD
-        : process.env.SENTRY_DSN) || ''
-    ),
+    __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
