@@ -69,7 +69,7 @@ const DEFAULT_OPTIONS: CliOptions = {
   artifactsDir: './tmp/qa-artifacts',
   videoFile: '',
   outputDir: './tmp',
-  model: 'gpt-5.4',
+  model: 'gpt-4o',
   minIntervalSeconds: 5,
   maxFrames: 36,
   requestTimeoutMs: 300_000,
@@ -88,7 +88,7 @@ Options:
   --output-dir <path>           Output directory for markdown reports
                                  (default: ./tmp)
   --model <name>                OpenAI model
-                                 (default: gpt-5.4)
+                                 (default: gpt-4o)
   --min-interval-seconds <n>    Minimum frame sampling interval in seconds
                                  (default: 5)
   --max-frames <n>              Max frames analyzed per video

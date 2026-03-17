@@ -356,6 +356,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAW_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           npm install -g wrangler@^4.0.0 >/dev/null 2>&1
 
@@ -410,7 +411,6 @@ jobs:
           ERROREOF
 
           # Sanitize branch name for Cloudflare Pages URL (same rules CF uses)
-          RAW_BRANCH="${{ github.head_ref || github.ref_name }}"
           BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
           URL=$(wrangler pages deploy "$DEPLOY_DIR" \
             --project-name="comfyui-qa-videos" \
@@ -470,11 +470,12 @@ jobs:
         if: >-
           github.event.label.name == 'qa-changes' ||
           github.event.label.name == 'qa-full'
-        run: |
-          gh pr edit ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} --remove-label "${{ github.event.label.name }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LABEL: ${{ github.event.label.name }}
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} --remove-label "$LABEL"
 
   video-review:
     needs: [qa, report]
