@@ -140,6 +140,19 @@ describe('TeamWorkspacesDialogContent', () => {
       const wrapper = mountComponent()
       expect(wrapper.findAll('li')).toHaveLength(0)
     })
+
+    it('shows create-only subtitle when no owned workspaces', () => {
+      const wrapper = mountComponent()
+      const subtitle = wrapper.find('header p')
+      expect(subtitle.text()).toBe('teamWorkspacesDialog.subtitleNoWorkspaces')
+    })
+
+    it('shows switch-or-create subtitle when owned workspaces exist', () => {
+      setOwnedWorkspaces()
+      const wrapper = mountComponent()
+      const subtitle = wrapper.find('header p')
+      expect(subtitle.text()).toBe('teamWorkspacesDialog.subtitle')
+    })
   })
 
   describe('workspace switching', () => {
@@ -246,6 +259,36 @@ describe('TeamWorkspacesDialogContent', () => {
           detail: 'Limit reached'
         })
       )
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+    })
+
+    it('shows separate toast when onConfirm fails but still closes dialog', async () => {
+      mockCreateWorkspace.mockResolvedValue({ id: 'new-ws' })
+      const onConfirm = vi.fn().mockRejectedValue(new Error('Setup failed'))
+      const wrapper = mountComponent({ onConfirm })
+
+      await typeAndCreate(wrapper, 'New Team')
+
+      expect(mockCreateWorkspace).toHaveBeenCalledWith('New Team')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'Setup failed'
+        })
+      )
+      expect(mockCloseDialog).toHaveBeenCalledWith({
+        key: 'team-workspaces'
+      })
+    })
+
+    it('does not call onConfirm when createWorkspace fails', async () => {
+      mockCreateWorkspace.mockRejectedValue(new Error('Limit reached'))
+      const onConfirm = vi.fn()
+      const wrapper = mountComponent({ onConfirm })
+
+      await typeAndCreate(wrapper, 'New Team')
+
+      expect(onConfirm).not.toHaveBeenCalled()
     })
 
     it('does not call createWorkspace when name is invalid', async () => {

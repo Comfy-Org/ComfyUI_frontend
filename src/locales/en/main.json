@@ -2573,6 +2573,8 @@
   "teamWorkspacesDialog": {
     "title": "Team Workspaces",
     "subtitle": "Switch to an existing one or create a new workspace",
+    "subtitleNoWorkspaces": "Create a new team workspace to collaborate",
+    "confirmCallbackFailed": "Workspace created but setup incomplete",
     "yourTeamWorkspaces": "Your team workspaces",
     "switch": "Switch",
     "newWorkspace": "New workspace",

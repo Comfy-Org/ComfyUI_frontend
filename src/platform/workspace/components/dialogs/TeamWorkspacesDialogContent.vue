@@ -15,7 +15,11 @@
           {{ $t('teamWorkspacesDialog.title') }}
         </h2>
         <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('teamWorkspacesDialog.subtitle') }}
+          {{
+            ownedTeamWorkspaces.length > 0
+              ? $t('teamWorkspacesDialog.subtitle')
+              : $t('teamWorkspacesDialog.subtitleNoWorkspaces')
+          }}
         </p>
       </div>
       <button
@@ -186,15 +190,26 @@ async function onCreate() {
   loading.value = true
   try {
     const name = workspaceName.value.trim()
-    await workspaceStore.createWorkspace(name)
-    await onConfirm?.(name)
+    try {
+      await workspaceStore.createWorkspace(name)
+    } catch (error) {
+      toast.add({
+        severity: 'error',
+        summary: t('workspacePanel.toast.failedToCreateWorkspace'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
+      return
+    }
+    try {
+      await onConfirm?.(name)
+    } catch (error) {
+      toast.add({
+        severity: 'error',
+        summary: t('teamWorkspacesDialog.confirmCallbackFailed'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
+    }
     dialogStore.closeDialog({ key: DIALOG_KEY })
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.toast.failedToCreateWorkspace'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
-    })
   } finally {
     loading.value = false
   }
