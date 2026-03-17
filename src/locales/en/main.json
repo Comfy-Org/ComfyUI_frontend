@@ -546,6 +546,7 @@
     "Open in Mask Editor": "Open in Mask Editor",
     "Open Image": "Open Image",
     "Copy Image": "Copy Image",
+    "Paste Image": "Paste Image",
     "Save Image": "Save Image",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
@@ -1839,7 +1840,8 @@
   "loadWorkflowWarning": {
     "outdatedVersion": "This workflow was created with a newer version of ComfyUI ({version}). Some nodes may not work correctly.",
     "outdatedVersionGeneric": "This workflow was created with a newer version of ComfyUI. Some nodes may not work correctly.",
-    "coreNodesFromVersion": "Core nodes from version {version}:"
+    "coreNodesFromVersion": "Core nodes from version {version}:",
+    "unknownVersion": "unknown"
   },
   "errorDialog": {
     "defaultTitle": "An error occurred",
