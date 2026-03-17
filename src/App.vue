@@ -130,7 +130,7 @@ onMounted(() => {
   void conflictDetection.initializeConflictDetection()
 
   // Show cloud notification for macOS desktop users (one-time)
-  if (isDesktop && navigator.platform.toLowerCase().includes('mac')) {
+  if (isDesktop && electronAPI()?.getPlatform() === 'darwin') {
     const settingStore = useSettingStore()
     if (!settingStore.get('Comfy.Desktop.CloudNotificationShown')) {
       const dialogService = useDialogService()
