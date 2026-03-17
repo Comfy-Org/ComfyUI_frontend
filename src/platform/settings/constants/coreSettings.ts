@@ -295,12 +295,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
-    id: 'Comfy.Workflow.ShowMissingNodesWarning',
-    name: 'Show missing nodes warning',
-    type: 'boolean',
-    defaultValue: true
-  },
-  {
     id: 'Comfy.Workflow.ShowMissingModelsWarning',
     name: 'Show missing models warning',
     type: isCloud ? 'hidden' : 'boolean',

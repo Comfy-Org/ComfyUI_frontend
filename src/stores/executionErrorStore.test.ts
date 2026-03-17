@@ -12,9 +12,17 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
+const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
+
 vi.mock('@/stores/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => false)
+    get: vi.fn(() => mockShowErrorsTab.value)
+  }))
+}))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => ({
+    get: vi.fn(() => mockShowErrorsTab.value)
   }))
 }))
 
@@ -100,6 +108,55 @@ describe('executionErrorStore — missing node operations', () => {
       ])
 
       expect(store.missingNodesError?.nodeTypes).toHaveLength(3)
+    })
+  })
+
+  describe('surfaceMissingNodes', () => {
+    beforeEach(() => {
+      mockShowErrorsTab.value = false
+    })
+
+    it('stores missing node types when called', () => {
+      const store = useExecutionErrorStore()
+      const types: MissingNodeType[] = [
+        { type: 'NodeA', nodeId: '1', isReplaceable: false }
+      ]
+      store.surfaceMissingNodes(types)
+
+      expect(store.missingNodesError).not.toBeNull()
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+      expect(store.hasMissingNodes).toBe(true)
+    })
+
+    it('opens error overlay when ShowErrorsTab setting is true', () => {
+      mockShowErrorsTab.value = true
+      const store = useExecutionErrorStore()
+      store.surfaceMissingNodes([
+        { type: 'NodeA', nodeId: '1', isReplaceable: false }
+      ])
+
+      expect(store.isErrorOverlayOpen).toBe(true)
+    })
+
+    it('does not open error overlay when ShowErrorsTab setting is false', () => {
+      mockShowErrorsTab.value = false
+      const store = useExecutionErrorStore()
+      store.surfaceMissingNodes([
+        { type: 'NodeA', nodeId: '1', isReplaceable: false }
+      ])
+
+      expect(store.isErrorOverlayOpen).toBe(false)
+    })
+
+    it('deduplicates node types', () => {
+      const store = useExecutionErrorStore()
+      store.surfaceMissingNodes([
+        { type: 'NodeA', nodeId: '1', isReplaceable: false },
+        { type: 'NodeA', nodeId: '1', isReplaceable: false },
+        { type: 'NodeB', nodeId: '2', isReplaceable: false }
+      ])
+
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
     })
   })
 

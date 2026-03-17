@@ -299,7 +299,6 @@ const zSettings = z.object({
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
   'Comfy.UI.TabBarLayout': z.enum(['Default', 'Legacy']),
-  'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
   'Comfy.DisableFloatRounding': z.boolean(),
