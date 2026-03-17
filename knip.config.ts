@@ -27,6 +27,11 @@ const config: KnipConfig = {
     },
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}']
+    },
+    'apps/website': {
+      entry: ['src/pages/**/*.astro', 'src/styles/global.css', 'astro.config.mjs'],
+      project: ['src/**/*.{astro,vue,ts}', '*.{js,ts,mjs}'],
+      ignoreDependencies: ['@comfyorg/design-system', '@vercel/analytics']
     }
   },
   ignoreBinaries: ['python3'],
