@@ -200,6 +200,13 @@ describe('formatUtil', () => {
         '<span class="highlight">foo</span> bar <span class="highlight">foo</span>'
       )
     })
+
+    it('should highlight cross-word matches', () => {
+      const result = highlightQuery('convert image to mask', 'geto', false)
+      expect(result).toBe(
+        'convert ima<span class="highlight">ge to</span> mask'
+      )
+    })
   })
 
   describe('getFilenameDetails', () => {
