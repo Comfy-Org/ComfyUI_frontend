@@ -10,7 +10,7 @@ import { createApp } from 'vue'
 
 import App from './App.vue'
 import './assets/css/style.css'
-import { i18n } from './i18n'
+import { i18n, loadLocale } from './i18n'
 import router from './router'
 
 const ComfyUIPreset = definePreset(Aura, {
@@ -19,6 +19,9 @@ const ComfyUIPreset = definePreset(Aura, {
     primary: Aura['primitive'].blue
   }
 })
+
+// Load the initial locale before mounting to avoid rendering with missing translations
+await loadLocale(i18n.global.locale.value)
 
 const app = createApp(App)
 const pinia = createPinia()
