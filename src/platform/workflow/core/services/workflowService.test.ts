@@ -332,6 +332,117 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('saveWorkflowAs', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+
+    beforeEach(() => {
+      setActivePinia(createTestingPinia())
+      workflowStore = useWorkflowStore()
+    })
+
+    it('should rename then save when workflow is temporary', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/Unsaved Workflow.json'
+      })
+      Object.defineProperty(workflow, 'isTemporary', { get: () => true })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue()
+      vi.mocked(workflowStore.saveWorkflow).mockResolvedValue()
+
+      const result = await useWorkflowService().saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(true)
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/my-workflow.json'
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('should return false when no filename is provided', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
+
+      const result = await useWorkflowService().saveWorkflowAs(workflow)
+
+      expect(result).toBe(false)
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('should rebind persisted workflow to new path', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/original.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      vi.mocked(workflowStore.rebindWorkflowToPath).mockResolvedValue()
+      vi.mocked(workflowStore.saveWorkflow).mockResolvedValue()
+
+      const result = await useWorkflowService().saveWorkflowAs(workflow, {
+        filename: 'new-name'
+      })
+
+      expect(result).toBe(true)
+      expect(workflowStore.rebindWorkflowToPath).toHaveBeenCalledWith(
+        workflow,
+        'workflows/new-name.json'
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+      // Should NOT create a copy
+      expect(workflowStore.saveAs).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('saveWorkflowCopy', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+
+    beforeEach(() => {
+      setActivePinia(createTestingPinia())
+      workflowStore = useWorkflowStore()
+    })
+
+    it('should create a copy and open it in a new tab', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/original.json'
+      })
+      const copy = createModeTestWorkflow({
+        path: 'workflows/copy-name.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      vi.mocked(workflowStore.saveAs).mockReturnValue(copy)
+      vi.mocked(workflowStore.saveWorkflow).mockResolvedValue()
+      vi.mocked(workflowStore.isActive).mockReturnValue(false)
+
+      const result = await useWorkflowService().saveWorkflowCopy(workflow, {
+        filename: 'copy-name'
+      })
+
+      expect(result).toBe(true)
+      expect(workflowStore.saveAs).toHaveBeenCalledWith(
+        workflow,
+        'workflows/copy-name.json'
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
+      // Should NOT rebind the original
+      expect(workflowStore.rebindWorkflowToPath).not.toHaveBeenCalled()
+    })
+
+    it('should return false when no filename is provided', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
+
+      const result = await useWorkflowService().saveWorkflowCopy(workflow)
+
+      expect(result).toBe(false)
+      expect(workflowStore.saveAs).not.toHaveBeenCalled()
+    })
+  })
+
   describe('afterLoadNewGraph', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
     let existingWorkflow: LoadedComfyWorkflow

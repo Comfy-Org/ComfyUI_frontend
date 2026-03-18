@@ -170,6 +170,17 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'save-copy',
+      label: t('menuLabels.Save a Copy'),
+      icon: 'pi pi-copy',
+      command: async () => {
+        await ensureWorkflowActive(workflow)
+        await commandStore.execute('Comfy.SaveWorkflowCopy')
+      },
+      visible: isRoot
+    })
+
+    addItem({
       id: 'export',
       label: t('menuLabels.Export'),
       icon: 'pi pi-download',

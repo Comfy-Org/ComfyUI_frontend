@@ -116,17 +116,36 @@ test.describe('Workflows sidebar', () => {
       .toEqual(['*Unsaved Workflow', 'foo/baz'])
   })
 
-  test('Can save workflow as', async ({ comfyPage }) => {
+  test('Save As rebinds persisted workflow to new name', async ({
+    comfyPage
+  }) => {
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.menu.topbar.saveWorkflowAs('workflow3')
     await expect
       .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
       .toEqual(['*Unsaved Workflow', 'workflow3'])
 
+    // Save As on a persisted workflow rebinds (same tab, new name)
     await comfyPage.menu.topbar.saveWorkflowAs('workflow4')
     await expect
       .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
-      .toEqual(['*Unsaved Workflow', 'workflow3', 'workflow4'])
+      .toEqual(['*Unsaved Workflow', 'workflow4'])
+  })
+
+  test('Save a Copy creates a new tab', async ({ comfyPage }) => {
+    await comfyPage.menu.topbar.saveWorkflow('original')
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
+      .toEqual(['original'])
+
+    // Save a Copy opens a new tab with the copy name
+    await comfyPage.menu.topbar.saveWorkflowCopy('copy1')
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
+      .toEqual(['original', 'copy1'])
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getActiveWorkflowName())
+      .toEqual('copy1')
   })
 
   test('Exported workflow does not contain localized slot names', async ({
@@ -229,21 +248,24 @@ test.describe('Workflows sidebar', () => {
   test('Can overwrite other workflows with save as', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
     await topbar.saveWorkflow('workflow1')
+
+    // Save As rebinds: workflow1 tab becomes workflow2
     await topbar.saveWorkflowAs('workflow2')
     await comfyPage.nextFrame()
     await expect
       .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
-      .toEqual(['workflow1', 'workflow2'])
+      .toEqual(['workflow2'])
     await expect
       .poll(() => comfyPage.menu.workflowsTab.getActiveWorkflowName())
       .toEqual('workflow2')
 
+    // Save As overwriting workflow1 (which is still on disk but no longer open)
+    // rebinds the current tab from workflow2 → workflow1
     await topbar.saveWorkflowAs('workflow1')
     await comfyPage.confirmDialog.click('overwrite')
-    // The old workflow1 should be deleted and the new one should be saved.
     await expect
       .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
-      .toEqual(['workflow2', 'workflow1'])
+      .toEqual(['workflow1'])
     await expect
       .poll(() => comfyPage.menu.workflowsTab.getActiveWorkflowName())
       .toEqual('workflow1')

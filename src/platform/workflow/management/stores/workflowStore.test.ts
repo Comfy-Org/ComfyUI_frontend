@@ -543,6 +543,62 @@ describe('useWorkflowStore', () => {
     })
   })
 
+  describe('rebindWorkflowToPath', () => {
+    it('should update path, lookup, and open tabs without backend call', async () => {
+      await syncRemoteWorkflows(['original.json'])
+      const workflow = store.getWorkflowByPath('workflows/original.json')!
+      workflow.changeTracker = createMockChangeTracker({ workflow })
+      workflow.content = '{}'
+      workflow.originalContent = '{}'
+      await store.openWorkflow(workflow)
+
+      await store.rebindWorkflowToPath(workflow, 'workflows/renamed.json')
+
+      expect(workflow.path).toBe('workflows/renamed.json')
+      expect(store.getWorkflowByPath('workflows/original.json')).toBeNull()
+      expect(store.getWorkflowByPath('workflows/renamed.json')).toBe(workflow)
+      expect(
+        store.openWorkflows.some((w) => w.path === 'workflows/renamed.json')
+      ).toBe(true)
+      expect(
+        store.openWorkflows.some((w) => w.path === 'workflows/original.json')
+      ).toBe(false)
+      // No backend rename call
+      expect(api.storeUserData).not.toHaveBeenCalled()
+    })
+
+    it('should transfer bookmarks from old path to new path', async () => {
+      await syncRemoteWorkflows(['bookmarked.json'])
+      const workflow = store.getWorkflowByPath('workflows/bookmarked.json')!
+      workflow.changeTracker = createMockChangeTracker({ workflow })
+      workflow.content = '{}'
+      workflow.originalContent = '{}'
+      await store.openWorkflow(workflow)
+      await bookmarkStore.setBookmarked('workflows/bookmarked.json', true)
+
+      await store.rebindWorkflowToPath(workflow, 'workflows/new-name.json')
+
+      expect(bookmarkStore.isBookmarked('workflows/bookmarked.json')).toBe(
+        false
+      )
+      expect(bookmarkStore.isBookmarked('workflows/new-name.json')).toBe(true)
+    })
+
+    it('should not affect bookmarks when workflow was not bookmarked', async () => {
+      await syncRemoteWorkflows(['plain.json'])
+      const workflow = store.getWorkflowByPath('workflows/plain.json')!
+      workflow.changeTracker = createMockChangeTracker({ workflow })
+      workflow.content = '{}'
+      workflow.originalContent = '{}'
+      await store.openWorkflow(workflow)
+
+      await store.rebindWorkflowToPath(workflow, 'workflows/new-plain.json')
+
+      expect(bookmarkStore.isBookmarked('workflows/plain.json')).toBe(false)
+      expect(bookmarkStore.isBookmarked('workflows/new-plain.json')).toBe(false)
+    })
+  })
+
   describe('saveAs', () => {
     it('should save workflow to new path and reset modification state', async () => {
       await syncRemoteWorkflows(['test.json'])

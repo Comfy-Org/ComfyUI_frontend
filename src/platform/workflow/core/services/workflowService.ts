@@ -110,9 +110,16 @@ export const useWorkflowService = () => {
     downloadBlob(file, blob)
   }
   /**
-   * Save a workflow as a new file
+   * Save the workflow under a new filename (standard "Save As" semantics).
+   *
+   * For persisted workflows the current tab is rebound to the new path and
+   * the old file is left on disk unchanged. Temporary workflows are renamed
+   * in place. If the target path already exists, the user is prompted to
+   * confirm overwrite.
+   *
    * @param workflow The workflow to save
    * @param options.filename Pre-supplied filename (skips the prompt dialog)
+   * @returns `true` if saved, `false` if the user cancelled
    */
   const saveWorkflowAs = async (
     workflow: ComfyWorkflow,
@@ -142,24 +149,59 @@ export const useWorkflowService = () => {
       if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
       await saveWorkflow(workflow)
     } else {
-      let target: ComfyWorkflow
-      if (workflow.isTemporary) {
-        await renameWorkflow(workflow, newPath)
-        target = workflow
-      } else {
-        target = workflowStore.saveAs(workflow, newPath)
-        await openWorkflow(target)
-      }
+      // True Save As: write current state to new path, rebind this
+      // workflow to the new path. Old file stays on disk unchanged.
+      await workflowStore.rebindWorkflowToPath(workflow, newPath)
 
       if (options.isApp !== undefined) {
         app.rootGraph.extra ??= {}
         app.rootGraph.extra.linearMode = isApp
-        target.initialMode = isApp ? 'app' : 'graph'
+        workflow.initialMode = isApp ? 'app' : 'graph'
       }
-      if (workflowStore.isActive(target)) target.changeTracker?.checkState()
+      workflow.changeTracker?.checkState()
 
-      await workflowStore.saveWorkflow(target)
+      await workflowStore.saveWorkflow(workflow)
     }
+
+    useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
+    return true
+  }
+
+  /**
+   * Save a copy of the workflow to a new file and open it in a new tab.
+   * The original workflow remains open and unchanged.
+   *
+   * @param workflow The workflow to copy
+   * @param options.filename Pre-supplied filename (skips the prompt dialog)
+   * @returns `true` if saved, `false` if the user cancelled
+   */
+  const saveWorkflowCopy = async (
+    workflow: ComfyWorkflow,
+    options: { filename?: string } = {}
+  ): Promise<boolean> => {
+    const newFilename = options.filename ?? (await workflow.promptSave())
+    if (!newFilename) return false
+
+    const isApp = workflow.initialMode === 'app'
+    const newPath =
+      workflow.directory + '/' + appendWorkflowJsonExt(newFilename, isApp)
+    const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
+
+    if (existingWorkflow && !existingWorkflow.isTemporary) {
+      if ((await confirmOverwrite(newPath)) !== true) return false
+
+      const isSelf = existingWorkflow.path === workflow.path
+      if (!isSelf) {
+        const deleted = await deleteWorkflow(existingWorkflow, true)
+        if (!deleted) return false
+      }
+    }
+
+    workflow.changeTracker?.checkState()
+
+    const copy = workflowStore.saveAs(workflow, newPath)
+    await openWorkflow(copy)
+    await workflowStore.saveWorkflow(copy)
 
     useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
     return true
@@ -567,6 +609,7 @@ export const useWorkflowService = () => {
   return {
     exportWorkflow,
     saveWorkflowAs,
+    saveWorkflowCopy,
     saveWorkflow,
     loadDefaultWorkflow,
     loadBlankWorkflow,

@@ -193,6 +193,19 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.SaveWorkflowCopy',
+      icon: 'pi pi-copy',
+      label: 'Save a Copy',
+      menubarLabel: 'Save a Copy',
+      category: 'essentials' as const,
+      function: async () => {
+        const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
+        if (!workflow) return
+
+        await workflowService.saveWorkflowCopy(workflow)
+      }
+    },
+    {
       id: 'Comfy.RenameWorkflow',
       icon: 'pi pi-pencil',
       label: 'Rename Workflow',

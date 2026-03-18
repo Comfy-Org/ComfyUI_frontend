@@ -64,6 +64,11 @@ interface WorkflowStore {
   ) => ComfyWorkflow
   renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
   deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  saveAs: (existingWorkflow: ComfyWorkflow, path: string) => ComfyWorkflow
+  rebindWorkflowToPath: (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ) => Promise<void>
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
 
   workflows: ComfyWorkflow[]
@@ -254,6 +259,45 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflow.originalContent = workflow.content = JSON.stringify(state)
     workflowLookup.value[workflow.path] = workflow
     return workflow
+  }
+
+  /**
+   * Rebind an existing workflow object to a new path without moving
+   * the old file on disk. Used by true "Save As" semantics — the
+   * current document gets a new filename but keeps its identity.
+   */
+  const rebindWorkflowToPath = async (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ) => {
+    const oldPath = workflow.path
+    const oldKey = workflow.key
+    const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
+    const draftStore = useWorkflowDraftStore()
+
+    // Update the workflow object's path (no backend rename)
+    workflow.updatePath(newPath)
+
+    // Swap lookup keys
+    delete workflowLookup.value[oldPath]
+    workflowLookup.value[newPath] = workflow
+
+    // Swap in open tabs
+    const openIndex = openWorkflowPaths.value.indexOf(oldPath)
+    if (openIndex !== -1) {
+      openWorkflowPaths.value.splice(openIndex, 1, newPath)
+    }
+
+    // Move drafts and thumbnails
+    draftStore.moveDraft(oldPath, newPath, workflow.key)
+    const newKey = workflow.key
+    moveWorkflowThumbnail(oldKey, newKey)
+
+    // Update bookmarks
+    if (wasBookmarked) {
+      await bookmarkStore.setBookmarked(oldPath, false)
+      await bookmarkStore.setBookmarked(newPath, true)
+    }
   }
 
   const ensureWorkflowId = (
@@ -776,6 +820,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     renameWorkflow,
     deleteWorkflow,
     saveAs,
+    rebindWorkflowToPath,
     saveWorkflow,
     reorderWorkflows,
 
