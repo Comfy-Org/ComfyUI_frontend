@@ -6,7 +6,8 @@ import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphI
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -61,6 +62,7 @@ function addLinkedInteriorInput(
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
   vi.clearAllMocks()
 })
 
@@ -119,6 +121,21 @@ describe('resolveSubgraphInputLink', () => {
     )
 
     expect(result).toBe('seed_input')
+  })
+
+  test('resolves the first connected link when multiple links exist', () => {
+    const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
+    addLinkedInteriorInput(subgraph, 'prompt', 'first_input', 'firstWidget')
+    addLinkedInteriorInput(subgraph, 'prompt', 'second_input', 'secondWidget')
+
+    const result = resolveSubgraphInputLink(
+      subgraphNode,
+      'prompt',
+      ({ targetInput }) => targetInput.name
+    )
+
+    // First connected wins — consistent with SubgraphNode._resolveLinkedPromotionBySubgraphInput
+    expect(result).toBe('first_input')
   })
 
   test('caches getTargetWidget result within the same callback evaluation', () => {
