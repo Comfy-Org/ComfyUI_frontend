@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { MODEL_NODE_MAPPINGS } from '@/stores/modelNodeMappings'
+import { MODEL_NODE_MAPPINGS } from '@/platform/assets/mappings/modelNodeMappings'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
