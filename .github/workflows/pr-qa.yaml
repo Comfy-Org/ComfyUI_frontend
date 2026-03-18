@@ -324,7 +324,15 @@ jobs:
           find qa-artifacts -type f 2>/dev/null | head -20
 
       - name: Install ffmpeg
-        run: sudo apt-get install -y -qq ffmpeg 2>&1 | tail -3
+        run: |
+          if command -v ffmpeg &>/dev/null; then
+            echo "ffmpeg already installed"
+          else
+            echo "Downloading static ffmpeg..."
+            curl -sL "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz" \
+              | tar xJ --strip-components=1 --wildcards '*/ffmpeg' -C /usr/local/bin/
+          fi
+          ffmpeg -version | head -1
 
       - name: Convert videos to mp4
         run: |
