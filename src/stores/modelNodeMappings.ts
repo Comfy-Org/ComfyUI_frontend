@@ -171,4 +171,6 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
     'LTXVPromptEnhancerLoader',
     'image_captioner_name'
   ]
-]
+] as const satisfies ReadonlyArray<
+  readonly [string, string, string]
+>
