@@ -329,8 +329,10 @@ jobs:
             echo "ffmpeg already installed"
           else
             echo "Downloading static ffmpeg..."
-            curl -sL "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz" \
-              | tar xJ --strip-components=1 --wildcards '*/ffmpeg' -C /usr/local/bin/
+            TMP=$(mktemp -d)
+            curl -sL "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz" | tar xJ -C "$TMP"
+            sudo cp "$TMP"/ffmpeg-*/ffmpeg /usr/local/bin/
+            rm -rf "$TMP"
           fi
           ffmpeg -version | head -1
 
