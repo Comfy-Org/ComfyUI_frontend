@@ -64,9 +64,10 @@
         :key="category.key"
         :node="category"
         :selected-category="selectedCategory"
-        :selected-collapsed="selectedCollapsed"
+        :expanded-category="expandedCategory"
         :hide-chevrons="hideChevrons"
         @select="selectCategory"
+        @collapse="collapseCategory"
       />
     </div>
   </RovingFocusGroup>
@@ -190,18 +191,34 @@ function categoryBtnClass(id: string) {
   )
 }
 
-const selectedCollapsed = ref(false)
+const expandedCategory = ref(selectedCategory.value)
+let lastEmittedCategory = ''
 
-watch(selectedCategory, () => {
-  selectedCollapsed.value = false
+watch(selectedCategory, (val) => {
+  if (val !== lastEmittedCategory) {
+    expandedCategory.value = val
+  }
+  lastEmittedCategory = ''
 })
 
+function parentCategory(key: string): string {
+  const i = key.lastIndexOf('/')
+  return i > 0 ? key.slice(0, i) : ''
+}
+
 function selectCategory(categoryId: string) {
-  if (selectedCategory.value === categoryId) {
-    selectedCollapsed.value = !selectedCollapsed.value
+  if (expandedCategory.value === categoryId) {
+    expandedCategory.value = parentCategory(categoryId)
   } else {
-    selectedCollapsed.value = false
-    selectedCategory.value = categoryId
+    expandedCategory.value = categoryId
   }
+  lastEmittedCategory = categoryId
+  selectedCategory.value = categoryId
+}
+
+function collapseCategory(categoryId: string) {
+  expandedCategory.value = ''
+  lastEmittedCategory = categoryId
+  selectedCategory.value = categoryId
 }
 </script>

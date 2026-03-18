@@ -370,6 +370,48 @@ describe('NodeSearchCategorySidebar', () => {
       expect(samplingBtn.element).toBe(document.activeElement)
     })
 
+    it('should collapse sampling on ArrowLeft, not just its expanded child', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'sampling' }),
+        createMockNodeDef({
+          name: 'Node2',
+          category: 'sampling/custom_sampling'
+        }),
+        createMockNodeDef({
+          name: 'Node3',
+          category: 'sampling/custom_sampling/child'
+        }),
+        createMockNodeDef({ name: 'Node4', category: 'loaders' })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper()
+
+      // Step 1: Expand sampling
+      await clickCategory(wrapper, 'sampling', true)
+      await wrapper.setProps({ selectedCategory: 'sampling' })
+      await nextTick()
+      expect(wrapper.text()).toContain('custom_sampling')
+
+      // Step 2: Expand custom_sampling
+      await clickCategory(wrapper, 'custom_sampling', true)
+      await wrapper.setProps({ selectedCategory: 'sampling/custom_sampling' })
+      await nextTick()
+      expect(wrapper.text()).toContain('child')
+
+      // Step 3: Navigate back to sampling (keyboard focus only)
+      const samplingBtn = wrapper.find('[data-testid="category-sampling"]')
+      ;(samplingBtn.element as HTMLElement).focus()
+      await nextTick()
+
+      // Step 4: Press left on sampling
+      await samplingBtn.trigger('keydown', { key: 'ArrowLeft' })
+      await nextTick()
+
+      // Sampling should collapse entirely — custom_sampling should not be visible
+      expect(wrapper.text()).not.toContain('custom_sampling')
+    })
+
     it('should set aria-expanded on tree nodes with children', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),

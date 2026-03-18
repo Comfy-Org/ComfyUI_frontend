@@ -53,10 +53,11 @@
         :node="child"
         :depth="depth + 1"
         :selected-category="selectedCategory"
-        :selected-collapsed="selectedCollapsed"
+        :expanded-category="expandedCategory"
         :hide-chevrons="hideChevrons"
         :focus-parent="() => buttonEl?.focus()"
         @select="$emit('select', $event)"
+        @collapse="$emit('collapse', $event)"
       />
     </div>
   </div>
@@ -85,20 +86,21 @@ const {
   node,
   depth = 0,
   selectedCategory,
-  selectedCollapsed = false,
+  expandedCategory,
   hideChevrons = false,
   focusParent
 } = defineProps<{
   node: CategoryNode
   depth?: number
   selectedCategory: string
-  selectedCollapsed?: boolean
+  expandedCategory: string
   hideChevrons?: boolean
   focusParent?: () => void
 }>()
 
 const emit = defineEmits<{
   select: [key: string]
+  collapse: [key: string]
 }>()
 
 const buttonEl = ref<HTMLButtonElement>()
@@ -106,10 +108,10 @@ const childRefs = ref<{ focus?: () => void }[]>([])
 
 defineExpose({ focus: () => buttonEl.value?.focus() })
 
-const isExpanded = computed(() => {
-  if (selectedCategory === node.key) return !selectedCollapsed
-  return selectedCategory.startsWith(node.key + '/')
-})
+const isExpanded = computed(
+  () =>
+    expandedCategory === node.key || expandedCategory.startsWith(node.key + '/')
+)
 
 function handleRight() {
   if (!node.children?.length) return
@@ -124,7 +126,11 @@ function handleRight() {
 
 function handleLeft() {
   if (node.children?.length && isExpanded.value) {
-    emit('select', node.key)
+    if (expandedCategory.startsWith(node.key + '/')) {
+      emit('collapse', node.key)
+    } else {
+      emit('select', node.key)
+    }
     return
   }
   focusParent?.()
