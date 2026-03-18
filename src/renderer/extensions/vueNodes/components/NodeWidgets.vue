@@ -412,7 +412,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       borderStyle,
       callback: widget.callback,
       controlWidget: widget.controlWidget,
-      label: widgetState?.label,
+      label: isPromotedView ? widget.promotedLabel : widgetState?.label,
       linkedUpstream,
       options: widgetOptions,
       spec: widget.spec

@@ -103,7 +103,13 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get name(): string {
-    return this.identityName ?? this.sourceWidgetName
+    if (this.identityName) return this.identityName
+
+    // Resolve from the SubgraphNode's input by matching source IDs
+    const slot = this.findBoundSubgraphSlot()
+    if (slot?.name) return slot.name
+
+    return this.sourceWidgetName
   }
 
   get y(): number {
@@ -191,13 +197,49 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get label(): string | undefined {
-    const state = this.getWidgetState()
-    return state?.label ?? this.displayName ?? this.sourceWidgetName
+    // Live-read from the bound subgraph slot's display name
+    const slot = this.findBoundSubgraphSlot()
+    if (slot) {
+      return 'displayName' in slot
+        ? (slot as { displayName: string }).displayName
+        : slot.name
+    }
+    return this.displayName
   }
 
-  set label(value: string | undefined) {
-    const state = this.getWidgetState()
-    if (state) state.label = value
+  /** Finds the SubgraphInput slot bound to this promoted view. */
+  private findBoundSubgraphSlot():
+    | { name: string; label?: string }
+    | undefined {
+    for (const input of this.subgraphNode.inputs ?? []) {
+      const slot = input._subgraphSlot as
+        | { name: string; label?: string }
+        | undefined
+      if (!slot) continue
+
+      // Match by subgraph slot's connected interior node, not by _widget identity
+      const w = input._widget
+      if (w && 'sourceNodeId' in w && 'sourceWidgetName' in w) {
+        if (
+          w.sourceNodeId === this.sourceNodeId &&
+          w.sourceWidgetName === this.sourceWidgetName
+        ) {
+          return slot
+        }
+      }
+
+      // Fallback: match by widget locator name against our composite key
+      if (
+        input.widget?.name === `${this.sourceNodeId}:${this.sourceWidgetName}`
+      ) {
+        return slot
+      }
+    }
+    return undefined
+  }
+
+  set label(_value: string | undefined) {
+    // No-op: label is derived from the subgraph input slot.
   }
 
   get hidden(): boolean {
