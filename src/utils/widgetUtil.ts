@@ -48,7 +48,10 @@ export function renameWidget(
   newLabel: string,
   parents?: SubgraphNode[]
 ): boolean {
-  if (isPromotedWidgetView(widget) && parents?.length) {
+  const resolvedParents =
+    parents ?? (node.isSubgraphNode() ? [node as SubgraphNode] : [])
+
+  if (isPromotedWidgetView(widget) && resolvedParents.length) {
     const sourceWidget = resolvePromotedWidgetSource(node, widget)
     if (!sourceWidget) {
       console.error('Could not resolve source widget for promoted widget')
