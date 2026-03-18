@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
-test.describe('ResultGallery', { tag: ['@slow'] }, () => {
+test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
@@ -39,9 +39,7 @@ test.describe('ResultGallery', { tag: ['@slow'] }, () => {
 
     // Hover to reveal zoom button, then click it
     await assetCard.hover()
-    const zoomButton = assetCard.getByLabel('Zoom in')
-    await expect(zoomButton).toBeVisible()
-    await zoomButton.click()
+    await assetCard.getByLabel('Zoom in').click()
 
     const gallery = comfyPage.page.getByRole('dialog')
     await expect(gallery).toBeVisible()
