@@ -232,7 +232,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           codex exec \
-            --model codex-mini-latest \
+            --model gpt-5.4-mini \
             --full-auto \
             - < "${{ runner.temp }}/qa-prompt.txt"
 
