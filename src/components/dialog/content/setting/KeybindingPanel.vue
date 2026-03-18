@@ -23,7 +23,17 @@
           item-class="text-sm gap-2"
           button-size="unset"
           button-class="size-10"
-        />
+        >
+          <template #button>
+            <Button
+              size="unset"
+              class="size-10"
+              data-testid="keybinding-preset-menu"
+            >
+              <i class="icon-[lucide--ellipsis]" />
+            </Button>
+          </template>
+        </DropdownMenu>
       </div>
     </Teleport>
 

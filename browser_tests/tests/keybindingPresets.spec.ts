@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
@@ -22,6 +23,19 @@ const TEST_PRESET = {
       targetElementId: 'graph-canvas-container'
     }
   ]
+}
+
+async function importPreset(page: Page, preset: typeof TEST_PRESET) {
+  const menuButton = page.getByTestId('keybinding-preset-menu')
+  await menuButton.click()
+
+  const fileChooserPromise = page.waitForEvent('filechooser')
+  await page.getByRole('menuitem', { name: /Import preset/i }).click()
+  const fileChooser = await fileChooserPromise
+
+  const presetPath = path.join(os.tmpdir(), 'test-preset.json')
+  fs.writeFileSync(presetPath, JSON.stringify(preset))
+  await fileChooser.setFiles(presetPath)
 }
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -56,19 +70,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     await comfyPage.settingDialog.open()
     await comfyPage.settingDialog.category('Keybinding').click()
 
-    // Import preset via ellipsis menu
-    const ellipsisButton = page
-      .locator('.icon-\\[lucide--ellipsis\\]')
-      .locator('..')
-    await ellipsisButton.click()
-
-    const fileChooserPromise = page.waitForEvent('filechooser')
-    await page.getByRole('menuitem', { name: /Import preset/i }).click()
-    const fileChooser = await fileChooserPromise
-
-    const presetPath = path.join(os.tmpdir(), 'test-preset.json')
-    fs.writeFileSync(presetPath, JSON.stringify(TEST_PRESET))
-    await fileChooser.setFiles(presetPath)
+    await importPreset(page, TEST_PRESET)
 
     // Verify active preset switched to test-preset
     const presetTrigger = page
@@ -116,24 +118,13 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
   test('Can export a preset and re-import it', async ({ comfyPage }) => {
     test.setTimeout(30000)
     const { page } = comfyPage
+    const menuButton = page.getByTestId('keybinding-preset-menu')
 
     // Open keybinding settings panel
     await comfyPage.settingDialog.open()
     await comfyPage.settingDialog.category('Keybinding').click()
 
-    // Import preset via ellipsis menu
-    const ellipsisButton = page
-      .locator('.icon-\\[lucide--ellipsis\\]')
-      .locator('..')
-    await ellipsisButton.click()
-
-    const fileChooserPromise = page.waitForEvent('filechooser')
-    await page.getByRole('menuitem', { name: /Import preset/i }).click()
-    const fileChooser = await fileChooserPromise
-
-    const presetPath = path.join(os.tmpdir(), 'test-preset.json')
-    fs.writeFileSync(presetPath, JSON.stringify(TEST_PRESET))
-    await fileChooser.setFiles(presetPath)
+    await importPreset(page, TEST_PRESET)
 
     // Verify active preset switched to test-preset
     const presetTrigger = page
@@ -147,7 +138,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     })
 
     // Export via ellipsis menu
-    await ellipsisButton.click()
+    await menuButton.click()
     const downloadPromise = page.waitForEvent('download')
     await page.getByRole('menuitem', { name: /Export preset/i }).click()
     const download = await downloadPromise
@@ -177,24 +168,13 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
   test('Can delete an imported preset', async ({ comfyPage }) => {
     test.setTimeout(30000)
     const { page } = comfyPage
+    const menuButton = page.getByTestId('keybinding-preset-menu')
 
     // Open keybinding settings panel
     await comfyPage.settingDialog.open()
     await comfyPage.settingDialog.category('Keybinding').click()
 
-    // Import preset via ellipsis menu
-    const ellipsisButton = page
-      .locator('.icon-\\[lucide--ellipsis\\]')
-      .locator('..')
-    await ellipsisButton.click()
-
-    const fileChooserPromise = page.waitForEvent('filechooser')
-    await page.getByRole('menuitem', { name: /Import preset/i }).click()
-    const fileChooser = await fileChooserPromise
-
-    const presetPath = path.join(os.tmpdir(), 'test-preset.json')
-    fs.writeFileSync(presetPath, JSON.stringify(TEST_PRESET))
-    await fileChooser.setFiles(presetPath)
+    await importPreset(page, TEST_PRESET)
 
     // Verify active preset switched to test-preset
     const presetTrigger = page
@@ -208,7 +188,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     })
 
     // Delete via ellipsis menu
-    await ellipsisButton.click()
+    await menuButton.click()
     await page.getByRole('menuitem', { name: /Delete preset/i }).click()
 
     // Confirm deletion in the dialog
@@ -228,24 +208,13 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
   test('Can save modifications as a new preset', async ({ comfyPage }) => {
     test.setTimeout(30000)
     const { page } = comfyPage
+    const menuButton = page.getByTestId('keybinding-preset-menu')
 
     // Open keybinding settings panel
     await comfyPage.settingDialog.open()
     await comfyPage.settingDialog.category('Keybinding').click()
 
-    // Import preset via ellipsis menu
-    const ellipsisButton = page
-      .locator('.icon-\\[lucide--ellipsis\\]')
-      .locator('..')
-    await ellipsisButton.click()
-
-    const fileChooserPromise = page.waitForEvent('filechooser')
-    await page.getByRole('menuitem', { name: /Import preset/i }).click()
-    const fileChooser = await fileChooserPromise
-
-    const presetPath = path.join(os.tmpdir(), 'test-preset.json')
-    fs.writeFileSync(presetPath, JSON.stringify(TEST_PRESET))
-    await fileChooser.setFiles(presetPath)
+    await importPreset(page, TEST_PRESET)
 
     // Verify active preset switched to test-preset
     const presetTrigger = page
@@ -259,7 +228,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     })
 
     // Save as new preset via ellipsis menu
-    await ellipsisButton.click()
+    await menuButton.click()
     await page.getByRole('menuitem', { name: /Save as new preset/i }).click()
 
     // Fill in the preset name in the prompt dialog
