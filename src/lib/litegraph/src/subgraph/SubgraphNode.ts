@@ -38,6 +38,10 @@ import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetVie
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
+import {
+  CANVAS_IMAGE_PREVIEW_WIDGET,
+  supportsVirtualCanvasImagePreview
+} from '@/composables/node/canvasImagePreviewTypes'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { usePromotionStore } from '@/stores/promotionStore'
@@ -612,9 +616,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const subgraphInput = e.detail.input
         const { name, type } = subgraphInput
         const existingInput = this.inputs.find(
-          (input) => input._subgraphSlot === subgraphInput
+          (input) =>
+            input._subgraphSlot === subgraphInput ||
+            (input._subgraphSlot && input._subgraphSlot.id === subgraphInput.id)
         )
         if (existingInput) {
+          // Rebind to the new SubgraphInput object and re-register listeners
+          // (configure recreates SubgraphInput objects with the same id)
+          this._addSubgraphInputListeners(subgraphInput, existingInput)
           const linkId = subgraphInput.linkIds[0]
           if (linkId === undefined) return
 
@@ -987,6 +996,25 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     this._syncPromotions()
+
+    for (const node of this.subgraph.nodes) {
+      if (!supportsVirtualCanvasImagePreview(node)) continue
+      if (
+        store.isPromoted(
+          this.rootGraph.id,
+          this.id,
+          String(node.id),
+          CANVAS_IMAGE_PREVIEW_WIDGET
+        )
+      )
+        continue
+      store.promote(
+        this.rootGraph.id,
+        this.id,
+        String(node.id),
+        CANVAS_IMAGE_PREVIEW_WIDGET
+      )
+    }
   }
 
   private _resolveInputWidget(
