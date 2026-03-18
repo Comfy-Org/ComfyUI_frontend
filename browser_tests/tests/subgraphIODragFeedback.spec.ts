@@ -112,26 +112,30 @@ test.describe('Subgraph IO drag visual feedback', { tag: '@subgraph' }, () => {
       let connectingFired = false
       let connectingTo: string | null = null
 
-      canvas.linkConnector.events.addEventListener(
-        'connecting',
-        (e: CustomEvent<{ connectingTo: string }>) => {
-          connectingFired = true
-          connectingTo = e.detail.connectingTo
-        }
-      )
+      function onConnecting(e: CustomEvent<{ connectingTo: string }>) {
+        connectingFired = true
+        connectingTo = e.detail.connectingTo
+      }
+
+      canvas.linkConnector.events.addEventListener('connecting', onConnecting)
 
       // Trigger an actual drag from the subgraph input node
       const inputSlot = subgraph.inputNode.slots[0]
       if (!inputSlot) return { error: 'No input slot' }
 
-      canvas.linkConnector.dragNewFromSubgraphInput(
-        subgraph as never,
-        subgraph.inputNode as never,
-        inputSlot as never
-      )
-
-      // Clean up the drag
-      canvas.linkConnector.reset()
+      try {
+        canvas.linkConnector.dragNewFromSubgraphInput(
+          subgraph as never,
+          subgraph.inputNode as never,
+          inputSlot as never
+        )
+      } finally {
+        canvas.linkConnector.events.removeEventListener(
+          'connecting',
+          onConnecting
+        )
+        canvas.linkConnector.reset()
+      }
 
       return { connectingFired, connectingTo }
     })
