@@ -135,14 +135,14 @@ export const useSubgraphNavigationStore = defineStore(
       const canvas = app.canvas
       if (!canvas) return
 
-      const viewport = viewportCache.get(cacheKey(graphId))
+      const expectedKey = cacheKey(graphId)
+      const isStillTarget = () => cacheKey(getActiveGraphId()) === expectedKey
+      const viewport = viewportCache.get(expectedKey)
       if (viewport) {
         if (suppressNavigatedSave) {
-          // During workflow switch, loadGraphData and changeTracker both
-          // write to canvas.ds AFTER this runs. Use double-rAF to ensure
-          // we apply AFTER all other viewport mutations settle.
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
+              if (!isStillTarget()) return
               applyViewport(viewport)
             })
           })

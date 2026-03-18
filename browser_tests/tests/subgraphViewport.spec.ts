@@ -40,7 +40,13 @@ test.describe('Subgraph viewport restoration', { tag: '@subgraph' }, () => {
 
       for (const node of canvas.graph._nodes) {
         const [nx, ny] = node.pos
-        if (nx >= visLeft && nx <= visRight && ny >= visTop && ny <= visBottom)
+        const [nw, nh] = node.size
+        if (
+          nx + nw > visLeft &&
+          nx < visRight &&
+          ny + nh > visTop &&
+          ny < visBottom
+        )
           return true
       }
       return false

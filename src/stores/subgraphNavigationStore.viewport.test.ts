@@ -79,6 +79,10 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     mockSetDirty.mockClear()
   })
 
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   describe('cache key isolation', () => {
     it('keys viewport cache by workflow path', () => {
       const store = useSubgraphNavigationStore()
