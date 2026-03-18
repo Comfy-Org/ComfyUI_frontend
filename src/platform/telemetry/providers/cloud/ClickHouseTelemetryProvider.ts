@@ -32,7 +32,7 @@ export class ClickHouseTelemetryProvider implements TelemetryProvider {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          event_name: 'missing_nodes_detected',
+          event_name: 'node_missing',
           event_data: {
             missing_class_types: metadata.missing_node_types,
             missing_count: metadata.missing_node_count,
