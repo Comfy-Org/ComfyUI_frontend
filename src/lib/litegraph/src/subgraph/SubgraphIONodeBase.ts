@@ -29,6 +29,23 @@ import type { Subgraph } from './Subgraph'
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutput } from './SubgraphOutput'
 
+interface SlotMeasurement<TSlot> {
+  slot: TSlot
+  width: number
+  height: number
+}
+
+interface SlotReorderDragState<TSlot> {
+  draggedSlot: TSlot
+  fromIndex: number
+  toIndex: number
+  cursorY: number
+  grabOffsetY: number
+  rowHeight: number
+  slotHeight: number
+  gapTop: number
+}
+
 export abstract class SubgraphIONodeBase<
   TSlot extends SubgraphInput | SubgraphOutput
 >
@@ -80,6 +97,9 @@ export abstract class SubgraphIONodeBase<
 
   abstract readonly slots: TSlot[]
   abstract get allSlots(): TSlot[]
+  protected abstract reorderSlot(fromIndex: number, toIndex: number): void
+
+  protected reorderDragState?: SlotReorderDragState<TSlot>
 
   constructor(
     /** The subgraph that this node belongs to. */
@@ -109,6 +129,10 @@ export abstract class SubgraphIONodeBase<
   }
 
   abstract get slotAnchorX(): number
+
+  protected get pinHitAreaWidth(): number {
+    return 12
+  }
 
   onPointerMove(e: CanvasPointerEvent): CanvasItem {
     const containsPoint = this.boundingRect.containsXy(e.canvasX, e.canvasY)
@@ -286,25 +310,169 @@ export abstract class SubgraphIONodeBase<
     )
   }
 
+  protected isConnectionDragHit(slot: TSlot, canvasX: number): boolean {
+    return Math.abs(canvasX - slot.pos[0]) <= this.pinHitAreaWidth
+  }
+
+  protected startSlotReorderDrag(slot: TSlot, cursorY: number): boolean {
+    const fromIndex = this.slots.indexOf(slot)
+    if (fromIndex === -1) return false
+
+    const [, slotHeight] = slot.measure()
+    const slotTop = slot.boundingRect[1]
+    const rowHeight = slot.boundingRect[3] || slotHeight
+
+    this.reorderDragState = {
+      draggedSlot: slot,
+      fromIndex,
+      toIndex: fromIndex,
+      cursorY,
+      grabOffsetY: cursorY - slotTop,
+      rowHeight,
+      slotHeight,
+      gapTop: slotTop
+    }
+
+    this.subgraph.setDirtyCanvas(true, true)
+    return true
+  }
+
+  protected updateSlotReorderDrag(cursorY: number): void {
+    const dragState = this.reorderDragState
+    if (!dragState) return
+
+    dragState.cursorY = cursorY
+    dragState.toIndex = this._getSlotInsertIndex(cursorY, dragState.rowHeight)
+    this.subgraph.setDirtyCanvas(true, true)
+  }
+
+  protected finishSlotReorderDrag():
+    | {
+        fromIndex: number
+        toIndex: number
+      }
+    | undefined {
+    const dragState = this.reorderDragState
+    if (!dragState) return
+
+    this.reorderDragState = undefined
+    this.subgraph.setDirtyCanvas(true, true)
+
+    return {
+      fromIndex: dragState.fromIndex,
+      toIndex: dragState.toIndex
+    }
+  }
+
+  protected clearSlotReorderDrag(): void {
+    if (!this.reorderDragState) return
+    this.reorderDragState = undefined
+    this.subgraph.setDirtyCanvas(true, true)
+  }
+
+  protected setDragCursor(cursor?: string): void {
+    this.subgraph.canvasAction((canvas) => {
+      canvas.canvas.style.cursor = cursor ?? ''
+    })
+  }
+
+  private _getSlotInsertIndex(cursorY: number, rowHeight: number): number {
+    return Math.max(
+      0,
+      Math.min(
+        this.slots.length - 1,
+        Math.floor((cursorY - this._getRailTop()) / rowHeight)
+      )
+    )
+  }
+
+  private _getRailTop(): number {
+    return this.boundingRect[1] + SubgraphIONodeBase.roundedRadius
+  }
+
+  private _measureSlots(): Array<
+    SlotMeasurement<TSlot | typeof this.emptySlot>
+  > {
+    return this.allSlots.map((slot) => {
+      const [width, height] = slot.measure()
+      return { slot, width, height }
+    })
+  }
+
   /** Arrange the slots in this node. */
   arrange(): void {
     const { minWidth, roundedRadius } = SubgraphIONodeBase
     const [, y] = this.boundingRect
-    const x = this.slotAnchorX
     const { size } = this
 
-    let maxWidth = minWidth
-    let currentY = y + roundedRadius
-
-    for (const slot of this.allSlots) {
-      const [slotWidth, slotHeight] = slot.measure()
-      slot.arrange([x, currentY, slotWidth, slotHeight])
-
-      currentY += slotHeight
-      if (slotWidth > maxWidth) maxWidth = slotWidth
-    }
+    const slotMeasurements = this._measureSlots()
+    const maxWidth = slotMeasurements.reduce(
+      (currentMax, { width }) => Math.max(currentMax, width),
+      minWidth
+    )
 
     size[0] = maxWidth + 2 * roundedRadius
+
+    const x = this.slotAnchorX
+    let currentY = this._getRailTop()
+    const dragState = this.reorderDragState
+
+    if (!dragState) {
+      for (const { slot, width, height } of slotMeasurements) {
+        slot.arrange([x, currentY, width, height])
+        currentY += height
+      }
+    } else {
+      const draggedMeasurement = slotMeasurements.find(
+        ({ slot }) => slot === dragState.draggedSlot
+      )
+      const emptyMeasurement = slotMeasurements.find(
+        ({ slot }) => slot === this.emptySlot
+      )
+
+      let gapInserted = false
+      let slotIndex = 0
+
+      for (const { slot, width, height } of slotMeasurements) {
+        if (slot === dragState.draggedSlot || slot === this.emptySlot) continue
+
+        if (!gapInserted && slotIndex === dragState.toIndex) {
+          dragState.gapTop = currentY
+          currentY += dragState.slotHeight
+          gapInserted = true
+          slotIndex += 1
+        }
+
+        slot.arrange([x, currentY, width, height])
+        currentY += height
+        slotIndex += 1
+      }
+
+      if (!gapInserted) {
+        dragState.gapTop = currentY
+        currentY += dragState.slotHeight
+      }
+
+      if (draggedMeasurement) {
+        dragState.draggedSlot.arrange([
+          x,
+          dragState.cursorY - dragState.grabOffsetY,
+          draggedMeasurement.width,
+          draggedMeasurement.height
+        ])
+      }
+
+      if (emptyMeasurement) {
+        this.emptySlot.arrange([
+          x,
+          currentY,
+          emptyMeasurement.width,
+          emptyMeasurement.height
+        ])
+        currentY += emptyMeasurement.height
+      }
+    }
+
     size[1] = currentY - y + roundedRadius
   }
 
@@ -356,9 +524,21 @@ export abstract class SubgraphIONodeBase<
     ctx.font = '12px Inter, sans-serif'
     ctx.textBaseline = 'middle'
 
+    const dragState = this.reorderDragState
+
     for (const slot of this.allSlots) {
+      if (slot === dragState?.draggedSlot) continue
       slot.draw({ ctx, colorContext, fromSlot, editorAlpha })
     }
+
+    if (!dragState) return
+
+    dragState.draggedSlot.draw({
+      ctx,
+      colorContext,
+      fromSlot,
+      editorAlpha: (editorAlpha ?? 1) * 0.85
+    })
   }
 
   configure(data: ExportedSubgraphIONode): void {

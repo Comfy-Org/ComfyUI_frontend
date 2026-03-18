@@ -42,6 +42,10 @@ export class SubgraphOutputNode
     return x + SubgraphIONodeBase.roundedRadius
   }
 
+  protected override reorderSlot(fromIndex: number, toIndex: number): void {
+    this.subgraph.reorderOutput(fromIndex, toIndex)
+  }
+
   override onPointerDown(
     e: CanvasPointerEvent,
     pointer: CanvasPointer,
