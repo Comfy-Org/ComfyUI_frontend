@@ -65,7 +65,7 @@ test.describe('Subgraph duplicate ID remapping', { tag: ['@subgraph'] }, () => {
       const afterSnapshot =
         await comfyPage.subgraph.getHostPromotedTupleSnapshot()
       expect(afterSnapshot).toEqual(beforeSnapshot)
-    }).toPass()
+    }).toPass({ timeout: 5_000 })
   })
 
   test('All links reference valid nodes in their graph', async ({

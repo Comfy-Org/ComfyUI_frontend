@@ -10,6 +10,19 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 
+type MockSubgraph = Pick<Subgraph, 'id' | 'rootGraph' | '_nodes' | 'nodes'>
+
+function createMockSubgraph(id: string, rootGraph = app.rootGraph): Subgraph {
+  const mockSubgraph = {
+    id,
+    rootGraph,
+    _nodes: [],
+    nodes: []
+  } satisfies MockSubgraph
+
+  return mockSubgraph as unknown as Subgraph
+}
+
 vi.mock('@/scripts/app', () => {
   const mockCanvas = {
     subgraph: null,
@@ -53,6 +66,14 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    app.rootGraph.subgraphs.clear()
+    app.canvas.subgraph = undefined
+    app.canvas.ds.scale = 1
+    app.canvas.ds.offset = [0, 0]
+    app.canvas.ds.state.scale = 1
+    app.canvas.ds.state.offset = [0, 0]
+    app.graph.getNodeById = vi.fn()
+    vi.clearAllMocks()
   })
 
   it('should not clear navigation stack when workflow internal state changes', async () => {
@@ -101,19 +122,8 @@ describe('useSubgraphNavigationStore', () => {
       filename: 'workflow2.json'
     } as ComfyWorkflow
 
-    const sub1 = {
-      id: 'sub-1',
-      rootGraph: app.rootGraph,
-      _nodes: [],
-      nodes: []
-    } as Partial<Subgraph> as Subgraph
-
-    const sub2 = {
-      id: 'sub-2',
-      rootGraph: app.rootGraph,
-      _nodes: [],
-      nodes: []
-    } as Partial<Subgraph> as Subgraph
+    const sub1 = createMockSubgraph('sub-1')
+    const sub2 = createMockSubgraph('sub-2')
 
     app.rootGraph.subgraphs.set(sub1.id, sub1)
     app.rootGraph.subgraphs.set(sub2.id, sub2)
@@ -159,12 +169,7 @@ describe('useSubgraphNavigationStore', () => {
       filename: 'workflow1.json'
     } as ComfyWorkflow
 
-    const workflow1Subgraph = {
-      id: 'sub-1',
-      rootGraph: app.rootGraph,
-      _nodes: [],
-      nodes: []
-    } as Partial<Subgraph> as Subgraph
+    const workflow1Subgraph = createMockSubgraph('sub-1')
 
     app.rootGraph.subgraphs.set(workflow1Subgraph.id, workflow1Subgraph)
     vi.mocked(findSubgraphPathById).mockImplementation((_rootGraph, id) =>
@@ -216,12 +221,7 @@ describe('useSubgraphNavigationStore', () => {
     const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
 
     // Create mock subgraph and graph structure
-    const mockSubgraph = {
-      id: 'subgraph-1',
-      rootGraph: app.graph,
-      _nodes: [],
-      nodes: []
-    } as Partial<Subgraph> as Subgraph
+    const mockSubgraph = createMockSubgraph('subgraph-1', app.graph)
 
     // Add the subgraph to the graph's subgraphs map
     app.graph.subgraphs.set('subgraph-1', mockSubgraph)

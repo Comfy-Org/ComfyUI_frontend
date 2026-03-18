@@ -112,14 +112,19 @@ test.describe(
       await comfyPage.nextFrame()
 
       await expect(async () => {
-        const progressAfter = await comfyPage.page.evaluate(() => {
+        const subgraphProgressState = await comfyPage.page.evaluate(() => {
           const graph = window.app!.canvas.graph!
           const subgraphNode = graph.nodes.find(
             (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
           )
-          return subgraphNode?.progress
+          if (!subgraphNode) {
+            return { exists: false, progress: null }
+          }
+
+          return { exists: true, progress: subgraphNode.progress }
         })
-        expect(progressAfter).toBeUndefined()
+        expect(subgraphProgressState.exists).toBe(true)
+        expect(subgraphProgressState.progress).toBeUndefined()
       }).toPass({ timeout: 5_000 })
     })
   }

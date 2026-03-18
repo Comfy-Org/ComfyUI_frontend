@@ -158,7 +158,7 @@ test.describe(
 
         await expect(
           comfyPage.page.getByTestId(TestIds.widgets.domWidgetTextarea)
-        ).not.toBeVisible()
+        ).toHaveCount(0)
       })
     })
 
