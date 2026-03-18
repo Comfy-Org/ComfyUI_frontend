@@ -88,6 +88,7 @@ export type TestIdValue =
   | (typeof TestIds.node)[keyof typeof TestIds.node]
   | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
+  | (typeof TestIds.builder)[keyof typeof TestIds.builder]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
       (typeof TestIds.templates)[keyof typeof TestIds.templates],
