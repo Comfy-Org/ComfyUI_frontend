@@ -47,11 +47,6 @@ jobs:
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
-          # TODO: remove push trigger before merge
-          if [ "$EVENT_NAME" = "push" ]; then
-            FULL=true
-          fi
-
           # Full QA triggers
           if [ "$EVENT_NAME" = "workflow_dispatch" ] && \
              [ "$INPUT_MODE" = "full" ]; then
