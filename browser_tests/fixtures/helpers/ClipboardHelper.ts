@@ -4,18 +4,7 @@ import { basename } from 'path'
 import type { Locator, Page } from '@playwright/test'
 
 import type { KeyboardHelper } from './KeyboardHelper'
-
-function getMimeType(fileName: string): string {
-  const name = fileName.toLowerCase()
-  if (name.endsWith('.png')) return 'image/png'
-  if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg'
-  if (name.endsWith('.webp')) return 'image/webp'
-  if (name.endsWith('.svg')) return 'image/svg+xml'
-  if (name.endsWith('.avif')) return 'image/avif'
-  if (name.endsWith('.webm')) return 'video/webm'
-  if (name.endsWith('.mp4')) return 'video/mp4'
-  return 'application/octet-stream'
-}
+import { getMimeType } from './mimeTypeUtil'
 
 export class ClipboardHelper {
   constructor(
@@ -37,19 +26,37 @@ export class ClipboardHelper {
     const fileName = basename(filePath)
     const fileType = getMimeType(fileName)
 
+    // Register a one-time capturing-phase listener that intercepts the next
+    // paste event and injects file data onto clipboardData.
     await this.page.evaluate(
-      ({ buf, name, type }) => {
-        const file = new File([new Uint8Array(buf)], name, { type })
-        const dataTransfer = new DataTransfer()
-        dataTransfer.items.add(file)
-        const event = new ClipboardEvent('paste', {
-          clipboardData: dataTransfer,
-          bubbles: true,
-          cancelable: true
-        })
-        document.dispatchEvent(event)
+      ({ bufferArray, fileName, fileType }) => {
+        document.addEventListener(
+          'paste',
+          (e: ClipboardEvent) => {
+            e.preventDefault()
+            e.stopImmediatePropagation()
+
+            const file = new File([new Uint8Array(bufferArray)], fileName, {
+              type: fileType
+            })
+            const dataTransfer = new DataTransfer()
+            dataTransfer.items.add(file)
+
+            const syntheticEvent = new ClipboardEvent('paste', {
+              clipboardData: dataTransfer,
+              bubbles: true,
+              cancelable: true
+            })
+            document.dispatchEvent(syntheticEvent)
+          },
+          { capture: true, once: true }
+        )
       },
-      { buf: bufferArray, name: fileName, type: fileType }
+      { bufferArray, fileName, fileType }
     )
+
+    // Trigger a real Ctrl+V keystroke — the capturing listener above will
+    // intercept it and re-dispatch with file data attached.
+    await this.paste()
   }
 }
