@@ -124,11 +124,27 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$QA_ARTIFACTS" .playwright
+
+          # Pre-seed localStorage so user-select is skipped
+          cat > "$RUNNER_TEMP/qa-storage-state.json" <<SEOF
+          {
+            "cookies": [],
+            "origins": [{
+              "origin": "http://127.0.0.1:8188",
+              "localStorage": [
+                { "name": "Comfy.userId", "value": "qa-ci-user" },
+                { "name": "Comfy.userName", "value": "QA CI" }
+              ]
+            }]
+          }
+          SEOF
+
           # Auto-record video + save screenshots to artifacts dir
           cat > .playwright/cli.config.json <<CEOF
           {
             "outputDir": "$QA_ARTIFACTS",
-            "saveVideo": { "width": 1280, "height": 720 }
+            "saveVideo": { "width": 1280, "height": 720 },
+            "storageState": "$RUNNER_TEMP/qa-storage-state.json"
           }
           CEOF
           echo "playwright-cli config:"
@@ -172,10 +188,13 @@ jobs:
           CRITICAL: "playwright-cli" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
           Chromium is already installed. Just run the commands directly.
 
+          LOGIN IS ALREADY HANDLED — localStorage is pre-seeded with a user account.
+          The app will load directly to the graph view. Do NOT interact with any login or user-select page.
+
           You MUST follow these exact steps in order:
           1. playwright-cli open http://127.0.0.1:8188
           2. playwright-cli video-start
-          3. playwright-cli snapshot
+          3. playwright-cli snapshot (you should see the graph editor, NOT a login page)
           4. Test the UI (click, fill, navigate — use snapshot between actions to get refs)
           5. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
           6. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
@@ -209,10 +228,13 @@ jobs:
           CRITICAL: "playwright-cli" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
           Chromium is already installed. Just run the commands directly.
 
+          LOGIN IS ALREADY HANDLED — localStorage is pre-seeded with a user account.
+          The app will load directly to the graph view. Do NOT interact with any login or user-select page.
+
           You MUST follow these exact steps in order:
           1. playwright-cli open http://127.0.0.1:8188
           2. playwright-cli video-start
-          3. playwright-cli snapshot (complete user-select if shown, enter the app)
+          3. playwright-cli snapshot (you should see the graph editor, NOT a login page)
           4. Execute your targeted test plan (take snapshot between each action)
           5. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
           6. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
