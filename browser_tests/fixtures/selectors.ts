@@ -58,6 +58,10 @@ export const TestIds = {
     domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button'
   },
+  builder: {
+    ioItem: 'builder-io-item',
+    widgetActionsMenu: 'widget-actions-menu'
+  },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
   },

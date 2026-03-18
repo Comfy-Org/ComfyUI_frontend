@@ -1,106 +1,149 @@
-import type { Page } from '@playwright/test'
-
+import type { ComfyPage } from '../fixtures/ComfyPage'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
+import { fitToViewInstant } from '../helpers/fitToView'
+import { getPromotedWidgetNames } from '../helpers/promotedWidgets'
 
-async function injectLinearData(page: Page) {
-  await page.evaluate(async () => {
-    const graph = window.app!.graph
-    if (!graph) return
+/**
+ * Convert the KSampler (id 3) in the default workflow to a subgraph,
+ * enter builder, select the promoted seed widget as input and
+ * SaveImage/PreviewImage as output.
+ *
+ * Returns the subgraph node reference for further interaction.
+ */
+async function setupSubgraphBuilder(comfyPage: ComfyPage) {
+  const { page, appMode } = comfyPage
+  await comfyPage.workflow.loadWorkflow('default')
 
-    const outputNodeIds = graph.nodes
-      .filter(
+  const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
+  await ksampler.click('title')
+  const subgraphNode = await ksampler.convertToSubgraph()
+  await comfyPage.nextFrame()
+
+  const subgraphNodeId = String(subgraphNode.id)
+  const promotedNames = await getPromotedWidgetNames(comfyPage, subgraphNodeId)
+  expect(promotedNames).toContain('seed')
+
+  await fitToViewInstant(comfyPage)
+  await appMode.enterBuilder()
+  await appMode.goToInputs()
+
+  // Click the promoted seed widget on the canvas to select it
+  const seedWidgetRef = await subgraphNode.getWidget(0)
+  const seedPos = await seedWidgetRef.getPosition()
+  await page.mouse.click(seedPos.x, seedPos.y)
+  await comfyPage.nextFrame()
+
+  // Select an output node
+  await appMode.goToOutputs()
+
+  const saveImageNodeId = await page.evaluate(() =>
+    String(
+      window.app!.rootGraph.nodes.find(
         (n: { type?: string }) =>
           n.type === 'SaveImage' || n.type === 'PreviewImage'
-      )
-      .map((n: { id: number | string }) => String(n.id))
-
-    const ksampler = graph.nodes.find(
-      (n: { type?: string }) => n.type === 'KSampler'
+      )?.id
     )
-    const inputs: [string, string][] = ksampler
-      ? [[String(ksampler.id), 'seed']]
-      : []
+  )
+  const saveImageRef = await comfyPage.nodeOps.getNodeRefById(saveImageNodeId)
+  const saveImagePos = await saveImageRef.getPosition()
+  // Click left edge — the right side is hidden by the builder panel
+  await page.mouse.click(saveImagePos.x + 10, saveImagePos.y - 10)
+  await comfyPage.nextFrame()
 
-    const workflow = graph.serialize() as unknown as Record<string, unknown>
-    const extra = (workflow.extra ?? {}) as Record<string, unknown>
-    extra.linearData = { inputs, outputs: outputNodeIds }
-    workflow.extra = extra
-    await window.app!.loadGraphData(
-      workflow as unknown as Parameters<
-        NonNullable<typeof window.app>['loadGraphData']
-      >[0]
-    )
-  })
+  return subgraphNode
 }
 
-async function toggleLinearMode(page: Page) {
-  await page.evaluate(() => {
-    window.app!.extensionManager.command.execute('Comfy.ToggleLinear')
-  })
+/** Save the workflow, reopen it, and enter app mode. */
+async function saveAndReopenInAppMode(
+  comfyPage: ComfyPage,
+  workflowName: string
+) {
+  await comfyPage.menu.topbar.saveWorkflow(workflowName)
+
+  const { workflowsTab } = comfyPage.menu
+  await workflowsTab.open()
+  await workflowsTab.getPersistedItem(workflowName).dblclick()
+  await comfyPage.nextFrame()
+
+  await comfyPage.appMode.toggleAppMode()
 }
 
-test.describe('App mode widget rename', { tag: '@ui' }, () => {
+test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.page.evaluate(() => {
+      window.app!.api.serverFeatureFlags.value = {
+        ...window.app!.api.serverFeatureFlags.value,
+        linear_toggle_enabled: true
+      }
+    })
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  test('Rename persists after saving and reloading workflow', async ({
-    comfyPage
-  }) => {
-    const { page } = comfyPage
+  test('Rename from builder input-select sidebar', async ({ comfyPage }) => {
+    const { appMode } = comfyPage
+    await setupSubgraphBuilder(comfyPage)
 
-    // Enter app mode with KSampler seed widget as input
-    await injectLinearData(page)
-    await comfyPage.nextFrame()
-    await toggleLinearMode(page)
-    await comfyPage.nextFrame()
+    // Go back to inputs step where IoItems are shown
+    await appMode.goToInputs()
 
-    const widgetsContainer = page.locator('[data-testid="linear-widgets"]')
-    await expect(widgetsContainer).toBeVisible({ timeout: 5000 })
+    const menu = appMode.getBuilderInputItemMenu('seed')
+    await expect(menu).toBeVisible({ timeout: 5000 })
+    await appMode.renameWidget(menu, 'Builder Input Seed')
 
-    // Click the ellipsis button on the seed widget
-    const ellipsisButton = widgetsContainer
-      .locator('button:has(i.icon-\\[lucide--ellipsis\\])')
-      .first()
-    await ellipsisButton.click()
+    // Verify in app mode after save/reload
+    await appMode.exitBuilder()
+    const workflowName = `${new Date().getTime()} builder-input`
+    await saveAndReopenInAppMode(comfyPage, workflowName)
 
-    // Click "Rename" in the popover
-    await page.getByText('Rename', { exact: true }).click()
+    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(
+      appMode.linearWidgets.getByText('Builder Input Seed')
+    ).toBeVisible()
+  })
 
-    // Fill in the rename prompt dialog
-    const dialogInput = page.locator('.p-dialog-content input[type="text"]')
-    await dialogInput.fill('My Custom Seed')
-    await page.keyboard.press('Enter')
-    await dialogInput.waitFor({ state: 'hidden' })
-    await comfyPage.nextFrame()
+  test('Rename from builder preview sidebar', async ({ comfyPage }) => {
+    const { appMode } = comfyPage
+    await setupSubgraphBuilder(comfyPage)
 
-    // Verify the widget label is updated
-    await expect(widgetsContainer.getByText('My Custom Seed')).toBeVisible()
+    await appMode.goToPreview()
 
-    // Exit app mode to access topbar
-    await toggleLinearMode(page)
-    await comfyPage.nextFrame()
+    const menu = appMode.getBuilderPreviewWidgetMenu('seed — New Subgraph')
+    await expect(menu).toBeVisible({ timeout: 5000 })
+    await appMode.renameWidget(menu, 'Preview Seed')
 
-    // Save workflow
-    const workflowName = `${new Date().getTime()} workflow`
-    await comfyPage.menu.topbar.saveWorkflow(workflowName)
+    // Verify in app mode after save/reload
+    await appMode.exitBuilder()
+    const workflowName = `${new Date().getTime()} builder-preview`
+    await saveAndReopenInAppMode(comfyPage, workflowName)
 
-    // Open the saved workflow from the browse tree in a fresh tab
-    const { workflowsTab } = comfyPage.menu
-    await workflowsTab.open()
-    await workflowsTab.getPersistedItem(workflowName).dblclick()
-    await comfyPage.nextFrame()
+    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets.getByText('Preview Seed')).toBeVisible()
+  })
 
-    // Re-enter app mode on the reloaded workflow
-    await toggleLinearMode(page)
-    await comfyPage.nextFrame()
+  test('Rename from app mode', async ({ comfyPage }) => {
+    const { appMode } = comfyPage
+    await setupSubgraphBuilder(comfyPage)
 
-    // Verify the renamed label persisted
-    const reloadedWidgets = page.locator('[data-testid="linear-widgets"]')
-    await expect(reloadedWidgets).toBeVisible({ timeout: 5000 })
-    await expect(reloadedWidgets.getByText('My Custom Seed')).toBeVisible()
+    // Enter app mode from builder
+    await appMode.exitBuilder()
+    await appMode.toggleAppMode()
+
+    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+
+    const menu = appMode.getAppModeWidgetMenu('seed')
+    await appMode.renameWidget(menu, 'App Mode Seed')
+
+    await expect(appMode.linearWidgets.getByText('App Mode Seed')).toBeVisible()
+
+    // Verify persistence after save/reload
+    await appMode.toggleAppMode()
+    const workflowName = `${new Date().getTime()} app-mode`
+    await saveAndReopenInAppMode(comfyPage, workflowName)
+
+    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets.getByText('App Mode Seed')).toBeVisible()
   })
 })
