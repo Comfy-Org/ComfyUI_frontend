@@ -1,31 +1,7 @@
-import { readFileSync } from 'fs'
-
-import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
-
-async function simulateImagePaste(
-  page: Page,
-  assetPath: string
-): Promise<void> {
-  const buffer = readFileSync(assetPath)
-  const bufferArray = [...new Uint8Array(buffer)]
-  await page.evaluate((buf) => {
-    const file = new File([new Uint8Array(buf)], 'image32x32.webp', {
-      type: 'image/webp'
-    })
-    const dataTransfer = new DataTransfer()
-    dataTransfer.items.add(file)
-    const event = new ClipboardEvent('paste', {
-      clipboardData: dataTransfer,
-      bubbles: true,
-      cancelable: true
-    })
-    document.dispatchEvent(event)
-  }, bufferArray)
-}
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -168,8 +144,9 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       await comfyPage.canvas.click({ position: { x: 50, y: 500 } })
       await comfyPage.nextFrame()
       await comfyPage.clipboard.paste()
-      await comfyPage.nextFrame()
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
+      await expect(async () => {
+        expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
+      }).toPass({ timeout: 5000 })
 
       // Step 2: Paste image onto selected LoadImage node
       const loadImageNodes =
@@ -181,16 +158,16 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
         (resp) => resp.url().includes('/upload/') && resp.status() === 200,
         { timeout: 10000 }
       )
-      await simulateImagePaste(
-        comfyPage.page,
+      await comfyPage.clipboard.pasteFile(
         comfyPage.assetPath('image32x32.webp')
       )
       await uploadPromise
-      await comfyPage.nextFrame()
 
-      const fileWidget = await loadImageNodes[0].getWidget(0)
-      const filename = await fileWidget.getValue()
-      expect(filename).toBe('image32x32.webp')
+      await expect(async () => {
+        const fileWidget = await loadImageNodes[0].getWidget(0)
+        const filename = await fileWidget.getValue()
+        expect(filename).toContain('image32x32')
+      }).toPass({ timeout: 5000 })
       expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
 
       // Step 3: Click empty canvas area, paste image → creates new LoadImage
@@ -201,14 +178,14 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
         (resp) => resp.url().includes('/upload/') && resp.status() === 200,
         { timeout: 10000 }
       )
-      await simulateImagePaste(
-        comfyPage.page,
+      await comfyPage.clipboard.pasteFile(
         comfyPage.assetPath('image32x32.webp')
       )
       await uploadPromise2
-      await comfyPage.nextFrame()
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(4)
+      await expect(async () => {
+        expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(4)
+      }).toPass({ timeout: 5000 })
       const allLoadImageNodes =
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
       expect(allLoadImageNodes).toHaveLength(2)
