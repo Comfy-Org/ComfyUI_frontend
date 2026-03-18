@@ -301,16 +301,32 @@ jobs:
           path: qa-artifacts
           pattern: qa-report-*
 
+      - name: Normalize artifact layout
+        run: |
+          # download-artifact v7 extracts flat when there's only 1 artifact.
+          # If qa-report-* subdirs don't exist, move flat files into the right subdir.
+          if ! ls -d qa-artifacts/qa-report-* >/dev/null 2>&1; then
+            echo "No qa-report-* subdirs found — reorganizing flat download"
+            # Detect OS from report filename (e.g. *-linux-report.md)
+            for os in Linux macOS Windows; do
+              OS_LOWER=$(echo "$os" | tr '[:upper:]' '[:lower:]')
+              if ls qa-artifacts/*-${OS_LOWER}-report.md >/dev/null 2>&1; then
+                DEST="qa-artifacts/qa-report-${os}-${{ github.run_id }}"
+                mkdir -p "$DEST"
+                find qa-artifacts -maxdepth 1 -type f -exec mv {} "$DEST/" \;
+                [ -d qa-artifacts/videos ] && mv qa-artifacts/videos "$DEST/"
+                echo "Moved flat files into $DEST"
+                break
+              fi
+            done
+          fi
+          echo "=== Artifact structure ==="
+          find qa-artifacts -type f 2>/dev/null | head -20
+
       - name: Convert videos to mp4
         run: |
-          echo "=== Artifact directory structure ==="
-          find qa-artifacts -type f 2>/dev/null | head -30 || echo "qa-artifacts not found"
-          echo "==="
-
           for dir in qa-artifacts/qa-report-*; do
             [ -d "$dir" ] || continue
-            echo "Processing dir: $dir"
-            ls -la "$dir/" | head -20
             WEBM=$(find "$dir" -name '*.webm' -type f | head -1)
             if [ -z "$WEBM" ]; then
               echo "No .webm video in $dir, skipping"
