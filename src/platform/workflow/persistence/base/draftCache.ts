@@ -5,7 +5,7 @@ export interface WorkflowDraftSnapshot {
   isTemporary: boolean
 }
 
-export interface DraftCacheState {
+interface DraftCacheState {
   drafts: Record<string, WorkflowDraftSnapshot>
   order: string[]
 }
