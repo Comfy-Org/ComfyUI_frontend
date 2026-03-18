@@ -85,15 +85,11 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
       return undefined
     }
 
-    const exactMatch = modelToNodeMap.value[modelType]
-    if (exactMatch && exactMatch.length > 0) return exactMatch
-
-    // Try progressively shorter parent paths
     const segments = modelType.split('/')
     for (let i = segments.length; i >= 1; i--) {
-      const parentPath = segments.slice(0, i).join('/')
-      const fallback = modelToNodeMap.value[parentPath]
-      if (fallback && fallback.length > 0) return fallback
+      const path = segments.slice(0, i).join('/')
+      const providers = modelToNodeMap.value[path]
+      if (providers && providers.length > 0) return providers
     }
 
     return undefined
