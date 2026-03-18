@@ -47,8 +47,7 @@ function createSubgraphNode(): SubgraphNode {
 }
 
 function createRegularNode(): LGraphNode {
-  const node = Object.create(LGraphNode.prototype)
-  return node
+  return new LGraphNode('testnode')
 }
 
 describe('useSubgraphOperations', () => {
