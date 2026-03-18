@@ -95,7 +95,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       // Apply Input filter with MODEL type
       await searchBoxV2.filterBarButton('Input').click()
       await expect(searchBoxV2.filterOptions.first()).toBeVisible()
-      await searchBoxV2.input.fill('MODEL')
+      await searchBoxV2.filterSearch.fill('MODEL')
       await searchBoxV2.filterOptions
         .filter({ hasText: 'MODEL' })
         .first()
