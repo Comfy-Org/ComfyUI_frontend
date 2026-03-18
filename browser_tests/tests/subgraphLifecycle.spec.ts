@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyPage } from '../fixtures/ComfyPage'
+import type { PromotedWidgetEntry } from '../helpers/promotedWidgets'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
@@ -11,6 +13,30 @@ import {
 } from '../helpers/promotedWidgets'
 
 const domPreviewSelector = '.image-preview'
+
+const expectPromotedWidgetsToResolveToInteriorNodes = async (
+  comfyPage: ComfyPage,
+  hostSubgraphNodeId: string,
+  widgets: PromotedWidgetEntry[]
+) => {
+  for (const [interiorNodeId] of widgets) {
+    const interiorNodeExists = await comfyPage.page.evaluate(
+      ([hostId, id]) => {
+        const graph = window.app!.graph!
+        const hostNodeId = Number(hostId)
+        const interiorNodeId = Number(id)
+        const hostNode = graph.getNodeById(hostNodeId)
+        if (!hostNode?.isSubgraphNode()) return false
+
+        const interiorNode = hostNode.subgraph.getNodeById(interiorNodeId)
+        return interiorNode !== null && interiorNode !== undefined
+      },
+      [hostSubgraphNodeId, interiorNodeId] as const
+    )
+
+    expect(interiorNodeExists).toBe(true)
+  }
+}
 
 test.describe(
   'Subgraph Lifecycle Edge Behaviors',
@@ -31,6 +57,12 @@ test.describe(
         for (const [interiorNodeId] of widgets) {
           expect(Number(interiorNodeId)).toBeGreaterThan(0)
         }
+
+        await expectPromotedWidgetsToResolveToInteriorNodes(
+          comfyPage,
+          '11',
+          widgets
+        )
       })
 
       test('proxyWidgets entries survive double round-trip without drift', async ({
@@ -43,6 +75,11 @@ test.describe(
 
         const initialWidgets = await getPromotedWidgets(comfyPage, '11')
         expect(initialWidgets.length).toBeGreaterThan(0)
+        await expectPromotedWidgetsToResolveToInteriorNodes(
+          comfyPage,
+          '11',
+          initialWidgets
+        )
 
         const serialized1 = await comfyPage.page.evaluate(() =>
           window.app!.graph!.serialize()
@@ -54,6 +91,11 @@ test.describe(
         await comfyPage.nextFrame()
 
         const afterFirst = await getPromotedWidgets(comfyPage, '11')
+        await expectPromotedWidgetsToResolveToInteriorNodes(
+          comfyPage,
+          '11',
+          afterFirst
+        )
 
         const serialized2 = await comfyPage.page.evaluate(() =>
           window.app!.graph!.serialize()
@@ -65,6 +107,11 @@ test.describe(
         await comfyPage.nextFrame()
 
         const afterSecond = await getPromotedWidgets(comfyPage, '11')
+        await expectPromotedWidgetsToResolveToInteriorNodes(
+          comfyPage,
+          '11',
+          afterSecond
+        )
 
         expect(afterFirst).toEqual(initialWidgets)
         expect(afterSecond).toEqual(initialWidgets)
@@ -85,6 +132,12 @@ test.describe(
           expect(interiorNodeId).not.toBe('-1')
           expect(Number(interiorNodeId)).toBeGreaterThan(0)
         }
+
+        await expectPromotedWidgetsToResolveToInteriorNodes(
+          comfyPage,
+          '2',
+          widgets
+        )
       })
     })
 
