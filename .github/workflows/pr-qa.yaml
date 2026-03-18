@@ -125,26 +125,11 @@ jobs:
         run: |
           mkdir -p "$QA_ARTIFACTS" .playwright
 
-          # Pre-seed localStorage so user-select is skipped
-          cat > "$RUNNER_TEMP/qa-storage-state.json" <<SEOF
-          {
-            "cookies": [],
-            "origins": [{
-              "origin": "http://127.0.0.1:8188",
-              "localStorage": [
-                { "name": "Comfy.userId", "value": "qa-ci-user" },
-                { "name": "Comfy.userName", "value": "QA CI" }
-              ]
-            }]
-          }
-          SEOF
-
           # Auto-record video + save screenshots to artifacts dir
           cat > .playwright/cli.config.json <<CEOF
           {
             "outputDir": "$QA_ARTIFACTS",
-            "saveVideo": { "width": 1280, "height": 720 },
-            "storageState": "$RUNNER_TEMP/qa-storage-state.json"
+            "saveVideo": { "width": 1280, "height": 720 }
           }
           CEOF
           echo "playwright-cli config:"
@@ -188,18 +173,17 @@ jobs:
           CRITICAL: "playwright-cli" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
           Chromium is already installed. Just run the commands directly.
 
-          LOGIN IS ALREADY HANDLED — localStorage is pre-seeded with a user account.
-          The app will load directly to the graph view. Do NOT interact with any login or user-select page.
-
           You MUST follow these exact steps in order:
           1. playwright-cli open http://127.0.0.1:8188
-          2. playwright-cli video-start
-          3. playwright-cli snapshot (you should see the graph editor, NOT a login page)
-          4. Test the UI (click, fill, navigate — use snapshot between actions to get refs)
-          5. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
-          6. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
+          2. playwright-cli evaluate "localStorage.setItem('Comfy.userId','qa-ci');localStorage.setItem('Comfy.userName','QA CI')"
+          3. playwright-cli navigate http://127.0.0.1:8188
+          4. playwright-cli video-start
+          5. playwright-cli snapshot (you should see the graph editor, NOT a login page)
+          6. Test the UI (click, fill, navigate — use snapshot between actions to get refs)
+          7. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
+          8. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
-          Do NOT skip steps 1-2 or 5-6. Do NOT use pnpm/npx to run playwright-cli.
+          Do NOT skip steps 1-4 or 7-8. Do NOT use pnpm/npx to run playwright-cli.
           Do NOT create a PR, post PR comments, commit, or push anything.
           Skip tests not available in CI (file dialogs, GPU execution).
           PROMPT
@@ -228,19 +212,18 @@ jobs:
           CRITICAL: "playwright-cli" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
           Chromium is already installed. Just run the commands directly.
 
-          LOGIN IS ALREADY HANDLED — localStorage is pre-seeded with a user account.
-          The app will load directly to the graph view. Do NOT interact with any login or user-select page.
-
           You MUST follow these exact steps in order:
           1. playwright-cli open http://127.0.0.1:8188
-          2. playwright-cli video-start
-          3. playwright-cli snapshot (you should see the graph editor, NOT a login page)
-          4. Execute your targeted test plan (take snapshot between each action)
-          5. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
-          6. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
+          2. playwright-cli evaluate "localStorage.setItem('Comfy.userId','qa-ci');localStorage.setItem('Comfy.userName','QA CI')"
+          3. playwright-cli navigate http://127.0.0.1:8188
+          4. playwright-cli video-start
+          5. playwright-cli snapshot (you should see the graph editor, NOT a login page)
+          6. Execute your targeted test plan (take snapshot between each action)
+          7. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
+          8. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
              Include PASS/FAIL for each test step in the report.
 
-          Do NOT skip steps 1-2 or 5-6. Do NOT use pnpm/npx to run playwright-cli.
+          Do NOT skip steps 1-4 or 7-8. Do NOT use pnpm/npx to run playwright-cli.
           Do NOT create a PR, post PR comments, commit, or push anything.
           PROMPT
           fi
