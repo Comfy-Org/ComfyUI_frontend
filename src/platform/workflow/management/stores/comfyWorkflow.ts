@@ -91,10 +91,10 @@ export class ComfyWorkflow extends UserFile {
   override async load({ force = false }: { force?: boolean } = {}): Promise<
     this & LoadedComfyWorkflow
   > {
-    const { useWorkflowDraftStore } =
-      await import('@/platform/workflow/persistence/stores/workflowDraftStore')
+    const { useWorkflowDraftStoreV2 } =
+      await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
     const { useSettingStore } = await import('@/platform/settings/settingStore')
-    const draftStore = useWorkflowDraftStore()
+    const draftStore = useWorkflowDraftStoreV2()
     const persistEnabled = useSettingStore().get('Comfy.Workflow.Persist')
     let draft =
       !force && persistEnabled ? draftStore.getDraft(this.path) : undefined
@@ -149,9 +149,9 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override async save() {
-    const { useWorkflowDraftStore } =
-      await import('@/platform/workflow/persistence/stores/workflowDraftStore')
-    const draftStore = useWorkflowDraftStore()
+    const { useWorkflowDraftStoreV2 } =
+      await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
+    const draftStore = useWorkflowDraftStoreV2()
     this.content = JSON.stringify(this.activeState)
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
@@ -168,9 +168,9 @@ export class ComfyWorkflow extends UserFile {
    * @returns this
    */
   override async saveAs(path: string) {
-    const { useWorkflowDraftStore } =
-      await import('@/platform/workflow/persistence/stores/workflowDraftStore')
-    const draftStore = useWorkflowDraftStore()
+    const { useWorkflowDraftStoreV2 } =
+      await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
+    const draftStore = useWorkflowDraftStoreV2()
     this.content = JSON.stringify(this.activeState)
     const result = await super.saveAs(path)
     draftStore.removeDraft(path)

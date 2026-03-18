@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -12,7 +12,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
@@ -69,6 +69,8 @@ describe('useWorkflowStore', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    localStorage.clear()
+    sessionStorage.clear()
     store = useWorkflowStore()
     bookmarkStore = useWorkflowBookmarkStore()
     vi.clearAllMocks()
@@ -81,6 +83,11 @@ describe('useWorkflowStore', () => {
     vi.mocked(api.storeUserData).mockResolvedValue({
       status: 200
     } as Response)
+  })
+
+  afterEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
   })
 
   describe('syncWorkflows', () => {
@@ -265,6 +272,36 @@ describe('useWorkflowStore', () => {
       expect(workflow.activeState).toEqual(defaultGraph)
       expect(workflow.initialState).toEqual(defaultGraph)
       expect(workflow.isModified).toBe(false)
+    })
+
+    it('should prefer a persisted V2 draft when loading a remote workflow', async () => {
+      const draftStore = useWorkflowDraftStoreV2()
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: 100, size: 1 }
+      ])
+
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      const draftGraph = JSON.parse(defaultGraphJSON)
+      draftGraph.extra = {
+        ...(draftGraph.extra ?? {}),
+        draftMarker: 'v2'
+      }
+
+      draftStore.saveDraft(workflow.path, JSON.stringify(draftGraph), {
+        name: 'a.json',
+        isTemporary: false
+      })
+
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+
+      await workflow.load()
+
+      expect(workflow.activeState.extra?.draftMarker).toBe('v2')
+      expect(workflow.isModified).toBe(true)
     })
 
     it('should load and open a remote workflow', async () => {
@@ -940,38 +977,34 @@ describe('useWorkflowStore', () => {
 
   describe('closeWorkflow draft cleanup', () => {
     it('should remove draft for persisted workflows on close', async () => {
-      const draftStore = useWorkflowDraftStore()
+      const draftStore = useWorkflowDraftStoreV2()
       await syncRemoteWorkflows(['a.json'])
       const workflow = store.getWorkflowByPath('workflows/a.json')!
 
-      draftStore.saveDraft('workflows/a.json', {
-        data: '{"dirty":true}',
-        updatedAt: Date.now(),
+      draftStore.saveDraft('workflows/a.json', '{"dirty":true}', {
         name: 'a.json',
         isTemporary: false
       })
-      expect(draftStore.getDraft('workflows/a.json')).toBeDefined()
+      expect(draftStore.getDraft('workflows/a.json')).toBeTruthy()
 
       await store.closeWorkflow(workflow)
 
-      expect(draftStore.getDraft('workflows/a.json')).toBeUndefined()
+      expect(draftStore.getDraft('workflows/a.json')).toBeNull()
     })
 
     it('should remove draft for temporary workflows on close', async () => {
-      const draftStore = useWorkflowDraftStore()
+      const draftStore = useWorkflowDraftStoreV2()
       const workflow = store.createTemporary('temp.json')
 
-      draftStore.saveDraft(workflow.path, {
-        data: '{"dirty":true}',
-        updatedAt: Date.now(),
+      draftStore.saveDraft(workflow.path, '{"dirty":true}', {
         name: 'temp.json',
         isTemporary: true
       })
-      expect(draftStore.getDraft(workflow.path)).toBeDefined()
+      expect(draftStore.getDraft(workflow.path)).toBeTruthy()
 
       await store.closeWorkflow(workflow)
 
-      expect(draftStore.getDraft(workflow.path)).toBeUndefined()
+      expect(draftStore.getDraft(workflow.path)).toBeNull()
     })
   })
 })

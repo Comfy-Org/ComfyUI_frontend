@@ -17,6 +17,7 @@ import {
   moveEntry,
   removeEntry,
   removeOrphanedEntries,
+  touchOrder,
   upsertEntry
 } from '../base/draftCacheV2'
 import { hashPath } from '../base/hashUtil'
@@ -246,7 +247,12 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    */
   function getDraft(
     path: string
-  ): { data: string; name: string; isTemporary: boolean } | null {
+  ): {
+    data: string
+    name: string
+    isTemporary: boolean
+    updatedAt: number
+  } | null {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const entry = getEntryByPath(index, path)
@@ -263,8 +269,25 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     return {
       data: payload.data,
       name: entry.name,
-      isTemporary: entry.isTemporary
+      isTemporary: entry.isTemporary,
+      updatedAt: payload.updatedAt
     }
+  }
+
+  /**
+   * Marks a draft as recently used without rewriting its payload.
+   */
+  function markDraftUsed(path: string): void {
+    const index = loadIndex()
+    const entry = getEntryByPath(index, path)
+    if (!entry) return
+
+    const draftKey = hashPath(path)
+    persistIndex({
+      ...index,
+      updatedAt: Date.now(),
+      order: touchOrder(index.order, draftKey)
+    })
   }
 
   /**
@@ -309,6 +332,10 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const loaded = await tryLoadGraph(draft.data, draft.name, () => {
       removeDraft(path)
     })
+
+    if (loaded) {
+      markDraftUsed(path)
+    }
 
     return loaded
   }
@@ -380,6 +407,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     removeDraft,
     moveDraft,
     getDraft,
+    markDraftUsed,
     getMostRecentPath,
     loadPersistedWorkflow,
     reset

@@ -6,7 +6,7 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -43,7 +43,7 @@ export const useWorkflowService = () => {
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const executionErrorStore = useExecutionErrorStore()
-  const workflowDraftStore = useWorkflowDraftStore()
+  const workflowDraftStore = useWorkflowDraftStoreV2()
 
   function confirmOverwrite(targetPath: string) {
     return dialogService.confirm({
@@ -361,12 +361,22 @@ export const useWorkflowService = () => {
         if (activeState) {
           try {
             const workflowJson = JSON.stringify(activeState)
-            workflowDraftStore.saveDraft(activeWorkflow.path, {
-              data: workflowJson,
-              updatedAt: Date.now(),
-              name: activeWorkflow.key,
-              isTemporary: activeWorkflow.isTemporary
-            })
+            const saved = workflowDraftStore.saveDraft(
+              activeWorkflow.path,
+              workflowJson,
+              {
+                name: activeWorkflow.key,
+                isTemporary: activeWorkflow.isTemporary
+              }
+            )
+
+            if (!saved) {
+              toastStore.add({
+                severity: 'error',
+                summary: t('g.error'),
+                detail: t('toastMessages.failedToSaveDraft')
+              })
+            }
           } catch {
             toastStore.add({
               severity: 'error',
