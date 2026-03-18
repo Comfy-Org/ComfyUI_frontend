@@ -60,7 +60,7 @@ const mountComponent = (
       stubs: {
         QueueOverlayExpanded: QueueOverlayExpandedStub,
         QueueOverlayActive: true,
-        ResultGallery: true
+        MediaLightbox: true
       },
       directives: {
         tooltip: () => {}

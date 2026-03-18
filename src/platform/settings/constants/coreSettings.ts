@@ -577,6 +577,19 @@ export const CORE_SETTINGS: SettingParams[] = [
       value === 'Integrated' ? 'Default' : value
   },
   {
+    id: 'Comfy.Appearance.DisableAnimations',
+    category: ['Appearance', 'General'],
+    name: 'Disable animations',
+    type: 'boolean',
+    defaultValue: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    tooltip:
+      'Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation.',
+    onChange: (value: unknown) => {
+      document.body.classList.toggle('disable-animations', !!value)
+    },
+    versionAdded: '1.43.0'
+  },
+  {
     id: 'Comfy.UseNewMenu',
     category: ['Comfy', 'Menu', 'UseNewMenu'],
     defaultValue: 'Top',
