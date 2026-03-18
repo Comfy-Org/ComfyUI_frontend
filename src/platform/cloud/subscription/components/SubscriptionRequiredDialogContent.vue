@@ -252,6 +252,7 @@ watch(
   () => isActiveSubscription.value,
   (isActive) => {
     if (isActive && showCustomPricingTable.value) {
+      telemetry?.trackMonthlySubscriptionSucceeded()
       emit('close', true)
     }
   }

@@ -66,4 +66,18 @@ describe('GtmTelemetryProvider', () => {
 
     expect(gtagScripts).toHaveLength(1)
   })
+
+  it('pushes subscription_success for subscription activation', () => {
+    window.__CONFIG__ = {
+      gtm_container_id: 'GTM-TEST123'
+    }
+
+    const provider = new GtmTelemetryProvider()
+    provider.trackMonthlySubscriptionSucceeded()
+
+    const lastEntry = window.dataLayer?.[window.dataLayer.length - 1]
+    expect(lastEntry).toMatchObject({
+      event: 'subscription_success'
+    })
+  })
 })
