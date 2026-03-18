@@ -40,7 +40,10 @@ export function toBrowsableUrl(url: string): string {
   if (isCivitaiModelUrl(url)) {
     return url.replace('/api/download/', '/').replace('/api/v1/', '/')
   }
-  return url.replace('/resolve/', '/blob/')
+  if (url.includes('huggingface.co')) {
+    return url.replace('/resolve/', '/blob/')
+  }
+  return url
 }
 
 export function isModelDownloadable(model: ModelWithUrl): boolean {
