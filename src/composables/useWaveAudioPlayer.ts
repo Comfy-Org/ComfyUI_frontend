@@ -42,15 +42,23 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
 
   function generateBarsFromBuffer(buffer: AudioBuffer) {
     const channelData = buffer.getChannelData(0)
-    const samplesPerBar = Math.floor(channelData.length / barCount)
-    const averages: number[] = []
+    if (channelData.length === 0) {
+      bars.value = generatePlaceholderBars()
+      return
+    }
 
+    const averages: number[] = []
     for (let i = 0; i < barCount; i++) {
+      const start = Math.floor((i * channelData.length) / barCount)
+      const end = Math.max(
+        start + 1,
+        Math.floor(((i + 1) * channelData.length) / barCount)
+      )
       let sum = 0
-      for (let j = 0; j < samplesPerBar; j++) {
-        sum += Math.abs(channelData[i * samplesPerBar + j])
+      for (let j = start; j < end && j < channelData.length; j++) {
+        sum += Math.abs(channelData[j])
       }
-      averages.push(sum / samplesPerBar)
+      averages.push(sum / (end - start))
     }
 
     const peak = Math.max(...averages) || 1
@@ -61,12 +69,16 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
 
   async function decodeAudioSource(url: string) {
     loading.value = true
+    let ctx: AudioContext | undefined
     try {
       const apiBase = api.apiURL('/')
       const route = url.includes(apiBase)
         ? url.slice(url.indexOf(apiBase) + api.apiURL('').length)
         : url
       const response = await api.fetchApi(route)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch audio (${response.status})`)
+      }
       const arrayBuffer = await response.arrayBuffer()
 
       const blob = new Blob([arrayBuffer.slice(0)], {
@@ -75,13 +87,13 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
       if (blobUrl.value) URL.revokeObjectURL(blobUrl.value)
       blobUrl.value = URL.createObjectURL(blob)
 
-      const ctx = new AudioContext()
+      ctx = new AudioContext()
       const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
       generateBarsFromBuffer(audioBuffer)
-      await ctx.close()
     } catch {
       bars.value = generatePlaceholderBars()
     } finally {
+      await ctx?.close()
       loading.value = false
     }
   }
@@ -159,7 +171,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
   }
 }
 
-export function formatTime(seconds: number): string {
+function formatTime(seconds: number): string {
   if (isNaN(seconds) || seconds === 0) return '0:00'
   const mins = Math.floor(seconds / 60)
   const secs = Math.floor(seconds % 60)
