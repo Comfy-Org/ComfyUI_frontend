@@ -120,18 +120,6 @@ jobs:
         shell: bash
         run: npm install -g @playwright/cli@latest @anthropic-ai/claude-code@2.1.71
 
-      - name: Configure playwright-cli
-        shell: bash
-        run: |
-          mkdir -p .playwright "$QA_ARTIFACTS/frames"
-          cat > .playwright/cli.config.json <<EOF
-          {
-            "outputDir": "$QA_ARTIFACTS",
-            "saveVideo": { "width": 1280, "height": 720 }
-          }
-          EOF
-          cat .playwright/cli.config.json
-
       - name: Get PR diff for focused QA
         if: needs.resolve-matrix.outputs.mode == 'focused'
         shell: bash
@@ -156,6 +144,8 @@ jobs:
         run: |
           OS_LOWER=$(echo "$RUNNER_OS" | tr '[:upper:]' '[:lower:]')
 
+          SCREENSHOT_DIR="$QA_ARTIFACTS/screenshots"
+
           if [ "$QA_MODE" = "full" ]; then
             cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
           You are running a FULL automated QA pass on the ComfyUI frontend.
@@ -167,20 +157,17 @@ jobs:
           PR: #${PR_NUM}
           Commit: ${SHA}
 
-          IMPORTANT: First start video recording, then do the QA, then stop recording:
+          Use playwright-cli for all browser interactions:
             playwright-cli open http://127.0.0.1:8188
-            playwright-cli video-start
-
-          Then use playwright-cli for all interactions:
             playwright-cli snapshot (to get element refs after each navigation)
             playwright-cli click <ref>
             playwright-cli press <key>
-            playwright-cli screenshot (after each significant interaction)
 
-          Run the FULL QA test plan from .claude/skills/comfy-qa/SKILL.md
-
-          When done with QA, stop the video:
-            playwright-cli video-stop $QA_ARTIFACTS/qa-session.mp4
+          CRITICAL: Take a screenshot after EVERY significant interaction using:
+            playwright-cli screenshot --filename=${SCREENSHOT_DIR}/NNN-description.png
+          where NNN is a zero-padded sequence number (001, 002, 003, ...).
+          These screenshots are stitched into a video. Take at least 20 screenshots throughout the QA session.
+          First run: mkdir -p ${SCREENSHOT_DIR}
 
           Save the QA report as: $QA_ARTIFACTS/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
@@ -204,22 +191,23 @@ jobs:
           DIFF (truncated to 500 lines):
           $(head -500 "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || echo "No diff available")
 
-          IMPORTANT: First start video recording:
+          Use playwright-cli for all browser interactions:
             playwright-cli open http://127.0.0.1:8188
-            playwright-cli video-start
-
-          Then use playwright-cli for all interactions:
             playwright-cli snapshot (to get element refs)
             playwright-cli click <ref>
             playwright-cli press <key>
-            playwright-cli screenshot (after each significant interaction)
+
+          CRITICAL: Take a screenshot after EVERY significant interaction using:
+            playwright-cli screenshot --filename=${SCREENSHOT_DIR}/NNN-description.png
+          where NNN is a zero-padded sequence number (001, 002, 003, ...).
+          These screenshots are stitched into a video. Take at least 15 screenshots throughout the QA session.
+          First run: mkdir -p ${SCREENSHOT_DIR}
 
           Instructions:
           1. Read the diff above to understand what changed
           2. Test the specific UI areas affected by these changes
           3. Quick smoke test of core functionality (app loads, canvas renders, sidebar works)
-          4. When done, stop the video: playwright-cli video-stop $QA_ARTIFACTS/qa-session.mp4
-          5. Save a concise report to $QA_ARTIFACTS as $(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
+          4. Save a concise report to $QA_ARTIFACTS as $(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
           Focus on: changed functionality, visual regressions, related features.
 
@@ -247,21 +235,21 @@ jobs:
         if: always()
         shell: bash
         run: |
-          mkdir -p "$QA_ARTIFACTS"
-          # Copy any playwright-cli output (screenshots, videos, snapshots)
+          mkdir -p "$QA_ARTIFACTS/screenshots"
+          # Copy screenshots from default playwright-cli locations
           for dir in .playwright-cli .playwright; do
             if [ -d "$dir" ]; then
-              echo "Copying $dir to artifacts"
-              cp -r "$dir"/* "$QA_ARTIFACTS/" 2>/dev/null || true
+              echo "Copying screenshots from $dir"
+              find "$dir" -name '*.png' -exec cp {} "$QA_ARTIFACTS/screenshots/" \; 2>/dev/null || true
             fi
           done
-          # Also check common screenshot locations
-          find . -maxdepth 2 -name "*.webm" -o -name "*.mp4" -o -name "screenshot*.png" 2>/dev/null | while read f; do
-            echo "Found: $f"
-            cp "$f" "$QA_ARTIFACTS/" 2>/dev/null || true
-          done
-          echo "=== Artifacts ==="
-          ls -laR "$QA_ARTIFACTS/" || true
+          # Also grab any PNGs saved directly to QA_ARTIFACTS root (older behavior)
+          find "$QA_ARTIFACTS" -maxdepth 1 -name '*.png' -exec mv {} "$QA_ARTIFACTS/screenshots/" \; 2>/dev/null || true
+          # Count what we have
+          TOTAL=$(find "$QA_ARTIFACTS/screenshots" -name '*.png' 2>/dev/null | wc -l)
+          echo "Total screenshots collected: $TOTAL"
+          ls -la "$QA_ARTIFACTS/screenshots/" 2>/dev/null || true
+          ls -la "$QA_ARTIFACTS/"*.md 2>/dev/null || echo "No report found"
 
       - name: Upload QA artifacts
         if: always()
@@ -311,19 +299,27 @@ jobs:
 
       - name: Stitch screenshots into video
         run: |
-          for dir in qa-artifacts/qa-report-*/frames; do
+          for dir in qa-artifacts/qa-report-*/screenshots; do
             [ -d "$dir" ] || continue
             FRAME_COUNT=$(find "$dir" -name '*.png' | wc -l)
             if [ "$FRAME_COUNT" -eq 0 ]; then
-              echo "No frames in $dir, skipping"
+              echo "No screenshots in $dir, skipping"
               continue
             fi
             PARENT=$(dirname "$dir")
-            echo "Stitching $FRAME_COUNT frames from $dir"
+            echo "Stitching $FRAME_COUNT screenshots from $dir into video"
+
+            # Screenshots are already numbered (001-xxx.png, 002-xxx.png, ...)
+            # so glob pattern sorts them correctly
             ffmpeg -y -framerate 2 -pattern_type glob -i "$dir/*.png" \
               -c:v libx264 -preset ultrafast -crf 28 -pix_fmt yuv420p \
-              "$PARENT/qa-session.mp4" 2>/dev/null \
+              -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2" \
+              "$PARENT/qa-session.mp4" 2>&1 | tail -5 \
             || echo "ffmpeg stitch failed for $dir (non-fatal)"
+
+            if [ -f "$PARENT/qa-session.mp4" ]; then
+              echo "Created video: $(du -h "$PARENT/qa-session.mp4" | cut -f1)"
+            fi
           done
 
       - name: Deploy videos to Cloudflare Pages
