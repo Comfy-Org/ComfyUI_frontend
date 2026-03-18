@@ -51,29 +51,54 @@ export class SubgraphOutputNode
     pointer: CanvasPointer,
     linkConnector: LinkConnector
   ): void {
-    // Left-click handling for dragging connections
-    if (e.button === 0) {
-      for (const slot of this.allSlots) {
-        // Check if click is within the full slot area (including label)
-        if (slot.boundingRect.containsXy(e.canvasX, e.canvasY)) {
-          pointer.onDragStart = () => {
-            linkConnector.dragNewFromSubgraphOutput(this.subgraph, this, slot)
-          }
-          pointer.onDragEnd = (eUp) => {
-            linkConnector.dropLinks(this.subgraph, eUp)
-          }
-          pointer.onDoubleClick = () => {
-            this.handleSlotDoubleClick(slot, e)
-          }
-          pointer.finally = () => {
-            linkConnector.reset(true)
-          }
-        }
-      }
-      // Check for right-click
-    } else if (e.button === 2) {
+    if (e.button === 2) {
       const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
       if (slot) this.showSlotContextMenu(slot, e)
+      return
+    }
+
+    if (e.button !== 0) return
+
+    const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
+    if (!slot) return
+
+    pointer.onDoubleClick = () => {
+      this.handleSlotDoubleClick(slot, e)
+    }
+
+    if (slot === this.emptySlot || this.isConnectionDragHit(slot, e.canvasX)) {
+      pointer.onDragStart = () => {
+        linkConnector.dragNewFromSubgraphOutput(this.subgraph, this, slot)
+      }
+      pointer.onDragEnd = (eUp) => {
+        linkConnector.dropLinks(this.subgraph, eUp)
+      }
+      pointer.finally = () => {
+        linkConnector.reset(true)
+      }
+      return
+    }
+
+    pointer.onDragStart = (_, eMove) => {
+      const started = this.startSlotReorderDrag(
+        slot,
+        eMove?.canvasY ?? e.canvasY
+      )
+      if (!started) return
+      this.setDragCursor('grabbing')
+    }
+    pointer.onDrag = (eMove) => {
+      this.updateSlotReorderDrag(eMove.canvasY)
+      this.setDragCursor('grabbing')
+    }
+    pointer.onDragEnd = () => {
+      const dragResult = this.finishSlotReorderDrag()
+      if (!dragResult || dragResult.fromIndex === dragResult.toIndex) return
+      this.reorderSlot(dragResult.fromIndex, dragResult.toIndex)
+    }
+    pointer.finally = () => {
+      this.clearSlotReorderDrag()
+      this.setDragCursor()
     }
   }
 
