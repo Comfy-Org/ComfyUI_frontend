@@ -362,10 +362,11 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
 
     // CogVideoX models (comfyui-cogvideoxwrapper)
     quickRegister('CogVideo/GGUF', 'DownloadAndLoadCogVideoGGUFModel', 'model')
+    // Empty key: HF-download node — don't activate asset browser for the combo widget
     quickRegister(
       'CogVideo/ControlNet',
       'DownloadAndLoadCogVideoControlNet',
-      'model'
+      ''
     )
 
     // DynamiCrafter models (ComfyUI-DynamiCrafterWrapper)
@@ -387,7 +388,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('lama', 'LaMa', 'lama_model')
 
     // CogVideoX video generation models (comfyui-cogvideoxwrapper)
-    quickRegister('CogVideo', 'DownloadAndLoadCogVideoModel', 'model')
+    // Empty key: HF-download node — don't activate asset browser for the combo widget
+    quickRegister('CogVideo', 'DownloadAndLoadCogVideoModel', '')
 
     // Inpaint models (comfyui-inpaint-nodes)
     quickRegister('inpaint', 'INPAINT_LoadInpaintModel', 'model_name')
