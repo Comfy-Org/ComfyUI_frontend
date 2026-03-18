@@ -44,11 +44,12 @@ function completePendingSlotSync(): void {
   app.canvas?.setDirty(true, true)
 }
 
-function isSlotElementMeasurable(el: HTMLElement): boolean {
-  if (!el.isConnected) return false
+function getSlotElementRect(el: HTMLElement): DOMRect | null {
+  if (!el.isConnected) return null
 
   const rect = el.getBoundingClientRect()
-  return rect.width > 0 && rect.height > 0
+  if (rect.width <= 0 || rect.height <= 0) return null
+  return rect
 }
 
 export function requestSlotLayoutSyncForAllNodes(): void {
@@ -129,14 +130,14 @@ export function syncNodeSlotLayoutsFromDOM(
   const positionConv = conv ?? useSharedCanvasPositionConversion()
 
   for (const [slotKey, entry] of node.slots) {
-    if (!isSlotElementMeasurable(entry.el)) {
+    const rect = getSlotElementRect(entry.el)
+    if (!rect) {
       // Drop stale layout values while the slot is hidden so we don't render
       // links with off-screen coordinates from a previous graph/tab state.
       layoutStore.deleteSlotLayout(slotKey)
       continue
     }
 
-    const rect = entry.el.getBoundingClientRect()
     const screenCenter: [number, number] = [
       rect.left + rect.width / 2,
       rect.top + rect.height / 2
