@@ -300,7 +300,8 @@ describe('useWorkflowStore', () => {
 
       await workflow.load()
 
-      expect(workflow.activeState.extra?.draftMarker).toBe('v2')
+      expect(workflow.activeState).not.toBeNull()
+      expect(workflow.activeState?.extra?.draftMarker).toBe('v2')
       expect(workflow.isModified).toBe(true)
     })
 
