@@ -13850,7 +13850,7 @@
       },
       "steps": {
         "name": "steps",
-        "tooltip": "Optional: The number of steps to LoRA has been trained for, used to name the saved file."
+        "tooltip": "Optional: The number of steps the LoRA has been trained for, used to name the saved file."
       }
     }
   },
@@ -15973,7 +15973,7 @@
       },
       "training_dtype": {
         "name": "training_dtype",
-        "tooltip": "The dtype to use for training."
+        "tooltip": "The dtype to use for training. 'none' preserves the model's native compute dtype instead of overriding it. For fp16 models, GradScaler is automatically enabled."
       },
       "lora_dtype": {
         "name": "lora_dtype",
@@ -15993,7 +15993,7 @@
       },
       "offloading": {
         "name": "offloading",
-        "tooltip": "Offload the Model to RAM. Requires Bypass Mode."
+        "tooltip": "Offload model weights to CPU during training to save GPU memory."
       },
       "existing_lora": {
         "name": "existing_lora",

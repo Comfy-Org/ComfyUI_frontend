@@ -35,7 +35,7 @@
         variant="secondary"
         size="sm"
         class="h-8 shrink-0 rounded-lg text-sm"
-        @click="copyToClipboard(model.representative.url!)"
+        @click="copyToClipboard(toBrowsableUrl(model.representative.url!))"
       >
         {{ t('rightSidePanel.missingModels.copyUrl') }}
       </Button>
@@ -201,7 +201,8 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import {
   downloadModel,
-  isModelDownloadable
+  isModelDownloadable,
+  toBrowsableUrl
 } from '@/platform/missingModel/missingModelDownload'
 import { formatSize } from '@/utils/formatUtil'
 

@@ -10,6 +10,7 @@ import type {
 } from './types'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type {

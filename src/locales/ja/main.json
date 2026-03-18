@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "パスワードリセットを送信しました",
   "cloudForgotPassword_sendResetLink": "リセットリンクを送信",
   "cloudForgotPassword_title": "パスワードを忘れた場合",
+  "cloudNotification": {
+    "continueLocally": "ローカルで続行",
+    "exploreCloud": "クラウドを無料で試す",
+    "feature1Title": "毎月400クレジット無料",
+    "feature2Title": "どこでも即時利用可能",
+    "feature3Title": "すぐに使えるモデル",
+    "feature4Title": "人気カスタムノードパックをプリインストール",
+    "footer": "ComfyUIは無料かつオープンソースのままです。クラウド利用は任意です。",
+    "message": "セットアップから作成まで数秒。人気モデル、拡張機能、強力なGPUがすぐに利用可能。",
+    "title": "ComfyUIをクラウドで実行"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -653,6 +664,7 @@
     "Open in Mask Editor": "マスクエディタで開く",
     "Outputs": "出力",
     "Paste": "貼り付け",
+    "Paste Image": "画像を貼り付け",
     "Pin": "ピン",
     "Properties": "プロパティ",
     "Properties Panel": "プロパティパネル",
@@ -736,6 +748,10 @@
       "tooltip": "Comfy全体で支払いが統一されました。すべてComfyクレジットで動作します：\n- パートナーノード（旧APIノード）\n- クラウドワークフロー\n\n既存のパートナーノード残高はクレジットに変換されました。"
     },
     "yourCreditBalance": "あなたのクレジット残高"
+  },
+  "curveWidget": {
+    "linear": "リニア",
+    "monotone_cubic": "スムーズ"
   },
   "dataTypes": {
     "*": "*",
@@ -1602,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "バージョン{version}のコアノード:",
     "outdatedVersion": "このワークフローは新しいバージョンのComfyUI（{version}）で作成されました。一部のノードが正しく動作しない場合があります。",
-    "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。"
+    "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。",
+    "unknownVersion": "不明"
   },
   "maintenance": {
     "None": "なし",
