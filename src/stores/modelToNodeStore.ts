@@ -76,8 +76,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
 
   /**
    * Find providers for modelType with hierarchical fallback.
-   * Tries exact match first, then falls back to top-level segment (e.g., "parent/child" → "parent").
-   * Note: Only falls back one level; "a/b/c" tries "a/b/c" then "a", not "a/b".
+   * Tries exact match first, then progressively shorter parent paths.
+   * e.g., "a/b/c" tries "a/b/c" → "a/b" → "a".
    */
   function findProvidersWithFallback(
     modelType: string
@@ -86,15 +86,12 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
       return undefined
     }
 
-    const exactMatch = modelToNodeMap.value[modelType]
-    if (exactMatch && exactMatch.length > 0) return exactMatch
-
-    const topLevel = modelType.split('/')[0]
-    if (topLevel === modelType) return undefined
-
-    const fallback = modelToNodeMap.value[topLevel]
-
-    if (fallback && fallback.length > 0) return fallback
+    const segments = modelType.split('/')
+    for (let i = segments.length; i >= 1; i--) {
+      const path = segments.slice(0, i).join('/')
+      const providers = modelToNodeMap.value[path]
+      if (providers && providers.length > 0) return providers
+    }
 
     return undefined
   }

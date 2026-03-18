@@ -140,9 +140,9 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ],
 
   // ---- CogVideoX (comfyui-cogvideoxwrapper) ----
-  ['CogVideo', 'DownloadAndLoadCogVideoModel', 'model'],
+  ['CogVideo', 'DownloadAndLoadCogVideoModel', ''],
   ['CogVideo/GGUF', 'DownloadAndLoadCogVideoGGUFModel', 'model'],
-  ['CogVideo/ControlNet', 'DownloadAndLoadCogVideoControlNet', 'model'],
+  ['CogVideo/ControlNet', 'DownloadAndLoadCogVideoControlNet', ''],
 
   // ---- DynamiCrafter (ComfyUI-DynamiCrafterWrapper) ----
   ['checkpoints/dynamicrafter', 'DownloadAndLoadDynamiCrafterModel', 'model'],
