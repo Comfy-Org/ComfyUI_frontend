@@ -300,11 +300,11 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
 <template>
   <div
     role="group"
-    class="flex h-21 min-w-0 items-center justify-center px-4 py-3 pb-4"
+    class="flex h-21 min-w-0 items-start justify-center px-4 py-3 pb-4"
   >
     <div
       v-if="queueCount > 0 || hasActiveContent"
-      class="flex shrink-0 items-start gap-0.5"
+      class="flex h-15 shrink-0 items-start gap-0.5"
     >
       <OutputHistoryActiveQueueItem
         v-if="queueCount > 1"
@@ -348,7 +348,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       data-testid="linear-outputs"
       class="min-w-0 overflow-x-auto overflow-y-clip"
     >
-      <div class="flex w-fit items-start gap-0.5">
+      <div class="flex h-15 w-fit items-start gap-0.5">
         <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
           <div
             v-if="aIdx > 0"
