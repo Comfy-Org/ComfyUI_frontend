@@ -65,6 +65,7 @@ import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -86,6 +87,7 @@ let disconnectOnReset = false
 const settingStore = useSettingStore()
 const searchBoxStore = useSearchBoxStore()
 const litegraphService = useLitegraphService()
+const { trackFeatureUsed } = useSurveyFeatureTracking('node-search')
 
 const { visible, newSearchBoxEnabled, useSearchBoxV2 } =
   storeToRefs(searchBoxStore)
@@ -167,6 +169,7 @@ function getFirstLink() {
 
 const nodeDefStore = useNodeDefStore()
 function showNewSearchBox(e: CanvasPointerEvent | null) {
+  trackFeatureUsed()
   const firstLink = getFirstLink()
   if (firstLink) {
     const filter =
