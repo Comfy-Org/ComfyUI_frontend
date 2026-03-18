@@ -1133,12 +1133,14 @@ export class ComfyApp {
     useMissingModelStore().clearMissingModels()
 
     if (clean !== false) {
+      // Reset canvas context before configuring a new graph so subgraph UI
+      // state from the previous workflow cannot leak into the newly loaded
+      // one, and so `clean()` can clear the root graph even when the user is
+      // currently inside a subgraph.
+      this.canvas.setGraph(this.rootGraph)
+
       this.clean()
     }
-
-    // Reset canvas context before configuring a new graph so subgraph UI state
-    // from the previous workflow cannot leak into the newly loaded one.
-    this.canvas.setGraph(this.rootGraph)
 
     let reset_invalid_values = false
     // Use explicit validation instead of falsy check to avoid replacing
