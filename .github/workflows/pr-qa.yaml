@@ -345,9 +345,15 @@ jobs:
         run: |
           for dir in qa-artifacts/qa-report-*; do
             [ -d "$dir" ] || continue
-            WEBM=$(find "$dir" -name '*.webm' -type f | head -1)
+            # Prefer explicitly-saved qa-session.webm over auto-recorded files
+            if [ -f "$dir/qa-session.webm" ] && [ -s "$dir/qa-session.webm" ]; then
+              WEBM="$dir/qa-session.webm"
+            else
+              # Fallback: find any non-empty webm
+              WEBM=$(find "$dir" -name '*.webm' -type f -size +0c | head -1)
+            fi
             if [ -z "$WEBM" ]; then
-              echo "No .webm video in $dir, skipping"
+              echo "No valid .webm video in $dir, skipping"
               continue
             fi
             echo "Converting $WEBM ($(du -h "$WEBM" | cut -f1)) to mp4"
