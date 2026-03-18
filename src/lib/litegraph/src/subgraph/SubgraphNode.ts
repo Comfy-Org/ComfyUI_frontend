@@ -275,25 +275,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const views = this._promotedViewManager.reconcile(
       reconcileEntries,
-      (entry) => {
-        const matchingInput = this.inputs.find(
-          (inp) =>
-            inp._widget &&
-            isPromotedWidgetView(inp._widget) &&
-            inp._widget.sourceNodeId === entry.sourceNodeId &&
-            inp._widget.sourceWidgetName === entry.sourceWidgetName
-        )
-        const slotName = matchingInput?._subgraphSlot?.name
-
-        return createPromotedWidgetView(
+      (entry) =>
+        createPromotedWidgetView(
           this,
           entry.sourceNodeId,
           entry.sourceWidgetName,
           entry.viewKey ? displayNameByViewKey.get(entry.viewKey) : undefined,
           entry.disambiguatingSourceNodeId,
-          slotName
+          entry.slotName
         )
-      }
     )
 
     this._promotedViewsCache = {
@@ -348,6 +338,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       sourceWidgetName: string
       viewKey?: string
       disambiguatingSourceNodeId?: string
+      slotName?: string
     }>
   } {
     const { fallbackStoredEntries } = this._collectLinkedAndFallbackEntries(
@@ -577,17 +568,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     sourceNodeId: string
     sourceWidgetName: string
     viewKey: string
+    disambiguatingSourceNodeId?: string
+    slotName: string
   }> {
     return linkedEntries.map(
       ({
         inputKey,
         inputName,
+        slotName,
         sourceNodeId,
         sourceWidgetName,
         disambiguatingSourceNodeId
       }) => ({
         sourceNodeId,
         sourceWidgetName,
+        slotName,
+        disambiguatingSourceNodeId,
         viewKey: this._makePromotionViewKey(
           inputKey,
           sourceNodeId,
@@ -1212,10 +1208,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       })
     }
 
-    // The user-facing display name: label if renamed, otherwise the
-    // interior widget's original name.
-    const displayWidgetName = input.label ?? subgraphInput.name
-
     // Create/retrieve the view from cache.
     // The cache key uses `input.name` (the slot's internal name) rather
     // than `subgraphInput.name` because nested subgraphs may remap
@@ -1228,7 +1220,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           this,
           nodeId,
           widgetName,
-          displayWidgetName,
+          undefined,
           sourceNodeId,
           subgraphInput.name
         ),

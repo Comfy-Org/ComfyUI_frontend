@@ -228,7 +228,7 @@ describe('SubgraphNode Synchronization', () => {
     // widget.name stays as the internal name — NOT the display label
     expect(promotedInput.widget!.name).toBe(originalWidgetName)
 
-    // The display label is on input.label and _widget.label
+    // The display label is on input.label (live-read via PromotedWidgetView.label)
     expect(promotedInput.label).toBe('my_custom_prompt')
 
     // input.widget.name should still match a widget in node.widgets

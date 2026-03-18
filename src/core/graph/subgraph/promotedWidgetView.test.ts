@@ -336,11 +336,11 @@ describe(createPromotedWidgetView, () => {
     innerNode.addWidget('text', 'myWidget', 'val', () => {})
     const bareId = String(innerNode.id)
 
-    // No displayName → falls back to widgetName
+    // No displayName → label is undefined (rendering uses widget.label ?? widget.name)
     const view1 = createPromotedWidgetView(subgraphNode, bareId, 'myWidget')
-    expect(view1.label).toBe('myWidget')
+    expect(view1.label).toBeUndefined()
 
-    // With displayName → falls back to displayName
+    // With displayName → label falls back to displayName
     const view2 = createPromotedWidgetView(
       subgraphNode,
       bareId,

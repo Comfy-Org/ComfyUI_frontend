@@ -199,21 +199,17 @@ class PromotedWidgetView implements IPromotedWidgetView {
   get label(): string | undefined {
     // Live-read from the bound subgraph slot's display name
     const slot = this.findBoundSubgraphSlot()
-    if (slot) {
-      return 'displayName' in slot
-        ? (slot as { displayName: string }).displayName
-        : slot.name
-    }
+    if (slot) return slot.displayName ?? slot.name
     return this.displayName
   }
 
   /** Finds the SubgraphInput slot bound to this promoted view. */
   private findBoundSubgraphSlot():
-    | { name: string; label?: string }
+    | { name: string; displayName?: string }
     | undefined {
     for (const input of this.subgraphNode.inputs ?? []) {
       const slot = input._subgraphSlot as
-        | { name: string; label?: string }
+        | { name: string; displayName?: string }
         | undefined
       if (!slot) continue
 

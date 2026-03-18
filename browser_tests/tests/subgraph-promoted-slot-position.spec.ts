@@ -83,8 +83,9 @@ test.describe(
       expect(after!.hasPos).toBe(true)
       expect(after!.posY).toBeGreaterThan(after!.titleHeight)
 
-      // widget.name should have been synced with the new label
-      expect(after!.widgetName).toBe('my_custom_prompt')
+      // widget.name is the stable identity key — it does NOT change on rename.
+      // The display label is on input.label, read via PromotedWidgetView.label.
+      expect(after!.widgetName).not.toBe('my_custom_prompt')
     })
   }
 )
