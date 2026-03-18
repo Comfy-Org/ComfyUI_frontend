@@ -165,6 +165,10 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     this.pushEvent('signup_opened')
   }
 
+  trackMonthlySubscriptionSucceeded(): void {
+    this.pushEvent('subscription_success')
+  }
+
   trackRunButton(options?: {
     subscribe_to_run?: boolean
     trigger_source?: ExecutionTriggerSource

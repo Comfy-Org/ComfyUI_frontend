@@ -24,6 +24,20 @@ test.describe(
       )
     })
 
+    test('@mobile graph canvas toolbar visible', async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+      await comfyPage.nextFrame()
+
+      const minimapButton = comfyPage.page.getByTestId(
+        TestIds.canvas.toggleMinimapButton
+      )
+      await expect(minimapButton).toBeVisible()
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'mobile-graph-canvas-toolbar.png'
+      )
+    })
+
     test('@mobile settings dialog', async ({ comfyPage }) => {
       await comfyPage.settingDialog.open()
       await comfyPage.nextFrame()
