@@ -91,21 +91,28 @@ test.describe('Subgraph IO drag visual feedback', { tag: '@subgraph' }, () => {
     )
     await comfyPage.nextFrame()
 
+    interface TestSubgraph {
+      inputNode: { slots: Array<unknown> }
+    }
+    interface TestSubgraphNode {
+      subgraph?: TestSubgraph
+    }
+
     const result = await comfyPage.page.evaluate(() => {
       const canvas = window.app!.canvas
       if (!canvas) return { error: 'No canvas' }
 
-      // Navigate into the subgraph
       const sgNode = canvas.graph!._nodes.find(
         (n: { isSubgraphNode?: () => boolean }) => n.isSubgraphNode?.()
-      ) as { subgraph?: { inputNode: { slots: Array<unknown> } } } | undefined
+      ) as unknown as TestSubgraphNode | undefined
       if (!sgNode?.subgraph) return { error: 'No subgraph node found' }
 
-      canvas.openSubgraph(sgNode.subgraph as never, sgNode as never)
+      canvas.openSubgraph(
+        sgNode.subgraph as unknown as Parameters<typeof canvas.openSubgraph>[0],
+        sgNode as unknown as Parameters<typeof canvas.openSubgraph>[1]
+      )
 
-      const subgraph = canvas.graph as unknown as {
-        inputNode: { slots: Array<unknown> }
-      } | null
+      const subgraph = canvas.graph as unknown as TestSubgraph | null
       if (!subgraph || !('inputNode' in subgraph))
         return { error: 'Not in subgraph' }
 
@@ -119,15 +126,15 @@ test.describe('Subgraph IO drag visual feedback', { tag: '@subgraph' }, () => {
 
       canvas.linkConnector.events.addEventListener('connecting', onConnecting)
 
-      // Trigger an actual drag from the subgraph input node
       const inputSlot = subgraph.inputNode.slots[0]
       if (!inputSlot) return { error: 'No input slot' }
 
+      type DragFn = typeof canvas.linkConnector.dragNewFromSubgraphInput
       try {
-        canvas.linkConnector.dragNewFromSubgraphInput(
-          subgraph as never,
-          subgraph.inputNode as never,
-          inputSlot as never
+        ;(canvas.linkConnector.dragNewFromSubgraphInput as DragFn)(
+          subgraph as unknown as Parameters<DragFn>[0],
+          subgraph.inputNode as unknown as Parameters<DragFn>[1],
+          inputSlot as unknown as Parameters<DragFn>[2]
         )
       } finally {
         canvas.linkConnector.events.removeEventListener(
