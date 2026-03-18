@@ -149,18 +149,17 @@ export const useWorkflowService = () => {
       if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
       await saveWorkflow(workflow)
     } else {
-      // True Save As: write current state to new path, rebind this
-      // workflow to the new path. Old file stays on disk unchanged.
-      await workflowStore.rebindWorkflowToPath(workflow, newPath)
-
-      if (options.isApp !== undefined) {
-        app.rootGraph.extra ??= {}
-        app.rootGraph.extra.linearMode = isApp
-        workflow.initialMode = isApp ? 'app' : 'graph'
+      // True Save As: only keep rebind if persistence succeeds.
+      const previousPath = workflow.path
+      try {
+        await workflowStore.rebindWorkflowToPath(workflow, newPath)
+        await workflowStore.saveWorkflow(workflow)
+      } catch (error) {
+        if (workflow.path !== previousPath) {
+          await workflowStore.rebindWorkflowToPath(workflow, previousPath)
+        }
+        throw error
       }
-      workflow.changeTracker?.checkState()
-
-      await workflowStore.saveWorkflow(workflow)
     }
 
     useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
@@ -187,14 +186,14 @@ export const useWorkflowService = () => {
       workflow.directory + '/' + appendWorkflowJsonExt(newFilename, isApp)
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
+    if (existingWorkflow?.path === workflow.path) {
+      return false
+    }
+
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       if ((await confirmOverwrite(newPath)) !== true) return false
-
-      const isSelf = existingWorkflow.path === workflow.path
-      if (!isSelf) {
-        const deleted = await deleteWorkflow(existingWorkflow, true)
-        if (!deleted) return false
-      }
+      const deleted = await deleteWorkflow(existingWorkflow, true)
+      if (!deleted) return false
     }
 
     workflow.changeTracker?.checkState()

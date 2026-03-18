@@ -425,9 +425,30 @@ describe('useWorkflowService', () => {
         workflow,
         'workflows/copy-name.json'
       )
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.anything(),
+        true,
+        true,
+        copy,
+        expect.anything()
+      )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
       // Should NOT rebind the original
       expect(workflowStore.rebindWorkflowToPath).not.toHaveBeenCalled()
+    })
+
+    it('should return false when copying to same path', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/original.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(workflow)
+
+      const result = await useWorkflowService().saveWorkflowCopy(workflow, {
+        filename: 'original'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.saveAs).not.toHaveBeenCalled()
     })
 
     it('should return false when no filename is provided', async () => {
