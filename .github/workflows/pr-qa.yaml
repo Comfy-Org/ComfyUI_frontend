@@ -186,14 +186,12 @@ jobs:
           PROMPT
           else
             cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
-          You are running a FOCUSED QA pass on a pull request to the ComfyUI frontend.
-          Your goal is to verify that the changes in this PR work correctly and don't break related functionality.
+          You are running a FOCUSED QA pass on PR #${PR_NUM} to the ComfyUI frontend.
+          Your goal is to TEST THE SPECIFIC BEHAVIOR this PR changes, not just smoke-test the app.
 
           Environment: CI=true, OS=${{ runner.os }}
           Server URL: http://127.0.0.1:8188
           Branch: ${BRANCH}
-          PR: #${PR_NUM}
-          Commit: ${SHA}
 
           CHANGED FILES:
           $(cat "${{ runner.temp }}/changed-files.txt" 2>/dev/null || echo "Unknown")
@@ -201,21 +199,27 @@ jobs:
           DIFF (truncated to 500 lines):
           $(head -500 "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || echo "No diff available")
 
+          IMPORTANT: Read the diff above carefully. Identify what UI behavior changed, then
+          design your test steps to exercise EXACTLY that behavior. For example:
+          - If the PR changes a menu item, find and click that menu item
+          - If the PR fixes a bug, try to reproduce the bug scenario
+          - If the PR adds a new feature, use that feature end-to-end
+          Do NOT just click around randomly. Test the PURPOSE of the PR.
+
           CRITICAL: "playwright-cli" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
           Chromium is already installed. Just run the commands directly.
 
           You MUST follow these exact steps in order:
           1. playwright-cli open http://127.0.0.1:8188
           2. playwright-cli video-start
-          3. playwright-cli snapshot
-          4. Test the changed UI areas (click, fill, navigate — use snapshot between actions)
-          5. Quick smoke test: app loads, canvas renders, sidebar works
-          6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
-          7. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
+          3. playwright-cli snapshot (complete user-select if shown, enter the app)
+          4. Execute your targeted test plan (take snapshot between each action)
+          5. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
+          6. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
+             Include PASS/FAIL for each test step in the report.
 
-          Do NOT skip steps 1-2 or 6-7. Do NOT use pnpm/npx to run playwright-cli.
+          Do NOT skip steps 1-2 or 5-6. Do NOT use pnpm/npx to run playwright-cli.
           Do NOT create a PR, post PR comments, commit, or push anything.
-          Skip tests not available in CI (file dialogs, GPU execution).
           PROMPT
           fi
 
