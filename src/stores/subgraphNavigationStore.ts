@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -34,105 +35,176 @@ export const useSubgraphNavigationStore = defineStore(
     /** The stack of subgraph IDs from the root graph to the currently opened subgraph. */
     const idStack = ref<string[]>([])
 
-    /** LRU cache for viewport states. Key: subgraph ID or 'root' for root graph */
+    /** LRU cache for viewport states. Key: `workflowPath:graphId` */
     const viewportCache = new QuickLRU<string, DragAndScaleState>({
       maxSize: VIEWPORT_CACHE_MAX_SIZE
     })
 
-    /**
-     * Get the ID of the root graph for the currently active workflow.
-     * @returns The ID of the root graph for the currently active workflow.
-     */
     const getCurrentRootGraphId = () => {
       const canvas = canvasStore.getCanvas()
       return canvas.graph?.rootGraph?.id ?? 'root'
     }
 
     /**
-     * A stack representing subgraph navigation history from the root graph to
-     * the current opened subgraph.
+     * Per-workflow-instance counter to disambiguate unsaved workflows
+     * that share the same path. Keyed by workflow object identity.
      */
+    const workflowInstanceIds = new WeakMap<object, number>()
+    let nextInstanceId = 0
+    const getWorkflowInstanceId = (workflow: object): number => {
+      let id = workflowInstanceIds.get(workflow)
+      if (id === undefined) {
+        id = nextInstanceId++
+        workflowInstanceIds.set(workflow, id)
+      }
+      return id
+    }
+
+    /**
+     * Suppression flag to prevent onNavigated from overwriting viewport
+     * state that was already saved by the workflow switch watcher.
+     * Cleared after a rAF cycle (covers the full async workflow load).
+     */
+    let suppressNavigatedSave = false
+    let workflowSwitchCycle = 0
+
+    // ── Helpers ──────────────────────────────────────────────────────
+
+    /** Build a workflow-scoped cache key unique per workflow instance. */
+    const cacheKey = (graphId: string, workflowRef?: object | null): string => {
+      const wf = workflowRef ?? workflowStore.activeWorkflow
+      const prefix = wf
+        ? `${(wf as { path?: string }).path ?? ''}#${getWorkflowInstanceId(wf)}`
+        : ''
+      return `${prefix}:${graphId}`
+    }
+
+    /** ID of the graph currently shown on the canvas. */
+    const getActiveGraphId = (): string => {
+      const canvas = canvasStore.getCanvas()
+      return canvas?.subgraph?.id ?? getCurrentRootGraphId()
+    }
+
+    // ── Navigation stack ─────────────────────────────────────────────
+
     const navigationStack = computed(() =>
       idStack.value
         .map((id) => app.rootGraph.subgraphs.get(id))
         .filter(isNonNullish)
     )
 
-    /**
-     * Restore the navigation stack from a list of subgraph IDs.
-     * @param subgraphIds The list of subgraph IDs to restore the navigation stack from.
-     * @see exportState
-     */
     const restoreState = (subgraphIds: string[]) => {
       idStack.value.length = 0
       for (const id of subgraphIds) idStack.value.push(id)
     }
 
-    /**
-     * Export the navigation stack as a list of subgraph IDs.
-     * @returns The list of subgraph IDs, ending with the currently active subgraph.
-     * @see restoreState
-     */
     const exportState = () => [...idStack.value]
 
-    /**
-     * Get the current viewport state.
-     * @returns The current viewport state, or null if the canvas is not available.
-     */
+    // ── Viewport save / restore ──────────────────────────────────────
+
     const getCurrentViewport = (): DragAndScaleState | null => {
       const canvas = canvasStore.getCanvas()
       if (!canvas) return null
-
       return {
         scale: canvas.ds.state.scale,
         offset: [...canvas.ds.state.offset]
       }
     }
 
-    /**
-     * Save the current viewport state.
-     * @param graphId The graph ID to save for. Use 'root' for root graph, or omit to use current context.
-     */
-    const saveViewport = (graphId: string) => {
+    const saveViewport = (graphId: string, workflowRef?: object | null) => {
       const viewport = getCurrentViewport()
       if (!viewport) return
-
-      viewportCache.set(graphId, viewport)
+      viewportCache.set(cacheKey(graphId, workflowRef), viewport)
     }
 
     /**
-     * Restore viewport state for a graph.
-     * @param graphId The graph ID to restore. Use 'root' for root graph, or omit to use current context.
+     * Restore viewport for a graph. On cache miss, fit the canvas to
+     * visible content after the browser has completed layout (rAF).
      */
-    const restoreViewport = (graphId: string) => {
-      const viewport = viewportCache.get(graphId)
-      if (!viewport) return
-
+    /** Apply a viewport state to the canvas. */
+    const applyViewport = (viewport: DragAndScaleState) => {
       const canvas = app.canvas
       if (!canvas) return
-
       canvas.ds.scale = viewport.scale
       canvas.ds.offset[0] = viewport.offset[0]
       canvas.ds.offset[1] = viewport.offset[1]
       canvas.setDirty(true, true)
     }
 
-    /**
-     * Update the navigation stack when the active subgraph changes.
-     * @param subgraph The new active subgraph.
-     * @param prevSubgraph The previous active subgraph.
-     */
+    const restoreViewport = (graphId: string) => {
+      const canvas = app.canvas
+      if (!canvas) return
+
+      const viewport = viewportCache.get(cacheKey(graphId))
+      if (viewport) {
+        if (suppressNavigatedSave) {
+          // During workflow switch, loadGraphData and changeTracker both
+          // write to canvas.ds AFTER this runs. Use double-rAF to ensure
+          // we apply AFTER all other viewport mutations settle.
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              applyViewport(viewport)
+            })
+          })
+        } else {
+          applyViewport(viewport)
+        }
+        return
+      }
+
+      // Cache miss — fit to content after the canvas has the new graph.
+      // rAF fires after layout + paint, when nodes are positioned.
+      const expectedGraphId = graphId
+      requestAnimationFrame(() => {
+        if (getActiveGraphId() !== expectedGraphId) return
+        if (!canvas.graph) return
+
+        try {
+          const nodes = canvas.graph._nodes
+          if (!nodes?.length) return
+
+          let minX = Infinity
+          let minY = Infinity
+          let maxX = -Infinity
+          let maxY = -Infinity
+          for (const n of nodes) {
+            minX = Math.min(minX, n.pos[0])
+            minY = Math.min(minY, n.pos[1])
+            maxX = Math.max(maxX, n.pos[0] + n.size[0])
+            maxY = Math.max(maxY, n.pos[1] + n.size[1])
+          }
+          if (!Number.isFinite(minX)) return
+
+          const pad = 80
+          const bounds: ReadOnlyRect = [
+            minX - pad,
+            minY - pad,
+            maxX - minX + 2 * pad,
+            maxY - minY + 2 * pad
+          ]
+          canvas.ds.fitToBounds(bounds)
+          canvas.setDirty(true, true)
+        } catch {
+          // graph._nodes can throw if graph is mid-transition
+        }
+      })
+    }
+
+    // ── Navigation handler ───────────────────────────────────────────
+
     const onNavigated = (
       subgraph: Subgraph | undefined,
       prevSubgraph: Subgraph | undefined
     ) => {
-      // Save viewport state for the graph we're leaving
-      if (prevSubgraph) {
-        // Leaving a subgraph
-        saveViewport(prevSubgraph.id)
-      } else if (!prevSubgraph && subgraph) {
-        // Leaving root graph to enter a subgraph
-        saveViewport(getCurrentRootGraphId())
+      // With flush:'sync', this fires immediately when activeSubgraph
+      // changes — before loadGraphData can overwrite canvas.ds. The
+      // suppressNavigatedSave flag handles the workflow switch watcher.
+      if (!suppressNavigatedSave) {
+        if (prevSubgraph) {
+          saveViewport(prevSubgraph.id)
+        } else if (!prevSubgraph && subgraph) {
+          saveViewport(getCurrentRootGraphId())
+        }
       }
 
       const isInRootGraph = !subgraph
@@ -147,20 +219,51 @@ export const useSubgraphNavigationStore = defineStore(
       if (isInReachableSubgraph) {
         idStack.value = [...path]
       } else {
-        // Treat as if opening a new subgraph
         idStack.value = [subgraph.id]
       }
 
-      // Always try to restore viewport for the target subgraph
       restoreViewport(subgraph.id)
     }
 
-    // Update navigation stack when opened subgraph changes (also triggers when switching workflows)
+    // ── Watchers ─────────────────────────────────────────────────────
+
+    // Save viewport BEFORE workflow switch corrupts canvas.ds.
+    // Watch the workflow object (not just path) because multiple unsaved
+    // workflows share the same path. flush:'sync' ensures this fires
+    // before loadGraphData overwrites canvas.ds.
+    watch(
+      () => workflowStore.activeWorkflow,
+      (newWorkflow, oldWorkflow) => {
+        if (newWorkflow === oldWorkflow) return
+
+        // Save under the OLD workflow's identity while canvas is still valid.
+        const graphId = getActiveGraphId()
+        const viewport = getCurrentViewport()
+        if (viewport && oldWorkflow) {
+          viewportCache.set(cacheKey(graphId, oldWorkflow), viewport)
+        }
+
+        // Suppress onNavigated saves until the load cycle completes.
+        suppressNavigatedSave = true
+        const cycle = ++workflowSwitchCycle
+        requestAnimationFrame(() => {
+          if (workflowSwitchCycle === cycle) {
+            suppressNavigatedSave = false
+          }
+        })
+      },
+      { flush: 'sync' }
+    )
+
+    // React to subgraph navigation (enter/exit/switch).
+    // flush:'sync' fires immediately when activeSubgraph changes (during
+    // setGraph), BEFORE loadGraphData can overwrite canvas.ds with extra.ds.
     watch(
       () => workflowStore.activeSubgraph,
       (newValue, oldValue) => {
         onNavigated(newValue, oldValue)
-      }
+      },
+      { flush: 'sync' }
     )
 
     //Allow navigation with forward/back buttons
