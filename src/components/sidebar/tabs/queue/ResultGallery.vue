@@ -1,56 +1,81 @@
 <template>
-  <Galleria
-    v-model:visible="galleryVisible"
-    :active-index="activeIndex"
-    :value="allGalleryItems"
-    :show-indicators="false"
-    change-item-on-indicator-hover
-    :show-item-navigators="hasMultiple"
-    full-screen
-    :circular="hasMultiple"
-    :show-thumbnails="false"
-    :pt="{
-      mask: {
-        onMousedown: onMaskMouseDown,
-        onMouseup: onMaskMouseUp,
-        'data-mask': true
-      },
-      prevButton: {
-        style: 'position: fixed !important'
-      },
-      nextButton: {
-        style: 'position: fixed !important'
-      }
-    }"
-    @update:visible="handleVisibilityChange"
-    @update:active-index="handleActiveIndexChange"
-  >
-    <template #item="{ item }">
-      <ComfyImage
-        v-if="item.isImage"
-        :key="item.url"
-        :src="item.url"
-        :contain="false"
-        :alt="item.filename"
-        class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
-      />
-      <ResultVideo v-else-if="item.isVideo" :result="item" />
-      <ResultAudio v-else-if="item.isAudio" :result="item" />
-    </template>
-  </Galleria>
+  <Teleport to="body">
+    <div
+      v-if="galleryVisible"
+      ref="dialogRef"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="$t('g.gallery')"
+      tabindex="-1"
+      class="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 outline-none"
+      data-mask
+      @mousedown="onMaskMouseDown"
+      @mouseup="onMaskMouseUp"
+    >
+      <!-- Close Button -->
+      <Button
+        variant="secondary"
+        size="icon-lg"
+        class="absolute top-4 right-4 z-10 rounded-full"
+        :aria-label="$t('g.close')"
+        @click="close"
+      >
+        <i class="icon-[lucide--x] size-5" />
+      </Button>
+
+      <!-- Previous Button -->
+      <Button
+        v-if="hasMultiple"
+        variant="secondary"
+        size="icon-lg"
+        class="fixed top-1/2 left-4 z-10 -translate-y-1/2 rounded-full"
+        :aria-label="$t('g.previous')"
+        @click="navigateImage(-1)"
+      >
+        <i class="icon-[lucide--chevron-left] size-6" />
+      </Button>
+
+      <!-- Content -->
+      <div class="flex max-h-full max-w-full items-center justify-center">
+        <template v-if="activeItem">
+          <ComfyImage
+            v-if="activeItem.isImage"
+            :key="activeItem.url"
+            :src="activeItem.url"
+            :contain="false"
+            :alt="activeItem.filename"
+            class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
+          />
+          <ResultVideo v-else-if="activeItem.isVideo" :result="activeItem" />
+          <ResultAudio v-else-if="activeItem.isAudio" :result="activeItem" />
+        </template>
+      </div>
+
+      <!-- Next Button -->
+      <Button
+        v-if="hasMultiple"
+        variant="secondary"
+        size="icon-lg"
+        class="fixed top-1/2 right-4 z-10 -translate-y-1/2 rounded-full"
+        :aria-label="$t('g.next')"
+        @click="navigateImage(1)"
+      >
+        <i class="icon-[lucide--chevron-right] size-6" />
+      </Button>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import Galleria from 'primevue/galleria'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 import ResultAudio from './ResultAudio.vue'
 import ResultVideo from './ResultVideo.vue'
-
-const galleryVisible = ref(false)
 
 const emit = defineEmits<{
   (e: 'update:activeIndex', value: number): void
@@ -61,91 +86,66 @@ const props = defineProps<{
   activeIndex: number
 }>()
 
+const galleryVisible = ref(false)
+const dialogRef = ref<HTMLElement>()
+let previouslyFocusedElement: HTMLElement | null = null
 const hasMultiple = computed(() => props.allGalleryItems.length > 1)
-
-let maskMouseDownTarget: EventTarget | null = null
-
-const onMaskMouseDown = (event: MouseEvent) => {
-  maskMouseDownTarget = event.target
-}
-
-const onMaskMouseUp = (event: MouseEvent) => {
-  const maskEl = document.querySelector('[data-mask]')
-  if (
-    galleryVisible.value &&
-    maskMouseDownTarget === event.target &&
-    maskMouseDownTarget === maskEl
-  ) {
-    galleryVisible.value = false
-    handleVisibilityChange(false)
-  }
-}
+const activeItem = computed(() => props.allGalleryItems[props.activeIndex])
 
 watch(
   () => props.activeIndex,
   (index) => {
+    galleryVisible.value = index !== -1
     if (index !== -1) {
-      galleryVisible.value = true
+      previouslyFocusedElement = document.activeElement as HTMLElement | null
+      void nextTick(() => dialogRef.value?.focus())
     }
-  }
+  },
+  { immediate: true }
 )
 
-const handleVisibilityChange = (visible: boolean) => {
-  if (!visible) {
-    emit('update:activeIndex', -1)
-  }
+function close() {
+  galleryVisible.value = false
+  emit('update:activeIndex', -1)
+  previouslyFocusedElement?.focus()
+  previouslyFocusedElement = null
 }
 
-const handleActiveIndexChange = (index: number) => {
-  emit('update:activeIndex', index)
-}
-
-const handleKeyDown = (event: KeyboardEvent) => {
-  if (!galleryVisible.value) return
-
-  switch (event.key) {
-    case 'ArrowLeft':
-      navigateImage(-1)
-      break
-    case 'ArrowRight':
-      navigateImage(1)
-      break
-    case 'Escape':
-      galleryVisible.value = false
-      handleVisibilityChange(false)
-      break
-  }
-}
-
-const navigateImage = (direction: number) => {
+function navigateImage(direction: number) {
   const newIndex =
     (props.activeIndex + direction + props.allGalleryItems.length) %
     props.allGalleryItems.length
   emit('update:activeIndex', newIndex)
 }
 
-onMounted(() => {
-  window.addEventListener('keydown', handleKeyDown)
-})
+let maskMouseDownTarget: EventTarget | null = null
 
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyDown)
-})
-</script>
-
-<style>
-/* PrimeVue's galleria teleports the fullscreen gallery out of subtree so we
-cannot use scoped style here. */
-.p-galleria-close-button {
-  /* Set z-index so the close button doesn't get hidden behind the image when image is large */
-  z-index: 1;
+function onMaskMouseDown(event: MouseEvent) {
+  maskMouseDownTarget = event.target
 }
 
-/* Mobile/tablet specific fixes */
-@media screen and (max-width: 768px) {
-  .p-galleria-prev-button,
-  .p-galleria-next-button {
-    z-index: 2;
+function onMaskMouseUp(event: MouseEvent) {
+  if (
+    maskMouseDownTarget === event.target &&
+    (event.target as HTMLElement)?.hasAttribute('data-mask')
+  ) {
+    close()
   }
 }
-</style>
+
+useEventListener(window, 'keydown', (event: KeyboardEvent) => {
+  if (!galleryVisible.value) return
+
+  const actions: Record<string, () => void> = {
+    ArrowLeft: () => navigateImage(-1),
+    ArrowRight: () => navigateImage(1),
+    Escape: () => close()
+  }
+
+  const action = actions[event.key]
+  if (action) {
+    event.preventDefault()
+    action()
+  }
+})
+</script>

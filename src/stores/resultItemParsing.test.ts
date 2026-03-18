@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import { parseNodeOutput, parseTaskOutput } from '@/stores/resultItemParsing'
 
 function makeOutput(
   overrides: Partial<NodeExecutionOutput> = {}
@@ -9,9 +9,9 @@ function makeOutput(
   return { ...overrides }
 }
 
-describe(flattenNodeOutput, () => {
+describe(parseNodeOutput, () => {
   it('returns empty array for output with no known media types', () => {
-    const result = flattenNodeOutput(['1', makeOutput({ text: 'hello' })])
+    const result = parseNodeOutput('1', makeOutput({ text: 'hello' }))
     expect(result).toEqual([])
   })
 
@@ -23,7 +23,7 @@ describe(flattenNodeOutput, () => {
       ]
     })
 
-    const result = flattenNodeOutput(['42', output])
+    const result = parseNodeOutput('42', output)
 
     expect(result).toHaveLength(2)
     expect(result[0].filename).toBe('a.png')
@@ -38,7 +38,7 @@ describe(flattenNodeOutput, () => {
       audio: [{ filename: 'sound.wav', subfolder: '', type: 'output' }]
     })
 
-    const result = flattenNodeOutput([7, output])
+    const result = parseNodeOutput(7, output)
 
     expect(result).toHaveLength(1)
     expect(result[0].mediaType).toBe('audio')
@@ -51,7 +51,7 @@ describe(flattenNodeOutput, () => {
       video: [{ filename: 'vid.mp4', subfolder: '', type: 'output' }]
     })
 
-    const result = flattenNodeOutput(['1', output])
+    const result = parseNodeOutput('1', output)
 
     expect(result).toHaveLength(2)
     const types = result.map((r) => r.mediaType)
@@ -69,7 +69,7 @@ describe(flattenNodeOutput, () => {
       ] as NodeExecutionOutput['3d']
     })
 
-    const result = flattenNodeOutput(['5', output])
+    const result = parseNodeOutput('5', output)
 
     expect(result).toHaveLength(2)
     const types = result.map((r) => r.mediaType)
@@ -79,21 +79,8 @@ describe(flattenNodeOutput, () => {
 
   it('ignores empty arrays', () => {
     const output = makeOutput({ images: [], audio: [] })
-    const result = flattenNodeOutput(['1', output])
+    const result = parseNodeOutput('1', output)
     expect(result).toEqual([])
-  })
-
-  it('flattens non-standard output keys with ResultItem-like values', () => {
-    const output = makeOutput({
-      a_images: [{ filename: 'before.png', subfolder: '', type: 'output' }],
-      b_images: [{ filename: 'after.png', subfolder: '', type: 'output' }]
-    } as unknown as Partial<NodeExecutionOutput>)
-
-    const result = flattenNodeOutput(['10', output])
-
-    expect(result).toHaveLength(2)
-    expect(result.map((r) => r.filename)).toContain('before.png')
-    expect(result.map((r) => r.filename)).toContain('after.png')
   })
 
   it('excludes animated key', () => {
@@ -102,7 +89,19 @@ describe(flattenNodeOutput, () => {
       animated: [true]
     })
 
-    const result = flattenNodeOutput(['1', output])
+    const result = parseNodeOutput('1', output)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].mediaType).toBe('images')
+  })
+
+  it('excludes text key', () => {
+    const output = makeOutput({
+      images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
+      text: 'some text output'
+    })
+
+    const result = parseNodeOutput('1', output)
 
     expect(result).toHaveLength(1)
     expect(result[0].mediaType).toBe('images')
@@ -114,7 +113,7 @@ describe(flattenNodeOutput, () => {
       custom_data: [{ randomKey: 123 }]
     } as unknown as NodeExecutionOutput
 
-    const result = flattenNodeOutput(['1', output])
+    const result = parseNodeOutput('1', output)
 
     expect(result).toHaveLength(1)
     expect(result[0].mediaType).toBe('images')
@@ -128,7 +127,7 @@ describe(flattenNodeOutput, () => {
       ]
     } as unknown as NodeExecutionOutput
 
-    const result = flattenNodeOutput(['1', output])
+    const result = parseNodeOutput('1', output)
 
     expect(result).toHaveLength(2)
     expect(result[0].filename).toBe('valid.png')
@@ -144,9 +143,30 @@ describe(flattenNodeOutput, () => {
       ]
     } as unknown as NodeExecutionOutput
 
-    const result = flattenNodeOutput(['1', output])
+    const result = parseNodeOutput('1', output)
 
     expect(result).toHaveLength(1)
     expect(result[0].filename).toBe('valid.png')
+  })
+})
+
+describe(parseTaskOutput, () => {
+  it('flattens across multiple nodes', () => {
+    const taskOutput: Record<string, NodeExecutionOutput> = {
+      '1': makeOutput({
+        images: [{ filename: 'a.png', subfolder: '', type: 'output' }]
+      }),
+      '2': makeOutput({
+        audio: [{ filename: 'b.wav', subfolder: '', type: 'output' }]
+      })
+    }
+
+    const result = parseTaskOutput(taskOutput)
+
+    expect(result).toHaveLength(2)
+    expect(result[0].nodeId).toBe('1')
+    expect(result[0].filename).toBe('a.png')
+    expect(result[1].nodeId).toBe('2')
+    expect(result[1].filename).toBe('b.wav')
   })
 })
