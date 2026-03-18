@@ -59,21 +59,25 @@ test.describe('Subgraph IO drag visual feedback', { tag: '@subgraph' }, () => {
         return origTrigger(event, data)
       }
 
-      // Connect SubgraphInput to interior node's widget input
-      const widgetInput = interiorNode.inputs?.find(
-        (inp: { widget?: unknown }) => inp.widget
-      )
-      if (!widgetInput) return { error: 'No widget input found on Int node' }
+      try {
+        // Connect SubgraphInput to interior node's widget input
+        const widgetInput = interiorNode.inputs?.find(
+          (inp: { widget?: unknown }) => inp.widget
+        )
+        if (!widgetInput) return { error: 'No widget input found on Int node' }
 
-      const inputIndex = interiorNode.inputs.indexOf(widgetInput)
-      const newSlot = subgraph.inputNode.slots.find(
-        (s: { name: string }) => s.name === 'test_int'
-      )
-      if (!newSlot) return { error: 'Could not find test_int slot' }
+        const inputIndex = interiorNode.inputs.indexOf(widgetInput)
+        const newSlot = subgraph.inputNode.slots.find(
+          (s: { name: string }) => s.name === 'test_int'
+        )
+        if (!newSlot) return { error: 'Could not find test_int slot' }
 
-      newSlot.connect(interiorNode.inputs[inputIndex], interiorNode)
+        newSlot.connect(interiorNode.inputs[inputIndex], interiorNode)
 
-      return { eventFired, eventConnected }
+        return { eventFired, eventConnected }
+      } finally {
+        subgraph.trigger = origTrigger
+      }
     })
 
     expect(result).not.toHaveProperty('error')
