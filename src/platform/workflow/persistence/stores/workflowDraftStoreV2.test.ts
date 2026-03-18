@@ -180,6 +180,27 @@ describe('workflowDraftStoreV2', () => {
       expect(result).toBe(true)
     })
 
+    it('marks a restored draft as most recent', async () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/a.json', '{"nodes":[]}', {
+        name: 'a',
+        isTemporary: true
+      })
+      store.saveDraft('workflows/b.json', '{"nodes":[]}', {
+        name: 'b',
+        isTemporary: true
+      })
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: 'a',
+        preferredPath: 'workflows/a.json'
+      })
+
+      expect(result).toBe(true)
+      expect(store.getMostRecentPath()).toBe('workflows/a.json')
+    })
+
     it('falls back to most recent when preferredPath missing', async () => {
       const store = useWorkflowDraftStoreV2()
 
