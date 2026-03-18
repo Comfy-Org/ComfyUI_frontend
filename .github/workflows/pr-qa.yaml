@@ -162,11 +162,11 @@ jobs:
              - Run: playwright-cli screenshot --filename=<path> (to capture failures)
           2. Run the FULL QA test plan from the skill file
           3. IMPORTANT: Take a screenshot after EVERY significant interaction to build a video.
-             Save all screenshots sequentially to \$QA_ARTIFACTS/frames/:
-               mkdir -p \$QA_ARTIFACTS/frames
-               playwright-cli screenshot --filename=\$QA_ARTIFACTS/frames/frame-001.png
+             Save all screenshots sequentially to $QA_ARTIFACTS/frames/:
+               mkdir -p $QA_ARTIFACTS/frames
+               playwright-cli screenshot --filename=$QA_ARTIFACTS/frames/frame-001.png
                (increment the number for each screenshot: frame-002.png, frame-003.png, etc.)
-          4. Also save screenshots of failures or notable states into \$QA_ARTIFACTS
+          4. Also save screenshots of failures or notable states into $QA_ARTIFACTS
           5. Save report to $QA_ARTIFACTS as YYYY-MM-DD-NNN-${OS_LOWER}-report.md
 
           Do NOT create a new PR. Do NOT post PR comments. Do NOT commit or push anything.
@@ -195,11 +195,11 @@ jobs:
              - Run: playwright-cli goto http://127.0.0.1:8188
              - Run: playwright-cli snapshot (after each navigation to get element refs)
              - Use: playwright-cli click <ref>, playwright-cli press <key>, etc.
-             - Run: playwright-cli screenshot --filename=<path> (to save failures into \$QA_ARTIFACTS)
+             - Run: playwright-cli screenshot --filename=<path> (to save failures into $QA_ARTIFACTS)
           3. IMPORTANT: Take a screenshot after EVERY significant interaction to build a video.
-             Save all screenshots sequentially to \$QA_ARTIFACTS/frames/:
-               mkdir -p \$QA_ARTIFACTS/frames
-               playwright-cli screenshot --filename=\$QA_ARTIFACTS/frames/frame-001.png
+             Save all screenshots sequentially to $QA_ARTIFACTS/frames/:
+               mkdir -p $QA_ARTIFACTS/frames
+               playwright-cli screenshot --filename=$QA_ARTIFACTS/frames/frame-001.png
                (increment the number for each screenshot: frame-002.png, frame-003.png, etc.)
           4. Test the specific UI areas affected by these changes
           5. Also do a quick smoke test of core functionality (app loads, canvas renders, sidebar works)
