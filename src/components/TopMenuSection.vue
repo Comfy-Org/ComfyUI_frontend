@@ -117,7 +117,7 @@
 <script setup lang="ts">
 import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -265,6 +265,7 @@ const rightSidePanelTooltipConfig = computed(() =>
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
 const hasLegacyContent = ref(false)
+let legacyContentCheckRafId: number | null = null
 
 function checkLegacyContent() {
   const el = legacyCommandsContainerRef.value
@@ -277,7 +278,16 @@ function checkLegacyContent() {
     el.querySelector(':scope > * > *:not(:empty)') !== null
 }
 
-useMutationObserver(legacyCommandsContainerRef, checkLegacyContent, {
+function scheduleLegacyContentCheck() {
+  if (legacyContentCheckRafId !== null) return
+
+  legacyContentCheckRafId = requestAnimationFrame(() => {
+    legacyContentCheckRafId = null
+    checkLegacyContent()
+  })
+}
+
+useMutationObserver(legacyCommandsContainerRef, scheduleLegacyContentCheck, {
   childList: true,
   subtree: true,
   characterData: true
@@ -289,6 +299,13 @@ onMounted(() => {
     legacyCommandsContainerRef.value.appendChild(app.menu.element)
     checkLegacyContent()
   }
+})
+
+onBeforeUnmount(() => {
+  if (legacyContentCheckRafId === null) return
+
+  cancelAnimationFrame(legacyContentCheckRafId)
+  legacyContentCheckRafId = null
 })
 
 const openCustomNodeManager = async () => {
