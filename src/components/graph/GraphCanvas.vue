@@ -164,9 +164,11 @@ import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -207,6 +209,7 @@ const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
+const { linearMode } = storeToRefs(canvasStore)
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toastStore = useToastStore()
@@ -268,6 +271,22 @@ watch(
 
 const allNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
+)
+watch(
+  () => linearMode.value,
+  (isLinearMode) => {
+    if (!shouldRenderVueNodes.value) return
+
+    if (isLinearMode) {
+      layoutStore.clearAllSlotLayouts()
+    } else {
+      // App mode hides the graph canvas with `display: none`, so slot connectors
+      // need a fresh DOM measurement pass before links can render correctly.
+      requestSlotLayoutSyncForAllNodes()
+    }
+
+    layoutStore.setPendingSlotSync(true)
+  }
 )
 
 function onLinkOverlayReady(el: HTMLCanvasElement) {
