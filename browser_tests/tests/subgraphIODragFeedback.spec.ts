@@ -6,54 +6,48 @@ test.describe('Subgraph IO drag visual feedback', { tag: '@subgraph' }, () => {
   test('SubgraphInput.connect fires node:slot-links:changed for widget inputs', async ({
     comfyPage
   }) => {
-    // Verify that connecting a widget-backed input inside a subgraph
-    // dispatches the slot-links:changed event, which drives Vue
-    // reactivity for slot visual feedback.
+    // Load a workflow with a subgraph that has a promoted text widget,
+    // then connect a new interior node to verify the event fires.
+    await comfyPage.workflow.loadWorkflow(
+      'subgraphs/subgraph-with-promoted-text-widget'
+    )
+    await comfyPage.nextFrame()
+
     const result = await comfyPage.page.evaluate(() => {
       const graph = window.app!.canvas.graph!
+
+      // Find the SubgraphNode and navigate into its subgraph
+      const subgraphNode = graph._nodes.find(
+        (n: { isSubgraphNode?: () => boolean }) => n.isSubgraphNode?.()
+      ) as
+        | {
+            subgraph?: {
+              addInput: (name: string, type: string) => void
+              add: (node: unknown) => void
+              inputNode: {
+                slots: Array<{
+                  name: string
+                  connect: (...args: unknown[]) => void
+                }>
+              }
+              trigger: (event: string, data: unknown) => unknown
+            }
+          }
+        | undefined
+      if (!subgraphNode?.subgraph) return { error: 'No subgraph node found' }
+
+      const subgraph = subgraphNode.subgraph
       const LiteGraph = window.LiteGraph!
 
-      // Create a subgraph with an INT input
-      const subgraphData = {
-        version: 1,
-        revision: 0,
-        state: {
-          lastNodeId: 0,
-          lastLinkId: 0,
-          lastGroupId: 0,
-          lastRerouteId: 0
-        },
-        nodes: [],
-        links: [],
-        groups: [],
-        config: {},
-        definitions: { subgraphs: [] },
-        id: crypto.randomUUID(),
-        name: 'Drag Test Subgraph',
-        inputNode: {
-          id: -10,
-          bounding: [10, 100, 150, 126],
-          pinned: false
-        },
-        outputNode: {
-          id: -20,
-          bounding: [400, 100, 140, 126],
-          pinned: false
-        },
-        inputs: [],
-        outputs: [],
-        widgets: []
-      }
-
-      const subgraph = graph.createSubgraph(subgraphData as never)
-      subgraph.addInput('value', 'INT')
+      // Add a new INT input to the subgraph
+      subgraph.addInput('test_int', 'INT')
 
       // Add an interior node with a widget input
       const interiorNode = LiteGraph.createNode('Int')
       if (!interiorNode) return { error: 'Could not create Int node' }
       subgraph.add(interiorNode)
 
-      // Listen for slot-links:changed events via LiteGraph's trigger system
+      // Listen for slot-links:changed
       let eventFired = false
       let eventConnected: boolean | null = null
       const origTrigger = subgraph.trigger.bind(subgraph)
@@ -72,10 +66,12 @@ test.describe('Subgraph IO drag visual feedback', { tag: '@subgraph' }, () => {
       if (!widgetInput) return { error: 'No widget input found on Int node' }
 
       const inputIndex = interiorNode.inputs.indexOf(widgetInput)
-      subgraph.inputNode.slots[0].connect(
-        interiorNode.inputs[inputIndex],
-        interiorNode
+      const newSlot = subgraph.inputNode.slots.find(
+        (s: { name: string }) => s.name === 'test_int'
       )
+      if (!newSlot) return { error: 'Could not find test_int slot' }
+
+      newSlot.connect(interiorNode.inputs[inputIndex], interiorNode)
 
       return { eventFired, eventConnected }
     })
@@ -85,14 +81,33 @@ test.describe('Subgraph IO drag visual feedback', { tag: '@subgraph' }, () => {
     expect(result.eventConnected).toBe(true)
   })
 
-  test('LinkConnector dispatches connecting event on subgraph IO drag', async ({
+  test('dragNewFromSubgraphInput dispatches connecting event', async ({
     comfyPage
   }) => {
-    // Verify that the connecting event is dispatched when starting
-    // a link drag, enabling the bridge composable to activate.
+    // Verify that starting a link drag from a SubgraphInput slot
+    // dispatches the 'connecting' event on the LinkConnector.
+    await comfyPage.workflow.loadWorkflow(
+      'subgraphs/subgraph-with-promoted-text-widget'
+    )
+    await comfyPage.nextFrame()
+
     const result = await comfyPage.page.evaluate(() => {
       const canvas = window.app!.canvas
       if (!canvas) return { error: 'No canvas' }
+
+      // Navigate into the subgraph
+      const sgNode = canvas.graph!._nodes.find(
+        (n: { isSubgraphNode?: () => boolean }) => n.isSubgraphNode?.()
+      ) as { subgraph?: { inputNode: { slots: Array<unknown> } } } | undefined
+      if (!sgNode?.subgraph) return { error: 'No subgraph node found' }
+
+      canvas.openSubgraph(sgNode.subgraph as never, sgNode as never)
+
+      const subgraph = canvas.graph as unknown as {
+        inputNode: { slots: Array<unknown> }
+      } | null
+      if (!subgraph || !('inputNode' in subgraph))
+        return { error: 'Not in subgraph' }
 
       let connectingFired = false
       let connectingTo: string | null = null
@@ -105,10 +120,18 @@ test.describe('Subgraph IO drag visual feedback', { tag: '@subgraph' }, () => {
         }
       )
 
-      // Trigger a link drag programmatically
-      canvas.linkConnector.events.dispatch('connecting', {
-        connectingTo: 'input'
-      })
+      // Trigger an actual drag from the subgraph input node
+      const inputSlot = subgraph.inputNode.slots[0]
+      if (!inputSlot) return { error: 'No input slot' }
+
+      canvas.linkConnector.dragNewFromSubgraphInput(
+        subgraph as never,
+        subgraph.inputNode as never,
+        inputSlot as never
+      )
+
+      // Clean up the drag
+      canvas.linkConnector.reset()
 
       return { connectingFired, connectingTo }
     })
