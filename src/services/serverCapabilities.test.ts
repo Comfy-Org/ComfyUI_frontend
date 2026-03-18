@@ -94,8 +94,11 @@ describe('serverCapabilities', () => {
     })
   })
 
-  it('returns default value when called before init', () => {
-    expect(getServerCapability('some_key', 'fallback')).toBe('fallback')
+  it('returns default value when called before init', async () => {
+    vi.resetModules()
+    const { getServerCapability: freshGet } =
+      await import('@/services/serverCapabilities')
+    expect(freshGet('supports_preview_metadata', 'fallback')).toBe('fallback')
   })
 
   describe('getServerCapability', () => {
