@@ -75,6 +75,7 @@ import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -1407,6 +1408,7 @@ export class ComfyApp {
         useWorkflowService().showPendingWarnings()
       }
 
+      void useSubgraphNavigationStore().updateHash()
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
