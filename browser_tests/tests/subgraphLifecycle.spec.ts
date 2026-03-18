@@ -19,22 +19,23 @@ const expectPromotedWidgetsToResolveToInteriorNodes = async (
   hostSubgraphNodeId: string,
   widgets: PromotedWidgetEntry[]
 ) => {
-  for (const [interiorNodeId] of widgets) {
-    const interiorNodeExists = await comfyPage.page.evaluate(
-      ([hostId, id]) => {
-        const graph = window.app!.graph!
-        const hostNodeId = Number(hostId)
-        const interiorNodeId = Number(id)
-        const hostNode = graph.getNodeById(hostNodeId)
-        if (!hostNode?.isSubgraphNode()) return false
+  const interiorNodeIds = widgets.map(([id]) => id)
+  const results = await comfyPage.page.evaluate(
+    ([hostId, ids]) => {
+      const graph = window.app!.graph!
+      const hostNode = graph.getNodeById(Number(hostId))
+      if (!hostNode?.isSubgraphNode()) return ids.map(() => false)
 
-        const interiorNode = hostNode.subgraph.getNodeById(interiorNodeId)
+      return ids.map((id) => {
+        const interiorNode = hostNode.subgraph.getNodeById(Number(id))
         return interiorNode !== null && interiorNode !== undefined
-      },
-      [hostSubgraphNodeId, interiorNodeId] as const
-    )
+      })
+    },
+    [hostSubgraphNodeId, interiorNodeIds] as const
+  )
 
-    expect(interiorNodeExists).toBe(true)
+  for (const exists of results) {
+    expect(exists).toBe(true)
   }
 }
 
