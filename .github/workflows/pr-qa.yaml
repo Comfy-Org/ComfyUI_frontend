@@ -175,15 +175,14 @@ jobs:
 
           You MUST follow these exact steps in order:
           1. playwright-cli open http://127.0.0.1:8188
-          2. playwright-cli evaluate "localStorage.setItem('Comfy.userId','qa-ci');localStorage.setItem('Comfy.userName','QA CI')"
-          3. playwright-cli navigate http://127.0.0.1:8188
-          4. playwright-cli video-start
-          5. playwright-cli snapshot (you should see the graph editor, NOT a login page)
-          6. Test the UI (click, fill, navigate — use snapshot between actions to get refs)
-          7. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
-          8. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
+          2. QUICK LOGIN (before video): snapshot, fill the username input with "qa-ci", click Next button, wait for graph editor to load
+          3. playwright-cli video-start
+          4. playwright-cli snapshot (you should see the graph editor now)
+          5. Test the UI (click, fill, navigate — use snapshot between actions to get refs)
+          6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
+          7. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
-          Do NOT skip steps 1-4 or 7-8. Do NOT use pnpm/npx to run playwright-cli.
+          Do NOT skip any steps. Do NOT use pnpm/npx to run playwright-cli.
           Do NOT create a PR, post PR comments, commit, or push anything.
           Skip tests not available in CI (file dialogs, GPU execution).
           PROMPT
@@ -214,16 +213,15 @@ jobs:
 
           You MUST follow these exact steps in order:
           1. playwright-cli open http://127.0.0.1:8188
-          2. playwright-cli evaluate "localStorage.setItem('Comfy.userId','qa-ci');localStorage.setItem('Comfy.userName','QA CI')"
-          3. playwright-cli navigate http://127.0.0.1:8188
-          4. playwright-cli video-start
-          5. playwright-cli snapshot (you should see the graph editor, NOT a login page)
-          6. Execute your targeted test plan (take snapshot between each action)
-          7. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
-          8. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
+          2. QUICK LOGIN (before video): snapshot, fill the username input with "qa-ci", click Next button, wait for graph editor to load
+          3. playwright-cli video-start
+          4. playwright-cli snapshot (you should see the graph editor now)
+          5. Execute your targeted test plan (take snapshot between each action)
+          6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
+          7. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
              Include PASS/FAIL for each test step in the report.
 
-          Do NOT skip steps 1-4 or 7-8. Do NOT use pnpm/npx to run playwright-cli.
+          Do NOT skip any steps. Do NOT use pnpm/npx to run playwright-cli.
           Do NOT create a PR, post PR comments, commit, or push anything.
           PROMPT
           fi
