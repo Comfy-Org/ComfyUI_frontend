@@ -113,7 +113,12 @@ jobs:
 
       - name: Install playwright-cli and Codex CLI
         shell: bash
-        run: npm install -g @playwright/cli@latest @openai/codex@latest
+        run: |
+          npm install -g @playwright/cli@latest @openai/codex@latest
+          # Verify playwright-cli is in PATH and install browser
+          which playwright-cli
+          playwright-cli --version || true
+          npx playwright install chromium
 
       - name: Configure playwright-cli output
         shell: bash
@@ -164,20 +169,18 @@ jobs:
           PR: #${PR_NUM}
           Commit: ${SHA}
 
-          Use playwright-cli for all browser interactions:
-            playwright-cli open http://127.0.0.1:8188
-            playwright-cli video-start              (start recording IMMEDIATELY after open)
-            playwright-cli snapshot                  (get element refs after each navigation)
-            playwright-cli click <ref>
-            playwright-cli press <key>
-            playwright-cli screenshot                (take screenshots of notable findings)
-            playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm  (stop recording when done)
+          CRITICAL: "playwright-cli" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
+          Chromium is already installed. Just run the commands directly.
 
-          IMPORTANT: You MUST run "playwright-cli video-start" right after opening the browser,
-          and "playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm" before writing the report.
+          You MUST follow these exact steps in order:
+          1. playwright-cli open http://127.0.0.1:8188
+          2. playwright-cli video-start
+          3. playwright-cli snapshot
+          4. Test the UI (click, fill, navigate — use snapshot between actions to get refs)
+          5. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
+          6. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
-          Save QA report to: ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
-
+          Do NOT skip steps 1-2 or 5-6. Do NOT use pnpm/npx to run playwright-cli.
           Do NOT create a PR, post PR comments, commit, or push anything.
           Skip tests not available in CI (file dialogs, GPU execution).
           PROMPT
@@ -198,26 +201,19 @@ jobs:
           DIFF (truncated to 500 lines):
           $(head -500 "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || echo "No diff available")
 
-          Use playwright-cli for all browser interactions:
-            playwright-cli open http://127.0.0.1:8188
-            playwright-cli video-start              (start recording IMMEDIATELY after open)
-            playwright-cli snapshot                  (get element refs)
-            playwright-cli click <ref>
-            playwright-cli press <key>
-            playwright-cli screenshot                (take screenshots of notable findings)
-            playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm  (stop recording when done)
+          CRITICAL: "playwright-cli" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
+          Chromium is already installed. Just run the commands directly.
 
-          IMPORTANT: You MUST run "playwright-cli video-start" right after opening the browser,
-          and "playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm" before writing the report.
+          You MUST follow these exact steps in order:
+          1. playwright-cli open http://127.0.0.1:8188
+          2. playwright-cli video-start
+          3. playwright-cli snapshot
+          4. Test the changed UI areas (click, fill, navigate — use snapshot between actions)
+          5. Quick smoke test: app loads, canvas renders, sidebar works
+          6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
+          7. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
-          Instructions:
-          1. Read the diff above to understand what changed
-          2. Test the specific UI areas affected by these changes
-          3. Quick smoke test of core functionality (app loads, canvas renders, sidebar works)
-          4. Save a concise report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
-
-          Focus on: changed functionality, visual regressions, related features.
-
+          Do NOT skip steps 1-2 or 6-7. Do NOT use pnpm/npx to run playwright-cli.
           Do NOT create a PR, post PR comments, commit, or push anything.
           Skip tests not available in CI (file dialogs, GPU execution).
           PROMPT
