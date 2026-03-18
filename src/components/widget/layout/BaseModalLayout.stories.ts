@@ -8,7 +8,7 @@ import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
@@ -68,7 +68,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
   components: {
     BaseModalLayout,
     LeftSidePanel,
-    SearchBox,
+    SearchInput,
     MultiSelect,
     SingleSelect,
     Button,
@@ -186,7 +186,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Header -->
         <template v-if="args.hasHeader" #header>
-          <SearchBox
+          <SearchInput
             class="max-w-[384px]"
             size="lg"
             :modelValue="searchQuery"
@@ -309,7 +309,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Header -->
         <template v-if="args.hasHeader" #header>
-          <SearchBox
+          <SearchInput
             class="max-w-[384px]"
             size="lg"
             :modelValue="searchQuery"

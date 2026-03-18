@@ -1,0 +1,35 @@
+name: Post PR Report Comment
+description: Reads a markdown report file and posts/updates a single idempotent comment on a PR.
+
+inputs:
+  pr-number:
+    description: PR number to comment on
+    required: true
+  report-file:
+    description: Path to the markdown report file
+    required: true
+  comment-marker:
+    description: HTML comment marker for idempotent matching
+    required: true
+  token:
+    description: GitHub token with pull-requests write permission
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Read report
+      id: report
+      uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+      with:
+        path: ${{ inputs.report-file }}
+
+    - name: Create or update PR comment
+      uses: actions-cool/maintain-one-comment@4b2dbf086015f892dcb5e8c1106f5fccd6c1476b # v3.2.0
+      with:
+        token: ${{ inputs.token }}
+        number: ${{ inputs.pr-number }}
+        body: |
+          ${{ steps.report.outputs.content }}
+          ${{ inputs.comment-marker }}
+        body-include: ${{ inputs.comment-marker }}

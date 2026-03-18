@@ -108,14 +108,22 @@ onMounted(() => {
 onBeforeUnmount(() => {
   draggableList.value?.dispose()
 })
+
+function onCollapseUpdate() {
+  // Rebuild draggable list after the section header is toggled
+  nextTick(setDraggableState)
+}
 </script>
 
 <template>
-  <div class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke">
+  <div
+    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
+  >
     <FormSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="favoritedWidgets"
+      class="flex-1"
     />
   </div>
   <SectionWidgets
@@ -127,10 +135,10 @@ onBeforeUnmount(() => {
     show-node-name
     enable-empty-state
     class="border-b border-interface-stroke"
-    @update:collapse="nextTick(setDraggableState)"
+    @update:collapse="onCollapseUpdate"
   >
     <template #empty>
-      <div class="text-sm text-muted-foreground px-4 text-center py-10">
+      <div class="px-4 py-10 text-center text-sm text-muted-foreground">
         <p>
           {{
             isSearching
@@ -147,7 +155,7 @@ onBeforeUnmount(() => {
           <template #moreIcon>
             <span
               aria-hidden="true"
-              class="inline-flex size-5 items-center justify-center rounded-md bg-secondary-background-hover text-secondary-foreground align-middle"
+              class="text-secondary-foreground inline-flex size-5 items-center justify-center rounded-md bg-secondary-background-hover align-middle"
             >
               <i class="icon-[lucide--more-vertical] text-sm" />
             </span>

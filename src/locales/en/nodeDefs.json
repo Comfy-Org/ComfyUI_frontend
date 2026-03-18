@@ -673,7 +673,7 @@
     }
   },
   "ByteDanceSeedreamNode": {
-    "display_name": "ByteDance Seedream 5.0",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
     "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
     "inputs": {
       "model": {
@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Math Expression",
+    "inputs": {
+      "expression": {
+        "name": "expression"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Switch",
     "inputs": {
@@ -2134,6 +2153,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "display_name": "CropByBBoxes",
+    "description": "Crop and resize regions from the input image batch based on provided bounding boxes.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "Width each crop is resized to."
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "Height each crop is resized to."
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "Extra padding in pixels added on each side of the bbox before cropping."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "All crops stacked into a single image batch."
       }
     }
   },
@@ -3271,6 +3319,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "display_name": "Flux KV Cache",
+    "description": "Enables KV Cache optimization for reference images on Flux family models.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use KV Cache on."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The patched model with KV Cache enabled."
+      }
+    }
+  },
   "FluxProExpandNode": {
     "display_name": "Flux.1 Expand Image",
     "description": "Outpaints image based on prompt.",
@@ -3601,6 +3664,60 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "display_name": "Nano Banana 2",
+    "description": "Generate or edit images synchronously via Google Vertex API.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt describing the image to generate or the edits to apply. Include any constraints, styles, or details the model should follow."
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "When the seed is fixed to a specific value, the model makes a best effort to provide the same response for repeated requests. Deterministic output isn't guaranteed. Also, changing the model or parameter settings, such as the temperature, can cause variations in the response even when you use the same seed value. By default, a random seed value is used."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "If set to 'auto', matches your input image's aspect ratio; if no image is provided, a 16:9 square is usually generated."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Target output resolution. For 2K/4K the native Gemini upscaler is used."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "thinking_level": {
+        "name": "thinking_level"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optional reference image(s). To include multiple images, use the Batch Images node (up to 14)."
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Optional file(s) to use as context for the model. Accepts inputs from the Gemini Generate Content Input Files node."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate an AI's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "display_name": "Google Gemini",
     "description": "Generate text responses with Google's Gemini AI model. You can provide multiple types of inputs (text, images, audio, video) as context for generating more relevant and meaningful responses.",
@@ -3885,6 +4002,10 @@
         "name": "seed",
         "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
       },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Only allowed when multiple images are connected to the image input."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -3916,6 +4037,9 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "resolution": {
+        "name": "resolution"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -5666,6 +5790,9 @@
       },
       "mode": {
         "name": "mode"
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -7950,7 +8077,7 @@
     }
   },
   "Mahiro": {
-    "display_name": "Mahiro CFG",
+    "display_name": "Positive-Biased Guidance",
     "description": "Modify the guidance to scale more on the 'direction' of the positive prompt rather than the difference between the negative prompt.",
     "inputs": {
       "model": {
@@ -11179,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "bg_color": {
+        "name": "bg_color"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional base image to paint over"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Cond Pair Combine",
     "inputs": {
@@ -12719,6 +12875,157 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "display_name": "Resolution Selector",
+    "description": "Calculate width and height from aspect ratio and megapixel target. Useful for setting up Empty Latent Image dimensions.",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio for the output dimensions."
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Target total megapixels. 1.0 MP ≈ 1024×1024 for square."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "Calculated width in pixels (multiple of 8)."
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "Calculated height in pixels (multiple of 8)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "display_name": "Reve Image Create",
+    "description": "Generate images from text descriptions using Reve.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired image. Maximum 2560 characters."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model version to use for generation."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Upscale the generated image. May add additional cost."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remove the background from the generated image. May add additional cost."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "display_name": "Reve Image Edit",
+    "description": "Edit images using natural language instructions with Reve.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The image to edit."
+      },
+      "edit_instruction": {
+        "name": "edit_instruction",
+        "tooltip": "Text description of how to edit the image. Maximum 2560 characters."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model version to use for editing."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Upscale the generated image. May add additional cost."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remove the background from the generated image. May add additional cost."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "display_name": "Reve Image Remix",
+    "description": "Combine reference images with text prompts to create new images using Reve.",
+    "inputs": {
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired image. May include XML img tags to reference specific images by index, e.g. <img>0</img>, <img>1</img>, etc."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model version to use for remixing."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Upscale the generated image. May add additional cost."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remove the background from the generated image. May add additional cost."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "display_name": "Rodin 3D Generate - Detail Generate",
     "description": "Generate 3D Assets using Rodin API",
@@ -13543,7 +13850,7 @@
       },
       "steps": {
         "name": "steps",
-        "tooltip": "Optional: The number of steps to LoRA has been trained for, used to name the saved file."
+        "tooltip": "Optional: The number of steps the LoRA has been trained for, used to name the saved file."
       }
     }
   },
@@ -13687,6 +13994,90 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "Multiplier for the bounding box area around each detected face."
+      },
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "Expand the shorter bbox axis so the crop region is always square."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "Face bounding boxes per frame, compatible with SDPoseKeypointExtractor bboxes input."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "display_name": "SDPoseKeypointExtractor",
+    "description": "Extract pose keypoints from images using the SDPose model: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "image": {
+        "name": "image"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Optional bounding boxes for more accurate detections. Required for multi-person detection."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "Keypoints in OpenPose frame format (canvas_width, canvas_height, people)"
       }
     }
   },
@@ -14860,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "display_name": "Hunyuan3D: 3D Texture Edit",
+    "description": "After inputting the 3D model, perform 3D model texture redrawing.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model in FBX format. Model should have less than 100000 faces."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describes texture editing. Supports up to 1024 UTF-8 characters."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Image(s) to Model",
     "inputs": {
@@ -14908,6 +15334,80 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "display_name": "Hunyuan3D: Model to UV",
+    "description": "Perform UV unfolding on a 3D model to generate UV texture. Input model must have less than 30000 faces.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Input 3D model (GLB, OBJ, or FBX)"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "display_name": "Hunyuan3D: Smart Topology",
+    "description": "Perform smart retopology on a 3D model. Supports GLB/OBJ formats; max 200MB; recommended for high-poly models.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Input 3D model (GLB or OBJ)"
+      },
+      "polygon_type": {
+        "name": "polygon_type",
+        "tooltip": "Surface composition type."
+      },
+      "face_level": {
+        "name": "face_level",
+        "tooltip": "Polygon reduction level."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -14950,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }
@@ -15469,7 +15973,7 @@
       },
       "training_dtype": {
         "name": "training_dtype",
-        "tooltip": "The dtype to use for training."
+        "tooltip": "The dtype to use for training. 'none' preserves the model's native compute dtype instead of overriding it. For fp16 models, GradScaler is automatically enabled."
       },
       "lora_dtype": {
         "name": "lora_dtype",
@@ -15489,7 +15993,7 @@
       },
       "offloading": {
         "name": "offloading",
-        "tooltip": "Offload the Model to RAM. Requires Bypass Mode."
+        "tooltip": "Offload model weights to CPU during training to save GPU memory."
       },
       "existing_lora": {
         "name": "existing_lora",
@@ -18002,6 +18506,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "pose_strength": {
+        "name": "pose_strength",
+        "tooltip": "Strength of the pose latent."
+      },
+      "pose_start": {
+        "name": "pose_start",
+        "tooltip": "Start step to use pose conditioning."
+      },
+      "pose_end": {
+        "name": "pose_end",
+        "tooltip": "End step to use pose conditioning."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "reference_image": {
+        "name": "reference_image"
+      },
+      "pose_video": {
+        "name": "pose_video",
+        "tooltip": "Video used for pose conditioning. Will be downscaled to half the resolution of the main video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Empty latent of the generation size."
       }
     }
   },

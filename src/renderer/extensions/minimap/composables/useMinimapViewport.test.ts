@@ -13,6 +13,15 @@ import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/us
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
 vi.mock('@vueuse/core')
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: vi.fn()
+}))
+
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: vi.fn().mockReturnValue({
+    nodeProgressStates: {}
+  })
+}))
 vi.mock('@/renderer/core/spatial/boundsCalculator', () => ({
   calculateNodeBounds: vi.fn(),
   calculateMinimapScale: vi.fn(),
@@ -176,6 +185,46 @@ describe('useMinimapViewport', () => {
     expect(transform.y).toBeCloseTo((worldY - 0) * 0.5 + centerOffsetY) // (50 - 0) * 0.5 + 0 = 25
     expect(transform.width).toBeCloseTo(viewportWidth * 0.5) // 400 * 0.5 = 200
     expect(transform.height).toBeCloseTo(viewportHeight * 0.5) // 300 * 0.5 = 150
+  })
+
+  it('should maintain strict reference equality for viewportTransform when canvas state is unchanged', () => {
+    vi.mocked(calculateNodeBounds).mockReturnValue({
+      minX: 0,
+      minY: 0,
+      maxX: 500,
+      maxY: 400,
+      width: 500,
+      height: 400
+    })
+
+    vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
+    vi.mocked(calculateMinimapScale).mockReturnValue(0.5)
+
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+
+    const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
+
+    mockCanvas.ds.scale = 2
+    mockCanvas.ds.offset = [-100, -50]
+
+    viewport.updateBounds()
+    viewport.updateCanvasDimensions()
+    viewport.updateViewport()
+
+    const initialTransform = viewport.viewportTransform.value
+
+    viewport.updateViewport()
+    const transformAfterIdle = viewport.viewportTransform.value
+
+    expect(transformAfterIdle).toBe(initialTransform)
+
+    mockCanvas.ds.offset = [-150, -50]
+    viewport.updateViewport()
+    const transformAfterPan = viewport.viewportTransform.value
+
+    expect(transformAfterPan).not.toBe(initialTransform)
+    expect(transformAfterPan.x).not.toBe(initialTransform.x)
   })
 
   it('should center view on world coordinates', () => {

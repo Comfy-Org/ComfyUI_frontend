@@ -55,7 +55,7 @@
 
         <ProgressSpinner
           v-if="loading"
-          class="mt-4 h-8 w-8"
+          class="mt-4 size-8"
           style="--pc-spinner-color: #000"
         />
         <div v-else class="mt-4 flex flex-col gap-2">
@@ -67,7 +67,7 @@
             v-if="!isApiKeyLogin"
             keypath="auth.deleteAccount.contactSupport"
             tag="p"
-            class="text-muted text-sm"
+            class="text-sm text-muted"
           >
             <template #email>
               <a href="mailto:support@comfy.org" class="underline"

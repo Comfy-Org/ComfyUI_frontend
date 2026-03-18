@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import type { FlattenedItem } from 'reka-ui'
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -9,9 +10,22 @@ import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 
 import TreeExplorerV2Node from './TreeExplorerV2Node.vue'
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn().mockReturnValue('left')
+  })
+}))
+
+vi.mock('@/stores/nodeBookmarkStore', () => ({
+  useNodeBookmarkStore: () => ({
+    isBookmarked: vi.fn().mockReturnValue(false),
+    toggleBookmark: vi.fn()
   })
 }))
 
@@ -78,6 +92,7 @@ describe('TreeExplorerV2Node', () => {
     return {
       wrapper: mount(TreeExplorerV2Node, {
         global: {
+          plugins: [i18n],
           stubs: {
             TreeItem: treeItemStub.stub,
             Teleport: { template: '<div />' }

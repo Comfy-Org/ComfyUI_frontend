@@ -29,8 +29,10 @@ class ComfyQueueButton {
   public readonly dropdownButton: Locator
   constructor(public readonly actionbar: ComfyActionbar) {
     this.root = actionbar.root.getByTestId(TestIds.topbar.queueButton)
-    this.primaryButton = this.root.locator('.p-splitbutton-button')
-    this.dropdownButton = this.root.locator('.p-splitbutton-dropdown')
+    this.primaryButton = this.root
+    this.dropdownButton = actionbar.root.getByTestId(
+      TestIds.topbar.queueModeMenuTrigger
+    )
   }
 
   public async toggleOptions() {

@@ -107,14 +107,14 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
 <template>
   <LayoutField :label="t('rightSidePanel.color')">
     <div
-      class="bg-secondary-background border-none rounded-lg p-1 grid grid-cols-5 gap-1 justify-items-center"
+      class="grid grid-cols-5 justify-items-center gap-1 rounded-lg border-none bg-secondary-background p-1"
     >
       <button
         v-for="option of colorOptions"
         :key="option.name"
         :class="
           cn(
-            'size-8 rounded-lg bg-transparent border-0 outline-0 ring-0 text-left flex justify-center items-center cursor-pointer',
+            'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-left ring-0 outline-0',
             option.name === nodeColor
               ? 'bg-interface-menu-component-surface-selected'
               : 'hover:bg-interface-menu-component-surface-selected'

@@ -12,7 +12,7 @@ import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
-interface CreateNodeOptions {
+interface ModelNodeCreateOptions {
   position?: Point
 }
 
@@ -48,7 +48,7 @@ type Result<T, E> = { success: true; value: T } | { success: false; error: E }
  */
 export function createModelNodeFromAsset(
   asset: AssetItem,
-  options?: CreateNodeOptions
+  options?: ModelNodeCreateOptions
 ): Result<LGraphNode, NodeCreationError> {
   const validatedAsset = assetItemSchema.safeParse(asset)
 

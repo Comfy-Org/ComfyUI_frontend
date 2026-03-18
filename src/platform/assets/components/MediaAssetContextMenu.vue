@@ -4,6 +4,7 @@
     :model="contextMenuItems"
     :pt="{
       root: {
+        id: contextMenuId,
         class: cn(
           'rounded-lg',
           'bg-secondary-background text-base-foreground',
@@ -29,14 +30,13 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
-import type { ComponentPublicInstance } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { isPreviewableMediaType } from '@/utils/formatUtil'
@@ -74,34 +74,22 @@ const emit = defineEmits<{
   'bulk-export-workflow': [assets: AssetItem[]]
 }>()
 
-type ContextMenuInstance = ComponentPublicInstance & {
+type ContextMenuHandle = {
   show: (event: MouseEvent) => void
   hide: () => void
-  container?: HTMLElement
-  $el?: HTMLElement
 }
 
-const contextMenu = ref<ContextMenuInstance | null>(null)
+const contextMenu = ref<ContextMenuHandle | null>(null)
+const contextMenuId = useId()
 const isVisible = ref(false)
 const actions = useMediaAssetActions()
 const { t } = useI18n()
 
-function getOverlayEl(): HTMLElement | null {
-  return contextMenu.value?.container ?? contextMenu.value?.$el ?? null
-}
-
-function dismissIfOutside(event: Event) {
-  if (!isVisible.value) return
-  const overlay = getOverlayEl()
-  if (!overlay) return
-  if (overlay.contains(event.target as Node)) return
-  hide()
-}
-
-useEventListener(window, 'pointerdown', dismissIfOutside, { capture: true })
-useEventListener(window, 'scroll', dismissIfOutside, {
-  capture: true,
-  passive: true
+useDismissableOverlay({
+  isOpen: isVisible,
+  getOverlayEl: () => document.getElementById(contextMenuId),
+  onDismiss: hide,
+  dismissOnScroll: true
 })
 
 const showAddToWorkflow = computed(() => {

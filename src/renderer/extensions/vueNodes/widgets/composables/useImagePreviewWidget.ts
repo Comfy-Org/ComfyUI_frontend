@@ -4,6 +4,7 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import type { DrawWidgetOptions } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -43,13 +44,50 @@ function scheduleDeferredImageRender() {
   })
 }
 
-const renderPreview = (
+const TWO_PI = Math.PI * 2
+const SPINNER_ARC_LENGTH = Math.PI * 1.5
+
+function renderUploadSpinner(
   ctx: CanvasRenderingContext2D,
   node: LGraphNode,
   shiftY: number,
   computedHeight: number | undefined
+) {
+  const dw = node.size[0]
+  const dh = computedHeight ?? 220
+  const centerX = dw / 2
+  const centerY = shiftY + dh / 2
+  const radius = 16
+  const angle = ((Date.now() % 1000) / 1000) * TWO_PI
+
+  ctx.save()
+  ctx.strokeStyle = LiteGraph.NODE_TEXT_COLOR
+  ctx.lineWidth = 3
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.arc(centerX, centerY, radius, angle, angle + SPINNER_ARC_LENGTH)
+  ctx.stroke()
+  ctx.restore()
+
+  // Schedule next frame to keep spinner animating continuously.
+  // Only runs while node.isUploading is true (checked by caller).
+  node.graph?.setDirtyCanvas(true)
+}
+
+const renderPreview = (
+  ctx: CanvasRenderingContext2D,
+  node: LGraphNode,
+  shiftY: number,
+  computedHeight: number | undefined,
+  imgs: HTMLImageElement[],
+  width: number
 ) => {
   if (!node.size) return
+
+  if (node.isUploading) {
+    renderUploadSpinner(ctx, node, shiftY, computedHeight)
+    return
+  }
 
   const canvas = useCanvasStore().getCanvas()
   const mouse = canvas.graph_mouse
@@ -64,7 +102,8 @@ const renderPreview = (
     node.pointerDown = null
   }
 
-  const imgs = node.imgs ?? []
+  if (imgs.length === 0) return
+
   let { imageIndex } = node
   const numImages = imgs.length
   if (numImages === 1 && !imageIndex) {
@@ -75,7 +114,7 @@ const renderPreview = (
   const settingStore = useSettingStore()
   const allowImageSizeDraw = settingStore.get('Comfy.Node.AllowImageSizeDraw')
   const IMAGE_TEXT_SIZE_TEXT_HEIGHT = allowImageSizeDraw ? 15 : 0
-  const dw = node.size[0]
+  const dw = width
   const dh = computedHeight ? computedHeight - IMAGE_TEXT_SIZE_TEXT_HEIGHT : 0
 
   if (imageIndex == null) {
@@ -321,8 +360,29 @@ class ImagePreviewWidget extends BaseWidget {
     this.serialize = false
   }
 
-  override drawWidget(ctx: CanvasRenderingContext2D): void {
-    renderPreview(ctx, this.node, this.y, this.computedHeight)
+  override drawWidget(
+    ctx: CanvasRenderingContext2D,
+    options: DrawWidgetOptions
+  ): void {
+    const imgs = options.previewImages ?? this.node.imgs ?? []
+    renderPreview(
+      ctx,
+      this.node,
+      this.y,
+      this.computedHeight,
+      imgs,
+      options.width
+    )
+  }
+
+  override createCopyForNode(node: LGraphNode): this {
+    const copy = new ImagePreviewWidget(
+      node,
+      this.name,
+      this.options as IWidgetOptions<string | object>
+    ) as this
+    copy.value = this.value
+    return copy
   }
 
   override onPointerDown(pointer: CanvasPointer, node: LGraphNode): boolean {

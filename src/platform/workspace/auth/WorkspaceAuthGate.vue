@@ -1,11 +1,5 @@
 <template>
   <slot v-if="isReady" />
-  <div
-    v-else
-    class="fixed inset-0 z-[1100] flex items-center justify-center bg-[var(--p-mask-background)]"
-  >
-    <ProgressSpinner />
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -20,10 +14,12 @@
  *
  * This prevents race conditions where API calls use Firebase tokens
  * instead of workspace tokens when the workspace feature is enabled.
+ *
+ * The splash loader in index.html (z-9999) covers the screen during this
+ * phase, so no separate loading indicator is needed here.
  */
 import { promiseTimeout, until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import ProgressSpinner from 'primevue/progressspinner'
 import { onMounted, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'

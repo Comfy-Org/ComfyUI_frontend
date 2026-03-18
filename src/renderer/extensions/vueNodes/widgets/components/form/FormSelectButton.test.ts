@@ -93,7 +93,7 @@ describe('FormSelectButton Core Component', () => {
       expect(button.classes()).toContain('h-6')
       expect(button.classes()).toContain('px-5')
       expect(button.classes()).toContain('py-[5px]')
-      expect(button.classes()).toContain('rounded')
+      expect(button.classes()).toContain('rounded-sm')
       expect(button.classes()).toContain('text-center')
       expect(button.classes()).toContain('text-xs')
       expect(button.classes()).toContain('font-normal')

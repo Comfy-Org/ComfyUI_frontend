@@ -17,6 +17,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+import { createMockWidget } from './widgetTestUtils'
 
 // Mock state for asset service
 const mockShouldUseAssetBrowser = vi.hoisted(() => vi.fn(() => false))
@@ -36,24 +37,25 @@ describe('WidgetSelect Value Binding', () => {
     vi.clearAllMocks()
   })
 
-  const createMockWidget = (
+  const createSelectWidget = (
     value: string = 'option1',
     options: Partial<
       SelectProps & { values?: string[]; return_index?: boolean }
     > = {},
     callback?: (value: string | undefined) => void,
     spec?: ComboInputSpec
-  ): SimplifiedWidget<string | undefined> => ({
-    name: 'test_select',
-    type: 'combo',
-    value,
-    options: {
-      values: ['option1', 'option2', 'option3'],
-      ...options
-    },
-    callback,
-    spec
-  })
+  ) =>
+    createMockWidget<string | undefined>({
+      value,
+      name: 'test_select',
+      type: 'combo',
+      options: {
+        values: ['option1', 'option2', 'option3'],
+        ...options
+      },
+      callback,
+      spec
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<string | undefined>,
@@ -84,7 +86,7 @@ describe('WidgetSelect Value Binding', () => {
 
   describe('Vue Event Emission', () => {
     it('emits Vue event when selection changes', async () => {
-      const widget = createMockWidget('option1')
+      const widget = createSelectWidget('option1')
       const wrapper = mountComponent(widget, 'option1')
 
       const emitted = await setSelectValueAndEmit(wrapper, 'option2')
@@ -94,7 +96,7 @@ describe('WidgetSelect Value Binding', () => {
     })
 
     it('emits string value for different options', async () => {
-      const widget = createMockWidget('option1')
+      const widget = createSelectWidget('option1')
       const wrapper = mountComponent(widget, 'option1')
 
       const emitted = await setSelectValueAndEmit(wrapper, 'option3')
@@ -106,7 +108,7 @@ describe('WidgetSelect Value Binding', () => {
 
     it('handles custom option values', async () => {
       const customOptions = ['custom_a', 'custom_b', 'custom_c']
-      const widget = createMockWidget('custom_a', { values: customOptions })
+      const widget = createSelectWidget('custom_a', { values: customOptions })
       const wrapper = mountComponent(widget, 'custom_a')
 
       const emitted = await setSelectValueAndEmit(wrapper, 'custom_b')
@@ -116,7 +118,7 @@ describe('WidgetSelect Value Binding', () => {
     })
 
     it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget('option1', {}, undefined)
+      const widget = createSelectWidget('option1', {}, undefined)
       const wrapper = mountComponent(widget, 'option1')
 
       const emitted = await setSelectValueAndEmit(wrapper, 'option2')
@@ -127,7 +129,7 @@ describe('WidgetSelect Value Binding', () => {
     })
 
     it('handles value changes gracefully', async () => {
-      const widget = createMockWidget('option1')
+      const widget = createSelectWidget('option1')
       const wrapper = mountComponent(widget, 'option1')
 
       const emitted = await setSelectValueAndEmit(wrapper, 'option2')
@@ -139,7 +141,7 @@ describe('WidgetSelect Value Binding', () => {
 
   describe('Option Handling', () => {
     it('handles empty options array', async () => {
-      const widget = createMockWidget('', { values: [] })
+      const widget = createSelectWidget('', { values: [] })
       const wrapper = mountComponent(widget, '')
 
       const select = wrapper.findComponent({ name: 'SelectPlus' })
@@ -147,7 +149,7 @@ describe('WidgetSelect Value Binding', () => {
     })
 
     it('handles single option', async () => {
-      const widget = createMockWidget('only_option', {
+      const widget = createSelectWidget('only_option', {
         values: ['only_option']
       })
       const wrapper = mountComponent(widget, 'only_option')
@@ -164,7 +166,7 @@ describe('WidgetSelect Value Binding', () => {
         'option@#$%',
         'option/with\\slashes'
       ]
-      const widget = createMockWidget(specialOptions[0], {
+      const widget = createSelectWidget(specialOptions[0], {
         values: specialOptions
       })
       const wrapper = mountComponent(widget, specialOptions[0])
@@ -178,7 +180,7 @@ describe('WidgetSelect Value Binding', () => {
 
   describe('Edge Cases', () => {
     it('handles selection of non-existent option gracefully', async () => {
-      const widget = createMockWidget('option1')
+      const widget = createSelectWidget('option1')
       const wrapper = mountComponent(widget, 'option1')
 
       const emitted = await setSelectValueAndEmit(
@@ -193,7 +195,7 @@ describe('WidgetSelect Value Binding', () => {
 
     it('handles numeric string options correctly', async () => {
       const numericOptions = ['1', '2', '10', '100']
-      const widget = createMockWidget('1', { values: numericOptions })
+      const widget = createSelectWidget('1', { values: numericOptions })
       const wrapper = mountComponent(widget, '1')
 
       const emitted = await setSelectValueAndEmit(wrapper, '100')
@@ -211,7 +213,7 @@ describe('WidgetSelect Value Binding', () => {
         name: 'test_select',
         image_upload: true
       }
-      const widget = createMockWidget('option1', {}, undefined, spec)
+      const widget = createSelectWidget('option1', {}, undefined, spec)
       const wrapper = mount(WidgetSelect, {
         props: {
           widget,
@@ -230,7 +232,7 @@ describe('WidgetSelect Value Binding', () => {
     })
 
     it('does not pass node-type prop to WidgetSelectDefault', () => {
-      const widget = createMockWidget('option1')
+      const widget = createSelectWidget('option1')
       const wrapper = mount(WidgetSelect, {
         props: {
           widget,
@@ -252,7 +254,7 @@ describe('WidgetSelect Value Binding', () => {
     it('enables asset mode when shouldUseAssetBrowser returns true', () => {
       mockShouldUseAssetBrowser.mockReturnValue(true)
 
-      const widget = createMockWidget('test.safetensors')
+      const widget = createSelectWidget('test.safetensors')
       const wrapper = mount(WidgetSelect, {
         props: {
           widget,
@@ -271,7 +273,7 @@ describe('WidgetSelect Value Binding', () => {
     it('disables asset mode when shouldUseAssetBrowser returns false', () => {
       mockShouldUseAssetBrowser.mockReturnValue(false)
 
-      const widget = createMockWidget('test.safetensors')
+      const widget = createSelectWidget('test.safetensors')
       const wrapper = mount(WidgetSelect, {
         props: {
           widget,
@@ -295,7 +297,7 @@ describe('WidgetSelect Value Binding', () => {
         name: 'test_select',
         image_upload: true
       }
-      const widget = createMockWidget('option1', {}, undefined, spec)
+      const widget = createSelectWidget('option1', {}, undefined, spec)
       const wrapper = mountComponent(widget, 'option1')
 
       expect(wrapper.findComponent(WidgetSelectDropdown).exists()).toBe(true)
@@ -309,7 +311,7 @@ describe('WidgetSelect Value Binding', () => {
         name: 'test_select',
         audio_upload: true
       }
-      const widget = createMockWidget('clip.wav', {}, undefined, spec)
+      const widget = createSelectWidget('clip.wav', {}, undefined, spec)
       const wrapper = mountComponent(widget, 'clip.wav')
       const dropdown = wrapper.findComponent(WidgetSelectDropdown)
 
@@ -325,7 +327,7 @@ describe('WidgetSelect Value Binding', () => {
         mesh_upload: true,
         upload_subfolder: '3d'
       }
-      const widget = createMockWidget('model.glb', {}, undefined, spec)
+      const widget = createSelectWidget('model.glb', {}, undefined, spec)
       const wrapper = mountComponent(widget, 'model.glb')
       const dropdown = wrapper.findComponent(WidgetSelectDropdown)
 
@@ -337,7 +339,7 @@ describe('WidgetSelect Value Binding', () => {
     })
 
     it('keeps default select when no spec or media hints are present', () => {
-      const widget = createMockWidget('plain', {
+      const widget = createSelectWidget('plain', {
         values: ['plain', 'text']
       })
       const wrapper = mountComponent(widget, 'plain')

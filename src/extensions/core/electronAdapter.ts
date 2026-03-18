@@ -204,8 +204,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
                 toastStore.add({
                   severity: 'error',
                   summary: t('g.error'),
-                  detail: t('desktopUpdate.errorInstallingUpdate'),
-                  life: 10_000
+                  detail: t('desktopUpdate.errorInstallingUpdate')
                 })
               }
             }
@@ -214,8 +213,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
             toastStore.add({
               severity: 'error',
               summary: t('g.error'),
-              detail: t('desktopUpdate.errorCheckingUpdate'),
-              life: 10_000
+              detail: t('desktopUpdate.errorCheckingUpdate')
             })
           }
         }

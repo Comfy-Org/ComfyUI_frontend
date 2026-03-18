@@ -1,11 +1,11 @@
 <template>
   <div
     data-component-id="ModelInfoPanel"
-    class="flex h-full flex-col scrollbar-custom"
+    class="flex scrollbar-custom h-full flex-col"
   >
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter select-none">
+        <span class="font-inter text-xs uppercase select-none">
           {{ t('assetBrowser.modelInfo.basicInfo') }}
         </span>
       </template>
@@ -14,7 +14,7 @@
           <EditableText
             :model-value="displayName"
             :is-editing="isEditingDisplayName"
-            :class="cn('break-all text-muted-foreground flex-auto')"
+            :class="cn('flex-auto break-all text-muted-foreground')"
             @dblclick="isEditingDisplayName = !isImmutable"
             @edit="handleDisplayNameEdit"
             @cancel="isEditingDisplayName = false"
@@ -23,11 +23,11 @@
             v-if="!isImmutable && !isEditingDisplayName"
             size="icon-sm"
             variant="muted-textonly"
-            class="transition-opacity opacity-0 group-hover:opacity-100"
+            class="opacity-0 transition-opacity group-hover:opacity-100"
             :aria-label="t('assetBrowser.modelInfo.editDisplayName')"
             @click="isEditingDisplayName = !isImmutable"
           >
-            <i class="icon-[lucide--square-pen] self-center size-4" />
+            <i class="icon-[lucide--square-pen] size-4 self-center" />
           </Button>
         </div>
       </ModelInfoField>
@@ -42,7 +42,7 @@
           :href="sourceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
+          class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
         >
           <img
             v-if="sourceName === 'Civitai'"
@@ -64,7 +64,7 @@
 
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter select-none">
+        <span class="font-inter text-xs uppercase select-none">
           {{ t('assetBrowser.modelInfo.modelTagging') }}
         </span>
       </template>
@@ -140,7 +140,7 @@
 
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter select-none">
+        <span class="font-inter text-xs uppercase select-none">
           {{ t('assetBrowser.modelInfo.modelDescription') }}
         </span>
       </template>
@@ -157,7 +157,7 @@
             class="p-0"
             @click="copyToClipboard(triggerPhrases.join(', '))"
           >
-            <i class="icon-[lucide--copy] size-4 min-w-4 min-h-4 opacity-60" />
+            <i class="icon-[lucide--copy] size-4 min-h-4 min-w-4 opacity-60" />
           </Button>
         </template>
         <div class="flex flex-wrap gap-1 pt-1">
@@ -167,11 +167,11 @@
             variant="muted-textonly"
             size="unset"
             :title="t('g.copyToClipboard')"
-            class="text-pretty whitespace-normal text-left text-xs"
+            class="text-left text-xs text-pretty whitespace-normal"
             @click="copyToClipboard(phrase)"
           >
             {{ phrase }}
-            <i class="icon-[lucide--copy] size-4 min-w-4 min-h-4 opacity-60" />
+            <i class="icon-[lucide--copy] size-4 min-h-4 min-w-4 opacity-60" />
           </Button>
         </div>
       </ModelInfoField>
@@ -194,7 +194,7 @@
           rows="3"
           :class="
             cn(
-              'w-full resize-y rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground outline-none transition-colors focus:bg-component-node-widget-background',
+              'w-full resize-y rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground transition-colors outline-none focus:bg-component-node-widget-background',
               isImmutable && 'cursor-not-allowed'
             )
           "
@@ -251,7 +251,7 @@ const descriptionTextarea = useTemplateRef<HTMLTextAreaElement>(
 )
 
 const accordionClass = cn(
-  'bg-modal-panel-background border-t border-border-default'
+  'border-t border-border-default bg-modal-panel-background'
 )
 
 const { asset, cacheKey } = defineProps<{

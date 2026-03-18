@@ -5,19 +5,15 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import type { HelpCenterTriggerLocation } from '@/stores/helpCenterStore'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useNodeConflictDialog } from '@/workbench/extensions/manager/composables/useNodeConflictDialog'
 
-export function useHelpCenter(
-  triggerFrom: HelpCenterTriggerLocation = 'sidebar'
-) {
+export function useHelpCenter() {
   const settingStore = useSettingStore()
   const releaseStore = useReleaseStore()
   const helpCenterStore = useHelpCenterStore()
-  const { isVisible: isHelpCenterVisible, triggerLocation } =
-    storeToRefs(helpCenterStore)
+  const { isVisible: isHelpCenterVisible } = storeToRefs(helpCenterStore)
   const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 
   const conflictDetection = useConflictDetection()
@@ -42,9 +38,9 @@ export function useHelpCenter(
    */
   const toggleHelpCenter = () => {
     useTelemetry()?.trackUiButtonClicked({
-      button_id: `${triggerFrom}_help_center_toggled`
+      button_id: 'sidebar_help_center_toggled'
     })
-    helpCenterStore.toggle(triggerFrom)
+    helpCenterStore.toggle()
   }
 
   const closeHelpCenter = () => {
@@ -90,7 +86,6 @@ export function useHelpCenter(
 
   return {
     isHelpCenterVisible,
-    triggerLocation,
     shouldShowRedDot,
     sidebarLocation,
     toggleHelpCenter,

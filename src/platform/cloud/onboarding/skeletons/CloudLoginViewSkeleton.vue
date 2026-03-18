@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full items-center justify-center p-8">
     <div class="max-w-[100vw] lg:w-96">
-      <div class="rounded-lg bg-[#2d2e32] p-4">
+      <div class="rounded-lg bg-charcoal-500 p-4">
         <Skeleton width="60%" height="1.125rem" class="mb-2" />
         <Skeleton width="90%" height="1rem" class="mb-2" />
         <Skeleton width="80%" height="1rem" />

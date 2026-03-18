@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 
@@ -50,10 +51,6 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('primevue/progressspinner', () => ({
-  default: { template: '<div class="progress-spinner" />' }
-}))
-
 describe('WorkspaceAuthGate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -66,8 +63,11 @@ describe('WorkspaceAuthGate', () => {
     mockWorkspaceStoreInitialize.mockResolvedValue(undefined)
   })
 
+  const i18n = createI18n({ legacy: false })
+
   const mountComponent = () =>
     mount(WorkspaceAuthGate, {
+      global: { plugins: [i18n] },
       slots: {
         default: '<div data-testid="slot-content">App Content</div>'
       }
@@ -81,18 +81,16 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(true)
-      expect(wrapper.find('.progress-spinner').exists()).toBe(false)
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
   })
 
   describe('cloud builds - unauthenticated user', () => {
-    it('shows spinner while waiting for Firebase auth', () => {
+    it('hides slot while waiting for Firebase auth', () => {
       mockIsInitialized.value = false
 
       const wrapper = mountComponent()
 
-      expect(wrapper.find('.progress-spinner').exists()).toBe(true)
       expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(false)
     })
 
@@ -100,7 +98,7 @@ describe('WorkspaceAuthGate', () => {
       mockIsInitialized.value = false
 
       const wrapper = mountComponent()
-      expect(wrapper.find('.progress-spinner').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(false)
 
       mockIsInitialized.value = true
       mockCurrentUser.value = null
@@ -179,8 +177,8 @@ describe('WorkspaceAuthGate', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      // Still showing spinner before timeout
-      expect(wrapper.find('.progress-spinner').exists()).toBe(true)
+      // Slot not yet rendered before timeout
+      expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(false)
 
       // Advance past the 10 second timeout
       await vi.advanceTimersByTimeAsync(10_001)

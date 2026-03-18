@@ -69,9 +69,11 @@ function mapOutputsToAssetItems({
     items.push({
       id: `${jobId}-${outputKey}`,
       name: output.filename,
+      display_name: output.display_name,
       size: 0,
       created_at: createdAtValue,
       tags: ['output'],
+      thumbnail_url: output.previewUrl,
       preview_url: output.url,
       user_metadata: {
         jobId,
@@ -99,9 +101,10 @@ export async function resolveOutputAssetItems(
     }
   }
 
+  // Reverse so the most recent outputs appear first
   return mapOutputsToAssetItems({
     jobId: metadata.jobId,
-    outputs: outputsToDisplay,
+    outputs: outputsToDisplay.toReversed(),
     createdAt,
     executionTimeInSeconds: metadata.executionTimeInSeconds,
     workflow: metadata.workflow,

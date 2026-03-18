@@ -13,27 +13,45 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
-import { useMissingModelsDialog } from '@/composables/useMissingModelsDialog'
-import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
+import { useAppMode } from '@/composables/useAppMode'
+import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { appendJsonExt } from '@/utils/formatUtil'
+import {
+  appendJsonExt,
+  appendWorkflowJsonExt,
+  generateUUID
+} from '@/utils/formatUtil'
+
+function linearModeToAppMode(linearMode: unknown): AppMode | null {
+  if (typeof linearMode !== 'boolean') return null
+  return linearMode ? 'app' : 'graph'
+}
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
-  const missingModelsDialog = useMissingModelsDialog()
-  const missingNodesDialog = useMissingNodesDialog()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
+  const executionErrorStore = useExecutionErrorStore()
   const workflowDraftStore = useWorkflowDraftStore()
+
+  function confirmOverwrite(targetPath: string) {
+    return dialogService.confirm({
+      title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
+      type: 'overwrite',
+      message: t('sideToolbar.workflowTab.confirmOverwrite'),
+      itemList: [targetPath]
+    })
+  }
 
   async function getFilename(defaultName: string): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
@@ -91,43 +109,36 @@ export const useWorkflowService = () => {
    * Save a workflow as a new file
    * @param workflow The workflow to save
    * @param options.filename Pre-supplied filename (skips the prompt dialog)
-   * @param options.openAsApp If set, updates linearMode extra before saving
    */
   const saveWorkflowAs = async (
     workflow: ComfyWorkflow,
-    options: { filename?: string; openAsApp?: boolean } = {}
+    options: { filename?: string } = {}
   ): Promise<boolean> => {
     const newFilename = options.filename ?? (await workflow.promptSave())
     if (!newFilename) return false
 
-    if (options.openAsApp !== undefined) {
-      app.rootGraph.extra ??= {}
-      app.rootGraph.extra.linearMode = options.openAsApp
-      workflow.changeTracker?.checkState()
-    }
-
-    const newPath = workflow.directory + '/' + appendJsonExt(newFilename)
+    const isApp = workflow.initialMode === 'app'
+    const newPath =
+      workflow.directory + '/' + appendWorkflowJsonExt(newFilename, isApp)
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
+    const isSelfOverwrite =
+      existingWorkflow?.path === workflow.path && !existingWorkflow?.isTemporary
+
     if (existingWorkflow && !existingWorkflow.isTemporary) {
-      const res = await dialogService.confirm({
-        title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
-        type: 'overwrite',
-        message: t('sideToolbar.workflowTab.confirmOverwrite'),
-        itemList: [newPath]
-      })
+      if ((await confirmOverwrite(newPath)) !== true) return false
 
-      if (res !== true) return false
-
-      if (existingWorkflow.path === workflow.path) {
-        await saveWorkflow(workflow)
-        return true
+      if (!isSelfOverwrite) {
+        const deleted = await deleteWorkflow(existingWorkflow, true)
+        if (!deleted) return false
       }
-      const deleted = await deleteWorkflow(existingWorkflow, true)
-      if (!deleted) return false
     }
 
-    if (workflow.isTemporary) {
+    workflow.changeTracker?.checkState()
+
+    if (isSelfOverwrite) {
+      await saveWorkflow(workflow)
+    } else if (workflow.isTemporary) {
       await renameWorkflow(workflow, newPath)
       await workflowStore.saveWorkflow(workflow)
     } else {
@@ -135,6 +146,8 @@ export const useWorkflowService = () => {
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
     }
+
+    useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
     return true
   }
 
@@ -146,7 +159,36 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
+      workflow.changeTracker?.checkState()
+
+      const isApp = workflow.initialMode === 'app'
+      const expectedPath =
+        workflow.directory +
+        '/' +
+        appendWorkflowJsonExt(workflow.filename, isApp)
+      if (workflow.path !== expectedPath) {
+        const existing = workflowStore.getWorkflowByPath(expectedPath)
+        if (existing && !existing.isTemporary) {
+          if ((await confirmOverwrite(expectedPath)) !== true) {
+            await workflowStore.saveWorkflow(workflow)
+            return
+          }
+          await deleteWorkflow(existing, true)
+        }
+        await renameWorkflow(workflow, expectedPath)
+        toastStore.add({
+          severity: 'info',
+          summary: t(
+            isApp
+              ? 'workflowService.savedAsApp'
+              : 'workflowService.savedAsWorkflow'
+          ),
+          life: 3000
+        })
+      }
+
       await workflowStore.saveWorkflow(workflow)
+      useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
     }
   }
 
@@ -197,8 +239,8 @@ export const useWorkflowService = () => {
       /* restore_view=*/ true,
       workflow,
       {
-        showMissingModelsDialog: loadFromRemote,
-        showMissingNodesDialog: loadFromRemote,
+        showMissingModels: loadFromRemote,
+        showMissingNodes: true,
         checkForRerouteMigration: false,
         deferWarnings: true
       }
@@ -328,8 +370,7 @@ export const useWorkflowService = () => {
             toastStore.add({
               severity: 'error',
               summary: t('g.error'),
-              detail: t('toastMessages.failedToSaveDraft'),
-              life: 3000
+              detail: t('toastMessages.failedToSaveDraft')
             })
           }
         }
@@ -356,13 +397,17 @@ export const useWorkflowService = () => {
     workflowData: ComfyWorkflowJSON
   ) => {
     const workflowStore = useWorkspaceStore().workflow
-    if (
-      workflowData.extra?.linearMode !== undefined ||
-      !workflowData.nodes.length
-    ) {
-      if (workflowData.extra?.linearMode && !useCanvasStore().linearMode)
+    const { isAppMode } = useAppMode()
+    const wasAppMode = isAppMode.value
+
+    // Determine the initial app mode for fresh loads from serialized state.
+    // null means linearMode was never explicitly set (not builder-saved).
+    const freshLoadMode = linearModeToAppMode(workflowData.extra?.linearMode)
+
+    function trackIfEnteringApp(workflow: ComfyWorkflow) {
+      if (!wasAppMode && workflow.initialMode === 'app') {
         useTelemetry()?.trackEnterLinear({ source: 'workflow' })
-      useCanvasStore().linearMode = !!workflowData.extra?.linearMode
+      }
     }
 
     if (value === null || typeof value === 'string') {
@@ -373,32 +418,56 @@ export const useWorkflowService = () => {
         const fullPath = ComfyWorkflow.basePath + appendJsonExt(path)
         const existingWorkflow = workflowStore.getWorkflowByPath(fullPath)
 
-        // If the workflow exists and is NOT loaded yet (restoration case),
-        // use the existing workflow instead of creating a new one.
-        // If it IS loaded, this is a re-import case - create new with suffix.
-        if (existingWorkflow?.isPersisted && !existingWorkflow.isLoaded) {
+        // Reuse an existing workflow when this is a restoration case
+        // (persisted but currently unloaded) or an idempotent repeated load
+        // of the currently active same-path workflow.
+        //
+        // This prevents accidental duplicate tabs when startup/load flows
+        // invoke loadGraphData more than once for the same workflow name.
+        const isSameActiveWorkflowLoad =
+          !!existingWorkflow &&
+          workflowStore.isActive(existingWorkflow) &&
+          (existingWorkflow.activeState?.id === undefined ||
+            workflowData.id === undefined ||
+            existingWorkflow.activeState.id === workflowData.id)
+
+        if (
+          existingWorkflow &&
+          ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
+            isSameActiveWorkflowLoad)
+        ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
+          if (loadedWorkflow.initialMode === undefined) {
+            // Prefer the file's linearMode over the draft's since the file
+            // is the authoritative saved state.
+            loadedWorkflow.initialMode =
+              linearModeToAppMode(
+                loadedWorkflow.initialState?.extra?.linearMode
+              ) ?? freshLoadMode
+            trackIfEnteringApp(loadedWorkflow)
+          }
           loadedWorkflow.changeTracker.reset(workflowData)
           loadedWorkflow.changeTracker.restore()
           return
         }
       }
 
-      if (useCanvasStore().linearMode) {
-        app.rootGraph.extra ??= {}
-        app.rootGraph.extra.linearMode = true
-      }
-
       const tempWorkflow = workflowStore.createNewTemporary(
         path ? appendJsonExt(path) : undefined,
         workflowData
       )
+      tempWorkflow.initialMode = freshLoadMode
+      trackIfEnteringApp(tempWorkflow)
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (loadedWorkflow.initialMode === undefined) {
+      loadedWorkflow.initialMode = freshLoadMode
+      trackIfEnteringApp(loadedWorkflow)
+    }
     loadedWorkflow.changeTracker.reset(workflowData)
     loadedWorkflow.changeTracker.restore()
   }
@@ -447,7 +516,10 @@ export const useWorkflowService = () => {
    * Takes an existing workflow and duplicates it with a new name
    */
   const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
+    if (!workflow.isLoaded) await workflow.load()
     const state = JSON.parse(JSON.stringify(workflow.activeState))
+    // Ensure duplicates are always treated as distinct workflows.
+    if (state) state.id = generateUUID()
     const suffix = workflow.isPersisted ? ' (Copy)' : ''
     // Remove the suffix `(2)` or similar
     const filename = workflow.filename.replace(/\s*\(\d+\)$/, '') + suffix
@@ -464,20 +536,11 @@ export const useWorkflowService = () => {
     const wf = workflow ?? workflowStore.activeWorkflow
     if (!wf?.pendingWarnings) return
 
-    const { missingNodeTypes, missingModels } = wf.pendingWarnings
+    const { missingNodeTypes } = wf.pendingWarnings
     wf.pendingWarnings = null
 
-    if (
-      missingNodeTypes?.length &&
-      settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')
-    ) {
-      missingNodesDialog.show({ missingNodeTypes })
-    }
-    if (
-      missingModels &&
-      settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')
-    ) {
-      missingModelsDialog.show(missingModels)
+    if (missingNodeTypes?.length) {
+      executionErrorStore.surfaceMissingNodes(missingNodeTypes)
     }
   }
 

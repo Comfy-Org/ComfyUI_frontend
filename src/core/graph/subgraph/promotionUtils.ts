@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/vue'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type {
@@ -10,7 +11,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
-} from '@/composables/node/useNodeCanvasImagePreview'
+} from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePromotionStore } from '@/stores/promotionStore'
@@ -57,6 +58,11 @@ export function promoteWidget(
   for (const parent of parents) {
     store.promote(parent.rootGraph.id, parent.id, nodeId, widgetName)
   }
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Promoted widget "${widgetName}" on node ${node.id}`,
+    level: 'info'
+  })
 }
 
 export function demoteWidget(
@@ -72,6 +78,11 @@ export function demoteWidget(
   for (const parent of parents) {
     store.demote(parent.rootGraph.id, parent.id, nodeId, widgetName)
   }
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Demoted widget "${widgetName}" on node ${node.id}`,
+    level: 'info'
+  })
 }
 
 function getParentNodes(): SubgraphNode[] {
@@ -81,8 +92,7 @@ function getParentNodes(): SubgraphNode[] {
     useToastStore().add({
       severity: 'error',
       summary: t('g.error'),
-      detail: t('subgraphStore.promoteOutsideSubgraph'),
-      life: 2000
+      detail: t('subgraphStore.promoteOutsideSubgraph')
     })
     return []
   }
@@ -227,6 +237,29 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     // defer. Core $$ preview widgets are the lazy path that needs updatePreviews.
     if (hasPreviewWidget()) continue
 
+    // Nodes in CANVAS_IMAGE_PREVIEW_NODE_TYPES support a virtual $$
+    // preview widget. Eagerly promote it so getPseudoWidgetPreviewTargets
+    // includes this node and onDrawBackground can call updatePreviews on it
+    // once execution outputs arrive.
+    if (supportsVirtualCanvasImagePreview(node)) {
+      if (
+        !store.isPromoted(
+          subgraphNode.rootGraph.id,
+          subgraphNode.id,
+          String(node.id),
+          CANVAS_IMAGE_PREVIEW_WIDGET
+        )
+      ) {
+        store.promote(
+          subgraphNode.rootGraph.id,
+          subgraphNode.id,
+          String(node.id),
+          CANVAS_IMAGE_PREVIEW_WIDGET
+        )
+      }
+      continue
+    }
+
     // Also schedule a deferred check: core $$ widgets are created lazily by
     // updatePreviews when node outputs are first loaded.
     requestAnimationFrame(() => updatePreviews(node, promotePreviewWidget))
@@ -282,4 +315,9 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
   }
 
   store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, validEntries)
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Pruned ${removedEntries.length} disconnected promotion(s) from subgraph node ${subgraphNode.id}`,
+    level: 'info'
+  })
 }

@@ -1,386 +1,70 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
-import type { IWidget } from '@/lib/litegraph/src/types/widgets'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
-import {
-  compressWidgetInputSlots,
-  createNode,
-  isAnimatedOutput,
-  isVideoOutput,
-  migrateWidgetsValues
-} from '@/utils/litegraphUtil'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
-  LiteGraph: {
-    createNode: vi.fn()
-  }
-}))
+import { resolveNode } from './litegraphUtil'
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({
-    addAlert: vi.fn(),
-    add: vi.fn(),
-    remove: vi.fn()
-  }))
-}))
-
-vi.mock('@/i18n', () => ({
-  t: vi.fn((key: string) => key)
-}))
-
-function createMockCanvas(overrides: Partial<LGraphCanvas> = {}): LGraphCanvas {
-  const mockGraph = {
-    add: vi.fn((node) => node),
-    change: vi.fn()
-  } as Partial<LGraph> as LGraph
-  const mockCanvas: Partial<LGraphCanvas> = {
-    graph_mouse: [100, 200],
-    graph: mockGraph,
-    ...overrides
-  }
-  return mockCanvas as LGraphCanvas
-}
-
-describe('createNode', () => {
-  beforeEach(vi.clearAllMocks)
-
-  it('should create a node successfully', async () => {
-    const mockNode = { pos: [0, 0] }
-    vi.mocked(LiteGraph.createNode).mockReturnValue(mockNode as LGraphNode)
-
-    const mockCanvas = createMockCanvas()
-    const result = await createNode(mockCanvas, 'LoadImage')
-
-    expect(LiteGraph.createNode).toHaveBeenCalledWith('LoadImage')
-    expect(mockNode.pos).toEqual([100, 200])
-    expect(mockCanvas.graph!.add).toHaveBeenCalledWith(mockNode)
-    expect(mockCanvas.graph!.change).toHaveBeenCalled()
-    expect(result).toBe(mockNode)
+describe('resolveNode', () => {
+  it('returns undefined when graph is null', () => {
+    expect(resolveNode(1, null)).toBeUndefined()
   })
 
-  it('should return null when name is empty', async () => {
-    const mockCanvas = createMockCanvas()
-    const result = await createNode(mockCanvas, '')
-
-    expect(LiteGraph.createNode).not.toHaveBeenCalled()
-    expect(result).toBeNull()
+  it('returns undefined when graph is undefined', () => {
+    expect(resolveNode(1, undefined)).toBeUndefined()
   })
 
-  it('should handle graph being null', async () => {
-    const mockNode = { pos: [0, 0] }
-    const mockCanvas = createMockCanvas({ graph: null })
-    vi.mocked(LiteGraph.createNode).mockReturnValue(mockNode as LGraphNode)
+  it('finds a node in the root graph', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('TestNode')
+    graph.add(node)
 
-    const result = await createNode(mockCanvas, 'LoadImage')
-
-    expect(mockNode.pos).toEqual([0, 0])
-    expect(result).toBeNull()
-  })
-  it('should set position based on canvas graph_mouse', async () => {
-    const mockCanvas = createMockCanvas({ graph_mouse: [250, 350] })
-    const mockNode = { pos: [0, 0] }
-    vi.mocked(LiteGraph.createNode).mockReturnValue(mockNode as LGraphNode)
-
-    await createNode(mockCanvas, 'LoadAudio')
-
-    expect(mockNode.pos).toEqual([250, 350])
-  })
-})
-
-describe('migrateWidgetsValues', () => {
-  it('should remove widget values for forceInput inputs', () => {
-    const inputDefs: Record<string, InputSpec> = {
-      normalInput: {
-        type: 'INT',
-        name: 'normalInput'
-      },
-      forceInputField: {
-        type: 'STRING',
-        name: 'forceInputField',
-        forceInput: true
-      },
-      anotherNormal: {
-        type: 'FLOAT',
-        name: 'anotherNormal'
-      }
-    }
-
-    const widgets = [
-      { name: 'normalInput', type: 'number' },
-      { name: 'anotherNormal', type: 'number' }
-    ] as Partial<IWidget>[] as IWidget[]
-
-    const widgetValues = [42, 'dummy value', 3.14]
-
-    const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
-    expect(result).toEqual([42, 3.14])
+    expect(resolveNode(node.id, graph)).toBe(node)
   })
 
-  it('should return original values if lengths do not match', () => {
-    const inputDefs: Record<string, InputSpec> = {
-      input1: {
-        type: 'INT',
-        name: 'input1',
-        forceInput: true
-      }
-    }
+  it('returns undefined when node does not exist anywhere', () => {
+    const graph = new LGraph()
 
-    const widgets: IWidget[] = []
-    const widgetValues = [42, 'extra value']
-
-    const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
-    expect(result).toEqual(widgetValues)
+    expect(resolveNode(999, graph)).toBeUndefined()
   })
 
-  it('should handle empty widgets and values', () => {
-    const inputDefs: Record<string, InputSpec> = {}
-    const widgets: IWidget[] = []
-    const widgetValues: unknown[] = []
+  it('finds a node inside a subgraph', () => {
+    const subgraph = createTestSubgraph({ nodeCount: 1 })
+    const rootGraph = subgraph.rootGraph
+    rootGraph._subgraphs.set(subgraph.id, subgraph)
+    const subgraphNode = subgraph._nodes[0]
 
-    const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
-    expect(result).toEqual([])
+    // Node should NOT be found directly on root graph
+    expect(rootGraph.getNodeById(subgraphNode.id)).toBeFalsy()
+
+    // But resolveNode should find it via subgraph search
+    expect(resolveNode(subgraphNode.id, rootGraph)).toBe(subgraphNode)
   })
 
-  it('should preserve order of non-forceInput widget values', () => {
-    const inputDefs: Record<string, InputSpec> = {
-      first: {
-        type: 'INT',
-        name: 'first'
-      },
-      forced: {
-        type: 'STRING',
-        name: 'forced',
-        forceInput: true
-      },
-      last: {
-        type: 'FLOAT',
-        name: 'last'
-      }
-    }
+  it('prefers root graph node over subgraph node with same id', () => {
+    const subgraph = createTestSubgraph()
+    const rootGraph = subgraph.rootGraph
 
-    const widgets = [
-      { name: 'first', type: 'number' },
-      { name: 'last', type: 'number' }
-    ] as Partial<IWidget>[] as IWidget[]
+    const rootNode = new LGraphNode('RootNode')
+    rootGraph.add(rootNode)
 
-    const widgetValues = ['first value', 'dummy', 'last value']
+    // Add a different node to the subgraph
+    const sgNode = new LGraphNode('SubgraphNode')
+    subgraph.add(sgNode)
 
-    const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
-    expect(result).toEqual(['first value', 'last value'])
-  })
-  it('should correctly handle seed with unexpected value', () => {
-    const inputDefs: Record<string, InputSpec> = {
-      normalInput: {
-        type: 'INT',
-        name: 'normalInput',
-        control_after_generate: true
-      },
-      forceInputField: {
-        type: 'STRING',
-        name: 'forceInputField',
-        forceInput: true
-      }
-    }
-
-    const widgets = [
-      { name: 'normalInput', type: 'number' },
-      { name: 'control_after_generate', type: 'string' }
-    ] as Partial<IWidget>[] as IWidget[]
-
-    const widgetValues = [42, 'fixed', 'unexpected widget value']
-
-    const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
-    expect(result).toEqual([42, 'fixed'])
-  })
-})
-
-function createOutput(
-  overrides: Partial<ExecutedWsMessage['output']> = {}
-): ExecutedWsMessage['output'] {
-  return { ...overrides }
-}
-
-describe('isAnimatedOutput', () => {
-  it('returns false for undefined output', () => {
-    expect(isAnimatedOutput(undefined)).toBe(false)
+    // resolveNode should return the root graph node first
+    expect(resolveNode(rootNode.id, rootGraph)).toBe(rootNode)
   })
 
-  it('returns false when animated array is missing', () => {
-    expect(isAnimatedOutput(createOutput())).toBe(false)
-  })
+  it('searches across multiple subgraphs', () => {
+    const sg1 = createTestSubgraph({ name: 'SG1' })
+    const rootGraph = sg1.rootGraph
+    const sg2 = createTestSubgraph({ name: 'SG2', nodeCount: 1 })
 
-  it('returns false when all animated values are false', () => {
-    expect(isAnimatedOutput(createOutput({ animated: [false, false] }))).toBe(
-      false
-    )
-  })
+    // Put sg2 under the same root graph
+    rootGraph._subgraphs.set(sg2.id, sg2)
 
-  it('returns true when any animated value is true', () => {
-    expect(isAnimatedOutput(createOutput({ animated: [false, true] }))).toBe(
-      true
-    )
-  })
-})
-
-describe('isVideoOutput', () => {
-  it('returns false for non-animated output', () => {
-    expect(
-      isVideoOutput(
-        createOutput({
-          animated: [false],
-          images: [{ filename: 'video.webm' }]
-        })
-      )
-    ).toBe(false)
-  })
-
-  it('returns false for animated webp output', () => {
-    expect(
-      isVideoOutput(
-        createOutput({
-          animated: [true],
-          images: [{ filename: 'anim.webp' }]
-        })
-      )
-    ).toBe(false)
-  })
-
-  it('returns false for animated png output', () => {
-    expect(
-      isVideoOutput(
-        createOutput({
-          animated: [true],
-          images: [{ filename: 'anim.png' }]
-        })
-      )
-    ).toBe(false)
-  })
-
-  it('returns true for animated webm output', () => {
-    expect(
-      isVideoOutput(
-        createOutput({
-          animated: [true],
-          images: [{ filename: 'output.webm' }]
-        })
-      )
-    ).toBe(true)
-  })
-
-  it('returns true for animated mp4 output', () => {
-    expect(
-      isVideoOutput(
-        createOutput({
-          animated: [true],
-          images: [{ filename: 'output.mp4' }]
-        })
-      )
-    ).toBe(true)
-  })
-
-  it('returns true for animated output with no images array', () => {
-    expect(isVideoOutput(createOutput({ animated: [true] }))).toBe(true)
-  })
-
-  it('does not false-positive on filenames containing webp as substring', () => {
-    expect(
-      isVideoOutput(
-        createOutput({
-          animated: [true],
-          images: [{ filename: 'my_webp_file.mp4' }]
-        })
-      )
-    ).toBe(true)
-  })
-})
-
-describe('compressWidgetInputSlots', () => {
-  it('should remove unconnected widget input slots', () => {
-    // Using partial mock - only including properties needed for test
-    const graph = {
-      nodes: [
-        {
-          id: 1,
-          type: 'foo',
-          pos: [0, 0],
-          size: [100, 100],
-          flags: {},
-          order: 0,
-          mode: 0,
-          inputs: [
-            { widget: { name: 'foo' }, link: null, type: 'INT', name: 'foo' },
-            { widget: { name: 'bar' }, link: 2, type: 'INT', name: 'bar' },
-            { widget: { name: 'baz' }, link: null, type: 'INT', name: 'baz' }
-          ],
-          outputs: []
-        }
-      ],
-      links: [[2, 1, 0, 1, 0, 'INT']]
-    } as Partial<ISerialisedGraph> as ISerialisedGraph
-
-    compressWidgetInputSlots(graph)
-
-    expect(graph.nodes[0].inputs).toEqual([
-      { widget: { name: 'bar' }, link: 2, type: 'INT', name: 'bar' }
-    ])
-  })
-
-  it('should update link target slots correctly', () => {
-    const graph = {
-      nodes: [
-        {
-          id: 1,
-          type: 'foo',
-          pos: [0, 0],
-          size: [100, 100],
-          flags: {},
-          order: 0,
-          mode: 0,
-          inputs: [
-            { widget: { name: 'foo' }, link: null, type: 'INT', name: 'foo' },
-            { widget: { name: 'bar' }, link: 2, type: 'INT', name: 'bar' },
-            { widget: { name: 'baz' }, link: 3, type: 'INT', name: 'baz' }
-          ],
-          outputs: []
-        }
-      ],
-      links: [
-        [2, 1, 0, 1, 1, 'INT'],
-        [3, 1, 0, 1, 2, 'INT']
-      ]
-    } as Partial<ISerialisedGraph> as ISerialisedGraph
-
-    compressWidgetInputSlots(graph)
-
-    expect(graph.nodes[0].inputs).toEqual([
-      { widget: { name: 'bar' }, link: 2, type: 'INT', name: 'bar' },
-      { widget: { name: 'baz' }, link: 3, type: 'INT', name: 'baz' }
-    ])
-
-    expect(graph.links).toEqual([
-      [2, 1, 0, 1, 0, 'INT'],
-      [3, 1, 0, 1, 1, 'INT']
-    ])
-  })
-
-  it('should handle graphs with no nodes gracefully', () => {
-    // Using partial mock - only including properties needed for test
-    const graph = {
-      nodes: [],
-      links: []
-    } as Partial<ISerialisedGraph> as ISerialisedGraph
-
-    compressWidgetInputSlots(graph)
-
-    expect(graph.nodes).toEqual([])
-    expect(graph.links).toEqual([])
+    const targetNode = sg2._nodes[0]
+    expect(resolveNode(targetNode.id, rootGraph)).toBe(targetNode)
   })
 })

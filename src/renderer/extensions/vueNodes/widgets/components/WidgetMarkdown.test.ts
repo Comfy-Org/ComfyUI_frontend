@@ -9,6 +9,7 @@ import enMessages from '@/locales/en/main.json'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetMarkdown from './WidgetMarkdown.vue'
+import { createMockWidget } from './widgetTestUtils'
 
 // Mock the markdown renderer utility
 vi.mock('@/utils/markdownRendererUtil', () => ({
@@ -24,17 +25,18 @@ vi.mock('@/utils/markdownRendererUtil', () => ({
 }))
 
 describe('WidgetMarkdown Dual Mode Display', () => {
-  const createMockWidget = (
+  const createMarkdownWidget = (
     value: string = '# Default Heading\nSome **bold** text.',
-    options: Record<string, unknown> = {},
+    options: SimplifiedWidget<string>['options'] = {},
     callback?: (value: string) => void
-  ): SimplifiedWidget<string> => ({
-    name: 'test_markdown',
-    type: 'string',
-    value,
-    options,
-    callback
-  })
+  ) =>
+    createMockWidget<string>({
+      value,
+      name: 'test_markdown',
+      type: 'string',
+      options,
+      callback
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<string>,
@@ -83,7 +85,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
   describe('Display Mode', () => {
     it('renders markdown content as HTML in display mode', () => {
       const markdown = '# Heading\nSome **bold** and *italic* text.'
-      const widget = createMockWidget(markdown)
+      const widget = createMarkdownWidget(markdown)
       const wrapper = mountComponent(widget, markdown)
 
       const displayDiv = wrapper.find('.comfy-markdown-content')
@@ -97,7 +99,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       context.skip(
         'Something in the logic in these tests is definitely off. needs diagnosis'
       )
-      const widget = createMockWidget('# Test')
+      const widget = createMarkdownWidget('# Test')
       const wrapper = mountComponent(widget, '# Test')
 
       expect(wrapper.find('.comfy-markdown-content').exists()).toBe(true)
@@ -105,7 +107,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     })
 
     it('handles empty markdown content', () => {
-      const widget = createMockWidget('')
+      const widget = createMarkdownWidget('')
       const wrapper = mountComponent(widget, '')
 
       const displayDiv = wrapper.find('.comfy-markdown-content')
@@ -117,7 +119,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
   describe('Edit Mode Toggle', () => {
     it('switches to edit mode when clicked', async (context) => {
       context.skip('markdown editor not disappearing. needs diagnosis')
-      const widget = createMockWidget('# Test')
+      const widget = createMarkdownWidget('# Test')
       const wrapper = mountComponent(widget, '# Test')
 
       expect(wrapper.find('.comfy-markdown-content').exists()).toBe(true)
@@ -129,7 +131,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     })
 
     it('does not switch to edit mode when already editing', async () => {
-      const widget = createMockWidget('# Test')
+      const widget = createMarkdownWidget('# Test')
       const wrapper = mountComponent(widget, '# Test')
 
       // First click to enter edit mode
@@ -143,7 +145,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
 
     it('switches back to display mode on textarea blur', async (context) => {
       context.skip('textarea not disappearing. needs diagnosis')
-      const widget = createMockWidget('# Test')
+      const widget = createMarkdownWidget('# Test')
       const wrapper = mountComponent(widget, '# Test')
 
       await clickToEdit(wrapper)
@@ -158,7 +160,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
   describe('Edit Mode', () => {
     it('displays textarea with current value when editing', async () => {
       const markdown = '# Original Content'
-      const widget = createMockWidget(markdown)
+      const widget = createMarkdownWidget(markdown)
       const wrapper = mountComponent(widget, markdown)
 
       await clickToEdit(wrapper)
@@ -172,7 +174,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       context.skip(
         'Props or styling are not as described in the test. needs diagnosis'
       )
-      const widget = createMockWidget('# Test')
+      const widget = createMarkdownWidget('# Test')
       const wrapper = mountComponent(widget, '# Test')
 
       await clickToEdit(wrapper)
@@ -187,7 +189,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     })
 
     it('stops click and keydown event propagation in edit mode', async () => {
-      const widget = createMockWidget('# Test')
+      const widget = createMarkdownWidget('# Test')
       const wrapper = mountComponent(widget, '# Test')
 
       await clickToEdit(wrapper)
@@ -209,7 +211,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
 
     describe('Pointer Event Propagation', () => {
       it('stops pointerdown propagation to prevent node drag during text selection', async () => {
-        const widget = createMockWidget('# Test')
+        const widget = createMarkdownWidget('# Test')
         const wrapper = mountComponent(widget, '# Test')
 
         await clickToEdit(wrapper)
@@ -227,7 +229,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       })
 
       it('stops pointermove propagation during text selection', async () => {
-        const widget = createMockWidget('# Test')
+        const widget = createMarkdownWidget('# Test')
         const wrapper = mountComponent(widget, '# Test')
 
         await clickToEdit(wrapper)
@@ -244,7 +246,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       })
 
       it('stops pointerup propagation after text selection', async () => {
-        const widget = createMockWidget('# Test')
+        const widget = createMarkdownWidget('# Test')
         const wrapper = mountComponent(widget, '# Test')
 
         await clickToEdit(wrapper)
@@ -264,7 +266,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
 
   describe('Value Updates', () => {
     it('emits update:modelValue when textarea content changes', async () => {
-      const widget = createMockWidget('# Original')
+      const widget = createMarkdownWidget('# Original')
       const wrapper = mountComponent(widget, '# Original')
 
       await clickToEdit(wrapper)
@@ -279,7 +281,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     })
 
     it('renders updated HTML after value change and blur', async () => {
-      const widget = createMockWidget('# Original')
+      const widget = createMarkdownWidget('# Original')
       const wrapper = mountComponent(widget, '# Original')
 
       await clickToEdit(wrapper)
@@ -295,7 +297,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     })
 
     it('emits update:modelValue for callback handling at parent level', async () => {
-      const widget = createMockWidget('# Test', {})
+      const widget = createMarkdownWidget('# Test', {})
       const wrapper = mountComponent(widget, '# Test')
 
       await clickToEdit(wrapper)
@@ -311,7 +313,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     })
 
     it('handles missing callback gracefully', async () => {
-      const widget = createMockWidget('# Test', {}, undefined)
+      const widget = createMarkdownWidget('# Test', {}, undefined)
       const wrapper = mountComponent(widget, '# Test')
 
       await clickToEdit(wrapper)
@@ -334,7 +336,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
 This paragraph has **bold** and *italic* text.
 Another line with more content.`
 
-      const widget = createMockWidget(complexMarkdown)
+      const widget = createMarkdownWidget(complexMarkdown)
       const wrapper = mountComponent(widget, complexMarkdown)
 
       const displayDiv = wrapper.find('.comfy-markdown-content')
@@ -346,7 +348,7 @@ Another line with more content.`
 
     it('handles line breaks in markdown', () => {
       const markdownWithBreaks = 'Line 1\nLine 2\nLine 3'
-      const widget = createMockWidget(markdownWithBreaks)
+      const widget = createMarkdownWidget(markdownWithBreaks)
       const wrapper = mountComponent(widget, markdownWithBreaks)
 
       const displayDiv = wrapper.find('.comfy-markdown-content')
@@ -355,7 +357,7 @@ Another line with more content.`
 
     it('handles empty or whitespace-only markdown', () => {
       const whitespaceMarkdown = '   \n\n   '
-      const widget = createMockWidget(whitespaceMarkdown)
+      const widget = createMarkdownWidget(whitespaceMarkdown)
       const wrapper = mountComponent(widget, whitespaceMarkdown)
 
       const displayDiv = wrapper.find('.comfy-markdown-content')
@@ -366,7 +368,7 @@ Another line with more content.`
   describe('Edge Cases', () => {
     it('handles very long markdown content', async () => {
       const longMarkdown = '# Heading\n' + 'Lorem ipsum '.repeat(1000)
-      const widget = createMockWidget(longMarkdown)
+      const widget = createMarkdownWidget(longMarkdown)
       const wrapper = mountComponent(widget, longMarkdown)
 
       // Should render without issues
@@ -382,7 +384,7 @@ Another line with more content.`
 
     it('handles special characters in markdown', async () => {
       const specialChars = '# Special: @#$%^&*()[]{}|\\:";\'<>?,./'
-      const widget = createMockWidget(specialChars)
+      const widget = createMarkdownWidget(specialChars)
       const wrapper = mountComponent(widget, specialChars)
 
       await clickToEdit(wrapper)
@@ -392,7 +394,7 @@ Another line with more content.`
 
     it('handles unicode characters', async () => {
       const unicode = '# Unicode: 🎨 αβγ 中文 العربية 🚀'
-      const widget = createMockWidget(unicode)
+      const widget = createMarkdownWidget(unicode)
       const wrapper = mountComponent(widget, unicode)
 
       await clickToEdit(wrapper)
@@ -408,7 +410,7 @@ Another line with more content.`
     })
 
     it('handles rapid edit mode toggling', async () => {
-      const widget = createMockWidget('# Test')
+      const widget = createMarkdownWidget('# Test')
       const wrapper = mountComponent(widget, '# Test')
 
       // Rapid toggling
@@ -425,7 +427,7 @@ Another line with more content.`
 
   describe('Focus Management', () => {
     it('creates textarea reference when entering edit mode', async () => {
-      const widget = createMockWidget('# Test')
+      const widget = createMarkdownWidget('# Test')
       const wrapper = mountComponent(widget, '# Test')
       const vm = wrapper.vm as InstanceType<typeof WidgetMarkdown>
 

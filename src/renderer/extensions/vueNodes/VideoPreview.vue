@@ -21,11 +21,9 @@
       <div
         v-if="videoError"
         role="alert"
-        class="flex flex-auto flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
+        class="flex flex-auto flex-col items-center justify-center bg-muted-background py-8 text-center text-base-foreground"
       >
-        <i
-          class="mb-2 icon-[lucide--video-off] h-12 w-12 text-base-foreground"
-        />
+        <i class="mb-2 icon-[lucide--video-off] size-12 text-base-foreground" />
         <p class="text-sm text-base-foreground">
           {{ $t('g.videoFailedToLoad') }}
         </p>
@@ -67,7 +65,7 @@
           :aria-label="$t('g.downloadVideo')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] h-4 w-4" />
+          <i class="icon-[lucide--download] size-4" />
         </button>
 
         <!-- Close Button -->
@@ -77,14 +75,14 @@
           :aria-label="$t('g.removeVideo')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] h-4 w-4" />
+          <i class="icon-[lucide--x] size-4" />
         </button>
       </div>
 
       <!-- Multiple Videos Navigation -->
       <div
         v-if="hasMultipleVideos"
-        class="absolute right-2 bottom-2 left-2 flex justify-center gap-1"
+        class="absolute inset-x-2 bottom-2 flex justify-center gap-1"
       >
         <button
           v-for="(_, index) in imageUrls"
@@ -123,7 +121,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { cn } from '@/utils/tailwindUtil'
 
 interface VideoPreviewProps {
@@ -217,11 +215,15 @@ const handleRemove = () => {
 }
 
 const setCurrentIndex = (index: number) => {
+  if (currentIndex.value === index) return
   if (index >= 0 && index < props.imageUrls.length) {
+    const urlChanged = props.imageUrls[index] !== currentVideoUrl.value
     currentIndex.value = index
-    actualDimensions.value = null
-    showLoader.value = true
     videoError.value = false
+    if (urlChanged) {
+      actualDimensions.value = null
+      showLoader.value = true
+    }
   }
 }
 
@@ -243,12 +245,13 @@ const handleFocusOut = (event: FocusEvent) => {
   }
 }
 
-const getNavigationDotClass = (index: number) => {
-  return [
-    'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer',
-    index === currentIndex.value ? 'bg-white' : 'bg-white/50 hover:bg-white/80'
-  ]
-}
+const getNavigationDotClass = (index: number) =>
+  cn(
+    'size-2 cursor-pointer rounded-full border-0 transition-all duration-200',
+    index === currentIndex.value
+      ? 'bg-base-foreground'
+      : 'bg-base-foreground/50 hover:bg-base-foreground/80'
+  )
 
 const handleKeyDown = (event: KeyboardEvent) => {
   if (props.imageUrls.length <= 1) return

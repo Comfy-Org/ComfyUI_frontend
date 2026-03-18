@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type {
@@ -41,28 +41,9 @@ vi.mock('@/stores/workspaceStore', () => ({
   })
 }))
 
-const SplitButtonStub = defineComponent({
-  name: 'SplitButton',
-  props: {
-    label: {
-      type: String,
-      default: ''
-    },
-    severity: {
-      type: String,
-      default: 'primary'
-    }
-  },
-  template: `
-    <button
-      data-testid="split-button"
-      :data-label="label"
-      :data-severity="severity"
-    >
-      <slot name="icon" />
-    </button>
-  `
-})
+const BatchCountEditStub = {
+  template: '<div data-testid="batch-count-edit" />'
+}
 
 const i18n = createI18n({
   legacy: false,
@@ -107,14 +88,26 @@ function createWrapper() {
         tooltip: () => {}
       },
       stubs: {
-        SplitButton: SplitButtonStub,
-        BatchCountEdit: true
+        BatchCountEdit: BatchCountEditStub,
+        DropdownMenuRoot: { template: '<div><slot /></div>' },
+        DropdownMenuTrigger: { template: '<div><slot /></div>' },
+        DropdownMenuPortal: { template: '<div><slot /></div>' },
+        DropdownMenuContent: { template: '<div><slot /></div>' },
+        DropdownMenuItem: { template: '<div><slot /></div>' }
       }
     }
   })
 }
 
 describe('ComfyQueueButton', () => {
+  it('renders the batch count control before the run button', () => {
+    const wrapper = createWrapper()
+    const controls = wrapper.get('.queue-button-group').element.children
+
+    expect(controls[0]?.getAttribute('data-testid')).toBe('batch-count-edit')
+    expect(controls[1]?.getAttribute('data-testid')).toBe('queue-button')
+  })
+
   it('keeps the run instant presentation while idle even with active jobs', async () => {
     const wrapper = createWrapper()
     const queueSettingsStore = useQueueSettingsStore()
@@ -124,10 +117,10 @@ describe('ComfyQueueButton', () => {
     queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
-    const splitButton = wrapper.get('[data-testid="queue-button"]')
+    const queueButton = wrapper.get('[data-testid="queue-button"]')
 
-    expect(splitButton.attributes('data-label')).toBe('Run (Instant)')
-    expect(splitButton.attributes('data-severity')).toBe('primary')
+    expect(queueButton.text()).toContain('Run (Instant)')
+    expect(queueButton.attributes('data-variant')).toBe('primary')
     expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
   })
 
@@ -138,10 +131,10 @@ describe('ComfyQueueButton', () => {
     queueSettingsStore.mode = 'instant-running'
     await nextTick()
 
-    const splitButton = wrapper.get('[data-testid="queue-button"]')
+    const queueButton = wrapper.get('[data-testid="queue-button"]')
 
-    expect(splitButton.attributes('data-label')).toBe('Stop Run (Instant)')
-    expect(splitButton.attributes('data-severity')).toBe('danger')
+    expect(queueButton.text()).toContain('Stop Run (Instant)')
+    expect(queueButton.attributes('data-variant')).toBe('destructive')
     expect(wrapper.find('.icon-\\[lucide--square\\]').exists()).toBe(true)
   })
 
@@ -159,19 +152,17 @@ describe('ComfyQueueButton', () => {
     await nextTick()
 
     expect(queueSettingsStore.mode).toBe('instant-idle')
-    const splitButtonWhileStopping = wrapper.get('[data-testid="queue-button"]')
-    expect(splitButtonWhileStopping.attributes('data-label')).toBe(
-      'Run (Instant)'
-    )
-    expect(splitButtonWhileStopping.attributes('data-severity')).toBe('primary')
+    const queueButtonWhileStopping = wrapper.get('[data-testid="queue-button"]')
+    expect(queueButtonWhileStopping.text()).toContain('Run (Instant)')
+    expect(queueButtonWhileStopping.attributes('data-variant')).toBe('primary')
     expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
 
     expect(commandStore.execute).not.toHaveBeenCalled()
 
-    const splitButton = wrapper.get('[data-testid="queue-button"]')
+    const queueButton = wrapper.get('[data-testid="queue-button"]')
     expect(queueSettingsStore.mode).toBe('instant-idle')
-    expect(splitButton.attributes('data-label')).toBe('Run (Instant)')
-    expect(splitButton.attributes('data-severity')).toBe('primary')
+    expect(queueButton.text()).toContain('Run (Instant)')
+    expect(queueButton.attributes('data-variant')).toBe('primary')
     expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
   })
 

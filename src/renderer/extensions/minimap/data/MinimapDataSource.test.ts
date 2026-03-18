@@ -15,6 +15,13 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   }
 }))
 
+// Mock useExecutionStore
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: vi.fn().mockReturnValue({
+    nodeProgressStates: {}
+  })
+}))
+
 // Helper to create mock links that satisfy LGraph['links'] type
 function createMockLinks(): LGraph['links'] {
   const map = new Map<number, LLink>()

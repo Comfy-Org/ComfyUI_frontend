@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "数式",
+    "inputs": {
+      "expression": {
+        "name": "式"
+      },
+      "values": {
+        "name": "値"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "スイッチ",
     "inputs": {
@@ -2134,6 +2153,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "description": "指定されたバウンディングボックスに基づいて、入力画像バッチから領域を切り抜きリサイズします。",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "バウンディングボックス"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "output_height": {
+        "name": "出力高さ",
+        "tooltip": "各切り抜き画像がリサイズされる高さ。"
+      },
+      "output_width": {
+        "name": "出力幅",
+        "tooltip": "各切り抜き画像がリサイズされる幅。"
+      },
+      "padding": {
+        "name": "パディング",
+        "tooltip": "切り抜き前にバウンディングボックスの各辺に追加される余白（ピクセル単位）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "すべての切り抜き画像が1つの画像バッチとしてまとめられます。"
       }
     }
   },
@@ -3159,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Fluxファミリーモデルの参照画像に対してKVキャッシュ最適化を有効にします。",
+    "display_name": "Flux KVキャッシュ",
+    "inputs": {
+      "model": {
+        "name": "モデル",
+        "tooltip": "KVキャッシュを使用するモデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KVキャッシュが有効になったパッチ済みモデル。"
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "このノードは、Flux Kontextに最適なサイズに画像をリサイズします。",
     "display_name": "FluxKontextImageScale",
@@ -3701,6 +3764,60 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "Google Vertex API を使って画像を同期的に生成または編集します。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "「auto」に設定すると入力画像のアスペクト比に合わせます。画像が指定されていない場合は通常16:9の正方形が生成されます。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "files": {
+        "name": "ファイル",
+        "tooltip": "モデルのコンテキストとして使用する任意のファイル。Gemini Generate Content Input Filesノードからの入力を受け付けます。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "任意の参照画像。複数画像を含める場合はBatch Imagesノードを使用してください（最大14枚まで）。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成する画像や適用する編集内容を説明するテキストプロンプトです。モデルが従うべき制約、スタイル、詳細なども含めてください。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力画像の目標解像度です。2K/4Kの場合はGeminiのネイティブアップスケーラーが使用されます。"
+      },
+      "response_modalities": {
+        "name": "レスポンスモダリティ"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シード値を特定の値に固定すると、モデルは繰り返しリクエストに対して同じ応答を返すよう最善を尽くしますが、完全な決定論的出力は保証されません。また、モデルやパラメータ設定（例：temperature）を変更すると、同じシード値でも応答が変化する場合があります。デフォルトではランダムなシード値が使用されます。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "AIの挙動を決定する基本的な指示です。"
+      },
+      "thinking_level": {
+        "name": "思考レベル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "GoogleのGemini AIモデルでテキスト応答を生成します。テキスト、画像、音声、動画など複数の種類の入力をコンテキストとして提供し、より関連性の高い意味のある応答を生成できます。",
     "display_name": "Google Gemini",
@@ -3864,6 +3981,10 @@
     "description": "テキストプロンプトに基づいて既存の画像を編集します",
     "display_name": "Grok画像編集",
     "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "複数の画像が画像入力に接続されている場合のみ使用できます。"
+      },
       "control_after_generate": {
         "name": "生成後の制御"
       },
@@ -3915,6 +4036,9 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "画像生成に使用するテキストプロンプト"
+      },
+      "resolution": {
+        "name": "解像度"
       },
       "seed": {
         "name": "シード値",
@@ -5770,6 +5894,9 @@
       },
       "mode": {
         "name": "モード"
+      },
+      "model": {
+        "name": "モデル"
       },
       "prompt": {
         "name": "プロンプト"
@@ -11179,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "背景色"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "上から描画するための任意のベース画像"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "ペア条件付け組み合わせ",
     "inputs": {
@@ -12719,6 +12875,157 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "アスペクト比とメガピクセルの目標値から幅と高さを計算します。Empty Latent Image の寸法設定に便利です。",
+    "display_name": "解像度セレクター",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "出力寸法のアスペクト比です。"
+      },
+      "megapixels": {
+        "name": "メガピクセル",
+        "tooltip": "目標とする総メガピクセル数。1.0 MP ≈ 1024×1024（正方形の場合）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "幅",
+        "tooltip": "計算された幅（ピクセル単位、8の倍数）。"
+      },
+      "1": {
+        "name": "高さ",
+        "tooltip": "計算された高さ（ピクセル単位、8の倍数）。"
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Reveを使用してテキスト説明から画像を生成します。",
+    "display_name": "Reve画像生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "生成に使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成したい画像のテキスト説明。最大2560文字。"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Reveを使って自然言語指示で画像を編集します。",
+    "display_name": "Reve画像編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "edit_instruction": {
+        "name": "編集指示",
+        "tooltip": "画像の編集方法のテキスト説明。最大2560文字。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "編集する画像。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "編集に使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "参照画像とテキストプロンプトを組み合わせてReveで新しい画像を作成します。",
+    "display_name": "Reve画像リミックス",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "リミックスに使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成したい画像のテキスト説明。特定の画像をインデックスで参照するXML imgタグ（例：<img>0</img>, <img>1</img>など）を含めることができます。"
+      },
+      "reference_images": {
+        "name": "参照画像"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Rodin APIを使用して3Dアセットを生成",
     "display_name": "Rodin 3D生成 - 詳細生成",
@@ -12975,6 +13282,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "ボディを描画"
+      },
+      "draw_face": {
+        "name": "顔を描画"
+      },
+      "draw_feet": {
+        "name": "足を描画"
+      },
+      "draw_hands": {
+        "name": "手を描画"
+      },
+      "face_point_size": {
+        "name": "顔ポイントサイズ"
+      },
+      "keypoints": {
+        "name": "キーポイント"
+      },
+      "score_threshold": {
+        "name": "スコア閾値"
+      },
+      "stick_width": {
+        "name": "スティック幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "正方形に強制",
+        "tooltip": "短い辺を拡張して、切り抜き領域が常に正方形になるようにします。"
+      },
+      "keypoints": {
+        "name": "キーポイント"
+      },
+      "scale": {
+        "name": "スケール",
+        "tooltip": "各検出された顔のバウンディングボックス領域の倍率。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "バウンディングボックス",
+        "tooltip": "各フレームごとの顔バウンディングボックス。SDPoseKeypointExtractorのbboxes入力と互換性があります。"
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "SDPoseモデル（https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints）を使用して画像からポーズキーポイントを抽出します。",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "bboxes": {
+        "name": "バウンディングボックス",
+        "tooltip": "より正確な検出のためのオプションのバウンディングボックス。複数人検出時は必須です。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "キーポイント",
+        "tooltip": "OpenPoseフレーム形式（canvas_width, canvas_height, people）のキーポイント"
       }
     }
   },
@@ -14860,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "3Dモデルを入力後、3Dモデルのテクスチャを再描画します。",
+    "display_name": "Hunyuan3D: 3Dテクスチャ編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX形式の3Dモデル。モデルの面数は100,000未満である必要があります。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "テクスチャ編集内容を記述します。最大1024文字のUTF-8文字列がサポートされています。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: 画像からモデルへ (Pro)",
     "inputs": {
@@ -14908,6 +15334,80 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "3DモデルにUV展開を行い、UVテクスチャを生成します。入力モデルは30,000面未満である必要があります。",
+    "display_name": "Hunyuan3D: モデルからUVへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "入力3Dモデル（GLB、OBJ、またはFBX）"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "3Dモデルにスマートリトポロジーを実行します。GLB/OBJ形式をサポート、最大200MB、高ポリゴンモデルに推奨。",
+    "display_name": "Hunyuan3D: スマートトポロジー",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "face_level": {
+        "name": "面レベル",
+        "tooltip": "ポリゴン削減レベル。"
+      },
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "入力3Dモデル（GLBまたはOBJ）"
+      },
+      "polygon_type": {
+        "name": "ポリゴンタイプ",
+        "tooltip": "表面構成タイプ。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -14950,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }
@@ -17963,6 +18467,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end": {
+        "name": "ポーズ終了ステップ",
+        "tooltip": "ポーズ条件付けを使用する終了ステップ。"
+      },
+      "pose_start": {
+        "name": "ポーズ開始ステップ",
+        "tooltip": "ポーズ条件付けを使用する開始ステップ。"
+      },
+      "pose_strength": {
+        "name": "ポーズ強度",
+        "tooltip": "ポーズのlatentの強さ。"
+      },
+      "pose_video": {
+        "name": "ポーズビデオ",
+        "tooltip": "ポーズ条件付けに使用するビデオ。メインビデオの解像度の半分にダウンサンプリングされます。"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_image": {
+        "name": "参照画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "生成サイズの空のlatent。"
       }
     }
   },

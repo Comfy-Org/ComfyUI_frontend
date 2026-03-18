@@ -1,7 +1,7 @@
 <template>
   <div v-if="shouldShow" class="flex justify-end">
     <div
-      class="flex items-center whitespace-nowrap text-[0.75rem] leading-[normal] drop-shadow-[1px_1px_8px_rgba(0,0,0,0.4)]"
+      class="flex items-center text-[0.75rem] leading-[normal] whitespace-nowrap drop-shadow-[1px_1px_8px_rgba(0,0,0,0.4)]"
       role="status"
       aria-live="polite"
       aria-atomic="true"

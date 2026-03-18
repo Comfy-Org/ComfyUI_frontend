@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group relative flex flex-col items-center justify-center py-4 px-2 rounded-2xl cursor-pointer select-none transition-colors duration-150 box-content bg-component-node-background hover:bg-secondary-background-hover border border-component-node-border aspect-square"
+    class="group relative box-content flex cursor-pointer flex-col items-center justify-center rounded-lg bg-component-node-background px-2 py-3 transition-colors duration-150 select-none hover:bg-secondary-background-hover"
     :data-node-name="node.label"
     draggable="true"
     @click="handleClick"
@@ -9,12 +9,10 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
-    <div class="flex flex-1 items-center justify-center">
-      <i :class="cn(nodeIcon, 'size-14 text-muted-foreground')" />
-    </div>
+    <i :class="cn(nodeIcon, 'size-6 text-muted-foreground')" />
 
     <TextTickerMultiLine
-      class="shrink-0 h-8 w-full text-xs font-bold text-foreground leading-4"
+      class="text-foreground mt-2 h-7 w-full shrink-0 text-xs/normal font-normal"
     >
       {{ node.label }}
     </TextTickerMultiLine>
@@ -35,12 +33,14 @@
 
 <script setup lang="ts">
 import { kebabCase } from 'es-toolkit/string'
+import type { Ref } from 'vue'
 import { computed, inject } from 'vue'
 
 import TextTickerMultiLine from '@/components/common/TextTickerMultiLine.vue'
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
-import { SidebarContainerKey } from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
+import { resolveBlueprintIcon } from '@/constants/essentialsDisplayNames'
+import { ESSENTIALS_ICON_OVERRIDES } from '@/constants/essentialsNodes'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
@@ -49,11 +49,15 @@ const { node } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
 }>()
 
+const panelRef = inject<Ref<HTMLElement | null>>(
+  'essentialsPanelRef',
+  undefined!
+)
+
 const emit = defineEmits<{
   click: [node: RenderedTreeExplorerNode<ComfyNodeDefImpl>]
 }>()
 
-const panelRef = inject(SidebarContainerKey, undefined)
 const nodeDef = computed(() => node.data)
 
 const {
@@ -64,10 +68,16 @@ const {
   handleMouseLeave,
   handleDragStart,
   handleDragEnd
-} = useNodePreviewAndDrag(nodeDef, { panelRef })
+} = useNodePreviewAndDrag(nodeDef, panelRef)
 
 const nodeIcon = computed(() => {
   const nodeName = node.data?.name
+  if (nodeName && nodeName in ESSENTIALS_ICON_OVERRIDES)
+    return ESSENTIALS_ICON_OVERRIDES[nodeName]
+  if (nodeName) {
+    const blueprintIcon = resolveBlueprintIcon(nodeName)
+    if (blueprintIcon) return blueprintIcon
+  }
   const iconName = nodeName ? kebabCase(nodeName) : 'node'
   return `icon-[comfy--${iconName}]`
 })

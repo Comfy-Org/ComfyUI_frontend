@@ -2,14 +2,14 @@
   <div
     v-show="widgetState.visible"
     ref="widgetElement"
-    class="dom-widget h-full w-full"
+    class="dom-widget size-full"
     :title="tooltip"
     :style="style"
   >
     <component
       :is="widget.component"
       v-if="isComponentWidget(widget)"
-      class="h-full w-full"
+      class="size-full"
       :model-value="widget.value"
       :widget="widget"
       v-bind="widget.props"
@@ -102,25 +102,39 @@ const updateDomClipping = () => {
  * and update the position of the widget accordingly.
  */
 const { left, top } = useElementBounding(canvasStore.getCanvas().canvas)
+
+function composeStyle() {
+  const override = widgetState.positionOverride
+  const isDisabled = override
+    ? (override.widget.computedDisabled ?? widget.computedDisabled)
+    : widget.computedDisabled
+
+  style.value = {
+    ...positionStyle.value,
+    ...(enableDomClipping.value ? clippingStyle.value : {}),
+    zIndex: widgetState.zIndex,
+    pointerEvents: widgetState.readonly || isDisabled ? 'none' : 'auto',
+    opacity: isDisabled ? 0.5 : 1
+  }
+}
+
 watch(
-  [() => widgetState, left, top],
-  ([widgetState, _, __]) => {
+  [() => widgetState, left, top, enableDomClipping],
+  ([widgetState]) => {
     updatePosition(widgetState)
     if (enableDomClipping.value) {
       updateDomClipping()
     }
-
-    style.value = {
-      ...positionStyle.value,
-      ...(enableDomClipping.value ? clippingStyle.value : {}),
-      zIndex: widgetState.zIndex,
-      pointerEvents:
-        widgetState.readonly || widget.computedDisabled ? 'none' : 'auto',
-      opacity: widget.computedDisabled ? 0.5 : 1
-    }
+    composeStyle()
   },
   { deep: true }
 )
+
+// Recompose style when clippingStyle updates asynchronously via RAF.
+// updateClipPath() schedules clip-path calculation in a requestAnimationFrame,
+// so clippingStyle.value updates after the main watcher has already composed
+// style. This watcher ensures the new clip-path is applied to the DOM.
+watch(clippingStyle, composeStyle, { deep: true })
 
 watch(
   () => widgetState.visible,

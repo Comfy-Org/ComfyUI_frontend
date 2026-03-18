@@ -53,6 +53,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
@@ -207,7 +208,9 @@ export function useCoreCommands(): ComfyCommand[] {
         })
         if (!newName || newName === workflow.filename) return
 
-        const newPath = workflow.directory + '/' + newName + '.json'
+        const suffix = getWorkflowSuffix(workflow.suffix)
+        const newPath =
+          workflow.directory + '/' + ensureWorkflowSuffix(newName, suffix)
         await workflowService.renameWorkflow(workflow, newPath)
       }
     },
@@ -394,8 +397,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (app.canvas.empty) {
           toastStore.add({
             severity: 'error',
-            summary: t('toastMessages.emptyCanvas'),
-            life: 3000
+            summary: t('toastMessages.emptyCanvas')
           })
           return
         }
@@ -554,8 +556,7 @@ export function useCoreCommands(): ComfyCommand[] {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.nothingToQueue'),
-            detail: t('toastMessages.pleaseSelectOutputNodes'),
-            life: 3000
+            detail: t('toastMessages.pleaseSelectOutputNodes')
           })
           return
         }
@@ -568,8 +569,7 @@ export function useCoreCommands(): ComfyCommand[] {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.failedToQueue'),
-            detail: t('toastMessages.failedExecutionPathResolution'),
-            life: 3000
+            detail: t('toastMessages.failedExecutionPathResolution')
           })
           return
         }
@@ -599,8 +599,7 @@ export function useCoreCommands(): ComfyCommand[] {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.nothingToGroup'),
-            detail: t('toastMessages.pleaseSelectNodesToGroup'),
-            life: 3000
+            detail: t('toastMessages.pleaseSelectNodesToGroup')
           })
           return
         }
@@ -903,6 +902,14 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.Canvas.PasteFromClipboardWithConnect',
+      icon: 'icon-[lucide--clipboard-paste]',
+      label: () => t('Paste with Connect'),
+      function: () => {
+        app.canvas.pasteFromClipboard({ connectInputs: true })
+      }
+    },
+    {
       id: 'Comfy.Canvas.SelectAll',
       icon: 'icon-[lucide--lasso-select]',
       label: 'Select All',
@@ -916,6 +923,12 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Delete Selected Items',
       versionAdded: '1.10.5',
       function: () => {
+        if (app.canvas.selectedItems.size === 0) {
+          app.canvas.canvas.dispatchEvent(
+            new CustomEvent('litegraph:no-items-selected', { bubbles: true })
+          )
+          return
+        }
         app.canvas.deleteSelected()
         app.canvas.setDirty(true, true)
       }
@@ -945,8 +958,7 @@ export function useCoreCommands(): ComfyCommand[] {
           toastStore.add({
             severity: 'error',
             summary: t('g.error'),
-            detail: t('manager.notAvailable'),
-            life: 3000
+            detail: t('manager.notAvailable')
           })
           return
         }
@@ -1031,8 +1043,7 @@ export function useCoreCommands(): ComfyCommand[] {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.cannotCreateSubgraph'),
-            detail: t('toastMessages.failedToConvertToSubgraph'),
-            life: 3000
+            detail: t('toastMessages.failedToConvertToSubgraph')
           })
           return
         }
@@ -1241,8 +1252,7 @@ export function useCoreCommands(): ComfyCommand[] {
             summary: t('g.error'),
             detail: t('g.commandProhibited', {
               command: 'Comfy.Memory.UnloadModels'
-            }),
-            life: 3000
+            })
           })
           return
         }
@@ -1261,8 +1271,7 @@ export function useCoreCommands(): ComfyCommand[] {
             summary: t('g.error'),
             detail: t('g.commandProhibited', {
               command: 'Comfy.Memory.UnloadModelsAndExecutionCache'
-            }),
-            life: 3000
+            })
           })
           return
         }
@@ -1338,8 +1347,6 @@ export function useCoreCommands(): ComfyCommand[] {
           typeof metadata?.source === 'string' ? metadata.source : 'keybind'
         const newMode = !canvasStore.linearMode
         if (newMode) useTelemetry()?.trackEnterLinear({ source })
-        app.rootGraph.extra.linearMode = newMode
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
         canvasStore.linearMode = newMode
       }
     }

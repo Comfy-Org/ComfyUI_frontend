@@ -1,5 +1,6 @@
 import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
+import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
@@ -27,6 +28,8 @@ export interface DrawWidgetOptions {
   showText?: boolean
   /** When true, suppresses the promoted outline color (e.g. for projected copies on SubgraphNode). */
   suppressPromotedOutline?: boolean
+  /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
+  previewImages?: HTMLImageElement[]
 }
 
 interface DrawTruncatingTextOptions extends DrawWidgetOptions {
@@ -140,6 +143,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     this._state = useWidgetValueStore().registerWidget(graphId, {
       ...this._state,
+      // BaseWidget: this.value getter returns this._state.value. So value: this.value === value: this._state.value.
+      // BaseDOMWidgetImpl: this.value getter returns options.getValue?.() ?? ''. Resolves the correct initial value instead of undefined.
+      // I.e., calls overriden getter -> options.getValue() -> correct value (https://github.com/Comfy-Org/ComfyUI_frontend/issues/9194).
+      value: this.value,
       nodeId
     })
   }
@@ -343,8 +350,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     // Measure label and value
     const { displayName, _displayValue } = this
-    const labelWidth = ctx.measureText(displayName).width
-    const valueWidth = ctx.measureText(_displayValue).width
+    const labelWidth = cachedMeasureText(ctx, displayName)
+    const valueWidth = cachedMeasureText(ctx, _displayValue)
 
     const gap = BaseWidget.labelValueGap
     const x = margin * 2 + leftPadding

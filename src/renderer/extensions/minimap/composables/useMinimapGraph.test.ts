@@ -17,6 +17,12 @@ vi.mock('@vueuse/core', () => ({
   useThrottleFn: vi.fn((fn) => fn)
 }))
 
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: vi.fn().mockReturnValue({
+    nodeProgressStates: {}
+  })
+}))
+
 vi.mock('@/scripts/api', () => ({
   api: {
     addEventListener: vi.fn(),

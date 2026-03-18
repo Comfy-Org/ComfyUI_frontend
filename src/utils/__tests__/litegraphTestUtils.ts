@@ -226,7 +226,10 @@ export function createMockChangeTracker(
     undoQueue: [],
     redoQueue: [],
     changeCount: 0,
+    checkState: vi.fn(),
     reset: vi.fn(),
+    restore: vi.fn(),
+    store: vi.fn(),
     ...overrides
   }
   return partial as Partial<ChangeTracker> as ChangeTracker
@@ -273,6 +276,8 @@ export function createMockCanvas2DContext(
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
+    save: vi.fn(),
+    restore: vi.fn(),
     ...overrides
   }
   return partial as CanvasRenderingContext2D

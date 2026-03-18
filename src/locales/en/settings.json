@@ -352,8 +352,8 @@
     "tooltip": "The maximum number of tasks that show in the queue history."
   },
   "Comfy_Queue_QPOV2": {
-    "name": "Use the unified job queue in the Assets side panel",
-    "tooltip": "Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout."
+    "name": "Docked job history/queue panel",
+    "tooltip": "Replaces the floating job queue panel with an equivalent job queue embedded in the job history side panel. You can disable this to return to the floating panel layout."
   },
   "Comfy_QueueButton_BatchCountLimit": {
     "name": "Batch count limit",
@@ -402,10 +402,10 @@
   },
   "Comfy_UI_TabBarLayout": {
     "name": "Tab Bar Layout",
-    "tooltip": "Controls the layout of the tab bar. \"Integrated\" moves Help and User controls into the tab bar area.",
+    "tooltip": "Controls the elements contained in the integrated tab bar.",
     "options": {
       "Default": "Default",
-      "Integrated": "Integrated"
+      "Legacy": "Legacy"
     }
   },
   "Comfy_UseNewMenu": {
@@ -458,9 +458,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Show missing models warning"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Show missing nodes warning"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Sort node IDs when saving workflow"
   },
@@ -484,6 +481,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Scale node combo widget menus (lists) when zoomed in"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "Select group children on click",
+    "tooltip": "When enabled, clicking a group selects all nodes and items inside it"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "Always shrink new nodes",

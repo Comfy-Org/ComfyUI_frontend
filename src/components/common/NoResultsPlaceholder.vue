@@ -3,16 +3,21 @@
     <Card>
       <template #content>
         <div class="flex flex-col items-center">
-          <i :class="icon" style="font-size: 3rem; margin-bottom: 1rem" />
-          <h3>{{ title }}</h3>
+          <i
+            v-if="icon"
+            :class="icon"
+            style="font-size: 3rem; margin-bottom: 1rem"
+          />
+          <h3 v-if="title">{{ title }}</h3>
           <p :class="textClass" class="text-center whitespace-pre-line">
             {{ message }}
           </p>
           <Button
             v-if="buttonLabel"
-            variant="textonly"
+            :variant="buttonVariant ?? 'textonly'"
             @click="$emit('action')"
           >
+            <i v-if="buttonIcon" :class="buttonIcon" />
             {{ buttonLabel }}
           </Button>
         </div>
@@ -25,14 +30,17 @@
 import Card from 'primevue/card'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '../ui/button/button.variants'
 
 const props = defineProps<{
   class?: string
   icon?: string
-  title: string
+  title?: string
   message: string
   textClass?: string
+  buttonIcon?: string
   buttonLabel?: string
+  buttonVariant?: ButtonVariants['variant']
 }>()
 
 defineEmits(['action'])
@@ -51,7 +59,6 @@ defineEmits(['action'])
 }
 
 .no-results-placeholder p {
-  color: var(--text-color-secondary);
   margin-bottom: 1rem;
 }
 </style>

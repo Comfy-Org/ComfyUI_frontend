@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { useEventListener, useInfiniteScroll } from '@vueuse/core'
-import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
+import {
+  useEventListener,
+  useInfiniteScroll,
+  useResizeObserver
+} from '@vueuse/core'
+import { storeToRefs } from 'pinia'
+import type { ComponentPublicInstance } from 'vue'
 import {
   computed,
   nextTick,
+  ref,
   toValue,
   useTemplateRef,
   watch,
@@ -11,7 +17,7 @@ import {
 } from 'vue'
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import OutputHistoryActiveQueueItem from '@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue'
 import OutputHistoryItem from '@/renderer/extensions/linearMode/OutputHistoryItem.vue'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type {
@@ -20,12 +26,17 @@ import type {
 } from '@/renderer/extensions/linearMode/linearModeTypes'
 import OutputPreviewItem from '@/renderer/extensions/linearMode/OutputPreviewItem.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const { outputs, allOutputs } = useOutputHistory()
+const { outputs, allOutputs, selectFirstHistory, mayBeActiveWorkflowPending } =
+  useOutputHistory()
+const { hasOutputs } = storeToRefs(useAppModeStore())
 const queueStore = useQueueStore()
 const store = useLinearOutputStore()
+const workflowStore = useWorkflowStore()
 
 const emit = defineEmits<{
   updateSelection: [selection: OutputSelection]
@@ -35,24 +46,25 @@ const queueCount = computed(
   () => queueStore.runningTasks.length + queueStore.pendingTasks.length
 )
 
-const listboxRef = useTemplateRef<{
-  highlightItem: (value: SelectionValue) => void
-}>('listboxRef')
-
 const itemClass = cn(
-  'shrink-0 cursor-pointer p-1 rounded-lg border-2 border-transparent outline-none',
-  'data-[state=checked]:border-interface-panel-job-progress-border'
+  'shrink-0 cursor-pointer rounded-lg border-2 border-transparent p-1 outline-none',
+  'relative data-[state=checked]:border-interface-panel-job-progress-border'
 )
 
-const hasActiveContent = computed(() => store.inProgressItems.length > 0)
+const hasActiveContent = computed(
+  () => store.activeWorkflowInProgressItems.length > 0
+)
 
 const visibleHistory = computed(() =>
-  outputs.media.value.filter((a) => toValue(allOutputs(a)).length > 0)
+  outputs.media.value.filter((a) => allOutputs(a).length > 0)
 )
 
 const selectableItems = computed(() => {
   const items: SelectionValue[] = []
-  for (const item of store.inProgressItems) {
+  if (mayBeActiveWorkflowPending.value) {
+    items.push({ id: 'slot:pending', kind: 'inProgress', itemId: 'pending' })
+  }
+  for (const item of store.activeWorkflowInProgressItems) {
     items.push({
       id: `slot:${item.id}`,
       kind: 'inProgress',
@@ -60,7 +72,7 @@ const selectableItems = computed(() => {
     })
   }
   for (const asset of outputs.media.value) {
-    const outs = toValue(allOutputs(asset))
+    const outs = allOutputs(asset)
     for (let k = 0; k < outs.length; k++) {
       items.push({
         id: `history:${asset.id}:${k}`,
@@ -82,9 +94,22 @@ const selectedValue = computed(() => {
   return selectionMap.value.get(store.selectedId)
 })
 
-function onSelectionChange(val: unknown) {
-  const sv = val as SelectionValue | undefined
-  store.select(sv?.id ?? null)
+function itemAttrs(id: string) {
+  const selected = store.selectedId === id
+  return {
+    'data-state': selected ? 'checked' : 'unchecked',
+    tabindex: selected ? 0 : -1
+  }
+}
+
+const selectedItemEl = ref<Element | null>(null)
+
+function selectedRef(id: string) {
+  return store.selectedId === id
+    ? (el: Element | ComponentPublicInstance | null) => {
+        selectedItemEl.value = el instanceof Element ? el : null
+      }
+    : undefined
 }
 
 function doEmit() {
@@ -94,9 +119,11 @@ function doEmit() {
     return
   }
   if (sel.kind === 'inProgress') {
-    const item = store.inProgressItems.find((i) => i.id === sel.itemId)
+    const item = store.activeWorkflowInProgressItems.find(
+      (i) => i.id === sel.itemId
+    )
     if (!item || item.state === 'skeleton') {
-      emit('updateSelection', { canShowPreview: true })
+      emit('updateSelection', { canShowPreview: true, showSkeleton: true })
     } else if (item.state === 'latent') {
       emit('updateSelection', {
         canShowPreview: true,
@@ -111,7 +138,7 @@ function doEmit() {
     return
   }
   const asset = outputs.media.value.find((a) => a.id === sel.assetId)
-  const output = asset ? toValue(allOutputs(asset))[sel.key] : undefined
+  const output = asset ? allOutputs(asset)[sel.key] : undefined
   const isFirst = outputs.media.value[0]?.id === sel.assetId
   emit('updateSelection', {
     asset,
@@ -122,23 +149,24 @@ function doEmit() {
 
 watchEffect(doEmit)
 
-// Resolve in-progress items only when history outputs are loaded.
-// Using watchEffect so it re-runs when allOutputs refs resolve (async).
-watchEffect(() => {
-  if (store.pendingResolve.size === 0) return
-  for (const jobId of store.pendingResolve) {
-    const asset = outputs.media.value.find((a) => {
-      const m = getOutputAssetMetadata(a?.user_metadata)
-      return m?.jobId === jobId
-    })
-    if (!asset) continue
-    const loaded = toValue(allOutputs(asset)).length > 0
-    if (loaded) {
-      store.resolveIfReady(jobId, true)
-      if (!store.selectedId) selectFirstHistory()
+// On load or workflow tab switch, select the most recent item.
+// Prefer in-progress items for this workflow, then history, skipping
+// the global pending slot which may belong to another workflow.
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  (path) => {
+    if (!path) return
+    const inProgress = store.activeWorkflowInProgressItems
+    if (inProgress.length > 0) {
+      store.selectAsLatest(`slot:${inProgress[0].id}`)
+    } else if (hasOutputs.value) {
+      selectFirstHistory()
+    } else {
+      store.selectAsLatest(null)
     }
-  }
-})
+  },
+  { immediate: true }
+)
 
 // Keep history selection stable on media changes
 watch(
@@ -157,51 +185,47 @@ watch(
       : undefined
 
     if (!sv || sv.kind !== 'history') {
-      selectFirstHistory()
+      if (hasOutputs.value) selectFirstHistory()
       return
     }
 
     const wasFirst = sv.assetId === oldAssets[0]?.id
     if (wasFirst || !newAssets.some((a) => a.id === sv.assetId)) {
-      selectFirstHistory()
+      if (hasOutputs.value) selectFirstHistory()
     }
   }
 )
 
-function selectFirstHistory() {
-  const first = outputs.media.value[0]
-  if (first) {
-    store.selectAsLatest(`history:${first.id}:0`)
-  } else {
-    store.selectAsLatest(null)
-  }
-}
-
 const outputsRef = useTemplateRef('outputsRef')
+
+// Track scrollWidth so we can compensate when items are prepended on the left.
+let lastScrollWidth = 0
+useResizeObserver(outputsRef, () => {
+  lastScrollWidth = outputsRef.value?.scrollWidth ?? 0
+})
+watch(
+  [
+    () => store.activeWorkflowInProgressItems.length,
+    () => visibleHistory.value[0]?.id,
+    queueCount
+  ],
+  () => {
+    const el = outputsRef.value
+    if (!el || el.scrollLeft === 0) {
+      lastScrollWidth = el?.scrollWidth ?? 0
+      return
+    }
+    nextTick(() => {
+      const delta = el.scrollWidth - lastScrollWidth
+      if (delta !== 0) el.scrollLeft += delta
+      lastScrollWidth = el.scrollWidth
+    })
+  }
+)
+
 useInfiniteScroll(outputsRef, outputs.loadMore, {
   canLoadMore: () => outputs.hasMore.value
 })
-
-// Reka UI's ListboxContent stops propagation on ALL Enter keydown events,
-// which blocks modifier+Enter (Ctrl+Enter = run workflow) from reaching
-// the global keybinding handler on window. Intercept in capture phase
-// and re-dispatch from above the Listbox.
-function onModifierEnter(e: KeyboardEvent) {
-  if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey || e.shiftKey)) return
-  e.stopImmediatePropagation()
-  outputsRef.value?.parentElement?.dispatchEvent(
-    new KeyboardEvent('keydown', {
-      key: e.key,
-      code: e.code,
-      ctrlKey: e.ctrlKey,
-      metaKey: e.metaKey,
-      shiftKey: e.shiftKey,
-      altKey: e.altKey,
-      bubbles: true,
-      cancelable: true
-    })
-  )
-}
 
 function navigateToAdjacent(direction: 1 | -1) {
   const items = selectableItems.value
@@ -210,9 +234,13 @@ function navigateToAdjacent(direction: 1 | -1) {
   const idx = currentId ? items.findIndex((i) => i.id === currentId) : -1
   const nextIdx =
     idx === -1 ? 0 : Math.max(0, Math.min(items.length - 1, idx + direction))
-  const next = items[nextIdx]
-  store.select(next.id)
-  nextTick(() => listboxRef.value?.highlightItem(next))
+  store.select(items[nextIdx].id)
+  nextTick(() => {
+    selectedItemEl.value?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest'
+    })
+  })
 }
 
 const pointer = new CanvasPointer(document.body)
@@ -254,9 +282,15 @@ useEventListener(
   { passive: false }
 )
 
+const keyHandlers: Record<string, 1 | -1> = {
+  ArrowUp: -1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowRight: 1
+}
 useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
   if (
-    (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') ||
+    !(e.key in keyHandlers) ||
     e.target instanceof HTMLTextAreaElement ||
     e.target instanceof HTMLInputElement
   )
@@ -264,95 +298,80 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
 
   e.preventDefault()
   e.stopPropagation()
-  if (e.key === 'ArrowDown') navigateToAdjacent(1)
-  else navigateToAdjacent(-1)
+  navigateToAdjacent(keyHandlers[e.key])
 })
 </script>
 <template>
-  <ListboxRoot
-    ref="listboxRef"
-    :model-value="selectedValue"
-    orientation="horizontal"
-    selection-behavior="replace"
-    by="id"
-    class="min-w-0"
-    @update:model-value="onSelectionChange"
-  >
-    <ListboxContent as-child>
-      <article
-        ref="outputsRef"
-        data-testid="linear-outputs"
-        class="p-3 overflow-y-clip overflow-x-auto min-w-0"
-        @keydown.capture="onModifierEnter"
-      >
-        <div class="flex items-center gap-0.5 mx-auto w-fit">
-          <div v-if="queueCount > 0" class="shrink-0 flex items-center gap-0.5">
-            <div
-              class="shrink-0 p-1 border-2 border-transparent relative"
-              data-testid="linear-job"
-            >
-              <div
-                class="size-10 rounded-sm bg-secondary-background flex items-center justify-center"
-              >
-                <i
-                  class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
-                />
-              </div>
-              <div
-                v-if="queueCount > 1"
-                class="absolute top-0 right-0 min-w-4 h-4 flex justify-center items-center rounded-full bg-primary-background text-text-primary text-xs"
-                v-text="queueCount"
-              />
-            </div>
-            <div
-              v-if="hasActiveContent || visibleHistory.length > 0"
-              class="border-l border-border-default h-12 shrink-0 mx-4"
-            />
+  <div role="group" class="min-w-0 px-4 pb-4">
+    <article
+      ref="outputsRef"
+      data-testid="linear-outputs"
+      class="min-w-0 overflow-x-auto overflow-y-clip py-3"
+    >
+      <div class="mx-auto flex h-21 w-fit items-start gap-0.5">
+        <div
+          v-if="queueCount > 0 || hasActiveContent"
+          :class="
+            cn(
+              'sticky left-0 z-10 flex shrink-0 items-start gap-0.5',
+              'md:bg-comfy-menu-secondary-bg bg-comfy-menu-bg'
+            )
+          "
+        >
+          <OutputHistoryActiveQueueItem
+            v-if="queueCount > 1"
+            class="mr-3"
+            :queue-count="queueCount"
+          />
+
+          <div
+            v-if="mayBeActiveWorkflowPending"
+            :ref="selectedRef('slot:pending')"
+            v-bind="itemAttrs('slot:pending')"
+            :class="itemClass"
+            @click="store.select('slot:pending')"
+          >
+            <OutputPreviewItem />
           </div>
 
-          <ListboxItem
-            v-for="item in store.inProgressItems"
+          <div
+            v-for="item in store.activeWorkflowInProgressItems"
             :key="`${item.id}-${item.state}`"
-            :value="{
-              id: `slot:${item.id}`,
-              kind: 'inProgress',
-              itemId: item.id
-            }"
+            :ref="selectedRef(`slot:${item.id}`)"
+            v-bind="itemAttrs(`slot:${item.id}`)"
             :class="itemClass"
+            @click="store.select(`slot:${item.id}`)"
           >
             <OutputPreviewItem
               v-if="item.state !== 'image' || !item.output"
               :latent-preview="item.latentPreviewUrl"
             />
             <OutputHistoryItem v-else :output="item.output" />
-          </ListboxItem>
+          </div>
 
           <div
             v-if="hasActiveContent && visibleHistory.length > 0"
-            class="border-l border-border-default h-12 shrink-0 mx-4"
+            class="mx-4 h-12 shrink-0 border-l border-border-default"
           />
-
-          <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
-            <div
-              v-if="aIdx > 0"
-              class="border-l border-border-default h-12 shrink-0 mx-4"
-            />
-            <ListboxItem
-              v-for="(output, key) in toValue(allOutputs(asset))"
-              :key
-              :value="{
-                id: `history:${asset.id}:${key}`,
-                kind: 'history',
-                assetId: asset.id,
-                key
-              }"
-              :class="itemClass"
-            >
-              <OutputHistoryItem :output="output" />
-            </ListboxItem>
-          </template>
         </div>
-      </article>
-    </ListboxContent>
-  </ListboxRoot>
+
+        <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
+          <div
+            v-if="aIdx > 0"
+            class="mx-4 h-12 shrink-0 border-l border-border-default"
+          />
+          <div
+            v-for="(output, key) in toValue(allOutputs(asset))"
+            :key
+            :ref="selectedRef(`history:${asset.id}:${key}`)"
+            v-bind="itemAttrs(`history:${asset.id}:${key}`)"
+            :class="itemClass"
+            @click="store.select(`history:${asset.id}:${key}`)"
+          >
+            <OutputHistoryItem :output="output" />
+          </div>
+        </template>
+      </div>
+    </article>
+  </div>
 </template>

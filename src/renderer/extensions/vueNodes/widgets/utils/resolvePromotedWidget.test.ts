@@ -96,6 +96,38 @@ describe('resolveWidgetFromHostNode', () => {
     expect(resolved).toEqual({ node: innerNode, widget: innerWidget })
   })
 
+  it('resolves nested promoted widget chain to deepest interior widget', () => {
+    const innerWidget = createWidget('inner_text')
+    const innerNode = createHostNode([innerWidget])
+
+    const middleNode = createHostNode([], {
+      isSubgraphNode: true,
+      innerNodesById: { '100': innerNode }
+    })
+    const middlePromotedWidget = {
+      ...createPromotedWidget('inner_text', '100', 'inner_text'),
+      node: middleNode
+    } as TestPromotedWidget & { node: LGraphNode }
+    middleNode.widgets = [middlePromotedWidget]
+
+    const outerPromotedWidget = createPromotedWidget(
+      'outer_text',
+      '42',
+      'inner_text'
+    )
+    const hostNode = createHostNode([outerPromotedWidget], {
+      isSubgraphNode: true,
+      innerNodesById: { '42': middleNode }
+    })
+
+    const resolved = resolveWidgetFromHostNode(
+      hostNode,
+      outerPromotedWidget.name
+    )
+
+    expect(resolved).toEqual({ node: innerNode, widget: innerWidget })
+  })
+
   it('returns undefined when promoted interior node is missing', () => {
     const promotedWidget = createPromotedWidget(
       'promoted_text',

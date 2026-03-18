@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-end gap-2 w-full">
+  <div class="flex w-full justify-end gap-2">
     <div v-if="currentStep === 1" class="mr-auto flex items-center gap-2">
       <i class="icon-[lucide--circle-question-mark] text-muted-foreground" />
       <Button
@@ -49,10 +49,7 @@
       :disabled="!canFetchMetadata || isFetchingMetadata"
       @click="emit('fetchMetadata')"
     >
-      <i
-        v-if="isFetchingMetadata"
-        class="icon-[lucide--loader-circle] animate-spin"
-      />
+      <Loader v-if="isFetchingMetadata" />
       <span>{{ $t('g.continue') }}</span>
     </Button>
     <Button
@@ -63,7 +60,7 @@
       :disabled="!canUploadModel || isUploading"
       @click="emit('upload')"
     >
-      <i v-if="isUploading" class="icon-[lucide--loader-circle] animate-spin" />
+      <Loader v-if="isUploading" />
       <span>{{ $t('assetBrowser.upload') }}</span>
     </Button>
     <template
@@ -109,6 +106,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import Loader from '@/components/loader/Loader.vue'
 import Button from '@/components/ui/button/Button.vue'
 import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
 

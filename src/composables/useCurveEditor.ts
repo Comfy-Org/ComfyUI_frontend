@@ -1,31 +1,44 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { createMonotoneInterpolator } from '@/components/curve/curveUtils'
-import type { CurvePoint } from '@/lib/litegraph/src/types/widgets'
+import { createInterpolator } from '@/components/curve/curveUtils'
+import type { CurveInterpolation, CurvePoint } from '@/components/curve/types'
 
 interface UseCurveEditorOptions {
   svgRef: Ref<SVGSVGElement | null>
   modelValue: Ref<CurvePoint[]>
+  interpolation: Ref<CurveInterpolation>
 }
 
-export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
+export function useCurveEditor({
+  svgRef,
+  modelValue,
+  interpolation
+}: UseCurveEditorOptions) {
   const dragIndex = ref(-1)
   let cleanupDrag: (() => void) | null = null
 
   const curvePath = computed(() => {
     const points = modelValue.value
     if (points.length < 2) return ''
+    const sorted = [...points].sort((a, b) => a[0] - b[0])
 
-    const interpolate = createMonotoneInterpolator(points)
-    const xMin = points[0][0]
-    const xMax = points[points.length - 1][0]
+    if (interpolation.value === 'linear') {
+      return sorted
+        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${1 - p[1]}`)
+        .join('')
+    }
+
+    const interpolate = createInterpolator(sorted, interpolation.value)
+    const xMin = sorted[0][0]
+    const xMax = sorted[sorted.length - 1][0]
     const segments = 128
+    const range = xMax - xMin
     const parts: string[] = []
     for (let i = 0; i <= segments; i++) {
-      const x = xMin + (xMax - xMin) * (i / segments)
+      const x = xMin + range * (i / segments)
       const y = 1 - interpolate(x)
-      parts.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(4)},${y.toFixed(4)}`)
+      parts.push(`${i === 0 ? 'M' : 'L'}${x},${y}`)
     }
     return parts.join('')
   })

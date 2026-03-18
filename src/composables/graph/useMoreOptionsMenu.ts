@@ -1,7 +1,12 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type {
+  LGraphGroup,
+  LGraphNode,
+  NodeId
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
@@ -46,7 +51,7 @@ export enum BadgeVariant {
 // Global singleton for NodeOptions component reference
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
-const hoveredWidgetName = ref<string>()
+const hoveredWidget = ref<[string, NodeId | undefined]>()
 
 /**
  * Toggle the node options popover
@@ -63,22 +68,24 @@ export function toggleNodeOptions(event: Event) {
  * Use this for contextmenu events where we always want to show at the new position
  * @param event - The trigger event (must be MouseEvent for position)
  */
-export function showNodeOptions(event: MouseEvent) {
-  hoveredWidgetName.value = undefined
-  const target = event.target
-  if (target instanceof HTMLElement) {
-    const widgetEl = target.closest('.lg-node-widget')
-    if (widgetEl instanceof HTMLElement)
-      hoveredWidgetName.value = widgetEl.dataset.widgetName
-  }
+export function showNodeOptions(
+  event: MouseEvent,
+  widgetName?: string,
+  nodeId?: NodeId
+) {
+  hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
   if (nodeOptionsInstance?.show) {
     nodeOptionsInstance.show(event)
   }
 }
 
 /**
- * Hide the node options popover
+ * Check if the node options menu is currently open
  */
+export function isNodeOptionsOpen(): boolean {
+  return nodeOptionsInstance?.isOpen.value ?? false
+}
+
 interface NodeOptionsInstance {
   toggle: (event: Event) => void
   show: (event: MouseEvent) => void
@@ -158,8 +165,7 @@ export function useMoreOptionsMenu() {
 
   const menuOptions = computed((): MenuOption[] => {
     // Reference selection flags to ensure re-computation when they change
-
-    optionsVersion.value
+    void optionsVersion.value
     const states = computeSelectionFlags()
 
     // Detect single group selection context (and no nodes explicitly selected)
@@ -259,8 +265,16 @@ export function useMoreOptionsMenu() {
       options.push(...getImageMenuOptions(selectedNodes.value[0]))
       options.push({ type: 'divider' })
     }
-    const rawName = hoveredWidgetName.value
-    const widget = node?.widgets?.find((w) => w.name === rawName)
+    const [widgetName, nodeId] = hoveredWidget.value ?? []
+    const widget =
+      nodeId !== undefined
+        ? node?.widgets?.find(
+            (w) =>
+              isPromotedWidgetView(w) &&
+              w.sourceWidgetName === widgetName &&
+              w.sourceNodeId === nodeId
+          )
+        : node?.widgets?.find((w) => w.name === widgetName)
     if (widget) {
       const widgetOptions = convertContextMenuToOptions(
         getExtraOptionsForWidget(node, widget)

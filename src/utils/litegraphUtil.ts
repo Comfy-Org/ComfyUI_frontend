@@ -1,5 +1,6 @@
 import _ from 'es-toolkit/compat'
 
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
@@ -20,8 +21,10 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
@@ -302,6 +305,45 @@ function compressSubgraphWidgetInputSlots(
 
 export function getLinkTypeColor(typeName: string): string {
   return LGraphCanvas.link_type_colors[typeName] ?? LiteGraph.LINK_COLOR
+}
+
+export function resolveNode(
+  nodeId: NodeId,
+  graph: LGraph | null | undefined = app.rootGraph
+): LGraphNode | undefined {
+  if (!graph) return undefined
+  const found = graph.getNodeById(nodeId)
+  if (found) return found
+  for (const sg of graph.subgraphs.values()) {
+    const node = sg.getNodeById(nodeId)
+    if (node) return node
+  }
+  return undefined
+}
+export function resolveNodeWidget(
+  nodeId: NodeId,
+  widgetName?: string,
+  graph: LGraph = app.rootGraph
+): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
+  const node = graph.getNodeById(nodeId)
+  if (!widgetName) return node ? [node] : []
+  if (node) {
+    const widget = node.widgets?.find((w) => w.name === widgetName)
+    return widget ? [node, widget] : []
+  }
+
+  for (const node of graph.nodes) {
+    if (!node.isSubgraphNode()) continue
+    const widget = node.widgets?.find(
+      (w) =>
+        isPromotedWidgetView(w) &&
+        w.sourceWidgetName === widgetName &&
+        w.sourceNodeId === nodeId
+    )
+    if (widget) return [node, widget]
+  }
+
+  return []
 }
 
 export function isLoad3dNode(node: LGraphNode) {

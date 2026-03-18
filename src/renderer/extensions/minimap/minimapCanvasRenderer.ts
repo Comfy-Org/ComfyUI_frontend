@@ -26,6 +26,8 @@ function getMinimapColors() {
     groupColorDefault: isLightTheme ? '#283640' : '#B3C1CB',
     bypassColor: isLightTheme ? '#DBDBDB' : '#4B184B',
     errorColor: '#FF0000',
+    runningColor: '#00FF00',
+    successColor: '#239B23',
     isLightTheme
   }
 }
@@ -103,10 +105,19 @@ function renderNodes(
   const nodes = dataSource.getNodes()
   if (nodes.length === 0) return
 
+  ctx.save()
+
   // Group nodes by color for batch rendering (performance optimization)
   const nodesByColor = new Map<
     string,
-    Array<{ x: number; y: number; w: number; h: number; hasErrors?: boolean }>
+    Array<{
+      x: number
+      y: number
+      w: number
+      h: number
+      hasErrors?: boolean
+      executionState?: 'pending' | 'running' | 'finished' | 'error' | null
+    }>
   >()
 
   for (const node of nodes) {
@@ -121,7 +132,14 @@ function renderNodes(
       nodesByColor.set(color, [])
     }
 
-    nodesByColor.get(color)!.push({ x, y, w, h, hasErrors: node.hasErrors })
+    nodesByColor.get(color)!.push({
+      x,
+      y,
+      w,
+      h,
+      hasErrors: node.hasErrors,
+      executionState: node.executionState
+    })
   }
 
   // Batch render nodes by color
@@ -132,18 +150,29 @@ function renderNodes(
     }
   }
 
-  // Render error outlines if needed
-  if (context.settings.renderError) {
-    ctx.strokeStyle = colors.errorColor
-    ctx.lineWidth = 0.3
-    for (const nodes of nodesByColor.values()) {
-      for (const node of nodes) {
-        if (node.hasErrors) {
-          ctx.strokeRect(node.x, node.y, node.w, node.h)
-        }
+  ctx.lineWidth = 0.3
+  for (const nodes of nodesByColor.values()) {
+    for (const node of nodes) {
+      if (node.hasErrors && context.settings.renderError) {
+        ctx.strokeStyle = colors.errorColor
+        ctx.strokeRect(node.x, node.y, node.w, node.h)
+      } else if (node.executionState === 'running') {
+        ctx.strokeStyle = colors.runningColor
+        ctx.strokeRect(node.x, node.y, node.w, node.h)
+      } else if (node.executionState === 'finished') {
+        ctx.strokeStyle = colors.successColor
+        ctx.strokeRect(node.x, node.y, node.w, node.h)
+      } else if (
+        node.executionState === 'error' &&
+        context.settings.renderError
+      ) {
+        ctx.strokeStyle = colors.errorColor
+        ctx.strokeRect(node.x, node.y, node.w, node.h)
       }
     }
   }
+
+  ctx.restore()
 }
 
 /**

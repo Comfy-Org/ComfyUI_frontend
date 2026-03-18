@@ -1,23 +1,11 @@
 <template>
   <div class="flex h-full flex-col">
-    <div v-if="assetItems.length" class="px-2">
-      <div
-        class="flex items-center p-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
-      >
-        {{
-          t(
-            assetType === 'input'
-              ? 'sideToolbar.importedAssetsHeader'
-              : 'sideToolbar.generatedAssetsHeader'
-          )
-        }}
-      </div>
-    </div>
-
     <VirtualGrid
       class="flex-1"
       :items="assetItems"
       :grid-style="listGridStyle"
+      :max-columns="1"
+      :default-item-height="48"
       @approach-end="emit('approach-end')"
     >
       <template #item="{ item }">
@@ -33,7 +21,7 @@
             tabindex="0"
             :aria-label="
               t('assetBrowser.ariaLabel.assetCard', {
-                name: item.asset.name,
+                name: getAssetDisplayName(item.asset),
                 type: getAssetMediaType(item.asset)
               })
             "
@@ -44,7 +32,7 @@
               )
             "
             :preview-url="getAssetPreviewUrl(item.asset)"
-            :preview-alt="item.asset.name"
+            :preview-alt="getAssetDisplayName(item.asset)"
             :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
             :is-video-preview="isVideoAsset(item.asset)"
             :primary-text="getAssetPrimaryText(item.asset)"
@@ -56,6 +44,8 @@
             @mouseleave="onAssetLeave(item.asset.id)"
             @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
             @click.stop="emit('select-asset', item.asset, selectableAssets)"
+            @dblclick.stop="emit('preview-asset', item.asset)"
+            @preview-click="emit('preview-asset', item.asset)"
             @stack-toggle="void toggleStack(item.asset)"
           >
             <template v-if="hoveredAssetId === item.asset.id" #actions>
@@ -86,6 +76,7 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -101,21 +92,20 @@ const {
   selectableAssets,
   isSelected,
   isStackExpanded,
-  toggleStack,
-  assetType = 'output'
+  toggleStack
 } = defineProps<{
   assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
-  assetType?: 'input' | 'output'
 }>()
 
 const assetsStore = useAssetsStore()
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem, assets?: AssetItem[]): void
+  (e: 'preview-asset', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
 }>()
@@ -131,7 +121,7 @@ const listGridStyle = {
 }
 
 function getAssetPrimaryText(asset: AssetItem): string {
-  return truncateFilename(asset.name)
+  return truncateFilename(getAssetDisplayName(asset))
 }
 
 function getAssetMediaType(asset: AssetItem) {
@@ -186,7 +176,7 @@ function getAssetCardClass(selected: boolean): string {
     'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
     'cursor-pointer',
     selected &&
-      'bg-secondary-background-hover ring-1 ring-inset ring-modal-card-border-highlighted'
+      'bg-secondary-background-hover ring-1 ring-modal-card-border-highlighted ring-inset'
   )
 }
 

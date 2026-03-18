@@ -1,7 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app } from '@/scripts/app'
-import { useExecutionStore } from '@/stores/executionStore'
+import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
@@ -11,6 +11,7 @@ const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -37,6 +38,37 @@ declare global {
 vi.mock('@/composables/node/useNodeProgressText', () => ({
   useNodeProgressText: () => ({
     showTextPreview: vi.fn()
+  })
+}))
+
+/**
+ * Captures event handlers registered via api.addEventListener so tests
+ * can invoke them directly (e.g. to simulate WebSocket progress events).
+ */
+type EventHandler = (...args: unknown[]) => void
+const apiEventHandlers = new Map<string, EventHandler>()
+vi.mock('@/scripts/api', () => ({
+  api: {
+    addEventListener: vi.fn((event: string, handler: EventHandler) => {
+      apiEventHandlers.set(event, handler)
+    }),
+    removeEventListener: vi.fn((event: string) => {
+      apiEventHandlers.delete(event)
+    }),
+    clientId: 'test-client',
+    apiURL: vi.fn((path: string) => `/api${path}`)
+  }
+}))
+
+vi.mock('@/stores/imagePreviewStore', () => ({
+  useNodeOutputStore: () => ({
+    revokePreviewsByExecutionId: vi.fn()
+  })
+}))
+
+vi.mock('@/stores/jobPreviewStore', () => ({
+  useJobPreviewStore: () => ({
+    clearPreview: vi.fn()
   })
 }))
 
@@ -133,6 +165,226 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
       expect(result).toBeNull()
     })
+  })
+})
+
+describe('useExecutionStore - nodeLocationProgressStates caching', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockNodeExecutionIdToNodeLocatorId.mockReset()
+    mockNodeIdToNodeLocatorId.mockReset()
+    mockNodeLocatorIdToNodeExecutionId.mockReset()
+
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should resolve execution IDs to locator IDs for subgraph nodes', () => {
+    const mockSubgraph = {
+      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      nodes: []
+    }
+    const mockNode = createMockLGraphNode({
+      id: 123,
+      isSubgraphNode: () => true,
+      subgraph: mockSubgraph
+    })
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
+
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123:456',
+        state: 'running',
+        value: 50,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node1'
+      }
+    }
+
+    const result = store.nodeLocationProgressStates
+
+    expect(result['123']).toBeDefined()
+    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:456']).toBeDefined()
+  })
+
+  it('should not re-traverse graph for same execution IDs across progress updates', () => {
+    const mockSubgraph = {
+      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      nodes: []
+    }
+    const mockNode = createMockLGraphNode({
+      id: 123,
+      isSubgraphNode: () => true,
+      subgraph: mockSubgraph
+    })
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
+
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123:456',
+        state: 'running',
+        value: 50,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node1'
+      }
+    }
+
+    // First evaluation triggers graph traversal
+    expect(store.nodeLocationProgressStates['123']).toBeDefined()
+    const callCountAfterFirst = vi.mocked(app.rootGraph.getNodeById).mock.calls
+      .length
+
+    // Second update with same execution IDs but different progress
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123:456',
+        state: 'running',
+        value: 75,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node1'
+      }
+    }
+
+    expect(store.nodeLocationProgressStates['123']).toBeDefined()
+
+    // getNodeById should NOT be called again for the same execution ID
+    expect(vi.mocked(app.rootGraph.getNodeById).mock.calls.length).toBe(
+      callCountAfterFirst
+    )
+  })
+
+  it('should correctly resolve multiple sibling nodes in the same subgraph', () => {
+    const mockSubgraph = {
+      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      nodes: []
+    }
+    const mockNode = createMockLGraphNode({
+      id: 123,
+      isSubgraphNode: () => true,
+      subgraph: mockSubgraph
+    })
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
+
+    // Two sibling nodes in the same subgraph
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123:456',
+        state: 'running',
+        value: 50,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node1'
+      },
+      node2: {
+        display_node_id: '123:789',
+        state: 'running',
+        value: 30,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node2'
+      }
+    }
+
+    const result = store.nodeLocationProgressStates
+
+    // Both sibling nodes should be resolved with the correct subgraph UUID
+    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:456']).toBeDefined()
+    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:789']).toBeDefined()
+
+    // The shared parent "123" should also have a merged state
+    expect(result['123']).toBeDefined()
+    expect(result['123'].state).toBe('running')
+  })
+})
+
+describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function makeProgressNodes(
+    nodeId: string,
+    jobId: string
+  ): Record<string, NodeProgressState> {
+    return {
+      [nodeId]: {
+        value: 5,
+        max: 10,
+        state: 'running',
+        node_id: nodeId,
+        prompt_id: jobId,
+        display_node_id: nodeId
+      }
+    }
+  }
+
+  function fireProgressState(
+    jobId: string,
+    nodes: Record<string, NodeProgressState>
+  ) {
+    const handler = apiEventHandlers.get('progress_state')
+    if (!handler) throw new Error('progress_state handler not bound')
+    handler(
+      new CustomEvent('progress_state', { detail: { nodes, prompt_id: jobId } })
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('should retain entries below the limit', () => {
+    for (let i = 0; i < 5; i++) {
+      fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
+    }
+
+    expect(Object.keys(store.nodeProgressStatesByJob)).toHaveLength(5)
+  })
+
+  it('should evict oldest entries when exceeding MAX_PROGRESS_JOBS', () => {
+    for (let i = 0; i < MAX_PROGRESS_JOBS + 10; i++) {
+      fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
+    }
+
+    const keys = Object.keys(store.nodeProgressStatesByJob)
+    expect(keys).toHaveLength(MAX_PROGRESS_JOBS)
+    // Oldest jobs (0-9) should be evicted; newest should remain
+    expect(keys).not.toContain('job-0')
+    expect(keys).not.toContain('job-9')
+    expect(keys).toContain(`job-${MAX_PROGRESS_JOBS + 9}`)
+    expect(keys).toContain(`job-${MAX_PROGRESS_JOBS}`)
+  })
+
+  it('should keep the most recently added job after eviction', () => {
+    for (let i = 0; i < MAX_PROGRESS_JOBS + 1; i++) {
+      fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
+    }
+
+    const lastJobId = `job-${MAX_PROGRESS_JOBS}`
+    expect(store.nodeProgressStatesByJob).toHaveProperty(lastJobId)
+  })
+
+  it('should not evict when updating an existing job', () => {
+    for (let i = 0; i < MAX_PROGRESS_JOBS; i++) {
+      fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
+    }
+    expect(Object.keys(store.nodeProgressStatesByJob)).toHaveLength(
+      MAX_PROGRESS_JOBS
+    )
+
+    // Update an existing job — should not trigger eviction
+    fireProgressState('job-0', makeProgressNodes('0', 'job-0'))
+    expect(Object.keys(store.nodeProgressStatesByJob)).toHaveLength(
+      MAX_PROGRESS_JOBS
+    )
+    expect(store.nodeProgressStatesByJob).toHaveProperty('job-0')
   })
 })
 
@@ -343,5 +595,102 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
       const result = store.slotHasError('123', 'width')
       expect(result).toBe(false)
     })
+  })
+})
+
+describe('useExecutionErrorStore - setMissingNodeTypes', () => {
+  let store: ReturnType<typeof useExecutionErrorStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionErrorStore()
+  })
+
+  it('clears missingNodesError when called with an empty array', () => {
+    store.setMissingNodeTypes([{ type: 'NodeA' }])
+    store.setMissingNodeTypes([])
+    expect(store.missingNodesError).toBeNull()
+  })
+
+  it('hasMissingNodes is false when error is null', () => {
+    store.setMissingNodeTypes([])
+    expect(store.hasMissingNodes).toBe(false)
+  })
+
+  it('hasMissingNodes is true after setting non-empty types', () => {
+    store.setMissingNodeTypes([{ type: 'NodeA' }])
+    expect(store.hasMissingNodes).toBe(true)
+  })
+
+  it('deduplicates string entries by value', () => {
+    store.setMissingNodeTypes(['GroupNode', 'GroupNode', 'OtherGroup'])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
+    expect(store.missingNodesError?.nodeTypes).toEqual([
+      'GroupNode',
+      'OtherGroup'
+    ])
+  })
+
+  it('keeps a single string entry unchanged', () => {
+    store.setMissingNodeTypes(['GroupNode'])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('deduplicates object entries with the same nodeId', () => {
+    store.setMissingNodeTypes([
+      { type: 'NodeA', nodeId: 1 },
+      { type: 'NodeA', nodeId: 1 }
+    ])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('keeps object entries with different nodeIds even if same type', () => {
+    store.setMissingNodeTypes([
+      { type: 'NodeA', nodeId: 1 },
+      { type: 'NodeA', nodeId: 2 }
+    ])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
+  })
+
+  it('deduplicates object entries by type when nodeId is absent', () => {
+    store.setMissingNodeTypes([{ type: 'NodeB' }, { type: 'NodeB' }])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('keeps distinct types when nodeId is absent', () => {
+    store.setMissingNodeTypes([{ type: 'NodeB' }, { type: 'NodeC' }])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
+  })
+
+  it('treats absent nodeId the same as type-only key (falls back to type)', () => {
+    store.setMissingNodeTypes([{ type: 'NodeD' }, { type: 'NodeD' }])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('handles a mix of string and object entries correctly', () => {
+    store.setMissingNodeTypes([
+      'GroupNode',
+      'GroupNode', // string dup
+      { type: 'NodeA', nodeId: 1 },
+      { type: 'NodeA', nodeId: 1 }, // object dup by nodeId
+      { type: 'NodeA', nodeId: 2 }, // same type, different nodeId → kept
+      { type: 'NodeB' },
+      { type: 'NodeB' } // object dup by type
+    ])
+    // Unique: 'GroupNode', {NodeA,1}, {NodeA,2}, {NodeB} → 4
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(4)
+  })
+
+  it('stores a non-empty message string in missingNodesError', () => {
+    store.setMissingNodeTypes([{ type: 'NodeA' }])
+    expect(typeof store.missingNodesError?.message).toBe('string')
+    expect(store.missingNodesError!.message.length).toBeGreaterThan(0)
+  })
+
+  it('stores the deduplicated nodeTypes array in missingNodesError', () => {
+    const input = [{ type: 'NodeA' }, { type: 'NodeB' }]
+    store.setMissingNodeTypes(input)
+    expect(store.missingNodesError?.nodeTypes).toEqual(input)
   })
 })

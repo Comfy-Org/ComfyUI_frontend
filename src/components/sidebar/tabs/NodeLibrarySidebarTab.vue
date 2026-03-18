@@ -86,18 +86,40 @@
       </template>
       <template #header>
         <div class="px-2 2xl:px-4">
-          <SearchBox
-            ref="searchBoxRef"
-            v-model:model-value="searchQuery"
-            data-testid="node-library-search"
-            class="node-lib-search-box"
-            :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
-            filter-icon="pi pi-filter"
-            :filters
-            @search="handleSearch"
-            @show-filter="($event) => searchFilter?.toggle($event)"
-            @remove-filter="onRemoveFilter"
-          />
+          <div class="flex items-center gap-1">
+            <SearchInput
+              ref="searchBoxRef"
+              v-model="searchQuery"
+              data-testid="node-library-search"
+              class="node-lib-search-box"
+              :placeholder="
+                $t('g.searchPlaceholder', { subject: $t('g.nodes') })
+              "
+              @search="handleSearch"
+            />
+            <Button
+              variant="textonly"
+              size="icon"
+              class="filter-button shrink-0"
+              :aria-label="$t('g.filter')"
+              @click="(e: Event) => searchFilter?.toggle(e)"
+            >
+              <i class="pi pi-filter" />
+            </Button>
+          </div>
+          <div
+            v-if="filters?.length"
+            class="search-filters flex flex-wrap gap-2 pt-2"
+          >
+            <SearchFilterChip
+              v-for="filter in filters"
+              :key="filter.id"
+              :text="filter.text"
+              :badge="filter.badge"
+              :badge-class="filter.badgeClass"
+              @remove="onRemoveFilter(filter)"
+            />
+          </div>
 
           <Popover ref="searchFilter" class="ml-[-13px]">
             <NodeSearchFilter @add-filter="onAddFilter" />
@@ -155,8 +177,9 @@ import {
 } from 'vue'
 
 import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
 import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'

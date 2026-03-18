@@ -62,6 +62,7 @@ export interface FormItem {
 
 export interface ISettingGroup {
   label: string
+  category?: string
   settings: SettingParams[]
 }
 

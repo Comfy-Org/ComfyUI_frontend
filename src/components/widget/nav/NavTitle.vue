@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'flex items-center justify-between m-0 px-3 py-0 pt-5',
+        'm-0 flex items-center justify-between px-3 py-0 pt-5',
         collapsible && 'cursor-pointer select-none'
       )
     "
@@ -15,7 +15,7 @@
       v-if="collapsible"
       :class="
         cn(
-          'pi transition-transform duration-200 text-xs text-text-secondary ',
+          'pi text-xs text-text-secondary transition-transform duration-200',
           isCollapsed ? 'pi-chevron-right' : 'pi-chevron-down'
         )
       "

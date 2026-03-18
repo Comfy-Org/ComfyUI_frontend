@@ -400,7 +400,7 @@
     "name": "タブバーのレイアウト",
     "options": {
       "Default": "デフォルト",
-      "Integrated": "統合"
+      "Legacy": "レガシー"
     },
     "tooltip": "タブバーのレイアウトを制御します。「統合」を選択すると、ヘルプとユーザーコントロールがタブバーエリアに移動します。"
   },
@@ -480,6 +480,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "ズームイン時にノードコンボウィジェットメニュー（リスト）をスケーリングする"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "グループ内の子要素をクリックで選択",
+    "tooltip": "有効にすると、グループをクリックした際に内部のすべてのノードとアイテムが選択されます"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "新しいノードを常に縮小",

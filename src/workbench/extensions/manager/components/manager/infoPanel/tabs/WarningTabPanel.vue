@@ -7,8 +7,11 @@
     >
       <!-- Import failed conflicts show detailed error message -->
       <template v-if="conflict.type === 'import_failed'">
-        <div v-if="conflict.required_value" class="overflow-x-hidden rounded">
-          <p class="m-0 text-xs text-muted-foreground break-all font-mono">
+        <div
+          v-if="conflict.required_value"
+          class="overflow-x-hidden rounded-sm"
+        >
+          <p class="m-0 font-mono text-xs break-all text-muted-foreground">
             {{ conflict.required_value }}
           </p>
         </div>
@@ -16,7 +19,7 @@
 
       <!-- Other conflict types use standard message -->
       <template v-else>
-        <div class="text-sm break-words">
+        <div class="text-sm wrap-break-word">
           {{ getConflictMessage(conflict, $t) }}
         </div>
       </template>

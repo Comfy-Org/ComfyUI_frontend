@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, reactive, ref, shallowRef, watch } from 'vue'
+
+import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -30,6 +32,40 @@ const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>(
   widgetsSectionDataList.value
 )
 const isSearching = ref(false)
+
+const collapseMap = reactive<Record<string, boolean>>({})
+
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  () => {
+    for (const key of Object.keys(collapseMap)) {
+      delete collapseMap[key]
+    }
+  }
+)
+
+function isSectionCollapsed(nodeId: string): boolean {
+  // Defaults to collapsed when not explicitly set by the user
+  return collapseMap[nodeId] ?? true
+}
+
+function setSectionCollapsed(nodeId: string, collapsed: boolean) {
+  collapseMap[nodeId] = collapsed
+}
+
+const isAllCollapsed = computed({
+  get() {
+    return searchedWidgetsSectionDataList.value.every(({ node }) =>
+      isSectionCollapsed(String(node.id))
+    )
+  },
+  set(collapse: boolean) {
+    for (const { node } of widgetsSectionDataList.value) {
+      setSectionCollapsed(String(node.id), collapse)
+    }
+  }
+})
+
 async function searcher(query: string) {
   const list = widgetsSectionDataList.value
   const target = searchedWidgetsSectionDataList
@@ -39,17 +75,24 @@ async function searcher(query: string) {
 </script>
 
 <template>
-  <div class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke">
+  <div
+    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
+  >
     <FormSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="widgetsSectionDataList"
+      class="flex-1"
+    />
+    <CollapseToggleButton
+      v-model="isAllCollapsed"
+      :show="!isSearching && widgetsSectionDataList.length > 1"
     />
   </div>
   <TransitionGroup tag="div" name="list-scale" class="relative">
     <div
       v-if="isSearching && searchedWidgetsSectionDataList.length === 0"
-      class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15"
+      class="px-4 pt-5 pb-15 text-center text-sm text-muted-foreground"
     >
       {{ $t('rightSidePanel.noneSearchDesc') }}
     </div>
@@ -58,7 +101,7 @@ async function searcher(query: string) {
       :key="node.id"
       :node
       :widgets
-      :collapse="!isSearching"
+      :collapse="isSectionCollapsed(String(node.id)) && !isSearching"
       :tooltip="
         isSearching || widgets.length
           ? ''
@@ -66,6 +109,7 @@ async function searcher(query: string) {
       "
       show-locate-button
       class="border-b border-interface-stroke"
+      @update:collapse="setSectionCollapsed(String(node.id), $event)"
     />
   </TransitionGroup>
 </template>

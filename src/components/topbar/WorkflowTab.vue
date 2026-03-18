@@ -7,10 +7,12 @@
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
+        @mouseup="handleMouseUp"
         @click="handleClick"
       >
+        <i v-if="isBuilderState" class="bg-text-subtle icon-[lucide--hammer]" />
         <i
-          v-if="workflowOption.workflow.activeState?.extra?.linearMode"
+          v-else-if="workflowOption.workflow.initialMode === 'app'"
           class="icon-[lucide--panels-top-left] bg-primary-background"
         />
         <span
@@ -38,7 +40,7 @@
     </ContextMenuTrigger>
     <ContextMenuPortal>
       <ContextMenuContent
-        class="z-1000 rounded-lg px-2 py-3 min-w-56 bg-base-background shadow-interface border border-border-subtle"
+        class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
       >
         <WorkflowActionsList
           :items="contextMenuItems"
@@ -98,6 +100,13 @@ const props = defineProps<{
   isLast: boolean
 }>()
 
+const emit = defineEmits<{
+  closeToLeft: []
+  closeToRight: []
+  closeOthers: []
+  mouseup: [event: MouseEvent]
+}>()
+
 const { t } = useI18n()
 
 const workspaceStore = useWorkspaceStore()
@@ -141,6 +150,11 @@ const shouldShowStatusIndicator = computed(() => {
   return false
 })
 
+const isBuilderState = computed(() => {
+  const currentMode = props.workflowOption.workflow.activeMode
+  return typeof currentMode === 'string' && currentMode.startsWith('builder:')
+})
+
 const isActiveTab = computed(() => {
   return workflowStore.activeWorkflow?.key === props.workflowOption.workflow.key
 })
@@ -162,6 +176,10 @@ const handleClick = (event: Event) => {
   popoverRef.value?.togglePopover(event)
 }
 
+const handleMouseUp = (event: MouseEvent) => {
+  emit('mouseup', event)
+}
+
 const closeWorkflows = async (options: WorkflowOption[]) => {
   for (const opt of options) {
     if (
@@ -180,12 +198,6 @@ const onCloseWorkflow = async (option: WorkflowOption) => {
   await closeWorkflows([option])
 }
 
-const emit = defineEmits<{
-  closeToLeft: []
-  closeToRight: []
-  closeOthers: []
-}>()
-
 const commandStore = useCommandStore()
 const workflow = computed(() => props.workflowOption.workflow)
 
@@ -198,11 +210,13 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
   ...baseMenuItems.value,
   { separator: true },
   {
+    id: 'close-tab',
     label: t('tabMenu.closeTab'),
     icon: 'pi pi-times',
     command: () => onCloseWorkflow(props.workflowOption)
   },
   {
+    id: 'close-tabs-to-left',
     label: t('tabMenu.closeTabsToLeft'),
     overlayIcon: {
       mainIcon: 'pi pi-times',
@@ -215,6 +229,7 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
     disabled: props.isFirst
   },
   {
+    id: 'close-tabs-to-right',
     label: t('tabMenu.closeTabsToRight'),
     overlayIcon: {
       mainIcon: 'pi pi-times',
@@ -227,6 +242,7 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
     disabled: props.isLast
   },
   {
+    id: 'close-other-tabs',
     label: t('tabMenu.closeOtherTabs'),
     overlayIcon: {
       mainIcon: 'pi pi-times',

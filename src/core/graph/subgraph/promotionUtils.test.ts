@@ -184,6 +184,17 @@ describe('getPromotableWidgets', () => {
     ).toBe(true)
   })
 
+  it('adds virtual canvas preview widget for GLSLShader nodes', () => {
+    const node = new LGraphNode('GLSLShader')
+    node.type = 'GLSLShader'
+
+    const widgets = getPromotableWidgets(node)
+
+    expect(
+      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
+    ).toBe(true)
+  })
+
   it('does not add virtual canvas preview widget for non-image nodes', () => {
     const node = new LGraphNode('TextNode')
     node.addOutput('TEXT', 'STRING')
@@ -231,5 +242,50 @@ describe('promoteRecommendedWidgets', () => {
     promoteRecommendedWidgets(subgraphNode)
 
     expect(updatePreviewsMock).not.toHaveBeenCalled()
+  })
+
+  it('eagerly promotes virtual preview widget for CANVAS_IMAGE_PREVIEW nodes', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const glslNode = new LGraphNode('GLSLShader')
+    glslNode.type = 'GLSLShader'
+    subgraph.add(glslNode)
+
+    promoteRecommendedWidgets(subgraphNode)
+
+    const store = usePromotionStore()
+    expect(
+      store.isPromoted(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id,
+        String(glslNode.id),
+        CANVAS_IMAGE_PREVIEW_WIDGET
+      )
+    ).toBe(true)
+    expect(updatePreviewsMock).not.toHaveBeenCalled()
+  })
+
+  it('registers $$canvas-image-preview on configure for GLSLShader in saved workflow', () => {
+    // Simulate loading a saved workflow where proxyWidgets does NOT contain
+    // the $$canvas-image-preview entry (e.g. blueprint authored before the
+    // promotion system, or old workflow save).
+    const subgraph = createTestSubgraph()
+    const glslNode = new LGraphNode('GLSLShader')
+    glslNode.type = 'GLSLShader'
+    subgraph.add(glslNode)
+
+    // Create subgraphNode — constructor calls configure → _internalConfigureAfterSlots
+    // which eagerly registers $$canvas-image-preview for supported node types
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    const store = usePromotionStore()
+    expect(
+      store.isPromoted(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id,
+        String(glslNode.id),
+        CANVAS_IMAGE_PREVIEW_WIDGET
+      )
+    ).toBe(true)
   })
 })

@@ -83,8 +83,7 @@ describe('getNodeSource', () => {
     it('should identify essentials nodes from custom_nodes module', () => {
       const result = getNodeSource(
         'custom_nodes.ComfyUI-Example@1.0.0',
-        'Video',
-        'SomeNode'
+        'Video'
       )
       expect(result.type).toBe(NodeSourceType.Essentials)
       expect(result.className).toBe('comfy-essentials')
@@ -92,18 +91,8 @@ describe('getNodeSource', () => {
     })
 
     it('should not identify nodes without essentials_category as essentials', () => {
-      // Use a node name not in the mock list
-      const result = getNodeSource(
-        'nodes.some_module',
-        undefined,
-        'UnknownNode'
-      )
+      const result = getNodeSource('nodes.some_module', undefined)
       expect(result.type).toBe(NodeSourceType.Core)
-    })
-
-    it('should identify nodes from mock list as essentials', () => {
-      const result = getNodeSource('nodes.some_module', undefined, 'LoadImage')
-      expect(result.type).toBe(NodeSourceType.Essentials)
     })
   })
 

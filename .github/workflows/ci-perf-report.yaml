@@ -1,0 +1,115 @@
+name: 'CI: Performance Report'
+
+on:
+  push:
+    branches: [main, core/*]
+    paths-ignore: ['**/*.md']
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths-ignore: ['**/*.md']
+
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  perf-tests:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.12
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
+      packages: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Start ComfyUI server
+        uses: ./.github/actions/start-comfyui-server
+
+      - name: Run performance tests
+        id: perf
+        continue-on-error: true
+        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each=3
+
+      - name: Upload perf metrics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: perf-metrics
+          path: test-results/perf-metrics.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Save PR metadata
+        if: github.event_name == 'pull_request'
+        run: |
+          mkdir -p temp/perf-meta
+          echo "${{ github.event.number }}" > temp/perf-meta/number.txt
+          echo "${{ github.event.pull_request.base.ref }}" > temp/perf-meta/base.txt
+          echo "${{ github.event.pull_request.head.sha }}" > temp/perf-meta/head-sha.txt
+
+      - name: Upload PR metadata
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: perf-meta
+          path: temp/perf-meta/
+
+      - name: Save perf baseline to perf-data branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.perf.outcome == 'success'
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+          cp test-results/perf-metrics.json /tmp/perf-metrics.json
+
+          git fetch origin perf-data || {
+            echo "Creating perf-data branch"
+            git checkout --orphan perf-data
+            git rm -rf . 2>/dev/null || true
+            echo "# Performance Baselines" > README.md
+            mkdir -p baselines
+            git add README.md baselines
+            git commit -m "Initialize perf-data branch"
+            git push origin perf-data
+            git fetch origin perf-data
+          }
+
+          git worktree add /tmp/perf-data origin/perf-data
+
+          TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
+          SHA=$(echo "${{ github.sha }}" | cut -c1-8)
+          mkdir -p /tmp/perf-data/baselines
+          cp /tmp/perf-metrics.json "/tmp/perf-data/baselines/perf-${TIMESTAMP}-${SHA}.json"
+
+          # Keep only last 20 baselines
+          cd /tmp/perf-data
+          ls -t baselines/perf-*.json 2>/dev/null | tail -n +21 | xargs -r rm
+
+          git -C /tmp/perf-data add baselines/
+          git -C /tmp/perf-data commit -m "perf: add baseline for ${SHA}" || echo "No changes to commit"
+          git -C /tmp/perf-data push origin HEAD:perf-data
+
+          git worktree remove /tmp/perf-data --force 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

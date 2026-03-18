@@ -1,6 +1,6 @@
 <template>
   <div class="extension-panel flex flex-col gap-2">
-    <SearchBox
+    <SearchInput
       v-model="filters['global'].value"
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.extensions') })"
     />
@@ -92,7 +92,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'

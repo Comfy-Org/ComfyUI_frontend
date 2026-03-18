@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "붙여넣기"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "연결하여 붙여넣기"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "뷰 재설정"
   },
@@ -343,6 +346,10 @@
   },
   "Workspace_ToggleFocusMode": {
     "label": "포커스 모드 토글"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "앱 사이드바 전환",
+    "tooltip": "앱"
   },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "에셋 사이드바 전환",

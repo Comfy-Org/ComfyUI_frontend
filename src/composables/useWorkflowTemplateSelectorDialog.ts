@@ -1,5 +1,6 @@
 import WorkflowTemplateSelectorDialog from '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'
 import { useTelemetry } from '@/platform/telemetry'
+import type { TemplateLibraryMetadata } from '@/platform/telemetry/types'
 import { useDialogService } from '@/services/dialogService'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -17,8 +18,8 @@ export const useWorkflowTemplateSelectorDialog = () => {
   }
 
   function show(
-    source: 'sidebar' | 'menu' | 'command' = 'command',
-    options?: { initialCategory?: string }
+    source: TemplateLibraryMetadata['source'] = 'command',
+    options?: { initialCategory?: string; afterClose?: () => void }
   ) {
     useTelemetry()?.trackTemplateLibraryOpened({ source })
 
@@ -30,7 +31,10 @@ export const useWorkflowTemplateSelectorDialog = () => {
       key: DIALOG_KEY,
       component: WorkflowTemplateSelectorDialog,
       props: {
-        onClose: hide,
+        onClose: () => {
+          hide()
+          options?.afterClose?.()
+        },
         initialCategory
       }
     })

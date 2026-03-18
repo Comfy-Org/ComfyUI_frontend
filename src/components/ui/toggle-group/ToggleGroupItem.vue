@@ -40,7 +40,7 @@ const resolvedVariant = computed(
     :class="
       cn(
         toggleGroupItemVariants({ variant: resolvedVariant, size }),
-        'flex-1 min-w-0 truncate',
+        'min-w-0 flex-1 truncate',
         className
       )
     "

@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Matematiksel İfade",
+    "inputs": {
+      "expression": {
+        "name": "ifade"
+      },
+      "values": {
+        "name": "değerler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Anahtar",
     "inputs": {
@@ -2134,6 +2153,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "description": "Sağlanan sınırlayıcı kutulara göre giriş görüntü grubundan bölgeleri kırp ve yeniden boyutlandır.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "sınırlayıcı_kutular"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "output_height": {
+        "name": "çıktı_yüksekliği",
+        "tooltip": "Her kırpmanın yeniden boyutlandırılacağı yükseklik."
+      },
+      "output_width": {
+        "name": "çıktı_genişliği",
+        "tooltip": "Her kırpmanın yeniden boyutlandırılacağı genişlik."
+      },
+      "padding": {
+        "name": "dolgu",
+        "tooltip": "Kırpmadan önce sınırlayıcı kutunun her bir kenarına piksel cinsinden eklenen ekstra dolgu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Tüm kırpmalar tek bir görüntü grubunda birleştirilir."
       }
     }
   },
@@ -3159,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Flux ailesi modellerinde referans görselleri için KV Cache optimizasyonunu etkinleştirir.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "KV Cache uygulanacak model."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KV Cache etkinleştirilmiş yamalı model."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Bu düğüm, görüntüyü flux kontext için daha uygun bir boyuta yeniden boyutlandırır.",
     "display_name": "FluxKontext Görüntü Ölçeği",
@@ -3701,6 +3764,60 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "Google Vertex API üzerinden senkron olarak görseller oluşturun veya düzenleyin.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' olarak ayarlanırsa, giriş görselinizin en-boy oranı kullanılır; görsel yoksa genellikle 16:9 kare oluşturulur."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı dosya(lar). Gemini Generate Content Input Files düğümünden gelen girdileri kabul eder."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "İsteğe bağlı referans görsel(ler)i. Birden fazla görsel eklemek için Batch Images düğümünü kullanın (en fazla 14)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Oluşturulacak görseli veya uygulanacak düzenlemeleri tanımlayan metin istemi. Modelin uyması gereken kısıtlamalar, stiller veya detayları ekleyin."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Hedef çıktı çözünürlüğü. 2K/4K için yerel Gemini yükselticisi kullanılır."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed belirli bir değere sabitlendiğinde, model tekrarlanan isteklerde aynı yanıtı vermeye çalışır. Deterministik çıktı garanti edilmez. Ayrıca, model veya parametre ayarlarını (ör. sıcaklık) değiştirmek, aynı seed değeriyle bile yanıtın farklı olmasına neden olabilir. Varsayılan olarak rastgele bir seed değeri kullanılır."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Bir yapay zekanın davranışını belirleyen temel talimatlar."
+      },
+      "thinking_level": {
+        "name": "thinking_level"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Google'ın Gemini AI modeli ile metin yanıtları oluşturun. Daha alakalı ve anlamlı yanıtlar oluşturmak için bağlam olarak birden fazla girdi türü (metin, görseller, ses, video) sağlayabilirsiniz.",
     "display_name": "Google Gemini",
@@ -3864,6 +3981,10 @@
     "description": "Mevcut bir görüntüyü metin istemine göre değiştir",
     "display_name": "Grok Görüntü Düzenle",
     "inputs": {
+      "aspect_ratio": {
+        "name": "en-boy oranı",
+        "tooltip": "Yalnızca birden fazla görsel, görsel girişine bağlandığında kullanılabilir."
+      },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
@@ -3915,6 +4036,9 @@
       "prompt": {
         "name": "istem",
         "tooltip": "Görüntüyü oluşturmak için kullanılan metin istemi"
+      },
+      "resolution": {
+        "name": "çözünürlük"
       },
       "seed": {
         "name": "tohum",
@@ -5770,6 +5894,9 @@
       },
       "mode": {
         "name": "mod"
+      },
+      "model": {
+        "name": "model"
       },
       "prompt": {
         "name": "istem"
@@ -11179,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "arka_plan_rengi"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Üzerine boyanacak isteğe bağlı temel görüntü"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Koşul Çifti Birleştir",
     "inputs": {
@@ -12719,6 +12875,157 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "En-boy oranı ve megapiksel hedefinden genişlik ve yükseklik hesaplayın. Boş Latent Görüntü boyutlarını ayarlamak için kullanışlıdır.",
+    "display_name": "Çözünürlük Seçici",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en_boy_orani",
+        "tooltip": "Çıktı boyutları için en-boy oranı."
+      },
+      "megapixels": {
+        "name": "megapiksel",
+        "tooltip": "Hedef toplam megapiksel. 1,0 MP ≈ 1024×1024 (kare için)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "genislik",
+        "tooltip": "Piksel cinsinden hesaplanan genişlik (8'in katı)."
+      },
+      "1": {
+        "name": "yukseklik",
+        "tooltip": "Piksel cinsinden hesaplanan yükseklik (8'in katı)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Reve kullanarak metin açıklamalarından görseller oluşturun.",
+    "display_name": "Reve Görsel Oluştur",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Oluşturma için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenen görselin metin açıklaması. En fazla 2560 karakter."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Reve ile doğal dil talimatları kullanarak görselleri düzenleyin.",
+    "display_name": "Reve Görsel Düzenle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "edit_instruction": {
+        "name": "düzenleme_talimatı",
+        "tooltip": "Görselin nasıl düzenleneceğine dair metin açıklaması. En fazla 2560 karakter."
+      },
+      "image": {
+        "name": "görsel",
+        "tooltip": "Düzenlenecek görsel."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Düzenleme için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Referans görselleri ve metin istemlerini birleştirerek Reve ile yeni görseller oluşturun.",
+    "display_name": "Reve Görsel Remix",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Remix için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenen görselin metin açıklaması. Belirli görselleri indeks ile referans göstermek için XML img etiketleri ekleyebilirsiniz, örn. <img>0</img>, <img>1</img> vb."
+      },
+      "reference_images": {
+        "name": "referans_görseller"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
     "display_name": "Rodin 3D Oluştur - Detay Oluştur",
@@ -12975,6 +13282,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "gövde_çiz"
+      },
+      "draw_face": {
+        "name": "yüzü_çiz"
+      },
+      "draw_feet": {
+        "name": "ayakları_çiz"
+      },
+      "draw_hands": {
+        "name": "elleri_çiz"
+      },
+      "face_point_size": {
+        "name": "yüz_nokta_boyutu"
+      },
+      "keypoints": {
+        "name": "anahtar_noktalar"
+      },
+      "score_threshold": {
+        "name": "puan_eşiği"
+      },
+      "stick_width": {
+        "name": "çizgi_genişliği"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "kare_zorla",
+        "tooltip": "Kırpma bölgesinin her zaman kare olması için kısa olan kutu eksenini genişlet."
+      },
+      "keypoints": {
+        "name": "anahtar_noktalar"
+      },
+      "scale": {
+        "name": "ölçek",
+        "tooltip": "Her tespit edilen yüzün etrafındaki sınırlayıcı kutu alanı için çarpan."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "Her kare için yüz sınırlayıcı kutuları, SDPoseKeypointExtractor bboxes girişiyle uyumlu."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "SDPose modeli ile görüntülerden poz anahtar noktalarını çıkar: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "toplu_boyut"
+      },
+      "bboxes": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "Daha doğru tespitler için isteğe bağlı sınırlayıcı kutular. Çoklu kişi tespiti için gereklidir."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "anahtar_noktalar",
+        "tooltip": "OpenPose çerçeve formatında anahtar noktalar (canvas_genişliği, canvas_yüksekliği, kişiler)"
       }
     }
   },
@@ -14860,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "3D modeli girdikten sonra, 3D modelin dokusunu yeniden çiz.",
+    "display_name": "Hunyuan3D: 3D Doku Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX formatında 3D model. Model 100000'den az yüzeye sahip olmalıdır."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Doku düzenlemesini açıklar. En fazla 1024 UTF-8 karakteri destekler."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "doku_görseli",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
     "inputs": {
@@ -14908,6 +15334,80 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "doku_görseli",
+        "tooltip": null
+      },
+      "4": {
+        "name": "isteğe_bağlı_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "isteğe_bağlı_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "isteğe_bağlı_roughness",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Bir 3D model üzerinde UV açılımı yaparak UV doku oluşturur. Girdi modelinin 30000'den az yüzü olmalıdır.",
+    "display_name": "Hunyuan3D: Modelden UV'ye",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model girişi (GLB, OBJ veya FBX)"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Bir 3D model üzerinde akıllı retopoloji uygular. GLB/OBJ formatlarını destekler; maksimum 200MB; yüksek poligonlu modeller için önerilir.",
+    "display_name": "Hunyuan3D: Akıllı Topoloji",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "face_level": {
+        "name": "yüz seviyesi",
+        "tooltip": "Poligon azaltma seviyesi."
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model girişi (GLB veya OBJ)"
+      },
+      "polygon_type": {
+        "name": "poligon_tipi",
+        "tooltip": "Yüzey bileşimi tipi."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -14950,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "doku_görseli",
         "tooltip": null
       }
     }
@@ -17963,6 +18467,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "toplu_boyutu"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "pose_end": {
+        "name": "poz_bitişi",
+        "tooltip": "Poz koşullandırmasının biteceği adım."
+      },
+      "pose_start": {
+        "name": "poz_başlangıcı",
+        "tooltip": "Poz koşullandırmasının başlayacağı adım."
+      },
+      "pose_strength": {
+        "name": "poz_gücü",
+        "tooltip": "Poz latentinin gücü."
+      },
+      "pose_video": {
+        "name": "poz_videosu",
+        "tooltip": "Poz koşullandırması için kullanılan video. Ana videonun çözünürlüğünün yarısına düşürülecek."
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "reference_image": {
+        "name": "referans_görsel"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Üretim boyutunda boş latent."
       }
     }
   },

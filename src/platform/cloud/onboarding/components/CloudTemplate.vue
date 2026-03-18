@@ -12,7 +12,7 @@
     <div class="relative hidden flex-1 overflow-hidden bg-black lg:block">
       <!-- Video Background -->
       <video
-        class="absolute inset-0 h-full w-full object-cover"
+        class="absolute inset-0 size-full object-cover"
         autoplay
         muted
         loop
@@ -22,7 +22,7 @@
         <source :src="videoSrc" type="video/mp4" />
       </video>
 
-      <div class="absolute inset-0 h-full w-full bg-black/30"></div>
+      <div class="absolute inset-0 size-full bg-black/30"></div>
 
       <!-- Optional Overlay for better visual -->
       <div

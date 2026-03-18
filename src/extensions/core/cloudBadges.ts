@@ -1,7 +1,7 @@
-import { computed } from 'vue'
-
+import { computed, watch } from 'vue'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { t } from '@/i18n'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
 import type { TopbarBadge } from '@/types/comfy'
 
@@ -18,15 +18,19 @@ const badges = computed<TopbarBadge[]>(() => {
       tooltip: alert.tooltip
     })
   }
-
-  // Always add cloud badge last (furthest right)
-  result.push({
-    label: t('g.beta'),
-    text: 'Comfy Cloud'
-  })
-
   return result
 })
+
+const canvasStore = useCanvasStore()
+watch(
+  () => canvasStore.canvas,
+  (canvas) => {
+    if (canvas) {
+      canvas.info_text = t('g.comfyCloud')
+    }
+  },
+  { immediate: true }
+)
 
 useExtensionService().registerExtension({
   name: 'Comfy.Cloud.Badges',

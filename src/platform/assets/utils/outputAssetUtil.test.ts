@@ -20,15 +20,21 @@ type OutputOverrides = Partial<{
   subfolder: string
   nodeId: string
   url: string
+  display_name: string
 }>
 
 function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
-  return {
+  const merged = {
     filename: 'file.png',
     subfolder: 'sub',
     nodeId: '1',
     url: 'https://example.com/file.png',
     ...overrides
+  }
+  return {
+    ...merged,
+    previewUrl: merged.url,
+    display_name: merged.display_name
   } as ResultItemImpl
 }
 
@@ -83,7 +89,7 @@ describe('resolveOutputAssetItems', () => {
     )
   })
 
-  it('loads full outputs when metadata indicates more outputs', async () => {
+  it('loads full outputs when metadata indicates more outputs (newest first)', async () => {
     const previewOutput = createOutput({
       filename: 'preview.png',
       nodeId: '1',
@@ -115,10 +121,106 @@ describe('resolveOutputAssetItems', () => {
     expect(mocks.getPreviewableOutputsFromJobDetail).toHaveBeenCalledWith(
       jobDetail
     )
+    // Outputs are reversed so the most recent appears first
     expect(results.map((asset) => asset.name)).toEqual([
-      'full.png',
-      'preview.png'
+      'preview.png',
+      'full.png'
     ])
+  })
+
+  it('reverses outputs and excludes the correct key simultaneously', async () => {
+    const outputA = createOutput({
+      filename: 'a.png',
+      nodeId: '1',
+      url: 'https://example.com/a.png'
+    })
+    const outputB = createOutput({
+      filename: 'b.png',
+      nodeId: '2',
+      url: 'https://example.com/b.png'
+    })
+    const outputC = createOutput({
+      filename: 'c.png',
+      nodeId: '3',
+      url: 'https://example.com/c.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-combo',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 3,
+      allOutputs: [outputA, outputB, outputC]
+    }
+
+    const results = await resolveOutputAssetItems(metadata, {
+      excludeOutputKey: '2-sub-b.png'
+    })
+
+    // outputB excluded, remaining reversed: [C, A]
+    expect(results.map((asset) => asset.name)).toEqual(['c.png', 'a.png'])
+  })
+
+  it('returns empty array when all outputs are excluded', async () => {
+    const output = createOutput({
+      filename: 'only.png',
+      nodeId: '1',
+      url: 'https://example.com/only.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-empty',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata, {
+      excludeOutputKey: '1-sub-only.png'
+    })
+
+    expect(results).toHaveLength(0)
+  })
+
+  it('propagates display_name from output to asset item', async () => {
+    const output = createOutput({
+      filename: 'abc123hash.png',
+      nodeId: '1',
+      url: 'https://example.com/abc123hash.png',
+      display_name: 'ComfyUI_00001_.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-dn',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results).toHaveLength(1)
+    expect(results[0].name).toBe('abc123hash.png')
+    expect(results[0].display_name).toBe('ComfyUI_00001_.png')
+  })
+
+  it('omits display_name when not present in output', async () => {
+    const output = createOutput({
+      filename: 'file.png',
+      nodeId: '1',
+      url: 'https://example.com/file.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-nodn',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results).toHaveLength(1)
+    expect(results[0].display_name).toBeUndefined()
   })
 
   it('keeps root outputs with empty subfolders', async () => {

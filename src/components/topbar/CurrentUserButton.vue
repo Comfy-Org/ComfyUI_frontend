@@ -11,8 +11,8 @@
       <div
         :class="
           cn(
-            'flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface justify-center',
-            compact && 'size-full '
+            'flex items-center justify-center gap-1 rounded-full hover:bg-interface-button-hover-surface',
+            compact && 'size-full'
           )
         "
       >
@@ -30,7 +30,7 @@
         <UserAvatar
           v-else
           :photo-url="photoURL"
-          :class="compact && 'size-full'"
+          :class="compact && 'h-full w-auto'"
         />
 
         <i v-if="showArrow" class="icon-[lucide--chevron-down] size-4 px-1" />
@@ -98,15 +98,21 @@ const photoURL = computed<string | undefined>(
   () => userPhotoUrl.value ?? undefined
 )
 
-const { workspaceName: teamWorkspaceName, initState } = storeToRefs(
-  useTeamWorkspaceStore()
-)
+const {
+  workspaceName: teamWorkspaceName,
+  initState,
+  isInPersonalWorkspace
+} = storeToRefs(useTeamWorkspaceStore())
 
 const showWorkspaceSkeleton = computed(
   () => isCloud && teamWorkspacesEnabled.value && initState.value === 'loading'
 )
 const showWorkspaceIcon = computed(
-  () => isCloud && teamWorkspacesEnabled.value && initState.value === 'ready'
+  () =>
+    isCloud &&
+    teamWorkspacesEnabled.value &&
+    initState.value === 'ready' &&
+    !isInPersonalWorkspace.value
 )
 
 const workspaceName = computed(() => {

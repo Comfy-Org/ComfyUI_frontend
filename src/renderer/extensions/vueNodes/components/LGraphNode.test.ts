@@ -6,6 +6,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -40,6 +41,23 @@ vi.mock(
     useVueElementTracking: vi.fn()
   })
 )
+
+vi.mock('@/scripts/app', () => ({
+  app: {
+    rootGraph: { getNodeById: vi.fn() },
+    canvas: { setDirty: vi.fn() }
+  }
+}))
+
+vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    getNodeByLocatorId: vi.fn(() => ({
+      isSubgraphNode: () => false
+    }))
+  }
+})
 
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({
@@ -131,6 +149,14 @@ const mockNodeData: VueNodeData = {
   executing: false
 }
 
+const mockRerouteNodeData: VueNodeData = {
+  ...mockNodeData,
+  id: 'reroute-node-1',
+  title: '',
+  type: 'Reroute',
+  titleMode: TitleMode.NO_TITLE
+}
+
 describe('LGraphNode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
@@ -184,8 +210,13 @@ describe('LGraphNode', () => {
 
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
-    expect(wrapper.classes()).toContain('outline-3')
+    // Root div should have the selection class
     expect(wrapper.classes()).toContain('outline-node-component-outline')
+
+    // The layered outline overlay should be present
+    const overlay = wrapper.find('[data-testid="node-state-outline-overlay"]')
+    expect(overlay.exists()).toBe(true)
+    expect(overlay.classes()).toContain('border-node-component-outline')
   })
 
   it('should render progress indicator when executing prop is true', () => {
@@ -193,7 +224,13 @@ describe('LGraphNode', () => {
 
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
+    // Root div should have the executing class
     expect(wrapper.classes()).toContain('outline-node-stroke-executing')
+
+    // The layered outline overlay should be present
+    const overlay = wrapper.find('[data-testid="node-state-outline-overlay"]')
+    expect(overlay.exists()).toBe(true)
+    expect(overlay.classes()).toContain('border-node-stroke-executing')
   })
 
   it('should initialize height CSS vars for collapsed nodes', () => {
@@ -222,5 +259,38 @@ describe('LGraphNode', () => {
       '130px'
     )
     expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe('')
+  })
+
+  describe('Reroute node sizing', () => {
+    it('should not enforce minimum width for reroute nodes', () => {
+      const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
+      const regularWrapper = mountLGraphNode({ nodeData: mockNodeData })
+
+      const rerouteHasMinWidth = wrapper
+        .classes()
+        .some((c) => c.startsWith('min-w-'))
+      const regularHasMinWidth = regularWrapper
+        .classes()
+        .some((c) => c.startsWith('min-w-'))
+
+      expect(rerouteHasMinWidth).toBe(false)
+      expect(regularHasMinWidth).toBe(true)
+    })
+
+    it('should use fixed height for reroute nodes', () => {
+      const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
+      const hasFixedHeight = wrapper.classes().some((c) => c.startsWith('h-'))
+      expect(hasFixedHeight).toBe(true)
+    })
+
+    it('should not render resize handle for reroute nodes', () => {
+      const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
+      expect(wrapper.find('[role="button"][aria-label]').exists()).toBe(false)
+    })
+
+    it('should render resize handle for regular nodes', () => {
+      const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+      expect(wrapper.find('[role="button"][aria-label]').exists()).toBe(true)
+    })
   })
 })

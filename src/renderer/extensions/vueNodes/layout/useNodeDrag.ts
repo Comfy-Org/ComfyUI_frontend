@@ -148,22 +148,33 @@ function useNodeDragIndividual() {
       y: canvasWithDelta.y - canvasOrigin.y
     }
 
-    mutations.moveNode(nodeId, {
-      x: dragStartPos.x + canvasDelta.x,
-      y: dragStartPos.y + canvasDelta.y
-    })
+    // Move drag updates in one transaction to avoid per-node notify fan-out.
+    const updates = [
+      {
+        nodeId,
+        position: {
+          x: dragStartPos.x + canvasDelta.x,
+          y: dragStartPos.y + canvasDelta.y
+        }
+      }
+    ]
 
     if (
       otherSelectedNodesStartPositions &&
       otherSelectedNodesStartPositions.size > 0
     ) {
       for (const [otherNodeId, startPos] of otherSelectedNodesStartPositions) {
-        mutations.moveNode(otherNodeId, {
-          x: startPos.x + canvasDelta.x,
-          y: startPos.y + canvasDelta.y
+        updates.push({
+          nodeId: otherNodeId,
+          position: {
+            x: startPos.x + canvasDelta.x,
+            y: startPos.y + canvasDelta.y
+          }
         })
       }
     }
+
+    mutations.batchMoveNodes(updates)
 
     if (selectedGroups && selectedGroups.length > 0 && lastCanvasDelta) {
       const frameDelta = {

@@ -9,7 +9,8 @@ const panY = ref(0.0)
 
 function handleWheel(e: WheelEvent) {
   const zoomPaneEl = zoomPane.value
-  if (!zoomPaneEl) return
+  if (!zoomPaneEl || (e.deltaY < 0 ? zoom.value > 1200 : zoom.value < -500))
+    return
 
   zoom.value -= e.deltaY
   const { x, y, width, height } = zoomPaneEl.getBoundingClientRect()
@@ -23,7 +24,7 @@ function handleWheel(e: WheelEvent) {
 
 let dragging = false
 function handleDown(e: PointerEvent) {
-  if (e.button !== 0) return
+  if (e.button !== 0 && e.button !== 1) return
 
   const zoomPaneEl = zoomPane.value
   if (!zoomPaneEl) return
@@ -47,7 +48,7 @@ const transform = computed(() => {
 <template>
   <div
     ref="zoomPane"
-    class="contain-size place-content-center"
+    class="place-content-center contain-size"
     @wheel="handleWheel"
     @pointerdown.prevent="handleDown"
     @pointermove="handleMove"

@@ -14,6 +14,7 @@ import type {
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -249,9 +250,24 @@ export const useWorkflowStore = defineStore('workflow', () => {
         modified: Date.now(),
         size: -1
       })
+    workflow.initialMode = existingWorkflow.initialMode
     workflow.originalContent = workflow.content = JSON.stringify(state)
     workflowLookup.value[workflow.path] = workflow
     return workflow
+  }
+
+  const ensureWorkflowId = (
+    workflowData?: ComfyWorkflowJSON
+  ): ComfyWorkflowJSON => {
+    const base = workflowData
+      ? (JSON.parse(JSON.stringify(workflowData)) as ComfyWorkflowJSON)
+      : (JSON.parse(defaultGraphJSON) as ComfyWorkflowJSON)
+
+    if (!base.id) {
+      base.id = generateUUID()
+    }
+
+    return base
   }
 
   /**
@@ -267,9 +283,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
       size: -1
     })
 
-    workflow.originalContent = workflow.content = workflowData
-      ? JSON.stringify(workflowData)
-      : defaultGraphJSON
+    const initialWorkflowData = ensureWorkflowId(workflowData)
+    workflow.originalContent = workflow.content =
+      JSON.stringify(initialWorkflowData)
 
     workflowLookup.value[workflow.path] = workflow
     return workflow
@@ -283,9 +299,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
 
+    const normalizedWorkflowData = workflowData
+      ? ensureWorkflowId(workflowData)
+      : undefined
+
     // Try to reuse an existing loaded workflow with the same filename
     // that is not stored in the workflows directory
-    if (path && workflowData) {
+    if (path && normalizedWorkflowData) {
       const existingWorkflow = workflows.value.find(
         (w) => w.fullFilename === path
       )
@@ -295,12 +315,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
           ComfyWorkflow.basePath.slice(0, -1)
         )
       ) {
-        existingWorkflow.changeTracker.reset(workflowData)
+        existingWorkflow.changeTracker.reset(normalizedWorkflowData)
         return existingWorkflow
       }
     }
 
-    return createNewWorkflow(fullPath, workflowData)
+    return createNewWorkflow(fullPath, normalizedWorkflowData)
   }
 
   /**
@@ -478,12 +498,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
       const draftStore = useWorkflowDraftStore()
 
-      const openIndex = detachWorkflow(workflow)
-      // Perform the actual rename operation first
-      try {
-        await workflow.rename(newPath)
-      } finally {
-        attachWorkflow(workflow, openIndex)
+      await workflow.rename(newPath)
+
+      // Synchronously swap old path for new path in lookup and open paths
+      // to avoid a tab flicker caused by an async gap between detach/attach.
+      delete workflowLookup.value[oldPath]
+      workflowLookup.value[workflow.path] = workflow
+      const openIndex = openWorkflowPaths.value.indexOf(oldPath)
+      if (openIndex !== -1) {
+        openWorkflowPaths.value.splice(openIndex, 1, workflow.path)
       }
 
       draftStore.moveDraft(oldPath, newPath, workflow.key)
@@ -524,13 +547,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const saveWorkflow = async (workflow: ComfyWorkflow) => {
     isBusy.value = true
     try {
-      // Detach the workflow and re-attach to force refresh the tree objects.
+      await workflow.save()
+      // Synchronously detach and re-attach to force refresh the tree objects
+      // without an async gap that would cause the tab to disappear.
       const openIndex = detachWorkflow(workflow)
-      try {
-        await workflow.save()
-      } finally {
-        attachWorkflow(workflow, openIndex)
-      }
+      attachWorkflow(workflow, openIndex)
     } finally {
       isBusy.value = false
     }

@@ -17,7 +17,8 @@ export const STANDARD_EXCLUDED_PROPS = [
 export const INPUT_EXCLUDED_PROPS = [
   ...STANDARD_EXCLUDED_PROPS,
   'inputClass',
-  'inputStyle'
+  'inputStyle',
+  'read_only'
 ] as const
 
 export const PANEL_EXCLUDED_PROPS = [

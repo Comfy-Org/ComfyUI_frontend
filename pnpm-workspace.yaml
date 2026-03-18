@@ -6,9 +6,11 @@ catalog:
   '@alloc/quick-lru': ^5.2.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^9.39.1
+  '@formkit/auto-animate': ^0.9.0
   '@iconify-json/lucide': ^1.1.178
   '@iconify/json': ^2.2.380
   '@iconify/tailwind4': ^1.2.0
+  '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.1.1
   '@lobehub/i18n-cli': ^1.26.1
   '@nx/eslint': 22.5.2
@@ -61,11 +63,13 @@ catalog:
   eslint: ^9.39.1
   eslint-config-prettier: ^10.1.8
   eslint-import-resolver-typescript: ^4.4.4
+  eslint-plugin-better-tailwindcss: ^4.3.1
   eslint-plugin-import-x: ^4.16.1
-  eslint-plugin-oxlint: 1.25.0
+  eslint-plugin-oxlint: 1.55.0
   eslint-plugin-storybook: ^10.2.10
   eslint-plugin-unused-imports: ^4.3.0
   eslint-plugin-vue: ^10.6.2
+  fast-check: ^4.5.3
   firebase: ^11.6.0
   glob: ^13.0.6
   globals: ^16.5.0
@@ -80,12 +84,13 @@ catalog:
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
   nx: 22.5.2
-  oxfmt: ^0.34.0
-  oxlint: ^1.49.0
-  oxlint-tsgolint: ^0.14.2
+  oxfmt: ^0.40.0
+  oxlint: ^1.55.0
+  oxlint-tsgolint: ^0.17.0
   picocolors: ^1.1.1
   pinia: ^3.0.4
   postcss-html: ^1.8.0
+  posthog-js: ^1.358.1
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: ^4.2.5
@@ -103,7 +108,7 @@ catalog:
   unplugin-icons: ^22.5.0
   unplugin-typegpu: 0.8.0
   unplugin-vue-components: ^30.0.0
-  vite: 8.0.0-beta.13
+  vite: ^8.0.0
   vite-plugin-dts: ^4.5.4
   vite-plugin-html: ^3.2.2
   vite-plugin-vue-devtools: ^8.0.0

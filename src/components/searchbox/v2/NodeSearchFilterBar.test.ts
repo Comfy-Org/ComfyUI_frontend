@@ -39,14 +39,17 @@ describe(NodeSearchFilterBar, () => {
     return wrapper
   }
 
-  it('should render Input, Output, and Source filter chips', async () => {
+  it('should render all filter chips', async () => {
     const wrapper = await createWrapper()
 
     const buttons = wrapper.findAll('button')
-    expect(buttons).toHaveLength(3)
-    expect(buttons[0].text()).toBe('Input')
-    expect(buttons[1].text()).toBe('Output')
-    expect(buttons[2].text()).toBe('Source')
+    expect(buttons).toHaveLength(6)
+    expect(buttons[0].text()).toBe('Blueprints')
+    expect(buttons[1].text()).toBe('Partner Nodes')
+    expect(buttons[2].text()).toBe('Essentials')
+    expect(buttons[3].text()).toBe('Extensions')
+    expect(buttons[4].text()).toBe('Input')
+    expect(buttons[5].text()).toBe('Output')
   })
 
   it('should mark active chip as pressed when activeChipKey matches', async () => {

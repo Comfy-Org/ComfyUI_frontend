@@ -595,6 +595,34 @@ describe('usePaste', () => {
       )
     })
   })
+
+  it('should skip node metadata paste when a media node is selected', async () => {
+    const mockNode = createMockLGraphNode({
+      is_selected: true,
+      pasteFile: vi.fn(),
+      pasteFiles: vi.fn()
+    })
+    mockCanvas.current_node = mockNode
+    vi.mocked(isImageNode).mockReturnValue(true)
+
+    usePaste()
+
+    const nodeData = { nodes: [{ type: 'KSampler' }] }
+    const encoded = btoa(JSON.stringify(nodeData))
+    const html = `<div data-metadata="${encoded}"></div>`
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+    dataTransfer.setData('text/plain', 'some text')
+
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+  })
 })
 
 describe('cloneDataTransfer', () => {

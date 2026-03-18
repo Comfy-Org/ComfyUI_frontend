@@ -58,12 +58,12 @@ export function getAssetBaseModels(asset: AssetItem): string[] {
 
 /**
  * Gets the display name for an asset
- * Checks user_metadata.name first, then metadata.name, then asset.name
+ * Checks user_metadata.name, then metadata.name, then display_name, then asset.name
  * @param asset - The asset to get display name from
  * @returns The display name
  */
 export function getAssetDisplayName(asset: AssetItem): string {
-  return getStringProperty(asset, 'name') ?? asset.name
+  return getStringProperty(asset, 'name') || asset.display_name || asset.name
 }
 
 /**
@@ -138,8 +138,7 @@ export function getSourceName(url: string): string {
  */
 export function getAssetModelType(asset: AssetItem): string | null {
   const typeTag = asset.tags?.find((tag) => tag && tag !== 'models')
-  if (!typeTag) return null
-  return typeTag.includes('/') ? (typeTag.split('/').pop() ?? null) : typeTag
+  return typeTag ?? null
 }
 
 /**

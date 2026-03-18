@@ -35,7 +35,7 @@
       }
     ],
     "no-control-regex": "off",
-    "no-eval": "off",
+    "no-eval": "error",
     "no-redeclare": "error",
     "no-restricted-imports": [
       "error",
@@ -97,6 +97,13 @@
     "typescript/unbound-method": "off",
     "typescript/no-floating-promises": "error",
     "typescript/no-explicit-any": "error",
+    "typescript/no-import-type-side-effects": "error",
+    "typescript/no-empty-object-type": [
+      "error",
+      {
+        "allowInterfaces": "always"
+      }
+    ],
     "vue/no-import-compiler-macros": "error",
     "vue/no-dupe-keys": "error"
   },

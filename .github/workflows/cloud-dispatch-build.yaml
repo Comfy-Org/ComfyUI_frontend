@@ -1,0 +1,81 @@
+---
+# Dispatches a frontend-asset-build event to the cloud repo on push to
+# cloud/* branches and main. The cloud repo handles the actual build,
+# GCS upload, and secret management (Sentry, Algolia, GCS creds).
+#
+# This is fire-and-forget — it does NOT wait for the cloud workflow to
+# complete. Status is visible in the cloud repo's Actions tab.
+
+name: Cloud Frontend Build Dispatch
+
+on:
+  push:
+    branches:
+      - 'cloud/*'
+      - 'main'
+  pull_request:
+    types: [labeled, synchronize]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: cloud-dispatch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    # Fork guard: prevent forks from dispatching to the cloud repo.
+    # For pull_request events, only dispatch for preview labels.
+    # - labeled: fires when a label is added; check the added label name.
+    # - synchronize: fires on push; check existing labels on the PR.
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (github.event_name != 'pull_request' ||
+       (github.event.action == 'labeled' &&
+        contains(fromJSON('["preview","preview-cpu","preview-gpu"]'), github.event.label.name)) ||
+       (github.event.action == 'synchronize' &&
+        (contains(github.event.pull_request.labels.*.name, 'preview') ||
+         contains(github.event.pull_request.labels.*.name, 'preview-cpu') ||
+         contains(github.event.pull_request.labels.*.name, 'preview-gpu'))))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build client payload
+        id: payload
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ACTION: ${{ github.event.action }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          if [ "${EVENT_NAME}" = "pull_request" ]; then
+            REF="${PR_HEAD_SHA}"
+            BRANCH="${PR_HEAD_REF}"
+
+            # Derive variant from all PR labels (default to cpu for frontend-only previews)
+            VARIANT="cpu"
+            echo "${PR_LABELS}" | grep -q '"preview-gpu"' && VARIANT="gpu"
+          else
+            REF="${GITHUB_SHA}"
+            BRANCH="${GITHUB_REF_NAME}"
+            PR_NUMBER=""
+            VARIANT=""
+          fi
+          payload="$(jq -nc \
+            --arg ref "${REF}" \
+            --arg branch "${BRANCH}" \
+            --arg pr_number "${PR_NUMBER}" \
+            --arg variant "${VARIANT}" \
+            '{ref: $ref, branch: $branch, pr_number: $pr_number, variant: $variant}')"
+          echo "json=${payload}" >> "${GITHUB_OUTPUT}"
+
+      - name: Dispatch to cloud repo
+        uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4.0.1
+        with:
+          token: ${{ secrets.CLOUD_DISPATCH_TOKEN }}
+          repository: Comfy-Org/cloud
+          event-type: frontend-asset-build
+          client-payload: ${{ steps.payload.outputs.json }}

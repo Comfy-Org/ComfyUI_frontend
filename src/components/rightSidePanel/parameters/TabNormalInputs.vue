@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, reactive, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
@@ -17,6 +19,7 @@ const { nodes, mustShowNodeTitle } = defineProps<{
 }>()
 
 const { t } = useI18n()
+const workflowStore = useWorkflowStore()
 
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
@@ -52,6 +55,46 @@ const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>(
 )
 const isSearching = ref(false)
 
+const collapseMap = reactive<Record<string, boolean>>({})
+const advancedCollapsed = ref(true)
+
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  () => {
+    for (const key of Object.keys(collapseMap)) {
+      delete collapseMap[key]
+    }
+    advancedCollapsed.value = true
+  }
+)
+
+function isSectionCollapsed(nodeId: string): boolean {
+  // When not explicitly set, sections are collapsed if multiple nodes are selected
+  return collapseMap[nodeId] ?? isMultipleNodesSelected.value
+}
+
+function setSectionCollapsed(nodeId: string, collapsed: boolean) {
+  collapseMap[nodeId] = collapsed
+}
+
+const isAllCollapsed = computed({
+  get() {
+    const normalAllCollapsed = searchedWidgetsSectionDataList.value.every(
+      ({ node }) => isSectionCollapsed(String(node.id))
+    )
+    const hasAdvanced = advancedWidgetsSectionDataList.value.length > 0
+    return hasAdvanced
+      ? normalAllCollapsed && advancedCollapsed.value
+      : normalAllCollapsed
+  },
+  set(collapse: boolean) {
+    for (const { node } of widgetsSectionDataList.value) {
+      setSectionCollapsed(String(node.id), collapse)
+    }
+    advancedCollapsed.value = collapse
+  }
+})
+
 async function searcher(query: string) {
   const list = widgetsSectionDataList.value
   const target = searchedWidgetsSectionDataList
@@ -76,17 +119,28 @@ const advancedLabel = computed(() => {
 </script>
 
 <template>
-  <div class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke">
+  <div
+    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
+  >
     <FormSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="widgetsSectionDataList"
+      class="flex-1"
+    />
+    <CollapseToggleButton
+      v-model="isAllCollapsed"
+      :show="
+        !isSearching &&
+        widgetsSectionDataList.length + advancedWidgetsSectionDataList.length >
+          1
+      "
     />
   </div>
   <TransitionGroup tag="div" name="list-scale" class="relative">
     <div
       v-if="searchedWidgetsSectionDataList.length === 0"
-      class="text-sm text-muted-foreground px-4 py-10 text-center"
+      class="px-4 py-10 text-center text-sm text-muted-foreground"
     >
       {{
         isSearching
@@ -100,7 +154,7 @@ const advancedLabel = computed(() => {
       :node
       :label
       :widgets
-      :collapse="isMultipleNodesSelected && !isSearching"
+      :collapse="isSectionCollapsed(String(node.id)) && !isSearching"
       :show-locate-button="isMultipleNodesSelected"
       :tooltip="
         isSearching || widgets.length
@@ -108,13 +162,14 @@ const advancedLabel = computed(() => {
           : t('rightSidePanel.inputsNoneTooltip')
       "
       class="border-b border-interface-stroke"
+      @update:collapse="setSectionCollapsed(String(node.id), $event)"
     />
   </TransitionGroup>
   <template v-if="advancedWidgetsSectionDataList.length > 0 && !isSearching">
     <SectionWidgets
       v-for="{ widgets, node } in advancedWidgetsSectionDataList"
       :key="`advanced-${node.id}`"
-      :collapse="true"
+      v-model:collapse="advancedCollapsed"
       :node
       :label="advancedLabel"
       :widgets

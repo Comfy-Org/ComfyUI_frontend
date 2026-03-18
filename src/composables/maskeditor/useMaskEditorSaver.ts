@@ -1,6 +1,6 @@
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type {
   EditorOutputData,
   EditorOutputLayer,
@@ -9,6 +9,7 @@ import type {
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 // Private layer filename functions
@@ -347,11 +348,15 @@ export function useMaskEditorSaver() {
           node.widgets_values[widgetIndex] = widgetValue
         }
       }
-
-      imageWidget.callback?.(widgetValue)
     }
 
-    nodeOutputStore.updateNodeImages(node)
+    node.imgs = undefined
+    const annotatedPath = createAnnotatedPath(mainRef.filename, {
+      subfolder: mainRef.subfolder,
+      rootFolder: mainRef.type
+    })
+    nodeOutputStore.setNodeOutputs(node, annotatedPath, { folder: 'input' })
+    node.graph?.setDirtyCanvas(true)
   }
 
   function loadImageFromUrl(url: string): Promise<HTMLImageElement> {

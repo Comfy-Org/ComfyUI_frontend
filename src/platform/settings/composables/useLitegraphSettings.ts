@@ -6,6 +6,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 /**
@@ -168,5 +169,13 @@ export const useLitegraphSettings = () => {
     LiteGraph.saveViewportWithGraph = settingStore.get(
       'Comfy.EnableWorkflowViewRestore'
     )
+  })
+
+  watchEffect(() => {
+    const selectChildren = settingStore.get(
+      'LiteGraph.Group.SelectChildrenOnClick'
+    )
+    if (canvasStore.canvas)
+      canvasStore.canvas.groupSelectChildren = selectChildren
   })
 }

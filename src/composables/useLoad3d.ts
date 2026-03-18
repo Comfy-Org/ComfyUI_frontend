@@ -5,6 +5,10 @@ import { nextTick, ref, toRaw, watch } from 'vue'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import {
+  isAssetPreviewSupported,
+  persistThumbnail
+} from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
   CameraConfig,
@@ -514,19 +518,21 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       // Reset skeleton visibility when loading new model
       modelConfig.value.showSkeleton = false
 
-      if (load3d) {
+      if (load3d && isAssetPreviewSupported()) {
         const node = nodeRef.value
 
         const modelWidget = node?.widgets?.find(
           (w) => w.name === 'model_file' || w.name === 'image'
         )
         const value = modelWidget?.value
-        if (typeof value === 'string') {
-          void Load3dUtils.generateThumbnailIfNeeded(
-            load3d,
-            value,
-            isPreview.value ? 'output' : 'input'
-          )
+        if (typeof value === 'string' && value) {
+          const filename = value.trim().replace(/\s*\[output\]$/, '')
+          const modelName = Load3dUtils.splitFilePath(filename)[1]
+          load3d
+            .captureThumbnail(256, 256)
+            .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+            .then((blob) => persistThumbnail(modelName, blob))
+            .catch(() => {})
         }
       }
     },

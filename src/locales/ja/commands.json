@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "貼り付け"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "接続して貼り付け"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "ビューをリセット"
   },
@@ -343,6 +346,10 @@
   },
   "Workspace_ToggleFocusMode": {
     "label": "フォーカスモードの切り替え"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "アプリサイドバーを切り替え",
+    "tooltip": "アプリ"
   },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "アセットサイドバーの表示切り替え",

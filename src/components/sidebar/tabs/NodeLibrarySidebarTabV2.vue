@@ -1,26 +1,27 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.nodes')">
     <template #header>
-      <TabsRoot v-model="selectedTab" class="flex flex-col">
-        <div class="flex items-center justify-between gap-2 px-2 pb-2 2xl:px-4">
-          <SearchBox
-            ref="searchBoxRef"
-            v-model="searchQuery"
-            :placeholder="$t('g.search') + '...'"
-            @search="handleSearch"
-          />
+      <SidebarTopArea bottom-divider>
+        <SearchInput
+          ref="searchBoxRef"
+          v-model="searchQuery"
+          :placeholder="$t('g.search') + '...'"
+          @search="handleSearch"
+        />
+        <template #actions>
           <DropdownMenuRoot>
             <DropdownMenuTrigger as-child>
-              <button
+              <Button
+                variant="secondary"
+                size="icon"
                 :aria-label="$t('g.sort')"
-                class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-comfy-input hover:bg-comfy-input-hover border-none"
               >
                 <i class="icon-[lucide--arrow-up-down] size-4" />
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
-                class="z-[9999] min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
                 align="end"
                 :side-offset="4"
               >
@@ -29,93 +30,153 @@
                     v-for="option in sortingOptions"
                     :key="option.id"
                     :value="option.id"
-                    class="flex cursor-pointer items-center justify-end gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                    class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
                   >
+                    <span class="flex-1">{{ $t(option.label) }}</span>
                     <DropdownMenuItemIndicator class="w-4">
                       <i class="icon-[lucide--check] size-4" />
                     </DropdownMenuItemIndicator>
-                    <span>{{ $t(option.label) }}</span>
                   </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenuPortal>
           </DropdownMenuRoot>
-        </div>
-        <Separator decorative class="border border-dashed border-comfy-input" />
-        <!-- Tab list in header (fixed) -->
-        <TabsList
-          class="flex gap-4 border-b border-comfy-input bg-background p-4 justify-between"
-        >
-          <TabsTrigger
-            v-for="tab in tabs"
-            :key="tab.value"
-            :value="tab.value"
-            :class="
-              cn(
-                'flex-1 text-center select-none border-none outline-none px-3 py-2 rounded-lg cursor-pointer',
-                'text-sm text-foreground transition-colors',
-                selectedTab === tab.value
-                  ? 'bg-comfy-input font-bold'
-                  : 'bg-transparent font-normal'
-              )
-            "
-          >
+          <DropdownMenuRoot v-if="selectedTab === 'all'">
+            <DropdownMenuTrigger as-child>
+              <Button
+                variant="secondary"
+                size="icon"
+                :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
+              >
+                <i class="icon-[lucide--list-filter] size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuContent
+                class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                align="end"
+                :side-offset="4"
+              >
+                <DropdownMenuCheckboxItem
+                  v-model="filterOptions.blueprints"
+                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                >
+                  <span class="flex-1">{{
+                    $t('sideToolbar.nodeLibraryTab.filterOptions.blueprints')
+                  }}</span>
+                  <DropdownMenuItemIndicator class="w-4">
+                    <i class="icon-[lucide--check] size-4" />
+                  </DropdownMenuItemIndicator>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  v-model="filterOptions.partnerNodes"
+                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                >
+                  <span class="flex-1">{{
+                    $t('sideToolbar.nodeLibraryTab.filterOptions.partnerNodes')
+                  }}</span>
+                  <DropdownMenuItemIndicator class="w-4">
+                    <i class="icon-[lucide--check] size-4" />
+                  </DropdownMenuItemIndicator>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  v-model="filterOptions.comfyNodes"
+                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                >
+                  <span class="flex-1">{{
+                    $t('sideToolbar.nodeLibraryTab.filterOptions.comfyNodes')
+                  }}</span>
+                  <DropdownMenuItemIndicator class="w-4">
+                    <i class="icon-[lucide--check] size-4" />
+                  </DropdownMenuItemIndicator>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  v-model="filterOptions.extensions"
+                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                >
+                  <span class="flex-1">{{
+                    $t('sideToolbar.nodeLibraryTab.filterOptions.extensions')
+                  }}</span>
+                  <DropdownMenuItemIndicator class="w-4">
+                    <i class="icon-[lucide--check] size-4" />
+                  </DropdownMenuItemIndicator>
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenuPortal>
+          </DropdownMenuRoot>
+        </template>
+      </SidebarTopArea>
+      <div class="border-b border-comfy-input p-2 2xl:px-4">
+        <TabList v-model="selectedTab">
+          <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
             {{ tab.label }}
-          </TabsTrigger>
-        </TabsList>
-      </TabsRoot>
+          </Tab>
+        </TabList>
+      </div>
     </template>
     <template #body>
       <NodeDragPreview />
-      <!-- Tab content (scrollable) -->
-      <TabsRoot v-model="selectedTab" class="h-full">
-        <EssentialNodesPanel
-          v-if="
-            flags.nodeLibraryEssentialsEnabled && selectedTab === 'essentials'
-          "
-          v-model:expanded-keys="expandedKeys"
-          :root="renderedEssentialRoot"
-          @node-click="handleNodeClick"
-        />
-        <AllNodesPanel
-          v-if="selectedTab === 'all'"
-          v-model:expanded-keys="expandedKeys"
-          :sections="renderedSections"
-          :fill-node-info="fillNodeInfo"
-          @node-click="handleNodeClick"
-        />
-        <CustomNodesPanel
-          v-if="selectedTab === 'custom'"
-          v-model:expanded-keys="expandedKeys"
-          :sections="renderedCustomSections"
-          @node-click="handleNodeClick"
-        />
-      </TabsRoot>
+      <div class="flex h-full flex-col">
+        <div class="min-h-0 flex-1 overflow-y-auto py-2">
+          <TabPanel
+            v-if="flags.nodeLibraryEssentialsEnabled"
+            :model-value="selectedTab"
+            value="essentials"
+          >
+            <EssentialNodesPanel
+              v-model:expanded-keys="expandedKeys"
+              :root="renderedEssentialRoot"
+              :flat-nodes="essentialFlatNodes"
+              @node-click="handleNodeClick"
+            />
+          </TabPanel>
+          <TabPanel :model-value="selectedTab" value="all">
+            <AllNodesPanel
+              v-model:expanded-keys="expandedKeys"
+              :sections="renderedSections"
+              :fill-node-info="fillNodeInfo"
+              :sort-order="sortOrder"
+              @node-click="handleNodeClick"
+            />
+          </TabPanel>
+          <TabPanel :model-value="selectedTab" value="blueprints">
+            <BlueprintsPanel
+              v-model:expanded-keys="expandedKeys"
+              :sections="renderedBlueprintsSections"
+              @node-click="handleNodeClick"
+            />
+          </TabPanel>
+        </div>
+      </div>
     </template>
   </SidebarTabTemplate>
 </template>
 
 <script setup lang="ts">
-import { cn } from '@/utils/tailwindUtil'
 import { useLocalStorage } from '@vueuse/core'
 import {
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItemIndicator,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuRoot,
-  DropdownMenuTrigger,
-  Separator,
-  TabsList,
-  TabsRoot,
-  TabsTrigger
+  DropdownMenuTrigger
 } from 'reka-ui'
 import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
-import SearchBox from '@/components/common/SearchBoxV2.vue'
+import {
+  resolveBlueprintSuffix,
+  resolveEssentialsDisplayName
+} from '@/constants/essentialsDisplayNames'
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
+import TabPanel from '@/components/tab/TabPanel.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import Button from '@/components/ui/button/Button.vue'
+import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
@@ -125,17 +186,23 @@ import {
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
 import { getProviderIcon } from '@/utils/categoryUtil'
-import { sortedTree } from '@/utils/treeUtil'
+import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { SortingStrategyId, TabId } from '@/types/nodeOrganizationTypes'
+import { buildNodeDefTree, useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
+  NodeCategoryId,
+  NodeSection,
+  SortingStrategyId,
+  TabId
+} from '@/types/nodeOrganizationTypes'
+import type {
+  NodeLibrarySection,
   RenderedTreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'
 
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
-import CustomNodesPanel from './nodeLibrary/CustomNodesPanel.vue'
+import BlueprintsPanel from './nodeLibrary/BlueprintsPanel.vue'
 import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
 import NodeDragPreview from './nodeLibrary/NodeDragPreview.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
@@ -161,7 +228,7 @@ const sortOrderByTab = useLocalStorage<Record<TabId, SortingStrategyId>>(
   {
     essentials: DEFAULT_SORTING_ID,
     all: DEFAULT_SORTING_ID,
-    custom: 'alphabetical'
+    blueprints: 'alphabetical'
   }
 )
 const sortOrder = usePerTabState(selectedTab, sortOrderByTab)
@@ -173,14 +240,21 @@ const sortingOptions = computed(() =>
   }))
 )
 
+const filterOptions = ref<Record<NodeCategoryId, boolean>>({
+  blueprints: true,
+  partnerNodes: true,
+  comfyNodes: true,
+  extensions: true
+})
+
 const { t } = useI18n()
 
-const searchBoxRef = ref()
+const searchBoxRef = ref<InstanceType<typeof SearchInput> | null>(null)
 const searchQuery = ref('')
 const expandedKeysByTab = ref<Record<TabId, string[]>>({
   essentials: [],
   all: [],
-  custom: []
+  blueprints: []
 })
 const expandedKeys = usePerTabState(selectedTab, expandedKeysByTab)
 
@@ -213,8 +287,8 @@ const sections = computed(() => {
 function getFolderIcon(node: TreeNode): string {
   const firstLeaf = findFirstLeaf(node)
   if (
-    firstLeaf?.key?.startsWith('root/api node') &&
-    firstLeaf.key.replace(`${node.key}/`, '') === firstLeaf.label
+    firstLeaf?.data?.api_node &&
+    firstLeaf.key?.replace(`${node.key}/`, '') === firstLeaf.label
   ) {
     return getProviderIcon(node.label ?? '')
   }
@@ -264,12 +338,33 @@ function applySorting(tree: TreeNode): TreeNode {
   return tree
 }
 
-const renderedSections = computed(() => {
-  return sections.value.map((section) => ({
+function renderSections(
+  nodeSections: NodeSection[],
+  filter?: (section: NodeSection) => boolean
+): NodeLibrarySection<ComfyNodeDefImpl>[] {
+  const filtered = filter ? nodeSections.filter(filter) : nodeSections
+
+  if (sortOrder.value === 'alphabetical') {
+    const allNodes = filtered.flatMap((section) =>
+      flattenTree<ComfyNodeDefImpl>(section.tree)
+    )
+    const mergedTree = unwrapTreeRoot(buildNodeDefTree(allNodes))
+    return [{ root: fillNodeInfo(applySorting(mergedTree)) }]
+  }
+
+  return filtered.map((section) => ({
+    category: section.category,
     title: section.title,
     root: fillNodeInfo(applySorting(section.tree))
   }))
-})
+}
+
+const renderedSections = computed(() =>
+  renderSections(
+    sections.value,
+    (section) => !section.category || filterOptions.value[section.category]
+  )
+)
 
 const essentialSections = computed(() => {
   if (selectedTab.value !== 'essentials') return []
@@ -279,24 +374,65 @@ const essentialSections = computed(() => {
   )
 })
 
+function disambiguateBlueprintLabels(
+  root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
+  if (!root.children) return root
+  return {
+    ...root,
+    children: root.children.map((folder) => {
+      if (folder.type !== 'folder' || !folder.children) return folder
+      const labelCounts = new Map<string, number>()
+      for (const node of folder.children) {
+        if (node.label)
+          labelCounts.set(node.label, (labelCounts.get(node.label) ?? 0) + 1)
+      }
+      return {
+        ...folder,
+        children: folder.children.map((node) => {
+          if ((labelCounts.get(node.label ?? '') ?? 0) <= 1) return node
+          const suffix = resolveBlueprintSuffix(node.data?.name ?? '')
+          if (!suffix) return node
+          return { ...node, label: `${node.label} (${suffix})` }
+        })
+      }
+    })
+  }
+}
+
 const renderedEssentialRoot = computed(() => {
   const section = essentialSections.value[0]
-  return section
+  const root = section
     ? fillNodeInfo(applySorting(section.tree), { useEssentialsLabels: true })
     : fillNodeInfo({ key: 'root', label: '', children: [] })
+  return disambiguateBlueprintLabels(root)
 })
 
-const customSections = computed(() => {
-  if (selectedTab.value !== 'custom') return []
-  return nodeOrganizationService.organizeNodesByTab(activeNodes.value, 'custom')
+function flattenRenderedLeaves(
+  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+): RenderedTreeExplorerNode<ComfyNodeDefImpl>[] {
+  if (node.type === 'node') return [node]
+  return node.children?.flatMap(flattenRenderedLeaves) ?? []
+}
+
+const essentialFlatNodes = computed(() => {
+  if (sortOrder.value !== 'alphabetical') return []
+  return flattenRenderedLeaves(renderedEssentialRoot.value).sort((a, b) =>
+    (a.label ?? '').localeCompare(b.label ?? '')
+  )
 })
 
-const renderedCustomSections = computed(() => {
-  return customSections.value.map((section) => ({
-    title: section.title,
-    root: fillNodeInfo(applySorting(section.tree))
-  }))
+const blueprintsSections = computed(() => {
+  if (selectedTab.value !== 'blueprints') return []
+  return nodeOrganizationService.organizeNodesByTab(
+    activeNodes.value,
+    'blueprints'
+  )
 })
+
+const renderedBlueprintsSections = computed(() =>
+  renderSections(blueprintsSections.value)
+)
 
 function collectFolderKeys(node: TreeNode): string[] {
   if (node.leaf) return []
@@ -334,8 +470,8 @@ async function handleSearch() {
     for (const section of essentialSections.value) {
       allKeys.push(...collectFolderKeys(section.tree))
     }
-  } else if (selectedTab.value === 'custom') {
-    for (const section of customSections.value) {
+  } else if (selectedTab.value === 'blueprints') {
+    for (const section of blueprintsSections.value) {
       allKeys.push(...collectFolderKeys(section.tree))
     }
   } else {
@@ -347,19 +483,18 @@ async function handleSearch() {
 }
 
 const tabs = computed(() => {
-  const baseTabs: Array<{ value: TabId; label: string }> = [
+  const allTabs: Array<{ value: TabId; label: string }> = [
     { value: 'all', label: t('sideToolbar.nodeLibraryTab.allNodes') },
-    { value: 'custom', label: t('sideToolbar.nodeLibraryTab.custom') }
+    {
+      value: 'essentials' as TabId,
+      label: t('sideToolbar.nodeLibraryTab.essentials')
+    },
+    {
+      value: 'blueprints',
+      label: t('sideToolbar.nodeLibraryTab.blueprints')
+    }
   ]
-  return flags.nodeLibraryEssentialsEnabled
-    ? [
-        {
-          value: 'essentials' as TabId,
-          label: t('sideToolbar.nodeLibraryTab.essentials')
-        },
-        ...baseTabs
-      ]
-    : baseTabs
+  return flags.nodeLibraryEssentialsEnabled ? allTabs : [allTabs[0], allTabs[2]]
 })
 
 onMounted(() => {

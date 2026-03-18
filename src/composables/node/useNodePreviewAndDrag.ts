@@ -10,7 +10,7 @@ const PREVIEW_MARGIN = 16
 
 export function useNodePreviewAndDrag(
   nodeDef: Ref<ComfyNodeDefImpl | undefined>,
-  options?: { panelRef?: Ref<HTMLElement | null> }
+  panelRef?: Ref<HTMLElement | null>
 ) {
   const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
   const settingStore = useSettingStore()
@@ -56,8 +56,7 @@ export function useNodePreviewAndDrag(
 
     const target = e.currentTarget as HTMLElement
     const rect = target.getBoundingClientRect()
-    const horizontalRect =
-      options?.panelRef?.value?.getBoundingClientRect() ?? rect
+    const horizontalRect = panelRef?.value?.getBoundingClientRect() ?? rect
     const { left, viewportHeight } = calculatePreviewPosition(horizontalRect)
 
     let top = rect.top

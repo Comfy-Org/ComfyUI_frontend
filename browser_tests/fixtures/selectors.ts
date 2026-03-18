@@ -27,12 +27,14 @@ export const TestIds = {
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
     confirm: 'confirm-dialog',
-    missingNodes: 'missing-nodes-warning',
+    errorOverlay: 'error-overlay',
+    missingNodeCard: 'missing-node-card',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section'
   },
   topbar: {
     queueButton: 'queue-button',
+    queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button'
   },
   nodeLibrary: {

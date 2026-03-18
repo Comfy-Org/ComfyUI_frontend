@@ -25,7 +25,7 @@ defineProps<{
       "
       :class="
         cn(
-          'text-sm text-muted-foreground truncate group',
+          'group truncate text-sm text-muted-foreground',
           tooltip ? 'cursor-help' : '',
           singleline ? 'flex-1' : ''
         )
@@ -35,7 +35,7 @@ defineProps<{
 
       <i
         v-if="tooltip"
-        class="icon-[lucide--info] ml-0.5 size-3 relative top-[1px] group-hover:text-primary"
+        class="relative top-px ml-0.5 icon-[lucide--info] size-3 group-hover:text-primary"
       />
     </span>
     <slot />

@@ -36,7 +36,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     data-slot="slider"
     :class="
       cn(
-        'relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50',
+        'relative flex w-full touch-none items-center select-none data-disabled:opacity-50',
         'data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col',
         props.class
       )
@@ -50,7 +50,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="slider-track"
       :class="
         cn(
-          'bg-node-stroke relative grow overflow-hidden rounded-full',
+          'relative grow overflow-hidden rounded-full bg-node-stroke',
           'cursor-pointer overflow-visible',
           `before:absolute before:-inset-2 before:block before:bg-transparent`,
           'data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:w-full',
@@ -70,9 +70,9 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="slider-thumb"
       :class="
         cn(
-          'bg-node-component-surface-highlight ring-node-component-surface-selected block size-3.5 shrink-0 rounded-full shadow-sm transition-[color,box-shadow]',
+          'block size-3.5 shrink-0 rounded-full bg-node-component-surface-highlight shadow-sm ring-node-component-surface-selected transition-[color,box-shadow]',
           'cursor-grab',
-          'before:absolute before:-inset-1 before:block before:bg-transparent before:rounded-full',
+          'before:absolute before:-inset-1 before:block before:rounded-full before:bg-transparent',
           'hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50',
           { 'cursor-grabbing': pressed }
         )

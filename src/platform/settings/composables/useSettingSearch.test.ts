@@ -299,10 +299,12 @@ describe('useSettingSearch', () => {
       expect(results).toEqual([
         {
           label: 'Basic',
+          category: 'Category',
           settings: [mockSettings['Category.Setting1']]
         },
         {
           label: 'Advanced',
+          category: 'Category',
           settings: [mockSettings['Category.Setting2']]
         }
       ])
@@ -332,13 +334,48 @@ describe('useSettingSearch', () => {
       expect(results).toEqual([
         {
           label: 'Basic',
+          category: 'Category',
           settings: [mockSettings['Category.Setting1']]
         },
         {
           label: 'SubCategory',
+          category: 'Other',
           settings: [mockSettings['Other.Setting3']]
         }
       ])
+    })
+
+    it('returns results from all categories when searching cross-category term', () => {
+      // Simulates the "badge" scenario: same term matches settings in
+      // multiple categories (e.g. LiteGraph and Comfy)
+      mockSettings['LiteGraph.BadgeSetting'] = {
+        id: 'LiteGraph.BadgeSetting',
+        name: 'Node source badge mode',
+        type: 'combo',
+        defaultValue: 'default',
+        category: ['LiteGraph', 'Node']
+      }
+      mockSettings['Comfy.BadgeSetting'] = {
+        id: 'Comfy.BadgeSetting',
+        name: 'Show API node pricing badge',
+        type: 'boolean',
+        defaultValue: true,
+        category: ['Comfy', 'API Nodes']
+      }
+
+      const search = useSettingSearch()
+      search.handleSearch('badge')
+
+      expect(search.filteredSettingIds.value).toContain(
+        'LiteGraph.BadgeSetting'
+      )
+      expect(search.filteredSettingIds.value).toContain('Comfy.BadgeSetting')
+
+      // getSearchResults(null) should return both categories' results
+      const results = search.getSearchResults(null)
+      const labels = results.map((g) => g.label)
+      expect(labels).toContain('Node')
+      expect(labels).toContain('API Nodes')
     })
 
     it('returns empty array when no filtered results', () => {
@@ -372,12 +409,82 @@ describe('useSettingSearch', () => {
       expect(results).toEqual([
         {
           label: 'Basic',
+          category: 'Category',
           settings: [
             mockSettings['Category.Setting1'],
             mockSettings['Category.Setting4']
           ]
         }
       ])
+    })
+  })
+
+  describe('nav item matching', () => {
+    const navItems = [
+      { key: 'keybinding', label: 'Keybinding' },
+      { key: 'about', label: 'About' },
+      { key: 'extension', label: 'Extension' },
+      { key: 'Comfy', label: 'Comfy' }
+    ]
+
+    it('matches nav items by key', () => {
+      const search = useSettingSearch()
+
+      search.handleSearch('keybinding', navItems)
+
+      expect(search.matchedNavItemKeys.value.has('keybinding')).toBe(true)
+    })
+
+    it('matches nav items by translated label (case insensitive)', () => {
+      const search = useSettingSearch()
+
+      search.handleSearch('ABOUT', navItems)
+
+      expect(search.matchedNavItemKeys.value.has('about')).toBe(true)
+    })
+
+    it('matches partial nav item labels', () => {
+      const search = useSettingSearch()
+
+      search.handleSearch('ext', navItems)
+
+      expect(search.matchedNavItemKeys.value.has('extension')).toBe(true)
+    })
+
+    it('clears matched nav item keys on empty query', () => {
+      const search = useSettingSearch()
+
+      search.handleSearch('keybinding', navItems)
+      expect(search.matchedNavItemKeys.value.size).toBeGreaterThan(0)
+
+      search.handleSearch('', navItems)
+      expect(search.matchedNavItemKeys.value.size).toBe(0)
+    })
+
+    it('can match both settings and nav items simultaneously', () => {
+      const search = useSettingSearch()
+
+      search.handleSearch('other', navItems)
+
+      expect(search.filteredSettingIds.value).toContain('Other.Setting3')
+      expect(search.matchedNavItemKeys.value.size).toBe(0)
+    })
+
+    it('matches nav items with translated labels different from key', () => {
+      const translatedNavItems = [{ key: 'keybinding', label: '키 바인딩' }]
+      const search = useSettingSearch()
+
+      search.handleSearch('키 바인딩', translatedNavItems)
+
+      expect(search.matchedNavItemKeys.value.has('keybinding')).toBe(true)
+    })
+
+    it('does not match nav items when no nav items provided', () => {
+      const search = useSettingSearch()
+
+      search.handleSearch('keybinding')
+
+      expect(search.matchedNavItemKeys.value.size).toBe(0)
     })
   })
 

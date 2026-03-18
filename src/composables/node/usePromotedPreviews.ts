@@ -3,7 +3,7 @@ import { computed, toValue } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
@@ -39,16 +39,18 @@ export function usePromotedPreviews(
       const interiorNode = node.subgraph.getNodeById(entry.interiorNodeId)
       if (!interiorNode) continue
 
-      // Read from the reactive nodeOutputs ref to establish Vue
-      // dependency tracking. getNodeImageUrls reads from the
-      // non-reactive app.nodeOutputs, so without this access the
-      // computed would never re-evaluate when outputs change.
+      // Read from both reactive refs to establish Vue dependency
+      // tracking. getNodeImageUrls reads from non-reactive
+      // app.nodeOutputs / app.nodePreviewImages, so without this
+      // access the computed would never re-evaluate.
       const locatorId = createNodeLocatorId(
         node.subgraph.id,
         entry.interiorNodeId
       )
-      const _reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
-      if (!_reactiveOutputs?.images?.length) continue
+      const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
+      const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
+      if (!reactiveOutputs?.images?.length && !reactivePreviews?.length)
+        continue
 
       const urls = nodeOutputStore.getNodeImageUrls(interiorNode)
       if (!urls?.length) continue

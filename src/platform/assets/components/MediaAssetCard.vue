@@ -5,7 +5,7 @@
     :aria-label="
       asset
         ? $t('assetBrowser.ariaLabel.assetCard', {
-            name: asset.name,
+            name: getAssetDisplayName(asset),
             type: fileKind
           })
         : $t('assetBrowser.ariaLabel.loadingAsset')
@@ -13,10 +13,10 @@
     :tabindex="loading ? -1 : 0"
     :class="
       cn(
-        'flex flex-col overflow-hidden cursor-pointer p-2 transition-colors duration-200 rounded-lg',
-        'gap-2 select-none group',
+        'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
+        'group gap-2 select-none',
         selected
-          ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
+          ? 'ring-3 ring-modal-card-border-highlighted ring-inset'
           : 'hover:bg-modal-card-background-hovered/20'
       )
     "
@@ -84,22 +84,24 @@
     <!-- Bottom Area: Media Info -->
     <div class="flex-1">
       <!-- Loading State -->
-      <div v-if="loading" class="flex justify-between items-start">
+      <div v-if="loading" class="flex items-start justify-between">
         <div class="flex flex-col gap-1">
           <div
-            class="h-4 w-24 animate-pulse rounded bg-modal-card-background"
+            class="h-4 w-24 animate-pulse rounded-sm bg-modal-card-background"
           />
           <div
-            class="h-3 w-20 animate-pulse rounded bg-modal-card-background"
+            class="h-3 w-20 animate-pulse rounded-sm bg-modal-card-background"
           />
         </div>
-        <div class="h-6 w-12 animate-pulse rounded bg-modal-card-background" />
+        <div
+          class="h-6 w-12 animate-pulse rounded-sm bg-modal-card-background"
+        />
       </div>
 
       <!-- Content -->
       <div
         v-else-if="asset && adaptedAsset"
-        class="flex justify-between items-end gap-1.5"
+        class="flex items-end justify-between gap-1.5"
       >
         <!-- Left side: Media name and metadata -->
         <div class="flex flex-col gap-1">
@@ -113,7 +115,7 @@
         </div>
 
         <!-- Right side: Output count -->
-        <div v-if="showOutputCount" class="flex-shrink-0">
+        <div v-if="showOutputCount" class="shrink-0">
           <Button
             v-tooltip.top.pt:pointer-events-none="
               $t('mediaAsset.actions.seeMoreOutputs')
@@ -148,8 +150,10 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
+import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
+import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
@@ -223,7 +227,7 @@ const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
 
 // Get filename without extension
 const fileName = computed(() => {
-  return getFilenameDetails(asset?.name || '').filename
+  return getFilenameDetails(asset ? getAssetDisplayName(asset) : '').filename
 })
 
 // Adapt AssetItem to legacy AssetMeta format for existing components
@@ -232,8 +236,14 @@ const adaptedAsset = computed(() => {
   return {
     id: asset.id,
     name: asset.name,
+    display_name: asset.display_name,
     kind: fileKind.value,
-    src: asset.preview_url || '',
+    src:
+      fileKind.value === '3D'
+        ? getAssetUrl(asset)
+        : asset.thumbnail_url || asset.preview_url || '',
+    preview_url: asset.preview_url,
+    preview_id: asset.preview_id,
     size: asset.size,
     tags: asset.tags || [],
     created_at: asset.created_at,

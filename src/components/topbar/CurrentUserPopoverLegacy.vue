@@ -1,10 +1,10 @@
 <!-- A popover that shows current user information and actions -->
 <template>
   <div
-    class="current-user-popover w-80 -m-3 p-2 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    class="current-user-popover -m-3 w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- User Info Section -->
-    <div class="flex flex-col items-center px-0 py-3 mb-4">
+    <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
         class="mb-1"
         :photo-url="userPhotoUrl"
@@ -23,15 +23,18 @@
       </p>
       <span
         v-if="subscriptionTierName"
-        class="my-0 text-xs text-foreground bg-secondary-background-hover rounded-full uppercase px-2 py-0.5 font-bold mt-2"
+        class="text-foreground my-0 mt-2 rounded-full bg-secondary-background-hover px-2 py-0.5 text-xs font-bold uppercase"
       >
         {{ subscriptionTierName }}
       </span>
     </div>
 
-    <!-- Credits Section -->
-    <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--component] text-amber-400 text-sm" />
+    <!-- Credits Section (cloud only) -->
+    <div
+      v-if="isCloud && isActiveSubscription"
+      class="flex items-center gap-2 px-4 py-2"
+    >
+      <i class="icon-[lucide--component] text-sm text-amber-400" />
       <Skeleton
         v-if="authStore.isFetchingBalance"
         width="4rem"
@@ -43,9 +46,19 @@
       }}</span>
       <i
         v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        class="icon-[lucide--circle-help] cursor-help text-base text-muted-foreground mr-auto"
+        class="mr-auto icon-[lucide--circle-help] cursor-help text-base text-muted-foreground"
       />
       <Button
+        v-if="isFreeTier"
+        variant="gradient"
+        size="sm"
+        data-testid="upgrade-to-add-credits-button"
+        @click="handleUpgradeToAddCredits"
+      >
+        {{ $t('subscription.upgradeToAddCredits') }}
+      </Button>
+      <Button
+        v-else
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -56,79 +69,80 @@
       </Button>
     </div>
 
-    <div v-else class="flex justify-center px-4">
+    <div v-else-if="isCloud" class="flex justify-center px-4">
       <SubscribeButton
         :fluid="false"
         :label="$t('subscription.subscribeToComfyCloud')"
         size="sm"
-        variant="gradient"
+        button-variant="gradient"
         @subscribed="handleSubscribed"
       />
     </div>
 
-    <Divider class="my-2 mx-0" />
+    <Divider class="mx-0 my-2" />
 
     <div
-      v-if="isActiveSubscription"
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
+      v-if="isCloud && isActiveSubscription"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
     >
-      <i class="icon-[lucide--tag] text-muted-foreground text-sm" />
-      <span class="text-sm text-base-foreground flex-1">{{
+      <i class="icon-[lucide--tag] text-sm text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.partnerNodesCredits')
       }}</span>
     </div>
 
     <div
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
+      v-if="isCloud"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
     >
-      <i class="icon-[lucide--receipt-text] text-muted-foreground text-sm" />
-      <span class="text-sm text-base-foreground flex-1">{{
+      <i class="icon-[lucide--receipt-text] text-sm text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.plansAndPricing')
       }}</span>
       <span
         v-if="canUpgrade"
-        class="text-xs font-bold text-base-background bg-base-foreground px-1.5 py-0.5 rounded-full"
+        class="rounded-full bg-base-foreground px-1.5 py-0.5 text-xs font-bold text-base-background"
       >
         {{ $t('subscription.upgrade') }}
       </span>
     </div>
 
     <div
-      v-if="isActiveSubscription"
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
+      v-if="isCloud && isActiveSubscription"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
-      <i class="icon-[lucide--file-text] text-muted-foreground text-sm" />
-      <span class="text-sm text-base-foreground flex-1">{{
+      <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
       }}</span>
     </div>
 
     <div
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="user-settings-menu-item"
       @click="handleOpenUserSettings"
     >
-      <i class="icon-[lucide--settings-2] text-muted-foreground text-sm" />
-      <span class="text-sm text-base-foreground flex-1">{{
+      <i class="icon-[lucide--settings-2] text-sm text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
         $t('userSettings.accountSettings')
       }}</span>
     </div>
 
-    <Divider class="my-2 mx-0" />
+    <Divider class="mx-0 my-2" />
 
     <div
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="logout-menu-item"
       @click="handleLogout"
     >
-      <i class="icon-[lucide--log-out] text-muted-foreground text-sm" />
-      <span class="text-sm text-base-foreground flex-1">{{
+      <i class="icon-[lucide--log-out] text-sm text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
         $t('auth.signOut.signOut')
       }}</span>
     </div>
@@ -170,6 +184,7 @@ const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
   isActiveSubscription,
+  isFreeTier,
   subscriptionTierName,
   subscriptionTier,
   fetchStatus
@@ -234,6 +249,11 @@ const handleOpenPartnerNodesInfo = () => {
     buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
     '_blank'
   )
+  emit('close')
+}
+
+const handleUpgradeToAddCredits = () => {
+  subscriptionDialog.showPricingTable()
   emit('close')
 }
 

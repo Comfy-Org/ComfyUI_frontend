@@ -1,10 +1,10 @@
 <!-- A popover that shows current user information and actions -->
 <template>
   <div
-    class="current-user-popover w-80 -m-3 p-2 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    class="current-user-popover -m-3 w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- User Info Section -->
-    <div class="flex flex-col items-center px-0 py-3 mb-4">
+    <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
         class="mb-1"
         :photo-url="userPhotoUrl"
@@ -70,11 +70,21 @@
       }}</span>
       <i
         v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        class="icon-[lucide--circle-help] mr-auto cursor-help text-base text-muted-foreground"
+        class="mr-auto icon-[lucide--circle-help] cursor-help text-base text-muted-foreground"
       />
-      <!-- Add Credits (subscribed + personal or workspace owner only) -->
+      <!-- Upgrade to add credits (free tier) -->
       <Button
-        v-if="isActiveSubscription && permissions.canTopUp"
+        v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
+        variant="gradient"
+        size="sm"
+        data-testid="upgrade-to-add-credits-button"
+        @click="handleUpgradeToAddCredits"
+      >
+        {{ $t('subscription.upgradeToAddCredits') }}
+      </Button>
+      <!-- Add Credits (subscribed + personal or workspace owner only, paid tier) -->
+      <Button
+        v-else-if="isActiveSubscription && permissions.canTopUp"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -93,7 +103,7 @@
             : $t('workspaceSwitcher.subscribe')
         "
         size="sm"
-        variant="gradient"
+        button-variant="gradient"
       />
       <Button
         v-if="showSubscribeAction && !isPersonalWorkspace"
@@ -242,8 +252,14 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
-const { isActiveSubscription, subscription, balance, isLoading, fetchBalance } =
-  useBillingContext()
+const {
+  isActiveSubscription,
+  isFreeTier,
+  subscription,
+  balance,
+  isLoading,
+  fetchBalance
+} = useBillingContext()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
@@ -307,6 +323,11 @@ const handleOpenPlanAndCreditsSettings = () => {
     settingsDialog.show('credits')
   }
 
+  emit('close')
+}
+
+const handleUpgradeToAddCredits = () => {
+  subscriptionDialog.showPricingTable()
   emit('close')
 }
 

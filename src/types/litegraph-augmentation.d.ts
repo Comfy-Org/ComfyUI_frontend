@@ -175,6 +175,8 @@ declare module '@/lib/litegraph/src/litegraph' {
     videoContainer?: HTMLElement
     /** Whether the node's preview media is loading */
     isLoading?: boolean
+    /** Whether a file is being uploaded to this node */
+    isUploading?: boolean
     /** The content type of the node's preview media */
     previewMediaType?: 'image' | 'video' | 'audio' | 'model'
     /** If true, output images are stored but not rendered below the node */

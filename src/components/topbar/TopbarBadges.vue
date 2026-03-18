@@ -19,7 +19,7 @@ import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 
 import TopbarBadge from './TopbarBadge.vue'
 
-const { reverseOrder = false, noPadding = false } = defineProps<{
+const { reverseOrder, noPadding } = defineProps<{
   reverseOrder?: boolean
   noPadding?: boolean
 }>()

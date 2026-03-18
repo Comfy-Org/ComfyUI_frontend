@@ -400,7 +400,7 @@
     "name": "Layout da Barra de Abas",
     "options": {
       "Default": "Padrão",
-      "Integrated": "Integrado"
+      "Legacy": "Legado"
     },
     "tooltip": "Controla o layout da barra de abas. \"Integrado\" move os controles de Ajuda e Usuário para a área da barra de abas."
   },
@@ -480,6 +480,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Escalar menus de combinação de nós (listas) ao dar zoom"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "Selecionar filhos do grupo ao clicar",
+    "tooltip": "Quando ativado, clicar em um grupo seleciona todos os nós e itens dentro dele"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "Sempre reduzir novos nós",

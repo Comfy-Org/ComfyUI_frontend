@@ -8,7 +8,7 @@
         :get-children="
           (item) => (item.children?.length ? item.children : undefined)
         "
-        class="m-0 p-0 pb-6"
+        class="m-0 min-w-0 p-0 pb-2"
       >
         <TreeVirtualizer
           v-slot="{ item }"
@@ -39,10 +39,10 @@
 
     <ContextMenuPortal v-if="showContextMenu">
       <ContextMenuContent
-        class="z-[9999] min-w-32 overflow-hidden rounded-md border border-border-default bg-comfy-menu-bg p-1 shadow-md"
+        class="z-9999 min-w-32 overflow-hidden rounded-md border border-border-default bg-comfy-menu-bg p-1 shadow-md"
       >
         <ContextMenuItem
-          class="flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-highlight focus:bg-highlight"
+          class="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none hover:bg-highlight focus:bg-highlight"
           @select="handleAddToFavorites"
         >
           <i

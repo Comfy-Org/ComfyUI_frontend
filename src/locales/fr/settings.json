@@ -400,7 +400,7 @@
     "name": "Disposition de la barre d’onglets",
     "options": {
       "Default": "Par défaut",
-      "Integrated": "Intégrée"
+      "Legacy": "Héritage"
     },
     "tooltip": "Contrôle la disposition de la barre d’onglets. « Intégrée » déplace les contrôles Aide et Utilisateur dans la zone de la barre d’onglets."
   },
@@ -480,6 +480,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Mise à l'échelle des menus de widgets combinés de nœuds (listes) lors du zoom"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "Sélectionner les éléments du groupe au clic",
+    "tooltip": "Lorsque cette option est activée, cliquer sur un groupe sélectionne tous les nœuds et éléments qu’il contient"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "Toujours réduire les nouveaux nœuds",

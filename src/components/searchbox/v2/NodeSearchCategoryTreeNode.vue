@@ -6,7 +6,7 @@
     :style="{ paddingLeft: `${0.75 + depth * 1.25}rem` }"
     :class="
       cn(
-        'w-full cursor-pointer rounded border-none bg-transparent py-2.5 pr-3 text-left text-sm transition-colors',
+        'w-full cursor-pointer rounded-sm border-none bg-transparent py-2.5 pr-3 text-left text-sm transition-colors',
         selectedCategory === node.key
           ? CATEGORY_SELECTED_CLASS
           : CATEGORY_UNSELECTED_CLASS

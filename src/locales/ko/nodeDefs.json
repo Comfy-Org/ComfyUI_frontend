@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "수학식",
+    "inputs": {
+      "expression": {
+        "name": "수식"
+      },
+      "values": {
+        "name": "값"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "스위치",
     "inputs": {
@@ -2134,6 +2153,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "description": "제공된 바운딩 박스를 기반으로 입력 이미지 배치에서 영역을 자르고 크기를 조정합니다.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "각 잘라낸 이미지의 높이로 크기가 조정됩니다."
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "각 잘라낸 이미지의 너비로 크기가 조정됩니다."
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "자르기 전에 바운딩 박스의 각 면에 추가되는 픽셀 단위의 여백입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "모든 잘라낸 이미지가 하나의 이미지 배치로 쌓입니다."
       }
     }
   },
@@ -3159,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Flux 계열 모델에서 참조 이미지에 대한 KV 캐시 최적화를 활성화합니다.",
+    "display_name": "Flux KV 캐시",
+    "inputs": {
+      "model": {
+        "name": "모델",
+        "tooltip": "KV 캐시를 사용할 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KV 캐시가 활성화된 패치된 모델입니다."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "이 노드는 이미지를 Flux Kontext에 더 최적화된 크기로 조정합니다.",
     "display_name": "Flux Kontext 이미지 스케일",
@@ -3701,6 +3764,60 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "Google Vertex API를 통해 이미지를 동기적으로 생성하거나 편집합니다.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "'auto'로 설정하면 입력 이미지의 종횡비와 일치합니다. 이미지가 제공되지 않으면 일반적으로 16:9 정사각형이 생성됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "files": {
+        "name": "파일",
+        "tooltip": "모델의 컨텍스트로 사용할 선택적 파일(들)입니다. Gemini Generate Content Input Files 노드에서 입력을 받을 수 있습니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "선택적 참조 이미지(들)입니다. 여러 이미지를 포함하려면 Batch Images 노드를 사용하세요(최대 14개)."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "생성할 이미지 또는 적용할 편집을 설명하는 텍스트 프롬프트입니다. 모델이 따라야 할 제약 조건, 스타일 또는 세부 정보를 포함하세요."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "목표 출력 해상도입니다. 2K/4K의 경우 Gemini 기본 업스케일러가 사용됩니다."
+      },
+      "response_modalities": {
+        "name": "응답 모달리티"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드를 특정 값으로 고정하면, 모델은 반복 요청에 대해 동일한 응답을 제공하려고 최선을 다합니다. 결정적 결과는 보장되지 않습니다. 또한, 모델이나 파라미터 설정(예: temperature)을 변경하면 동일한 시드 값을 사용해도 응답이 달라질 수 있습니다. 기본적으로 무작위 시드 값이 사용됩니다."
+      },
+      "system_prompt": {
+        "name": "시스템 프롬프트",
+        "tooltip": "AI의 동작을 지시하는 기본 지침입니다."
+      },
+      "thinking_level": {
+        "name": "사고 수준"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Google의 Gemini AI 모델로 텍스트 응답을 생성합니다. 더 관련성 있고 의미 있는 응답을 생성하기 위해 컨텍스트로 여러 유형의 입력(텍스트, 이미지, 오디오, 비디오)을 제공할 수 있습니다.",
     "display_name": "Google Gemini",
@@ -3864,6 +3981,10 @@
     "description": "텍스트 프롬프트를 기반으로 기존 이미지를 수정합니다",
     "display_name": "Grok 이미지 편집",
     "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "여러 이미지가 이미지 입력에 연결된 경우에만 허용됩니다."
+      },
       "control_after_generate": {
         "name": "생성 후 제어"
       },
@@ -3915,6 +4036,9 @@
       "prompt": {
         "name": "프롬프트",
         "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트"
+      },
+      "resolution": {
+        "name": "해상도"
       },
       "seed": {
         "name": "시드",
@@ -5770,6 +5894,9 @@
       },
       "mode": {
         "name": "모드"
+      },
+      "model": {
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트"
@@ -11179,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "배경색"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "덧칠할 선택적 기본 이미지"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "조건 쌍 (결합)",
     "inputs": {
@@ -12719,6 +12875,157 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "종횡비와 메가픽셀 목표값으로 너비와 높이를 계산합니다. Empty Latent Image의 크기를 설정할 때 유용합니다.",
+    "display_name": "해상도 선택기",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "출력 크기의 종횡비입니다."
+      },
+      "megapixels": {
+        "name": "메가픽셀",
+        "tooltip": "목표 총 메가픽셀. 1.0 MP ≈ 1024×1024 (정사각형 기준)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "너비",
+        "tooltip": "계산된 픽셀 단위 너비 (8의 배수)."
+      },
+      "1": {
+        "name": "높이",
+        "tooltip": "계산된 픽셀 단위 높이 (8의 배수)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Reve를 사용하여 텍스트 설명으로부터 이미지를 생성합니다.",
+    "display_name": "Reve 이미지 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "생성에 사용할 모델 버전입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_test_time_scaling": {
+        "name": "테스트 타임 스케일링"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 이미지에 대한 텍스트 설명입니다. 최대 2560자까지 입력할 수 있습니다."
+      },
+      "remove_background": {
+        "name": "배경 제거",
+        "tooltip": "생성된 이미지에서 배경을 제거합니다. 추가 비용이 발생할 수 있습니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "upscale": {
+        "name": "업스케일",
+        "tooltip": "생성된 이미지를 업스케일합니다. 추가 비용이 발생할 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Reve를 사용하여 자연어 지시로 이미지를 편집합니다.",
+    "display_name": "Reve 이미지 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "edit_instruction": {
+        "name": "편집 지시",
+        "tooltip": "이미지를 어떻게 편집할지에 대한 텍스트 설명입니다. 최대 2560자까지 입력할 수 있습니다."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "편집할 이미지입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "편집에 사용할 모델 버전입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_test_time_scaling": {
+        "name": "테스트 타임 스케일링"
+      },
+      "remove_background": {
+        "name": "배경 제거",
+        "tooltip": "생성된 이미지에서 배경을 제거합니다. 추가 비용이 발생할 수 있습니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "upscale": {
+        "name": "업스케일",
+        "tooltip": "생성된 이미지를 업스케일합니다. 추가 비용이 발생할 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "참고 이미지를 텍스트 프롬프트와 결합하여 Reve로 새로운 이미지를 만듭니다.",
+    "display_name": "Reve 이미지 리믹스",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "리믹스에 사용할 모델 버전입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_test_time_scaling": {
+        "name": "테스트 타임 스케일링"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 이미지에 대한 텍스트 설명입니다. 특정 이미지를 인덱스로 참조하려면 XML img 태그를 사용할 수 있습니다. 예: <img>0</img>, <img>1</img> 등."
+      },
+      "reference_images": {
+        "name": "참고 이미지"
+      },
+      "remove_background": {
+        "name": "배경 제거",
+        "tooltip": "생성된 이미지에서 배경을 제거합니다. 추가 비용이 발생할 수 있습니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "upscale": {
+        "name": "업스케일",
+        "tooltip": "생성된 이미지를 업스케일합니다. 추가 비용이 발생할 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
     "display_name": "Rodin 3D 생성 - 디테일 생성",
@@ -12975,6 +13282,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "자르기 영역이 항상 정사각형이 되도록 더 짧은 바운딩 박스 축을 확장합니다."
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "각 감지된 얼굴 주위의 바운딩 박스 영역에 곱해지는 배수입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "프레임별 얼굴 바운딩 박스이며, SDPoseKeypointExtractor의 bboxes 입력과 호환됩니다."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "SDPose 모델을 사용하여 이미지에서 포즈 키포인트를 추출합니다: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "더 정확한 감지를 위한 선택적 바운딩 박스입니다. 다중 인물 감지 시 필수입니다."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "OpenPose 프레임 형식의 키포인트 (canvas_width, canvas_height, people)"
       }
     }
   },
@@ -14860,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "3D 모델을 입력한 후, 3D 모델 텍스처를 다시 그립니다.",
+    "display_name": "Hunyuan3D: 3D 텍스처 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX 형식의 3D 모델입니다. 모델은 100,000개 미만의 면을 가져야 합니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "텍스처 편집을 설명합니다. 최대 1024자의 UTF-8 문자를 지원합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: 이미지 → 모델 (Pro)",
     "inputs": {
@@ -14908,6 +15334,80 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "3D 모델에 UV 펼치기를 수행하여 UV 텍스처를 생성합니다. 입력 모델은 30,000개 미만의 면을 가져야 합니다.",
+    "display_name": "Hunyuan3D: 모델에서 UV로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model_3d": {
+        "name": "3D 모델",
+        "tooltip": "입력 3D 모델 (GLB, OBJ, 또는 FBX)"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "3D 모델에 스마트 리토폴로지를 수행합니다. GLB/OBJ 포맷 지원; 최대 200MB; 고폴리곤 모델에 권장됩니다.",
+    "display_name": "Hunyuan3D: 스마트 토폴로지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "face_level": {
+        "name": "면 수준",
+        "tooltip": "폴리곤 감소 수준."
+      },
+      "model_3d": {
+        "name": "3D 모델",
+        "tooltip": "입력 3D 모델 (GLB 또는 OBJ)"
+      },
+      "polygon_type": {
+        "name": "폴리곤 유형",
+        "tooltip": "표면 구성 유형."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -14950,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }
@@ -17963,6 +18467,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end": {
+        "name": "포즈 종료",
+        "tooltip": "포즈 컨디셔닝을 적용할 마지막 스텝입니다."
+      },
+      "pose_start": {
+        "name": "포즈 시작",
+        "tooltip": "포즈 컨디셔닝을 적용할 시작 스텝입니다."
+      },
+      "pose_strength": {
+        "name": "포즈 강도",
+        "tooltip": "포즈 latent의 강도입니다."
+      },
+      "pose_video": {
+        "name": "포즈 비디오",
+        "tooltip": "포즈 컨디셔닝에 사용되는 비디오입니다. 메인 비디오 해상도의 절반으로 다운스케일됩니다."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_image": {
+        "name": "참조 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "생성 크기의 빈 latent입니다."
       }
     }
   },

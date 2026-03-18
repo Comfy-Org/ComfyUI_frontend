@@ -29,12 +29,27 @@ test.describe(
       // Currently opens missing nodes dialog which is outside scope of AVIF loading functionality
       // 'workflow.avif'
     ]
+    const filesWithUpload = new Set(['no_workflow.webp'])
+
     fileNames.forEach(async (fileName) => {
       test(`Load workflow in ${fileName} (drop from filesystem)`, async ({
         comfyPage
       }) => {
+        const shouldUpload = filesWithUpload.has(fileName)
+        const uploadRequestPromise = shouldUpload
+          ? comfyPage.page.waitForRequest((req) =>
+              req.url().includes('/upload/')
+            )
+          : null
+
         await comfyPage.dragDrop.dragAndDropFile(`workflowInMedia/${fileName}`)
-        await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
+
+        if (uploadRequestPromise) {
+          const request = await uploadRequestPromise
+          expect(request.url()).toContain('/upload/')
+        } else {
+          await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
+        }
       })
     })
 

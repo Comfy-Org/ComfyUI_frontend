@@ -1,12 +1,12 @@
 <template>
   <div
-    class="relative size-full overflow-hidden rounded bg-modal-card-placeholder-background"
+    class="relative size-full overflow-hidden rounded-sm bg-modal-card-placeholder-background"
     @dblclick="emit('view')"
   >
     <img
       v-if="!error"
       :src="asset.src"
-      :alt="asset.name"
+      :alt="getAssetDisplayName(asset)"
       class="size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
     />
     <div
@@ -22,6 +22,7 @@
 import { useImage, whenever } from '@vueuse/core'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 
 const { asset } = defineProps<{
   asset: AssetMeta
@@ -34,7 +35,7 @@ const emit = defineEmits<{
 
 const { state, error, isReady } = useImage({
   src: asset.src ?? '',
-  alt: asset.name
+  alt: getAssetDisplayName(asset)
 })
 
 whenever(

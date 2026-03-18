@@ -44,6 +44,15 @@ vi.mock('@/i18n', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key
 }))
 
+const { mockRemoveMissingNodesByType } = vi.hoisted(() => ({
+  mockRemoveMissingNodesByType: vi.fn()
+}))
+vi.mock('@/stores/executionErrorStore', () => ({
+  useExecutionErrorStore: vi.fn(() => ({
+    removeMissingNodesByType: mockRemoveMissingNodesByType
+  }))
+}))
+
 import { app } from '@/scripts/app'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'
@@ -649,6 +658,321 @@ describe('useNodeReplacement', () => {
 
       // Should still succeed (dot-notation skipped gracefully)
       expect(result).toEqual(['ImageBatch'])
+    })
+  })
+
+  describe('placeholder detection predicate', () => {
+    /**
+     * replaceNodesInPlace calls collectAllNodes with a predicate.
+     * These tests capture the predicate by inspecting the mock call
+     * and verify it matches only nodes whose serialized type is in
+     * the targetTypes set — regardless of has_errors or registered_node_types.
+     */
+
+    function capturedPredicate(): (n: LGraphNode) => boolean {
+      const calls = vi.mocked(collectAllNodes).mock.calls
+      expect(calls.length).toBeGreaterThan(0)
+      return calls[calls.length - 1][1] as (n: LGraphNode) => boolean
+    }
+
+    it('should detect placeholder when type is in targetTypes even if has_errors is false', () => {
+      const placeholder = createPlaceholderNode(1, 'OldNode')
+      placeholder.has_errors = false
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      const predicate = capturedPredicate()
+      expect(predicate(placeholder)).toBe(true)
+    })
+
+    it('should detect placeholder when type is in targetTypes even if type is registered', () => {
+      // Simulate the pack being reinstalled — type is now registered
+      ;(LiteGraph.registered_node_types as Record<string, unknown>)['OldNode'] =
+        {}
+
+      const placeholder = createPlaceholderNode(1, 'OldNode')
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      const predicate = capturedPredicate()
+      expect(predicate(placeholder)).toBe(true)
+
+      // Cleanup
+      delete (LiteGraph.registered_node_types as Record<string, unknown>)[
+        'OldNode'
+      ]
+    })
+
+    it('should exclude nodes whose type is NOT in targetTypes', () => {
+      const unrelatedNode = createPlaceholderNode(1, 'UnrelatedNode')
+      const graph = createMockGraph([unrelatedNode])
+      unrelatedNode.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('SomeOtherNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'SomeOtherNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      const predicate = capturedPredicate()
+      expect(predicate(unrelatedNode)).toBe(false)
+    })
+
+    it('should exclude nodes without last_serialization', () => {
+      const freshNode = createPlaceholderNode(1, 'OldNode')
+      freshNode.last_serialization =
+        undefined as unknown as LGraphNode['last_serialization']
+      const graph = createMockGraph([freshNode])
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      const predicate = capturedPredicate()
+      expect(predicate(freshNode)).toBe(false)
+    })
+
+    it('should fall back to node.type when last_serialization.type is undefined', () => {
+      const node = createPlaceholderNode(1, 'FallbackType')
+      node.last_serialization!.type = undefined as unknown as string
+      node.type = 'FallbackType'
+      const graph = createMockGraph([node])
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('FallbackType', {
+          new_node_id: 'NewNode',
+          old_node_id: 'FallbackType',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      const predicate = capturedPredicate()
+      expect(predicate(node)).toBe(true)
+    })
+
+    it('should match node via sanitized type when last_serialization.type is absent and live type contains HTML special chars', () => {
+      // Simulates an old serialization format (no last_serialization.type)
+      // where app.ts has already run sanitizeNodeName on n.type,
+      // stripping '&' from "OldNode&Special" → "OldNodeSpecial".
+      // targetTypes still holds the original unsanitized name "OldNode&Special",
+      // so the predicate must fall back to checking sanitizeNodeName(originalType).
+      const node = createPlaceholderNode(1, 'OldNodeSpecial')
+      node.last_serialization!.type = undefined as unknown as string
+      // Simulate what sanitizeNodeName does to '&' in the live type
+      node.type = 'OldNodeSpecial' // '&' already stripped by sanitizeNodeName
+      const graph = createMockGraph([node])
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        // targetTypes will contain the original name with '&'
+        makeMissingNodeType('OldNode&Special', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode&Special',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      const predicate = capturedPredicate()
+      // Without the sanitize fallback this would return false.
+      expect(predicate(node)).toBe(true)
+    })
+  })
+
+  describe('replaceGroup', () => {
+    it('calls removeMissingNodesByType with replaced types on success', () => {
+      const placeholder = createPlaceholderNode(1, 'OldNode')
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      const newNode = createNewNode()
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceGroup } = useNodeReplacement()
+      replaceGroup({
+        type: 'OldNode',
+        nodeTypes: [
+          makeMissingNodeType('OldNode', {
+            new_node_id: 'NewNode',
+            old_node_id: 'OldNode',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          })
+        ]
+      })
+
+      expect(mockRemoveMissingNodesByType).toHaveBeenCalledWith(['OldNode'])
+    })
+
+    it('does not call removeMissingNodesByType when no nodes are replaced', () => {
+      const graph = createMockGraph([])
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      const { replaceGroup } = useNodeReplacement()
+      replaceGroup({
+        type: 'OldNode',
+        nodeTypes: [
+          makeMissingNodeType('OldNode', {
+            new_node_id: 'NewNode',
+            old_node_id: 'OldNode',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          })
+        ]
+      })
+
+      expect(mockRemoveMissingNodesByType).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('replaceAllGroups', () => {
+    it('calls removeMissingNodesByType with all successfully replaced types', () => {
+      const p1 = createPlaceholderNode(1, 'TypeA')
+      const p2 = createPlaceholderNode(2, 'TypeB')
+      const graph = createMockGraph([p1, p2])
+      p1.graph = graph
+      p2.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([p1, p2])
+      vi.mocked(LiteGraph.createNode)
+        .mockReturnValueOnce(createNewNode())
+        .mockReturnValueOnce(createNewNode())
+
+      const { replaceAllGroups } = useNodeReplacement()
+      replaceAllGroups([
+        {
+          type: 'TypeA',
+          nodeTypes: [
+            makeMissingNodeType('TypeA', {
+              new_node_id: 'NewA',
+              old_node_id: 'TypeA',
+              old_widget_ids: null,
+              input_mapping: null,
+              output_mapping: null
+            })
+          ]
+        },
+        {
+          type: 'TypeB',
+          nodeTypes: [
+            makeMissingNodeType('TypeB', {
+              new_node_id: 'NewB',
+              old_node_id: 'TypeB',
+              old_widget_ids: null,
+              input_mapping: null,
+              output_mapping: null
+            })
+          ]
+        }
+      ])
+
+      expect(mockRemoveMissingNodesByType).toHaveBeenCalledWith(
+        expect.arrayContaining(['TypeA', 'TypeB'])
+      )
+    })
+
+    it('removes only the types that were actually replaced when some fail', () => {
+      const p1 = createPlaceholderNode(1, 'TypeA')
+      const graph = createMockGraph([p1])
+      p1.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      // Only TypeA appears as a placeholder; TypeB has no matching node
+      vi.mocked(collectAllNodes).mockReturnValue([p1])
+      vi.mocked(LiteGraph.createNode).mockReturnValueOnce(createNewNode())
+
+      const { replaceAllGroups } = useNodeReplacement()
+      replaceAllGroups([
+        {
+          type: 'TypeA',
+          nodeTypes: [
+            makeMissingNodeType('TypeA', {
+              new_node_id: 'NewA',
+              old_node_id: 'TypeA',
+              old_widget_ids: null,
+              input_mapping: null,
+              output_mapping: null
+            })
+          ]
+        },
+        {
+          type: 'TypeB',
+          nodeTypes: [
+            makeMissingNodeType('TypeB', {
+              new_node_id: 'NewB',
+              old_node_id: 'TypeB',
+              old_widget_ids: null,
+              input_mapping: null,
+              output_mapping: null
+            })
+          ]
+        }
+      ])
+
+      // Only TypeA was replaced; TypeB had no matching placeholder
+      expect(mockRemoveMissingNodesByType).toHaveBeenCalledWith(['TypeA'])
     })
   })
 })

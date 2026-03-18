@@ -7,8 +7,14 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
+
+interface ReplacementGroup {
+  type: string
+  nodeTypes: MissingNodeType[]
+}
 
 /** Compares sanitized type strings to match placeholder → missing node type. */
 function findMatchingType(
@@ -226,11 +232,30 @@ export function useNodeReplacement() {
       useWorkflowStore().activeWorkflow?.changeTracker ?? null
     changeTracker?.beforeChange()
 
-    try {
-      const placeholders = collectAllNodes(
-        graph,
-        (n) => !!n.has_errors && !!n.last_serialization
+    // Target types come from node_replacements fetched at workflow load time
+    // and the missing nodes detected at that point — not from the current
+    // registered_node_types. This ensures replacement still works even if
+    // the user has since installed the missing node pack.
+    // Also include sanitized variants so that when the fallback path reads
+    // n.type (which app.ts may have already run through sanitizeNodeName),
+    // we can still match against the original type stored in selectedTypes.
+    const targetTypes = new Set([
+      ...selectedTypes.map((t) => (typeof t === 'string' ? t : t.type)),
+      ...selectedTypes.map((t) =>
+        sanitizeNodeName(typeof t === 'string' ? t : t.type)
       )
+    ])
+
+    try {
+      const placeholders = collectAllNodes(graph, (n) => {
+        if (!n.last_serialization) return false
+        // Prefer the original serialized type; fall back to the live type
+        // for nodes whose serialization predates the type field.
+        // n.type may have been sanitized by app.ts (HTML special chars stripped);
+        // the sanitized variants in targetTypes ensure we still match correctly.
+        const originalType = n.last_serialization.type ?? n.type
+        return !!originalType && targetTypes.has(originalType)
+      })
 
       for (const node of placeholders) {
         const match = findMatchingType(node, selectedTypes)
@@ -261,6 +286,10 @@ export function useNodeReplacement() {
             }
         replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
 
+        // Refresh Vue node data — replaceWithMapping bypasses graph.add()
+        // so onNodeAdded must be called explicitly to update VueNodeData.
+        nodeGraph.onNodeAdded?.(newNode)
+
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)
         }
@@ -279,6 +308,18 @@ export function useNodeReplacement() {
           life: 3000
         })
       }
+    } catch (error) {
+      console.error('Failed to replace nodes:', error)
+      if (replacedTypes.length > 0) {
+        graph.updateExecutionOrder()
+        graph.setDirtyCanvas(true, true)
+      }
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error', 'Error'),
+        detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes')
+      })
+      return replacedTypes
     } finally {
       changeTracker?.afterChange()
     }
@@ -286,7 +327,32 @@ export function useNodeReplacement() {
     return replacedTypes
   }
 
+  /**
+   * Replaces all nodes in a single swap group and removes successfully
+   * replaced types from the execution error store.
+   */
+  function replaceGroup(group: ReplacementGroup): void {
+    const replaced = replaceNodesInPlace(group.nodeTypes)
+    if (replaced.length > 0) {
+      useExecutionErrorStore().removeMissingNodesByType(replaced)
+    }
+  }
+
+  /**
+   * Replaces every available node across all swap groups and removes
+   * the succeeded types from the execution error store.
+   */
+  function replaceAllGroups(groups: ReplacementGroup[]): void {
+    const allNodeTypes = groups.flatMap((g) => g.nodeTypes)
+    const replaced = replaceNodesInPlace(allNodeTypes)
+    if (replaced.length > 0) {
+      useExecutionErrorStore().removeMissingNodesByType(replaced)
+    }
+  }
+
   return {
-    replaceNodesInPlace
+    replaceNodesInPlace,
+    replaceGroup,
+    replaceAllGroups
   }
 }

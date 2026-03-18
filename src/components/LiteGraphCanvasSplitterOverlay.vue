@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-full absolute top-0 left-0 z-999 pointer-events-none flex flex-col"
+    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-col"
   >
     <slot name="workflow-tabs" />
 
@@ -17,8 +17,8 @@
 
       <Splitter
         :key="splitterRefreshKey"
-        class="bg-transparent pointer-events-none border-none flex-1 overflow-hidden"
-        :state-key="sidebarStateKey"
+        class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
+        :state-key="isSelectMode ? 'builder-splitter' : sidebarStateKey"
         state-storage="local"
         @resizestart="onResizestart"
       >
@@ -30,13 +30,15 @@
           :class="
             sidebarLocation === 'left'
               ? cn(
-                  'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
+                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
                   sidebarPanelVisible && 'min-w-78'
                 )
-              : 'bg-comfy-menu-bg pointer-events-auto'
+              : 'pointer-events-auto bg-comfy-menu-bg'
           "
-          :min-size="sidebarLocation === 'left' ? 10 : 15"
-          :size="20"
+          :min-size="
+            sidebarLocation === 'left' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
+          "
+          :size="SIDE_PANEL_SIZE"
           :style="firstPanelStyle"
           :role="sidebarLocation === 'left' ? 'complementary' : undefined"
           :aria-label="
@@ -54,15 +56,15 @@
         </SplitterPanel>
 
         <!-- Main panel (always present) -->
-        <SplitterPanel :size="80" class="flex flex-col">
+        <SplitterPanel :size="CENTER_PANEL_SIZE" class="flex flex-col">
           <slot name="topmenu" :sidebar-panel-visible />
 
           <Splitter
-            class="bg-transparent pointer-events-none border-none splitter-overlay-bottom mr-1 mb-1 ml-1 flex-1"
+            class="splitter-overlay-bottom pointer-events-none mx-1 mb-1 flex-1 border-none bg-transparent"
             layout="vertical"
             :pt:gutter="
               cn(
-                'rounded-tl-lg rounded-tr-lg ',
+                'rounded-t-lg',
                 !(bottomPanelVisible && !focusMode) && 'hidden'
               )
             "
@@ -75,7 +77,7 @@
             </SplitterPanel>
             <SplitterPanel
               v-show="bottomPanelVisible && !focusMode"
-              class="bottom-panel border border-(--p-panel-border-color) max-w-full overflow-x-auto bg-comfy-menu-bg pointer-events-auto rounded-lg"
+              class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg"
             >
               <slot name="bottom-panel" />
             </SplitterPanel>
@@ -90,13 +92,15 @@
           :class="
             sidebarLocation === 'right'
               ? cn(
-                  'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
+                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
                   sidebarPanelVisible && 'min-w-78'
                 )
-              : 'bg-comfy-menu-bg pointer-events-auto'
+              : 'pointer-events-auto bg-comfy-menu-bg'
           "
-          :min-size="sidebarLocation === 'right' ? 10 : 15"
-          :size="20"
+          :min-size="
+            sidebarLocation === 'right' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
+          "
+          :size="SIDE_PANEL_SIZE"
           :style="lastPanelStyle"
           :role="sidebarLocation === 'right' ? 'complementary' : undefined"
           :aria-label="
@@ -123,8 +127,14 @@ import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useAppMode } from '@/composables/useAppMode'
+import {
+  BUILDER_MIN_SIZE,
+  CENTER_PANEL_SIZE,
+  SIDEBAR_MIN_SIZE,
+  SIDE_PANEL_SIZE
+} from '@/constants/splitterConstants'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -145,15 +155,17 @@ const unifiedWidth = computed(() =>
 
 const { focusMode } = storeToRefs(workspaceStore)
 
-const appModeStore = useAppModeStore()
+const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
 const showOffsideSplitter = computed(
-  () => rightSidePanelVisible.value || appModeStore.mode === 'builder:select'
+  () => rightSidePanelVisible.value || isSelectMode.value
 )
 
-const sidebarPanelVisible = computed(() => activeSidebarTab.value !== null)
+const sidebarPanelVisible = computed(
+  () => activeSidebarTab.value !== null && !isBuilderMode.value
+)
 
 const sidebarStateKey = computed(() => {
   return unifiedWidth.value
@@ -174,7 +186,7 @@ function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
  * to recalculate the width and panel order
  */
 const splitterRefreshKey = computed(() => {
-  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}-${sidebarLocation.value}`
+  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}`
 })
 
 const firstPanelStyle = computed(() => {

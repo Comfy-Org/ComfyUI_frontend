@@ -101,6 +101,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
+  escapeParameter: true,
   messages: {
     en: {
       subscription: {
@@ -112,7 +113,8 @@ const i18n = createI18n({
         partnerNodesBalance: 'Partner Nodes Balance',
         partnerNodesDescription: 'Credits for partner nodes',
         totalCredits: 'Total Credits',
-        creditsRemainingThisMonth: 'Credits remaining this month',
+        creditsRemainingThisMonth: 'Included (Refills {date})',
+        creditsRemainingThisYear: 'Included (Refills {date})',
         creditsYouveAdded: "Credits you've added",
         monthlyBonusDescription: 'Monthly bonus',
         prepaidDescription: 'Prepaid credits',
@@ -285,6 +287,13 @@ describe('SubscriptionPanel', () => {
       mockCreditsData.isLoadingBalance = false
       const wrapper = createWrapper()
       expect(wrapper.findAll('.skeleton').length).toBe(0)
+    })
+
+    it('renders refill date with literal slashes', () => {
+      mockIsActiveSubscription.value = true
+      const wrapper = createWrapper()
+      expect(wrapper.text()).toContain('Included (Refills 12/31/24)')
+      expect(wrapper.text()).not.toContain('&#x2F;')
     })
   })
 

@@ -5,11 +5,8 @@
       v-if="isHelpCenterVisible"
       class="help-center-popup"
       :class="{
-        'sidebar-left':
-          triggerLocation === 'sidebar' && sidebarLocation === 'left',
-        'sidebar-right':
-          triggerLocation === 'sidebar' && sidebarLocation === 'right',
-        'topbar-right': triggerLocation === 'topbar',
+        'sidebar-left': sidebarLocation === 'left',
+        'sidebar-right': sidebarLocation === 'right',
         'small-sidebar': isSmall
       }"
     >
@@ -63,7 +60,6 @@ const { isSmall = false } = defineProps<{
 
 const {
   isHelpCenterVisible,
-  triggerLocation,
   sidebarLocation,
   closeHelpCenter,
   handleWhatsNewDismissed
@@ -99,25 +95,6 @@ const {
 
 .help-center-popup.sidebar-right {
   right: 1rem;
-}
-
-.help-center-popup.topbar-right {
-  top: 2rem;
-  right: 1rem;
-  bottom: auto;
-  animation: slideInDown 0.2s ease-out;
-}
-
-@keyframes slideInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 @keyframes slideInUp {

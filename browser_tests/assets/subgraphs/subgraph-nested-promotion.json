@@ -1,0 +1,760 @@
+{
+  "id": "9a37f747-e96b-4304-9212-7abcaad7bdac",
+  "revision": 0,
+  "last_node_id": 11,
+  "last_link_id": 18,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "PreviewAny",
+      "pos": [1031, 434],
+      "size": [250, 178],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 5
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [null, null, null]
+    },
+    {
+      "id": 5,
+      "type": "1e38d8ea-45e1-48a5-aa20-966584201867",
+      "pos": [788, 433.5],
+      "size": [225, 380],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "string_a",
+          "type": "STRING",
+          "widget": {
+            "name": "string_a"
+          },
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [5]
+        }
+      ],
+      "properties": {
+        "proxyWidgets": [
+          ["3", "string_a"],
+          ["4", "value"],
+          ["6", "value"],
+          ["6", "value_1"]
+        ]
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 1,
+      "type": "PrimitiveStringMultiline",
+      "pos": [548, 451],
+      "size": [225, 142],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [4]
+        }
+      ],
+      "title": "Outer",
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": ["Outer\n"]
+    }
+  ],
+  "links": [
+    [4, 1, 0, 5, 0, "STRING"],
+    [5, 5, 0, 2, 0, "STRING"]
+  ],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "1e38d8ea-45e1-48a5-aa20-966584201867",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 11,
+          "lastLinkId": 18,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Sub 0",
+        "inputNode": {
+          "id": -10,
+          "bounding": [351, 432.5, 120, 120]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [1352, 294.5, 120, 60]
+        },
+        "inputs": [
+          {
+            "id": "7bf3e1d4-0521-4b5c-92f5-47ca598b7eb4",
+            "name": "string_a",
+            "type": "STRING",
+            "linkIds": [1],
+            "localized_name": "string_a",
+            "pos": [451, 452.5]
+          },
+          {
+            "id": "5fb3dcf7-9bfd-4b3c-a1b9-750b4f3edf19",
+            "name": "value",
+            "type": "STRING",
+            "linkIds": [13],
+            "pos": [451, 472.5]
+          },
+          {
+            "id": "55d24b8a-7c82-4b02-8e3d-ff31ffb8aa13",
+            "name": "value_1",
+            "type": "STRING",
+            "linkIds": [16],
+            "pos": [451, 492.5]
+          },
+          {
+            "id": "c1fe7cc3-547e-4fb0-b763-61888558d4bd",
+            "name": "value_1_1",
+            "type": "STRING",
+            "linkIds": [18],
+            "pos": [451, 512.5]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "fbe975ba-d7c2-471e-a99a-a1e2c6ab466d",
+            "name": "STRING",
+            "type": "STRING",
+            "linkIds": [9],
+            "localized_name": "STRING",
+            "pos": [1372, 314.5]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 4,
+            "type": "PrimitiveStringMultiline",
+            "pos": [504, 437],
+            "size": [210, 88],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "value",
+                "name": "value",
+                "type": "STRING",
+                "widget": {
+                  "name": "value"
+                },
+                "link": 13
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "STRING",
+                "name": "STRING",
+                "type": "STRING",
+                "links": [2]
+              }
+            ],
+            "title": "Inner 1",
+            "properties": {
+              "Node name for S&R": "PrimitiveStringMultiline"
+            },
+            "widgets_values": ["Inner 1\n"]
+          },
+          {
+            "id": 3,
+            "type": "StringConcatenate",
+            "pos": [743, 325],
+            "size": [347, 231],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "string_a",
+                "name": "string_a",
+                "type": "STRING",
+                "widget": {
+                  "name": "string_a"
+                },
+                "link": 1
+              },
+              {
+                "localized_name": "string_b",
+                "name": "string_b",
+                "type": "STRING",
+                "widget": {
+                  "name": "string_b"
+                },
+                "link": 2
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "STRING",
+                "name": "STRING",
+                "type": "STRING",
+                "links": [7]
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "StringConcatenate"
+            },
+            "widgets_values": ["", "", ""]
+          },
+          {
+            "id": 6,
+            "type": "9be42452-056b-4c99-9f9f-7381d11c4454",
+            "pos": [1115, 301],
+            "size": [210, 196],
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "string_a",
+                "name": "string_a",
+                "type": "STRING",
+                "widget": {
+                  "name": "string_a"
+                },
+                "link": 7
+              },
+              {
+                "name": "value",
+                "type": "STRING",
+                "widget": {
+                  "name": "value"
+                },
+                "link": 16
+              },
+              {
+                "name": "value_1",
+                "type": "STRING",
+                "widget": {
+                  "name": "value_1"
+                },
+                "link": 18
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "STRING",
+                "name": "STRING",
+                "type": "STRING",
+                "links": [9]
+              }
+            ],
+            "properties": {
+              "proxyWidgets": [
+                ["5", "string_a"],
+                ["11", "value"],
+                ["9", "value"],
+                ["10", "string_a"]
+              ]
+            },
+            "widgets_values": []
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 2,
+            "origin_id": 4,
+            "origin_slot": 0,
+            "target_id": 3,
+            "target_slot": 1,
+            "type": "STRING"
+          },
+          {
+            "id": 1,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 3,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 7,
+            "origin_id": 3,
+            "origin_slot": 0,
+            "target_id": 6,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 6,
+            "origin_id": 6,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 1,
+            "type": "STRING"
+          },
+          {
+            "id": 9,
+            "origin_id": 6,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 13,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 4,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 16,
+            "origin_id": -10,
+            "origin_slot": 2,
+            "target_id": 6,
+            "target_slot": 1,
+            "type": "STRING"
+          },
+          {
+            "id": 18,
+            "origin_id": -10,
+            "origin_slot": 3,
+            "target_id": 6,
+            "target_slot": 2,
+            "type": "STRING"
+          }
+        ],
+        "extra": {}
+      },
+      {
+        "id": "9be42452-056b-4c99-9f9f-7381d11c4454",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 11,
+          "lastLinkId": 18,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Sub 1",
+        "inputNode": {
+          "id": -10,
+          "bounding": [180, 739, 120, 100]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [1246, 612, 120, 60]
+        },
+        "inputs": [
+          {
+            "id": "01c05c51-86b5-4bad-b32f-9c911683a13d",
+            "name": "string_a",
+            "type": "STRING",
+            "linkIds": [4],
+            "localized_name": "string_a",
+            "pos": [280, 759]
+          },
+          {
+            "id": "d50f6a62-0185-43d4-a174-a8a94bd8f6e7",
+            "name": "value",
+            "type": "STRING",
+            "linkIds": [14],
+            "pos": [280, 779]
+          },
+          {
+            "id": "6b78450e-5986-49cd-b743-c933e5a34a69",
+            "name": "value_1",
+            "type": "STRING",
+            "linkIds": [17],
+            "pos": [280, 799]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "a8bcf3bf-a66a-4c71-8d92-17a2a4d03686",
+            "name": "STRING",
+            "type": "STRING",
+            "linkIds": [12],
+            "localized_name": "STRING",
+            "pos": [1266, 632]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 11,
+            "type": "PrimitiveStringMultiline",
+            "pos": [334, 742],
+            "size": [210, 88],
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "value",
+                "name": "value",
+                "type": "STRING",
+                "widget": {
+                  "name": "value"
+                },
+                "link": 14
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "STRING",
+                "name": "STRING",
+                "type": "STRING",
+                "links": [7]
+              }
+            ],
+            "title": "Inner 2",
+            "properties": {
+              "Node name for S&R": "PrimitiveStringMultiline"
+            },
+            "widgets_values": ["Inner 2\n"]
+          },
+          {
+            "id": 10,
+            "type": "StringConcatenate",
+            "pos": [581, 637],
+            "size": [400, 200],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "string_a",
+                "name": "string_a",
+                "type": "STRING",
+                "widget": {
+                  "name": "string_a"
+                },
+                "link": 4
+              },
+              {
+                "localized_name": "string_b",
+                "name": "string_b",
+                "type": "STRING",
+                "widget": {
+                  "name": "string_b"
+                },
+                "link": 7
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "STRING",
+                "name": "STRING",
+                "type": "STRING",
+                "links": [11]
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "StringConcatenate"
+            },
+            "widgets_values": ["", "", ""]
+          },
+          {
+            "id": 9,
+            "type": "7c2915a5-5eb8-4958-a8fd-4beb30f370ce",
+            "pos": [1004, 613],
+            "size": [210, 142],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "string_a",
+                "name": "string_a",
+                "type": "STRING",
+                "widget": {
+                  "name": "string_a"
+                },
+                "link": 11
+              },
+              {
+                "name": "value",
+                "type": "STRING",
+                "widget": {
+                  "name": "value"
+                },
+                "link": 17
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "STRING",
+                "name": "STRING",
+                "type": "STRING",
+                "links": [12]
+              }
+            ],
+            "properties": {
+              "proxyWidgets": [
+                ["7", "string_a"],
+                ["8", "value"]
+              ]
+            },
+            "widgets_values": []
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 4,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 10,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 7,
+            "origin_id": 11,
+            "origin_slot": 0,
+            "target_id": 10,
+            "target_slot": 1,
+            "type": "STRING"
+          },
+          {
+            "id": 11,
+            "origin_id": 10,
+            "origin_slot": 0,
+            "target_id": 9,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 10,
+            "origin_id": 9,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 12,
+            "origin_id": 9,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 14,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 11,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 17,
+            "origin_id": -10,
+            "origin_slot": 2,
+            "target_id": 9,
+            "target_slot": 1,
+            "type": "STRING"
+          }
+        ],
+        "extra": {}
+      },
+      {
+        "id": "7c2915a5-5eb8-4958-a8fd-4beb30f370ce",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 11,
+          "lastLinkId": 18,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Sub 2",
+        "inputNode": {
+          "id": -10,
+          "bounding": [262, 1222, 120, 80]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [1123.089999999999, 1125.1999999999998, 120, 60]
+        },
+        "inputs": [
+          {
+            "id": "934a8baa-d79c-428c-8ec9-814ad437d7c7",
+            "name": "string_a",
+            "type": "STRING",
+            "linkIds": [9],
+            "localized_name": "string_a",
+            "pos": [362, 1242]
+          },
+          {
+            "id": "3a545207-7202-42a9-a82f-3b62e1b0f459",
+            "name": "value",
+            "type": "STRING",
+            "linkIds": [15],
+            "pos": [362, 1262]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "4c3d243b-9ff6-4dcd-9dbf-e4ec8e1fc879",
+            "name": "STRING",
+            "type": "STRING",
+            "linkIds": [10],
+            "localized_name": "STRING",
+            "pos": [1143.089999999999, 1145.1999999999998]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 8,
+            "type": "PrimitiveStringMultiline",
+            "pos": [412.96000000000004, 1228.2399999999996],
+            "size": [210, 88],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "value",
+                "name": "value",
+                "type": "STRING",
+                "widget": {
+                  "name": "value"
+                },
+                "link": 15
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "STRING",
+                "name": "STRING",
+                "type": "STRING",
+                "links": [8]
+              }
+            ],
+            "title": "Inner 3",
+            "properties": {
+              "Node name for S&R": "PrimitiveStringMultiline"
+            },
+            "widgets_values": ["Inner 3\n"]
+          },
+          {
+            "id": 7,
+            "type": "StringConcatenate",
+            "pos": [686.08, 1132.38],
+            "size": [400, 200],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "string_a",
+                "name": "string_a",
+                "type": "STRING",
+                "widget": {
+                  "name": "string_a"
+                },
+                "link": 9
+              },
+              {
+                "localized_name": "string_b",
+                "name": "string_b",
+                "type": "STRING",
+                "widget": {
+                  "name": "string_b"
+                },
+                "link": 8
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "STRING",
+                "name": "STRING",
+                "type": "STRING",
+                "links": [10]
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "StringConcatenate"
+            },
+            "widgets_values": ["", "", ""]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 8,
+            "origin_id": 8,
+            "origin_slot": 0,
+            "target_id": 7,
+            "target_slot": 1,
+            "type": "STRING"
+          },
+          {
+            "id": 9,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 7,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 10,
+            "origin_id": 7,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 15,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 8,
+            "target_slot": 0,
+            "type": "STRING"
+          }
+        ],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [-412, 11]
+    },
+    "frontendVersion": "1.41.7"
+  },
+  "version": 0.4
+}

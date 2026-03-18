@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  appendWorkflowJsonExt,
+  ensureWorkflowSuffix,
+  getFilenameDetails,
   getMediaTypeFromFilename,
+  getPathDetails,
   highlightQuery,
   isPreviewableMediaType,
   truncateFilename
@@ -194,6 +198,147 @@ describe('formatUtil', () => {
       const result = highlightQuery('foo bar foo', 'foo')
       expect(result).toBe(
         '<span class="highlight">foo</span> bar <span class="highlight">foo</span>'
+      )
+    })
+  })
+
+  describe('getFilenameDetails', () => {
+    it('splits simple filenames into name and suffix', () => {
+      expect(getFilenameDetails('file.txt')).toEqual({
+        filename: 'file',
+        suffix: 'txt'
+      })
+    })
+
+    it('handles filenames with multiple dots', () => {
+      expect(getFilenameDetails('my.file.name.png')).toEqual({
+        filename: 'my.file.name',
+        suffix: 'png'
+      })
+    })
+
+    it('handles filenames without extension', () => {
+      expect(getFilenameDetails('README')).toEqual({
+        filename: 'README',
+        suffix: null
+      })
+    })
+
+    it('recognises .app.json as a compound extension', () => {
+      expect(getFilenameDetails('workflow.app.json')).toEqual({
+        filename: 'workflow',
+        suffix: 'app.json'
+      })
+    })
+
+    it('recognises .app.json case-insensitively', () => {
+      expect(getFilenameDetails('Workflow.APP.JSON')).toEqual({
+        filename: 'Workflow',
+        suffix: 'app.json'
+      })
+    })
+
+    it('handles regular .json files normally', () => {
+      expect(getFilenameDetails('workflow.json')).toEqual({
+        filename: 'workflow',
+        suffix: 'json'
+      })
+    })
+
+    it('treats bare .app.json as a dotfile without basename', () => {
+      expect(getFilenameDetails('.app.json')).toEqual({
+        filename: '.app',
+        suffix: 'json'
+      })
+    })
+  })
+
+  describe('getPathDetails', () => {
+    it('splits a path with .app.json extension', () => {
+      const result = getPathDetails('workflows/test.app.json')
+      expect(result).toEqual({
+        directory: 'workflows',
+        fullFilename: 'test.app.json',
+        filename: 'test',
+        suffix: 'app.json'
+      })
+    })
+
+    it('splits a path with .json extension', () => {
+      const result = getPathDetails('workflows/test.json')
+      expect(result).toEqual({
+        directory: 'workflows',
+        fullFilename: 'test.json',
+        filename: 'test',
+        suffix: 'json'
+      })
+    })
+  })
+
+  describe('appendWorkflowJsonExt', () => {
+    it('appends .app.json when isApp is true', () => {
+      expect(appendWorkflowJsonExt('test', true)).toBe('test.app.json')
+    })
+
+    it('appends .json when isApp is false', () => {
+      expect(appendWorkflowJsonExt('test', false)).toBe('test.json')
+    })
+
+    it('replaces .json with .app.json when isApp is true', () => {
+      expect(appendWorkflowJsonExt('test.json', true)).toBe('test.app.json')
+    })
+
+    it('replaces .app.json with .json when isApp is false', () => {
+      expect(appendWorkflowJsonExt('test.app.json', false)).toBe('test.json')
+    })
+
+    it('leaves .app.json unchanged when isApp is true', () => {
+      expect(appendWorkflowJsonExt('test.app.json', true)).toBe('test.app.json')
+    })
+
+    it('leaves .json unchanged when isApp is false', () => {
+      expect(appendWorkflowJsonExt('test.json', false)).toBe('test.json')
+    })
+
+    it('handles case-insensitive extensions', () => {
+      expect(appendWorkflowJsonExt('test.JSON', true)).toBe('test.app.json')
+      expect(appendWorkflowJsonExt('test.APP.JSON', false)).toBe('test.json')
+    })
+  })
+
+  describe('ensureWorkflowSuffix', () => {
+    it('appends suffix when missing', () => {
+      expect(ensureWorkflowSuffix('file', 'json')).toBe('file.json')
+    })
+
+    it('does not double-append when suffix already present', () => {
+      expect(ensureWorkflowSuffix('file.json', 'json')).toBe('file.json')
+    })
+
+    it('appends compound suffix when missing', () => {
+      expect(ensureWorkflowSuffix('file', 'app.json')).toBe('file.app.json')
+    })
+
+    it('does not double-append compound suffix', () => {
+      expect(ensureWorkflowSuffix('file.app.json', 'app.json')).toBe(
+        'file.app.json'
+      )
+    })
+
+    it('replaces .json with .app.json when suffix is app.json', () => {
+      expect(ensureWorkflowSuffix('file.json', 'app.json')).toBe(
+        'file.app.json'
+      )
+    })
+
+    it('replaces .app.json with .json when suffix is json', () => {
+      expect(ensureWorkflowSuffix('file.app.json', 'json')).toBe('file.json')
+    })
+
+    it('handles case-insensitive extension detection', () => {
+      expect(ensureWorkflowSuffix('file.JSON', 'json')).toBe('file.json')
+      expect(ensureWorkflowSuffix('file.APP.JSON', 'app.json')).toBe(
+        'file.app.json'
       )
     })
   })

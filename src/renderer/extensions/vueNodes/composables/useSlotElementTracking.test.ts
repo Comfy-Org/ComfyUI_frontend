@@ -4,6 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -11,6 +12,7 @@ import type { SlotLayout } from '@/renderer/core/layout/types'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
+  syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
   useSlotElementTracking
 } from './useSlotElementTracking'
@@ -130,5 +132,44 @@ describe('useSlotElementTracking', () => {
 
     // Should remain pending — waiting for Vue components to mount
     expect(layoutStore.pendingSlotSync).toBe(true)
+  })
+
+  it('skips slot layout writeback when measured slot geometry is unchanged', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const slotEl = document.createElement('div')
+    slotEl.getBoundingClientRect = vi.fn(() => new DOMRect(100, 200, 16, 16))
+
+    const registryStore = useNodeSlotRegistryStore()
+    const node = registryStore.ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: slotEl,
+      index: SLOT_INDEX,
+      type: 'input',
+      cachedOffset: { x: 108, y: 208 }
+    })
+
+    const slotSize = LiteGraph.NODE_SLOT_HEIGHT
+    const halfSlotSize = slotSize / 2
+    const initialLayout: SlotLayout = {
+      nodeId: NODE_ID,
+      index: SLOT_INDEX,
+      type: 'input',
+      position: { x: 108, y: 208 },
+      bounds: {
+        x: 108 - halfSlotSize,
+        y: 208 - halfSlotSize,
+        width: slotSize,
+        height: slotSize
+      }
+    }
+    layoutStore.batchUpdateSlotLayouts([
+      { key: slotKey, layout: initialLayout }
+    ])
+
+    const batchUpdateSpy = vi.spyOn(layoutStore, 'batchUpdateSlotLayouts')
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(batchUpdateSpy).not.toHaveBeenCalled()
   })
 })

@@ -90,6 +90,8 @@ export type MissingNodeType =
   // Primarily used by group nodes.
   | {
       type: string
+      nodeId?: string | number
+      cnrId?: string
       hint?: string
       action?: {
         text: string

@@ -21,8 +21,8 @@
       @click="emit('apply', option)"
       @mouseenter="selectedIndex = index"
     >
-      <span class="text-base font-semibold text-foreground">
-        <span class="text-2xl mr-1" :style="{ color: getLinkTypeColor(option) }"
+      <span class="text-foreground text-base font-semibold">
+        <span class="mr-1 text-2xl" :style="{ color: getLinkTypeColor(option) }"
           >&bull;</span
         >
         {{ option }}

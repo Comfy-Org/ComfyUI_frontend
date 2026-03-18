@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full z-8888 flex flex-col justify-between bg-comfy-menu-bg">
+  <div class="z-8888 flex h-full flex-col justify-between bg-comfy-menu-bg">
     <div class="flex flex-col">
       <div
         v-for="tool in allTools"
@@ -19,7 +19,7 @@
     </div>
 
     <div
-      class="flex flex-col items-center cursor-pointer rounded-md mb-2 transition-colors duration-200 hover:bg-secondary-background-hover"
+      class="mb-2 flex cursor-pointer flex-col items-center rounded-md transition-colors duration-200 hover:bg-secondary-background-hover"
       :title="t('maskEditor.clickToResetZoom')"
       @click="onResetZoom"
     >

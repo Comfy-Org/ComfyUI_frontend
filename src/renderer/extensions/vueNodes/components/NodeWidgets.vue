@@ -21,20 +21,16 @@
     @pointermove="handleWidgetPointerEvent"
     @pointerup="handleWidgetPointerEvent"
   >
-    <template
-      v-for="(widget, index) in processedWidgets"
-      :key="`widget-${index}-${widget.name}`"
-    >
+    <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
-        :data-widget-name="widget.name"
       >
         <!-- Widget Input Slot Dot -->
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
+              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
               widget.slotMetadata?.linked && 'opacity-100'
             )
           "
@@ -54,21 +50,28 @@
           />
         </div>
         <!-- Widget Component -->
-        <component
-          :is="widget.vueComponent"
-          v-model="widget.value"
-          v-tooltip.left="widget.tooltipConfig"
-          :widget="widget.simplified"
-          :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :node-type="nodeType"
-          :class="
-            cn(
-              'col-span-2',
-              widget.hasError && 'text-node-stroke-error font-bold'
-            )
-          "
-          @update:model-value="widget.updateHandler"
-        />
+        <AppInput
+          :id="widget.id"
+          :name="widget.name"
+          :enable="canSelectInputs && !widget.simplified.options?.disabled"
+        >
+          <component
+            :is="widget.vueComponent"
+            v-model="widget.value"
+            v-tooltip.left="widget.tooltipConfig"
+            :widget="widget.simplified"
+            :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+            :node-type="nodeType"
+            :class="
+              cn(
+                'col-span-2',
+                widget.hasError && 'font-bold text-node-stroke-error'
+              )
+            "
+            @update:model-value="widget.updateHandler"
+            @contextmenu="widget.handleContextMenu"
+          />
+        </AppInput>
       </div>
     </template>
   </div>
@@ -80,15 +83,22 @@ import { computed, onErrorCaptured, ref, toValue } from 'vue'
 import type { Component } from 'vue'
 
 import type {
+  SafeWidgetData,
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAppMode } from '@/composables/useAppMode'
+import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 // Import widget components directly
@@ -98,14 +108,23 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { nodeTypeValidForApp } from '@/stores/appModeStore'
+import type { WidgetState } from '@/stores/widgetValueStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { usePromotionStore } from '@/stores/promotionStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type {
+  LinkedUpstreamInfo,
+  SimplifiedWidget,
+  WidgetValue
+} from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
+import { getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
+import { app } from '@/scripts/app'
 
 import InputSlot from './InputSlot.vue'
 
@@ -117,10 +136,12 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
+const { isSelectInputsMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
 const promotionStore = usePromotionStore()
 const executionErrorStore = useExecutionErrorStore()
+const missingModelStore = useMissingModelStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -134,6 +155,8 @@ function handleBringToFront() {
   }
 }
 
+const { handleNodeRightClick } = useNodeEventHandlers()
+
 // Error boundary implementation
 const renderError = ref<string | null>(null)
 
@@ -145,6 +168,13 @@ onErrorCaptured((error) => {
   return false
 })
 
+const canSelectInputs = computed(
+  () =>
+    isSelectInputsMode.value &&
+    nodeData?.mode === LGraphEventMode.ALWAYS &&
+    nodeTypeValidForApp(nodeData.type) &&
+    !nodeData.hasErrors
+)
 const nodeType = computed(() => nodeData?.type || '')
 const settingStore = useSettingStore()
 const showAdvanced = computed(
@@ -157,12 +187,35 @@ const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
 )
 const widgetValueStore = useWidgetValueStore()
 
+function createWidgetUpdateHandler(
+  widgetState: WidgetState | undefined,
+  widget: SafeWidgetData,
+  nodeExecId: string,
+  widgetOptions: IWidgetOptions | Record<string, never>
+): (newValue: WidgetValue) => void {
+  return (newValue: WidgetValue) => {
+    if (widgetState) widgetState.value = newValue
+    widget.callback?.(newValue)
+    const effectiveExecId = widget.sourceExecutionId ?? nodeExecId
+    executionErrorStore.clearWidgetRelatedErrors(
+      effectiveExecId,
+      widget.slotName ?? widget.name,
+      widget.name,
+      newValue,
+      { min: widgetOptions?.min, max: widgetOptions?.max }
+    )
+  }
+}
+
 interface ProcessedWidget {
   advanced: boolean
+  handleContextMenu: (e: PointerEvent) => void
   hasLayoutSize: boolean
   hasError: boolean
   hidden: boolean
+  id: string
   name: string
+  renderKey: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
   type: string
@@ -172,17 +225,146 @@ interface ProcessedWidget {
   slotMetadata?: WidgetSlotMetadata
 }
 
+function hasWidgetError(
+  widget: SafeWidgetData,
+  nodeExecId: string,
+  nodeErrors: { errors: { extra_info?: { input_name?: string } }[] } | undefined
+): boolean {
+  const errors = widget.sourceExecutionId
+    ? executionErrorStore.lastNodeErrors?.[widget.sourceExecutionId]?.errors
+    : nodeErrors?.errors
+  const inputName = widget.slotName ?? widget.name
+  return (
+    !!errors?.some((e) => e.extra_info?.input_name === inputName) ||
+    missingModelStore.isWidgetMissingModel(
+      widget.sourceExecutionId ?? nodeExecId,
+      widget.name
+    )
+  )
+}
+
+function getWidgetIdentity(
+  widget: SafeWidgetData,
+  nodeId: string | number | undefined,
+  index: number
+): {
+  dedupeIdentity?: string
+  renderKey: string
+} {
+  const rawWidgetId = widget.storeNodeId ?? widget.nodeId
+  const storeWidgetName = widget.storeName ?? widget.name
+  const slotNameForIdentity = widget.slotName ?? widget.name
+  const stableIdentityRoot = rawWidgetId
+    ? `node:${String(stripGraphPrefix(rawWidgetId))}`
+    : widget.sourceExecutionId
+      ? `exec:${widget.sourceExecutionId}`
+      : undefined
+
+  const dedupeIdentity = stableIdentityRoot
+    ? `${stableIdentityRoot}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}`
+    : undefined
+  const renderKey =
+    dedupeIdentity ??
+    `transient:${String(nodeId ?? '')}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}:${index}`
+
+  return {
+    dedupeIdentity,
+    renderKey
+  }
+}
+
+function isWidgetVisible(options: IWidgetOptions): boolean {
+  const hidden = options.hidden ?? false
+  const advanced = options.advanced ?? false
+  return !hidden && (!advanced || showAdvanced.value)
+}
+
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
-  const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeData.id ?? '']
+
+  // nodeData.id is the local node ID; subgraph nodes need the full execution
+  // path (e.g. "65:63") to match keys in lastNodeErrors.
+  const nodeExecId = app.isGraphReady
+    ? getExecutionIdFromNodeData(app.rootGraph, nodeData)
+    : String(nodeData.id ?? '')
+
+  const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
   const graphId = canvasStore.canvas?.graph?.rootGraph.id
 
   const nodeId = nodeData.id
   const { widgets } = nodeData
   const result: ProcessedWidget[] = []
+  const uniqueWidgets: Array<{
+    widget: SafeWidgetData
+    identity: ReturnType<typeof getWidgetIdentity>
+    mergedOptions: IWidgetOptions
+    widgetState: WidgetState | undefined
+    isVisible: boolean
+  }> = []
+  const dedupeIndexByIdentity = new Map<string, number>()
 
-  for (const widget of widgets) {
+  for (const [index, widget] of widgets.entries()) {
     if (!shouldRenderAsVue(widget)) continue
+
+    const identity = getWidgetIdentity(widget, nodeId, index)
+    const storeWidgetName = widget.storeName ?? widget.name
+    const bareWidgetId = String(
+      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
+    )
+    const widgetState = graphId
+      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
+      : undefined
+    const mergedOptions: IWidgetOptions = {
+      ...(widget.options ?? {}),
+      ...(widgetState?.options ?? {})
+    }
+    const visible = isWidgetVisible(mergedOptions)
+    if (!identity.dedupeIdentity) {
+      uniqueWidgets.push({
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: visible
+      })
+      continue
+    }
+
+    const existingIndex = dedupeIndexByIdentity.get(identity.dedupeIdentity)
+    if (existingIndex === undefined) {
+      dedupeIndexByIdentity.set(identity.dedupeIdentity, uniqueWidgets.length)
+      uniqueWidgets.push({
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: visible
+      })
+      continue
+    }
+
+    const existingWidget = uniqueWidgets[existingIndex]
+    if (existingWidget && !existingWidget.isVisible && visible) {
+      uniqueWidgets[existingIndex] = {
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: true
+      }
+    }
+  }
+
+  for (const {
+    widget,
+    mergedOptions,
+    widgetState,
+    identity: { renderKey }
+  } of uniqueWidgets) {
+    const bareWidgetId = String(
+      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
+    )
+    const isPromotedView = !!widget.nodeId
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -190,30 +372,32 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const { slotMetadata } = widget
 
-    // Get metadata from store (registered during BaseWidget.setNodeId)
-    const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
-    const widgetState = graphId
-      ? widgetValueStore.getWidget(graphId, bareWidgetId, widget.name)
-      : undefined
-
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
 
-    // Build options from store state, with slot-linked override for disabled
-    const storeOptions = widgetState?.options ?? {}
-    const widgetOptions = slotMetadata?.linked
-      ? { ...storeOptions, disabled: true }
-      : storeOptions
+    // Build options from store state, with disabled override for
+    // slot-linked widgets or widgets with disabled state (e.g. display-only)
+    const isDisabled = slotMetadata?.linked || widgetState?.disabled
+    const widgetOptions = isDisabled
+      ? { ...mergedOptions, disabled: true }
+      : mergedOptions
 
-    const isPromotedView = !!widget.nodeId
     const borderStyle =
       graphId &&
       !isPromotedView &&
       promotionStore.isPromotedByAny(graphId, String(bareWidgetId), widget.name)
         ? 'ring ring-component-node-widget-promoted'
-        : widget.options?.advanced
+        : mergedOptions.advanced
           ? 'ring ring-component-node-widget-advanced'
           : undefined
+
+    const linkedUpstream: LinkedUpstreamInfo | undefined =
+      slotMetadata?.linked && slotMetadata.originNodeId
+        ? {
+            nodeId: slotMetadata.originNodeId,
+            outputName: slotMetadata.originOutputName
+          }
+        : undefined
 
     const simplified: SimplifiedWidget = {
       name: widget.name,
@@ -223,29 +407,42 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       callback: widget.callback,
       controlWidget: widget.controlWidget,
       label: widgetState?.label,
+      linkedUpstream,
       options: widgetOptions,
       spec: widget.spec
     }
 
-    function updateHandler(newValue: WidgetValue) {
-      // Update value in store
-      if (widgetState) widgetState.value = newValue
-      // Invoke LiteGraph callback wrapper (handles triggerDraw, etc.)
-      widget.callback?.(newValue)
-    }
+    const updateHandler = createWidgetUpdateHandler(
+      widgetState,
+      widget,
+      nodeExecId,
+      widgetOptions
+    )
 
     const tooltipText = getWidgetTooltip(widget)
     const tooltipConfig = createTooltipConfig(tooltipText)
+    const handleContextMenu = (e: PointerEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      handleNodeRightClick(e, nodeId)
+      showNodeOptions(
+        e,
+        widget.name,
+        widget.nodeId !== undefined
+          ? String(stripGraphPrefix(widget.nodeId))
+          : undefined
+      )
+    }
 
     result.push({
-      advanced: widget.options?.advanced ?? false,
+      advanced: mergedOptions.advanced ?? false,
+      handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
-      hasError:
-        nodeErrors?.errors?.some(
-          (error) => error.extra_info?.input_name === widget.name
-        ) ?? false,
-      hidden: widget.options?.hidden ?? false,
+      hasError: hasWidgetError(widget, nodeExecId, nodeErrors),
+      hidden: mergedOptions.hidden ?? false,
+      id: String(bareWidgetId),
       name: widget.name,
+      renderKey,
       type: widget.type,
       vueComponent,
       simplified,

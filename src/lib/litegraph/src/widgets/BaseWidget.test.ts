@@ -162,6 +162,38 @@ describe('BaseWidget store integration', () => {
     })
   })
 
+  describe('DOM widget value registration', () => {
+    it('registers value from getter when value property is overridden', () => {
+      const defaultValue = 'You are an expert image-generation engine.'
+      const widget = createTestWidget(node, {
+        name: 'system_prompt',
+        value: undefined as unknown as number
+      })
+
+      // Simulate what addDOMWidget does: override value with getter/setter
+      // that falls back to a default (like inputEl.value for textarea widgets)
+      Object.defineProperty(widget, 'value', {
+        get() {
+          const graphId = widget.node.graph?.rootGraph.id
+          if (!graphId) return defaultValue
+          const state = store.getWidget(graphId, node.id, 'system_prompt')
+          return (state?.value as string) ?? defaultValue
+        },
+        set(v: string) {
+          const graphId = widget.node.graph?.rootGraph.id
+          if (!graphId) return
+          const state = store.getWidget(graphId, node.id, 'system_prompt')
+          if (state) state.value = v
+        }
+      })
+
+      widget.setNodeId(node.id)
+
+      const state = store.getWidget(graph.id, node.id, 'system_prompt')
+      expect(state?.value).toBe(defaultValue)
+    })
+  })
+
   describe('fallback behavior', () => {
     it('uses internal value before registration', () => {
       const widget = createTestWidget(node, {

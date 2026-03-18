@@ -3,7 +3,9 @@ import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromot
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { useDialogService } from '@/services/dialogService'
 
 export type WidgetValue = boolean | number | string | object | undefined
 
@@ -74,4 +76,35 @@ export function renameWidget(
   }
 
   return true
+}
+
+export async function promptWidgetLabel(
+  widget: IBaseWidget,
+  t: (key: string) => string
+): Promise<string | null> {
+  return useDialogService().prompt({
+    title: t('g.rename'),
+    message: t('g.enterNewNamePrompt'),
+    defaultValue: widget.label,
+    placeholder: widget.name
+  })
+}
+
+export async function promptRenameWidget(
+  widget: IBaseWidget,
+  node: LGraphNode,
+  t: (key: string) => string,
+  parents?: SubgraphNode[]
+): Promise<string | null> {
+  const rawLabel = await promptWidgetLabel(widget, t)
+  if (rawLabel === null) return null
+
+  const normalizedLabel = rawLabel.trim()
+  if (!normalizedLabel) return null
+
+  if (!renameWidget(widget, node, normalizedLabel, parents)) return null
+
+  widget.callback?.(widget.value)
+  useCanvasStore().canvas?.setDirty(true)
+  return normalizedLabel
 }

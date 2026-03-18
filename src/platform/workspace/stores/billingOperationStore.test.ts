@@ -219,8 +219,7 @@ describe('billingOperationStore', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'billingOperation.subscriptionFailed',
-        detail: errorMessage,
-        life: 5000
+        detail: errorMessage
       })
     })
 
@@ -239,8 +238,7 @@ describe('billingOperationStore', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'billingOperation.topupFailed',
-        detail: undefined,
-        life: 5000
+        detail: undefined
       })
     })
   })
@@ -267,8 +265,7 @@ describe('billingOperationStore', () => {
 
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
-        summary: 'billingOperation.subscriptionTimeout',
-        life: 5000
+        summary: 'billingOperation.subscriptionTimeout'
       })
     })
 
@@ -287,8 +284,7 @@ describe('billingOperationStore', () => {
 
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
-        summary: 'billingOperation.topupTimeout',
-        life: 5000
+        summary: 'billingOperation.topupTimeout'
       })
     })
   })

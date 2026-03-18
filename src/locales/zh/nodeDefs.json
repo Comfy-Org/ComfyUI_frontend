@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "数学表达式",
+    "inputs": {
+      "expression": {
+        "name": "表达式"
+      },
+      "values": {
+        "name": "数值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "切换",
     "inputs": {
@@ -2134,6 +2153,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "description": "根据提供的边界框，从输入图像批量中裁剪并调整区域大小。",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "每个裁剪区域调整后的高度。"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "每个裁剪区域调整后的宽度。"
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "在裁剪前，每个边界框四周额外添加的像素填充。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "所有裁剪区域堆叠为一个图像批量。"
       }
     }
   },
@@ -3159,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "为 Flux 系列模型的参考图像启用 KV 缓存优化。",
+    "display_name": "Flux KV 缓存",
+    "inputs": {
+      "model": {
+        "name": "模型",
+        "tooltip": "要在其上启用 KV 缓存的模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已启用 KV 缓存的模型。"
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "将图像调整为更适合 Flux Kontext 的尺寸。",
     "display_name": "图像缩放为FluxKontext",
@@ -3701,6 +3764,60 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "通过 Google Vertex API 同步生成或编辑图像。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "如果设置为“自动”，则匹配输入图像的宽高比；如果未提供图像，通常会生成 16:9 的正方形。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "files": {
+        "name": "文件",
+        "tooltip": "可选的文件，作为模型的上下文使用。可接受来自 Gemini 生成内容输入文件节点的输入。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "可选的参考图像。要包含多张图片，请使用批量图像节点（最多 14 张）。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述要生成图像或要应用编辑的文本提示。请包含模型应遵循的任何约束、风格或细节。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "目标输出分辨率。对于 2K/4K，使用原生 Gemini 超分辨率算法。"
+      },
+      "response_modalities": {
+        "name": "响应模式"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "当种子值固定时，模型会尽力为重复请求提供相同的响应，但不能保证输出完全一致。此外，更改模型或参数设置（如温度）即使使用相同的种子值，也可能导致响应不同。默认情况下使用随机种子值。"
+      },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "决定 AI 行为的基础性指令。"
+      },
+      "thinking_level": {
+        "name": "思考层级"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "使用 Google 的 Gemini AI 模型生成文本响应。您可以提供多种类型的输入（文本、图像、音频、视频）作为上下文，以生成更相关和有意义的响应。",
     "display_name": "Google Gemini",
@@ -3864,6 +3981,10 @@
     "description": "根据文本提示修改现有图像",
     "display_name": "Grok 图像编辑",
     "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "仅当多个图像连接到图像输入时允许。"
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -3915,6 +4036,9 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "用于生成图像的文本提示"
+      },
+      "resolution": {
+        "name": "分辨率"
       },
       "seed": {
         "name": "seed",
@@ -5770,6 +5894,9 @@
       },
       "mode": {
         "name": "模式"
+      },
+      "model": {
+        "name": "模型"
       },
       "prompt": {
         "name": "提示词"
@@ -11179,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "背景颜色"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "可选的底图用于绘制"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "条件对合并",
     "inputs": {
@@ -12719,6 +12875,157 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "根据宽高比和目标百万像素数计算宽度和高度。适用于设置空latent图像的尺寸。",
+    "display_name": "分辨率选择器",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "输出尺寸的宽高比。"
+      },
+      "megapixels": {
+        "name": "百万像素",
+        "tooltip": "目标总百万像素数。1.0 MP ≈ 1024×1024（正方形）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "宽度",
+        "tooltip": "计算得到的像素宽度（8的倍数）。"
+      },
+      "1": {
+        "name": "高度",
+        "tooltip": "计算得到的像素高度（8的倍数）。"
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "使用 Reve 根据文本描述生成图像。",
+    "display_name": "Reve 图像生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成的模型版本。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "期望图像的文本描述。最多 2560 个字符。"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "移除生成图像的背景。可能会产生额外费用。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "对生成的图像进行放大。可能会产生额外费用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "使用 Reve 通过自然语言指令编辑图像。",
+    "display_name": "Reve 图像编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "edit_instruction": {
+        "name": "edit_instruction",
+        "tooltip": "关于如何编辑图像的文本描述。最多 2560 个字符。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要编辑的图像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于编辑的模型版本。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "移除生成图像的背景。可能会产生额外费用。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "对生成的图像进行放大。可能会产生额外费用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "结合参考图像和文本提示，使用 Reve 创建新图像。",
+    "display_name": "Reve 图像混合",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于混合的模型版本。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "期望图像的文本描述。可包含 XML img 标签，通过索引引用特定图像，例如 <img>0</img>、<img>1</img> 等。"
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "移除生成图像的背景。可能会产生额外费用。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "对生成的图像进行放大。可能会产生额外费用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "使用Rodin API生成3D资源",
     "display_name": "Rodin 3D生成 - 细节生成",
@@ -12975,6 +13282,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "扩展较短的边界框轴，使裁剪区域始终为正方形。"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "每个检测到的人脸边界框区域的缩放倍数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "每帧的人脸边界框，可与SDPoseKeypointExtractor的bboxes输入兼容。"
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "使用SDPose模型从图像中提取姿态关键点：https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "可选的边界框，用于更精确的检测。多人检测时必需。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "OpenPose帧格式的关键点（canvas_width, canvas_height, people）"
       }
     }
   },
@@ -14860,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "输入3D模型后，对3D模型进行纹理重绘。",
+    "display_name": "Hunyuan3D：3D纹理编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX格式的3D模型。模型面数应少于100000。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "描述纹理编辑。支持最多1024个UTF-8字符。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D：图像转模型（专业版）",
     "inputs": {
@@ -14908,6 +15334,80 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "对3D模型进行UV展开，生成UV贴图。输入模型面数需小于30000。",
+    "display_name": "Hunyuan3D：模型转UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model_3d": {
+        "name": "3D模型",
+        "tooltip": "输入3D模型（GLB、OBJ或FBX）"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "对3D模型进行智能重拓扑。支持GLB/OBJ格式；最大200MB；推荐用于高面数模型。",
+    "display_name": "Hunyuan3D：智能拓扑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "face_level": {
+        "name": "面数级别",
+        "tooltip": "多边形简化级别。"
+      },
+      "model_3d": {
+        "name": "3D模型",
+        "tooltip": "输入3D模型（GLB或OBJ）"
+      },
+      "polygon_type": {
+        "name": "面类型",
+        "tooltip": "表面组成类型。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -14950,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }
@@ -17963,6 +18467,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "clip_vision_output": {
+        "name": "clip视觉输出"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "negative": {
+        "name": "负向"
+      },
+      "pose_end": {
+        "name": "姿态结束步",
+        "tooltip": "用于姿态调控的结束步数。"
+      },
+      "pose_start": {
+        "name": "姿态起始步",
+        "tooltip": "用于姿态调控的起始步数。"
+      },
+      "pose_strength": {
+        "name": "姿态强度",
+        "tooltip": "姿态latent的强度。"
+      },
+      "pose_video": {
+        "name": "姿态视频",
+        "tooltip": "用于姿态调控的视频。将被缩小到主视频分辨率的一半。"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "reference_image": {
+        "name": "参考图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负向",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "生成尺寸的空latent。"
       }
     }
   },

@@ -1,9 +1,9 @@
-// TODO: Fix these tests after migration
 import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
+import { usePromotionStore } from '@/stores/promotionStore'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -454,6 +454,52 @@ describe('SubgraphIO - Empty Slot Connection', () => {
       expect(link.target_slot).toBe(0)
       expect(link.origin_id).toBe(subgraph.inputNode.id)
       expect(link.origin_slot).toBe(1) // Should be the second slot
+    }
+  )
+
+  subgraphTest(
+    'creates distinct named inputs when promoting same widget name from multiple node instances',
+    ({ subgraphWithNode }) => {
+      const { subgraph, subgraphNode } = subgraphWithNode
+
+      const firstNode = new LGraphNode('First Seed Node')
+      const firstInput = firstNode.addInput('seed', 'number')
+      firstNode.addWidget('number', 'seed', 1, () => undefined)
+      firstInput.widget = { name: 'seed' }
+      subgraph.add(firstNode)
+
+      const secondNode = new LGraphNode('Second Seed Node')
+      const secondInput = secondNode.addInput('seed', 'number')
+      secondNode.addWidget('number', 'seed', 2, () => undefined)
+      secondInput.widget = { name: 'seed' }
+      subgraph.add(secondNode)
+
+      subgraph.inputNode.connectByType(-1, firstNode, 'number')
+      subgraph.inputNode.connectByType(-1, secondNode, 'number')
+
+      expect(subgraph.inputs.map((input) => input.name)).toStrictEqual([
+        'input',
+        'seed',
+        'seed_1'
+      ])
+      expect(subgraphNode.inputs.map((input) => input.name)).toStrictEqual([
+        'input',
+        'seed',
+        'seed_1'
+      ])
+      expect(subgraphNode.widgets.map((widget) => widget.name)).toStrictEqual([
+        'seed',
+        'seed_1'
+      ])
+      expect(
+        usePromotionStore().getPromotions(
+          subgraphNode.rootGraph.id,
+          subgraphNode.id
+        )
+      ).toStrictEqual([
+        { interiorNodeId: String(firstNode.id), widgetName: 'seed' },
+        { interiorNodeId: String(secondNode.id), widgetName: 'seed' }
+      ])
     }
   )
 })

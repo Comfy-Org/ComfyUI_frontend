@@ -3,7 +3,11 @@ import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
 
-const zRendererType = z.enum(['LG', 'Vue']) satisfies z.ZodType<RendererType>
+const zRendererType = z.enum([
+  'LG',
+  'Vue',
+  'Vue-corrected'
+]) satisfies z.ZodType<RendererType>
 
 // GroupNode is hacking node id to be a string, so we need to allow that.
 // innerNode.id = `${this.node.id}:${i}`
@@ -405,6 +409,7 @@ interface SubgraphDefinitionBase<
   /** Optional description shown as tooltip when hovering over the subgraph node. */
   description?: string
   category?: string
+  essentials_category?: string
   /** Custom metadata for the subgraph (description, searchAliases, etc.) */
   extra?: T extends ComfyWorkflow1BaseInput
     ? z.input<typeof zExtra> | null
@@ -443,6 +448,7 @@ const zSubgraphDefinition = zComfyWorkflow1
     /** Optional description shown as tooltip when hovering over the subgraph node. */
     description: z.string().optional(),
     category: z.string().optional(),
+    essentials_category: z.string().optional(),
     inputNode: zExportedSubgraphIONode,
     outputNode: zExportedSubgraphIONode,
 
@@ -553,7 +559,6 @@ export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>
  * where that definition is instantiated in the workflow.
  *
  * "def-A" → ["5", "10"] for each container node instantiating that subgraph definition.
- * @knipIgnoreUsedByStackedPR
  */
 export function buildSubgraphExecutionPaths(
   rootNodes: ComfyNode[],
@@ -590,4 +595,57 @@ export function buildSubgraphExecutionPaths(
 
   build(rootNodes, '')
   return pathMap
+}
+
+/**
+ * Recursively collect all subgraph definitions from root and nested levels.
+ */
+function collectAllSubgraphDefs(rootDefs: unknown[]): SubgraphDefinition[] {
+  const result: SubgraphDefinition[] = []
+  const seen = new Set<string>()
+
+  function collect(defs: unknown[]) {
+    for (const def of defs) {
+      if (!isSubgraphDefinition(def)) continue
+      if (seen.has(def.id)) continue
+      seen.add(def.id)
+      result.push(def)
+      if (def.definitions?.subgraphs?.length) {
+        collect(def.definitions.subgraphs)
+      }
+    }
+  }
+
+  collect(rootDefs)
+  return result
+}
+
+/**
+ * Flatten all workflow nodes (root + subgraphs) into a single array.
+ * Each node's `id` is prefixed with its execution path (e.g. node "3" inside container "11" → "11:3").
+ */
+export function flattenWorkflowNodes(
+  graphData: ComfyWorkflowJSON
+): Readonly<ComfyNode>[] {
+  const rootNodes = graphData.nodes ?? []
+  const allDefs = collectAllSubgraphDefs(graphData.definitions?.subgraphs ?? [])
+  const pathMap = buildSubgraphExecutionPaths(rootNodes, allDefs)
+
+  const allNodes: ComfyNode[] = [...rootNodes]
+
+  const subgraphDefMap = new Map(allDefs.map((s) => [s.id, s]))
+  for (const [defId, paths] of pathMap.entries()) {
+    const def = subgraphDefMap.get(defId)
+    if (!def?.nodes) continue
+    for (const prefix of paths) {
+      for (const node of def.nodes) {
+        allNodes.push({
+          ...node,
+          id: `${prefix}:${node.id}`
+        })
+      }
+    }
+  }
+
+  return allNodes
 }

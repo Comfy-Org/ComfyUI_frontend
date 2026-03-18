@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
+  compareExecutionId,
   createNodeExecutionId,
   createNodeLocatorId,
   getAncestorExecutionIds,
@@ -230,6 +231,47 @@ describe('nodeIdentification', () => {
     it('returns all ancestors excluding self for nested IDs', () => {
       expect(getParentExecutionIds('65:70')).toEqual(['65'])
       expect(getParentExecutionIds('65:70:63')).toEqual(['65', '65:70'])
+    })
+  })
+
+  describe('compareExecutionId', () => {
+    it('sorts simple numeric IDs in ascending order', () => {
+      expect(compareExecutionId('1', '2')).toBeLessThan(0)
+      expect(compareExecutionId('2', '1')).toBeGreaterThan(0)
+      expect(compareExecutionId('5', '5')).toBe(0)
+    })
+
+    it('compares nested IDs left-to-right by segment', () => {
+      // "1" < "1:20" < "2" < "10:11:12" as documented
+      expect(compareExecutionId('1', '1:20')).toBeLessThan(0)
+      expect(compareExecutionId('1:20', '2')).toBeLessThan(0)
+      expect(compareExecutionId('2', '10:11:12')).toBeLessThan(0)
+    })
+
+    it('treats a shorter ID as having trailing segment 0 when comparing', () => {
+      // "5" vs "5:0" → first segments equal, second: 0 vs 0 → equal
+      expect(compareExecutionId('5', '5:0')).toBe(0)
+      // "5" vs "5:1" → second segment 0 < 1
+      expect(compareExecutionId('5', '5:1')).toBeLessThan(0)
+    })
+
+    it('handles undefined inputs by treating them as empty string (segment 0)', () => {
+      expect(compareExecutionId(undefined, '1')).toBeLessThan(0)
+      expect(compareExecutionId('1', undefined)).toBeGreaterThan(0)
+      expect(compareExecutionId(undefined, undefined)).toBe(0)
+    })
+
+    it('handles empty string inputs', () => {
+      expect(compareExecutionId('', '1')).toBeLessThan(0)
+      expect(compareExecutionId('1', '')).toBeGreaterThan(0)
+      expect(compareExecutionId('', '')).toBe(0)
+    })
+
+    it('treats non-numeric segments as 0 via NaN guard', () => {
+      // Number('foo') → NaN → treated as 0
+      expect(compareExecutionId('foo', '1')).toBeLessThan(0)
+      expect(compareExecutionId('foo', '0')).toBe(0)
+      expect(compareExecutionId('1:foo', '1:0')).toBe(0)
     })
   })
 })

@@ -19,7 +19,7 @@
           data-testid="logo-img"
           :src="logo.urls[providerIndex]"
           :alt="provider"
-          class="h-6 w-6 rounded-full border-2 border-white object-cover"
+          class="size-6 rounded-full border-2 border-white object-cover"
           :class="{ relative: providerIndex > 0 }"
           :style="
             providerIndex > 0 ? { marginLeft: `${logo.gap ?? -6}px` } : {}

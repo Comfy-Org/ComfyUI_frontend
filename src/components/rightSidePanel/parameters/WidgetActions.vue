@@ -15,10 +15,9 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useDialogService } from '@/services/dialogService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import { getWidgetDefaultValue } from '@/utils/widgetUtil'
+import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
 const {
@@ -42,7 +41,6 @@ const label = defineModel<string>('label', { required: true })
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const nodeDefStore = useNodeDefStore()
-const dialogService = useDialogService()
 const { t } = useI18n()
 
 const hasParents = computed(() => parents?.length > 0)
@@ -67,15 +65,8 @@ const isCurrentValueDefault = computed(() => {
 })
 
 async function handleRename() {
-  const newLabel = await dialogService.prompt({
-    title: t('g.rename'),
-    message: t('g.enterNewNamePrompt'),
-    defaultValue: widget.label,
-    placeholder: widget.name
-  })
-
-  if (newLabel === null) return
-  label.value = newLabel
+  const newLabel = await promptWidgetLabel(widget, t)
+  if (newLabel !== null) label.value = newLabel
 }
 
 function handleHideInput() {
@@ -117,13 +108,13 @@ function handleResetToDefault() {
 <template>
   <MoreButton
     is-vertical
-    class="text-muted-foreground bg-transparent hover:text-base-foreground hover:bg-secondary-background-hover active:scale-95 transition-all"
+    class="bg-transparent text-muted-foreground transition-all hover:bg-secondary-background-hover hover:text-base-foreground active:scale-95"
   >
     <template #default="{ close }">
       <Button
         variant="textonly"
         size="unset"
-        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleRename()
@@ -139,7 +130,7 @@ function handleResetToDefault() {
         v-if="hasParents"
         variant="textonly"
         size="unset"
-        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             if (isShownOnParents) handleHideInput()
@@ -161,7 +152,7 @@ function handleResetToDefault() {
       <Button
         variant="textonly"
         size="unset"
-        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleToggleFavorite()
@@ -183,7 +174,7 @@ function handleResetToDefault() {
         v-if="hasDefault"
         variant="textonly"
         size="unset"
-        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         :disabled="isCurrentValueDefault"
         @click="
           () => {

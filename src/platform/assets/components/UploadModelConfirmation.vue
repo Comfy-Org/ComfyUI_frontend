@@ -11,7 +11,7 @@
           v-if="previewImage"
           :src="previewImage"
           :alt="metadata?.filename || metadata?.name || 'Model preview'"
-          class="size-14 flex-shrink-0 rounded object-cover"
+          class="size-14 shrink-0 rounded-sm object-cover"
         />
         <p class="m-0 min-w-0 flex-1 truncate text-base-foreground">
           {{ metadata?.filename || metadata?.name }}

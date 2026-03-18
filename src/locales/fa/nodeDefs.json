@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "عبارت ریاضی",
+    "inputs": {
+      "expression": {
+        "name": "عبارت"
+      },
+      "values": {
+        "name": "مقادیر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "سوئیچ",
     "inputs": {
@@ -2134,6 +2153,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "description": "برش و تغییر اندازه نواحی از دسته تصویر ورودی بر اساس جعبه‌های مرزی ارائه‌شده.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "جعبه‌های مرزی"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "output_height": {
+        "name": "ارتفاع خروجی",
+        "tooltip": "ارتفاعی که هر برش به آن تغییر اندازه داده می‌شود."
+      },
+      "output_width": {
+        "name": "عرض خروجی",
+        "tooltip": "عرضی که هر برش به آن تغییر اندازه داده می‌شود."
+      },
+      "padding": {
+        "name": "حاشیه",
+        "tooltip": "حاشیه اضافی (بر حسب پیکسل) که به هر طرف جعبه مرزی قبل از برش اضافه می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "تمام برش‌ها به صورت یک دسته تصویر واحد جمع‌آوری شده‌اند."
       }
     }
   },
@@ -3159,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "بهینه‌سازی KV Cache را برای تصاویر مرجع در مدل‌های خانواده Flux فعال می‌کند.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که قرار است KV Cache روی آن فعال شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل اصلاح‌شده با KV Cache فعال."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "این نود تصویر را به اندازه‌ای تغییر می‌دهد که برای flux kontext بهینه‌تر باشد.",
     "display_name": "FluxKontextImageScale",
@@ -3701,6 +3764,60 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "تولید یا ویرایش تصاویر به صورت همزمان از طریق Google Vertex API.",
+    "display_name": "Nano Banana ۲",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "اگر روی 'auto' تنظیم شود، با نسبت تصویر ورودی شما مطابقت دارد؛ اگر تصویری ارائه نشود، معمولاً یک مربع با نسبت ۱۶:۹ تولید می‌شود."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "files": {
+        "name": "فایل‌ها",
+        "tooltip": "فایل(های) اختیاری برای استفاده به عنوان زمینه برای مدل. ورودی‌ها را از node Gemini Generate Content Input Files می‌پذیرد."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصویر(های) مرجع اختیاری. برای افزودن چند تصویر، از node Batch Images استفاده کنید (تا ۱۴ تصویر)."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی درباره تصویری که باید تولید شود یا ویرایش‌هایی که باید اعمال گردد. هرگونه محدودیت، سبک یا جزئیاتی که مدل باید رعایت کند را وارد کنید."
+      },
+      "resolution": {
+        "name": "وضوح تصویر",
+        "tooltip": "وضوح خروجی هدف. برای ۲K/۴K از upscaler بومی Gemini استفاده می‌شود."
+      },
+      "response_modalities": {
+        "name": "حالت‌های پاسخ"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "زمانی که مقدار seed ثابت باشد، مدل تلاش می‌کند تا پاسخ مشابهی برای درخواست‌های تکراری ارائه دهد. خروجی قطعی تضمین نمی‌شود. همچنین، تغییر مدل یا تنظیمات پارامترها مانند دما (temperature) می‌تواند باعث تغییر در پاسخ حتی با همان مقدار seed شود. به طور پیش‌فرض، مقدار seed به صورت تصادفی انتخاب می‌شود."
+      },
+      "system_prompt": {
+        "name": "پرامپت سیستمی",
+        "tooltip": "دستورالعمل‌های پایه‌ای که رفتار هوش مصنوعی را تعیین می‌کند."
+      },
+      "thinking_level": {
+        "name": "سطح تفکر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "تولید پاسخ متنی با مدل هوش مصنوعی Gemini گوگل. می‌توانید انواع مختلفی از ورودی‌ها (متن، تصویر، صوت، ویدئو) را به عنوان زمینه برای تولید پاسخ‌های مرتبط‌تر و معنادارتر ارائه دهید.",
     "display_name": "Google Gemini",
@@ -3864,6 +3981,10 @@
     "description": "ویرایش یک تصویر موجود بر اساس یک متن راهنما",
     "display_name": "ویرایش تصویر Grok",
     "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "فقط زمانی مجاز است که چندین تصویر به ورودی تصویر متصل باشند."
+      },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
@@ -3915,6 +4036,9 @@
       "prompt": {
         "name": "راهنما",
         "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "resolution": {
+        "name": "وضوح"
       },
       "seed": {
         "name": "بذر",
@@ -5770,6 +5894,9 @@
       },
       "mode": {
         "name": "حالت"
+      },
+      "model": {
+        "name": "مدل"
       },
       "prompt": {
         "name": "پرامپت"
@@ -11179,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "نقاش",
+    "inputs": {
+      "bg_color": {
+        "name": "رنگ پس‌زمینه"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر پایه اختیاری برای نقاشی روی آن"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "ترکیب جفت شرطی",
     "inputs": {
@@ -12719,6 +12875,157 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "محاسبه عرض و ارتفاع بر اساس نسبت تصویر و هدف مگاپیکسل. مناسب برای تعیین ابعاد تصویر نهفته خالی.",
+    "display_name": "انتخابگر وضوح",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "نسبت تصویر برای ابعاد خروجی."
+      },
+      "megapixels": {
+        "name": "مگاپیکسل",
+        "tooltip": "هدف مجموع مگاپیکسل‌ها. ۱٫۰ مگاپیکسل ≈ ۱۰۲۴×۱۰۲۴ برای تصویر مربع."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "عرض",
+        "tooltip": "عرض محاسبه‌شده بر حسب پیکسل (مضربی از ۸)."
+      },
+      "1": {
+        "name": "ارتفاع",
+        "tooltip": "ارتفاع محاسبه‌شده بر حسب پیکسل (مضربی از ۸)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "تولید تصویر از توضیحات متنی با استفاده از Reve.",
+    "display_name": "ایجاد تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی تصویر مورد نظر. حداکثر ۲۵۶۰ کاراکتر."
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "ویرایش تصاویر با استفاده از دستور زبان طبیعی در Reve.",
+    "display_name": "ویرایش تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "edit_instruction": {
+        "name": "دستور ویرایش",
+        "tooltip": "توضیح متنی نحوه ویرایش تصویر. حداکثر ۲۵۶۰ کاراکتر."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویری که باید ویرایش شود."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای ویرایش."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "ترکیب تصاویر مرجع با پرامپت متنی برای ایجاد تصاویر جدید با استفاده از Reve.",
+    "display_name": "ترکیب تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای ترکیب."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی تصویر مورد نظر. می‌توانید از تگ XML img برای ارجاع به تصاویر خاص با شماره اندیس استفاده کنید، مانند <img>۰</img>، <img>۱</img> و غیره."
+      },
+      "reference_images": {
+        "name": "تصاویر مرجع"
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
     "display_name": "Rodin 3D Generate - تولید جزئیات",
@@ -12975,6 +13282,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "ترسیم بدن"
+      },
+      "draw_face": {
+        "name": "ترسیم صورت"
+      },
+      "draw_feet": {
+        "name": "ترسیم پاها"
+      },
+      "draw_hands": {
+        "name": "ترسیم دست‌ها"
+      },
+      "face_point_size": {
+        "name": "اندازه نقطه صورت"
+      },
+      "keypoints": {
+        "name": "نقاط کلیدی"
+      },
+      "score_threshold": {
+        "name": "آستانه امتیاز"
+      },
+      "stick_width": {
+        "name": "ضخامت خط"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "اجبار به مربع بودن",
+        "tooltip": "محور کوتاه‌تر جعبه مرزی را گسترش می‌دهد تا ناحیه برش همیشه مربع باشد."
+      },
+      "keypoints": {
+        "name": "نقاط کلیدی"
+      },
+      "scale": {
+        "name": "مقیاس",
+        "tooltip": "ضریب بزرگنمایی برای ناحیه جعبه مرزی اطراف هر صورت شناسایی‌شده."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "جعبه‌های مرزی",
+        "tooltip": "جعبه‌های مرزی صورت برای هر فریم، سازگار با ورودی bboxes در SDPoseKeypointExtractor."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "استخراج نقاط کلیدی ژست از تصاویر با استفاده از مدل SDPose: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته"
+      },
+      "bboxes": {
+        "name": "جعبه‌های مرزی",
+        "tooltip": "جعبه‌های مرزی اختیاری برای تشخیص دقیق‌تر. برای تشخیص چند نفره الزامی است."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نقاط کلیدی",
+        "tooltip": "نقاط کلیدی در قالب قاب OpenPose (عرض بوم، ارتفاع بوم، افراد)"
       }
     }
   },
@@ -14860,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "پس از وارد کردن مدل سه‌بعدی، بازطراحی بافت مدل سه‌بعدی را انجام دهید.",
+    "display_name": "Hunyuan3D: ویرایش بافت سه‌بعدی",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "مدل سه‌بعدی با فرمت FBX. مدل باید کمتر از ۱۰۰٬۰۰۰ وجه داشته باشد."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "توضیح ویرایش بافت. تا ۱۰۲۴ نویسه UTF-8 پشتیبانی می‌شود."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed کنترل می‌کند که node دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "تصویر بافت",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: تبدیل تصویر(ها) به مدل (پیشرفته)",
     "inputs": {
@@ -14908,6 +15334,80 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "تصویر بافت",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metallic اختیاری",
+        "tooltip": null
+      },
+      "5": {
+        "name": "normal اختیاری",
+        "tooltip": null
+      },
+      "6": {
+        "name": "roughness اختیاری",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "بازکردن UV روی یک مدل سه‌بعدی برای تولید بافت UV. مدل ورودی باید کمتر از ۳۰۰۰۰ وجه داشته باشد.",
+    "display_name": "Hunyuan3D: مدل به UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model_3d": {
+        "name": "مدل سه‌بعدی",
+        "tooltip": "مدل سه‌بعدی ورودی (GLB، OBJ یا FBX)"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "اجرای رتپولوژی هوشمند روی یک مدل سه‌بعدی. پشتیبانی از فرمت‌های GLB/OBJ؛ حداکثر ۲۰۰ مگابایت؛ توصیه‌شده برای مدل‌های با چندضلعی بالا.",
+    "display_name": "Hunyuan3D: توپولوژی هوشمند",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "face_level": {
+        "name": "سطح وجه",
+        "tooltip": "سطح کاهش چندضلعی."
+      },
+      "model_3d": {
+        "name": "مدل سه‌بعدی",
+        "tooltip": "مدل سه‌بعدی ورودی (GLB یا OBJ)"
+      },
+      "polygon_type": {
+        "name": "نوع چندضلعی",
+        "tooltip": "نوع ترکیب سطح."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -14950,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "تصویر بافت",
         "tooltip": null
       }
     }
@@ -17963,6 +18467,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته"
+      },
+      "clip_vision_output": {
+        "name": "خروجی clip vision"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "pose_end": {
+        "name": "پایان pose",
+        "tooltip": "گام پایان برای استفاده از pose conditioning."
+      },
+      "pose_start": {
+        "name": "شروع pose",
+        "tooltip": "گام شروع برای استفاده از pose conditioning."
+      },
+      "pose_strength": {
+        "name": "قدرت pose",
+        "tooltip": "قدرت pose در latent."
+      },
+      "pose_video": {
+        "name": "ویدئوی pose",
+        "tooltip": "ویدئو برای pose conditioning استفاده می‌شود. به نصف وضوح ویدئوی اصلی کاهش داده می‌شود."
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "reference_image": {
+        "name": "تصویر مرجع"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent خالی با اندازه تولید."
       }
     }
   },

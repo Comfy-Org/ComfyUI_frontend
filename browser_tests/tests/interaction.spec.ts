@@ -171,6 +171,9 @@ test.describe('Node Interaction', () => {
 
   test('Can drag node', { tag: '@screenshot' }, async ({ comfyPage }) => {
     await comfyPage.nodeOps.dragTextEncodeNode2()
+    // Move mouse away to avoid hover highlight on the node at the drop position.
+    await comfyPage.canvasOps.moveMouseToEmptyArea()
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png')
   })
 
@@ -816,16 +819,13 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
       const activeWorkflowName =
         await comfyPage.menu.workflowsTab.getActiveWorkflowName()
-      const workflowPathA = `${workflowA}.json`
-      const workflowPathB = `${workflowB}.json`
-
       expect(openWorkflows).toEqual(
-        expect.arrayContaining([workflowPathA, workflowPathB])
+        expect.arrayContaining([workflowA, workflowB])
       )
-      expect(openWorkflows.indexOf(workflowPathA)).toBeLessThan(
-        openWorkflows.indexOf(workflowPathB)
+      expect(openWorkflows.indexOf(workflowA)).toBeLessThan(
+        openWorkflows.indexOf(workflowB)
       )
-      expect(activeWorkflowName).toEqual(workflowPathB)
+      expect(activeWorkflowName).toEqual(workflowB)
     })
   })
 

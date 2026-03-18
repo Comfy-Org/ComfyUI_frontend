@@ -11,7 +11,7 @@ import {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 import { api } from './api'
@@ -28,6 +28,14 @@ logger.setLevel('info')
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
+  /**
+   * Guard flag to prevent checkState from running during loadGraphData.
+   * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
+   * contains the NEW workflow's data while activeWorkflow still points to
+   * the OLD workflow. Any checkState call in that window would serialize
+   * the wrong graph into the old workflow's activeState, corrupting it.
+   */
+  static isLoadingGraph = false
   /**
    * The active state of the workflow.
    */
@@ -77,6 +85,7 @@ export class ChangeTracker {
       scale: app.canvas.ds.scale,
       offset: [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
     }
+    this.nodeOutputs = useNodeOutputStore().snapshotOutputs()
     const navigation = useSubgraphNavigationStore().exportState()
     // Always store the navigation state, even if empty (root level)
     this.subgraphState = { navigation }
@@ -130,7 +139,7 @@ export class ChangeTracker {
   }
 
   checkState() {
-    if (!app.graph || this.changeCount) return
+    if (!app.graph || this.changeCount || ChangeTracker.isLoadingGraph) return
     const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
     if (!this.activeState) {
       this.activeState = currentState
@@ -156,8 +165,8 @@ export class ChangeTracker {
       this._restoringState = true
       try {
         await app.loadGraphData(prevState, false, false, this.workflow, {
-          showMissingModelsDialog: false,
-          showMissingNodesDialog: false,
+          showMissingModels: false,
+          showMissingNodes: false,
           checkForRerouteMigration: false
         })
         this.activeState = prevState

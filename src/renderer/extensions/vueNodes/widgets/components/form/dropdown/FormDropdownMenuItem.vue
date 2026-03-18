@@ -55,13 +55,13 @@ function handleVideoLoad(event: Event) {
   <div
     :class="
       cn(
-        'flex gap-1 select-none group/item cursor-pointer bg-component-node-widget-background',
+        'group/item flex cursor-pointer gap-1 bg-component-node-widget-background select-none',
         'transition-[transform,box-shadow,background-color] duration-150',
         {
           'flex-col text-center': layout === 'grid',
-          'flex-row text-left max-h-16 rounded-lg hover:scale-102 active:scale-98':
+          'max-h-16 flex-row rounded-lg text-left hover:scale-102 active:scale-98':
             layout === 'list',
-          'flex-row text-left hover:bg-component-node-widget-background-hovered rounded-lg':
+          'flex-row rounded-lg text-left hover:bg-component-node-widget-background-hovered':
             layout === 'list-small',
           // selection
           'ring-2 ring-component-node-widget-background-highlighted':
@@ -77,10 +77,10 @@ function handleVideoLoad(event: Event) {
       :class="
         cn(
           'relative',
-          'w-full aspect-square overflow-hidden outline-1 outline-offset-[-1px] outline-interface-stroke',
+          'aspect-square w-full overflow-hidden outline-1 -outline-offset-1 outline-interface-stroke',
           'transition-[transform,box-shadow] duration-150',
           {
-            'min-w-16 max-w-16 rounded-l-lg': layout === 'list',
+            'max-w-16 min-w-16 rounded-l-lg': layout === 'list',
             'rounded-sm group-hover/item:scale-108 group-active/item:scale-95':
               layout === 'grid',
             // selection
@@ -93,10 +93,10 @@ function handleVideoLoad(event: Event) {
       <!-- Selected Icon -->
       <div
         v-if="selected"
-        class="absolute top-1 left-1 size-4 rounded-full border-1 border-base-foreground bg-primary-background"
+        class="absolute top-1 left-1 size-4 rounded-full border border-base-foreground bg-primary-background"
       >
         <i
-          class="icon-[lucide--check] size-3 translate-y-[-0.5px] text-base-foreground bold"
+          class="bold icon-[lucide--check] size-3 translate-y-[-0.5px] text-base-foreground"
         />
       </div>
       <video
@@ -117,7 +117,7 @@ function handleVideoLoad(event: Event) {
       />
       <div
         v-else
-        class="size-full bg-gradient-to-tr from-blue-400 via-teal-500 to-green-400"
+        class="size-full bg-linear-to-tr from-blue-400 via-teal-500 to-green-400"
       />
     </div>
     <!-- Name -->
@@ -125,8 +125,8 @@ function handleVideoLoad(event: Event) {
       :class="
         cn('flex gap-1', {
           'flex-col': layout === 'grid',
-          'flex-col px-4 py-1 w-full justify-center min-w-0': layout === 'list',
-          'flex-row p-2 items-center justify-between w-full':
+          'w-full min-w-0 flex-col justify-center px-4 py-1': layout === 'list',
+          'w-full flex-row items-center justify-between p-2':
             layout === 'list-small'
         })
       "
@@ -135,7 +135,7 @@ function handleVideoLoad(event: Event) {
         v-tooltip="layout === 'grid' ? (label ?? name) : undefined"
         :class="
           cn(
-            'block text-xs line-clamp-2 break-words overflow-hidden',
+            'line-clamp-2 block overflow-hidden text-xs wrap-break-word',
             'transition-colors duration-150',
             // selection
             !!selected && 'text-base-foreground'

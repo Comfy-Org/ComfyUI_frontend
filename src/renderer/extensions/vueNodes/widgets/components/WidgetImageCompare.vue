@@ -26,14 +26,14 @@
     <div
       v-if="beforeImage || afterImage"
       ref="containerRef"
-      class="relative min-h-0 flex-1"
+      class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-node-component-surface py-4"
     >
       <img
         v-if="afterImage"
         :src="afterImage"
         :alt="afterAlt"
         draggable="false"
-        class="size-full object-contain"
+        class="absolute inset-0 size-full object-cover"
       />
 
       <img
@@ -41,12 +41,18 @@
         :src="beforeImage"
         :alt="beforeAlt"
         draggable="false"
-        class="absolute inset-0 size-full object-contain"
-        :style="{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }"
+        class="absolute inset-0 size-full object-cover"
+        :style="
+          hasCompareImages
+            ? { clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }
+            : undefined
+        "
       />
 
+      <!-- Circular drag handle -->
       <div
-        class="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-white shadow-md"
+        v-if="hasCompareImages"
+        class="pointer-events-none absolute top-1/2 z-10 size-6 -translate-1/2 rounded-full border-2 border-white bg-white/30 shadow-lg backdrop-blur-sm"
         :style="{ left: `${sliderPosition}%` }"
         role="presentation"
       />
@@ -92,9 +98,15 @@ watch([elementX, elementWidth, isOutside], ([x, width, outside]) => {
   }
 })
 
+function isSingleImage(
+  value: ImageCompareValue | string | undefined
+): value is string {
+  return typeof value === 'string'
+}
+
 const parsedValue = computed(() => {
   const value = props.widget.value
-  return typeof value === 'string' ? null : value
+  return isSingleImage(value) ? null : value
 })
 
 const beforeBatchCount = computed(
@@ -126,26 +138,30 @@ watch(
 
 const beforeImage = computed(() => {
   const value = props.widget.value
-  if (typeof value === 'string') return value
+  if (isSingleImage(value)) return value
   return value?.beforeImages?.[beforeIndex.value] ?? ''
 })
 
 const afterImage = computed(() => {
   const value = props.widget.value
-  if (typeof value === 'string') return ''
+  if (isSingleImage(value)) return ''
   return value?.afterImages?.[afterIndex.value] ?? ''
 })
 
+const hasCompareImages = computed(() =>
+  Boolean(beforeImage.value && afterImage.value)
+)
+
 const beforeAlt = computed(() => {
   const value = props.widget.value
-  return typeof value === 'object' && value?.beforeAlt
+  return !isSingleImage(value) && value?.beforeAlt
     ? value.beforeAlt
     : 'Before image'
 })
 
 const afterAlt = computed(() => {
   const value = props.widget.value
-  return typeof value === 'object' && value?.afterAlt
+  return !isSingleImage(value) && value?.afterAlt
     ? value.afterAlt
     : 'After image'
 })

@@ -1,7 +1,7 @@
 <template>
   <div
     :class="
-      cn(WidgetInputBaseClass, 'w-full p-1 flex min-w-0 items-center gap-1')
+      cn(WidgetInputBaseClass, 'flex w-full min-w-0 items-center gap-1 p-1')
     "
   >
     <button
@@ -9,15 +9,15 @@
       :key="getOptionValue(option, index)"
       :class="
         cn(
-          'flex-1 min-w-0 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out truncate',
-          'bg-transparent border-none',
+          'flex h-6 min-w-0 flex-1 items-center justify-center gap-1 truncate rounded-sm px-5 py-[5px] transition-all duration-150 ease-in-out',
+          'border-none bg-transparent',
           'text-center text-xs font-normal',
           {
             'bg-interface-menu-component-surface-selected':
               isSelected(index) && !disabled,
             'hover:bg-interface-menu-component-surface-selected/50':
               !isSelected(index) && !disabled,
-            'opacity-50 cursor-not-allowed': disabled,
+            'cursor-not-allowed opacity-50': disabled,
             'cursor-pointer': !disabled
           },
           isSelected(index) && !disabled
@@ -63,7 +63,7 @@ const {
   options,
   optionLabel = 'label',
   optionValue = 'value',
-  disabled = false
+  disabled
 } = defineProps<Props>()
 
 const emit = defineEmits<Emits>()

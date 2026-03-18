@@ -111,7 +111,9 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.canvasOps.disconnectEdge()
       await expect(comfyPage.searchBox.input).toHaveCount(1)
       await comfyPage.page.locator('.p-chip-remove-icon').click()
-      await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+      await comfyPage.searchBox.fillAndSelectFirstNode('KSampler', {
+        exact: true
+      })
       await expect(comfyPage.canvas).toHaveScreenshot(
         'added-node-no-connection.png'
       )

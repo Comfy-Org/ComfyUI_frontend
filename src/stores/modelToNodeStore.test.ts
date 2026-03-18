@@ -190,78 +190,28 @@ describe('useModelToNodeStore', () => {
       expect(provider?.key).toBe('')
     })
 
-    it('should return provider for new extension model types', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
+    it.each([
+      ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
+      ['sams', 'SAMLoader', 'model_name'],
+      ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
+      ['depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model'],
+      ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
+      ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
+      ['FlashVSR', 'FlashVSRNode', ''],
+      ['FlashVSR-v1.1', 'FlashVSRNode', ''],
+      ['segformer_b2_clothes', 'LS_LoadSegformerModel', 'model_name'],
+      ['segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name']
+    ])(
+      'should return correct provider for %s',
+      (modelType, expectedNodeName, expectedKey) => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.registerDefaults()
 
-      // SAM2
-      const sam2Provider = modelToNodeStore.getNodeProvider('sam2')
-      expect(sam2Provider?.nodeDef?.name).toBe('DownloadAndLoadSAM2Model')
-      expect(sam2Provider?.key).toBe('model')
-
-      // SAMLoader (original SAM)
-      const samsProvider = modelToNodeStore.getNodeProvider('sams')
-      expect(samsProvider?.nodeDef?.name).toBe('SAMLoader')
-      expect(samsProvider?.key).toBe('model_name')
-
-      // IP-Adapter
-      const ipadapterProvider = modelToNodeStore.getNodeProvider('ipadapter')
-      expect(ipadapterProvider?.nodeDef?.name).toBe('IPAdapterModelLoader')
-      expect(ipadapterProvider?.key).toBe('ipadapter_file')
-
-      // DepthAnything
-      const depthProvider = modelToNodeStore.getNodeProvider('depthanything')
-      expect(depthProvider?.nodeDef?.name).toBe(
-        'DownloadAndLoadDepthAnythingV2Model'
-      )
-      expect(depthProvider?.key).toBe('model')
-    })
-
-    it('should use hierarchical fallback for ultralytics subcategories', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      // ultralytics/bbox should fall back to ultralytics
-      const bboxProvider = modelToNodeStore.getNodeProvider('ultralytics/bbox')
-      expect(bboxProvider?.nodeDef?.name).toBe('UltralyticsDetectorProvider')
-      expect(bboxProvider?.key).toBe('model_name')
-
-      // ultralytics/segm should also fall back to ultralytics
-      const segmProvider = modelToNodeStore.getNodeProvider('ultralytics/segm')
-      expect(segmProvider?.nodeDef?.name).toBe('UltralyticsDetectorProvider')
-    })
-
-    it('should return provider for FlashVSR nodes with empty key (auto-load)', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      const flashVSRProvider = modelToNodeStore.getNodeProvider('FlashVSR')
-      expect(flashVSRProvider?.nodeDef?.name).toBe('FlashVSRNode')
-      expect(flashVSRProvider?.key).toBe('')
-
-      const flashVSR11Provider =
-        modelToNodeStore.getNodeProvider('FlashVSR-v1.1')
-      expect(flashVSR11Provider?.nodeDef?.name).toBe('FlashVSRNode')
-      expect(flashVSR11Provider?.key).toBe('')
-    })
-
-    it('should return provider for segformer models', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      const segformerB2Provider = modelToNodeStore.getNodeProvider(
-        'segformer_b2_clothes'
-      )
-      expect(segformerB2Provider?.nodeDef?.name).toBe('LS_LoadSegformerModel')
-      expect(segformerB2Provider?.key).toBe('model_name')
-
-      const segformerB3FashionProvider = modelToNodeStore.getNodeProvider(
-        'segformer_b3_fashion'
-      )
-      expect(segformerB3FashionProvider?.nodeDef?.name).toBe(
-        'LS_LoadSegformerModel'
-      )
-    })
+        const provider = modelToNodeStore.getNodeProvider(modelType)
+        expect(provider?.nodeDef?.name).toBe(expectedNodeName)
+        expect(provider?.key).toBe(expectedKey)
+      }
+    )
   })
 
   describe('getAllNodeProviders', () => {
