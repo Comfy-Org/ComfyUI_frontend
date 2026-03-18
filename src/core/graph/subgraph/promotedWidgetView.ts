@@ -50,14 +50,16 @@ export function createPromotedWidgetView(
   nodeId: string,
   widgetName: string,
   displayName?: string,
-  disambiguatingSourceNodeId?: string
+  disambiguatingSourceNodeId?: string,
+  identityName?: string
 ): IPromotedWidgetView {
   return new PromotedWidgetView(
     subgraphNode,
     nodeId,
     widgetName,
     displayName,
-    disambiguatingSourceNodeId
+    disambiguatingSourceNodeId,
+    identityName
   )
 }
 
@@ -88,7 +90,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
     nodeId: string,
     widgetName: string,
     private readonly displayName?: string,
-    readonly disambiguatingSourceNodeId?: string
+    readonly disambiguatingSourceNodeId?: string,
+    private readonly identityName?: string
   ) {
     this.sourceNodeId = nodeId
     this.sourceWidgetName = widgetName
@@ -100,7 +103,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get name(): string {
-    return this.displayName ?? this.sourceWidgetName
+    return this.identityName ?? this.sourceWidgetName
   }
 
   get y(): number {

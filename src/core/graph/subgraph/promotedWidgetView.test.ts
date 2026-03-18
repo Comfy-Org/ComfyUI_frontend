@@ -138,15 +138,17 @@ describe(createPromotedWidgetView, () => {
     expect(view.name).toBe('myWidget')
   })
 
-  test('name uses displayName when provided', () => {
+  test('name uses identityName when provided, label uses displayName', () => {
     const [subgraphNode] = setupSubgraph()
     const view = createPromotedWidgetView(
       subgraphNode,
       '1',
       'myWidget',
-      'Custom Label'
+      'Custom Label',
+      'my_slot'
     )
-    expect(view.name).toBe('Custom Label')
+    expect(view.name).toBe('my_slot')
+    expect(view.label).toBe('Custom Label')
   })
 
   test('node getter returns the subgraphNode', () => {
@@ -1012,7 +1014,9 @@ describe('SubgraphNode.widgets getter', () => {
 
     const afterRename = promotedWidgets(subgraphNode)[0]
     if (!afterRename) throw new Error('Expected linked promoted view')
-    expect(afterRename.name).toBe('seed_renamed')
+    // .name stays as identity (subgraph input name), .label updates for display
+    expect(afterRename.name).toBe('seed')
+    expect(afterRename.label).toBe('seed_renamed')
   })
 
   test('caches view objects across getter calls (stable references)', () => {
