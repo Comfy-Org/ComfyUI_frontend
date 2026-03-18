@@ -937,6 +937,36 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
   }
 
+  private _sortSlotsToCanonicalOrder(): void {
+    const canonicalInputs = this.subgraph.inputNode.slots
+    this.inputs.sort((a, b) => {
+      const ai = canonicalInputs.indexOf(a._subgraphSlot!)
+      const bi = canonicalInputs.indexOf(b._subgraphSlot!)
+      return ai - bi
+    })
+    // Fix input link target_slot indices after reorder
+    for (const [i, input] of this.inputs.entries()) {
+      if (input.link == null) continue
+      const link = this.graph?._links.get(input.link)
+      if (link) link.target_slot = i
+    }
+
+    const canonicalOutputs = this.subgraph.outputNode.slots
+    this.outputs.sort((a, b) => {
+      const ai = canonicalOutputs.findIndex((s) => s.name === a.name)
+      const bi = canonicalOutputs.findIndex((s) => s.name === b.name)
+      return ai - bi
+    })
+    // Fix output link origin_slot indices after reorder
+    for (const [i, output] of this.outputs.entries()) {
+      if (!output.links?.length) continue
+      for (const linkId of output.links) {
+        const link = this.graph?._links.get(linkId)
+        if (link) link.origin_slot = i
+      }
+    }
+  }
+
   private _rebindInputSubgraphSlots(): void {
     this._invalidatePromotedViewsCache()
 
@@ -1051,6 +1081,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Prune inputs that don't map to any subgraph slot definition.
     // This prevents stale/duplicate serialized inputs from persisting (#9977).
     this.inputs = this.inputs.filter((input) => input._subgraphSlot)
+
+    // Enforce canonical order: sort inputs/outputs to match the subgraph
+    // definition arrays. Serialized data may have a different order, causing
+    // drift between inner pins, outer pins, and properties panel (#10221).
+    this._sortSlotsToCanonicalOrder()
 
     // Ensure proxyWidgets is initialized so it serializes
     this.properties.proxyWidgets ??= []
