@@ -49,8 +49,6 @@ function isValidIndex(value: unknown): value is DraftIndexV2 {
  * Reads and parses the draft index from localStorage.
  */
 export function readIndex(workspaceId: string): DraftIndexV2 | null {
-  if (!storageAvailable) return null
-
   try {
     const key = StorageKeys.draftIndex(workspaceId)
     const json = localStorage.getItem(key)
@@ -88,8 +86,6 @@ export function readPayload(
   workspaceId: string,
   draftKey: string
 ): DraftPayloadV2 | null {
-  if (!storageAvailable) return null
-
   try {
     const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
     const json = localStorage.getItem(key)
@@ -146,8 +142,6 @@ export function deletePayloads(workspaceId: string, draftKeys: string[]): void {
  * Gets all draft payload keys for a workspace from localStorage.
  */
 export function getPayloadKeys(workspaceId: string): string[] {
-  if (!storageAvailable) return []
-
   const prefix = `${StorageKeys.prefixes.draftPayload}${workspaceId}:`
   const keys: string[] = []
 
@@ -313,8 +307,6 @@ export function writeOpenPaths(
  * Used during signout to prevent data leakage.
  */
 export function clearAllV2Storage(): void {
-  if (!storageAvailable) return
-
   const prefixes = [
     StorageKeys.prefixes.draftIndex,
     StorageKeys.prefixes.draftPayload

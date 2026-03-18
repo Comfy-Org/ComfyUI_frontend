@@ -228,6 +228,37 @@ describe('workflowDraftStoreV2', () => {
 
       expect(result).toBe(false)
     })
+
+    it('keeps an existing draft readable after storage is marked unavailable', async () => {
+      vi.resetModules()
+      const [{ useWorkflowDraftStoreV2: useDynamicWorkflowDraftStoreV2 }, mod] =
+        await Promise.all([
+          import('./workflowDraftStoreV2'),
+          import('../base/storageIO')
+        ])
+
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      localStorage.clear()
+      sessionStorage.clear()
+
+      const store = useDynamicWorkflowDraftStoreV2()
+      const draftData = '{"nodes":[],"extra":{"draftMarker":"quota"}}'
+      store.saveDraft('workflows/test.json', draftData, {
+        name: 'test',
+        isTemporary: true
+      })
+
+      mod.markStorageUnavailable()
+
+      expect(store.getDraft('workflows/test.json')?.data).toBe(draftData)
+      expect(
+        await store.loadPersistedWorkflow({
+          workflowName: 'test',
+          preferredPath: 'workflows/test.json'
+        })
+      ).toBe(true)
+      expect(store.getDraft('workflows/test.json')?.data).toBe(draftData)
+    })
   })
 
   describe('reset', () => {

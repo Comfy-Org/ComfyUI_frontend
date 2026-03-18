@@ -156,6 +156,56 @@ describe('storageIO', () => {
     })
   })
 
+  describe('storage availability', () => {
+    it('still reads an existing payload after storage is marked unavailable', async () => {
+      vi.resetModules()
+      const mod = await import('./storageIO')
+
+      const payload: DraftPayloadV2 = {
+        data: '{"nodes":[]}',
+        updatedAt: 123
+      }
+
+      expect(mod.writePayload('ws-1', 'abc', payload)).toBe(true)
+
+      mod.markStorageUnavailable()
+
+      expect(mod.readPayload('ws-1', 'abc')).toEqual(payload)
+    })
+
+    it('still reads an existing index and payload keys after storage is marked unavailable', async () => {
+      vi.resetModules()
+      const mod = await import('./storageIO')
+
+      const index: DraftIndexV2 = {
+        v: 2,
+        updatedAt: 456,
+        order: ['abc'],
+        entries: {
+          abc: {
+            path: 'workflows/test.json',
+            name: 'test',
+            isTemporary: true,
+            updatedAt: 456
+          }
+        }
+      }
+
+      expect(mod.writeIndex('ws-1', index)).toBe(true)
+      expect(
+        mod.writePayload('ws-1', 'abc', {
+          data: '{"nodes":[]}',
+          updatedAt: 456
+        })
+      ).toBe(true)
+
+      mod.markStorageUnavailable()
+
+      expect(mod.readIndex('ws-1')).toEqual(index)
+      expect(mod.getPayloadKeys('ws-1')).toEqual(['abc'])
+    })
+  })
+
   describe('session storage pointers', () => {
     const clientId = 'client-abc'
 
@@ -316,6 +366,36 @@ describe('storageIO', () => {
         sessionStorage.getItem('Comfy.Workflow.OpenPaths:client-2')
       ).toBeNull()
       expect(sessionStorage.getItem('unrelated')).toBe('keep')
+    })
+
+    it('still clears V2 keys after storage is marked unavailable', async () => {
+      vi.resetModules()
+      const mod = await import('./storageIO')
+
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{}')
+      sessionStorage.setItem('Comfy.Workflow.ActivePath:client-1', '{}')
+      sessionStorage.setItem('Comfy.Workflow.OpenPaths:client-2', '{}')
+      localStorage.setItem('unrelated', 'keep-local')
+      sessionStorage.setItem('unrelated', 'keep-session')
+
+      mod.markStorageUnavailable()
+      mod.clearAllV2Storage()
+
+      expect(
+        localStorage.getItem('Comfy.Workflow.DraftIndex.v2:ws-1')
+      ).toBeNull()
+      expect(
+        localStorage.getItem('Comfy.Workflow.Draft.v2:ws-1:abc')
+      ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
+      ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.OpenPaths:client-2')
+      ).toBeNull()
+      expect(localStorage.getItem('unrelated')).toBe('keep-local')
+      expect(sessionStorage.getItem('unrelated')).toBe('keep-session')
     })
   })
 })
