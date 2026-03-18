@@ -111,6 +111,18 @@ vi.mock('@/stores/queueStore', () => ({
     constructor(public job: JobListItem) {
       this.jobId = job.id
       this.outputsCount = job.outputs_count ?? null
+
+      if (mockOutputOverrides.value) {
+        this.flatOutputs = mockOutputOverrides.value
+        const previewable = mockOutputOverrides.value.filter(
+          (output) => output.supportsPreview
+        )
+        this.previewOutput =
+          previewable.findLast((output) => output.type === 'output') ??
+          previewable.at(-1)
+        return
+      }
+
       const preview = job.preview_output
       const isPreviewable =
         !!preview?.filename && PREVIEWABLE_MEDIA_TYPES.has(preview.mediaType)
