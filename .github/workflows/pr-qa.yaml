@@ -307,8 +307,14 @@ jobs:
 
       - name: Convert videos to mp4
         run: |
+          echo "=== Artifact directory structure ==="
+          find qa-artifacts -type f 2>/dev/null | head -30 || echo "qa-artifacts not found"
+          echo "==="
+
           for dir in qa-artifacts/qa-report-*; do
             [ -d "$dir" ] || continue
+            echo "Processing dir: $dir"
+            ls -la "$dir/" | head -20
             WEBM=$(find "$dir" -name '*.webm' -type f | head -1)
             if [ -z "$WEBM" ]; then
               echo "No .webm video in $dir, skipping"
