@@ -233,7 +233,7 @@ jobs:
         run: |
           codex exec \
             --model gpt-5.4-mini \
-            --full-auto \
+            --sandbox danger-full-access \
             - < "${{ runner.temp }}/qa-prompt.txt"
 
       - name: Collect artifacts
