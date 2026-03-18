@@ -120,6 +120,9 @@ test.describe('Subgraph IO drag visual feedback', { tag: '@subgraph' }, () => {
       if (!subgraph || !('inputNode' in subgraph))
         return { error: 'Not in subgraph' }
 
+      const inputSlot = subgraph.inputNode.slots[0]
+      if (!inputSlot) return { error: 'No input slot' }
+
       let connectingFired = false
       let connectingTo: string | null = null
 
@@ -129,9 +132,6 @@ test.describe('Subgraph IO drag visual feedback', { tag: '@subgraph' }, () => {
       }
 
       canvas.linkConnector.events.addEventListener('connecting', onConnecting)
-
-      const inputSlot = subgraph.inputNode.slots[0]
-      if (!inputSlot) return { error: 'No input slot' }
 
       type DragFn = typeof canvas.linkConnector.dragNewFromSubgraphInput
       try {
