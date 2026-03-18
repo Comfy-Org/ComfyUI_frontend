@@ -825,6 +825,41 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       { signal }
     )
 
+    subgraphEvents.addEventListener(
+      'input-reordered',
+      (e) => {
+        const { fromIndex, toIndex } = e.detail
+        const [moved] = this.inputs.splice(fromIndex, 1)
+        this.inputs.splice(toIndex, 0, moved)
+        for (const [i, input] of this.inputs.entries()) {
+          if (input.link == null) continue
+          const link = this.graph?._links.get(input.link)
+          if (link) link.target_slot = i
+        }
+        this._invalidatePromotedViewsCache()
+        this.setDirtyCanvas(true, true)
+      },
+      { signal }
+    )
+
+    subgraphEvents.addEventListener(
+      'output-reordered',
+      (e) => {
+        const { fromIndex, toIndex } = e.detail
+        const [moved] = this.outputs.splice(fromIndex, 1)
+        this.outputs.splice(toIndex, 0, moved)
+        for (const [i, output] of this.outputs.entries()) {
+          if (!output.links?.length) continue
+          for (const linkId of output.links) {
+            const link = this.graph?._links.get(linkId)
+            if (link) link.origin_slot = i
+          }
+        }
+        this.setDirtyCanvas(true, true)
+      },
+      { signal }
+    )
+
     this.type = subgraph.id
     this.configure(instanceData)
 
