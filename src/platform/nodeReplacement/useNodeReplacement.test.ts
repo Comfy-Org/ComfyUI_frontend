@@ -47,8 +47,8 @@ vi.mock('@/i18n', () => ({
 const { mockRemoveMissingNodesByType } = vi.hoisted(() => ({
   mockRemoveMissingNodesByType: vi.fn()
 }))
-vi.mock('@/stores/executionErrorStore', () => ({
-  useExecutionErrorStore: vi.fn(() => ({
+vi.mock('@/stores/missingNodesErrorStore', () => ({
+  useMissingNodesErrorStore: vi.fn(() => ({
     removeMissingNodesByType: mockRemoveMissingNodesByType
   }))
 }))

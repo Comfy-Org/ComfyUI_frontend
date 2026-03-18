@@ -31,7 +31,9 @@ export const TestIds = {
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
     about: 'about-panel',
-    whatsNewSection: 'whats-new-section'
+    whatsNewSection: 'whats-new-section',
+    missingNodePacksGroup: 'error-group-missing-node',
+    missingModelsGroup: 'error-group-missing-model'
   },
   topbar: {
     queueButton: 'queue-button',
@@ -72,6 +74,10 @@ export const TestIds = {
   },
   user: {
     currentUserIndicator: 'current-user-indicator'
+  },
+  errors: {
+    imageLoadError: 'error-loading-image',
+    videoLoadError: 'error-loading-video'
   }
 } as const
 
@@ -96,3 +102,4 @@ export type TestIdValue =
       (id: string) => string
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
+  | (typeof TestIds.errors)[keyof typeof TestIds.errors]

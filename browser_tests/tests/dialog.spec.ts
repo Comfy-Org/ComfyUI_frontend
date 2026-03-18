@@ -28,7 +28,7 @@ test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingNodesTitle = comfyPage.page.getByText(/Missing Node Packs/)
+    const missingNodesTitle = errorOverlay.getByText(/Missing Node Packs/)
     await expect(missingNodesTitle).toBeVisible()
   })
 
@@ -42,7 +42,7 @@ test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingNodesTitle = comfyPage.page.getByText(/Missing Node Packs/)
+    const missingNodesTitle = errorOverlay.getByText(/Missing Node Packs/)
     await expect(missingNodesTitle).toBeVisible()
 
     // Click "See Errors" to open the errors tab and verify subgraph node content
@@ -204,7 +204,7 @@ test.describe('Missing models in Error Tab', () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingModelsTitle = comfyPage.page.getByText(/Missing Models/)
+    const missingModelsTitle = errorOverlay.getByText(/Missing Models/)
     await expect(missingModelsTitle).toBeVisible()
   })
 
@@ -220,7 +220,7 @@ test.describe('Missing models in Error Tab', () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingModelsTitle = comfyPage.page.getByText(/Missing Models/)
+    const missingModelsTitle = errorOverlay.getByText(/Missing Models/)
     await expect(missingModelsTitle).toBeVisible()
   })
 
@@ -231,13 +231,13 @@ test.describe('Missing models in Error Tab', () => {
       'missing/model_metadata_widget_mismatch'
     )
 
-    const missingModelsTitle = comfyPage.page.getByText(/Missing Models/)
-    await expect(missingModelsTitle).not.toBeVisible()
-
     const errorOverlay = comfyPage.page.getByTestId(
       TestIds.dialogs.errorOverlay
     )
     await expect(errorOverlay).not.toBeVisible()
+
+    const missingModelsTitle = errorOverlay.getByText(/Missing Models/)
+    await expect(missingModelsTitle).not.toBeVisible()
   })
 
   // Flaky test after parallelization

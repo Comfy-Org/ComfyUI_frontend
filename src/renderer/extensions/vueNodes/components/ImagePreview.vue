@@ -90,7 +90,11 @@
 
     <!-- Image Dimensions -->
     <div class="pt-2 text-center text-xs text-base-foreground">
-      <span v-if="imageError" class="text-red-400">
+      <span
+        v-if="imageError"
+        class="text-red-400"
+        data-testid="error-loading-image"
+      >
         {{ $t('g.errorLoadingImage') }}
       </span>
       <span v-else-if="showLoader" class="text-base-foreground">

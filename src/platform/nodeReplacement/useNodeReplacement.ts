@@ -7,7 +7,7 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/stores/missingNodesErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
@@ -334,7 +334,7 @@ export function useNodeReplacement() {
   function replaceGroup(group: ReplacementGroup): void {
     const replaced = replaceNodesInPlace(group.nodeTypes)
     if (replaced.length > 0) {
-      useExecutionErrorStore().removeMissingNodesByType(replaced)
+      useMissingNodesErrorStore().removeMissingNodesByType(replaced)
     }
   }
 
@@ -346,7 +346,7 @@ export function useNodeReplacement() {
     const allNodeTypes = groups.flatMap((g) => g.nodeTypes)
     const replaced = replaceNodesInPlace(allNodeTypes)
     if (replaced.length > 0) {
-      useExecutionErrorStore().removeMissingNodesByType(replaced)
+      useMissingNodesErrorStore().removeMissingNodesByType(replaced)
     }
   }
 

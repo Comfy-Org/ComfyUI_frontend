@@ -58,6 +58,7 @@ vi.mock(
 )
 
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/stores/missingNodesErrorStore'
 import { useErrorGroups } from './useErrorGroups'
 
 function makeMissingNodeType(
@@ -126,8 +127,9 @@ describe('useErrorGroups', () => {
     })
 
     it('groups non-replaceable nodes by cnrId', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeA', { cnrId: 'pack-1' }),
         makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' }),
         makeMissingNodeType('NodeC', { cnrId: 'pack-2', nodeId: '3' })
@@ -146,8 +148,9 @@ describe('useErrorGroups', () => {
     })
 
     it('excludes replaceable nodes from missingPackGroups', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('OldNode', {
           isReplaceable: true,
           replacement: { new_node_id: 'NewNode' }
@@ -164,8 +167,9 @@ describe('useErrorGroups', () => {
     })
 
     it('groups nodes without cnrId under null packId', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('UnknownNode', { nodeId: '1' }),
         makeMissingNodeType('AnotherUnknown', { nodeId: '2' })
       ])
@@ -177,8 +181,9 @@ describe('useErrorGroups', () => {
     })
 
     it('sorts groups alphabetically with null packId last', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeA', { cnrId: 'zebra-pack' }),
         makeMissingNodeType('NodeB', { nodeId: '2' }),
         makeMissingNodeType('NodeC', { cnrId: 'alpha-pack', nodeId: '3' })
@@ -190,8 +195,9 @@ describe('useErrorGroups', () => {
     })
 
     it('sorts nodeTypes within each group alphabetically by type then nodeId', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' }),
         makeMissingNodeType('NodeA', { cnrId: 'pack-1', nodeId: '3' }),
         makeMissingNodeType('NodeA', { cnrId: 'pack-1', nodeId: '1' })
@@ -206,8 +212,9 @@ describe('useErrorGroups', () => {
     })
 
     it('handles string nodeType entries', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         'StringGroupNode' as unknown as MissingNodeType
       ])
       await nextTick()
@@ -224,8 +231,9 @@ describe('useErrorGroups', () => {
     })
 
     it('includes missing_node group when missing nodes exist', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
       ])
       await nextTick()
@@ -237,8 +245,9 @@ describe('useErrorGroups', () => {
     })
 
     it('includes swap_nodes group when replaceable nodes exist', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('OldNode', {
           isReplaceable: true,
           replacement: { new_node_id: 'NewNode' }
@@ -253,8 +262,9 @@ describe('useErrorGroups', () => {
     })
 
     it('includes both swap_nodes and missing_node when both exist', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('OldNode', {
           isReplaceable: true,
           replacement: { new_node_id: 'NewNode' }
@@ -272,8 +282,9 @@ describe('useErrorGroups', () => {
     })
 
     it('swap_nodes has lower priority than missing_node', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('OldNode', {
           isReplaceable: true,
           replacement: { new_node_id: 'NewNode' }
@@ -533,8 +544,9 @@ describe('useErrorGroups', () => {
     })
 
     it('includes missing node group title as message', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
       ])
       await nextTick()

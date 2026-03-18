@@ -15,6 +15,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/stores/missingNodesErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -38,12 +39,14 @@ import TabErrors from './errors/TabErrors.vue'
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
+const missingNodesErrorStore = useMissingNodesErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
-const { hasAnyError, allErrorExecutionIds, activeMissingNodeGraphIds } =
-  storeToRefs(executionErrorStore)
+const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionErrorStore)
+
+const { activeMissingNodeGraphIds } = storeToRefs(missingNodesErrorStore)
 
 const { activeMissingModelGraphIds } = storeToRefs(missingModelStore)
 

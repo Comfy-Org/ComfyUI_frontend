@@ -53,6 +53,7 @@
         <PropertiesAccordionItem
           v-for="group in filteredGroups"
           :key="group.title"
+          :data-testid="'error-group-' + group.type.replace('_', '-')"
           :collapse="isSectionCollapsed(group.title) && !isSearching"
           class="border-b border-interface-stroke"
           :size="getGroupSize(group)"
