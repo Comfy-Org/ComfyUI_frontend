@@ -412,6 +412,49 @@ describe('NodeSearchCategorySidebar', () => {
       expect(wrapper.text()).not.toContain('custom_sampling')
     })
 
+    it('should collapse 4-deep tree to parent of level 2 on ArrowLeft', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'N1', category: 'a' }),
+        createMockNodeDef({ name: 'N2', category: 'a/b' }),
+        createMockNodeDef({ name: 'N3', category: 'a/b/c' }),
+        createMockNodeDef({ name: 'N4', category: 'a/b/c/d' }),
+        createMockNodeDef({ name: 'N5', category: 'other' })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper()
+
+      // Expand a → a/b → a/b/c → a/b/c/d
+      await clickCategory(wrapper, 'a', true)
+      await wrapper.setProps({ selectedCategory: 'a' })
+      await nextTick()
+      expect(wrapper.text()).toContain('b')
+
+      await clickCategory(wrapper, 'b', true)
+      await wrapper.setProps({ selectedCategory: 'a/b' })
+      await nextTick()
+      expect(wrapper.text()).toContain('c')
+
+      await clickCategory(wrapper, 'c', true)
+      await wrapper.setProps({ selectedCategory: 'a/b/c' })
+      await nextTick()
+      expect(wrapper.text()).toContain('d')
+
+      // Focus level 2 (a/b) and press ArrowLeft
+      const bBtn = wrapper.find('[data-testid="category-a/b"]')
+      ;(bBtn.element as HTMLElement).focus()
+      await nextTick()
+
+      await bBtn.trigger('keydown', { key: 'ArrowLeft' })
+      await nextTick()
+
+      // Level 2 and below should collapse, but level 1 (a) stays expanded
+      // so 'b' is still visible but 'c' and 'd' are not
+      expect(wrapper.text()).toContain('b')
+      expect(wrapper.text()).not.toContain('c')
+      expect(wrapper.text()).not.toContain('d')
+    })
+
     it('should set aria-expanded on tree nodes with children', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),

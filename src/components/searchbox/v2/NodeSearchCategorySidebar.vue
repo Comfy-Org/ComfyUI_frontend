@@ -217,7 +217,7 @@ function selectCategory(categoryId: string) {
 }
 
 function collapseCategory(categoryId: string) {
-  expandedCategory.value = ''
+  expandedCategory.value = parentCategory(categoryId)
   lastEmittedCategory = categoryId
   selectedCategory.value = categoryId
 }
