@@ -192,8 +192,16 @@ export const useWorkflowService = () => {
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       if ((await confirmOverwrite(newPath)) !== true) return false
-      const deleted = await deleteWorkflow(existingWorkflow, true)
-      if (!deleted) return false
+
+      // Close with dirty-state warning before deleting so unsaved
+      // edits in the target tab are not silently discarded.
+      if (workflowStore.isOpen(existingWorkflow)) {
+        const closed = await closeWorkflow(existingWorkflow, {
+          warnIfUnsaved: true
+        })
+        if (!closed) return false
+      }
+      await workflowStore.deleteWorkflow(existingWorkflow)
     }
 
     workflow.changeTracker?.checkState()
