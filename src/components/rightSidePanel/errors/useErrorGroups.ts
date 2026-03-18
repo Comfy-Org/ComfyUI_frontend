@@ -395,7 +395,8 @@ export function useErrorGroups(
         {
           message: `${e.exception_type}: ${e.exception_message}`,
           details: e.traceback.join('\n'),
-          isRuntimeError: true
+          isRuntimeError: true,
+          exceptionType: e.exception_type
         }
       ],
       filterBySelection

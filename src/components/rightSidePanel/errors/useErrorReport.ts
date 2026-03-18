@@ -9,17 +9,8 @@ import { generateErrorReport } from '@/utils/errorReportUtil'
 
 import type { ErrorCardData } from './types'
 
-/** Module-level cache keyed by card ID + error index + error message to avoid stale entries. */
-const reportCache = new Map<string, string>()
-
-/** @internal Exposed for test cleanup only. */
-export function clearReportCache() {
-  reportCache.clear()
-}
-
-function cacheKey(cardId: string, idx: number, message: string): string {
-  return `${cardId}-${idx}-${message}`
-}
+/** Fallback exception type for error reports when the backend does not provide one. Not i18n'd: used in diagnostic reports only. */
+const FALLBACK_EXCEPTION_TYPE = 'Runtime Error'
 
 export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
   const systemStatsStore = useSystemStatsStore()
@@ -43,19 +34,6 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
 
     if (runtimeErrors.length === 0) return
 
-    // Resolve cached entries first; collect uncached ones
-    const uncached: typeof runtimeErrors = []
-    for (const entry of runtimeErrors) {
-      const key = cacheKey(card.id, entry.idx, entry.error.message)
-      if (reportCache.has(key)) {
-        enrichedDetails[entry.idx] = reportCache.get(key)!
-      } else {
-        uncached.push(entry)
-      }
-    }
-
-    if (uncached.length === 0) return
-
     if (!systemStatsStore.systemStats) {
       await systemStatsStore.refetchSystemStats()
     }
@@ -70,10 +48,10 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
 
     const workflow = app.rootGraph.serialize()
 
-    for (const { error, idx } of uncached) {
+    for (const { error, idx } of runtimeErrors) {
       try {
         const report = generateErrorReport({
-          exceptionType: card.title,
+          exceptionType: error.exceptionType ?? FALLBACK_EXCEPTION_TYPE,
           exceptionMessage: error.message,
           traceback: error.details,
           nodeId: card.nodeId,
@@ -83,7 +61,6 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
           workflow
         })
         enrichedDetails[idx] = report
-        reportCache.set(cacheKey(card.id, idx, error.message), report)
       } catch {
         // Fallback: keep original error.details
       }

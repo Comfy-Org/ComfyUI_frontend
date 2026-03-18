@@ -50,7 +50,7 @@
         :class="
           cn(
             'flex min-h-0 flex-col gap-3',
-            card.errors.length === 1 && error.isRuntimeError && 'flex-1'
+            fullHeight && error.isRuntimeError && 'flex-1'
           )
         "
       >
@@ -68,7 +68,11 @@
           :class="
             cn(
               'overflow-y-auto rounded-lg border border-interface-stroke/30 bg-secondary-background-hover p-2.5',
-              error.isRuntimeError ? 'min-h-0 flex-1' : 'max-h-[6lh]'
+              error.isRuntimeError
+                ? fullHeight
+                  ? 'min-h-0 flex-1'
+                  : 'max-h-[15lh]'
+                : 'max-h-[6lh]'
             )
           "
         >
@@ -135,12 +139,15 @@ import { useErrorReport } from './useErrorReport'
 const {
   card,
   showNodeIdBadge = false,
-  compact = false
+  compact = false,
+  fullHeight = false
 } = defineProps<{
   card: ErrorCardData
   showNodeIdBadge?: boolean
   /** Hide card header and error message (used in single-node selection mode) */
   compact?: boolean
+  /** Allow runtime error details to fill available height (used in dedicated panel) */
+  fullHeight?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
-import { clearReportCache } from './useErrorReport'
 
 const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
 const mockSerialize = vi.fn(() => ({ nodes: [] }))
@@ -61,7 +60,6 @@ describe('ErrorNodeCard.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     cardIdCounter = 0
-    clearReportCache()
     mockGetLogs.mockResolvedValue('mock server logs')
     mockGenerateErrorReport.mockReturnValue('# ComfyUI Error Report\n...')
 
@@ -148,7 +146,8 @@ describe('ErrorNodeCard.vue', () => {
         {
           message: 'RuntimeError: CUDA out of memory',
           details: 'Traceback line 1\nTraceback line 2',
-          isRuntimeError: true
+          isRuntimeError: true,
+          exceptionType: 'RuntimeError'
         }
       ]
     }
@@ -287,6 +286,42 @@ describe('ErrorNodeCard.vue', () => {
       expect.objectContaining({
         resource_type: 'help_feedback',
         source: 'error_dialog'
+      })
+    )
+  })
+
+  it('passes exceptionType from error item to report generator', async () => {
+    mountCard(makeRuntimeErrorCard())
+    await flushPromises()
+
+    expect(mockGenerateErrorReport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        exceptionType: 'RuntimeError'
+      })
+    )
+  })
+
+  it('uses fallback exception type when error item has no exceptionType', async () => {
+    const card: ErrorCardData = {
+      id: `exec-${++cardIdCounter}`,
+      title: 'KSampler',
+      nodeId: '10',
+      nodeTitle: 'KSampler',
+      errors: [
+        {
+          message: 'Unknown error occurred',
+          details: 'Some traceback',
+          isRuntimeError: true
+        }
+      ]
+    }
+
+    mountCard(card)
+    await flushPromises()
+
+    expect(mockGenerateErrorReport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        exceptionType: 'Runtime Error'
       })
     )
   })

@@ -26,6 +26,7 @@
         :key="singleRuntimeErrorCard.id"
         :card="singleRuntimeErrorCard"
         :show-node-id-badge="showNodeIdBadge"
+        full-height
         class="min-h-0 flex-1"
         @locate-node="handleLocateNode"
         @enter-subgraph="handleEnterSubgraph"
