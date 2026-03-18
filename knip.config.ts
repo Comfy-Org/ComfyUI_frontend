@@ -62,7 +62,9 @@ const config: KnipConfig = {
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Loaded via @plugin directive in CSS, not detected by knip
-    'packages/design-system/src/css/lucideStrokePlugin.js'
+    'packages/design-system/src/css/lucideStrokePlugin.js',
+    // Legacy V1 workflow draft store retained during V2 transition/rollback window
+    'src/platform/workflow/persistence/stores/workflowDraftStore.ts'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199

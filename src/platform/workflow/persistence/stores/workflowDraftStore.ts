@@ -2,10 +2,7 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
-import type {
-  DraftCacheState,
-  WorkflowDraftSnapshot
-} from '@/platform/workflow/persistence/base/draftCache'
+import type { WorkflowDraftSnapshot } from '@/platform/workflow/persistence/base/draftCache'
 import {
   MAX_DRAFTS,
   createDraftCacheState,
@@ -36,10 +33,10 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
 
   const mostRecentDraft = computed(() => mostRecentDraftPath(storedOrder.value))
 
-  const currentState = (): DraftCacheState =>
+  const currentState = () =>
     createDraftCacheState(storedDrafts.value, storedOrder.value)
 
-  const updateState = (state: DraftCacheState) => {
+  const updateState = (state: ReturnType<typeof currentState>) => {
     storedDrafts.value = state.drafts
     storedOrder.value = state.order
   }
