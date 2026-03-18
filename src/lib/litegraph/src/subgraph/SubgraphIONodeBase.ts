@@ -36,7 +36,7 @@ export abstract class SubgraphIONodeBase<
 {
   static margin = 10
   static minWidth = 100
-  static roundedRadius = 4
+  static roundedRadius = 14
 
   private readonly _boundingRect: Rectangle = new Rectangle()
 
