@@ -6,14 +6,14 @@ import type { Locator, Page } from '@playwright/test'
 import type { KeyboardHelper } from './KeyboardHelper'
 
 function getMimeType(fileName: string): string {
-  if (fileName.endsWith('.png')) return 'image/png'
-  if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg'))
-    return 'image/jpeg'
-  if (fileName.endsWith('.webp')) return 'image/webp'
-  if (fileName.endsWith('.svg')) return 'image/svg+xml'
-  if (fileName.endsWith('.avif')) return 'image/avif'
-  if (fileName.endsWith('.webm')) return 'video/webm'
-  if (fileName.endsWith('.mp4')) return 'video/mp4'
+  const name = fileName.toLowerCase()
+  if (name.endsWith('.png')) return 'image/png'
+  if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg'
+  if (name.endsWith('.webp')) return 'image/webp'
+  if (name.endsWith('.svg')) return 'image/svg+xml'
+  if (name.endsWith('.avif')) return 'image/avif'
+  if (name.endsWith('.webm')) return 'video/webm'
+  if (name.endsWith('.mp4')) return 'video/mp4'
   return 'application/octet-stream'
 }
 
