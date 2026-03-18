@@ -1,13 +1,29 @@
-import { mount } from '@vue/test-utils'
-import PrimeVue from 'primevue/config'
-import Galleria from 'primevue/galleria'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, nextTick } from 'vue'
+import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+enableAutoUnmount(afterEach)
 
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 import ResultGallery from './ResultGallery.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      g: {
+        close: 'Close',
+        gallery: 'Gallery',
+        previous: 'Previous',
+        next: 'Next'
+      }
+    }
+  }
+})
 
 type MockResultItem = Partial<ResultItemImpl> & {
   filename: string
@@ -19,10 +35,10 @@ type MockResultItem = Partial<ResultItemImpl> & {
   url?: string
   isImage?: boolean
   isVideo?: boolean
+  isAudio?: boolean
 }
 
 describe('ResultGallery', () => {
-  // Mock ComfyImage and ResultVideo components
   const mockComfyImage = {
     name: 'ComfyImage',
     template: '<div class="mock-comfy-image" data-testid="comfy-image"></div>',
@@ -36,7 +52,13 @@ describe('ResultGallery', () => {
     props: ['result']
   }
 
-  // Sample gallery items - using mock instances with only required properties
+  const mockResultAudio = {
+    name: 'ResultAudio',
+    template:
+      '<div class="mock-result-audio" data-testid="result-audio"></div>',
+    props: ['result']
+  }
+
   const mockGalleryItems: MockResultItem[] = [
     {
       filename: 'image1.jpg',
@@ -46,6 +68,7 @@ describe('ResultGallery', () => {
       mediaType: 'images',
       isImage: true,
       isVideo: false,
+      isAudio: false,
       url: 'image1.jpg',
       id: '1'
     },
@@ -57,23 +80,29 @@ describe('ResultGallery', () => {
       mediaType: 'images',
       isImage: true,
       isVideo: false,
+      isAudio: false,
       url: 'image2.jpg',
       id: '2'
+    },
+    {
+      filename: 'image3.jpg',
+      subfolder: 'outputs',
+      type: 'output',
+      nodeId: '789' as NodeId,
+      mediaType: 'images',
+      isImage: true,
+      isVideo: false,
+      isAudio: false,
+      url: 'image3.jpg',
+      id: '3'
     }
   ]
 
   beforeEach(() => {
-    const app = createApp({})
-    app.use(PrimeVue)
-
-    // Create mock elements for Galleria to find
-    document.body.innerHTML = `
-      <div id="app"></div>
-    `
+    document.body.innerHTML = '<div id="app"></div>'
   })
 
   afterEach(() => {
-    // Clean up any elements added to body
     document.body.innerHTML = ''
     vi.restoreAllMocks()
   })
@@ -81,11 +110,11 @@ describe('ResultGallery', () => {
   const mountGallery = (props = {}) => {
     return mount(ResultGallery, {
       global: {
-        plugins: [PrimeVue],
+        plugins: [i18n],
         components: {
-          Galleria,
           ComfyImage: mockComfyImage,
-          ResultVideo: mockResultVideo
+          ResultVideo: mockResultVideo,
+          ResultAudio: mockResultAudio
         },
         stubs: {
           teleport: true
@@ -100,85 +129,121 @@ describe('ResultGallery', () => {
     })
   }
 
-  it('renders Galleria component with correct props', async () => {
+  it('renders overlay with role="dialog" and aria-modal', async () => {
     const wrapper = mountGallery()
+    await nextTick()
 
-    await nextTick() // Wait for component to mount
+    const dialog = wrapper.find('[role="dialog"]')
+    expect(dialog.exists()).toBe(true)
+    expect(dialog.attributes('aria-modal')).toBe('true')
+  })
 
-    const galleria = wrapper.findComponent(Galleria)
-    expect(galleria.exists()).toBe(true)
-    expect(galleria.props('value')).toEqual(mockGalleryItems)
-    expect(galleria.props('showIndicators')).toBe(false)
-    expect(galleria.props('showItemNavigators')).toBe(true)
-    expect(galleria.props('fullScreen')).toBe(true)
+  it('renders close button', async () => {
+    const wrapper = mountGallery()
+    await nextTick()
+
+    expect(wrapper.find('[aria-label="Close"]').exists()).toBe(true)
+  })
+
+  it('shows navigation buttons when multiple items', async () => {
+    const wrapper = mountGallery()
+    await nextTick()
+
+    expect(wrapper.find('[aria-label="Previous"]').exists()).toBe(true)
+    expect(wrapper.find('[aria-label="Next"]').exists()).toBe(true)
+  })
+
+  it('hides navigation buttons for single item', async () => {
+    const wrapper = mountGallery({
+      allGalleryItems: [mockGalleryItems[0]] as ResultItemImpl[]
+    })
+    await nextTick()
+
+    expect(wrapper.find('[aria-label="Previous"]').exists()).toBe(false)
+    expect(wrapper.find('[aria-label="Next"]').exists()).toBe(false)
   })
 
   it('shows gallery when activeIndex changes from -1', async () => {
     const wrapper = mountGallery({ activeIndex: -1 })
 
-    // Initially galleryVisible should be false
-    type GalleryVM = typeof wrapper.vm & {
-      galleryVisible: boolean
-    }
-    const vm = wrapper.vm as GalleryVM
-    expect(vm.galleryVisible).toBe(false)
+    expect(wrapper.find('[data-mask]').exists()).toBe(false)
 
-    // Change activeIndex
     await wrapper.setProps({ activeIndex: 0 })
     await nextTick()
 
-    // galleryVisible should become true
-    expect(vm.galleryVisible).toBe(true)
+    expect(wrapper.find('[data-mask]').exists()).toBe(true)
   })
 
-  it('should render the component properly', () => {
-    // This is a meta-test to confirm the component mounts properly
-    const wrapper = mountGallery()
-
-    // We can't directly test the compiled CSS, but we can verify the component renders
-    expect(wrapper.exists()).toBe(true)
-
-    // Verify that the Galleria component exists and is properly mounted
-    const galleria = wrapper.findComponent(Galleria)
-    expect(galleria.exists()).toBe(true)
-  })
-
-  it('ensures correct configuration for mobile viewport', async () => {
-    // Mock window.matchMedia to simulate mobile viewport
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: vi.fn().mockImplementation((query) => ({
-        matches: query.includes('max-width: 768px'),
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn()
-      }))
-    })
-
+  it('emits update:activeIndex with -1 when close button clicked', async () => {
     const wrapper = mountGallery()
     await nextTick()
 
-    // Verify mobile media query is working
-    expect(window.matchMedia('(max-width: 768px)').matches).toBe(true)
+    await wrapper.find('[aria-label="Close"]').trigger('click')
+    await nextTick()
 
-    // Check if the component renders with Galleria
-    const galleria = wrapper.findComponent(Galleria)
-    expect(galleria.exists()).toBe(true)
-
-    // Check that our PT props for positioning work correctly
-    interface GalleriaPT {
-      prevButton?: { style?: string }
-      nextButton?: { style?: string }
-    }
-    const pt = galleria.props('pt') as GalleriaPT
-    expect(pt?.prevButton?.style).toContain('position: fixed')
-    expect(pt?.nextButton?.style).toContain('position: fixed')
+    expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([-1])
   })
 
-  // Additional tests for interaction could be added once we can reliably
-  // test Galleria component in fullscreen mode
+  describe('keyboard navigation', () => {
+    it('navigates to next item on ArrowRight', async () => {
+      const wrapper = mountGallery({ activeIndex: 0 })
+      await nextTick()
+
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true })
+      )
+      await nextTick()
+
+      expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([1])
+    })
+
+    it('navigates to previous item on ArrowLeft', async () => {
+      const wrapper = mountGallery({ activeIndex: 1 })
+      await nextTick()
+
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true })
+      )
+      await nextTick()
+
+      expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([0])
+    })
+
+    it('wraps to last item on ArrowLeft from first', async () => {
+      const wrapper = mountGallery({ activeIndex: 0 })
+      await nextTick()
+
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true })
+      )
+      await nextTick()
+
+      expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([2])
+    })
+
+    it('closes gallery on Escape', async () => {
+      const wrapper = mountGallery({ activeIndex: 0 })
+      await nextTick()
+
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', cancelable: true })
+      )
+      await nextTick()
+
+      expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([-1])
+    })
+
+    it('prevents default on arrow keys', async () => {
+      mountGallery({ activeIndex: 0 })
+      await nextTick()
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'ArrowRight',
+        cancelable: true
+      })
+      window.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(true)
+    })
+  })
 })
