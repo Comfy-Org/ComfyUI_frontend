@@ -123,12 +123,15 @@ jobs:
       - name: Configure playwright-cli output
         shell: bash
         run: |
-          mkdir -p "$QA_ARTIFACTS/screenshots" .playwright
-          # Point playwright-cli default output to our screenshots directory
+          mkdir -p "$QA_ARTIFACTS" .playwright
+          # Auto-record video + save screenshots to artifacts dir
           cat > .playwright/cli.config.json <<CEOF
-          { "outputDir": "$QA_ARTIFACTS/screenshots" }
+          {
+            "outputDir": "$QA_ARTIFACTS",
+            "saveVideo": { "width": 1280, "height": 720 }
+          }
           CEOF
-          echo "playwright-cli outputDir: $QA_ARTIFACTS/screenshots"
+          echo "playwright-cli config:"
           cat .playwright/cli.config.json
 
       - name: Get PR diff for focused QA
@@ -166,15 +169,12 @@ jobs:
           PR: #${PR_NUM}
           Commit: ${SHA}
 
-          Use playwright-cli for all browser interactions:
+          Use playwright-cli for all browser interactions (video is auto-recorded):
             playwright-cli open http://127.0.0.1:8188
             playwright-cli snapshot (to get element refs after each navigation)
             playwright-cli click <ref>
             playwright-cli press <key>
-
-          IMPORTANT - SCREENSHOTS: After EVERY significant interaction, run:
-            playwright-cli screenshot
-          Screenshots are auto-saved to a configured directory. Take at least 20 throughout the session.
+            playwright-cli screenshot (take screenshots of notable findings)
 
           Save QA report to: ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
@@ -198,15 +198,12 @@ jobs:
           DIFF (truncated to 500 lines):
           $(head -500 "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || echo "No diff available")
 
-          Use playwright-cli for all browser interactions:
+          Use playwright-cli for all browser interactions (video is auto-recorded):
             playwright-cli open http://127.0.0.1:8188
             playwright-cli snapshot (to get element refs)
             playwright-cli click <ref>
             playwright-cli press <key>
-
-          IMPORTANT - SCREENSHOTS: After EVERY significant interaction, run:
-            playwright-cli screenshot
-          Screenshots are auto-saved to a configured directory. Take at least 15 throughout the session.
+            playwright-cli screenshot (take screenshots of notable findings)
 
           Instructions:
           1. Read the diff above to understand what changed
@@ -240,36 +237,27 @@ jobs:
         if: always()
         shell: bash
         run: |
-          mkdir -p "$QA_ARTIFACTS/screenshots"
+          mkdir -p "$QA_ARTIFACTS"
+          echo "=== QA artifacts ==="
+          ls -la "$QA_ARTIFACTS/" 2>/dev/null | head -30
 
-          # 1. Collect from the designated screenshot dir (if Claude followed instructions)
-          echo "=== Screenshots in $QA_ARTIFACTS/screenshots ==="
-          ls -la "$QA_ARTIFACTS/screenshots/" 2>/dev/null || echo "(empty)"
-
-          # 2. Copy from playwright-cli internal directories
-          for dir in .playwright-cli .playwright; do
-            if [ -d "$dir" ]; then
-              echo "=== Contents of $dir ==="
-              find "$dir" -type f | head -20
-              find "$dir" -name '*.png' -exec cp {} "$QA_ARTIFACTS/screenshots/" \; 2>/dev/null || true
+          # Find the auto-recorded video (saveVideo produces .webm in outputDir)
+          VIDEO=$(find "$QA_ARTIFACTS" -name '*.webm' -type f | head -1)
+          if [ -n "$VIDEO" ]; then
+            echo "Found auto-recorded video: $VIDEO ($(du -h "$VIDEO" | cut -f1))"
+            cp "$VIDEO" "$QA_ARTIFACTS/qa-session.webm"
+          else
+            echo "No auto-recorded .webm found in $QA_ARTIFACTS"
+            # Fallback: check default playwright-cli output dir
+            FALLBACK=$(find . -maxdepth 3 -name '*.webm' -not -path '*/node_modules/*' 2>/dev/null | head -1)
+            if [ -n "$FALLBACK" ]; then
+              echo "Found fallback video: $FALLBACK"
+              cp "$FALLBACK" "$QA_ARTIFACTS/qa-session.webm"
             fi
-          done
+          fi
 
-          # 3. Move any PNGs saved to QA_ARTIFACTS root
-          find "$QA_ARTIFACTS" -maxdepth 1 -name '*.png' -exec mv {} "$QA_ARTIFACTS/screenshots/" \; 2>/dev/null || true
-
-          # 4. Search entire working directory for stray screenshot PNGs (excluding node_modules)
-          echo "=== Searching for PNGs in working directory ==="
-          find . -maxdepth 3 -name '*.png' -not -path '*/node_modules/*' -not -path '*/dist/*' -newer "$QA_ARTIFACTS" 2>/dev/null | head -30 | while read -r f; do
-            echo "Found: $f"
-            cp "$f" "$QA_ARTIFACTS/screenshots/" 2>/dev/null || true
-          done
-
-          TOTAL=$(find "$QA_ARTIFACTS/screenshots" -name '*.png' 2>/dev/null | wc -l)
-          echo "=== Total screenshots collected: $TOTAL ==="
-          ls -la "$QA_ARTIFACTS/screenshots/" 2>/dev/null | head -30
-          echo "=== Reports ==="
-          ls -la "$QA_ARTIFACTS/"*.md 2>/dev/null || echo "No report found"
+          echo "=== Final artifacts ==="
+          ls -la "$QA_ARTIFACTS/" 2>/dev/null | head -30
 
       - name: Upload QA artifacts
         if: always()
@@ -317,32 +305,43 @@ jobs:
       - name: Install ffmpeg
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1
 
-      - name: Stitch screenshots into video
+      - name: Convert videos to mp4
         run: |
-          for dir in qa-artifacts/qa-report-*/screenshots; do
+          for dir in qa-artifacts/qa-report-*; do
             [ -d "$dir" ] || continue
-            FRAME_COUNT=$(find "$dir" -name '*.png' | wc -l)
-            if [ "$FRAME_COUNT" -eq 0 ]; then
-              echo "No screenshots in $dir, skipping"
+            WEBM=$(find "$dir" -name '*.webm' -type f | head -1)
+            if [ -z "$WEBM" ]; then
+              echo "No .webm video in $dir, skipping"
               continue
             fi
-            PARENT=$(dirname "$dir")
-            echo "Stitching $FRAME_COUNT screenshots from $dir into video"
+            echo "Converting $WEBM ($(du -h "$WEBM" | cut -f1)) to mp4"
+            ffmpeg -y -i "$WEBM" \
+              -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p \
+              "$dir/qa-session.mp4" 2>&1 | tail -5 \
+            || echo "ffmpeg conversion failed for $WEBM (non-fatal)"
 
-            # Screenshots are already numbered (001-xxx.png, 002-xxx.png, ...)
-            # so glob pattern sorts them correctly
-            ffmpeg -y -framerate 2 -pattern_type glob -i "$dir/*.png" \
-              -c:v libx264 -preset ultrafast -crf 28 -pix_fmt yuv420p \
-              -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2" \
-              "$PARENT/qa-session.mp4" 2>&1 | tail -5 \
-            || echo "ffmpeg stitch failed for $dir (non-fatal)"
-
-            if [ -f "$PARENT/qa-session.mp4" ]; then
-              echo "Created video: $(du -h "$PARENT/qa-session.mp4" | cut -f1)"
+            if [ -f "$dir/qa-session.mp4" ]; then
+              echo "Created: $dir/qa-session.mp4 ($(du -h "$dir/qa-session.mp4" | cut -f1))"
             fi
           done
 
-      - name: Deploy videos to Cloudflare Pages
+      - name: Run video review
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          mkdir -p video-reviews
+          for vid in qa-artifacts/qa-report-*/qa-session.mp4; do
+            [ -f "$vid" ] || continue
+            echo "::group::Reviewing $vid"
+            pnpm exec tsx scripts/qa-video-review.ts \
+              --artifacts-dir qa-artifacts \
+              --output-dir video-reviews \
+              --video-file "$vid" \
+              --model gpt-4o || true
+            echo "::endgroup::"
+          done
+
+      - name: Deploy to Cloudflare Pages
         id: deploy-videos
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -360,7 +359,7 @@ jobs:
               cp "$VID" "$DEPLOY_DIR/qa-${os}.mp4"
               echo "Found ${os} video ($(du -h "$VID" | cut -f1))"
 
-              # Generate GIF thumbnail: 8s starting at 10s, 480px wide, 8fps
+              # Generate GIF thumbnail
               ffmpeg -y -ss 10 -i "$VID" -t 8 \
                 -vf "fps=8,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer" \
                 -loop 0 "$DEPLOY_DIR/qa-${os}-thumb.gif" 2>/dev/null \
@@ -371,13 +370,31 @@ jobs:
             fi
           done
 
-          # Build video cards HTML
+          # Build video cards and report sections
           CARDS=""
           ICONS_Linux="&#x1F427;" ICONS_macOS="&#x1F34E;" ICONS_Windows="&#x1FA9F;"
           for os in Linux macOS Windows; do
             eval "ICON=\$ICONS_${os}"
+            OS_LOWER=$(echo "$os" | tr '[:upper:]' '[:lower:]')
+
+            # Copy GPT report if available
+            REPORT_FILE="video-reviews/${OS_LOWER}-qa-video-report.md"
+            REPORT_LINK=""
+            REPORT_HTML=""
+            if [ -f "$REPORT_FILE" ]; then
+              cp "$REPORT_FILE" "$DEPLOY_DIR/report-${OS_LOWER}.md"
+              REPORT_LINK="<a class=download href=report-${OS_LOWER}.md>GPT Report</a>"
+
+              # Convert markdown to basic HTML for inline display
+              REPORT_CONTENT=$(sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' "$REPORT_FILE" \
+                | sed 's/^## \(.*\)/<h3>\1<\/h3>/; s/^# \(.*\)/<h2>\1<\/h2>/' \
+                | sed 's/|\(.*\)|/<tr><td>\1<\/td><\/tr>/g' \
+                | sed '/^$/s/.*/<br>/')
+              REPORT_HTML="<details class=report><summary>GPT Video Review</summary><div class=report-body>${REPORT_CONTENT}</div></details>"
+            fi
+
             if [ -f "$DEPLOY_DIR/qa-${os}.mp4" ]; then
-              CARDS="${CARDS}<div class=card><video controls autoplay muted loop preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video><div class=card-body><span class=platform><span class=icon>${ICON}</span> ${os}</span><a class=download href=qa-${os}.mp4 download>Download</a></div></div>"
+              CARDS="${CARDS}<div class=card><video controls autoplay muted loop preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video><div class=card-body><span class=platform><span class=icon>${ICON}</span> ${os}</span><span class=links><a class=download href=qa-${os}.mp4 download>Download</a>${REPORT_LINK}</span></div>${REPORT_HTML}</div>"
             else
               CARDS="${CARDS}<div class=card><div class=empty-card>No recording available</div><div class=card-body><span class=platform><span class=icon>${ICON}</span> ${os}</span><span class='badge missing'>Missing</span></div></div>"
             fi
@@ -386,22 +403,19 @@ jobs:
           cat > "$DEPLOY_DIR/index.html" <<INDEXEOF
           <!DOCTYPE html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>QA Session Recordings</title>
           <style>
-          *{margin:0;padding:0;box-sizing:border-box}body{background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;min-height:100vh;padding:2rem 1rem}.container{max-width:1200px;margin:0 auto}header{display:flex;align-items:center;gap:.75rem;margin-bottom:2rem;padding-bottom:1rem;border-bottom:1px solid #30363d}h1{font-size:1.5rem;font-weight:600}.meta{color:#8b949e;font-size:.875rem;margin-top:.25rem}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.25rem}.card{background:#161b22;border:1px solid #30363d;border-radius:.5rem;overflow:hidden;transition:border-color .15s}.card:hover{border-color:#58a6ff}.card video{width:100%;display:block;background:#010409;aspect-ratio:16/9;object-fit:contain}.card-body{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between}.platform{display:flex;align-items:center;gap:.5rem;font-weight:500}.icon{font-size:1.25rem}.badge{font-size:.75rem;padding:.125rem .5rem;border-radius:999px;background:#1f6feb33;color:#58a6ff;border:1px solid #1f6feb55}.badge.missing{background:#da363333;color:#f85149;border-color:#da363355}.empty-card{display:flex;align-items:center;justify-content:center;min-height:200px;color:#484f58;font-size:.875rem}a.download{color:#58a6ff;text-decoration:none;font-size:.8125rem}a.download:hover{text-decoration:underline}
+          *{margin:0;padding:0;box-sizing:border-box}body{background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;min-height:100vh;padding:2rem 1rem}.container{max-width:1200px;margin:0 auto}header{display:flex;align-items:center;gap:.75rem;margin-bottom:2rem;padding-bottom:1rem;border-bottom:1px solid #30363d}h1{font-size:1.5rem;font-weight:600}.meta{color:#8b949e;font-size:.875rem;margin-top:.25rem}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.25rem}.card{background:#161b22;border:1px solid #30363d;border-radius:.5rem;overflow:hidden;transition:border-color .15s}.card:hover{border-color:#58a6ff}.card video{width:100%;display:block;background:#010409;aspect-ratio:16/9;object-fit:contain}.card-body{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between}.platform{display:flex;align-items:center;gap:.5rem;font-weight:500}.icon{font-size:1.25rem}.links{display:flex;gap:.75rem}.badge{font-size:.75rem;padding:.125rem .5rem;border-radius:999px;background:#1f6feb33;color:#58a6ff;border:1px solid #1f6feb55}.badge.missing{background:#da363333;color:#f85149;border-color:#da363355}.empty-card{display:flex;align-items:center;justify-content:center;min-height:200px;color:#484f58;font-size:.875rem}a.download{color:#58a6ff;text-decoration:none;font-size:.8125rem}a.download:hover{text-decoration:underline}.report{border-top:1px solid #30363d;padding:.75rem 1rem;font-size:.8125rem}.report summary{cursor:pointer;color:#8b949e;font-weight:500}.report summary:hover{color:#e6edf3}.report-body{margin-top:.75rem;line-height:1.6;color:#c9d1d9;white-space:pre-wrap;overflow-x:auto}.report-body h2,.report-body h3{margin:1rem 0 .5rem;color:#e6edf3}.report-body h2{font-size:1.1rem}.report-body h3{font-size:.95rem}
           </style></head><body><div class=container>
           <header><svg width=28 height=28 viewBox="0 0 24 24" fill=none stroke=#58a6ff stroke-width=2 stroke-linecap=round stroke-linejoin=round><polygon points="23 7 16 12 23 17 23 7"/><rect x=1 y=5 width=15 height=14 rx=2 ry=2/></svg><div><h1>QA Session Recordings</h1><div class=meta>ComfyUI Frontend &middot; Automated QA</div></div></header>
           <div class=grid>${CARDS}</div>
           </div></body></html>
           INDEXEOF
 
-          # 404 page so Cloudflare Pages returns proper 404 for missing files
-          # (instead of SPA fallback serving index.html)
           cat > "$DEPLOY_DIR/404.html" <<'ERROREOF'
           <!DOCTYPE html><html><head><meta charset=utf-8><title>404</title>
           <style>body{background:#0d1117;color:#8b949e;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}div{text-align:center}h1{color:#f85149;font-size:3rem;margin-bottom:.5rem}p{font-size:1rem}</style>
           </head><body><div><h1>404</h1><p>File not found. The QA recording may have failed or been cancelled.</p></div></body></html>
           ERROREOF
 
-          # Sanitize branch name for Cloudflare Pages URL (same rules CF uses)
           BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
           URL=$(wrangler pages deploy "$DEPLOY_DIR" \
             --project-name="comfyui-qa-videos" \
@@ -410,22 +424,6 @@ jobs:
 
           echo "url=${URL:-https://${BRANCH}.comfyui-qa-videos.pages.dev}" >> "$GITHUB_OUTPUT"
           echo "Deployed to: ${URL}"
-
-      - name: Run video review
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          mkdir -p video-reviews
-          for vid in qa-artifacts/qa-report-*/qa-session.mp4; do
-            [ -f "$vid" ] || continue
-            echo "::group::Reviewing $vid"
-            pnpm exec tsx scripts/qa-video-review.ts \
-              --artifacts-dir qa-artifacts \
-              --output-dir video-reviews \
-              --video-file "$vid" \
-              --model gpt-4o || true
-            echo "::endgroup::"
-          done
 
       - name: Post unified QA comment on PR
         env:
