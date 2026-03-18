@@ -331,10 +331,11 @@ jobs:
             echo "Downloading static ffmpeg..."
             TMP=$(mktemp -d)
             curl -sL "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz" | tar xJ -C "$TMP"
-            sudo cp "$TMP"/ffmpeg-*/ffmpeg /usr/local/bin/
+            sudo cp "$TMP"/ffmpeg-*/ffmpeg "$TMP"/ffmpeg-*/ffprobe /usr/local/bin/
             rm -rf "$TMP"
           fi
           ffmpeg -version | head -1
+          ffprobe -version | head -1
 
       - name: Convert videos to mp4
         run: |
