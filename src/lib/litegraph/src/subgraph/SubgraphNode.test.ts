@@ -880,6 +880,99 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
   })
 })
 
+describe('SubgraphNode canonical IO order (#10221)', () => {
+  it('should enforce canonical input order after configure with mismatched serialized order', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'first', type: 'STRING' },
+        { name: 'second', type: 'INT' },
+        { name: 'third', type: 'FLOAT' }
+      ]
+    })
+
+    const parentGraph = new LGraph()
+    const instanceData = {
+      id: 1 as const,
+      type: subgraph.id,
+      pos: [0, 0] as [number, number],
+      size: [200, 100] as [number, number],
+      inputs: [
+        { name: 'third', type: 'FLOAT', link: null },
+        { name: 'first', type: 'STRING', link: null },
+        { name: 'second', type: 'INT', link: null }
+      ],
+      outputs: [],
+      properties: {},
+      flags: {},
+      mode: 0,
+      order: 0
+    }
+
+    const node = new SubgraphNode(
+      parentGraph,
+      subgraph,
+      instanceData as ExportedSubgraphInstance
+    )
+
+    expect(node.inputs.map((i) => i.name)).toEqual(['first', 'second', 'third'])
+  })
+
+  it('should enforce canonical output order after configure', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [
+        { name: 'out_a', type: 'STRING' },
+        { name: 'out_b', type: 'INT' }
+      ]
+    })
+
+    const parentGraph = new LGraph()
+    const instanceData = {
+      id: 1 as const,
+      type: subgraph.id,
+      pos: [0, 0] as [number, number],
+      size: [200, 100] as [number, number],
+      inputs: [],
+      outputs: [
+        { name: 'out_b', type: 'INT', links: null },
+        { name: 'out_a', type: 'STRING', links: null }
+      ],
+      properties: {},
+      flags: {},
+      mode: 0,
+      order: 0
+    }
+
+    const node = new SubgraphNode(
+      parentGraph,
+      subgraph,
+      instanceData as ExportedSubgraphInstance
+    )
+
+    expect(node.outputs.map((o) => o.name)).toEqual(['out_a', 'out_b'])
+  })
+
+  it('should preserve canonical order across serialize/configure cycles', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'alpha', type: 'STRING' },
+        { name: 'beta', type: 'INT' },
+        { name: 'gamma', type: 'FLOAT' }
+      ]
+    })
+
+    const node = createTestSubgraphNode(subgraph)
+    const expectedOrder = ['alpha', 'beta', 'gamma']
+
+    expect(node.inputs.map((i) => i.name)).toEqual(expectedOrder)
+
+    for (let cycle = 0; cycle < 3; cycle++) {
+      const serialized = node.serialize()
+      node.configure(serialized)
+      expect(node.inputs.map((i) => i.name)).toEqual(expectedOrder)
+    }
+  })
+})
+
 describe('Nested SubgraphNode duplicate input prevention', () => {
   it('should not duplicate inputs when the referenced subgraph is reconfigured', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
