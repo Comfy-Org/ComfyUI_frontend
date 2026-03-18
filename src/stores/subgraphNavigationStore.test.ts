@@ -74,7 +74,7 @@ describe('useSubgraphNavigationStore', () => {
     app.canvas.ds.state.scale = 1
     app.canvas.ds.state.offset = [0, 0]
     app.graph.getNodeById = vi.fn()
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   it('should not clear navigation stack when workflow internal state changes', async () => {
