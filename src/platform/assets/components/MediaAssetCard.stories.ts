@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
 import type { AssetItem } from '../schemas/assetSchema'
@@ -10,16 +11,26 @@ const meta: Meta<typeof MediaAssetCard> = {
   title: 'Platform/Assets/MediaAssetCard',
   component: MediaAssetCard,
   decorators: [
-    () => ({
-      components: { ResultGallery },
+    (_story, context) => ({
+      components: { MediaLightbox },
       setup() {
         const galleryStore = useMediaAssetGalleryStore()
+        ;(context.args as Record<string, unknown>).onZoom = (
+          asset: AssetItem
+        ) => {
+          const kind = getMediaTypeFromFilename(asset.name)
+          galleryStore.openSingle({
+            ...asset,
+            kind,
+            src: asset.preview_url || ''
+          })
+        }
         return { galleryStore }
       },
       template: `
         <div>
           <story />
-          <ResultGallery 
+          <MediaLightbox
             v-model:active-index="galleryStore.activeIndex"
             :all-gallery-items="galleryStore.items"
           />
