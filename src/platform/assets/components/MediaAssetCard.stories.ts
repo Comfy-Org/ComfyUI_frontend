@@ -15,9 +15,10 @@ const meta: Meta<typeof MediaAssetCard> = {
       components: { MediaLightbox },
       setup() {
         const galleryStore = useMediaAssetGalleryStore()
-        ;(context.args as Record<string, unknown>).onZoom = (
-          asset: AssetItem
-        ) => {
+        const args = context.args as {
+          onZoom?: (asset: AssetItem) => void
+        }
+        args.onZoom = (asset: AssetItem) => {
           const kind = getMediaTypeFromFilename(asset.name)
           galleryStore.openSingle({
             ...asset,

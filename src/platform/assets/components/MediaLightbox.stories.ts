@@ -77,7 +77,7 @@ export const SingleImage: Story = {
   render: () => ({
     components: { MediaLightbox },
     setup() {
-      const activeIndex = ref(0)
+      const activeIndex = ref(-1)
       const items = [SAMPLE_IMAGES[0]] as ResultItemImpl[]
       return { activeIndex, items }
     },

@@ -11,7 +11,7 @@
       data-mask
       @mousedown="onMaskMouseDown"
       @mouseup="onMaskMouseUp"
-      @keydown="handleKeyDown"
+      @keydown.stop="handleKeyDown"
     >
       <!-- Close Button -->
       <Button
