@@ -285,7 +285,9 @@ export function useSubgraphDragBridge() {
       const entry = slotRegistry
         .getNode(candidate.layout.nodeId)
         ?.slots.get(key)
-      const groupEl = entry?.el?.parentElement
+      const groupEl =
+        (entry?.el?.closest('.group\\/slot') as HTMLElement | null) ??
+        entry?.el?.parentElement
       if (groupEl) {
         groupEl.classList.add(SNAP_CLASS)
         highlightedSlotEl = groupEl
