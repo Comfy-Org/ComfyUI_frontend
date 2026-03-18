@@ -7,6 +7,9 @@ import {
   computeStats,
   formatSignificance,
   isNoteworthy,
+  sparkline,
+  trendArrow,
+  trendDirection,
   zScore
 } from './perf-stats'
 
@@ -73,8 +76,11 @@ function groupByName(
 function loadHistoricalReports(): PerfReport[] {
   if (!existsSync(HISTORY_DIR)) return []
   const reports: PerfReport[] = []
-  for (const dir of readdirSync(HISTORY_DIR)) {
-    const filePath = join(HISTORY_DIR, dir, 'perf-metrics.json')
+  for (const entry of readdirSync(HISTORY_DIR)) {
+    const entryPath = join(HISTORY_DIR, entry)
+    const filePath = entry.endsWith('.json')
+      ? entryPath
+      : join(entryPath, 'perf-metrics.json')
     if (!existsSync(filePath)) continue
     try {
       reports.push(JSON.parse(readFileSync(filePath, 'utf-8')) as PerfReport)
@@ -100,6 +106,27 @@ function getHistoricalStats(
     }
   }
   return computeStats(values)
+}
+
+function getHistoricalTimeSeries(
+  reports: PerfReport[],
+  testName: string,
+  metric: MetricKey
+): number[] {
+  const sorted = [...reports].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
+  const values: number[] = []
+  for (const r of sorted) {
+    const group = groupByName(r.measurements)
+    const samples = group.get(testName)
+    if (samples) {
+      values.push(
+        samples.reduce((sum, s) => sum + s[metric], 0) / samples.length
+      )
+    }
+  }
+  return values
 }
 
 function computeCV(stats: MetricStats): number {
@@ -232,6 +259,34 @@ function renderFullReport(
     }
   }
   lines.push('', '</details>')
+
+  const trendRows: string[] = []
+  for (const [testName] of prGroups) {
+    for (const { key, label, unit } of REPORTED_METRICS) {
+      const series = getHistoricalTimeSeries(historical, testName, key)
+      if (series.length < 3) continue
+      const dir = trendDirection(series)
+      const arrow = trendArrow(dir)
+      const spark = sparkline(series)
+      const last = series[series.length - 1]
+      trendRows.push(
+        `| ${testName}: ${label} | ${spark} | ${arrow} | ${formatValue(last, unit)} |`
+      )
+    }
+  }
+
+  if (trendRows.length > 0) {
+    lines.push(
+      '',
+      `<details><summary>Trend (last ${historical.length} commits on main)</summary>`,
+      '',
+      '| Metric | Trend | Dir | Latest |',
+      '|--------|-------|-----|--------|',
+      ...trendRows,
+      '',
+      '</details>'
+    )
+  }
 
   return lines
 }

@@ -152,13 +152,6 @@ export default defineConfig([
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/prefer-as-const': 'off',
       '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-import-type-side-effects': 'error',
-      '@typescript-eslint/no-empty-object-type': [
-        'error',
-        {
-          allowInterfaces: 'always'
-        }
-      ],
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
@@ -302,6 +295,49 @@ export default defineConfig([
       'import-x/namespace': 'off',
       'import-x/no-duplicates': 'off',
       'import-x/consistent-type-specifier-style': 'off'
+    }
+  },
+
+  // Layer architecture boundary enforcement
+  // Layers (bottom to top): base → platform → workbench → renderer
+  // Each layer may only import from layers below it.
+  // Existing violations are suppressed with eslint-disable comments.
+  {
+    files: [
+      'src/base/**/*.{ts,vue}',
+      'src/platform/**/*.{ts,vue}',
+      'src/workbench/**/*.{ts,vue}'
+    ],
+    rules: {
+      'import-x/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './src/base/**',
+              from: [
+                './src/platform/**',
+                './src/workbench/**',
+                './src/renderer/**'
+              ],
+              message:
+                'base/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            {
+              target: './src/platform/**',
+              from: ['./src/workbench/**', './src/renderer/**'],
+              message:
+                'platform/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            {
+              target: './src/workbench/**',
+              from: './src/renderer/**',
+              message:
+                'workbench/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
+            }
+          ]
+        }
+      ]
     }
   },
 

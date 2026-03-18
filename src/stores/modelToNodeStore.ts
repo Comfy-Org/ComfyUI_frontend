@@ -393,6 +393,18 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
 
     // LayerDiffuse transparent image generation (comfyui-layerdiffuse)
     quickRegister('layer_model', 'LayeredDiffusionApply', 'config')
+
+    // LTX Video prompt enhancer models (ComfyUI-LTXTricks)
+    quickRegister(
+      'LLM/Llama-3.2-3B-Instruct',
+      'LTXVPromptEnhancerLoader',
+      'llm_name'
+    )
+    quickRegister(
+      'LLM/Florence-2-large-PromptGen-v2.0',
+      'LTXVPromptEnhancerLoader',
+      'image_captioner_name'
+    )
   }
 
   return {
