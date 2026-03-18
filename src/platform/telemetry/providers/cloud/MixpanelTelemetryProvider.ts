@@ -8,7 +8,6 @@ import {
   clearTopupTracking as clearTopupUtil,
   startTopupTracking as startTopupUtil
 } from '@/platform/telemetry/topupTracker'
-import { api } from '@/scripts/api'
 import type { AuditLog } from '@/services/customerEventsService'
 
 import { getExecutionContext } from '../../utils/getExecutionContext'
@@ -359,42 +358,11 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   trackWorkflowImported(metadata: WorkflowImportMetadata): void {
-    const { missing_node_count, missing_node_types, ...rest } = metadata
-    this.trackEvent(TelemetryEvents.WORKFLOW_IMPORTED, rest)
-    this.reportMissingNodesToClickHouse(metadata)
+    this.trackEvent(TelemetryEvents.WORKFLOW_IMPORTED, metadata)
   }
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
-    const { missing_node_count, missing_node_types, ...rest } = metadata
-    this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, rest)
-    this.reportMissingNodesToClickHouse(metadata)
-  }
-
-  /**
-   * Send missing node data to ClickHouse via the backend cloud_analytics endpoint.
-   * This supplements the Mixpanel tracking with data in our own analytics pipeline,
-   * enabling post-hoc analysis of which unsupported nodes users are trying to use.
-   * Fire-and-forget — errors are silently ignored.
-   */
-  private reportMissingNodesToClickHouse(
-    metadata: WorkflowImportMetadata
-  ): void {
-    if (metadata.missing_node_count <= 0) return
-
-    api
-      .fetchApi('/internal/cloud_analytics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_name: 'missing_nodes_detected',
-          event_data: {
-            missing_class_types: metadata.missing_node_types,
-            missing_count: metadata.missing_node_count,
-            source: metadata.open_source ?? 'unknown'
-          }
-        })
-      })
-      .catch(() => {})
+    this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
   }
 
   trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
