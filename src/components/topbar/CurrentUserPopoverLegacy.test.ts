@@ -167,9 +167,12 @@ vi.mock('@/platform/telemetry', () => ({
   }))
 }))
 
-// Mock isCloud
+// Mock isCloud with hoisted state for per-test toggling
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
+  get isCloud() {
+    return mockIsCloud.value
+  }
 }))
 
 vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
@@ -184,6 +187,7 @@ vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockIsCloud.value = true
     mockAuthStoreState.balance = {
       amount_micros: 100_000,
       effective_balance_micros: 100_000,
@@ -423,6 +427,62 @@ describe('CurrentUserPopoverLegacy', () => {
         }
       })
       expect(wrapper.text()).toContain('0')
+    })
+  })
+
+  describe('non-cloud distribution', () => {
+    beforeEach(() => {
+      mockIsCloud.value = false
+    })
+
+    it('hides credits section', () => {
+      const wrapper = mountComponent()
+      expect(wrapper.find('[data-testid="add-credits-button"]').exists()).toBe(
+        false
+      )
+      expect(
+        wrapper.find('[data-testid="upgrade-to-add-credits-button"]').exists()
+      ).toBe(false)
+    })
+
+    it('hides subscribe button', () => {
+      const wrapper = mountComponent()
+      expect(wrapper.text()).not.toContain('Subscribe Button')
+    })
+
+    it('hides partner nodes menu item', () => {
+      const wrapper = mountComponent()
+      expect(
+        wrapper.find('[data-testid="partner-nodes-menu-item"]').exists()
+      ).toBe(false)
+    })
+
+    it('hides plans & pricing menu item', () => {
+      const wrapper = mountComponent()
+      expect(
+        wrapper.find('[data-testid="plans-pricing-menu-item"]').exists()
+      ).toBe(false)
+    })
+
+    it('hides manage plan menu item', () => {
+      const wrapper = mountComponent()
+      expect(
+        wrapper.find('[data-testid="manage-plan-menu-item"]').exists()
+      ).toBe(false)
+    })
+
+    it('still shows user settings menu item', () => {
+      const wrapper = mountComponent()
+      expect(
+        wrapper.find('[data-testid="user-settings-menu-item"]').exists()
+      ).toBe(true)
+    })
+
+    it('still shows logout menu item', () => {
+      const wrapper = mountComponent()
+      expect(wrapper.find('[data-testid="logout-menu-item"]').exists()).toBe(
+        true
+      )
     })
   })
 })

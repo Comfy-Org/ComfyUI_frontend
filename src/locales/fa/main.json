@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "لینک بازنشانی رمز عبور ارسال شد",
   "cloudForgotPassword_sendResetLink": "ارسال لینک بازنشانی",
   "cloudForgotPassword_title": "فراموشی رمز عبور",
+  "cloudNotification": {
+    "continueLocally": "ادامه به صورت محلی",
+    "exploreCloud": "امتحان رایگان فضای ابری",
+    "feature1Title": "۴۰۰ اعتبار رایگان ماهانه",
+    "feature2Title": "قابل استفاده در هر مکان، بلافاصله",
+    "feature3Title": "مدل‌ها آماده استفاده",
+    "feature4Title": "برترین بسته‌های Node سفارشی از پیش نصب‌شده",
+    "footer": "ComfyUI رایگان و متن‌باز باقی می‌ماند. استفاده از فضای ابری اختیاری است.",
+    "message": "از راه‌اندازی تا خلق اثر در چند ثانیه. مدل‌های محبوب، افزونه‌ها و GPUهای قدرتمند — آماده برای شما.",
+    "title": "اجرای ComfyUI در فضای ابری"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -653,6 +664,7 @@
     "Open in Mask Editor": "باز کردن در Mask Editor",
     "Outputs": "خروجی‌ها",
     "Paste": "چسباندن",
+    "Paste Image": "چسباندن تصویر",
     "Pin": "سنجاق کردن",
     "Properties": "ویژگی‌ها",
     "Properties Panel": "پنل ویژگی‌ها",
@@ -736,6 +748,10 @@
       "tooltip": "پرداخت‌ها در Comfy یکپارچه شده‌اند. اکنون همه چیز با اعتبار Comfy انجام می‌شود:\n- nodeهای شریک (قبلاً nodeهای API)\n- workflowهای ابری\n\nموجودی nodeهای شریک شما به اعتبار تبدیل شده است."
     },
     "yourCreditBalance": "موجودی اعتبار شما"
+  },
+  "curveWidget": {
+    "linear": "خطی",
+    "monotone_cubic": "صاف"
   },
   "dataTypes": {
     "*": "*",
@@ -1602,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "nodeهای اصلی از نسخه {version}:",
     "outdatedVersion": "این workflow با نسخه جدیدتری از ComfyUI ({version}) ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
-    "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند."
+    "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
+    "unknownVersion": "نامشخص"
   },
   "maintenance": {
     "None": "هیچ‌کدام",
@@ -2439,7 +2456,9 @@
       "collapseNodes": "مخفی کردن nodeهای مرتبط",
       "confirmSelection": "تأیید انتخاب",
       "copyModelName": "کپی نام مدل",
+      "copyUrl": "کپی نشانی اینترنتی",
       "customNodeDownloadDisabled": "محیط ابری از وارد کردن مدل برای custom nodeها در این بخش پشتیبانی نمی‌کند. لطفاً از nodeهای بارگذار استاندارد استفاده کنید یا مدلی از کتابخانه زیر جایگزین نمایید.",
+      "downloadAll": "دانلود همه",
       "expandNodes": "نمایش nodeهای مرتبط",
       "import": "وارد کردن",
       "importAnyway": "به هر حال وارد کن",

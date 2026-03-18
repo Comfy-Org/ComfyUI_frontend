@@ -167,7 +167,10 @@ import {
 import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
+import {
+  resolveBlueprintSuffix,
+  resolveEssentialsDisplayName
+} from '@/constants/essentialsDisplayNames'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import TabPanel from '@/components/tab/TabPanel.vue'
@@ -371,11 +374,38 @@ const essentialSections = computed(() => {
   )
 })
 
+function disambiguateBlueprintLabels(
+  root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
+  if (!root.children) return root
+  return {
+    ...root,
+    children: root.children.map((folder) => {
+      if (folder.type !== 'folder' || !folder.children) return folder
+      const labelCounts = new Map<string, number>()
+      for (const node of folder.children) {
+        if (node.label)
+          labelCounts.set(node.label, (labelCounts.get(node.label) ?? 0) + 1)
+      }
+      return {
+        ...folder,
+        children: folder.children.map((node) => {
+          if ((labelCounts.get(node.label ?? '') ?? 0) <= 1) return node
+          const suffix = resolveBlueprintSuffix(node.data?.name ?? '')
+          if (!suffix) return node
+          return { ...node, label: `${node.label} (${suffix})` }
+        })
+      }
+    })
+  }
+}
+
 const renderedEssentialRoot = computed(() => {
   const section = essentialSections.value[0]
-  return section
+  const root = section
     ? fillNodeInfo(applySorting(section.tree), { useEssentialsLabels: true })
     : fillNodeInfo({ key: 'root', label: '', children: [] })
+  return disambiguateBlueprintLabels(root)
 })
 
 function flattenRenderedLeaves(

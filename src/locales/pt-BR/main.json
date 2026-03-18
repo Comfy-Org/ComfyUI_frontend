@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "Redefinição de senha enviada",
   "cloudForgotPassword_sendResetLink": "Enviar link de redefinição",
   "cloudForgotPassword_title": "Esqueceu a senha",
+  "cloudNotification": {
+    "continueLocally": "Continuar Localmente",
+    "exploreCloud": "Experimente a Nuvem Gratuitamente",
+    "feature1Title": "400 Créditos Grátis por Mês",
+    "feature2Title": "Funciona em Qualquer Lugar, Instantaneamente",
+    "feature3Title": "Modelos Prontos para Usar",
+    "feature4Title": "Principais Pacotes de Nodes Personalizados Pré-instalados",
+    "footer": "O ComfyUI continua gratuito e de código aberto. A nuvem é opcional.",
+    "message": "Da configuração à criação em segundos. Modelos populares, extensões e GPUs potentes — prontos quando você quiser.",
+    "title": "Execute o ComfyUI na Nuvem"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -653,6 +664,7 @@
     "Open in Mask Editor": "Abrir no Editor de Máscara",
     "Outputs": "Saídas",
     "Paste": "Colar",
+    "Paste Image": "Colar imagem",
     "Pin": "Fixar",
     "Properties": "Propriedades",
     "Properties Panel": "Painel de Propriedades",
@@ -736,6 +748,10 @@
       "tooltip": "Unificamos os pagamentos no Comfy. Agora tudo funciona com Créditos Comfy:\n- Nós parceiros (anteriormente nós de API)\n- Fluxos de trabalho na nuvem\n\nSeu saldo existente de nós parceiros foi convertido em créditos."
     },
     "yourCreditBalance": "Seu saldo de créditos"
+  },
+  "curveWidget": {
+    "linear": "Linear",
+    "monotone_cubic": "Suave"
   },
   "dataTypes": {
     "*": "*",
@@ -1602,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nós principais da versão {version}:",
     "outdatedVersion": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI ({version}). Alguns nós podem não funcionar corretamente.",
-    "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente."
+    "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente.",
+    "unknownVersion": "desconhecida"
   },
   "maintenance": {
     "None": "Nenhum",
@@ -2439,7 +2456,9 @@
       "collapseNodes": "Ocultar nós de referência",
       "confirmSelection": "Confirmar seleção",
       "copyModelName": "Copiar nome do modelo",
+      "copyUrl": "Copiar URL",
       "customNodeDownloadDisabled": "O ambiente em nuvem não suporta importação de modelos para nós personalizados nesta seção. Utilize nós de carregamento padrão ou substitua por um modelo da biblioteca abaixo.",
+      "downloadAll": "Baixar tudo",
       "expandNodes": "Mostrar nós de referência",
       "import": "Importar",
       "importAnyway": "Importar mesmo assim",
