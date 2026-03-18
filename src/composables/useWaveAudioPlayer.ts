@@ -21,6 +21,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
   const waveformRef = ref<HTMLElement>()
   const blobUrl = ref<string>()
   const loading = ref(false)
+  let decodeRequestId = 0
   const bars = ref<WaveformBar[]>(generatePlaceholderBars())
 
   const { playing, currentTime, duration, volume, muted } =
@@ -70,6 +71,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
   }
 
   async function decodeAudioSource(url: string) {
+    const requestId = ++decodeRequestId
     loading.value = true
     let ctx: AudioContext | undefined
     try {
@@ -78,10 +80,13 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
         ? url.slice(url.indexOf(apiBase) + api.apiURL('').length)
         : url
       const response = await api.fetchApi(route)
+      if (requestId !== decodeRequestId) return
       if (!response.ok) {
         throw new Error(`Failed to fetch audio (${response.status})`)
       }
       const arrayBuffer = await response.arrayBuffer()
+
+      if (requestId !== decodeRequestId) return
 
       const blob = new Blob([arrayBuffer.slice(0)], {
         type: response.headers.get('content-type') ?? 'audio/wav'
@@ -91,12 +96,17 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
 
       ctx = new AudioContext()
       const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+      if (requestId !== decodeRequestId) return
       generateBarsFromBuffer(audioBuffer)
     } catch {
-      bars.value = generatePlaceholderBars()
+      if (requestId === decodeRequestId) {
+        bars.value = generatePlaceholderBars()
+      }
     } finally {
       await ctx?.close()
-      loading.value = false
+      if (requestId === decodeRequestId) {
+        loading.value = false
+      }
     }
   }
 

@@ -70,30 +70,34 @@ describe('useWaveAudioPlayer', () => {
   })
 
   it('fetches and decodes audio when src changes', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8)
     const mockAudioBuffer = {
       getChannelData: vi.fn(() => new Float32Array(80))
     }
 
+    const mockDecodeAudioData = vi.fn(() => Promise.resolve(mockAudioBuffer))
     const mockClose = vi.fn().mockResolvedValue(undefined)
-    globalThis.AudioContext = vi.fn().mockImplementation(() => ({
-      decodeAudioData: vi.fn(() => Promise.resolve(mockAudioBuffer)),
-      close: mockClose
-    })) as unknown as typeof AudioContext
+    globalThis.AudioContext = class {
+      decodeAudioData = mockDecodeAudioData
+      close = mockClose
+    } as unknown as typeof AudioContext
 
     mockFetchApi.mockResolvedValue({
-      arrayBuffer: () => Promise.resolve(mockArrayBuffer),
+      ok: true,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
       headers: { get: () => 'audio/wav' }
     })
 
     const src = ref('/api/view?filename=audio.wav&type=output')
-    const { bars } = useWaveAudioPlayer({ src, barCount: 10 })
+    const { bars, loading } = useWaveAudioPlayer({ src, barCount: 10 })
 
     await vi.waitFor(() => {
-      expect(bars.value).toHaveLength(10)
-      expect(mockFetchApi).toHaveBeenCalledWith(
-        '/view?filename=audio.wav&type=output'
-      )
+      expect(loading.value).toBe(false)
     })
+
+    expect(mockFetchApi).toHaveBeenCalledWith(
+      '/view?filename=audio.wav&type=output'
+    )
+    expect(mockDecodeAudioData).toHaveBeenCalled()
+    expect(bars.value).toHaveLength(10)
   })
 })
