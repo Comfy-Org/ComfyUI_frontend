@@ -785,15 +785,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back via breadcrumb
-        await comfyPage.page
-          .getByTestId(TestIds.breadcrumb.subgraph)
-          .waitFor({ state: 'visible', timeout: 5000 })
-        const homeBreadcrumb = comfyPage.page.getByRole('link', {
-          name: 'subgraph-with-promoted-text-widget'
-        })
-        await homeBreadcrumb.waitFor({ state: 'visible' })
-        await homeBreadcrumb.click()
-        await comfyPage.nextFrame()
+        await exitSubgraphToParent(comfyPage)
 
         // Widget count should be reduced
         const finalWidgetCount = await getPromotedWidgetCount(comfyPage, '11')
