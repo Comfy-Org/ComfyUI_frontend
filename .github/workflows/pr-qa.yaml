@@ -111,9 +111,9 @@ jobs:
           done
           echo "::error::Server timeout"; exit 1
 
-      - name: Install playwright-cli and Claude Code
+      - name: Install playwright-cli and Codex CLI
         shell: bash
-        run: npm install -g @playwright/cli@latest @anthropic-ai/claude-code@2.1.71
+        run: npm install -g @playwright/cli@latest @openai/codex@latest
 
       - name: Configure playwright-cli output
         shell: bash
@@ -223,20 +223,18 @@ jobs:
           PROMPT
           fi
 
-      - name: Run Claude QA
+      - name: Run Codex QA
         shell: bash
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CODEX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CI: 'true'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          MAX_TURNS=128
-          if [ "$QA_MODE" = "focused" ]; then MAX_TURNS=30; fi
-
-          cat "${{ runner.temp }}/qa-prompt.txt" | claude --print \
-            --max-turns "$MAX_TURNS" \
-            --allowedTools "Bash(playwright-cli:*),Bash(date:*),Bash(ls:*),Bash(mkdir:*),Read,Write,Edit,Glob,Grep"
+          codex exec \
+            --model codex-mini-latest \
+            --full-auto \
+            - < "${{ runner.temp }}/qa-prompt.txt"
 
       - name: Collect artifacts
         if: always()
