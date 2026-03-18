@@ -323,6 +323,9 @@ jobs:
           echo "=== Artifact structure ==="
           find qa-artifacts -type f 2>/dev/null | head -20
 
+      - name: Install ffmpeg
+        run: sudo apt-get install -y -qq ffmpeg 2>&1 | tail -3
+
       - name: Convert videos to mp4
         run: |
           for dir in qa-artifacts/qa-report-*; do
