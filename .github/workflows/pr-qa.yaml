@@ -5,6 +5,9 @@
 name: 'PR: QA'
 
 on:
+  # TODO: remove push trigger before merge
+  push:
+    branches: [sno-skills]
   pull_request:
     types: [labeled]
     branches: [main]
@@ -42,6 +45,11 @@ jobs:
           if [ "$EVENT_ACTION" = "labeled" ] && \
              [ "$LABEL" != "qa-changes" ] && [ "$LABEL" != "qa-full" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          # TODO: remove push trigger before merge
+          if [ "$EVENT_NAME" = "push" ]; then
+            FULL=true
           fi
 
           # Full QA triggers
@@ -112,80 +120,6 @@ jobs:
         shell: bash
         run: npm install -g @playwright/cli@latest @anthropic-ai/claude-code@2.1.71
 
-      # --- Virtual display + recording: Linux ---
-      - name: Setup Xvfb (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb ffmpeg x11-xserver-utils >/dev/null 2>&1
-          Xvfb :99 -screen 0 1280x720x24 -ac -nolisten tcp &
-          echo $! > "${{ runner.temp }}/xvfb.pid"
-          sleep 2
-          echo "DISPLAY=:99" >> "$GITHUB_ENV"
-          # Set black background and normal cursor (removes the default X cursor)
-          DISPLAY=:99 xsetroot -solid black -cursor_name left_ptr 2>/dev/null || true
-
-      - name: Start recording (Linux)
-        if: runner.os == 'Linux'
-        continue-on-error: true
-        run: |
-          mkdir -p "$QA_ARTIFACTS"
-          ffmpeg -y -f x11grab -video_size 1280x720 -framerate 10 \
-            -i :99.0 -c:v libx264 -preset ultrafast -crf 28 \
-            -pix_fmt yuv420p "$QA_ARTIFACTS/qa-session.mp4" &
-          echo $! > "${{ runner.temp }}/ffmpeg.pid"
-          sleep 1
-
-      # --- Recording: macOS (avfoundation) ---
-      - name: Install ffmpeg (macOS)
-        if: runner.os == 'macOS'
-        run: brew install ffmpeg
-
-      - name: Grant screen recording permission (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          # Grant kTCCServiceScreenCapture to ffmpeg and bash so avfoundation
-          # recording works without the blocking permission dialog.
-          FFMPEG_PATH=$(which ffmpeg)
-          echo "Granting screen recording permission to: $FFMPEG_PATH"
-          # macOS 14+ (Sonoma/Sequoia) TCC.db schema has 17 columns
-          for BIN in "$FFMPEG_PATH" "/bin/bash"; do
-            sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
-              "INSERT OR REPLACE INTO access VALUES('kTCCServiceScreenCapture','${BIN}',1,2,0,1,NULL,NULL,0,'UNUSED',NULL,0,$(date +%s),NULL,NULL,NULL,NULL);" 2>/dev/null \
-            || sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
-              "INSERT OR REPLACE INTO access VALUES('kTCCServiceScreenCapture','${BIN}',1,2,0,1,NULL,NULL,NULL,'UNUSED',NULL,0,$(date +%s));" 2>/dev/null \
-            || echo "Warning: Could not grant TCC permission to ${BIN}"
-          done
-
-      - name: Start recording (macOS)
-        if: runner.os == 'macOS'
-        continue-on-error: true
-        run: |
-          mkdir -p "$QA_ARTIFACTS"
-          ffmpeg -f avfoundation -list_devices true -i "" 2>&1 || true
-          ffmpeg -y -f avfoundation -framerate 10 -capture_cursor 1 \
-            -i "Capture screen 0:none" -c:v libx264 -preset ultrafast -crf 28 \
-            -pix_fmt yuv420p "$QA_ARTIFACTS/qa-session.mp4" &
-          echo $! > "${{ runner.temp }}/ffmpeg.pid"
-          sleep 2
-
-      # --- Recording: Windows (gdigrab) ---
-      - name: Install ffmpeg (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: choco install ffmpeg -y --no-progress
-
-      - name: Start recording (Windows)
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        shell: bash
-        run: |
-          mkdir -p "$QA_ARTIFACTS"
-          ffmpeg -y -f gdigrab -framerate 10 -i desktop \
-            -c:v libx264 -preset ultrafast -crf 28 \
-            -pix_fmt yuv420p "$QA_ARTIFACTS/qa-session.mp4" &
-          echo $! > "${{ runner.temp }}/ffmpeg.pid"
-          sleep 1
-
       - name: Get PR diff for focused QA
         if: needs.resolve-matrix.outputs.mode == 'focused'
         shell: bash
@@ -227,8 +161,13 @@ jobs:
              - Use `playwright-cli click <ref>`, `playwright-cli press <key>`, etc. for interactions
              - Run `playwright-cli screenshot --filename=<path>` to capture failures
           2. Run the FULL QA test plan from the skill file
-          3. Take screenshots of failures or notable states into $QA_ARTIFACTS
-          4. Save report to $QA_ARTIFACTS as YYYY-MM-DD-NNN-${OS_LOWER}-report.md
+          3. IMPORTANT: Take a screenshot after EVERY significant interaction to build a video.
+             Save all screenshots sequentially to \$QA_ARTIFACTS/frames/:
+               mkdir -p \$QA_ARTIFACTS/frames
+               playwright-cli screenshot --filename=\$QA_ARTIFACTS/frames/frame-001.png
+               (increment the number for each screenshot: frame-002.png, frame-003.png, etc.)
+          4. Also save screenshots of failures or notable states into \$QA_ARTIFACTS
+          5. Save report to $QA_ARTIFACTS as YYYY-MM-DD-NNN-${OS_LOWER}-report.md
 
           Do NOT create a new PR. Do NOT post PR comments. Do NOT commit or push anything.
           Skip tests not available in CI (file dialogs, GPU execution).
@@ -256,10 +195,15 @@ jobs:
              - Run `playwright-cli goto http://127.0.0.1:8188` to open the app
              - Run `playwright-cli snapshot` after each navigation to get element refs
              - Use `playwright-cli click <ref>`, `playwright-cli press <key>`, etc. for interactions
-             - Run `playwright-cli screenshot --filename=<path>` to capture failures into $QA_ARTIFACTS
-          3. Test the specific UI areas affected by these changes
-          4. Also do a quick smoke test of core functionality (app loads, canvas renders, sidebar works)
-          5. Save a concise report to $QA_ARTIFACTS as YYYY-MM-DD-NNN-${OS_LOWER}-report.md
+             - Run `playwright-cli screenshot --filename=<path>` to capture failures into \$QA_ARTIFACTS
+          3. IMPORTANT: Take a screenshot after EVERY significant interaction to build a video.
+             Save all screenshots sequentially to \$QA_ARTIFACTS/frames/:
+               mkdir -p \$QA_ARTIFACTS/frames
+               playwright-cli screenshot --filename=\$QA_ARTIFACTS/frames/frame-001.png
+               (increment the number for each screenshot: frame-002.png, frame-003.png, etc.)
+          4. Test the specific UI areas affected by these changes
+          5. Also do a quick smoke test of core functionality (app loads, canvas renders, sidebar works)
+          6. Save a concise report to $QA_ARTIFACTS as YYYY-MM-DD-NNN-${OS_LOWER}-report.md
 
           Focus on:
           - Does the changed functionality work as expected?
@@ -286,27 +230,6 @@ jobs:
             --max-turns "$MAX_TURNS" \
             --allowedTools "Bash(playwright-cli:*),Bash(date:*),Bash(ls:*),Bash(mkdir:*),Read,Write,Edit,Glob,Grep"
 
-      - name: Stop recording
-        if: always()
-        shell: bash
-        run: |
-          PID_FILE="${{ runner.temp }}/ffmpeg.pid"
-          if [ -f "$PID_FILE" ]; then
-            if [ "$RUNNER_OS" = "Windows" ]; then
-              # Graceful stop: taskkill without /F sends WM_CLOSE so ffmpeg
-              # can finalize the mp4 (write moov atom). Force-kill as fallback.
-              taskkill //PID $(cat "$PID_FILE") 2>/dev/null || true
-              sleep 5
-              taskkill //F //PID $(cat "$PID_FILE") 2>/dev/null || true
-            else
-              kill -INT $(cat "$PID_FILE") 2>/dev/null || true
-              sleep 3; kill $(cat "$PID_FILE") 2>/dev/null || true
-            fi
-          fi
-          [ -f "$QA_ARTIFACTS/qa-session.mp4" ] && \
-            echo "Video: $(du -h "$QA_ARTIFACTS/qa-session.mp4" | cut -f1)" || \
-            echo "No video (non-fatal)"
-
       - name: Collect artifacts
         if: always()
         shell: bash
@@ -322,17 +245,35 @@ jobs:
           path: ${{ env.QA_ARTIFACTS }}/
           retention-days: 14
 
-      - name: Cleanup (Linux)
-        if: always() && runner.os == 'Linux'
-        run: kill $(cat "${{ runner.temp }}/xvfb.pid") 2>/dev/null || true
-
   report:
     needs: [resolve-matrix, qa]
-    if: always() && github.event.pull_request.number && github.event.pull_request.head.repo.full_name == github.repository
+    if: always() && (github.event.pull_request.number || github.event_name == 'push')
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
+      - name: Resolve PR number
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -n "$PR_NUM" ]; then
+            echo "number=$PR_NUM" >> "$GITHUB_OUTPUT"
+          else
+            # Push event: look up open PR for this branch
+            NUM=$(gh pr list --repo "${{ github.repository }}" \
+              --head "${{ github.ref_name }}" --state open \
+              --json number --jq '.[0].number // empty')
+            echo "number=${NUM}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
       - name: Download QA artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
@@ -341,6 +282,23 @@ jobs:
 
       - name: Install ffmpeg
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1
+
+      - name: Stitch screenshots into video
+        run: |
+          for dir in qa-artifacts/qa-report-*/frames; do
+            [ -d "$dir" ] || continue
+            FRAME_COUNT=$(find "$dir" -name '*.png' | wc -l)
+            if [ "$FRAME_COUNT" -eq 0 ]; then
+              echo "No frames in $dir, skipping"
+              continue
+            fi
+            PARENT=$(dirname "$dir")
+            echo "Stitching $FRAME_COUNT frames from $dir"
+            ffmpeg -y -framerate 2 -pattern_type glob -i "$dir/*.png" \
+              -c:v libx264 -preset ultrafast -crf 28 -pix_fmt yuv420p \
+              "$PARENT/qa-session.mp4" 2>/dev/null \
+            || echo "ffmpeg stitch failed for $dir (non-fatal)"
+          done
 
       - name: Deploy videos to Cloudflare Pages
         id: deploy-videos
@@ -411,7 +369,23 @@ jobs:
           echo "url=${URL:-https://${BRANCH}.comfyui-qa-videos.pages.dev}" >> "$GITHUB_OUTPUT"
           echo "Deployed to: ${URL}"
 
-      - name: Post QA comment on PR
+      - name: Run video review
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          mkdir -p video-reviews
+          for vid in qa-artifacts/qa-report-*/qa-session.mp4; do
+            [ -f "$vid" ] || continue
+            echo "::group::Reviewing $vid"
+            pnpm exec tsx scripts/qa-video-review.ts \
+              --artifacts-dir qa-artifacts \
+              --output-dir video-reviews \
+              --video-file "$vid" \
+              --model gpt-4o || true
+            echo "::endgroup::"
+          done
+
+      - name: Post unified QA comment on PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VIDEO_BASE: ${{ steps.deploy-videos.outputs.url }}
@@ -437,25 +411,70 @@ jobs:
             fi
           done
 
+          # Build video review section from per-platform reports
+          VIDEO_REVIEW=""
+          for f in video-reviews/*-qa-video-report.md; do
+            [ -f "$f" ] || continue
+            [ -n "$VIDEO_REVIEW" ] && VIDEO_REVIEW="${VIDEO_REVIEW}
+          ---
+          "
+            VIDEO_REVIEW="${VIDEO_REVIEW}$(cat "$f")"
+          done
+
+          VIDEO_REVIEW_SECTION=""
+          if [ -n "$VIDEO_REVIEW" ]; then
+            VIDEO_REVIEW_SECTION=$(cat <<REVIEWEOF
+
+          <details>
+          <summary>Video Review</summary>
+
+          ${VIDEO_REVIEW}
+
+          </details>
+          REVIEWEOF
+          )
+          fi
+
           BODY=$(cat <<EOF
           ${COMMENT_MARKER}
           ## QA ${MODE_BADGE}
 
           ${VIDEO_SECTION}
           **Run**: [${RUN}](${RUN}) · [Download artifacts](${RUN}#artifacts) · [All videos](${VIDEO_BASE})
+          ${VIDEO_REVIEW_SECTION}
           EOF
           )
 
-          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+          PR_NUM="${{ steps.pr.outputs.number }}"
+          if [ -z "$PR_NUM" ]; then
+            echo "No PR found, skipping comment"
+            exit 0
+          fi
+
+          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${PR_NUM}/comments" \
             --jq ".[] | select(.body | contains(\"${COMMENT_MARKER}\")) | .id" | head -1)
 
           if [ -n "$EXISTING" ]; then
             gh api --method PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
               --field body="$BODY"
           else
-            gh pr comment ${{ github.event.pull_request.number }} \
+            gh pr comment "$PR_NUM" \
               --repo ${{ github.repository }} --body "$BODY"
           fi
+
+      - name: Cleanup old video review comments
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM="${{ steps.pr.outputs.number }}"
+          if [ -z "$PR_NUM" ]; then exit 0; fi
+          OLD_MARKER="<!-- QA_VIDEO_REVIEW_COMMENT -->"
+          gh api "repos/${{ github.repository }}/issues/${PR_NUM}/comments" \
+            --jq ".[] | select(.body | contains(\"${OLD_MARKER}\")) | .id" | \
+          while read -r comment_id; do
+            echo "Deleting old video review comment: $comment_id"
+            gh api --method DELETE "repos/${{ github.repository }}/issues/comments/${comment_id}" || true
+          done
 
       - name: Remove QA label
         if: >-
@@ -464,93 +483,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LABEL_NAME: ${{ github.event.label.name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
           REPO: ${{ github.repository }}
         run: |
-          gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label "$LABEL_NAME"
-
-  video-review:
-    needs: [qa, report]
-    if: always() && github.event.pull_request.number && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
-        with:
-          node-version: 24
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-        with:
-          version: 10
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install ffmpeg
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1
-
-      - name: Download QA artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
-        with:
-          path: qa-artifacts
-          pattern: qa-report-*
-
-      - name: Run video review
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          mkdir -p video-reviews
-          for vid in qa-artifacts/qa-report-*/qa-session.mp4; do
-            [ -f "$vid" ] || continue
-            echo "::group::Reviewing $vid"
-            pnpm exec tsx scripts/qa-video-review.ts \
-              --artifacts-dir qa-artifacts \
-              --output-dir video-reviews \
-              --video-file "$vid" \
-              --model gpt-4o || true
-            echo "::endgroup::"
-          done
-
-      - name: Post video review comment
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          MARKER="<!-- QA_VIDEO_REVIEW_COMMENT -->"
-          RUN="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-          # Combine per-platform reports
-          REPORT=""
-          for f in video-reviews/*-qa-video-report.md; do
-            [ -f "$f" ] || continue
-            [ -n "$REPORT" ] && REPORT="${REPORT}
-          ---
-          "
-            REPORT="${REPORT}$(cat "$f")"
-          done
-
-          [ -z "$REPORT" ] && REPORT="No video reports were generated."
-
-          BODY="${MARKER}
-          ## QA Video Report
-
-          ${REPORT}
-
-          ---
-          **Run**: [${RUN}](${RUN})"
-
-          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
-            --jq ".[] | select(.body | contains(\"${MARKER}\")) | .id" | head -1)
-
-          if [ -n "$EXISTING" ]; then
-            gh api --method PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
-              --field body="$BODY"
-          else
-            gh pr comment ${{ github.event.pull_request.number }} \
-              --repo ${{ github.repository }} --body "$BODY"
-          fi
+          [ -n "$PR_NUMBER" ] && gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label "$LABEL_NAME"
