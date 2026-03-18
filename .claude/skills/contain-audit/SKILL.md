@@ -30,7 +30,7 @@ Automatically finds DOM elements where adding `contain: layout style` would redu
 pnpm dev &
 
 # Run the audit (uses the @audit tag, not included in normal CI runs)
-pnpm exec playwright test browser_tests/tests/containAudit.spec.ts --project=chromium
+pnpm exec playwright test browser_tests/tests/containAudit.spec.ts --project=audit
 
 # View the HTML report
 pnpm exec playwright show-report
@@ -40,7 +40,7 @@ pnpm exec playwright show-report
 
 The audit outputs a table to the console:
 
-```
+```text
 CSS Containment Audit Results
 =======================================================
 Rank | Selector                        | Subtree | Score | DRecalcs | DLayouts | Visual
@@ -52,7 +52,7 @@ Rank | Selector                        | Subtree | Score | DRecalcs | DLayouts |
 - **Subtree**: Number of descendant elements (higher = more to skip)
 - **Score**: Composite heuristic score (subtree size x sizing constraint bonus)
 - **DRecalcs / DLayouts**: Change in style recalcs / layout counts vs baseline (negative = improvement)
-- **Visual**: OK if screenshot diff is below threshold, BREAK if visual regression detected
+- **Visual**: OK if no pixel change, DIFF if screenshot differs (may include subpixel noise — verify manually)
 
 ## Candidate Scoring
 

@@ -51,6 +51,17 @@ export default defineConfig({
     },
 
     {
+      name: 'audit',
+      use: {
+        ...devices['Desktop Chrome'],
+        trace: 'retain-on-failure'
+      },
+      timeout: 120_000,
+      grep: /@audit/,
+      fullyParallel: false
+    },
+
+    {
       name: 'chromium-2x',
       use: { ...devices['Desktop Chrome'], deviceScaleFactor: 2 },
       timeout: 15000,

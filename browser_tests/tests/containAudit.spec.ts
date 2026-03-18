@@ -39,11 +39,14 @@ function pctChange(baseline: number, measured: number): number {
   return ((measured - baseline) / baseline) * 100
 }
 
+const STABILIZATION_FRAMES = 60
+const SETTLE_FRAMES = 10
+
 test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
   test('scan large graph for containment candidates', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
 
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < STABILIZATION_FRAMES; i++) {
       await comfyPage.nextFrame()
     }
 
@@ -97,9 +100,20 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
           selector = `[data-testid="${testId}"]`
         } else if (el.id) {
           selector = `#${el.id}`
-        } else if (el.className && typeof el.className === 'string') {
-          const firstClass = el.className.split(' ')[0]
-          if (firstClass) selector = `.${firstClass}`
+        } else if (el.parentElement) {
+          // Use nth-child to disambiguate instead of fragile first-class fallback
+          // (e.g. Tailwind utilities like .flex, .relative are shared across many elements)
+          const children = Array.from(el.parentElement.children)
+          const index = children.indexOf(el) + 1
+          const parentTestId = el.parentElement.getAttribute('data-testid')
+          if (parentTestId) {
+            selector = `[data-testid="${parentTestId}"] > :nth-child(${index})`
+          } else if (el.parentElement.id) {
+            selector = `#${el.parentElement.id} > :nth-child(${index})`
+          } else {
+            const tag = el.tagName.toLowerCase()
+            selector = `${tag}:nth-child(${index})`
+          }
         }
 
         results.push({
@@ -133,7 +147,7 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
 
     // Measure baseline performance (idle)
     await comfyPage.perf.startMeasuring()
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < STABILIZATION_FRAMES; i++) {
       await comfyPage.nextFrame()
     }
     const baseline = await comfyPage.perf.stopMeasuring('baseline-idle')
@@ -163,20 +177,22 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
 
       if (applied === 0) continue
 
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < SETTLE_FRAMES; i++) {
         await comfyPage.nextFrame()
       }
 
       // Measure with containment
       await comfyPage.perf.startMeasuring()
-      for (let i = 0; i < 60; i++) {
+      for (let i = 0; i < STABILIZATION_FRAMES; i++) {
         await comfyPage.nextFrame()
       }
       const withContain = await comfyPage.perf.stopMeasuring(
         `contain-${candidate.selector}`
       )
 
-      // Take screenshot with containment applied to detect visual breakage
+      // Take screenshot with containment applied to detect visual breakage.
+      // Note: PNG byte comparison can produce false positives from subpixel
+      // rendering and anti-aliasing. Treat "DIFF" as "needs manual review".
       const containScreenshot = await comfyPage.page.screenshot()
       const visuallyBroken = !baselineScreenshot.equals(containScreenshot)
 
@@ -189,7 +205,7 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
         })
       }, candidate.selector)
 
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < SETTLE_FRAMES; i++) {
         await comfyPage.nextFrame()
       }
 
@@ -233,7 +249,7 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
         const score = String(Math.round(r.candidate.score)).padStart(5)
         const dr = formatPctDelta(r.deltaRecalcsPct)
         const dl = formatPctDelta(r.deltaLayoutsPct)
-        const vis = r.visuallyBroken ? 'BREAK' : 'OK'
+        const vis = r.visuallyBroken ? 'DIFF' : 'OK'
         console.log(
           `  ${String(i + 1).padStart(2)}  | ${sel} | ${sub} | ${score} | ${dr.padStart(10)} | ${dl.padStart(10)} | ${vis}`
         )
@@ -255,137 +271,6 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
     expect(results.length).toBeGreaterThan(0)
   })
 
-  test('measure containment impact with pan interaction', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
-
-    for (let i = 0; i < 60; i++) {
-      await comfyPage.nextFrame()
-    }
-
-    const canvas = comfyPage.canvas
-    const box = await canvas.boundingBox()
-    if (!box) throw new Error('Canvas bounding box not available')
-
-    async function measurePan(label: string): Promise<PerfMeasurement> {
-      await comfyPage.perf.startMeasuring()
-      const centerX = box!.x + box!.width / 2
-      const centerY = box!.y + box!.height / 2
-      await comfyPage.page.mouse.move(centerX, centerY)
-      await comfyPage.page.mouse.down({ button: 'middle' })
-      for (let j = 0; j < 60; j++) {
-        await comfyPage.page.mouse.move(centerX + j * 5, centerY + j * 2)
-        await comfyPage.nextFrame()
-      }
-      await comfyPage.page.mouse.up({ button: 'middle' })
-      return comfyPage.perf.stopMeasuring(label)
-    }
-
-    const baselinePan = await measurePan('baseline-pan')
-
-    // Find elements without containment that have large subtrees
-    const candidates = await comfyPage.page.evaluate(() => {
-      const results: Array<{ selector: string; subtreeSize: number }> = []
-
-      const nodeWrappers = document.querySelectorAll(
-        '[data-testid="node-inner-wrapper"]'
-      )
-      if (nodeWrappers.length > 0) {
-        const sample = nodeWrappers[0]
-        const subtreeSize = sample.querySelectorAll('*').length
-        const computed = getComputedStyle(sample)
-        const containValue = computed.contain || 'none'
-        if (!containValue.includes('layout')) {
-          results.push({
-            selector: '[data-testid="node-inner-wrapper"]',
-            subtreeSize
-          })
-        }
-      }
-
-      const nodeBodies = document.querySelectorAll('[data-testid^="node-body"]')
-      if (nodeBodies.length > 0) {
-        const sample = nodeBodies[0]
-        const subtreeSize = sample.querySelectorAll('*').length
-        const computed = getComputedStyle(sample)
-        const containValue = computed.contain || 'none'
-        if (!containValue.includes('layout')) {
-          results.push({
-            selector: '[data-testid^="node-body"]',
-            subtreeSize
-          })
-        }
-      }
-
-      const lgNodes = document.querySelectorAll('.lg-node')
-      if (lgNodes.length > 0) {
-        const sample = lgNodes[0]
-        const subtreeSize = sample.querySelectorAll('*').length
-        const computed = getComputedStyle(sample)
-        const containValue = computed.contain || 'none'
-        if (!containValue.includes('layout')) {
-          results.push({
-            selector: '.lg-node',
-            subtreeSize
-          })
-        }
-      }
-
-      return results
-    })
-
-    const divider = '='.repeat(90)
-    const thinDivider = '-'.repeat(90)
-    console.log('\n')
-    console.log('Pan Interaction Containment Impact')
-    console.log(divider)
-    console.log(
-      `Baseline pan: ${baselinePan.styleRecalcs} recalcs, ${baselinePan.layouts} layouts, ${baselinePan.taskDurationMs.toFixed(1)}ms task, ${baselinePan.durationMs.toFixed(1)}ms total`
-    )
-    console.log(thinDivider)
-
-    for (const candidate of candidates) {
-      await comfyPage.page.evaluate((sel: string) => {
-        document.querySelectorAll(sel).forEach((el) => {
-          if (el instanceof HTMLElement) el.style.contain = 'layout style'
-        })
-      }, candidate.selector)
-
-      for (let i = 0; i < 10; i++) {
-        await comfyPage.nextFrame()
-      }
-
-      const panResult = await measurePan(`pan-${candidate.selector}`)
-
-      console.log(
-        `\n${candidate.selector} (subtree: ${candidate.subtreeSize}, applied to all matching):`
-      )
-      console.log(
-        `  Recalcs: ${baselinePan.styleRecalcs} -> ${panResult.styleRecalcs} (${formatPctDelta(pctChange(baselinePan.styleRecalcs, panResult.styleRecalcs))})`
-      )
-      console.log(
-        `  Layouts: ${baselinePan.layouts} -> ${panResult.layouts} (${formatPctDelta(pctChange(baselinePan.layouts, panResult.layouts))})`
-      )
-      console.log(
-        `  Task:    ${baselinePan.taskDurationMs.toFixed(1)}ms -> ${panResult.taskDurationMs.toFixed(1)}ms (${formatPctDelta(pctChange(baselinePan.taskDurationMs, panResult.taskDurationMs))})`
-      )
-      console.log(
-        `  Duration: ${baselinePan.durationMs.toFixed(1)}ms -> ${panResult.durationMs.toFixed(1)}ms total`
-      )
-
-      await comfyPage.page.evaluate((sel: string) => {
-        document.querySelectorAll(sel).forEach((el) => {
-          if (el instanceof HTMLElement) el.style.contain = ''
-        })
-      }, candidate.selector)
-
-      for (let i = 0; i < 10; i++) {
-        await comfyPage.nextFrame()
-      }
-    }
-
-    console.log('\n' + divider)
-    expect(true).toBe(true)
-  })
+  // Pan interaction perf measurement removed — covered by PR #10001 (performance.spec.ts).
+  // The containment fix itself is tracked in PR #9946.
 })
