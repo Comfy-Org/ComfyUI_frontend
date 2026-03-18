@@ -173,6 +173,19 @@ jobs:
           path: temp/perf-baseline/
           if_no_artifact_found: warn
 
+      - name: Download perf history from perf-data branch
+        if: steps.pr-meta.outputs.skip != 'true' && steps.find-perf.outputs.status == 'ready'
+        continue-on-error: true
+        run: |
+          if git ls-remote --exit-code origin perf-data >/dev/null 2>&1; then
+            git fetch origin perf-data --depth=1
+            mkdir -p temp/perf-history
+            for file in $(git ls-tree --name-only origin/perf-data baselines/ 2>/dev/null | sort -r | head -10); do
+              git show "origin/perf-data:${file}" > "temp/perf-history/$(basename "$file")" 2>/dev/null || true
+            done
+            echo "Loaded $(ls temp/perf-history/*.json 2>/dev/null | wc -l) historical baselines"
+          fi
+
       - name: Generate unified report
         if: steps.pr-meta.outputs.skip != 'true'
         run: >
