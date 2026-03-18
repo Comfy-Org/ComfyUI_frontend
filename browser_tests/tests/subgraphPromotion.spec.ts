@@ -785,7 +785,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back via breadcrumb
-        await exitSubgraphToParent(comfyPage)
+        await comfyPage.subgraph.exitViaBreadcrumb()
 
         // Widget count should be reduced
         const finalWidgetCount = await getPromotedWidgetCount(comfyPage, '11')
