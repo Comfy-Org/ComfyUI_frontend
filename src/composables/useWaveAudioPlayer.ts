@@ -22,7 +22,8 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
   const loading = ref(false)
   const bars = ref<WaveformBar[]>(generatePlaceholderBars())
 
-  const { playing, currentTime, duration } = useMediaControls(audioRef)
+  const { playing, currentTime, duration, volume, muted } =
+    useMediaControls(audioRef)
 
   const playedBarIndex = computed(() => {
     if (duration.value === 0) return -1
@@ -121,6 +122,16 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     currentTime.value = clamped * duration.value
   }
 
+  function toggleMute() {
+    muted.value = !muted.value
+  }
+
+  const volumeIcon = computed(() => {
+    if (muted.value || volume.value === 0) return 'icon-[lucide--volume-x]'
+    if (volume.value < 0.5) return 'icon-[lucide--volume-1]'
+    return 'icon-[lucide--volume-2]'
+  })
+
   function handleWaveformClick(event: MouseEvent) {
     if (!waveformRef.value || duration.value === 0) return
     const rect = waveformRef.value.getBoundingClientRect()
@@ -166,6 +177,9 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     togglePlayPause,
     seekToStart,
     seekToEnd,
+    volume,
+    volumeIcon,
+    toggleMute,
     seekToRatio,
     handleWaveformClick
   }

@@ -99,41 +99,66 @@
       </div>
     </div>
 
-    <div class="flex items-center justify-center gap-2">
-      <Button
-        variant="textonly"
-        size="icon-sm"
-        class="size-8 rounded-full"
-        :aria-label="$t('g.skipToStart')"
-        :disabled="loading"
-        @click="seekToStart"
-      >
-        <i class="icon-[lucide--skip-back] size-4 text-base-foreground" />
-      </Button>
-      <Button
-        variant="textonly"
-        size="icon-sm"
-        class="size-10 rounded-full bg-muted-foreground/15 hover:bg-muted-foreground/25"
-        :aria-label="isPlaying ? $t('g.pause') : $t('g.play')"
-        :loading="loading"
-        @click="togglePlayPause"
-      >
-        <i
-          v-if="!isPlaying"
-          class="ml-0.5 icon-[lucide--play] size-5 text-base-foreground"
+    <div class="flex items-center gap-2">
+      <div class="w-20" />
+
+      <div class="flex flex-1 items-center justify-center gap-2">
+        <Button
+          variant="textonly"
+          size="icon-sm"
+          class="size-8 rounded-full"
+          :aria-label="$t('g.skipToStart')"
+          :disabled="loading"
+          @click="seekToStart"
+        >
+          <i class="icon-[lucide--skip-back] size-4 text-base-foreground" />
+        </Button>
+        <Button
+          variant="textonly"
+          size="icon-sm"
+          class="size-10 rounded-full bg-muted-foreground/15 hover:bg-muted-foreground/25"
+          :aria-label="isPlaying ? $t('g.pause') : $t('g.play')"
+          :loading="loading"
+          @click="togglePlayPause"
+        >
+          <i
+            v-if="!isPlaying"
+            class="ml-0.5 icon-[lucide--play] size-5 text-base-foreground"
+          />
+          <i v-else class="icon-[lucide--pause] size-5 text-base-foreground" />
+        </Button>
+        <Button
+          variant="textonly"
+          size="icon-sm"
+          class="size-8 rounded-full"
+          :aria-label="$t('g.skipToEnd')"
+          :disabled="loading"
+          @click="seekToEnd"
+        >
+          <i class="icon-[lucide--skip-forward] size-4 text-base-foreground" />
+        </Button>
+      </div>
+
+      <div class="flex w-20 items-center gap-1">
+        <Button
+          variant="textonly"
+          size="icon-sm"
+          class="size-8 shrink-0 rounded-full"
+          :aria-label="$t('g.volume')"
+          :disabled="loading"
+          @click="toggleMute"
+        >
+          <i :class="cn(volumeIcon, 'size-4 text-base-foreground')" />
+        </Button>
+        <Slider
+          :model-value="[volume * 100]"
+          :min="0"
+          :max="100"
+          :step="1"
+          class="flex-1"
+          @update:model-value="(v) => (volume = (v?.[0] ?? 100) / 100)"
         />
-        <i v-else class="icon-[lucide--pause] size-5 text-base-foreground" />
-      </Button>
-      <Button
-        variant="textonly"
-        size="icon-sm"
-        class="size-8 rounded-full"
-        :aria-label="$t('g.skipToEnd')"
-        :disabled="loading"
-        @click="seekToEnd"
-      >
-        <i class="icon-[lucide--skip-forward] size-4 text-base-foreground" />
-      </Button>
+      </div>
     </div>
   </div>
 
@@ -149,6 +174,7 @@
 import { ref, toRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Slider from '@/components/ui/slider/Slider.vue'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -182,6 +208,9 @@ const {
   togglePlayPause,
   seekToStart,
   seekToEnd,
+  volume,
+  volumeIcon,
+  toggleMute,
   seekToRatio,
   handleWaveformClick
 } = useWaveAudioPlayer({
