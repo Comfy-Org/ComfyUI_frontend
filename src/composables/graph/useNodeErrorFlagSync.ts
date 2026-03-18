@@ -79,8 +79,8 @@ function reconcileNodeErrorFlags(
 export function useNodeErrorFlagSync(
   lastNodeErrors: Ref<Record<string, NodeError> | null>,
   missingModelStore: ReturnType<typeof useMissingModelStore>
-): void {
-  watch(
+): () => void {
+  const stop = watch(
     [lastNodeErrors, () => missingModelStore.missingModelNodeIds],
     () => {
       if (!app.isGraphReady) return
@@ -101,4 +101,5 @@ export function useNodeErrorFlagSync(
     },
     { flush: 'post' }
   )
+  return stop
 }

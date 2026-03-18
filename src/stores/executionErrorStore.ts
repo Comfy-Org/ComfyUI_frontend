@@ -26,7 +26,7 @@ import {
   SIMPLE_ERROR_TYPES,
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
-import { useMissingNodesErrorStore } from './missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 
 /** Execution error state: node errors, runtime errors, prompt errors, and missing assets. */
 export const useExecutionErrorStore = defineStore('executionError', () => {

@@ -139,6 +139,9 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
   }
 
   return () => {
+    for (const node of graph._nodes ?? []) {
+      restoreNodeHooksRecursive(node)
+    }
     graph.onNodeAdded = originalOnNodeAdded || undefined
     graph.onNodeRemoved = originalOnNodeRemoved || undefined
   }

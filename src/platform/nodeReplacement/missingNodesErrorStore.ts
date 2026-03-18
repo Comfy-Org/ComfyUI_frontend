@@ -5,15 +5,11 @@ import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { MissingNodeType } from '@/types/comfy'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import {
-  getActiveGraphNodeIds,
-  getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 interface MissingNodesError {
   message: string
@@ -23,8 +19,6 @@ interface MissingNodesError {
 export const useMissingNodesErrorStore = defineStore(
   'missingNodesError',
   () => {
-    const canvasStore = useCanvasStore()
-
     const missingNodesError = ref<MissingNodesError | null>(null)
 
     function setMissingNodeTypes(types: MissingNodeType[]) {
@@ -67,7 +61,10 @@ export const useMissingNodesErrorStore = defineStore(
       showErrorOverlay: () => void
     ) {
       setMissingNodeTypes(types)
-      if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+      if (
+        types.length &&
+        useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+      ) {
         showErrorOverlay()
       }
     }
@@ -109,15 +106,6 @@ export const useMissingNodesErrorStore = defineStore(
       return ids
     })
 
-    const activeMissingNodeGraphIds = computed<Set<string>>(() => {
-      if (!app.isGraphReady) return new Set()
-      return getActiveGraphNodeIds(
-        app.rootGraph,
-        canvasStore.currentGraph ?? app.rootGraph,
-        missingAncestorExecutionIds.value
-      )
-    })
-
     /** True if the node has a missing node inside it at any nesting depth. */
     function isContainerWithMissingNode(node: LGraphNode): boolean {
       if (!app.isGraphReady) return false
@@ -134,7 +122,6 @@ export const useMissingNodesErrorStore = defineStore(
       hasMissingNodes,
       missingNodeCount,
       missingAncestorExecutionIds,
-      activeMissingNodeGraphIds,
       isContainerWithMissingNode
     }
   }

@@ -51,7 +51,7 @@ import {
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
-import { useMissingNodesErrorStore } from '@/stores/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 
 function mockNode(
   id: number,

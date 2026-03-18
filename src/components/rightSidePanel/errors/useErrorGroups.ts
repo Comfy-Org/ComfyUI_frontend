@@ -5,7 +5,7 @@ import type { IFuseOptions } from 'fuse.js'
 
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/stores/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -196,12 +196,8 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
         cardIndex: ci,
         searchableNodeId: card.nodeId ?? '',
         searchableNodeTitle: card.nodeTitle ?? '',
-        searchableMessage: card.errors
-          .map((e: ErrorItem) => e.message)
-          .join(' '),
-        searchableDetails: card.errors
-          .map((e: ErrorItem) => e.details ?? '')
-          .join(' ')
+        searchableMessage: card.errors.map((e) => e.message).join(' '),
+        searchableDetails: card.errors.map((e) => e.details ?? '').join(' ')
       })
     }
   }
@@ -450,6 +446,8 @@ export function useErrorGroups(
       for (const r of results) {
         if (r.status === 'fulfilled') {
           final.set(r.value.type, r.value.packId)
+        } else {
+          console.warn('Failed to resolve pack ID:', r.reason)
         }
       }
       // Clear any remaining RESOLVING markers for failed lookups
@@ -459,6 +457,16 @@ export function useErrorGroups(
       asyncResolvedIds.value = final
     },
     { immediate: true }
+  )
+
+  // Evict stale entries when missing nodes are cleared
+  watch(
+    () => missingNodesStore.missingNodesError,
+    (error) => {
+      if (!error && asyncResolvedIds.value.size > 0) {
+        asyncResolvedIds.value = new Map()
+      }
+    }
   )
 
   const missingPackGroups = computed<MissingPackGroup[]>(() => {

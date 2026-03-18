@@ -7,7 +7,7 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
-import { useMissingNodesErrorStore } from '@/stores/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 

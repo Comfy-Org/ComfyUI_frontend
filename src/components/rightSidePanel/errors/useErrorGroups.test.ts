@@ -58,7 +58,7 @@ vi.mock(
 )
 
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/stores/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useErrorGroups } from './useErrorGroups'
 
 function makeMissingNodeType(

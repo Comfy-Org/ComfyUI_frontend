@@ -34,7 +34,7 @@ vi.mock(
 )
 
 import { useExecutionErrorStore } from './executionErrorStore'
-import { useMissingNodesErrorStore } from './missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 
 describe('executionErrorStore — missing node operations', () => {
   beforeEach(() => {

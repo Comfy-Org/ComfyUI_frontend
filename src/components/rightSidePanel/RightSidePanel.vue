@@ -9,13 +9,15 @@ import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
 import { st } from '@/i18n'
+import { app } from '@/scripts/app'
+import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/stores/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -46,7 +48,14 @@ const { t } = useI18n()
 
 const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionErrorStore)
 
-const { activeMissingNodeGraphIds } = storeToRefs(missingNodesErrorStore)
+const activeMissingNodeGraphIds = computed<Set<string>>(() => {
+  if (!app.isGraphReady) return new Set()
+  return getActiveGraphNodeIds(
+    app.rootGraph,
+    canvasStore.currentGraph ?? app.rootGraph,
+    missingNodesErrorStore.missingAncestorExecutionIds
+  )
+})
 
 const { activeMissingModelGraphIds } = storeToRefs(missingModelStore)
 
