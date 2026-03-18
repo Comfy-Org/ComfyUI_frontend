@@ -1,4 +1,4 @@
-# Automated QA of ComfyUI frontend using Claude CLI + Playwright MCP.
+# Automated QA of ComfyUI frontend using Claude CLI + playwright-cli.
 # Two modes:
 #   Focused (qa-changes label): Linux-only, tests areas affected by PR changes
 #   Full (qa-full label): 3-OS matrix, full test plan
@@ -156,10 +156,10 @@ jobs:
           Commit: ${SHA}
 
           1. Use playwright-cli via Bash to navigate http://127.0.0.1:8188
-             - Run `playwright-cli goto http://127.0.0.1:8188` to open the app
-             - Run `playwright-cli snapshot` after each navigation to get element refs
-             - Use `playwright-cli click <ref>`, `playwright-cli press <key>`, etc. for interactions
-             - Run `playwright-cli screenshot --filename=<path>` to capture failures
+             - Run: playwright-cli goto http://127.0.0.1:8188
+             - Run: playwright-cli snapshot (after each navigation to get element refs)
+             - Use: playwright-cli click <ref>, playwright-cli press <key>, etc.
+             - Run: playwright-cli screenshot --filename=<path> (to capture failures)
           2. Run the FULL QA test plan from the skill file
           3. IMPORTANT: Take a screenshot after EVERY significant interaction to build a video.
              Save all screenshots sequentially to \$QA_ARTIFACTS/frames/:
@@ -192,10 +192,10 @@ jobs:
           Instructions:
           1. Read the diff above to understand what changed in this PR
           2. Use playwright-cli via Bash to navigate http://127.0.0.1:8188
-             - Run `playwright-cli goto http://127.0.0.1:8188` to open the app
-             - Run `playwright-cli snapshot` after each navigation to get element refs
-             - Use `playwright-cli click <ref>`, `playwright-cli press <key>`, etc. for interactions
-             - Run `playwright-cli screenshot --filename=<path>` to capture failures into \$QA_ARTIFACTS
+             - Run: playwright-cli goto http://127.0.0.1:8188
+             - Run: playwright-cli snapshot (after each navigation to get element refs)
+             - Use: playwright-cli click <ref>, playwright-cli press <key>, etc.
+             - Run: playwright-cli screenshot --filename=<path> (to save failures into \$QA_ARTIFACTS)
           3. IMPORTANT: Take a screenshot after EVERY significant interaction to build a video.
              Save all screenshots sequentially to \$QA_ARTIFACTS/frames/:
                mkdir -p \$QA_ARTIFACTS/frames
