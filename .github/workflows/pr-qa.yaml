@@ -120,6 +120,17 @@ jobs:
         shell: bash
         run: npm install -g @playwright/cli@latest @anthropic-ai/claude-code@2.1.71
 
+      - name: Configure playwright-cli output
+        shell: bash
+        run: |
+          mkdir -p "$QA_ARTIFACTS/screenshots" .playwright
+          # Point playwright-cli default output to our screenshots directory
+          cat > .playwright/cli.config.json <<CEOF
+          { "outputDir": "$QA_ARTIFACTS/screenshots" }
+          CEOF
+          echo "playwright-cli outputDir: $QA_ARTIFACTS/screenshots"
+          cat .playwright/cli.config.json
+
       - name: Get PR diff for focused QA
         if: needs.resolve-matrix.outputs.mode == 'focused'
         shell: bash
@@ -144,8 +155,6 @@ jobs:
         run: |
           OS_LOWER=$(echo "$RUNNER_OS" | tr '[:upper:]' '[:lower:]')
 
-          SCREENSHOT_DIR="$QA_ARTIFACTS/screenshots"
-
           if [ "$QA_MODE" = "full" ]; then
             cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
           You are running a FULL automated QA pass on the ComfyUI frontend.
@@ -163,15 +172,13 @@ jobs:
             playwright-cli click <ref>
             playwright-cli press <key>
 
-          CRITICAL: Take a screenshot after EVERY significant interaction using:
-            playwright-cli screenshot --filename=${SCREENSHOT_DIR}/NNN-description.png
-          where NNN is a zero-padded sequence number (001, 002, 003, ...).
-          These screenshots are stitched into a video. Take at least 20 screenshots throughout the QA session.
-          First run: mkdir -p ${SCREENSHOT_DIR}
+          IMPORTANT - SCREENSHOTS: After EVERY significant interaction, run:
+            playwright-cli screenshot
+          Screenshots are auto-saved to a configured directory. Take at least 20 throughout the session.
 
-          Save the QA report as: $QA_ARTIFACTS/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
+          Save QA report to: ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
-          Do NOT create a new PR. Do NOT post PR comments. Do NOT commit or push anything.
+          Do NOT create a PR, post PR comments, commit, or push anything.
           Skip tests not available in CI (file dialogs, GPU execution).
           PROMPT
           else
@@ -197,21 +204,19 @@ jobs:
             playwright-cli click <ref>
             playwright-cli press <key>
 
-          CRITICAL: Take a screenshot after EVERY significant interaction using:
-            playwright-cli screenshot --filename=${SCREENSHOT_DIR}/NNN-description.png
-          where NNN is a zero-padded sequence number (001, 002, 003, ...).
-          These screenshots are stitched into a video. Take at least 15 screenshots throughout the QA session.
-          First run: mkdir -p ${SCREENSHOT_DIR}
+          IMPORTANT - SCREENSHOTS: After EVERY significant interaction, run:
+            playwright-cli screenshot
+          Screenshots are auto-saved to a configured directory. Take at least 15 throughout the session.
 
           Instructions:
           1. Read the diff above to understand what changed
           2. Test the specific UI areas affected by these changes
           3. Quick smoke test of core functionality (app loads, canvas renders, sidebar works)
-          4. Save a concise report to $QA_ARTIFACTS as $(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
+          4. Save a concise report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
           Focus on: changed functionality, visual regressions, related features.
 
-          Do NOT run the full QA test plan. Do NOT create a new PR. Do NOT post PR comments. Do NOT commit or push anything.
+          Do NOT create a PR, post PR comments, commit, or push anything.
           Skip tests not available in CI (file dialogs, GPU execution).
           PROMPT
           fi
@@ -236,19 +241,34 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$QA_ARTIFACTS/screenshots"
-          # Copy screenshots from default playwright-cli locations
+
+          # 1. Collect from the designated screenshot dir (if Claude followed instructions)
+          echo "=== Screenshots in $QA_ARTIFACTS/screenshots ==="
+          ls -la "$QA_ARTIFACTS/screenshots/" 2>/dev/null || echo "(empty)"
+
+          # 2. Copy from playwright-cli internal directories
           for dir in .playwright-cli .playwright; do
             if [ -d "$dir" ]; then
-              echo "Copying screenshots from $dir"
+              echo "=== Contents of $dir ==="
+              find "$dir" -type f | head -20
               find "$dir" -name '*.png' -exec cp {} "$QA_ARTIFACTS/screenshots/" \; 2>/dev/null || true
             fi
           done
-          # Also grab any PNGs saved directly to QA_ARTIFACTS root (older behavior)
+
+          # 3. Move any PNGs saved to QA_ARTIFACTS root
           find "$QA_ARTIFACTS" -maxdepth 1 -name '*.png' -exec mv {} "$QA_ARTIFACTS/screenshots/" \; 2>/dev/null || true
-          # Count what we have
+
+          # 4. Search entire working directory for stray screenshot PNGs (excluding node_modules)
+          echo "=== Searching for PNGs in working directory ==="
+          find . -maxdepth 3 -name '*.png' -not -path '*/node_modules/*' -not -path '*/dist/*' -newer "$QA_ARTIFACTS" 2>/dev/null | head -30 | while read -r f; do
+            echo "Found: $f"
+            cp "$f" "$QA_ARTIFACTS/screenshots/" 2>/dev/null || true
+          done
+
           TOTAL=$(find "$QA_ARTIFACTS/screenshots" -name '*.png' 2>/dev/null | wc -l)
-          echo "Total screenshots collected: $TOTAL"
-          ls -la "$QA_ARTIFACTS/screenshots/" 2>/dev/null || true
+          echo "=== Total screenshots collected: $TOTAL ==="
+          ls -la "$QA_ARTIFACTS/screenshots/" 2>/dev/null | head -30
+          echo "=== Reports ==="
           ls -la "$QA_ARTIFACTS/"*.md 2>/dev/null || echo "No report found"
 
       - name: Upload QA artifacts
