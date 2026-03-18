@@ -180,6 +180,27 @@ describe('workflowDraftStoreV2', () => {
       expect(result).toBe(true)
     })
 
+    it('marks a restored draft as most recent', async () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/a.json', '{"nodes":[]}', {
+        name: 'a',
+        isTemporary: true
+      })
+      store.saveDraft('workflows/b.json', '{"nodes":[]}', {
+        name: 'b',
+        isTemporary: true
+      })
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: 'a',
+        preferredPath: 'workflows/a.json'
+      })
+
+      expect(result).toBe(true)
+      expect(store.getMostRecentPath()).toBe('workflows/a.json')
+    })
+
     it('falls back to most recent when preferredPath missing', async () => {
       const store = useWorkflowDraftStoreV2()
 
@@ -206,6 +227,37 @@ describe('workflowDraftStoreV2', () => {
       })
 
       expect(result).toBe(false)
+    })
+
+    it('keeps an existing draft readable after storage is marked unavailable', async () => {
+      vi.resetModules()
+      const [{ useWorkflowDraftStoreV2: useDynamicWorkflowDraftStoreV2 }, mod] =
+        await Promise.all([
+          import('./workflowDraftStoreV2'),
+          import('../base/storageIO')
+        ])
+
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      localStorage.clear()
+      sessionStorage.clear()
+
+      const store = useDynamicWorkflowDraftStoreV2()
+      const draftData = '{"nodes":[],"extra":{"draftMarker":"quota"}}'
+      store.saveDraft('workflows/test.json', draftData, {
+        name: 'test',
+        isTemporary: true
+      })
+
+      mod.markStorageUnavailable()
+
+      expect(store.getDraft('workflows/test.json')?.data).toBe(draftData)
+      expect(
+        await store.loadPersistedWorkflow({
+          workflowName: 'test',
+          preferredPath: 'workflows/test.json'
+        })
+      ).toBe(true)
+      expect(store.getDraft('workflows/test.json')?.data).toBe(draftData)
     })
   })
 

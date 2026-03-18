@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   LoadedComfyWorkflow,
@@ -96,9 +96,9 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => null
 }))
 
-vi.mock('@/platform/workflow/persistence/stores/workflowDraftStore', () => ({
-  useWorkflowDraftStore: () => ({
-    saveDraft: vi.fn(),
+vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
+  useWorkflowDraftStoreV2: () => ({
+    saveDraft: vi.fn(() => true),
     getDraft: vi.fn(),
     removeDraft: vi.fn(),
     markDraftUsed: vi.fn()
@@ -147,7 +147,14 @@ function enableWarningSettings() {
 describe('useWorkflowService', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    localStorage.clear()
+    sessionStorage.clear()
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
   })
 
   describe('showPendingWarnings', () => {

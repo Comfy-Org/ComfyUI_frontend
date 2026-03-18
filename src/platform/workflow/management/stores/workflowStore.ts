@@ -13,7 +13,7 @@ import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
@@ -340,7 +340,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     openWorkflowPaths.value = openWorkflowPaths.value.filter(
       (path) => path !== workflow.path
     )
-    useWorkflowDraftStore().removeDraft(workflow.path)
+    useWorkflowDraftStoreV2().removeDraft(workflow.path)
     if (workflow.isTemporary) {
       clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
@@ -496,7 +496,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const oldPath = workflow.path
       const oldKey = workflow.key
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
-      const draftStore = useWorkflowDraftStore()
+      const draftStore = useWorkflowDraftStoreV2()
 
       await workflow.rename(newPath)
 
@@ -528,7 +528,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isBusy.value = true
     try {
       await workflow.delete()
-      useWorkflowDraftStore().removeDraft(workflow.path)
+      useWorkflowDraftStoreV2().removeDraft(workflow.path)
       if (bookmarkStore.isBookmarked(workflow.path)) {
         await bookmarkStore.setBookmarked(workflow.path, false)
       }
