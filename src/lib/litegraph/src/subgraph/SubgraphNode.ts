@@ -836,6 +836,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           const link = this.graph?._links.get(input.link)
           if (link) link.target_slot = i
         }
+        this._setConcreteSlots()
         this._invalidatePromotedViewsCache()
         this.setDirtyCanvas(true, true)
       },
@@ -855,6 +856,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             if (link) link.origin_slot = i
           }
         }
+        this._setConcreteSlots()
         this.setDirtyCanvas(true, true)
       },
       { signal }
