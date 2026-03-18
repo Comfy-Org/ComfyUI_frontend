@@ -169,12 +169,17 @@ jobs:
           PR: #${PR_NUM}
           Commit: ${SHA}
 
-          Use playwright-cli for all browser interactions (video is auto-recorded):
+          Use playwright-cli for all browser interactions:
             playwright-cli open http://127.0.0.1:8188
-            playwright-cli snapshot (to get element refs after each navigation)
+            playwright-cli video-start              (start recording IMMEDIATELY after open)
+            playwright-cli snapshot                  (get element refs after each navigation)
             playwright-cli click <ref>
             playwright-cli press <key>
-            playwright-cli screenshot (take screenshots of notable findings)
+            playwright-cli screenshot                (take screenshots of notable findings)
+            playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm  (stop recording when done)
+
+          IMPORTANT: You MUST run "playwright-cli video-start" right after opening the browser,
+          and "playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm" before writing the report.
 
           Save QA report to: ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
@@ -198,12 +203,17 @@ jobs:
           DIFF (truncated to 500 lines):
           $(head -500 "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || echo "No diff available")
 
-          Use playwright-cli for all browser interactions (video is auto-recorded):
+          Use playwright-cli for all browser interactions:
             playwright-cli open http://127.0.0.1:8188
-            playwright-cli snapshot (to get element refs)
+            playwright-cli video-start              (start recording IMMEDIATELY after open)
+            playwright-cli snapshot                  (get element refs)
             playwright-cli click <ref>
             playwright-cli press <key>
-            playwright-cli screenshot (take screenshots of notable findings)
+            playwright-cli screenshot                (take screenshots of notable findings)
+            playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm  (stop recording when done)
+
+          IMPORTANT: You MUST run "playwright-cli video-start" right after opening the browser,
+          and "playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm" before writing the report.
 
           Instructions:
           1. Read the diff above to understand what changed
@@ -241,18 +251,18 @@ jobs:
           echo "=== QA artifacts ==="
           ls -la "$QA_ARTIFACTS/" 2>/dev/null | head -30
 
-          # Find the auto-recorded video (saveVideo produces .webm in outputDir)
-          VIDEO=$(find "$QA_ARTIFACTS" -name '*.webm' -type f | head -1)
-          if [ -n "$VIDEO" ]; then
-            echo "Found auto-recorded video: $VIDEO ($(du -h "$VIDEO" | cut -f1))"
-            cp "$VIDEO" "$QA_ARTIFACTS/qa-session.webm"
+          # Check for video from explicit video-stop command
+          if [ -f "$QA_ARTIFACTS/qa-session.webm" ]; then
+            echo "Found video: $QA_ARTIFACTS/qa-session.webm ($(du -h "$QA_ARTIFACTS/qa-session.webm" | cut -f1))"
           else
-            echo "No auto-recorded .webm found in $QA_ARTIFACTS"
-            # Fallback: check default playwright-cli output dir
-            FALLBACK=$(find . -maxdepth 3 -name '*.webm' -not -path '*/node_modules/*' 2>/dev/null | head -1)
-            if [ -n "$FALLBACK" ]; then
-              echo "Found fallback video: $FALLBACK"
-              cp "$FALLBACK" "$QA_ARTIFACTS/qa-session.webm"
+            echo "No qa-session.webm found at expected path"
+            # Search for any .webm in artifacts dir or playwright-cli output
+            VIDEO=$(find "$QA_ARTIFACTS" . -maxdepth 3 -name '*.webm' -not -path '*/node_modules/*' 2>/dev/null | head -1)
+            if [ -n "$VIDEO" ]; then
+              echo "Found fallback video: $VIDEO ($(du -h "$VIDEO" | cut -f1))"
+              cp "$VIDEO" "$QA_ARTIFACTS/qa-session.webm"
+            else
+              echo "WARNING: No .webm video found anywhere"
             fi
           fi
 
@@ -302,9 +312,6 @@ jobs:
           path: qa-artifacts
           pattern: qa-report-*
 
-      - name: Install ffmpeg
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1
-
       - name: Convert videos to mp4
         run: |
           for dir in qa-artifacts/qa-report-*; do
@@ -337,7 +344,7 @@ jobs:
               --artifacts-dir qa-artifacts \
               --output-dir video-reviews \
               --video-file "$vid" \
-              --model gpt-4o || true
+              --model gpt-4.1-mini || true
             echo "::endgroup::"
           done
 
