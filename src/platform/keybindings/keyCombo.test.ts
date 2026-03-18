@@ -35,7 +35,25 @@ describe('KeyComboImpl', () => {
       { key: '¡', code: 'Digit1', expected: '1' },
       { key: '€', code: 'Digit2', expected: '2' }
     ])(
-      'resolves Alt+$code to "$expected" instead of "$key" (macOS)',
+      'resolves digit Alt+$code to "$expected" instead of "$key" (macOS)',
+      ({ key, code, expected }) => {
+        const combo = KeyComboImpl.fromEvent(
+          mockKeyEvent({ key, code, altKey: true })
+        )
+        expect(combo.key).toBe(expected)
+        expect(combo.alt).toBe(true)
+      }
+    )
+
+    it.each([
+      { key: '≤', code: 'Comma', expected: ',' },
+      { key: '≥', code: 'Period', expected: '.' },
+      { key: '\u2019', code: 'BracketRight', expected: ']' },
+      { key: '`', code: 'Backquote', expected: '`' },
+      { key: '–', code: 'Minus', expected: '-' },
+      { key: '≠', code: 'Equal', expected: '=' }
+    ])(
+      'resolves punctuation Alt+$code to "$expected" instead of "$key" (macOS)',
       ({ key, code, expected }) => {
         const combo = KeyComboImpl.fromEvent(
           mockKeyEvent({ key, code, altKey: true })
@@ -79,6 +97,14 @@ describe('KeyComboImpl', () => {
       )
       expect(combo.key).toBe('Enter')
       expect(combo.alt).toBe(true)
+    })
+
+    it('falls through to event.key for unmapped codes like Numpad', () => {
+      const combo = KeyComboImpl.fromEvent(
+        mockKeyEvent({ key: '1', code: 'Numpad1', ctrlKey: true })
+      )
+      expect(combo.key).toBe('1')
+      expect(combo.ctrl).toBe(true)
     })
   })
 

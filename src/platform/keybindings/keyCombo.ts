@@ -89,6 +89,20 @@ export class KeyComboImpl implements KeyCombo {
   }
 }
 
+const CODE_TO_KEY: Record<string, string> = {
+  Comma: ',',
+  Period: '.',
+  Slash: '/',
+  Backslash: '\\',
+  BracketLeft: '[',
+  BracketRight: ']',
+  Semicolon: ';',
+  Quote: "'",
+  Backquote: '`',
+  Minus: '-',
+  Equal: '='
+}
+
 /**
  * When modifier keys (Ctrl, Alt, Meta) are held, event.key may return
  * unexpected characters:
@@ -96,12 +110,16 @@ export class KeyComboImpl implements KeyCombo {
  * - Non-English layouts return localized chars (e.g., Ctrl+S → Ctrl+ы in Russian)
  *
  * Use event.code to resolve the physical key in these cases.
+ *
+ * Shift is excluded from the modifier check because it intentionally changes
+ * the produced character (e.g., Shift+1 = !, Shift+a = A).
  */
 function resolveKeyFromEvent(event: KeyboardEvent): string {
   if ((event.ctrlKey || event.altKey || event.metaKey) && event.code) {
     const { code } = event
     if (code.startsWith('Key')) return code.slice(3).toLowerCase()
     if (code.startsWith('Digit')) return code.slice(5)
+    if (code in CODE_TO_KEY) return CODE_TO_KEY[code]
   }
   return event.key
 }
