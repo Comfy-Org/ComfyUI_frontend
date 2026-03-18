@@ -7,7 +7,7 @@ name: 'PR: QA'
 on:
   # TODO: remove push trigger before merge
   push:
-    branches: [sno-skills]
+    branches: [sno-skills, sno-qa-*]
   pull_request:
     types: [labeled]
     branches: [main]
