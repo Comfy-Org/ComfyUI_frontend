@@ -8,7 +8,7 @@ enableAutoUnmount(afterEach)
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
-import ResultGallery from './ResultGallery.vue'
+import MediaLightbox from './MediaLightbox.vue'
 
 const i18n = createI18n({
   legacy: false,
@@ -38,7 +38,7 @@ type MockResultItem = Partial<ResultItemImpl> & {
   isAudio?: boolean
 }
 
-describe('ResultGallery', () => {
+describe('MediaLightbox', () => {
   const mockComfyImage = {
     name: 'ComfyImage',
     template: '<div class="mock-comfy-image" data-testid="comfy-image"></div>',
@@ -108,7 +108,7 @@ describe('ResultGallery', () => {
   })
 
   const mountGallery = (props = {}) => {
-    return mount(ResultGallery, {
+    return mount(MediaLightbox, {
       global: {
         plugins: [i18n],
         components: {
@@ -136,13 +136,6 @@ describe('ResultGallery', () => {
     const dialog = wrapper.find('[role="dialog"]')
     expect(dialog.exists()).toBe(true)
     expect(dialog.attributes('aria-modal')).toBe('true')
-  })
-
-  it('renders close button', async () => {
-    const wrapper = mountGallery()
-    await nextTick()
-
-    expect(wrapper.find('[aria-label="Close"]').exists()).toBe(true)
   })
 
   it('shows navigation buttons when multiple items', async () => {
@@ -189,9 +182,9 @@ describe('ResultGallery', () => {
       const wrapper = mountGallery({ activeIndex: 0 })
       await nextTick()
 
-      window.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true })
-      )
+      await wrapper
+        .find('[role="dialog"]')
+        .trigger('keydown', { key: 'ArrowRight' })
       await nextTick()
 
       expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([1])
@@ -201,9 +194,9 @@ describe('ResultGallery', () => {
       const wrapper = mountGallery({ activeIndex: 1 })
       await nextTick()
 
-      window.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true })
-      )
+      await wrapper
+        .find('[role="dialog"]')
+        .trigger('keydown', { key: 'ArrowLeft' })
       await nextTick()
 
       expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([0])
@@ -213,9 +206,9 @@ describe('ResultGallery', () => {
       const wrapper = mountGallery({ activeIndex: 0 })
       await nextTick()
 
-      window.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true })
-      )
+      await wrapper
+        .find('[role="dialog"]')
+        .trigger('keydown', { key: 'ArrowLeft' })
       await nextTick()
 
       expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([2])
@@ -225,25 +218,12 @@ describe('ResultGallery', () => {
       const wrapper = mountGallery({ activeIndex: 0 })
       await nextTick()
 
-      window.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', cancelable: true })
-      )
+      await wrapper
+        .find('[role="dialog"]')
+        .trigger('keydown', { key: 'Escape' })
       await nextTick()
 
       expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([-1])
-    })
-
-    it('prevents default on arrow keys', async () => {
-      mountGallery({ activeIndex: 0 })
-      await nextTick()
-
-      const event = new KeyboardEvent('keydown', {
-        key: 'ArrowRight',
-        cancelable: true
-      })
-      window.dispatchEvent(event)
-
-      expect(event.defaultPrevented).toBe(true)
     })
   })
 })

@@ -11,6 +11,7 @@
       data-mask
       @mousedown="onMaskMouseDown"
       @mouseup="onMaskMouseUp"
+      @keydown="handleKeyDown"
     >
       <!-- Close Button -->
       <Button
@@ -67,7 +68,6 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
@@ -133,9 +133,7 @@ function onMaskMouseUp(event: MouseEvent) {
   }
 }
 
-useEventListener(window, 'keydown', (event: KeyboardEvent) => {
-  if (!galleryVisible.value) return
-
+function handleKeyDown(event: KeyboardEvent) {
   const actions: Record<string, () => void> = {
     ArrowLeft: () => navigateImage(-1),
     ArrowRight: () => navigateImage(1),
@@ -147,5 +145,5 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
     event.preventDefault()
     action()
   }
-})
+}
 </script>
