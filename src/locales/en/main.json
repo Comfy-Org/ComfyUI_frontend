@@ -1158,6 +1158,7 @@
   },
   "maskEditor": {
     "title": "Mask Editor",
+    "openMaskEditor": "Open in Mask Editor",
     "invert": "Invert",
     "clear": "Clear",
     "undo": "Undo",
