@@ -120,6 +120,18 @@ jobs:
         shell: bash
         run: npm install -g @playwright/cli@latest @anthropic-ai/claude-code@2.1.71
 
+      - name: Configure playwright-cli
+        shell: bash
+        run: |
+          mkdir -p .playwright "$QA_ARTIFACTS/frames"
+          cat > .playwright/cli.config.json <<EOF
+          {
+            "outputDir": "$QA_ARTIFACTS",
+            "saveVideo": { "width": 1280, "height": 720 }
+          }
+          EOF
+          cat .playwright/cli.config.json
+
       - name: Get PR diff for focused QA
         if: needs.resolve-matrix.outputs.mode == 'focused'
         shell: bash
@@ -155,19 +167,22 @@ jobs:
           PR: #${PR_NUM}
           Commit: ${SHA}
 
-          1. Use playwright-cli via Bash to navigate http://127.0.0.1:8188
-             - Run: playwright-cli goto http://127.0.0.1:8188
-             - Run: playwright-cli snapshot (after each navigation to get element refs)
-             - Use: playwright-cli click <ref>, playwright-cli press <key>, etc.
-             - Run: playwright-cli screenshot --filename=<path> (to capture failures)
-          2. Run the FULL QA test plan from the skill file
-          3. IMPORTANT: Take a screenshot after EVERY significant interaction to build a video.
-             Save all screenshots sequentially to $QA_ARTIFACTS/frames/:
-               mkdir -p $QA_ARTIFACTS/frames
-               playwright-cli screenshot --filename=$QA_ARTIFACTS/frames/frame-001.png
-               (increment the number for each screenshot: frame-002.png, frame-003.png, etc.)
-          4. Also save screenshots of failures or notable states into $QA_ARTIFACTS
-          5. Save report to $QA_ARTIFACTS as YYYY-MM-DD-NNN-${OS_LOWER}-report.md
+          IMPORTANT: First start video recording, then do the QA, then stop recording:
+            playwright-cli open http://127.0.0.1:8188
+            playwright-cli video-start
+
+          Then use playwright-cli for all interactions:
+            playwright-cli snapshot (to get element refs after each navigation)
+            playwright-cli click <ref>
+            playwright-cli press <key>
+            playwright-cli screenshot (after each significant interaction)
+
+          Run the FULL QA test plan from .claude/skills/comfy-qa/SKILL.md
+
+          When done with QA, stop the video:
+            playwright-cli video-stop $QA_ARTIFACTS/qa-session.mp4
+
+          Save the QA report as: $QA_ARTIFACTS/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
           Do NOT create a new PR. Do NOT post PR comments. Do NOT commit or push anything.
           Skip tests not available in CI (file dialogs, GPU execution).
@@ -189,26 +204,24 @@ jobs:
           DIFF (truncated to 500 lines):
           $(head -500 "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || echo "No diff available")
 
-          Instructions:
-          1. Read the diff above to understand what changed in this PR
-          2. Use playwright-cli via Bash to navigate http://127.0.0.1:8188
-             - Run: playwright-cli goto http://127.0.0.1:8188
-             - Run: playwright-cli snapshot (after each navigation to get element refs)
-             - Use: playwright-cli click <ref>, playwright-cli press <key>, etc.
-             - Run: playwright-cli screenshot --filename=<path> (to save failures into $QA_ARTIFACTS)
-          3. IMPORTANT: Take a screenshot after EVERY significant interaction to build a video.
-             Save all screenshots sequentially to $QA_ARTIFACTS/frames/:
-               mkdir -p $QA_ARTIFACTS/frames
-               playwright-cli screenshot --filename=$QA_ARTIFACTS/frames/frame-001.png
-               (increment the number for each screenshot: frame-002.png, frame-003.png, etc.)
-          4. Test the specific UI areas affected by these changes
-          5. Also do a quick smoke test of core functionality (app loads, canvas renders, sidebar works)
-          6. Save a concise report to $QA_ARTIFACTS as YYYY-MM-DD-NNN-${OS_LOWER}-report.md
+          IMPORTANT: First start video recording:
+            playwright-cli open http://127.0.0.1:8188
+            playwright-cli video-start
 
-          Focus on:
-          - Does the changed functionality work as expected?
-          - Are there visual regressions in affected areas?
-          - Do related features still work?
+          Then use playwright-cli for all interactions:
+            playwright-cli snapshot (to get element refs)
+            playwright-cli click <ref>
+            playwright-cli press <key>
+            playwright-cli screenshot (after each significant interaction)
+
+          Instructions:
+          1. Read the diff above to understand what changed
+          2. Test the specific UI areas affected by these changes
+          3. Quick smoke test of core functionality (app loads, canvas renders, sidebar works)
+          4. When done, stop the video: playwright-cli video-stop $QA_ARTIFACTS/qa-session.mp4
+          5. Save a concise report to $QA_ARTIFACTS as $(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
+
+          Focus on: changed functionality, visual regressions, related features.
 
           Do NOT run the full QA test plan. Do NOT create a new PR. Do NOT post PR comments. Do NOT commit or push anything.
           Skip tests not available in CI (file dialogs, GPU execution).
@@ -235,7 +248,20 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$QA_ARTIFACTS"
-          ls -la "$QA_ARTIFACTS/" || true
+          # Copy any playwright-cli output (screenshots, videos, snapshots)
+          for dir in .playwright-cli .playwright; do
+            if [ -d "$dir" ]; then
+              echo "Copying $dir to artifacts"
+              cp -r "$dir"/* "$QA_ARTIFACTS/" 2>/dev/null || true
+            fi
+          done
+          # Also check common screenshot locations
+          find . -maxdepth 2 -name "*.webm" -o -name "*.mp4" -o -name "screenshot*.png" 2>/dev/null | while read f; do
+            echo "Found: $f"
+            cp "$f" "$QA_ARTIFACTS/" 2>/dev/null || true
+          done
+          echo "=== Artifacts ==="
+          ls -laR "$QA_ARTIFACTS/" || true
 
       - name: Upload QA artifacts
         if: always()
