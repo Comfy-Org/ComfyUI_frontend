@@ -857,9 +857,9 @@
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
       "sections": {
-        "favorites": "Favorites",
-        "favoriteNode": "Favorite Node",
-        "unfavoriteNode": "Unfavorite Node",
+        "favorites": "Bookmarks",
+        "favoriteNode": "Bookmark Node",
+        "unfavoriteNode": "Unbookmark Node",
         "bookmarked": "Bookmarked",
         "subgraphBlueprints": "Subgraph Blueprints",
         "myBlueprints": "My Blueprints",
@@ -868,7 +868,7 @@
         "comfyNodes": "Comfy Nodes",
         "extensions": "Extensions"
       },
-      "noBookmarkedNodes": "No favorites yet"
+      "noBookmarkedNodes": "No bookmarks yet"
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
@@ -1840,7 +1840,8 @@
   "loadWorkflowWarning": {
     "outdatedVersion": "This workflow was created with a newer version of ComfyUI ({version}). Some nodes may not work correctly.",
     "outdatedVersionGeneric": "This workflow was created with a newer version of ComfyUI. Some nodes may not work correctly.",
-    "coreNodesFromVersion": "Core nodes from version {version}:"
+    "coreNodesFromVersion": "Core nodes from version {version}:",
+    "unknownVersion": "unknown"
   },
   "errorDialog": {
     "defaultTitle": "An error occurred",
@@ -1972,6 +1973,10 @@
     "y": "Y",
     "width": "Width",
     "height": "Height"
+  },
+  "curveWidget": {
+    "monotone_cubic": "Smooth",
+    "linear": "Linear"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -3568,9 +3573,9 @@
     "removeBackground": "Remove Background",
     "imageCompare": "Image compare",
     "extractFrame": "Extract frame",
-    "loadStyleLora": "Load style (LoRA)",
+    "loadStyleLora": "Load style",
     "lipsync": "Lipsync",
-    "textGenerationLLM": "Text generation (LLM)",
+    "textGenerationLLM": "Text generation",
     "textTo3DModel": "Text to 3D model",
     "imageTo3DModel": "Image to 3D Model",
     "musicGeneration": "Music generation",
@@ -3622,5 +3627,16 @@
   "builderMenu": {
     "enterAppMode": "Enter app mode",
     "exitAppBuilder": "Exit app builder"
+  },
+  "cloudNotification": {
+    "title": "Run ComfyUI in the Cloud",
+    "message": "From setup to creation in seconds. Popular models, extensions, and powerful GPUs — ready when you are.",
+    "feature1Title": "400 Free Credits Monthly",
+    "feature2Title": "Works Anywhere, Instantly",
+    "feature3Title": "Models Ready to Use",
+    "feature4Title": "Top Custom Node Packs Pre-installed",
+    "footer": "ComfyUI stays free and open source. Cloud is optional.",
+    "continueLocally": "Continue Locally",
+    "exploreCloud": "Try Cloud for Free"
   }
 }
