@@ -470,7 +470,8 @@ function handleSubscribeWorkspace() {
 }
 
 function handleUpgrade() {
-  isFreeTierPlan.value ? showPricingTable() : showSubscriptionDialog()
+  if (isFreeTierPlan.value) showPricingTable()
+  else showSubscriptionDialog()
 }
 
 function handleUpgradeToAddCredits() {

@@ -36,13 +36,16 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
   }
 
   async function startStoreBootstrap() {
+    if (isCloud) {
+      const { isInitialized, isAuthenticated } = storeToRefs(
+        useFirebaseAuthStore()
+      )
+      await until(isInitialized).toBe(true)
+      await until(isAuthenticated).toBe(true)
+    }
+
     const userStore = useUserStore()
     await userStore.initialize()
-
-    if (isCloud) {
-      const { isInitialized } = storeToRefs(useFirebaseAuthStore())
-      await until(isInitialized).toBe(true)
-    }
 
     const { needsLogin } = storeToRefs(userStore)
     await until(needsLogin).toBe(false)
