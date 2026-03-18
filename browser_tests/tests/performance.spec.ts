@@ -222,6 +222,84 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test.describe('vue renderer large graph', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+      await comfyPage.vueNodes.waitForNodes()
+    })
+
+    test('idle', async ({ comfyPage }) => {
+      await comfyPage.perf.startMeasuring()
+
+      for (let i = 0; i < 120; i++) {
+        await comfyPage.nextFrame()
+      }
+
+      const m = await comfyPage.perf.stopMeasuring('vue-large-graph-idle')
+      recordMeasurement(m)
+      console.log(
+        `Vue large graph idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.domNodes} DOM nodes`
+      )
+    })
+
+    test('pan', async ({ comfyPage }) => {
+      const canvas = comfyPage.canvas
+      const box = await canvas.boundingBox()
+      if (!box) throw new Error('Canvas bounding box not available')
+
+      await comfyPage.perf.startMeasuring()
+
+      const centerX = box.x + box.width / 2
+      const centerY = box.y + box.height / 2
+      await comfyPage.page.mouse.move(centerX, centerY)
+      await comfyPage.page.mouse.down({ button: 'middle' })
+      for (let i = 0; i < 60; i++) {
+        await comfyPage.page.mouse.move(centerX + i * 5, centerY + i * 2)
+        await comfyPage.nextFrame()
+      }
+      await comfyPage.page.mouse.up({ button: 'middle' })
+
+      const m = await comfyPage.perf.stopMeasuring('vue-large-graph-pan')
+      recordMeasurement(m)
+      console.log(
+        `Vue large graph pan: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+      )
+    })
+
+    test('zoom out culling', async ({ comfyPage }) => {
+      await comfyPage.perf.startMeasuring()
+
+      // Zoom out far enough that nodes become < 4px screen size
+      // (triggers size-based culling in isNodeInViewport)
+      for (let i = 0; i < 20; i++) {
+        await comfyPage.canvasOps.zoom(100)
+      }
+
+      // Verify we actually entered the culling regime.
+      // isNodeTooSmall triggers when max(width, height) * scale < 4px.
+      // Typical nodes are ~200px wide, so scale must be < 0.02.
+      const scale = await comfyPage.canvasOps.getScale()
+      expect(scale).toBeLessThan(0.02)
+
+      // Idle at extreme zoom-out — most nodes should be culled
+      for (let i = 0; i < 60; i++) {
+        await comfyPage.nextFrame()
+      }
+
+      // Zoom back in
+      for (let i = 0; i < 20; i++) {
+        await comfyPage.canvasOps.zoom(-100)
+      }
+
+      const m = await comfyPage.perf.stopMeasuring('vue-zoom-culling')
+      recordMeasurement(m)
+      console.log(
+        `Vue zoom culling: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
+      )
+    })
+  })
+
   test('workflow execution', async ({ comfyPage }) => {
     // Uses lightweight PrimitiveString → PreviewAny workflow (no GPU needed)
     await comfyPage.workflow.loadWorkflow('execution/partial_execution')

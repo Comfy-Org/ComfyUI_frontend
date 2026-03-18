@@ -108,7 +108,7 @@ app.registerExtension({
       'waiting for camera...',
       'capture',
       capture,
-      { canvasOnly: true }
+      {}
     )
     btn.disabled = true
     btn.serializeValue = () => undefined
@@ -142,7 +142,10 @@ app.registerExtension({
         useToastStore().addAlert(err)
         throw new Error(err)
       }
-      return `webcam/${name} [temp]`
+      const data = await resp.json()
+      const serverName = data.name ?? name
+      const subfolder = data.subfolder ?? 'webcam'
+      return `${subfolder}/${serverName} [temp]`
     }
 
     // @ts-expect-error fixme ts strict error

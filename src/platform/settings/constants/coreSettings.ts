@@ -294,6 +294,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Desktop.CloudNotificationShown',
+    name: 'Cloud notification shown',
+    type: 'hidden',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.Graph.ZoomSpeed',
     category: ['LiteGraph', 'Canvas', 'ZoomSpeed'],
     name: 'Canvas zoom speed',
@@ -569,6 +575,19 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'Default',
     migrateDeprecatedValue: (value: unknown) =>
       value === 'Integrated' ? 'Default' : value
+  },
+  {
+    id: 'Comfy.Appearance.DisableAnimations',
+    category: ['Appearance', 'General'],
+    name: 'Disable animations',
+    type: 'boolean',
+    defaultValue: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    tooltip:
+      'Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation.',
+    onChange: (value: unknown) => {
+      document.body.classList.toggle('disable-animations', !!value)
+    },
+    versionAdded: '1.43.0'
   },
   {
     id: 'Comfy.UseNewMenu',

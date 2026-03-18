@@ -56,11 +56,11 @@ const mountComponent = (groups: JobGroup[]) =>
     }
   })
 
-afterEach(() => {
-  vi.useRealTimers()
-})
-
 describe('JobGroupsList hover behavior', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('delays showing and hiding details while hovering over job rows', async () => {
     vi.useFakeTimers()
     const job = createJobItem({ id: 'job-d' })
@@ -94,5 +94,34 @@ describe('JobGroupsList hover behavior', () => {
     expect(
       wrapper.findComponent(QueueJobItemStub).props('activeDetailsId')
     ).toBeNull()
+  })
+
+  it('clears the previous popover when hovering a new row briefly and leaving', async () => {
+    vi.useFakeTimers()
+    const firstJob = createJobItem({ id: 'job-1', title: 'First job' })
+    const secondJob = createJobItem({ id: 'job-2', title: 'Second job' })
+    const wrapper = mountComponent([
+      { key: 'today', label: 'Today', items: [firstJob, secondJob] }
+    ])
+    const jobItems = wrapper.findAllComponents(QueueJobItemStub)
+
+    jobItems[0].vm.$emit('details-enter', firstJob.id)
+    vi.advanceTimersByTime(200)
+    await nextTick()
+    expect(jobItems[0].props('activeDetailsId')).toBe(firstJob.id)
+
+    jobItems[0].vm.$emit('details-leave', firstJob.id)
+    jobItems[1].vm.$emit('details-enter', secondJob.id)
+    vi.advanceTimersByTime(100)
+    await nextTick()
+    jobItems[1].vm.$emit('details-leave', secondJob.id)
+
+    vi.advanceTimersByTime(50)
+    await nextTick()
+    expect(jobItems[0].props('activeDetailsId')).toBeNull()
+
+    vi.advanceTimersByTime(50)
+    await nextTick()
+    expect(jobItems[1].props('activeDetailsId')).toBeNull()
   })
 })
