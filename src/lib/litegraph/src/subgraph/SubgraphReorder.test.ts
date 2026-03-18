@@ -163,11 +163,13 @@ describe('SubgraphNode syncs on reorder events', () => {
     expect(subgraphNode.inputs[0].link).not.toBeNull()
     const linkId = subgraphNode.inputs[0].link!
 
-    // Reorder: swap positions
+    // Reorder: move 'a' from index 0 to index 1
     subgraph.reorderInput(0, 1)
 
-    // The link should now be on the input that was moved
-    const movedInput = subgraphNode.inputs.find((i) => i.link === linkId)
-    expect(movedInput).toBeDefined()
+    // 'b' should now be at index 0 (no link), 'a' at index 1 (with link)
+    expect(subgraphNode.inputs[0].name).toBe('b')
+    expect(subgraphNode.inputs[0].link).toBeNull()
+    expect(subgraphNode.inputs[1].name).toBe('a')
+    expect(subgraphNode.inputs[1].link).toBe(linkId)
   })
 })
