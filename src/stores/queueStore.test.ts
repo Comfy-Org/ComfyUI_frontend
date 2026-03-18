@@ -66,7 +66,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 describe('TaskItemImpl', () => {
-  it('should remove animated property from outputs during construction', () => {
+  it('should exclude animated from flatOutputs', () => {
     const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
       'node-1': {
@@ -75,11 +75,9 @@ describe('TaskItemImpl', () => {
       }
     })
 
-    // Check that animated property was removed
-    expect('animated' in taskItem.outputs['node-1']).toBe(false)
-
-    expect(taskItem.outputs['node-1'].images).toBeDefined()
-    expect(taskItem.outputs['node-1'].images?.[0]?.filename).toBe('test.png')
+    expect(taskItem.flatOutputs).toHaveLength(1)
+    expect(taskItem.flatOutputs[0].filename).toBe('test.png')
+    expect(taskItem.flatOutputs[0].mediaType).toBe('images')
   })
 
   it('should handle outputs without animated property', () => {
@@ -202,8 +200,7 @@ describe('TaskItemImpl', () => {
 
     const task = new TaskItemImpl(job)
 
-    expect(task.flatOutputs).toHaveLength(1)
-    expect(task.flatOutputs[0].filename).toBe('')
+    expect(task.flatOutputs).toHaveLength(0)
     expect(task.previewableOutputs).toHaveLength(0)
     expect(task.previewOutput).toBeUndefined()
   })
