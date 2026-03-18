@@ -100,7 +100,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: '+',
+      key: '=',
       alt: true,
       shift: true
     },

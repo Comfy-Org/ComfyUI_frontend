@@ -104,18 +104,21 @@ const CODE_TO_KEY: Record<string, string> = {
 }
 
 /**
- * When modifier keys (Ctrl, Alt, Meta) are held, event.key may return
- * unexpected characters:
- * - macOS Option (Alt) produces special chars (e.g., Alt+M → µ, Alt+S → ß)
- * - Non-English layouts return localized chars (e.g., Ctrl+S → Ctrl+ы in Russian)
+ * Always resolve the physical key from event.code when available.
  *
- * Use event.code to resolve the physical key in these cases.
+ * Like VS Code's FallbackKeyboardMapper, keybindings are bound to physical
+ * key positions (US layout), not the characters they produce. This ensures
+ * shortcuts work on any keyboard layout:
+ * - Non-Latin layouts (Russian, Arabic): physical 'R' fires 'к'/'ق' in
+ *   event.key, but event.code is always 'KeyR' → resolved to 'r'
+ * - macOS Alt produces special chars (Alt+M → µ): resolved from code
+ * - US International Ctrl+Alt combos produce accented chars (Ctrl+Alt+A → á)
  *
- * Shift is excluded from the modifier check because it intentionally changes
- * the produced character (e.g., Shift+1 = !, Shift+a = A).
+ * Keys not in the mapping (Enter, Escape, F-keys, arrows, numpad) fall
+ * through to event.key, which is locale-independent for these keys.
  */
 function resolveKeyFromEvent(event: KeyboardEvent): string {
-  if ((event.ctrlKey || event.altKey || event.metaKey) && event.code) {
+  if (event.code) {
     const { code } = event
     if (code.startsWith('Key')) return code.slice(3).toLowerCase()
     if (code.startsWith('Digit')) return code.slice(5)

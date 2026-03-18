@@ -84,27 +84,58 @@ describe('KeyComboImpl', () => {
       }
     )
 
-    it('uses event.key when no modifier is pressed', () => {
+    it.each([
+      { key: 'к', code: 'KeyR', expected: 'r', label: 'Russian R' },
+      { key: 'س', code: 'KeyS', expected: 's', label: 'Arabic S' }
+    ])(
+      'resolves no-modifier $label to "$expected" (non-Latin layout)',
+      ({ key, code, expected }) => {
+        const combo = KeyComboImpl.fromEvent(mockKeyEvent({ key, code }))
+        expect(combo.key).toBe(expected)
+      }
+    )
+
+    it('resolves no-modifier punctuation from code', () => {
       const combo = KeyComboImpl.fromEvent(
-        mockKeyEvent({ key: 'ы', code: 'KeyS' })
+        mockKeyEvent({ key: '.', code: 'Period' })
       )
-      expect(combo.key).toBe('ы')
+      expect(combo.key).toBe('.')
     })
 
-    it('uses event.key for non-letter/digit codes with modifier', () => {
+    it('resolves Shift+digit from code (Shift+1 → key="1", shift=true)', () => {
       const combo = KeyComboImpl.fromEvent(
-        mockKeyEvent({ key: 'Enter', code: 'Enter', altKey: true })
+        mockKeyEvent({ key: '!', code: 'Digit1', shiftKey: true })
       )
-      expect(combo.key).toBe('Enter')
+      expect(combo.key).toBe('1')
+      expect(combo.shift).toBe(true)
+    })
+
+    it('resolves Ctrl+Alt US International accented char from code', () => {
+      const combo = KeyComboImpl.fromEvent(
+        mockKeyEvent({ key: 'á', code: 'KeyA', ctrlKey: true, altKey: true })
+      )
+      expect(combo.key).toBe('a')
+      expect(combo.ctrl).toBe(true)
       expect(combo.alt).toBe(true)
     })
 
     it('falls through to event.key for unmapped codes like Numpad', () => {
       const combo = KeyComboImpl.fromEvent(
-        mockKeyEvent({ key: '1', code: 'Numpad1', ctrlKey: true })
+        mockKeyEvent({ key: '+', code: 'NumpadAdd' })
       )
-      expect(combo.key).toBe('1')
-      expect(combo.ctrl).toBe(true)
+      expect(combo.key).toBe('+')
+    })
+
+    it('falls through to event.key for special keys', () => {
+      const combo = KeyComboImpl.fromEvent(
+        mockKeyEvent({ key: 'Enter', code: 'Enter' })
+      )
+      expect(combo.key).toBe('Enter')
+    })
+
+    it('falls through to event.key when code is empty', () => {
+      const combo = KeyComboImpl.fromEvent(mockKeyEvent({ key: 'a', code: '' }))
+      expect(combo.key).toBe('a')
     })
   })
 
