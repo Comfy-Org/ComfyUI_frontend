@@ -1,20 +1,58 @@
-// TODO: Fix these tests after migration
 /**
  * SubgraphSerialization Tests
  *
  * Tests for saving, loading, and version compatibility of subgraphs.
  * This covers serialization, deserialization, data integrity, and migration scenarios.
  */
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 
-import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
+import type { ISlotType } from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-describe.skip('SubgraphSerialization - Basic Serialization', () => {
+function createRegisteredNode(
+  graph: LGraph | Subgraph,
+  inputs: ISlotType[] = [],
+  outputs: ISlotType[] = [],
+  title?: string
+) {
+  const type = JSON.stringify({ inputs, outputs })
+  if (!LiteGraph.registered_node_types[type]) {
+    class testnode extends LGraphNode {
+      constructor(title: string) {
+        super(title)
+        let i = 0
+        for (const input of inputs) this.addInput('input_' + i++, input)
+        let o = 0
+        for (const output of outputs) this.addOutput('output_' + o++, output)
+      }
+    }
+    LiteGraph.registered_node_types[type] = testnode
+  }
+  const node = LiteGraph.createNode(type, title)
+  if (!node) throw new Error('Failed to create node')
+  graph.add(node)
+  return node
+}
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
+})
+
+describe('SubgraphSerialization - Basic Serialization', () => {
   it('should save and load simple subgraphs', () => {
     const original = createTestSubgraph({
       name: 'Simple Test',
@@ -122,7 +160,7 @@ describe.skip('SubgraphSerialization - Basic Serialization', () => {
   })
 })
 
-describe.skip('SubgraphSerialization - Complex Serialization', () => {
+describe('SubgraphSerialization - Complex Serialization', () => {
   it('should serialize nested subgraphs with multiple levels', () => {
     // Create a nested structure
     const childSubgraph = createTestSubgraph({
@@ -189,35 +227,28 @@ describe.skip('SubgraphSerialization - Complex Serialization', () => {
     }
   })
 
-  it('should preserve custom node data', () => {
-    const subgraph = createTestSubgraph({ nodeCount: 2 })
-
-    // Add custom properties to nodes (if supported)
-    const nodes = subgraph.nodes
-    if (nodes.length > 0) {
-      const firstNode = nodes[0]
-      if (firstNode.properties) {
-        firstNode.properties.customValue = 42
-        firstNode.properties.customString = 'test'
-      }
-    }
+  it('should preserve I/O even when nodes are not restored', () => {
+    const subgraph = createTestSubgraph({
+      nodeCount: 2,
+      inputs: [{ name: 'data_in', type: 'number' }],
+      outputs: [{ name: 'data_out', type: 'string' }]
+    })
 
     const exported = subgraph.asSerialisable()
     const restored = new Subgraph(new LGraph(), exported)
 
-    // Test nodes may not be restored if they don't have registered types
-    // This is expected behavior
+    // Nodes are not restored without registered types
+    expect(restored.nodes).toHaveLength(0)
 
-    // Custom properties preservation depends on node implementation
-    // This test documents the expected behavior
-    if (restored.nodes.length > 0 && restored.nodes[0].properties) {
-      // Properties should be preserved if the node supports them
-      expect(restored.nodes[0].properties).toBeDefined()
-    }
+    // I/O is still preserved
+    expect(restored.inputs).toHaveLength(1)
+    expect(restored.inputs[0].name).toBe('data_in')
+    expect(restored.outputs).toHaveLength(1)
+    expect(restored.outputs[0].name).toBe('data_out')
   })
 })
 
-describe.skip('SubgraphSerialization - Version Compatibility', () => {
+describe('SubgraphSerialization - Version Compatibility', () => {
   it('should handle version field in exports', () => {
     const subgraph = createTestSubgraph({ nodeCount: 1 })
     const exported = subgraph.asSerialisable()
@@ -323,7 +354,7 @@ describe.skip('SubgraphSerialization - Version Compatibility', () => {
   })
 })
 
-describe.skip('SubgraphSerialization - Data Integrity', () => {
+describe('SubgraphSerialization - Data Integrity', () => {
   it('should pass round-trip testing (save → load → save → compare)', () => {
     const original = createTestSubgraph({
       name: 'Round Trip Test',
@@ -400,36 +431,48 @@ describe.skip('SubgraphSerialization - Data Integrity', () => {
     expect(instance.outputs.length).toBe(1)
   })
 
-  it('should preserve node positions and properties', () => {
+  it('should not restore nodes without registered types', () => {
     const subgraph = createTestSubgraph({ nodeCount: 2 })
 
-    // Modify node positions if possible
-    if (subgraph.nodes.length > 0) {
-      const node = subgraph.nodes[0]
-      if ('pos' in node) {
-        node.pos = [100, 200]
-      }
-      if ('size' in node) {
-        node.size = [150, 80]
-      }
-    }
+    // Nodes exist before serialization
+    expect(subgraph.nodes).toHaveLength(2)
 
     const exported = subgraph.asSerialisable()
     const restored = new Subgraph(new LGraph(), exported)
 
-    // Test nodes may not be restored if they don't have registered types
-    // This is expected behavior
+    // Nodes are not restored without registered types
+    expect(restored.nodes).toHaveLength(0)
+  })
 
-    // Position/size preservation depends on node implementation
-    // This test documents the expected behavior
-    if (restored.nodes.length > 0) {
-      const restoredNode = restored.nodes[0]
-      expect(restoredNode).toBeDefined()
+  it('should preserve interior link structure through serialization', () => {
+    const subgraph = createTestSubgraph({ nodeCount: 0 })
 
-      // Properties should be preserved if supported
-      if ('pos' in restoredNode && restoredNode.pos) {
-        expect(Array.isArray(restoredNode.pos)).toBe(true)
-      }
+    const nodeA = createRegisteredNode(subgraph, [], ['number'], 'A')
+    const nodeB = createRegisteredNode(subgraph, ['number'], ['string'], 'B')
+    const nodeC = createRegisteredNode(subgraph, ['string'], [], 'C')
+
+    nodeA.connect(0, nodeB, 0)
+    nodeB.connect(0, nodeC, 0)
+
+    expect(subgraph.nodes).toHaveLength(3)
+    expect(subgraph.links.size).toBe(2)
+
+    const exported = subgraph.asSerialisable()
+    const restored = new Subgraph(new LGraph(), exported)
+    restored.configure(exported)
+
+    expect(restored.nodes).toHaveLength(3)
+    expect(restored.links.size).toBe(2)
+
+    for (const [, link] of restored.links) {
+      const originNode = restored.getNodeById(link.origin_id)
+      const targetNode = restored.getNodeById(link.target_id)
+      expect(originNode).toBeDefined()
+      expect(targetNode).toBeDefined()
+      expect(link.origin_slot).toBeGreaterThanOrEqual(0)
+      expect(link.target_slot).toBeGreaterThanOrEqual(0)
+      expect(originNode!.outputs[link.origin_slot]).toBeDefined()
+      expect(targetNode!.inputs[link.target_slot]).toBeDefined()
     }
   })
 })
