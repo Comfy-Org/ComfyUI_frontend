@@ -1,5 +1,6 @@
-// TODO: Fix these tests after migration
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import type {
   ISlotType,
@@ -11,7 +12,8 @@ import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createEventCapture,
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
 // Helper to create a node with a widget
@@ -53,8 +55,13 @@ function setupPromotedWidget(
   return createTestSubgraphNode(subgraph)
 }
 
-describe.skip('SubgraphWidgetPromotion', () => {
-  describe.skip('Widget Promotion Functionality', () => {
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
+})
+
+describe('SubgraphWidgetPromotion', () => {
+  describe('Widget Promotion Functionality', () => {
     it('should promote widgets when connecting node to subgraph input', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
@@ -140,7 +147,10 @@ describe.skip('SubgraphWidgetPromotion', () => {
       eventCapture.cleanup()
     })
 
-    it('should fire widget-demoted event when removing promoted widget', () => {
+    // BUG: removeWidgetByName calls demote but widgets getter rebuilds from
+    // promotionStore which still has the entry.
+    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/10174
+    it.skip('should fire widget-demoted event when removing promoted widget', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'input', type: 'number' }]
       })
@@ -284,7 +294,7 @@ describe.skip('SubgraphWidgetPromotion', () => {
     })
   })
 
-  describe.skip('Tooltip Promotion', () => {
+  describe('Tooltip Promotion', () => {
     it('should preserve widget tooltip when promoting', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
