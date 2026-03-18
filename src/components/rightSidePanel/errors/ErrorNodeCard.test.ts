@@ -31,9 +31,19 @@ vi.mock('@/utils/errorReportUtil', () => ({
   generateErrorReport: (data: unknown) => mockGenerateErrorReport(data)
 }))
 
+const mockTrackHelpResourceClicked = vi.fn()
+
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackUiButtonClicked: vi.fn()
+    trackUiButtonClicked: vi.fn(),
+    trackHelpResourceClicked: mockTrackHelpResourceClicked
+  }))
+}))
+
+const mockExecuteCommand = vi.fn()
+vi.mock('@/stores/commandStore', () => ({
+  useCommandStore: vi.fn(() => ({
+    execute: mockExecuteCommand
   }))
 }))
 
@@ -63,11 +73,18 @@ describe('ErrorNodeCard.vue', () => {
           g: {
             copy: 'Copy',
             findIssues: 'Find Issues',
-            findOnGithub: 'Find on Github'
+            findOnGithub: 'Find on Github',
+            getHelpAction: 'Get Help'
           },
           rightSidePanel: {
             locateNode: 'Locate Node',
-            enterSubgraph: 'Enter Subgraph'
+            enterSubgraph: 'Enter Subgraph',
+            findOnGithubTooltip: 'Search GitHub issues for related problems',
+            getHelpTooltip:
+              'Report this error and we\u0027ll help you resolve it'
+          },
+          issueReport: {
+            helpFix: 'Help Fix This'
           }
         }
       }
@@ -254,6 +271,24 @@ describe('ErrorNodeCard.vue', () => {
     )
 
     openSpy.mockRestore()
+  })
+
+  it('executes ContactSupport command when Get Help button is clicked', async () => {
+    const wrapper = mountCard(makeRuntimeErrorCard())
+    await flushPromises()
+
+    const getHelpButton = wrapper.find('button[aria-label="Get Help"]')
+    expect(getHelpButton.exists()).toBe(true)
+
+    await getHelpButton.trigger('click')
+
+    expect(mockExecuteCommand).toHaveBeenCalledWith('Comfy.ContactSupport')
+    expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resource_type: 'help_feedback',
+        source: 'error_dialog'
+      })
+    )
   })
 
   it('falls back to original details when systemStats is unavailable', async () => {

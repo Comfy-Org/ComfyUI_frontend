@@ -105,6 +105,7 @@
     "triggerPhrase": "Trigger phrase",
     "findIssues": "Find Issues",
     "findOnGithub": "Find on Github",
+    "getHelpAction": "Get Help",
     "reportIssue": "Send Report",
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
@@ -3385,6 +3386,8 @@
     "errors": "Errors",
     "noErrors": "No errors",
     "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
+    "findOnGithubTooltip": "Search GitHub issues for related problems",
+    "getHelpTooltip": "Report this error and we'll help you resolve it",
     "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
     "promptErrors": {

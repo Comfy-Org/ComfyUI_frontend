@@ -79,28 +79,40 @@
           </p>
         </div>
 
-        <div class="flex gap-2">
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
+            <Button
+              v-tooltip.top="t('rightSidePanel.findOnGithubTooltip')"
+              variant="secondary"
+              size="sm"
+              class="h-8 w-2/3 justify-center gap-1 rounded-lg text-xs"
+              :aria-label="t('g.findOnGithub')"
+              @click="handleCheckGithub(error)"
+            >
+              {{ t('g.findOnGithub') }}
+              <i class="icon-[lucide--github] size-3.5" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              class="h-8 w-1/3 justify-center gap-1 rounded-lg text-xs"
+              :aria-label="t('g.copy')"
+              @click="handleCopyError(idx)"
+            >
+              {{ t('g.copy') }}
+              <i class="icon-[lucide--copy] size-3.5" />
+            </Button>
+          </div>
           <Button
-            v-tooltip.top="t('g.findOnGithub')"
+            v-tooltip.top="t('rightSidePanel.getHelpTooltip')"
             variant="secondary"
             size="sm"
-            class="h-8 w-2/3 justify-center gap-1 rounded-lg text-xs"
-            :aria-label="t('g.findOnGithub')"
-            @click="handleCheckGithub(error)"
+            class="h-8 w-full justify-center gap-1 rounded-lg text-xs"
+            :aria-label="t('g.getHelpAction')"
+            @click="handleGetHelp"
           >
-            {{ t('g.findOnGithub') }}
-            <i class="icon-[lucide--github] size-3.5" />
-          </Button>
-          <Button
-            v-tooltip.top="t('g.copy')"
-            variant="secondary"
-            size="sm"
-            class="h-8 w-1/3 justify-center gap-1 rounded-lg text-xs"
-            :aria-label="t('g.copy')"
-            @click="handleCopyError(idx)"
-          >
-            {{ t('g.copy') }}
-            <i class="icon-[lucide--copy] size-3.5" />
+            {{ t('g.getHelpAction') }}
+            <i class="icon-[lucide--external-link] size-3.5" />
           </Button>
         </div>
       </div>
@@ -114,6 +126,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
+import { useCommandStore } from '@/stores/commandStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import type { ErrorCardData, ErrorItem } from './types'
@@ -169,5 +182,14 @@ function handleCheckGithub(error: ErrorItem) {
     '_blank',
     'noopener,noreferrer'
   )
+}
+
+function handleGetHelp() {
+  telemetry?.trackHelpResourceClicked({
+    resource_type: 'help_feedback',
+    is_external: true,
+    source: 'error_dialog'
+  })
+  useCommandStore().execute('Comfy.ContactSupport')
 }
 </script>
