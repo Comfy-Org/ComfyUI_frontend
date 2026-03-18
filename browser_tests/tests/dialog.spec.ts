@@ -153,7 +153,7 @@ test.describe('Error actions in Errors Tab', { tag: '@ui' }, () => {
     )
   })
 
-  test('Should show Find on Github and Copy buttons in error card after execution error', async ({
+  test('Should show Find on GitHub and Copy buttons in error card after execution error', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/execution_error')
@@ -168,9 +168,9 @@ test.describe('Error actions in Errors Tab', { tag: '@ui' }, () => {
     await errorOverlay.getByRole('button', { name: 'See Errors' }).click()
     await expect(errorOverlay).not.toBeVisible()
 
-    // Verify Find on Github button is present in the error card
+    // Verify Find on GitHub button is present in the error card
     const findOnGithubButton = comfyPage.page.getByRole('button', {
-      name: 'Find on Github'
+      name: 'Find on GitHub'
     })
     await expect(findOnGithubButton).toBeVisible()
 

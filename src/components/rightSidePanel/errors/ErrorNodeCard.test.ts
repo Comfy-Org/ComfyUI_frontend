@@ -71,7 +71,7 @@ describe('ErrorNodeCard.vue', () => {
           g: {
             copy: 'Copy',
             findIssues: 'Find Issues',
-            findOnGithub: 'Find on Github',
+            findOnGithub: 'Find on GitHub',
             getHelpAction: 'Get Help'
           },
           rightSidePanel: {
@@ -204,7 +204,9 @@ describe('ErrorNodeCard.vue', () => {
     const wrapper = mountCard(makeRuntimeErrorCard())
     await flushPromises()
 
-    const copyButton = wrapper.find('button[aria-label="Copy"]')
+    const copyButton = wrapper
+      .findAll('button')
+      .find((btn) => btn.text().includes('Copy'))!
     expect(copyButton.exists()).toBe(true)
     await copyButton.trigger('click')
 
@@ -217,7 +219,9 @@ describe('ErrorNodeCard.vue', () => {
     const wrapper = mountCard(makeValidationErrorCard())
     await flushPromises()
 
-    const copyButton = wrapper.find('button[aria-label="Copy"]')
+    const copyButton = wrapper
+      .findAll('button')
+      .find((btn) => btn.text().includes('Copy'))!
     await copyButton.trigger('click')
 
     const emitted = wrapper.emitted('copyToClipboard')
@@ -253,7 +257,9 @@ describe('ErrorNodeCard.vue', () => {
     const wrapper = mountCard(makeRuntimeErrorCard())
     await flushPromises()
 
-    const findIssuesButton = wrapper.find('button[aria-label="Find on Github"]')
+    const findIssuesButton = wrapper
+      .findAll('button')
+      .find((btn) => btn.text().includes('Find on GitHub'))!
     expect(findIssuesButton.exists()).toBe(true)
 
     await findIssuesButton.trigger('click')
@@ -276,7 +282,9 @@ describe('ErrorNodeCard.vue', () => {
     const wrapper = mountCard(makeRuntimeErrorCard())
     await flushPromises()
 
-    const getHelpButton = wrapper.find('button[aria-label="Get Help"]')
+    const getHelpButton = wrapper
+      .findAll('button')
+      .find((btn) => btn.text().includes('Get Help'))!
     expect(getHelpButton.exists()).toBe(true)
 
     await getHelpButton.trigger('click')

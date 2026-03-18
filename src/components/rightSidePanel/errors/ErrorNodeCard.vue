@@ -90,7 +90,6 @@
               variant="secondary"
               size="sm"
               class="h-8 w-2/3 justify-center gap-1 rounded-lg text-xs"
-              :aria-label="t('g.findOnGithub')"
               @click="handleCheckGithub(error)"
             >
               {{ t('g.findOnGithub') }}
@@ -100,7 +99,6 @@
               variant="secondary"
               size="sm"
               class="h-8 w-1/3 justify-center gap-1 rounded-lg text-xs"
-              :aria-label="t('g.copy')"
               @click="handleCopyError(idx)"
             >
               {{ t('g.copy') }}
@@ -112,7 +110,6 @@
             variant="secondary"
             size="sm"
             class="h-8 w-full justify-center gap-1 rounded-lg text-xs"
-            :aria-label="t('g.getHelpAction')"
             @click="handleGetHelp"
           >
             {{ t('g.getHelpAction') }}

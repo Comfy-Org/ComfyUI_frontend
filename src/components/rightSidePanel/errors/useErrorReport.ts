@@ -35,7 +35,11 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
     if (runtimeErrors.length === 0) return
 
     if (!systemStatsStore.systemStats) {
-      await systemStatsStore.refetchSystemStats()
+      try {
+        await systemStatsStore.refetchSystemStats()
+      } catch {
+        return
+      }
     }
     if (!systemStatsStore.systemStats) return
 
