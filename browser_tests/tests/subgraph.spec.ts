@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 // Constants
 const RENAMED_INPUT_NAME = 'renamed_input'
@@ -653,6 +654,28 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()
       expect(await isInSubgraph(comfyPage)).toBe(false)
+    })
+
+    test('Breadcrumb disappears after switching workflows while inside subgraph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.nextFrame()
+
+      const breadcrumb = comfyPage.page
+        .getByTestId(TestIds.breadcrumb.subgraph)
+        .locator('.p-breadcrumb')
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+      await comfyPage.nextFrame()
+
+      await expect(breadcrumb).toBeVisible()
+
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.nextFrame()
+
+      await expect(breadcrumb).toBeHidden()
     })
   })
 

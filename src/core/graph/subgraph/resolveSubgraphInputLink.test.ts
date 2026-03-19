@@ -161,4 +161,33 @@ describe('resolveSubgraphInputLink', () => {
     expect(result).toBe('ok')
     expect(getWidgetFromSlot).toHaveBeenCalledTimes(1)
   })
+
+  test('returns first link result with 3+ links connected', () => {
+    const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
+    addLinkedInteriorInput(subgraph, 'prompt', 'first_input', 'firstWidget')
+    addLinkedInteriorInput(subgraph, 'prompt', 'second_input', 'secondWidget')
+    addLinkedInteriorInput(subgraph, 'prompt', 'third_input', 'thirdWidget')
+
+    const result = resolveSubgraphInputLink(
+      subgraphNode,
+      'prompt',
+      ({ targetInput }) => targetInput.name
+    )
+
+    expect(result).toBe('first_input')
+  })
+
+  test('returns undefined when all links fail to resolve', () => {
+    const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
+    addLinkedInteriorInput(subgraph, 'prompt', 'first_input', 'firstWidget')
+    addLinkedInteriorInput(subgraph, 'prompt', 'second_input', 'secondWidget')
+
+    const result = resolveSubgraphInputLink(
+      subgraphNode,
+      'prompt',
+      () => undefined
+    )
+
+    expect(result).toBeUndefined()
+  })
 })

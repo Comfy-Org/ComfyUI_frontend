@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import type {
@@ -6,6 +7,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 
 import type { ComfyPage } from '../ComfyPage'
+import { TestIds } from '../selectors'
 import type { NodeReference } from '../utils/litegraphUtils'
 import { SubgraphSlotReference } from '../utils/litegraphUtils'
 
@@ -321,5 +323,94 @@ export class SubgraphHelper {
       await targetSlot.getPosition()
     )
     await this.comfyPage.nextFrame()
+  }
+
+  async isInSubgraph(): Promise<boolean> {
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph
+      return !!graph && 'inputNode' in graph
+    })
+  }
+
+  async exitViaBreadcrumb(): Promise<void> {
+    const breadcrumb = this.page.getByTestId(TestIds.breadcrumb.subgraph)
+    const parentLink = breadcrumb.getByRole('link').first()
+    if (await parentLink.isVisible()) {
+      await parentLink.click()
+    } else {
+      await this.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        const graph = canvas.graph
+        if (!graph) return
+        canvas.setGraph(graph.rootGraph)
+      })
+    }
+
+    await this.comfyPage.nextFrame()
+    await expect.poll(async () => this.isInSubgraph()).toBe(false)
+  }
+
+  async countGraphPseudoPreviewEntries(): Promise<number> {
+    return this.page.evaluate(() => {
+      const graph = window.app!.graph!
+      return graph.nodes.reduce((count, node) => {
+        const proxyWidgets = node.properties?.proxyWidgets
+        if (!Array.isArray(proxyWidgets)) return count
+
+        return (
+          count +
+          proxyWidgets.filter(
+            (entry) =>
+              Array.isArray(entry) &&
+              entry.length >= 2 &&
+              typeof entry[1] === 'string' &&
+              entry[1].startsWith('$$')
+          ).length
+        )
+      }, 0)
+    })
+  }
+
+  async getHostPromotedTupleSnapshot(): Promise<
+    { hostNodeId: string; promotedWidgets: [string, string][] }[]
+  > {
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      return graph._nodes
+        .filter(
+          (node) =>
+            typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+        )
+        .map((node) => {
+          const proxyWidgets = Array.isArray(node.properties?.proxyWidgets)
+            ? node.properties.proxyWidgets
+            : []
+          const promotedWidgets = proxyWidgets
+            .filter(
+              (entry): entry is [string, string] =>
+                Array.isArray(entry) &&
+                entry.length >= 2 &&
+                typeof entry[0] === 'string' &&
+                typeof entry[1] === 'string'
+            )
+            .map(
+              ([interiorNodeId, widgetName]) =>
+                [interiorNodeId, widgetName] as [string, string]
+            )
+
+          return {
+            hostNodeId: String(node.id),
+            promotedWidgets
+          }
+        })
+        .sort((a, b) => Number(a.hostNodeId) - Number(b.hostNodeId))
+    })
+  }
+
+  /** Reads from `window.app.canvas.graph` (viewed root or nested subgraph). */
+  async getNodeCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      return window.app!.canvas.graph!.nodes?.length || 0
+    })
   }
 }
