@@ -2,7 +2,7 @@ import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
 import { resultItemType } from '@/schemas/apiSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
 
-const METADATA_KEYS = new Set(['animated', 'text'])
+const METADATA_KEYS = new Set(['animated'])
 
 /**
  * Validates that an unknown value is a well-formed ResultItem.
@@ -14,8 +14,6 @@ function isResultItem(item: unknown): item is ResultItem {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return false
 
   const candidate = item as Record<string, unknown>
-
-  if (typeof candidate.filename !== 'string') return false
 
   if (
     candidate.type !== undefined &&
@@ -35,6 +33,11 @@ export function parseNodeOutput(
     .filter(([key, value]) => !METADATA_KEYS.has(key) && Array.isArray(value))
     .flatMap(([mediaType, items]) =>
       (items as unknown[])
+        .map((item) =>
+          mediaType === 'text' && typeof item === 'string'
+            ? { nodeId, mediaType, content: item }
+            : item
+        )
         .filter(isResultItem)
         .map((item) => new ResultItemImpl({ ...item, mediaType, nodeId }))
     )
