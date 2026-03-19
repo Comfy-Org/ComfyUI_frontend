@@ -100,3 +100,5 @@ vitest.config.*.timestamp*
 /output.txt
 
 .amp
+.playwright-cli/
+.playwright/
