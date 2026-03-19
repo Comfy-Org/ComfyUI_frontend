@@ -85,20 +85,16 @@ function isWidgetShownOnParents(
           ? widget.sourceNodeId
           : String(widgetNode.id)
 
-      return promotionStore.isPromoted(
-        parent.rootGraph.id,
-        parent.id,
-        interiorNodeId,
-        widget.sourceWidgetName,
-        sourceNodeId
-      )
+      return promotionStore.isPromoted(parent.rootGraph.id, parent.id, {
+        sourceNodeId: interiorNodeId,
+        sourceWidgetName: widget.sourceWidgetName,
+        disambiguatingSourceNodeId: sourceNodeId
+      })
     }
-    return promotionStore.isPromoted(
-      parent.rootGraph.id,
-      parent.id,
-      String(widgetNode.id),
-      widget.name
-    )
+    return promotionStore.isPromoted(parent.rootGraph.id, parent.id, {
+      sourceNodeId: String(widgetNode.id),
+      sourceWidgetName: widget.name
+    })
   })
 }
 

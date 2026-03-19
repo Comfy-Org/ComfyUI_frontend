@@ -413,12 +413,10 @@ describe('Subgraph Promoted Pseudo Widgets', () => {
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    usePromotionStore().promote(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
-    )
+    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
+      sourceNodeId: '10',
+      sourceWidgetName: '$$canvas-image-preview'
+    })
 
     const { vueNodeData } = useGraphNodeManager(graph)
     const vueNode = vueNodeData.get(String(subgraphNode.id))
@@ -500,12 +498,10 @@ describe('Nested promoted widget mapping', () => {
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    usePromotionStore().promote(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      String(independentNode.id),
-      'string_a'
-    )
+    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
+      sourceNodeId: String(independentNode.id),
+      sourceWidgetName: 'string_a'
+    })
 
     const { vueNodeData } = useGraphNodeManager(graph)
     const nodeData = vueNodeData.get(String(subgraphNode.id))
@@ -549,8 +545,8 @@ describe('Nested promoted widget mapping', () => {
       innerSubgraphNode.rootGraph.id,
       innerSubgraphNode.id,
       [
-        { interiorNodeId: String(firstTextNode.id), widgetName: 'text' },
-        { interiorNodeId: String(secondTextNode.id), widgetName: 'text' }
+        { sourceNodeId: String(firstTextNode.id), sourceWidgetName: 'text' },
+        { sourceNodeId: String(secondTextNode.id), sourceWidgetName: 'text' }
       ]
     )
 
@@ -559,14 +555,14 @@ describe('Nested promoted widget mapping', () => {
       outerSubgraphNode.id,
       [
         {
-          interiorNodeId: String(innerSubgraphNode.id),
-          widgetName: 'text',
-          sourceNodeId: String(firstTextNode.id)
+          sourceNodeId: String(innerSubgraphNode.id),
+          sourceWidgetName: 'text',
+          disambiguatingSourceNodeId: String(firstTextNode.id)
         },
         {
-          interiorNodeId: String(innerSubgraphNode.id),
-          widgetName: 'text',
-          sourceNodeId: String(secondTextNode.id)
+          sourceNodeId: String(innerSubgraphNode.id),
+          sourceWidgetName: 'text',
+          disambiguatingSourceNodeId: String(secondTextNode.id)
         }
       ]
     )

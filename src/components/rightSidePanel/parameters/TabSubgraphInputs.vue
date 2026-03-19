@@ -88,20 +88,27 @@ const widgetsList = computed((): NodeWidgetsList => {
   const { widgets = [] } = node
 
   const result: NodeWidgetsList = []
-  for (const { interiorNodeId, widgetName, sourceNodeId } of entries) {
+  for (const {
+    sourceNodeId: entryNodeId,
+    sourceWidgetName,
+    disambiguatingSourceNodeId
+  } of entries) {
     const widget = widgets.find((w) => {
       if (isPromotedWidgetView(w)) {
         if (
-          String(w.sourceNodeId) !== interiorNodeId ||
-          w.sourceWidgetName !== widgetName
+          String(w.sourceNodeId) !== entryNodeId ||
+          w.sourceWidgetName !== sourceWidgetName
         )
           return false
 
-        if (!sourceNodeId) return true
+        if (!disambiguatingSourceNodeId) return true
 
-        return (w.disambiguatingSourceNodeId ?? w.sourceNodeId) === sourceNodeId
+        return (
+          (w.disambiguatingSourceNodeId ?? w.sourceNodeId) ===
+          disambiguatingSourceNodeId
+        )
       }
-      return w.name === widgetName
+      return w.name === sourceWidgetName
     })
     if (widget) {
       result.push({ node, widget })
@@ -122,13 +129,11 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
 
   return allInteriorWidgets.filter(
     ({ node: interiorNode, widget }) =>
-      !promotionStore.isPromoted(
-        node.rootGraph.id,
-        node.id,
-        String(interiorNode.id),
-        getWidgetName(widget),
-        getSourceNodeId(widget)
-      )
+      !promotionStore.isPromoted(node.rootGraph.id, node.id, {
+        sourceNodeId: String(interiorNode.id),
+        sourceWidgetName: getWidgetName(widget),
+        disambiguatingSourceNodeId: getSourceNodeId(widget)
+      })
   )
 })
 

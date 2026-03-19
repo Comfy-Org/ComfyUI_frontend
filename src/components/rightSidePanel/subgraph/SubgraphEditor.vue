@@ -51,21 +51,26 @@ const activeWidgets = computed<WidgetItem[]>({
     if (!node) return []
 
     return promotionEntries.value.flatMap(
-      ({ interiorNodeId, widgetName, sourceNodeId }): WidgetItem[] => {
-        if (interiorNodeId === '-1') {
-          const widget = node.widgets.find((w) => w.name === widgetName)
+      ({
+        sourceNodeId,
+        sourceWidgetName,
+        disambiguatingSourceNodeId
+      }): WidgetItem[] => {
+        if (sourceNodeId === '-1') {
+          const widget = node.widgets.find((w) => w.name === sourceWidgetName)
           if (!widget) return []
           return [
             [{ id: -1, title: t('subgraphStore.linked'), type: '' }, widget]
           ]
         }
-        const wNode = node.subgraph._nodes_by_id[interiorNodeId]
+        const wNode = node.subgraph._nodes_by_id[sourceNodeId]
         if (!wNode) return []
         const widget = getPromotableWidgets(wNode).find((w) => {
-          if (w.name !== widgetName) return false
-          if (sourceNodeId && isPromotedWidgetView(w))
+          if (w.name !== sourceWidgetName) return false
+          if (disambiguatingSourceNodeId && isPromotedWidgetView(w))
             return (
-              (w.disambiguatingSourceNodeId ?? w.sourceNodeId) === sourceNodeId
+              (w.disambiguatingSourceNodeId ?? w.sourceNodeId) ===
+              disambiguatingSourceNodeId
             )
           return true
         })
@@ -86,9 +91,9 @@ const activeWidgets = computed<WidgetItem[]>({
       value.map(([n, w]) => {
         const sid = getSourceNodeId(w)
         return {
-          interiorNodeId: String(n.id),
-          widgetName: getWidgetName(w),
-          ...(sid && { sourceNodeId: sid })
+          sourceNodeId: String(n.id),
+          sourceWidgetName: getWidgetName(w),
+          ...(sid && { disambiguatingSourceNodeId: sid })
         }
       })
     )
@@ -115,13 +120,11 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   if (!node) return []
   return interiorWidgets.value.filter(
     ([n, w]: WidgetItem) =>
-      !promotionStore.isPromoted(
-        node.rootGraph.id,
-        node.id,
-        String(n.id),
-        getWidgetName(w),
-        getSourceNodeId(w)
-      )
+      !promotionStore.isPromoted(node.rootGraph.id, node.id, {
+        sourceNodeId: String(n.id),
+        sourceWidgetName: getWidgetName(w),
+        disambiguatingSourceNodeId: getSourceNodeId(w)
+      })
   )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {

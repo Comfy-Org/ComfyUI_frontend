@@ -387,12 +387,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const borderStyle =
       graphId &&
-      promotionStore.isPromotedByAny(
-        graphId,
-        hostNodeId,
-        widget.storeName ?? widget.name,
-        promotionSourceNodeId
-      )
+      promotionStore.isPromotedByAny(graphId, {
+        sourceNodeId: hostNodeId,
+        sourceWidgetName: widget.storeName ?? widget.name,
+        disambiguatingSourceNodeId: promotionSourceNodeId
+      })
         ? 'ring ring-component-node-widget-promoted'
         : mergedOptions.advanced
           ? 'ring ring-component-node-widget-advanced'

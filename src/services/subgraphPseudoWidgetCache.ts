@@ -1,8 +1,4 @@
-export interface SubgraphPromotionEntry {
-  interiorNodeId: string
-  widgetName: string
-  sourceNodeId?: string
-}
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 export interface SubgraphPseudoWidget {
   name: string
@@ -19,8 +15,8 @@ interface SubgraphPseudoWidgetCacheEntry<
   TNode extends SubgraphPseudoWidgetNode<TWidget>,
   TWidget extends SubgraphPseudoWidget
 > {
-  interiorNodeId: string
-  widgetName: string
+  sourceNodeId: string
+  sourceWidgetName: string
   node: TNode
 }
 
@@ -28,7 +24,7 @@ export interface SubgraphPseudoWidgetCache<
   TNode extends SubgraphPseudoWidgetNode<TWidget>,
   TWidget extends SubgraphPseudoWidget
 > {
-  promotions: readonly SubgraphPromotionEntry[]
+  promotions: readonly PromotedWidgetSource[]
   entries: SubgraphPseudoWidgetCacheEntry<TNode, TWidget>[]
   nodes: TNode[]
 }
@@ -38,7 +34,7 @@ interface ResolveSubgraphPseudoWidgetCacheArgs<
   TWidget extends SubgraphPseudoWidget
 > {
   cache: SubgraphPseudoWidgetCache<TNode, TWidget> | null
-  promotions: readonly SubgraphPromotionEntry[]
+  promotions: readonly PromotedWidgetSource[]
   getNodeById: (nodeId: string) => TNode | undefined
   isPreviewPseudoWidget: (widget: TWidget) => boolean
 }
@@ -70,10 +66,10 @@ function isCacheStillValid<
   isPreviewPseudoWidget: (widget: TWidget) => boolean
 ): boolean {
   return cache.entries.every((entry) => {
-    const currentNode = getNodeById(entry.interiorNodeId)
+    const currentNode = getNodeById(entry.sourceNodeId)
     if (!currentNode || currentNode !== entry.node) return false
     return isPseudoPromotion(
-      entry.widgetName,
+      entry.sourceWidgetName,
       currentNode.widgets,
       isPreviewPseudoWidget
     )
@@ -96,11 +92,11 @@ export function resolveSubgraphPseudoWidgetCache<
     return { cache, nodes: cache.nodes }
 
   const entries = promotions.flatMap((promotion) => {
-    const node = getNodeById(promotion.interiorNodeId)
+    const node = getNodeById(promotion.sourceNodeId)
     if (!node) return []
     if (
       !isPseudoPromotion(
-        promotion.widgetName,
+        promotion.sourceWidgetName,
         node.widgets,
         isPreviewPseudoWidget
       )

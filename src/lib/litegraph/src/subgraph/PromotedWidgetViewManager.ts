@@ -1,11 +1,8 @@
-type PromotionEntry = {
-  interiorNodeId: string
-  widgetName: string
-  viewKey?: string
-  sourceNodeId?: string
-}
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
-type CreateView<TView> = (entry: PromotionEntry) => TView
+type ViewManagerEntry = PromotedWidgetSource & { viewKey?: string }
+
+type CreateView<TView> = (entry: ViewManagerEntry) => TView
 
 /**
  * Reconciles promoted widget entries to stable view instances.
@@ -19,11 +16,11 @@ export class PromotedWidgetViewManager<TView> {
   private cachedEntryKeys: string[] | null = null
 
   reconcile(
-    entries: readonly PromotionEntry[],
+    entries: readonly ViewManagerEntry[],
     createView: CreateView<TView>
   ): TView[] {
     const entryKeys = entries.map((entry) =>
-      this.makeKey(entry.interiorNodeId, entry.widgetName, entry.viewKey)
+      this.makeKey(entry.sourceNodeId, entry.sourceWidgetName, entry.viewKey)
     )
 
     if (this.cachedViews && this.areEntryKeysEqual(entryKeys))
@@ -34,8 +31,8 @@ export class PromotedWidgetViewManager<TView> {
 
     for (const entry of entries) {
       const key = this.makeKey(
-        entry.interiorNodeId,
-        entry.widgetName,
+        entry.sourceNodeId,
+        entry.sourceWidgetName,
         entry.viewKey
       )
       if (seenKeys.has(key)) continue
@@ -62,12 +59,12 @@ export class PromotedWidgetViewManager<TView> {
   }
 
   getOrCreate(
-    interiorNodeId: string,
-    widgetName: string,
+    sourceNodeId: string,
+    sourceWidgetName: string,
     createView: () => TView,
     viewKey?: string
   ): TView {
-    const key = this.makeKey(interiorNodeId, widgetName, viewKey)
+    const key = this.makeKey(sourceNodeId, sourceWidgetName, viewKey)
     const cached = this.viewCache.get(key)
     if (cached) return cached
 
@@ -76,17 +73,17 @@ export class PromotedWidgetViewManager<TView> {
     return view
   }
 
-  remove(interiorNodeId: string, widgetName: string): void {
-    this.viewCache.delete(this.makeKey(interiorNodeId, widgetName))
+  remove(sourceNodeId: string, sourceWidgetName: string): void {
+    this.viewCache.delete(this.makeKey(sourceNodeId, sourceWidgetName))
     this.invalidateMemoizedList()
   }
 
   removeByViewKey(
-    interiorNodeId: string,
-    widgetName: string,
+    sourceNodeId: string,
+    sourceWidgetName: string,
     viewKey: string
   ): void {
-    this.viewCache.delete(this.makeKey(interiorNodeId, widgetName, viewKey))
+    this.viewCache.delete(this.makeKey(sourceNodeId, sourceWidgetName, viewKey))
     this.invalidateMemoizedList()
   }
 
@@ -111,11 +108,11 @@ export class PromotedWidgetViewManager<TView> {
   }
 
   private makeKey(
-    interiorNodeId: string,
-    widgetName: string,
+    sourceNodeId: string,
+    sourceWidgetName: string,
     viewKey?: string
   ): string {
-    const baseKey = `${interiorNodeId}:${widgetName}`
+    const baseKey = `${sourceNodeId}:${sourceWidgetName}`
     return viewKey ? `${baseKey}:${viewKey}` : baseKey
   }
 }

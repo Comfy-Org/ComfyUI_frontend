@@ -312,7 +312,11 @@ describe('NodeWidgets', () => {
     })
     const nodeData = createMockNodeData('SubgraphNode', [promotedWidget], '3')
     const wrapper = mountComponent(nodeData, () => {
-      usePromotionStore().promote('graph-test', '4', '3', 'text', '1')
+      usePromotionStore().promote('graph-test', '4', {
+        sourceNodeId: '3',
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
+      })
     })
     await nextTick()
     const borderStyles = getBorderStyles(wrapper)
@@ -331,7 +335,11 @@ describe('NodeWidgets', () => {
     })
     const nodeData = createMockNodeData('SubgraphNode', [promotedWidget], '4')
     const wrapper = mountComponent(nodeData, () => {
-      usePromotionStore().promote('graph-test', '4', '3', 'text', '1')
+      usePromotionStore().promote('graph-test', '4', {
+        sourceNodeId: '3',
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
+      })
     })
     await nextTick()
     const borderStyles = getBorderStyles(wrapper)

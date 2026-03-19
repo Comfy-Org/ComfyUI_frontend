@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   demoteWidget,
@@ -75,21 +76,18 @@ function handleHideInput() {
   if (!parents?.length) return
 
   if (isPromotedWidgetView(widget)) {
-    const sourceNodeId = getSourceNodeId(widget)
+    const disambiguatingSourceNodeId = getSourceNodeId(widget)
 
     for (const parent of parents) {
-      const interiorNodeId =
-        String(node.id) === String(parent.id)
-          ? widget.sourceNodeId
-          : String(node.id)
-
-      promotionStore.demote(
-        parent.rootGraph.id,
-        parent.id,
-        interiorNodeId,
-        widget.sourceWidgetName,
-        sourceNodeId
-      )
+      const source: PromotedWidgetSource = {
+        sourceNodeId:
+          String(node.id) === String(parent.id)
+            ? widget.sourceNodeId
+            : String(node.id),
+        sourceWidgetName: widget.sourceWidgetName,
+        disambiguatingSourceNodeId
+      }
+      promotionStore.demote(parent.rootGraph.id, parent.id, source)
       parent.computeSize(parent.size)
     }
     canvasStore.canvas?.setDirty(true, true)

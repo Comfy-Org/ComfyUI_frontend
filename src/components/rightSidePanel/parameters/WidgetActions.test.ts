@@ -240,7 +240,11 @@ describe('WidgetActions', () => {
     } as IBaseWidget
 
     const promotionStore = usePromotionStore()
-    promotionStore.promote('graph-test', 4, '3', 'text', '1')
+    promotionStore.promote('graph-test', 4, {
+      sourceNodeId: '3',
+      sourceWidgetName: 'text',
+      disambiguatingSourceNodeId: '1'
+    })
 
     const wrapper = mount(WidgetActions, {
       props: {
@@ -261,8 +265,12 @@ describe('WidgetActions', () => {
     expect(hideButton).toBeDefined()
     await hideButton?.trigger('click')
 
-    expect(promotionStore.isPromoted('graph-test', 4, '3', 'text', '1')).toBe(
-      false
-    )
+    expect(
+      promotionStore.isPromoted('graph-test', 4, {
+        sourceNodeId: '3',
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
+      })
+    ).toBe(false)
   })
 })
