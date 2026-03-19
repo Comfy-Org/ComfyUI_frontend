@@ -365,8 +365,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const bareWidgetId = String(
       stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
     )
-    const promotionSourceNodeId =
-      (widget.storeNodeId ?? widget.nodeId) ? String(bareWidgetId) : undefined
+    const promotionSourceNodeId = widget.storeName
+      ? String(bareWidgetId)
+      : undefined
 
     const vueComponent =
       getComponent(widget.type) ||

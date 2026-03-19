@@ -440,8 +440,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
       return false
 
-    const linkedWidgetNames = new Set(
-      linkedEntries.map((entry) => entry.widgetName)
+    const linkedEntryKeys = new Set(
+      linkedEntries.map((entry) =>
+        this._makePromotionEntryKey(entry.interiorNodeId, entry.widgetName)
+      )
     )
 
     const hasFallbackToKeep = fallbackStoredEntries.some((entry) => {
@@ -452,9 +454,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         ) === true
       if (hasSourceWidget) return true
 
-      // If the fallback widget name overlaps a linked widget name, keep it
+      // If the fallback entry overlaps a linked entry, keep it
       // until aliasing can be positively proven.
-      return linkedWidgetNames.has(entry.widgetName)
+      return linkedEntryKeys.has(
+        this._makePromotionEntryKey(entry.interiorNodeId, entry.widgetName)
+      )
     })
 
     return !hasFallbackToKeep
@@ -1437,11 +1441,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override removeWidget(widget: IBaseWidget): void {
     this.ensureWidgetRemoved(widget)
-  }
-
-  override removeWidgetByName(name: string): void {
-    const widget = this.widgets.find((w) => w.name === name)
-    if (widget) this.ensureWidgetRemoved(widget)
   }
 
   override ensureWidgetRemoved(widget: IBaseWidget): void {

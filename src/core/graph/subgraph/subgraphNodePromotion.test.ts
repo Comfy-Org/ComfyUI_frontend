@@ -214,7 +214,7 @@ describe('Subgraph proxyWidgets', () => {
     ).toStrictEqual([{ interiorNodeId: innerIds[0], widgetName: 'widgetB' }])
   })
 
-  test('removeWidgetByName removes from promotion list', () => {
+  test('removeWidget removes from promotion list', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
@@ -227,7 +227,8 @@ describe('Subgraph proxyWidgets', () => {
       ]
     )
 
-    subgraphNode.removeWidgetByName('widgetA')
+    const widgetA = subgraphNode.widgets.find((w) => w.name === 'widgetA')!
+    subgraphNode.removeWidget(widgetA)
 
     expect(subgraphNode.widgets).toHaveLength(1)
     expect(subgraphNode.widgets[0].name).toBe('widgetB')
