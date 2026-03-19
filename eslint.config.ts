@@ -5,6 +5,7 @@ import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
 import oxlint from 'eslint-plugin-oxlint'
+import testingLibrary from 'eslint-plugin-testing-library'
 // eslint-config-prettier disables ESLint rules that conflict with formatters (oxfmt)
 import eslintConfigPrettier from 'eslint-config-prettier'
 import { configs as storybookConfigs } from 'eslint-plugin-storybook'
@@ -269,6 +270,20 @@ export default defineConfig([
             'Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md'
         }
       ]
+    }
+  },
+  {
+    files: ['**/*.test.ts'],
+    plugins: { 'testing-library': testingLibrary },
+    rules: {
+      'testing-library/prefer-screen-queries': 'warn',
+      'testing-library/no-container': 'warn',
+      'testing-library/no-node-access': 'warn',
+      'testing-library/no-wait-for-multiple-assertions': 'warn',
+      'testing-library/prefer-find-by': 'warn',
+      'testing-library/prefer-presence-queries': 'warn',
+      'testing-library/prefer-user-event': 'warn',
+      'testing-library/no-debugging-utils': 'warn'
     }
   },
   {

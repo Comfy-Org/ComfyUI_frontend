@@ -34,6 +34,9 @@ catalog:
   '@storybook/vue3': ^10.2.10
   '@storybook/vue3-vite': ^10.2.10
   '@tailwindcss/vite': ^4.2.0
+  '@testing-library/jest-dom': ^6.9.1
+  '@testing-library/user-event': ^14.6.1
+  '@testing-library/vue': ^8.1.0
   '@tiptap/core': ^2.27.2
   '@tiptap/extension-link': ^2.27.2
   '@tiptap/extension-table': ^2.27.2
@@ -67,6 +70,7 @@ catalog:
   eslint-plugin-import-x: ^4.16.1
   eslint-plugin-oxlint: 1.55.0
   eslint-plugin-storybook: ^10.2.10
+  eslint-plugin-testing-library: ^7.16.1
   eslint-plugin-unused-imports: ^4.3.0
   eslint-plugin-vue: ^10.6.2
   fast-check: ^4.5.3
