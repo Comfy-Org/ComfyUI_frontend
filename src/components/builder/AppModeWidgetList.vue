@@ -191,7 +191,11 @@ function nodeToNodeData(node: LGraphNode) {
         ]"
       >
         <template #button>
-          <Button variant="textonly" size="icon">
+          <Button
+            variant="textonly"
+            size="icon"
+            data-testid="widget-actions-menu"
+          >
             <i class="icon-[lucide--ellipsis]" />
           </Button>
         </template>
