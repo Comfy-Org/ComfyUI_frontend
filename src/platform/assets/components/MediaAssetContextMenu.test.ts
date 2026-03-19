@@ -1,7 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
+import { nextTick } from 'vue'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -41,38 +40,6 @@ vi.mock('../composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => mediaAssetActions
 }))
 
-const contextMenuStub = defineComponent({
-  name: 'ContextMenu',
-  props: {
-    pt: {
-      type: Object,
-      default: undefined
-    }
-  },
-  emits: ['hide'],
-  data() {
-    return {
-      visible: false
-    }
-  },
-  methods: {
-    show() {
-      this.visible = true
-    },
-    hide() {
-      this.visible = false
-      this.$emit('hide')
-    }
-  },
-  template: `
-    <div
-      v-if="visible"
-      class="context-menu-stub"
-      v-bind="pt?.root"
-    />
-  `
-})
-
 const asset: AssetItem = {
   id: 'asset-1',
   name: 'image.png',
@@ -81,11 +48,7 @@ const asset: AssetItem = {
 }
 
 const buttonStub = {
-  template: '<div class="button-stub"><slot /></div>'
-}
-
-type MediaAssetContextMenuExposed = ComponentPublicInstance & {
-  show: (event: MouseEvent) => void
+  template: '<button class="button-stub" type="button"><slot /></button>'
 }
 
 const mountComponent = () =>
@@ -96,23 +59,35 @@ const mountComponent = () =>
       assetType: 'output',
       fileKind: 'image'
     },
+    slots: {
+      default: '<button class="context-trigger" type="button">Trigger</button>'
+    },
     global: {
       stubs: {
-        ContextMenu: contextMenuStub,
         Button: buttonStub
       }
     }
   })
 
-async function showMenu(
-  wrapper: ReturnType<typeof mountComponent>
-): Promise<HTMLElement> {
-  const exposed = wrapper.vm as MediaAssetContextMenuExposed
-  const event = new MouseEvent('contextmenu', { bubbles: true })
-  exposed.show(event)
-  await nextTick()
+async function showMenu(): Promise<HTMLElement | null> {
+  const trigger = document.body.querySelector('.context-trigger')
+  trigger?.dispatchEvent(
+    new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      button: 2
+    })
+  )
+  await waitForMenuUpdate()
 
-  return wrapper.get('.context-menu-stub').element as HTMLElement
+  return document.body.querySelector(
+    '.media-asset-context-menu-content'
+  ) as HTMLElement | null
+}
+
+const waitForMenuUpdate = async () => {
+  await nextTick()
+  await nextTick()
 }
 
 afterEach(() => {
@@ -121,23 +96,27 @@ afterEach(() => {
 })
 
 describe('MediaAssetContextMenu', () => {
-  it('dismisses outside pointerdown using the rendered root id', async () => {
+  it('opens from the slotted context-menu trigger', async () => {
     const wrapper = mountComponent()
-    const outside = document.createElement('div')
-    document.body.append(outside)
 
-    const menu = await showMenu(wrapper)
-    const menuId = menu.id
+    const menu = await showMenu()
+    expect(menu).not.toBeNull()
+    wrapper.unmount()
+  })
 
-    expect(menuId).not.toBe('')
-    expect(document.getElementById(menuId)).toBe(menu)
+  it('forwards inspect actions from the menu panel', async () => {
+    const wrapper = mountComponent()
 
-    outside.dispatchEvent(new Event('pointerdown', { bubbles: true }))
-    await nextTick()
+    const menu = await showMenu()
+    expect(menu).not.toBeNull()
 
-    expect(wrapper.find('.context-menu-stub').exists()).toBe(false)
-    expect(wrapper.emitted('hide')).toEqual([[]])
+    const inspectButton = document.body.querySelector(
+      '.media-asset-context-menu-content .button-stub'
+    ) as HTMLButtonElement | null
+    inspectButton?.click()
+    await waitForMenuUpdate()
 
+    expect(wrapper.emitted('zoom')).toEqual([[]])
     wrapper.unmount()
   })
 })

@@ -48,15 +48,11 @@
     <template #body>
       <JobAssetsList
         :displayed-job-groups="displayedJobGroups"
+        :get-menu-entries="getJobMenuEntries"
         @cancel-item="onCancelItem"
         @delete-item="onDeleteItem"
+        @menu-action="onJobMenuAction"
         @view-item="onViewItem"
-        @menu="onMenuItem"
-      />
-      <JobContextMenu
-        ref="jobContextMenuRef"
-        :entries="jobMenuEntries"
-        @action="onJobMenuAction"
       />
       <MediaLightbox
         v-model:active-index="galleryActiveIndex"
@@ -67,13 +63,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
 import JobFilterTabs from '@/components/queue/job/JobFilterTabs.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
-import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
@@ -182,13 +177,7 @@ const onInspectAsset = (item: JobListItem) => {
   void onViewItem(item)
 }
 
-const currentMenuItem = ref<JobListItem | null>(null)
-const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)
-
-const { jobMenuEntries, cancelJob } = useJobMenu(
-  () => currentMenuItem.value,
-  onInspectAsset
-)
+const { getJobMenuEntries, cancelJob } = useJobMenu(undefined, onInspectAsset)
 
 const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   await cancelJob(item)
@@ -199,14 +188,8 @@ const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   await queueStore.delete(item.taskRef)
 })
 
-const onMenuItem = (item: JobListItem, event: Event) => {
-  currentMenuItem.value = item
-  jobContextMenuRef.value?.open(event)
-}
-
 const onJobMenuAction = wrapWithErrorHandlingAsync(async (entry: MenuEntry) => {
   if (entry.kind === 'divider') return
   if (entry.onClick) await entry.onClick()
-  jobContextMenuRef.value?.hide()
 })
 </script>

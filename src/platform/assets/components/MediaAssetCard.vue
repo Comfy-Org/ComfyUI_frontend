@@ -22,9 +22,6 @@
     "
     :data-selected="selected"
     @click.stop="$emit('click')"
-    @contextmenu.prevent.stop="
-      asset ? emit('context-menu', $event, asset) : undefined
-    "
   >
     <!-- Top Area: Media Preview -->
     <div class="relative aspect-square overflow-hidden p-0">
@@ -67,16 +64,30 @@
           >
             <i class="icon-[lucide--zoom-in] size-4" />
           </Button>
-          <Button
-            variant="overlay-white"
-            size="icon"
-            :aria-label="$t('mediaAsset.actions.moreOptions')"
-            @click.stop="
-              asset ? emit('context-menu', $event, asset) : undefined
-            "
+          <MediaAssetActionsMenu
+            v-if="asset"
+            :asset
+            :asset-type="assetType"
+            :file-kind="fileKind"
+            :show-delete-button
+            :selected-assets
+            :is-bulk-mode
+            @zoom="handleZoomClick"
+            @asset-deleted="emit('asset-deleted')"
+            @bulk-download="emit('bulk-download', $event)"
+            @bulk-delete="emit('bulk-delete', $event)"
+            @bulk-add-to-workflow="emit('bulk-add-to-workflow', $event)"
+            @bulk-open-workflow="emit('bulk-open-workflow', $event)"
+            @bulk-export-workflow="emit('bulk-export-workflow', $event)"
           >
-            <i class="icon-[lucide--ellipsis] size-4" />
-          </Button>
+            <Button
+              variant="overlay-white"
+              size="icon"
+              :aria-label="$t('mediaAsset.actions.moreOptions')"
+            >
+              <i class="icon-[lucide--ellipsis] size-4" />
+            </Button>
+          </MediaAssetActionsMenu>
         </IconGroup>
       </div>
     </div>
@@ -157,6 +168,7 @@ import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
+import MediaAssetActionsMenu from './MediaAssetActionsMenu.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
 
@@ -175,12 +187,24 @@ function getTopComponent(kind: PreviewKind) {
   return mediaComponents.top[kind] || mediaComponents.top.other
 }
 
-const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
+const {
+  asset,
+  loading,
+  selected,
+  showOutputCount,
+  outputCount,
+  showDeleteButton,
+  selectedAssets,
+  isBulkMode
+} = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
   showOutputCount?: boolean
   outputCount?: number
+  showDeleteButton?: boolean
+  selectedAssets?: AssetItem[]
+  isBulkMode?: boolean
 }>()
 
 const assetsStore = useAssetsStore()
@@ -194,7 +218,12 @@ const emit = defineEmits<{
   click: []
   zoom: [asset: AssetItem]
   'output-count-click': []
-  'context-menu': [event: MouseEvent, asset: AssetItem]
+  'asset-deleted': []
+  'bulk-download': [assets: AssetItem[]]
+  'bulk-delete': [assets: AssetItem[]]
+  'bulk-add-to-workflow': [assets: AssetItem[]]
+  'bulk-open-workflow': [assets: AssetItem[]]
+  'bulk-export-workflow': [assets: AssetItem[]]
 }>()
 
 const cardContainerRef = ref<HTMLElement>()

@@ -82,7 +82,10 @@ const mountJobAssetsList = (jobs: JobListItem[]) => {
   ]
 
   return mount(JobAssetsList, {
-    props: { displayedJobGroups },
+    props: {
+      displayedJobGroups,
+      getMenuEntries: () => []
+    },
     global: {
       stubs: {
         teleport: true,

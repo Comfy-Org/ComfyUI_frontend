@@ -16,49 +16,79 @@
           >
             <i class="pi pi-trash text-xs" />
           </LoadingOverlay>
-          <AssetsListItem
-            role="button"
-            tabindex="0"
-            :aria-label="
-              t('assetBrowser.ariaLabel.assetCard', {
-                name: getAssetDisplayName(item.asset),
-                type: getAssetMediaType(item.asset)
-              })
-            "
-            :class="
-              cn(
-                getAssetCardClass(isSelected(item.asset.id)),
-                item.isChild && 'pl-6'
-              )
-            "
-            :preview-url="getAssetPreviewUrl(item.asset)"
-            :preview-alt="getAssetDisplayName(item.asset)"
-            :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
-            :is-video-preview="isVideoAsset(item.asset)"
-            :primary-text="getAssetPrimaryText(item.asset)"
-            :secondary-text="getAssetSecondaryText(item.asset)"
-            :stack-count="getStackCount(item.asset)"
-            :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
-            :stack-expanded="isStackExpanded(item.asset)"
-            @mouseenter="onAssetEnter(item.asset.id)"
-            @mouseleave="onAssetLeave(item.asset.id)"
-            @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
-            @click.stop="emit('select-asset', item.asset, selectableAssets)"
-            @dblclick.stop="emit('preview-asset', item.asset)"
-            @preview-click="emit('preview-asset', item.asset)"
-            @stack-toggle="void toggleStack(item.asset)"
+          <MediaAssetContextMenu
+            :asset="item.asset"
+            :asset-type="getAssetType(item.asset.tags)"
+            :file-kind="getAssetMediaType(item.asset)"
+            :show-delete-button
+            :selected-assets
+            :is-bulk-mode
+            @zoom="emit('preview-asset', item.asset)"
+            @asset-deleted="emit('asset-deleted')"
+            @bulk-download="emit('bulk-download', $event)"
+            @bulk-delete="emit('bulk-delete', $event)"
+            @bulk-add-to-workflow="emit('bulk-add-to-workflow', $event)"
+            @bulk-open-workflow="emit('bulk-open-workflow', $event)"
+            @bulk-export-workflow="emit('bulk-export-workflow', $event)"
           >
-            <template v-if="hoveredAssetId === item.asset.id" #actions>
-              <Button
-                variant="secondary"
-                size="icon"
-                :aria-label="t('mediaAsset.actions.moreOptions')"
-                @click.stop="emit('context-menu', $event, item.asset)"
-              >
-                <i class="icon-[lucide--ellipsis] size-4" />
-              </Button>
-            </template>
-          </AssetsListItem>
+            <AssetsListItem
+              role="button"
+              tabindex="0"
+              :aria-label="
+                t('assetBrowser.ariaLabel.assetCard', {
+                  name: getAssetDisplayName(item.asset),
+                  type: getAssetMediaType(item.asset)
+                })
+              "
+              :class="
+                cn(
+                  getAssetCardClass(isSelected(item.asset.id)),
+                  item.isChild && 'pl-6'
+                )
+              "
+              :preview-url="getAssetPreviewUrl(item.asset)"
+              :preview-alt="getAssetDisplayName(item.asset)"
+              :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
+              :is-video-preview="isVideoAsset(item.asset)"
+              :primary-text="getAssetPrimaryText(item.asset)"
+              :secondary-text="getAssetSecondaryText(item.asset)"
+              :stack-count="getStackCount(item.asset)"
+              :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
+              :stack-expanded="isStackExpanded(item.asset)"
+              @mouseenter="onAssetEnter(item.asset.id)"
+              @mouseleave="onAssetLeave(item.asset.id)"
+              @click.stop="emit('select-asset', item.asset, selectableAssets)"
+              @dblclick.stop="emit('preview-asset', item.asset)"
+              @preview-click="emit('preview-asset', item.asset)"
+              @stack-toggle="void toggleStack(item.asset)"
+            >
+              <template v-if="hoveredAssetId === item.asset.id" #actions>
+                <MediaAssetActionsMenu
+                  :asset="item.asset"
+                  :asset-type="getAssetType(item.asset.tags)"
+                  :file-kind="getAssetMediaType(item.asset)"
+                  :show-delete-button
+                  :selected-assets
+                  :is-bulk-mode
+                  @zoom="emit('preview-asset', item.asset)"
+                  @asset-deleted="emit('asset-deleted')"
+                  @bulk-download="emit('bulk-download', $event)"
+                  @bulk-delete="emit('bulk-delete', $event)"
+                  @bulk-add-to-workflow="emit('bulk-add-to-workflow', $event)"
+                  @bulk-open-workflow="emit('bulk-open-workflow', $event)"
+                  @bulk-export-workflow="emit('bulk-export-workflow', $event)"
+                >
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    :aria-label="t('mediaAsset.actions.moreOptions')"
+                  >
+                    <i class="icon-[lucide--ellipsis] size-4" />
+                  </Button>
+                </MediaAssetActionsMenu>
+              </template>
+            </AssetsListItem>
+          </MediaAssetContextMenu>
         </div>
       </template>
     </VirtualGrid>
@@ -72,7 +102,10 @@ import { useI18n } from 'vue-i18n'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import MediaAssetActionsMenu from '@/platform/assets/components/MediaAssetActionsMenu.vue'
+import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -92,13 +125,19 @@ const {
   selectableAssets,
   isSelected,
   isStackExpanded,
-  toggleStack
+  toggleStack,
+  showDeleteButton,
+  selectedAssets,
+  isBulkMode
 } = defineProps<{
   assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
+  showDeleteButton?: boolean
+  selectedAssets?: AssetItem[]
+  isBulkMode?: boolean
 }>()
 
 const assetsStore = useAssetsStore()
@@ -106,8 +145,13 @@ const assetsStore = useAssetsStore()
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem, assets?: AssetItem[]): void
   (e: 'preview-asset', asset: AssetItem): void
-  (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
+  (e: 'asset-deleted'): void
+  (e: 'bulk-download', assets: AssetItem[]): void
+  (e: 'bulk-delete', assets: AssetItem[]): void
+  (e: 'bulk-add-to-workflow', assets: AssetItem[]): void
+  (e: 'bulk-open-workflow', assets: AssetItem[]): void
+  (e: 'bulk-export-workflow', assets: AssetItem[]): void
 }>()
 
 const { t } = useI18n()

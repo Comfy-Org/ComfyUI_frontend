@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { JobListItem } from '@/composables/queue/useJobList'
 
 vi.mock('@/composables/queue/useJobMenu', () => ({
-  useJobMenu: () => ({ jobMenuEntries: [] })
+  useJobMenu: () => ({ getJobMenuEntries: () => [] })
 }))
 
 vi.mock('@/composables/useErrorHandling', () => ({

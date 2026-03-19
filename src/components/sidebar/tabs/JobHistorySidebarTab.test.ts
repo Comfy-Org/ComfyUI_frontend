@@ -52,7 +52,7 @@ vi.mock('@/composables/queue/useJobList', async () => {
 
 vi.mock('@/composables/queue/useJobMenu', () => ({
   useJobMenu: () => ({
-    jobMenuEntries: [],
+    getJobMenuEntries: () => [],
     cancelJob: vi.fn()
   })
 }))
@@ -130,7 +130,6 @@ function mountComponent() {
         JobFilterTabs: true,
         JobFilterActions: true,
         JobHistoryActionsMenu: true,
-        JobContextMenu: true,
         ResultGallery: true,
         teleport: true,
         JobDetailsPopover: JobDetailsPopoverStub

@@ -94,10 +94,18 @@
           :is-selected="isSelected"
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
+          :show-delete-button="shouldShowDeleteButton"
+          :selected-assets="selectedAssets"
+          :is-bulk-mode="isBulkMode"
           :toggle-stack="toggleListViewStack"
+          @asset-deleted="refreshAssets"
+          @bulk-download="handleBulkDownload"
+          @bulk-delete="handleBulkDelete"
+          @bulk-add-to-workflow="handleBulkAddToWorkflow"
+          @bulk-open-workflow="handleBulkOpenWorkflow"
+          @bulk-export-workflow="handleBulkExportWorkflow"
           @select-asset="handleAssetSelect"
           @preview-asset="handleZoomClick"
-          @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />
         <AssetsSidebarGridView
@@ -106,8 +114,16 @@
           :is-selected="isSelected"
           :show-output-count="shouldShowOutputCount"
           :get-output-count="getOutputCount"
+          :show-delete-button="shouldShowDeleteButton"
+          :selected-assets="selectedAssets"
+          :is-bulk-mode="isBulkMode"
+          @asset-deleted="refreshAssets"
+          @bulk-download="handleBulkDownload"
+          @bulk-delete="handleBulkDelete"
+          @bulk-add-to-workflow="handleBulkAddToWorkflow"
+          @bulk-open-workflow="handleBulkOpenWorkflow"
+          @bulk-export-workflow="handleBulkExportWorkflow"
           @select-asset="handleAssetSelect"
-          @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
           @zoom="handleZoomClick"
           @output-count-click="enterFolderView"
@@ -174,24 +190,6 @@
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
   />
-  <MediaAssetContextMenu
-    v-if="contextMenuAsset"
-    ref="contextMenuRef"
-    :asset="contextMenuAsset"
-    :asset-type="contextMenuAssetType"
-    :file-kind="contextMenuFileKind"
-    :show-delete-button="shouldShowDeleteButton"
-    :selected-assets="selectedAssets"
-    :is-bulk-mode="isBulkMode"
-    @zoom="handleZoomClick(contextMenuAsset)"
-    @hide="handleContextMenuHide"
-    @asset-deleted="refreshAssets"
-    @bulk-download="handleBulkDownload"
-    @bulk-delete="handleBulkDelete"
-    @bulk-add-to-workflow="handleBulkAddToWorkflow"
-    @bulk-open-workflow="handleBulkOpenWorkflow"
-    @bulk-export-workflow="handleBulkExportWorkflow"
-  />
 </template>
 
 <script setup lang="ts">
@@ -200,14 +198,12 @@ import {
   useDebounceFn,
   useElementHover,
   useResizeObserver,
-  useStorage,
-  useTimeoutFn
+  useStorage
 } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
 import {
   computed,
   defineAsyncComponent,
-  nextTick,
   onMounted,
   onUnmounted,
   ref,
@@ -224,9 +220,7 @@ import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
-import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
-import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -236,7 +230,6 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -267,23 +260,12 @@ const viewMode = useStorage<'list' | 'grid'>(
 )
 const isListView = computed(() => viewMode.value === 'list')
 
-const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
-const contextMenuAsset = ref<AssetItem | null>(null)
-
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
 const shouldShowDeleteButton = computed(() => {
   if (activeTab.value === 'input' && !isCloud) return false
   return true
 })
-
-const contextMenuAssetType = computed(() =>
-  contextMenuAsset.value ? getAssetType(contextMenuAsset.value.tags) : 'input'
-)
-
-const contextMenuFileKind = computed<MediaKind>(() =>
-  getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
-)
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
   if (activeTab.value !== 'output' || isInFolderView.value) {
@@ -500,26 +482,6 @@ function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const index = assetList.findIndex((a) => a.id === asset.id)
   emit('assetSelected', asset)
   handleAssetClick(asset, index, assetList)
-}
-
-const { start: scheduleCleanup, stop: cancelCleanup } = useTimeoutFn(
-  () => {
-    contextMenuAsset.value = null
-  },
-  0,
-  { immediate: false }
-)
-
-function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
-  cancelCleanup()
-  contextMenuAsset.value = asset
-  void nextTick(() => {
-    contextMenuRef.value?.show(event)
-  })
-}
-
-function handleContextMenuHide() {
-  scheduleCleanup()
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {
