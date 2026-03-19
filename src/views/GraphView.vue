@@ -253,7 +253,12 @@ const reconnectingMessage: ToastMessageOptions = {
   summary: t('g.reconnecting')
 }
 
+let disconnectedAt: number | null = null
+
 const onReconnecting = () => {
+  if (disconnectedAt === null) {
+    disconnectedAt = Date.now()
+  }
   if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
     toast.remove(reconnectingMessage)
     toast.add(reconnectingMessage)
@@ -261,6 +266,17 @@ const onReconnecting = () => {
 }
 
 const onReconnected = () => {
+  if (disconnectedAt !== null) {
+    const activeJobCount = queueStore.activeJobsCount
+    if (activeJobCount > 0) {
+      telemetry?.trackWebSocketReconnected({
+        disconnect_duration_ms: Date.now() - disconnectedAt,
+        had_active_jobs: true,
+        active_job_count: activeJobCount
+      })
+    }
+    disconnectedAt = null
+  }
   if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
     toast.remove(reconnectingMessage)
     toast.add({

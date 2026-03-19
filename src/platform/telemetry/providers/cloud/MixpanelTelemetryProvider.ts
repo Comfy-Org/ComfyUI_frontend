@@ -41,6 +41,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  WebSocketReconnectedMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
@@ -441,5 +442,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackWebSocketReconnected(metadata: WebSocketReconnectedMetadata): void {
+    this.trackEvent(TelemetryEvents.WEBSOCKET_RECONNECTED, metadata)
   }
 }

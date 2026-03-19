@@ -27,6 +27,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  WebSocketReconnectedMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
@@ -235,5 +236,9 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
     this.dispatch((provider) => provider.trackPageView?.(pageName, properties))
+  }
+
+  trackWebSocketReconnected(metadata: WebSocketReconnectedMetadata): void {
+    this.dispatch((provider) => provider.trackWebSocketReconnected?.(metadata))
   }
 }
