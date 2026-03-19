@@ -275,7 +275,7 @@ jobs:
 
   report:
     needs: [resolve-matrix, qa]
-    if: always() && (github.event.pull_request.number || github.event_name == 'push')
+    if: always() && (github.event.pull_request.number || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
