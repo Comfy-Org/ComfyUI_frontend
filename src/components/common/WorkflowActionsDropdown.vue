@@ -80,7 +80,11 @@ const tooltipPt = {
 </script>
 
 <template>
-  <DropdownMenuRoot v-model:open="dropdownOpen" @update:open="handleOpen">
+  <DropdownMenuRoot
+    v-model:open="dropdownOpen"
+    :modal="false"
+    @update:open="handleOpen"
+  >
     <slot name="button" :has-unseen-items="hasUnseenItems">
       <div
         class="pointer-events-auto inline-flex items-center rounded-lg bg-secondary-background"

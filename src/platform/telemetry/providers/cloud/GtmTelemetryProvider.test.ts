@@ -90,6 +90,14 @@ describe('GtmTelemetryProvider', () => {
       expect(lastDataLayerEntry()).toMatchObject({ event: 'select_promotion' })
     })
 
+    it('pushes subscription_success for subscription activation', () => {
+      const provider = createInitializedProvider()
+      provider.trackMonthlySubscriptionSucceeded()
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'subscription_success'
+      })
+    })
+
     it('pushes run_workflow with trigger_source', () => {
       const provider = createInitializedProvider()
       provider.trackRunButton({ trigger_source: 'button' })
