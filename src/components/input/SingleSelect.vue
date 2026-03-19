@@ -35,17 +35,19 @@
         <slot v-else name="icon" />
         <SelectValue :placeholder="label" class="truncate" />
       </div>
-      <SelectIcon v-if="!loading" as-child>
-        <i
-          class="icon-[lucide--chevron-down] shrink-0 px-3 py-2 text-muted-foreground"
-        />
-      </SelectIcon>
+      <div
+        v-if="!loading"
+        class="flex shrink-0 cursor-pointer items-center justify-center px-3"
+      >
+        <i class="icon-[lucide--chevron-down] text-muted-foreground" />
+      </div>
     </SelectTrigger>
 
     <SelectPortal>
       <SelectContent
         position="popper"
         :side-offset="8"
+        align="start"
         :style="optionStyle"
         :class="
           cn(
@@ -54,6 +56,7 @@
             'bg-base-background text-base-foreground',
             'border border-solid border-border-default',
             'shadow-md',
+            'min-w-(--reka-select-trigger-width)',
             'data-[state=closed]:animate-out data-[state=open]:animate-in',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
             'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -63,7 +66,7 @@
       >
         <SelectViewport
           :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
-          class="scrollbar-custom w-full min-w-(--reka-select-trigger-width)"
+          class="scrollbar-custom w-full"
         >
           <SelectItem
             v-for="opt in options"
@@ -101,7 +104,6 @@
 <script setup lang="ts">
 import {
   SelectContent,
-  SelectIcon,
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
