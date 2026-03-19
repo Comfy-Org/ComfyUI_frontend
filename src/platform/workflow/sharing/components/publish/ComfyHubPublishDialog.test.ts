@@ -46,11 +46,15 @@ vi.mock(
         name: '',
         description: '',
         tags: [],
+        models: [],
+        customNodes: [],
         thumbnailType: 'image',
         thumbnailFile: null,
         comparisonBeforeFile: null,
         comparisonAfterFile: null,
-        exampleImages: []
+        exampleImages: [],
+        tutorialUrl: '',
+        metadata: {}
       }),
       isFirstStep: ref(false),
       isLastStep: ref(true),
