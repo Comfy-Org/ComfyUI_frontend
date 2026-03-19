@@ -446,10 +446,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
     )
 
+    const linkedWidgetNames = new Set(
+      linkedEntries.map((entry) => entry.widgetName)
+    )
+
     const hasFallbackToKeep = fallbackStoredEntries.some((entry) => {
       const sourceNode = this.subgraph.getNodeById(entry.interiorNodeId)
+      if (!sourceNode) return linkedWidgetNames.has(entry.widgetName)
+
       const hasSourceWidget =
-        sourceNode?.widgets?.some(
+        sourceNode.widgets?.some(
           (widget) => widget.name === entry.widgetName
         ) === true
       if (hasSourceWidget) return true
