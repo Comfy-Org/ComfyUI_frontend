@@ -189,7 +189,7 @@ jobs:
           else
             cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
           You are running a FOCUSED QA pass on PR #${PR_NUM} to the ComfyUI frontend.
-          Your goal is to TEST THE SPECIFIC BEHAVIOR this PR changes, not just smoke-test the app.
+          Your ONLY goal is to test the SPECIFIC BEHAVIOR this PR changes — nothing else.
 
           Environment: CI=true, OS=${{ runner.os }}
           Server URL: http://127.0.0.1:8188
@@ -201,28 +201,39 @@ jobs:
           DIFF (truncated to 500 lines):
           $(head -500 "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || echo "No diff available")
 
-          IMPORTANT: Read the diff above carefully. Identify what UI behavior changed, then
-          design your test steps to exercise EXACTLY that behavior. For example:
-          - If the PR changes a menu item, find and click that menu item
-          - If the PR fixes a bug, try to reproduce the bug scenario
-          - If the PR adds a new feature, use that feature end-to-end
-          Do NOT just click around randomly. Test the PURPOSE of the PR.
+          ## Instructions
+
+          1. Read the diff above carefully. Identify what UI behavior changed.
+          2. Design 3-6 targeted test steps that exercise EXACTLY that behavior.
+          3. Execute ONLY those steps. Do NOT do general smoke testing, template
+             browsing, sidebar exploration, or anything unrelated to the PR.
+
+          Examples:
+          - PR changes a menu item → find and click that menu item, verify the change
+          - PR fixes a bug → reproduce the bug scenario, confirm it's fixed
+          - PR adds a feature → use that feature end-to-end
+
+          ## Time budget: keep the video recording under 30 seconds.
+          Only record the PR-relevant interactions. Login happens BEFORE recording.
 
           CRITICAL: "playwright-cli" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
           Chromium is already installed. Just run the commands directly.
 
           You MUST follow these exact steps in order:
           1. playwright-cli open http://127.0.0.1:8188
-          2. QUICK LOGIN (before video): snapshot, fill the username input with "qa-ci", click Next button, wait for graph editor to load
-          3. playwright-cli video-start
-          4. playwright-cli snapshot (you should see the graph editor now)
-          5. Execute your targeted test plan (take snapshot between each action)
+          2. QUICK LOGIN (before video): snapshot, fill the username input with "qa-ci",
+             click Next button, wait for graph editor to load
+          3. playwright-cli snapshot — verify graph editor is loaded
+          4. playwright-cli video-start
+          5. Execute ONLY your PR-targeted test steps (snapshot between each action)
           6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
           7. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
              Include PASS/FAIL for each test step in the report.
 
-          Do NOT skip any steps. Do NOT use pnpm/npx to run playwright-cli.
-          Do NOT create a PR, post PR comments, commit, or push anything.
+          RULES:
+          - Do NOT browse templates, explore sidebar panels, or test unrelated features
+          - Do NOT use pnpm/npx to run playwright-cli
+          - Do NOT create a PR, post PR comments, commit, or push anything
           PROMPT
           fi
 
