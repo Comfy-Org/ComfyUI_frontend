@@ -566,7 +566,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Legacy -1 entries use the slot name as the widget name.
     // Find the input with that name, then trace to the connected interior widget.
     const input = this.inputs.find((i) => i.name === widgetName)
-    if (!input?._widget) return undefined
+    if (!input?._widget) {
+      // Fallback: find via subgraph input slot connection
+      const resolvedTarget = resolveSubgraphInputTarget(this, widgetName)
+      if (!resolvedTarget) return undefined
+      return [resolvedTarget.nodeId, resolvedTarget.widgetName]
+    }
 
     const widget = input._widget
     if (isPromotedWidgetView(widget)) {

@@ -78,7 +78,10 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
-import { deduplicateSubgraphNodeIds } from './utils/subgraphDeduplication'
+import {
+  deduplicateSubgraphNodeIds,
+  topologicalSortSubgraphs
+} from './subgraph/subgraphDeduplication'
 
 export type {
   LGraphTriggerAction,
@@ -2585,7 +2588,12 @@ export class LGraph
         effectiveNodesData = deduplicated?.rootNodes ?? nodesData
 
         for (const subgraph of finalSubgraphs) this.createSubgraph(subgraph)
-        for (const subgraph of finalSubgraphs)
+
+        // Configure in leaf-first order so that when a SubgraphNode is
+        // configured, its referenced subgraph definition already has its
+        // nodes/links/inputs populated.
+        const configureOrder = topologicalSortSubgraphs(finalSubgraphs)
+        for (const subgraph of configureOrder)
           this.subgraphs.get(subgraph.id)?.configure(subgraph)
       }
 
@@ -2878,6 +2886,10 @@ export class Subgraph
       }
     }
 
+    // Repair IO slot linkIds that reference links removed by
+    // _removeDuplicateLinks during super.configure().
+    this._repairIOSlotLinkIds()
+
     if (widgets) {
       this.widgets.length = 0
       for (const widget of widgets) {
@@ -2900,6 +2912,44 @@ export class Subgraph
 
     this._configureSubgraph(data)
     return r
+  }
+
+  /**
+   * Repairs SubgraphInput/Output `linkIds` that reference links removed
+   * by `_removeDuplicateLinks` during `super.configure()`.
+   *
+   * For each stale link ID, finds the surviving link that connects to the
+   * same IO node and slot index, and substitutes it.
+   */
+  private _repairIOSlotLinkIds(): void {
+    for (const [slotIndex, slot] of this.inputs.entries()) {
+      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_INPUT_ID, slotIndex)
+    }
+    for (const [slotIndex, slot] of this.outputs.entries()) {
+      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_OUTPUT_ID, slotIndex)
+    }
+  }
+
+  private _repairSlotLinkIds(
+    linkIds: LinkId[],
+    ioNodeId: number,
+    slotIndex: number
+  ): void {
+    for (let i = 0; i < linkIds.length; i++) {
+      if (this._links.has(linkIds[i])) continue
+
+      // Find a surviving link that connects to this IO slot
+      for (const link of this._links.values()) {
+        const isOrigin =
+          link.origin_id === ioNodeId && link.origin_slot === slotIndex
+        const isTarget =
+          link.target_id === ioNodeId && link.target_slot === slotIndex
+        if (isOrigin || isTarget) {
+          linkIds[i] = link.id
+          break
+        }
+      }
+    }
   }
 
   override attachCanvas(canvas: LGraphCanvas): void {
