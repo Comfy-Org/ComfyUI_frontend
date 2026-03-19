@@ -25,7 +25,7 @@ jobs:
         with:
           include_build_step: true
 
-      # Upload only built dist/ (containerized test jobs cache pnpm store separately)
+      # Upload only built dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
         uses: actions/upload-artifact@v6
         with:
@@ -64,7 +64,7 @@ jobs:
         uses: ./.github/actions/start-comfyui-server
 
       - name: Install frontend deps
-        uses: ./.github/actions/install-frontend-deps
+        run: pnpm install --frozen-lockfile
 
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
@@ -111,7 +111,7 @@ jobs:
         uses: ./.github/actions/start-comfyui-server
 
       - name: Install frontend deps
-        uses: ./.github/actions/install-frontend-deps
+        run: pnpm install --frozen-lockfile
 
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
