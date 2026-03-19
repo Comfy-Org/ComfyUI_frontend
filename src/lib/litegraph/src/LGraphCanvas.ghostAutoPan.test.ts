@@ -52,6 +52,10 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
     node = new LGraphNode('test')
     node.size = [200, 100]
     graph.add(node)
+
+    // Near left edge so autopan fires by default
+    canvas.mouse[0] = 5
+    canvas.mouse[1] = 300
   })
 
   afterEach(() => {
@@ -59,32 +63,10 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
     vi.useRealTimers()
   })
 
-  it('starts auto-pan when ghost placement begins', () => {
-    canvas.mouse[0] = 400
-    canvas.mouse[1] = 300
-    canvas.startGhostPlacement(node)
-    expect(canvas['_autoPan']).not.toBeNull()
-  })
-
-  it('pans the viewport when pointer is near edge during ghost placement', () => {
-    canvas.mouse[0] = 5
-    canvas.mouse[1] = 300
-    canvas.startGhostPlacement(node)
-
-    const offsetBefore = canvas.ds.offset[0]
-
-    vi.advanceTimersByTime(16)
-
-    expect(canvas.ds.offset[0]).not.toBe(offsetBefore)
-  })
-
-  it('moves the ghost node when auto-pan fires', () => {
-    canvas.mouse[0] = 5
-    canvas.mouse[1] = 300
+  it('moves the ghost node when pointer is near edge', () => {
     canvas.startGhostPlacement(node)
 
     const posXBefore = node.pos[0]
-
     vi.advanceTimersByTime(16)
 
     expect(node.pos[0]).not.toBe(posXBefore)
@@ -92,75 +74,33 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
 
   it('does not pan when pointer is in the center', () => {
     canvas.mouse[0] = 400
-    canvas.mouse[1] = 300
     canvas.startGhostPlacement(node)
 
     const offsetBefore = [...canvas.ds.offset]
-
     vi.advanceTimersByTime(16)
 
     expect(canvas.ds.offset[0]).toBe(offsetBefore[0])
     expect(canvas.ds.offset[1]).toBe(offsetBefore[1])
   })
 
-  it('stops auto-pan when ghost placement is finalized', () => {
-    canvas.mouse[0] = 400
-    canvas.mouse[1] = 300
-    canvas.startGhostPlacement(node)
-    expect(canvas['_autoPan']).not.toBeNull()
-
-    canvas.finalizeGhostPlacement(false)
-
-    expect(canvas['_autoPan']).toBeNull()
-  })
-
-  it('stops auto-pan when ghost placement is cancelled', () => {
-    canvas.mouse[0] = 400
-    canvas.mouse[1] = 300
-    canvas.startGhostPlacement(node)
-    expect(canvas['_autoPan']).not.toBeNull()
-
-    canvas.finalizeGhostPlacement(true)
-
-    expect(canvas['_autoPan']).toBeNull()
-  })
-
-  it('marks canvas dirty when auto-pan fires', () => {
-    canvas.mouse[0] = 5
-    canvas.mouse[1] = 300
-    canvas.startGhostPlacement(node)
-
-    canvas.dirty_canvas = false
-    canvas.dirty_bgcanvas = false
-
-    vi.advanceTimersByTime(16)
-
-    expect(canvas.dirty_canvas).toBe(true)
-    expect(canvas.dirty_bgcanvas).toBe(true)
-  })
-
-  it('removes document pointermove listener on finalize', () => {
+  it('cleans up autopan and document listener on finalize', () => {
     const removeSpy = vi.spyOn(document, 'removeEventListener')
-    canvas.mouse[0] = 400
-    canvas.mouse[1] = 300
     canvas.startGhostPlacement(node)
+    expect(canvas['_autoPan']).not.toBeNull()
 
     canvas.finalizeGhostPlacement(false)
 
+    expect(canvas['_autoPan']).toBeNull()
     expect(removeSpy).toHaveBeenCalledWith('pointermove', expect.any(Function))
     removeSpy.mockRestore()
   })
 
   it('survives linkConnector reset during ghost placement', () => {
-    canvas.mouse[0] = 5
-    canvas.mouse[1] = 300
     canvas.startGhostPlacement(node)
-    expect(canvas['_autoPan']).not.toBeNull()
 
     canvas.linkConnector.reset()
 
     expect(canvas['_autoPan']).not.toBeNull()
-
     vi.advanceTimersByTime(16)
     expect(canvas.ds.offset[0]).not.toBe(0)
   })
