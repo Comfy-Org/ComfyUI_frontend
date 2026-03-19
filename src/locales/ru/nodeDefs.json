@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Включает оптимизацию KV Cache для эталонных изображений в моделях семейства Flux.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, для которой будет использоваться KV Cache."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Патченная модель с включённым KV Cache."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Этот узел изменяет размер изображения до более оптимального для flux kontext.",
     "display_name": "FluxKontextImageScale",
@@ -11291,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "цвет_фона"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Необязательное базовое изображение для рисования поверх"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Объединение пар кондиционирования",
     "inputs": {
@@ -12852,6 +12896,133 @@
       "1": {
         "name": "height",
         "tooltip": "Вычисленная высота в пикселях (кратна 8)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Генерируйте изображения по текстовым описаниям с помощью Reve.",
+    "display_name": "Reve Создание изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Версия модели для генерации."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого изображения. Максимум 2560 символов."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Удалить фон с сгенерированного изображения. Может потребоваться дополнительная оплата."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел запускаться повторно; результаты не являются детерминированными независимо от seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Увеличить разрешение сгенерированного изображения. Может потребоваться дополнительная оплата."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Редактируйте изображения с помощью естественно-языковых инструкций в Reve.",
+    "display_name": "Reve Редактирование изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "edit_instruction": {
+        "name": "edit_instruction",
+        "tooltip": "Текстовое описание того, как редактировать изображение. Максимум 2560 символов."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Изображение для редактирования."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Версия модели для редактирования."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Удалить фон с сгенерированного изображения. Может потребоваться дополнительная оплата."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел запускаться повторно; результаты не являются детерминированными независимо от seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Увеличить разрешение сгенерированного изображения. Может потребоваться дополнительная оплата."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Комбинируйте референсные изображения с текстовыми подсказками для создания новых изображений с помощью Reve.",
+    "display_name": "Reve Ремикс изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Версия модели для ремикса."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого изображения. Можно использовать XML-теги img для ссылки на определённые изображения по индексу, например <img>0</img>, <img>1</img> и т.д."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Удалить фон с сгенерированного изображения. Может потребоваться дополнительная оплата."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел запускаться повторно; результаты не являются детерминированными независимо от seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Увеличить разрешение сгенерированного изображения. Может потребоваться дополнительная оплата."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15080,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "После загрузки 3D-модели выполните перерисовку текстуры 3D-модели.",
+    "display_name": "Hunyuan3D: Редактирование 3D-текстуры",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D-модель в формате FBX. Модель должна содержать менее 100000 полигонов."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Опишите редактирование текстуры. Поддерживается до 1024 символов UTF-8."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результат всегда недетерминированный, независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Изображение(я) в модель (Pro)",
     "inputs": {
@@ -15127,6 +15333,22 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
         "tooltip": null
       }
     }
@@ -15228,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }

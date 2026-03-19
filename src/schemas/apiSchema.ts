@@ -23,6 +23,8 @@ const zResultItem = z.object({
   display_name: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
+// Uses .passthrough() because custom nodes can output arbitrary keys.
+// See docs/adr/0007-node-execution-output-passthrough-schema.md
 const zOutputs = z
   .object({
     audio: z.array(zResultItem).optional(),
@@ -112,7 +114,8 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
 
 const zProgressTextWsMessage = z.object({
   nodeId: zNodeId,
-  text: z.string()
+  text: z.string(),
+  prompt_id: z.string().optional()
 })
 
 const zNotificationWsMessage = z.object({
@@ -297,10 +300,11 @@ const zSettings = z.object({
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
+  'Comfy.Appearance.DisableAnimations': z.boolean(),
   'Comfy.UI.TabBarLayout': z.enum(['Default', 'Legacy']),
-  'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
+  'Comfy.Desktop.CloudNotificationShown': z.boolean(),
   'Comfy.DisableFloatRounding': z.boolean(),
   'Comfy.DisableSliders': z.boolean(),
   'Comfy.DOMClippingEnabled': z.boolean(),
@@ -308,6 +312,7 @@ const zSettings = z.object({
   'Comfy.EnableTooltips': z.boolean(),
   'Comfy.EnableWorkflowViewRestore': z.boolean(),
   'Comfy.FloatRoundingPrecision': z.number(),
+  'Comfy.Graph.AutoPanSpeed': z.number(),
   'Comfy.Graph.CanvasInfo': z.boolean(),
   'Comfy.Graph.CanvasMenu': z.boolean(),
   'Comfy.Graph.CtrlShiftZoom': z.boolean(),
@@ -464,7 +469,8 @@ const zSettings = z.object({
   'Comfy.VersionCompatibility.DisableWarnings': z.boolean(),
   'Comfy.RightSidePanel.IsOpen': z.boolean(),
   'Comfy.RightSidePanel.ShowErrorsTab': z.boolean(),
-  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean()
+  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean(),
+  'LiteGraph.Group.SelectChildrenOnClick': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>

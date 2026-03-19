@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useTemplateRef, watch } from 'vue'
+import { onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
@@ -13,10 +13,19 @@ const containerRef = useTemplateRef('containerRef')
 
 const viewer = ref(useLoad3dViewer())
 
-watch([containerRef, () => modelUrl], async () => {
-  if (!containerRef.value || !modelUrl) return
+watch(
+  [containerRef, () => modelUrl],
+  async () => {
+    if (!containerRef.value || !modelUrl) return
 
-  await viewer.value.initializeStandaloneViewer(containerRef.value, modelUrl)
+    viewer.value.cleanup()
+    await viewer.value.initializeStandaloneViewer(containerRef.value, modelUrl)
+  },
+  { flush: 'post' }
+)
+
+onUnmounted(() => {
+  viewer.value.cleanup()
 })
 
 //TODO: refactor to add control buttons

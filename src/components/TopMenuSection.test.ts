@@ -78,6 +78,14 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
   }))
 }))
 
+vi.mock('@/scripts/app', () => ({
+  app: {
+    menu: {
+      element: document.createElement('div')
+    }
+  }
+}))
+
 type WrapperOptions = {
   pinia?: ReturnType<typeof createTestingPinia>
   stubs?: Record<string, boolean | Component>
@@ -129,6 +137,18 @@ function createWrapper({
       }
     }
   })
+}
+
+function getLegacyCommandsContainer(
+  wrapper: ReturnType<typeof createWrapper>
+): HTMLElement {
+  const legacyContainer = wrapper.find(
+    '[data-testid="legacy-topbar-container"]'
+  ).element
+  if (!(legacyContainer instanceof HTMLElement)) {
+    throw new Error('Expected legacy commands container to be present')
+  }
+  return legacyContainer
 }
 
 function createJob(id: string, status: JobStatus): JobListItem {
@@ -514,5 +534,70 @@ describe('TopMenuSection', () => {
     await nextTick()
 
     expect(wrapper.find('span.bg-red-500').exists()).toBe(true)
+  })
+
+  it('coalesces legacy topbar mutation scans to one check per frame', async () => {
+    localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+
+    const rafCallbacks: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb)
+      return rafCallbacks.length
+    })
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+
+    const pinia = createTestingPinia({ createSpy: vi.fn })
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) => {
+      if (key === 'Comfy.UseNewMenu') return 'Top'
+      if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
+      if (key === 'Comfy.RightSidePanel.IsOpen') return true
+      return undefined
+    })
+
+    const wrapper = createWrapper({ pinia, attachTo: document.body })
+
+    try {
+      await nextTick()
+
+      const actionbarContainer = wrapper.find('.actionbar-container')
+      expect(actionbarContainer.classes()).toContain('w-0')
+
+      const legacyContainer = getLegacyCommandsContainer(wrapper)
+      const querySpy = vi.spyOn(legacyContainer, 'querySelector')
+
+      if (rafCallbacks.length > 0) {
+        const initialCallbacks = [...rafCallbacks]
+        rafCallbacks.length = 0
+        initialCallbacks.forEach((callback) => callback(0))
+        await nextTick()
+      }
+      querySpy.mockClear()
+      querySpy.mockReturnValue(document.createElement('div'))
+
+      for (let index = 0; index < 3; index++) {
+        const outer = document.createElement('div')
+        const inner = document.createElement('div')
+        inner.textContent = `legacy-${index}`
+        outer.appendChild(inner)
+        legacyContainer.appendChild(outer)
+      }
+
+      await vi.waitFor(() => {
+        expect(rafCallbacks.length).toBeGreaterThan(0)
+      })
+      expect(querySpy).not.toHaveBeenCalled()
+
+      const callbacks = [...rafCallbacks]
+      rafCallbacks.length = 0
+      callbacks.forEach((callback) => callback(0))
+      await nextTick()
+
+      expect(querySpy).toHaveBeenCalledTimes(1)
+      expect(actionbarContainer.classes()).toContain('px-2')
+    } finally {
+      wrapper.unmount()
+      vi.unstubAllGlobals()
+    }
   })
 })

@@ -481,6 +481,10 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大時縮放節點組合小工具選單（清單）"
   },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "點擊時選取群組內的子項目",
+    "tooltip": "啟用後，點擊群組會選取群組內的所有節點與項目"
+  },
   "LiteGraph_Node_DefaultPadding": {
     "name": "新增節點時自動縮小",
     "tooltip": "建立節點時自動調整為最小尺寸。若停用，新增的節點會略為加寬以顯示元件數值。"

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/vue'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type {
@@ -10,7 +11,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
-} from '@/composables/node/useNodeCanvasImagePreview'
+} from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePromotionStore } from '@/stores/promotionStore'
@@ -57,6 +58,11 @@ export function promoteWidget(
   for (const parent of parents) {
     store.promote(parent.rootGraph.id, parent.id, nodeId, widgetName)
   }
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Promoted widget "${widgetName}" on node ${node.id}`,
+    level: 'info'
+  })
 }
 
 export function demoteWidget(
@@ -72,6 +78,11 @@ export function demoteWidget(
   for (const parent of parents) {
     store.demote(parent.rootGraph.id, parent.id, nodeId, widgetName)
   }
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Demoted widget "${widgetName}" on node ${node.id}`,
+    level: 'info'
+  })
 }
 
 function getParentNodes(): SubgraphNode[] {
@@ -304,4 +315,9 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
   }
 
   store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, validEntries)
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Pruned ${removedEntries.length} disconnected promotion(s) from subgraph node ${subgraphNode.id}`,
+    level: 'info'
+  })
 }

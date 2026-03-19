@@ -23,3 +23,4 @@ export type ErrorGroup =
     }
   | { type: 'missing_node'; title: string; priority: number }
   | { type: 'swap_nodes'; title: string; priority: number }
+  | { type: 'missing_model'; title: string; priority: number }

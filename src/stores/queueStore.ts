@@ -1,4 +1,3 @@
-import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
@@ -16,6 +15,7 @@ import type {
 } from '@/schemas/apiSchema'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
+import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
@@ -256,10 +256,7 @@ export class TaskItemImpl {
             }
           }
         : {})
-    // Remove animated outputs from the outputs object
-    this.outputs = _.mapValues(effectiveOutputs, (nodeOutputs) =>
-      _.omit(nodeOutputs, 'animated')
-    )
+    this.outputs = effectiveOutputs
     this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
   }
 
@@ -267,18 +264,7 @@ export class TaskItemImpl {
     if (!this.outputs) {
       return []
     }
-    return Object.entries(this.outputs).flatMap(([nodeId, nodeOutputs]) =>
-      Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
-        (items as ResultItem[]).map(
-          (item: ResultItem) =>
-            new ResultItemImpl({
-              ...item,
-              nodeId,
-              mediaType
-            })
-        )
-      )
-    )
+    return parseTaskOutput(this.outputs)
   }
 
   /** All outputs that support preview (images, videos, audio, 3D) */
@@ -288,9 +274,10 @@ export class TaskItemImpl {
 
   get previewOutput(): ResultItemImpl | undefined {
     const previewable = this.previewableOutputs
-    // Prefer saved media files over the temp previews
+    // Prefer the last saved media file (most recent result) over temp previews
     return (
-      previewable.find((output) => output.type === 'output') ?? previewable[0]
+      previewable.findLast((output) => output.type === 'output') ??
+      previewable.at(-1)
     )
   }
 
@@ -487,8 +474,13 @@ export const useQueueStore = defineStore('queue', () => {
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
-  // Scoped per-store instance; incremented to dedupe concurrent update() calls
-  let updateRequestId = 0
+  // Single-flight coalescing: at most one fetch in flight at a time.
+  // If update() is called while a fetch is running, the call is coalesced
+  // and a single re-fetch fires after the current one completes.
+  // This prevents both request spam and UI starvation (where a rapid stream
+  // of calls causes every response to be discarded by a stale-request guard).
+  let inFlight = false
+  let dirty = false
 
   const tasks = computed<TaskItemImpl[]>(
     () =>
@@ -513,15 +505,19 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const update = async () => {
-    const requestId = ++updateRequestId
+    if (inFlight) {
+      dirty = true
+      return
+    }
+
+    inFlight = true
+    dirty = false
     isLoading.value = true
     try {
       const [queue, history] = await Promise.all([
         api.getQueue(),
         api.getHistory(maxHistoryItems.value)
       ])
-
-      if (requestId !== updateRequestId) return
 
       // API returns pre-sorted data (sort_by=create_time&order=desc)
       runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
@@ -581,11 +577,10 @@ export const useQueueStore = defineStore('queue', () => {
       }
       hasFetchedHistorySnapshot.value = true
     } finally {
-      // Only clear loading if this is the latest request.
-      // A stale request completing (success or error) should not touch loading state
-      // since a newer request is responsible for it.
-      if (requestId === updateRequestId) {
-        isLoading.value = false
+      isLoading.value = false
+      inFlight = false
+      if (dirty) {
+        void update()
       }
     }
   }

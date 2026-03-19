@@ -69,11 +69,40 @@ describe('useTransformSettling', () => {
     expect(isTransforming.value).toBe(false)
   })
 
-  it('should not track pan events', async () => {
+  it('should track pointer drag as pan interaction', async () => {
+    const { isTransforming } = useTransformSettling(element, {
+      settleDelay: 200
+    })
+
+    element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    element.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
+    await nextTick()
+
+    expect(isTransforming.value).toBe(true)
+
+    element.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
+    vi.advanceTimersByTime(200)
+
+    expect(isTransforming.value).toBe(false)
+  })
+
+  it('should not treat right-click as pan', async () => {
+    const { isTransforming } = useTransformSettling(element, {
+      settleDelay: 200
+    })
+
+    element.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, button: 2 })
+    )
+    element.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
+    await nextTick()
+
+    expect(isTransforming.value).toBe(false)
+  })
+
+  it('should not track pointermove without pointerdown', async () => {
     const { isTransforming } = useTransformSettling(element)
 
-    // Pointer events should not trigger transform
-    element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     element.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
     await nextTick()
 

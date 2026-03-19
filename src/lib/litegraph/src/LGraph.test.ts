@@ -534,6 +534,222 @@ describe('ensureGlobalIdUniqueness', () => {
   })
 })
 
+describe('_removeDuplicateLinks', () => {
+  class TestNode extends LGraphNode {
+    constructor(title?: string) {
+      super(title ?? 'TestNode')
+      this.addInput('input_0', 'number')
+      this.addOutput('output_0', 'number')
+    }
+  }
+
+  function registerTestNodes() {
+    LiteGraph.registerNodeType('test/DupTestNode', TestNode)
+  }
+
+  it('removes orphaned duplicate links from _links and output.links', () => {
+    registerTestNodes()
+    const graph = new LGraph()
+
+    const source = LiteGraph.createNode('test/DupTestNode', 'Source')!
+    const target = LiteGraph.createNode('test/DupTestNode', 'Target')!
+    graph.add(source)
+    graph.add(target)
+
+    source.connect(0, target, 0)
+    expect(graph._links.size).toBe(1)
+
+    const existingLink = graph._links.values().next().value!
+    for (let i = 0; i < 3; i++) {
+      const dupLink = new LLink(
+        ++graph.state.lastLinkId,
+        existingLink.type,
+        existingLink.origin_id,
+        existingLink.origin_slot,
+        existingLink.target_id,
+        existingLink.target_slot
+      )
+      graph._links.set(dupLink.id, dupLink)
+      source.outputs[0].links!.push(dupLink.id)
+    }
+
+    expect(graph._links.size).toBe(4)
+    expect(source.outputs[0].links).toHaveLength(4)
+
+    graph._removeDuplicateLinks()
+
+    expect(graph._links.size).toBe(1)
+    expect(source.outputs[0].links).toHaveLength(1)
+    expect(target.inputs[0].link).toBe(source.outputs[0].links![0])
+  })
+
+  it('keeps the link referenced by input.link', () => {
+    registerTestNodes()
+    const graph = new LGraph()
+
+    const source = LiteGraph.createNode('test/DupTestNode', 'Source')!
+    const target = LiteGraph.createNode('test/DupTestNode', 'Target')!
+    graph.add(source)
+    graph.add(target)
+
+    source.connect(0, target, 0)
+    const keptLinkId = target.inputs[0].link!
+
+    const dupLink = new LLink(
+      ++graph.state.lastLinkId,
+      'number',
+      source.id,
+      0,
+      target.id,
+      0
+    )
+    graph._links.set(dupLink.id, dupLink)
+    source.outputs[0].links!.push(dupLink.id)
+
+    graph._removeDuplicateLinks()
+
+    expect(graph._links.size).toBe(1)
+    expect(target.inputs[0].link).toBe(keptLinkId)
+    expect(graph._links.has(keptLinkId)).toBe(true)
+    expect(graph._links.has(dupLink.id)).toBe(false)
+  })
+
+  it('keeps the valid link when input.link is at a shifted slot index', () => {
+    LiteGraph.registerNodeType('test/DupTestNode', TestNode)
+    const graph = new LGraph()
+
+    const source = LiteGraph.createNode('test/DupTestNode', 'Source')!
+    const target = LiteGraph.createNode('test/DupTestNode', 'Target')!
+    graph.add(source)
+    graph.add(target)
+
+    // Connect source:0 -> target:0, establishing input.link on target
+    source.connect(0, target, 0)
+    const validLinkId = target.inputs[0].link!
+    expect(graph._links.has(validLinkId)).toBe(true)
+
+    // Simulate widget-to-input conversion shifting the slot: insert a new
+    // input BEFORE the connected one, moving it from index 0 to index 1.
+    target.addInput('extra_widget', 'number')
+    const connectedInput = target.inputs[0]
+    target.inputs[0] = target.inputs[1]
+    target.inputs[1] = connectedInput
+    // Now target.inputs[1].link === validLinkId, but target.inputs[0].link is null
+
+    // Add a duplicate link with the same connection tuple (target_slot=0
+    // in the LLink, matching the original slot before the shift).
+    const dupLink = new LLink(
+      ++graph.state.lastLinkId,
+      'number',
+      source.id,
+      0,
+      target.id,
+      0
+    )
+    graph._links.set(dupLink.id, dupLink)
+    source.outputs[0].links!.push(dupLink.id)
+
+    expect(graph._links.size).toBe(2)
+
+    graph._removeDuplicateLinks()
+
+    // The valid link (referenced by an actual input) must survive
+    expect(graph._links.size).toBe(1)
+    expect(graph._links.has(validLinkId)).toBe(true)
+    expect(graph._links.has(dupLink.id)).toBe(false)
+    expect(target.inputs[1].link).toBe(validLinkId)
+  })
+
+  it('repairs input.link when it points to a removed duplicate', () => {
+    LiteGraph.registerNodeType('test/DupTestNode', TestNode)
+    const graph = new LGraph()
+
+    const source = LiteGraph.createNode('test/DupTestNode', 'Source')!
+    const target = LiteGraph.createNode('test/DupTestNode', 'Target')!
+    graph.add(source)
+    graph.add(target)
+
+    source.connect(0, target, 0)
+
+    // Create a duplicate link
+    const dupLink = new LLink(
+      ++graph.state.lastLinkId,
+      'number',
+      source.id,
+      0,
+      target.id,
+      0
+    )
+    graph._links.set(dupLink.id, dupLink)
+    source.outputs[0].links!.push(dupLink.id)
+
+    // Point input.link to the duplicate (simulating corrupted state)
+    target.inputs[0].link = dupLink.id
+
+    graph._removeDuplicateLinks()
+
+    expect(graph._links.size).toBe(1)
+    // input.link must point to whichever link survived
+    const survivingId = graph._links.keys().next().value!
+    expect(target.inputs[0].link).toBe(survivingId)
+    expect(graph._links.has(target.inputs[0].link!)).toBe(true)
+  })
+
+  it('is a no-op when no duplicates exist', () => {
+    registerTestNodes()
+    const graph = new LGraph()
+
+    const source = LiteGraph.createNode('test/DupTestNode', 'Source')!
+    const target = LiteGraph.createNode('test/DupTestNode', 'Target')!
+    graph.add(source)
+    graph.add(target)
+
+    source.connect(0, target, 0)
+    const linksBefore = graph._links.size
+
+    graph._removeDuplicateLinks()
+
+    expect(graph._links.size).toBe(linksBefore)
+  })
+
+  it('cleans up duplicate links in subgraph during configure', () => {
+    const subgraphData = createTestSubgraphData()
+    const rootGraph = new LGraph()
+    const subgraph = rootGraph.createSubgraph(subgraphData)
+
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    target.addInput('in', 'number')
+    subgraph.add(source)
+    subgraph.add(target)
+
+    source.connect(0, target, 0)
+    expect(subgraph._links.size).toBe(1)
+
+    const existingLink = subgraph._links.values().next().value!
+    for (let i = 0; i < 3; i++) {
+      const dup = new LLink(
+        ++subgraph.state.lastLinkId,
+        existingLink.type,
+        existingLink.origin_id,
+        existingLink.origin_slot,
+        existingLink.target_id,
+        existingLink.target_slot
+      )
+      subgraph._links.set(dup.id, dup)
+      source.outputs[0].links!.push(dup.id)
+    }
+    expect(subgraph._links.size).toBe(4)
+
+    // Serialize and reconfigure - should clean up during configure
+    const serialized = subgraph.asSerialisable()
+    subgraph.configure(serialized as never)
+
+    expect(subgraph._links.size).toBe(1)
+  })
+})
+
 describe('Subgraph Unpacking', () => {
   class TestNode extends LGraphNode {
     constructor(title?: string) {

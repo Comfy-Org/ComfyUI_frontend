@@ -1,4 +1,5 @@
 declare const __COMFYUI_FRONTEND_VERSION__: string
+declare const __COMFYUI_FRONTEND_COMMIT__: string
 declare const __SENTRY_ENABLED__: boolean
 declare const __SENTRY_DSN__: string
 declare const __ALGOLIA_APP_ID__: string
@@ -35,7 +36,7 @@ interface Window {
     mixpanel_token?: string
     posthog_project_token?: string
     posthog_api_host?: string
-    posthog_debug?: boolean
+    posthog_config?: Record<string, unknown>
     require_whitelist?: boolean
     subscription_required?: boolean
     max_upload_size?: number

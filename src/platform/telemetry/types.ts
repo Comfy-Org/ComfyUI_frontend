@@ -63,6 +63,8 @@ export interface RunButtonProperties {
   has_toolkit_nodes: boolean
   toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
+  view_mode?: string
+  is_app_mode?: boolean
 }
 
 /**

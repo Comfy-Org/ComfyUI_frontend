@@ -33,6 +33,8 @@ app.registerExtension({
         this.addInput('', '*')
         this.addOutput(this.properties.showOutputText ? '*' : '', '*')
 
+        this.setSize(this.computeSize())
+
         // This node is purely frontend and does not impact the resulting prompt so should not be serialized
         this.isVirtualNode = true
       }

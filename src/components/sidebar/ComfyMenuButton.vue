@@ -11,13 +11,15 @@
     }"
     @click="onLogoMenuClick($event)"
   >
-    <div class="flex items-center gap-0.5">
+    <div class="grid place-items-center-safe gap-0.5">
+      <i
+        class="col-span-full row-span-full icon-[lucide--chevron-down] size-3 translate-x-4 text-muted-foreground"
+      />
       <ComfyLogo
         alt="ComfyUI Logo"
-        class="comfyui-logo h-[18px] w-[18px]"
+        class="comfyui-logo col-span-full row-span-full size-4.5"
         mode="fill"
       />
-      <i class="icon-[lucide--chevron-down] size-3 text-muted-foreground" />
     </div>
   </div>
 

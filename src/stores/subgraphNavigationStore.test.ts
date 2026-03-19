@@ -47,6 +47,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 vi.mock('@/utils/graphTraversalUtil', () => ({
   findSubgraphPathById: vi.fn()
 }))
+vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
 
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {

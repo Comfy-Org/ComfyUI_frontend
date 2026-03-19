@@ -6,7 +6,7 @@
     <img
       v-if="!error"
       :src="asset.src"
-      :alt="asset.display_name || asset.name"
+      :alt="getAssetDisplayName(asset)"
       class="size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
     />
     <div
@@ -22,6 +22,7 @@
 import { useImage, whenever } from '@vueuse/core'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 
 const { asset } = defineProps<{
   asset: AssetMeta
@@ -34,7 +35,7 @@ const emit = defineEmits<{
 
 const { state, error, isReady } = useImage({
   src: asset.src ?? '',
-  alt: asset.display_name || asset.name
+  alt: getAssetDisplayName(asset)
 })
 
 whenever(

@@ -25,12 +25,15 @@ import {
 import { Topbar } from './components/Topbar'
 import { CanvasHelper } from './helpers/CanvasHelper'
 import { PerformanceHelper } from './helpers/PerformanceHelper'
+import { QueueHelper } from './helpers/QueueHelper'
 import { ClipboardHelper } from './helpers/ClipboardHelper'
 import { CommandHelper } from './helpers/CommandHelper'
 import { DragDropHelper } from './helpers/DragDropHelper'
+import { FeatureFlagHelper } from './helpers/FeatureFlagHelper'
 import { KeyboardHelper } from './helpers/KeyboardHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
 import { SettingsHelper } from './helpers/SettingsHelper'
+import { AppModeHelper } from './helpers/AppModeHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
 import { ToastHelper } from './helpers/ToastHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
@@ -174,6 +177,7 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly vueNodes: VueNodeHelpers
+  public readonly appMode: AppModeHelper
   public readonly subgraph: SubgraphHelper
   public readonly canvasOps: CanvasHelper
   public readonly nodeOps: NodeOperationsHelper
@@ -184,9 +188,11 @@ export class ComfyPage {
   public readonly contextMenu: ContextMenu
   public readonly toast: ToastHelper
   public readonly dragDrop: DragDropHelper
+  public readonly featureFlags: FeatureFlagHelper
   public readonly command: CommandHelper
   public readonly bottomPanel: BottomPanel
   public readonly perf: PerformanceHelper
+  public readonly queue: QueueHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -217,6 +223,7 @@ export class ComfyPage {
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.vueNodes = new VueNodeHelpers(page)
+    this.appMode = new AppModeHelper(this)
     this.subgraph = new SubgraphHelper(this)
     this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
     this.nodeOps = new NodeOperationsHelper(this)
@@ -227,9 +234,11 @@ export class ComfyPage {
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
     this.dragDrop = new DragDropHelper(page, this.assetPath.bind(this))
+    this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
     this.bottomPanel = new BottomPanel(page)
     this.perf = new PerformanceHelper(page)
+    this.queue = new QueueHelper(page)
   }
 
   get visibleToasts() {
@@ -431,9 +440,9 @@ export const comfyPageFixture = base.extend<{
         // Disable toast warning about version compatibility, as they may or
         // may not appear - depending on upstream ComfyUI dependencies
         'Comfy.VersionCompatibility.DisableWarnings': true,
-        // Browser tests should opt into missing-model warnings explicitly so
-        // workflows do not render differently based on models present on disk.
-        'Comfy.Workflow.ShowMissingModelsWarning': false
+        // Disable errors tab to prevent missing model detection from
+        // rendering error indicators on nodes during unrelated tests.
+        'Comfy.RightSidePanel.ShowErrorsTab': false
       })
     } catch (e) {
       console.error(e)

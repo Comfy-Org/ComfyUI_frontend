@@ -17,6 +17,7 @@ import {
 } from '@/lib/litegraph/src/utils/type'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { BadgePosition, LGraphBadge } from './LGraphBadge'
@@ -1207,6 +1208,14 @@ export class LGraphNode
   }
 
   /**
+   * Resolves the output source for cross-graph virtual nodes (e.g. Set/Get),
+   * bypassing {@link getInputLink} when the source lives in a different graph.
+   */
+  resolveVirtualOutput?(
+    slot: number
+  ): { node: LGraphNode; slot: number } | undefined
+
+  /**
    * Returns the link info in the connection of an input slot
    * @returns object or null
    */
@@ -2083,7 +2092,7 @@ export class LGraphNode
       this._collapsed_width = Math.min(
         this.size[0],
         ctx
-          ? ctx.measureText(this.getTitle() ?? '').width +
+          ? cachedMeasureText(ctx, this.getTitle() ?? '') +
               LiteGraph.NODE_TITLE_HEIGHT * 2
           : 0
       )
