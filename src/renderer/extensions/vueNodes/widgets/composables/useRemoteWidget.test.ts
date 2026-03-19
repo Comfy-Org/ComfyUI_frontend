@@ -753,36 +753,42 @@ describe('useRemoteWidget', () => {
 
   describe('value preservation on first load', () => {
     it('does not overwrite a value restored by configure()', async () => {
-      const savedValue = 'my_checkpoint_v2.safetensors'
       const options = createMockOptions()
-      // Simulate configure() having already restored a saved value
-      options.widget.value = savedValue
 
       mockAxiosResponse(['model_a.safetensors', 'model_b.safetensors'])
       const hook = useRemoteWidget(options)
+
+      // Simulate configure() restoring a saved value
+      options.widget.value = 'my_checkpoint_v2.safetensors'
+      options.widget.configuredByLoad = true
+
       await new Promise<void>((resolve) => hook.getValue(() => resolve()))
 
-      // Widget should keep the saved value, not be overwritten with model_a
-      expect(options.widget.value).toBe(savedValue)
+      expect(options.widget.value).toBe('my_checkpoint_v2.safetensors')
     })
 
-    it('sets value to first item when widget has no saved value', async () => {
+    it('preserves saved value even when it equals defaultValue', async () => {
+      const options = createMockOptions()
+      options.widget.value = DEFAULT_VALUE
+
+      mockAxiosResponse(['model_a.safetensors', 'other_value'])
+      const hook = useRemoteWidget(options)
+
+      // configure() restored the default value — still counts as configured
+      options.widget.configuredByLoad = true
+
+      await new Promise<void>((resolve) => hook.getValue(() => resolve()))
+
+      expect(options.widget.value).toBe(DEFAULT_VALUE)
+    })
+
+    it('sets value to first item when not configured by load', async () => {
       const options = createMockOptions()
       options.widget.value = DEFAULT_VALUE
 
       mockAxiosResponse(['model_a.safetensors', 'model_b.safetensors'])
       const hook = useRemoteWidget(options)
-      await new Promise<void>((resolve) => hook.getValue(() => resolve()))
-
-      expect(options.widget.value).toBe('model_a.safetensors')
-    })
-
-    it('sets value to first item when widget value is empty string', async () => {
-      const options = createMockOptions()
-      options.widget.value = ''
-
-      mockAxiosResponse(['model_a.safetensors', 'model_b.safetensors'])
-      const hook = useRemoteWidget(options)
+      // No configuredByLoad flag — simulates fresh node creation
       await new Promise<void>((resolve) => hook.getValue(() => resolve()))
 
       expect(options.widget.value).toBe('model_a.safetensors')

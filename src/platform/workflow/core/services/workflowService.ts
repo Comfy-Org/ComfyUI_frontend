@@ -289,8 +289,6 @@ export const useWorkflowService = () => {
       }
     }
 
-    workflowDraftStore.removeDraft(workflow.path)
-
     // If this is the last workflow, create a new default temporary workflow
     if (workflowStore.openWorkflows.length === 1) {
       await loadDefaultWorkflow()

@@ -135,13 +135,9 @@ export function useRemoteWidget<
   const onFirstLoad = (data: T | T[]) => {
     isLoaded = true
 
-    // If configure() already restored a saved value, keep it — don't
-    // overwrite with the first item from the remote list.
-    const hasSavedValue =
-      widget.value != null &&
-      widget.value !== defaultValue &&
-      widget.value !== ''
-    if (hasSavedValue) return
+    // If configure() already restored a saved value from the workflow,
+    // keep it — don't overwrite with the first item from the remote list.
+    if (widget.configuredByLoad) return
 
     const nextValue =
       Array.isArray(data) && data.length > 0 ? data[0] : undefined

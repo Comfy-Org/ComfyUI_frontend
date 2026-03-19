@@ -450,6 +450,13 @@ export interface IBaseWidget<
   advanced?: boolean
   tooltip?: string
 
+  /**
+   * Set to `true` by {@link LGraphNode.configure} after restoring the widget's
+   * value from serialized workflow data. Used by async widget initializers
+   * (e.g. remote widgets) to avoid overwriting a restored value.
+   */
+  configuredByLoad?: boolean
+
   // TODO: Confirm this format
   callback?(
     value: unknown,
