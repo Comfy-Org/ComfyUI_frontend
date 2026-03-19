@@ -12,9 +12,13 @@ export interface ComfyHubPublishFormData {
   name: string
   description: string
   tags: string[]
+  models: string[]
+  customNodes: string[]
   thumbnailType: ThumbnailType
   thumbnailFile: File | null
   comparisonBeforeFile: File | null
   comparisonAfterFile: File | null
   exampleImages: ExampleImage[]
+  tutorialUrl: string
+  metadata: Record<string, unknown>
 }

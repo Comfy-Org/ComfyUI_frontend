@@ -54,11 +54,15 @@ function createFormData(
     name: 'Demo workflow',
     description: 'A demo workflow',
     tags: ['demo'],
+    models: [],
+    customNodes: [],
     thumbnailType: 'image',
     thumbnailFile: null,
     comparisonBeforeFile: null,
     comparisonAfterFile: null,
     exampleImages: [],
+    tutorialUrl: '',
+    metadata: {},
     ...overrides
   }
 }

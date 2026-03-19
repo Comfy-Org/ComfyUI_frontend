@@ -47,11 +47,15 @@ function createDefaultFormData(): ComfyHubPublishFormData {
     name: 'Test Workflow',
     description: '',
     tags: [],
+    models: [],
+    customNodes: [],
     thumbnailType: 'image',
     thumbnailFile: null,
     comparisonBeforeFile: null,
     comparisonAfterFile: null,
-    exampleImages: []
+    exampleImages: [],
+    tutorialUrl: '',
+    metadata: {}
   }
 }
 

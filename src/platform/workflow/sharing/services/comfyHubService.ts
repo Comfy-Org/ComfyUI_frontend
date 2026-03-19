@@ -25,10 +25,14 @@ interface PublishWorkflowInput {
   assetIds: string[]
   description?: string
   tags?: string[]
+  models?: string[]
+  customNodes?: string[]
   thumbnailType?: ThumbnailTypeInput
   thumbnailTokenOrUrl?: string
   thumbnailComparisonTokenOrUrl?: string
   sampleImageTokensOrUrls?: string[]
+  tutorialUrl?: string
+  metadata?: Record<string, unknown>
 }
 
 function normalizeThumbnailType(type: ThumbnailTypeInput): HubThumbnailType {
@@ -174,12 +178,16 @@ export function useComfyHubService() {
       asset_ids: input.assetIds,
       description: input.description,
       tags: input.tags,
+      models: input.models,
+      custom_nodes: input.customNodes,
       thumbnail_type: input.thumbnailType
         ? normalizeThumbnailType(input.thumbnailType)
         : undefined,
       thumbnail_token_or_url: input.thumbnailTokenOrUrl,
       thumbnail_comparison_token_or_url: input.thumbnailComparisonTokenOrUrl,
-      sample_image_tokens_or_urls: input.sampleImageTokensOrUrls
+      sample_image_tokens_or_urls: input.sampleImageTokensOrUrls,
+      tutorial_url: input.tutorialUrl,
+      metadata: input.metadata
     }
 
     const response = await api.fetchApi('/hub/workflows', {

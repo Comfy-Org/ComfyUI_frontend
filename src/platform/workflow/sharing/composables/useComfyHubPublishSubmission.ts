@@ -108,10 +108,18 @@ export function useComfyHubPublishSubmission() {
       assetIds,
       description: formData.description || undefined,
       tags: formData.tags.length > 0 ? normalizeTags(formData.tags) : undefined,
+      models: formData.models.length > 0 ? formData.models : undefined,
+      customNodes:
+        formData.customNodes.length > 0 ? formData.customNodes : undefined,
       thumbnailType,
       thumbnailTokenOrUrl,
       thumbnailComparisonTokenOrUrl,
-      sampleImageTokensOrUrls
+      sampleImageTokensOrUrls,
+      tutorialUrl: formData.tutorialUrl || undefined,
+      metadata:
+        Object.keys(formData.metadata).length > 0
+          ? formData.metadata
+          : undefined
     })
   }
 

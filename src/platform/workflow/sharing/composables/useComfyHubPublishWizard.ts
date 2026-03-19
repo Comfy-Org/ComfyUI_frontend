@@ -27,11 +27,15 @@ function createDefaultFormData(): ComfyHubPublishFormData {
     name: workflowStore.activeWorkflow?.filename ?? '',
     description: '',
     tags: [],
+    models: [],
+    customNodes: [],
     thumbnailType: 'image',
     thumbnailFile: null,
     comparisonBeforeFile: null,
     comparisonAfterFile: null,
-    exampleImages: []
+    exampleImages: [],
+    tutorialUrl: '',
+    metadata: {}
   }
 }
 
