@@ -27,9 +27,9 @@
       <p
         v-else
         class="text-foreground min-w-0 flex-1 truncate text-sm font-medium"
-        :title="item.name"
+        :title="displayName"
       >
-        {{ item.name }}
+        {{ displayName }}
         ({{ item.referencingNodes.length }})
       </p>
 
@@ -124,10 +124,10 @@
       </div>
     </TransitionCollapse>
 
-    <!-- Status card (pending selection: upload complete or library select) -->
+    <!-- Status card (uploading, uploaded, or library select) -->
     <TransitionCollapse>
       <div
-        v-if="isPending"
+        v-if="isPending || isUploading"
         class="bg-foreground/5 relative mt-1 overflow-hidden rounded-lg border border-interface-stroke p-2"
       >
         <div class="relative z-10 flex items-center gap-2">
@@ -233,7 +233,8 @@ import type { MissingMediaViewModel } from '@/platform/missingMedia/types'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import {
   useMissingMediaInteractions,
-  getNodeDisplayLabel
+  getNodeDisplayLabel,
+  getMediaDisplayName
 } from '@/platform/missingMedia/composables/useMissingMediaInteractions'
 
 const { item, showNodeIdBadge } = defineProps<{
@@ -263,6 +264,7 @@ const {
   hasPendingSelection
 } = useMissingMediaInteractions()
 
+const displayName = computed(() => getMediaDisplayName(item.name))
 const isSingleNode = computed(() => item.referencingNodes.length === 1)
 const singleNodeLabel = computed(() => {
   if (!isSingleNode.value) return ''
@@ -287,7 +289,8 @@ const isUploading = computed(
 const currentUpload = computed(() => uploadState.value[item.name])
 const pendingDisplayName = computed(() => {
   if (currentUpload.value) return currentUpload.value.fileName
-  return pendingSelection.value[item.name] ?? ''
+  const pending = pendingSelection.value[item.name]
+  return pending ? getMediaDisplayName(pending) : ''
 })
 
 const extensionHint = computed(() => getExtensionHint(item.mediaType))

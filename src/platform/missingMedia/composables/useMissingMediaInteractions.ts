@@ -8,6 +8,7 @@ import type {
   MediaType
 } from '@/platform/missingMedia/types'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { isCloud } from '@/platform/distribution/types'
 import { addToComboValues } from '@/utils/litegraphUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { st } from '@/i18n'
@@ -59,7 +60,7 @@ function resolveComboOptions(
 
   return list
     .filter((v) => v !== candidate.name)
-    .map((v) => ({ name: v, value: v }))
+    .map((v) => ({ name: getMediaDisplayName(v), value: v }))
 }
 
 function applyValueToNodes(
@@ -91,6 +92,16 @@ export function getNodeDisplayLabel(
     untitledLabel: fallback,
     st
   })
+}
+
+/**
+ * Resolve display name for a media file.
+ * Cloud widgets store asset hashes as values; this resolves them to
+ * human-readable names via assetsStore.getInputName().
+ */
+export function getMediaDisplayName(name: string): string {
+  if (!isCloud) return name
+  return useAssetsStore().getInputName(name)
 }
 
 export function useMissingMediaInteractions() {
