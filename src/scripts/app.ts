@@ -92,6 +92,11 @@ import {
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import {
+  scanAllMediaCandidates,
+  verifyCloudMediaCandidates
+} from '@/platform/missingMedia/missingMediaScan'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -1137,6 +1142,7 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph()
 
     useMissingModelStore().clearMissingModels()
+    useMissingMediaStore().clearMissingMedia()
 
     if (clean !== false) {
       // Reset canvas context before configuring a new graph so subgraph UI
@@ -1416,6 +1422,8 @@ export class ComfyApp {
         showMissingModels
       )
 
+      this.runMissingMediaPipeline()
+
       if (!deferWarnings) {
         useWorkflowService().showPendingWarnings()
       }
@@ -1563,6 +1571,36 @@ export class ComfyApp {
     }
 
     return { missingModels }
+  }
+
+  private runMissingMediaPipeline(): void {
+    const missingMediaStore = useMissingMediaStore()
+    const candidates = scanAllMediaCandidates(this.rootGraph, isCloud)
+
+    if (!candidates.length) return
+
+    if (isCloud) {
+      const controller = missingMediaStore.createVerificationAbortController()
+      verifyCloudMediaCandidates(candidates, controller.signal)
+        .then(() => {
+          if (controller.signal.aborted) return
+          const confirmed = candidates.filter((c) => c.isMissing === true)
+          if (confirmed.length) {
+            useExecutionErrorStore().surfaceMissingMedia(confirmed)
+          }
+        })
+        .catch((err) => {
+          console.warn(
+            '[Missing Media Pipeline] Asset verification failed:',
+            err
+          )
+        })
+    } else {
+      const confirmed = candidates.filter((c) => c.isMissing === true)
+      if (confirmed.length) {
+        useExecutionErrorStore().surfaceMissingMedia(confirmed)
+      }
+    }
   }
 
   async graphToPrompt(graph = this.rootGraph) {

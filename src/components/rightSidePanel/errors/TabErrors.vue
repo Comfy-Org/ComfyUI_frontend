@@ -170,6 +170,14 @@
             :show-node-id-badge="showNodeIdBadge"
             @locate-model="handleLocateModel"
           />
+
+          <!-- Missing Media -->
+          <MissingMediaCard
+            v-else-if="group.type === 'missing_media'"
+            :missing-media-groups="missingMediaGroups"
+            :show-node-id-badge="showNodeIdBadge"
+            @locate-node="handleLocateModel"
+          />
         </PropertiesAccordionItem>
       </TransitionGroup>
     </div>
@@ -225,6 +233,7 @@ import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
+import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
 import { isCloud } from '@/platform/distribution/types'
 import {
   downloadModel,
@@ -261,7 +270,8 @@ const isSearching = computed(() => searchQuery.value.trim() !== '')
 const fullSizeGroupTypes = new Set([
   'missing_node',
   'swap_nodes',
-  'missing_model'
+  'missing_model',
+  'missing_media'
 ])
 function getGroupSize(group: ErrorGroup) {
   return fullSizeGroupTypes.has(group.type) ? 'lg' : 'default'
@@ -283,6 +293,7 @@ const {
   missingNodeCache,
   missingPackGroups,
   missingModelGroups,
+  missingMediaGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
 

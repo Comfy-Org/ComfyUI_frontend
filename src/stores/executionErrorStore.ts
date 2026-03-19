@@ -4,7 +4,9 @@ import { computed, ref } from 'vue'
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -34,6 +36,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const canvasStore = useCanvasStore()
   const missingModelStore = useMissingModelStore()
   const missingNodesStore = useMissingNodesErrorStore()
+  const missingMediaStore = useMissingMediaStore()
 
   const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
@@ -170,6 +173,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
   }
 
+  /** Set missing media and open the error overlay if the Errors tab is enabled. */
+  function surfaceMissingMedia(media: MissingMediaCandidate[]) {
+    missingMediaStore.setMissingMedia(media)
+    if (
+      media.length &&
+      useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+    ) {
+      showErrorOverlay()
+    }
+  }
+
   const lastExecutionErrorNodeLocatorId = computed(() => {
     const err = lastExecutionError.value
     if (!err) return null
@@ -197,7 +211,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       hasPromptError.value ||
       hasNodeError.value ||
       missingNodesStore.hasMissingNodes ||
-      missingModelStore.hasMissingModels
+      missingModelStore.hasMissingModels ||
+      missingMediaStore.hasMissingMedia
   )
 
   const allErrorExecutionIds = computed<string[]>(() => {
@@ -233,7 +248,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       nodeErrorCount.value +
       executionErrorCount.value +
       missingNodesStore.missingNodeCount +
-      missingModelStore.missingModelCount
+      missingModelStore.missingModelCount +
+      missingMediaStore.missingMediaCount
   )
 
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
@@ -326,7 +342,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return errorAncestorExecutionIds.value.has(execId)
   }
 
-  useNodeErrorFlagSync(lastNodeErrors, missingModelStore)
+  useNodeErrorFlagSync(lastNodeErrors, missingModelStore, missingMediaStore)
 
   return {
     // Raw state
@@ -359,6 +375,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Missing model coordination (delegates to missingModelStore)
     surfaceMissingModels,
+
+    // Missing media coordination (delegates to missingMediaStore)
+    surfaceMissingMedia,
 
     // Lookup helpers
     getNodeErrors,
