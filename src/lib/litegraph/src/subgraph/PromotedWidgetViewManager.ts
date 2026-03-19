@@ -2,6 +2,7 @@ type PromotionEntry = {
   interiorNodeId: string
   widgetName: string
   viewKey?: string
+  sourceNodeId?: string
 }
 
 type CreateView<TView> = (entry: PromotionEntry) => TView

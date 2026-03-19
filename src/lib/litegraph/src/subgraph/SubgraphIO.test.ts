@@ -496,7 +496,7 @@ describe('SubgraphIO - Empty Slot Connection', () => {
           subgraphNode.rootGraph.id,
           subgraphNode.id
         )
-      ).toStrictEqual([
+      ).toEqual([
         { interiorNodeId: String(firstNode.id), widgetName: 'seed' },
         { interiorNodeId: String(secondNode.id), widgetName: 'seed' }
       ])

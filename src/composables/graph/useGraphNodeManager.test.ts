@@ -523,6 +523,70 @@ describe('Nested promoted widget mapping', () => {
       ])
     )
   })
+
+  it('maps duplicate-name promoted views from same intermediate node to distinct store identities', () => {
+    const innerSubgraph = createTestSubgraph()
+    const firstTextNode = new LGraphNode('FirstTextNode')
+    firstTextNode.addWidget('text', 'text', '11111111111', () => undefined)
+    innerSubgraph.add(firstTextNode)
+
+    const secondTextNode = new LGraphNode('SecondTextNode')
+    secondTextNode.addWidget('text', 'text', '22222222222', () => undefined)
+    innerSubgraph.add(secondTextNode)
+
+    const outerSubgraph = createTestSubgraph()
+    const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
+      id: 3,
+      parentGraph: outerSubgraph
+    })
+    outerSubgraph.add(innerSubgraphNode)
+
+    const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, { id: 4 })
+    const graph = outerSubgraphNode.graph as LGraph
+    graph.add(outerSubgraphNode)
+
+    usePromotionStore().setPromotions(
+      innerSubgraphNode.rootGraph.id,
+      innerSubgraphNode.id,
+      [
+        { interiorNodeId: String(firstTextNode.id), widgetName: 'text' },
+        { interiorNodeId: String(secondTextNode.id), widgetName: 'text' }
+      ]
+    )
+
+    usePromotionStore().setPromotions(
+      outerSubgraphNode.rootGraph.id,
+      outerSubgraphNode.id,
+      [
+        {
+          interiorNodeId: String(innerSubgraphNode.id),
+          widgetName: 'text',
+          sourceNodeId: String(firstTextNode.id)
+        },
+        {
+          interiorNodeId: String(innerSubgraphNode.id),
+          widgetName: 'text',
+          sourceNodeId: String(secondTextNode.id)
+        }
+      ]
+    )
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(outerSubgraphNode.id))
+    const promotedWidgets = nodeData?.widgets?.filter(
+      (widget) => widget.name === 'text'
+    )
+
+    expect(promotedWidgets).toHaveLength(2)
+    expect(
+      new Set(promotedWidgets?.map((widget) => widget.storeNodeId))
+    ).toEqual(
+      new Set([
+        `${outerSubgraphNode.subgraph.id}:${firstTextNode.id}`,
+        `${outerSubgraphNode.subgraph.id}:${secondTextNode.id}`
+      ])
+    )
+  })
 })
 
 describe('Promoted widget sourceExecutionId', () => {

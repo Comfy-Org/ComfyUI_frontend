@@ -11,6 +11,7 @@ export interface PromotedWidgetView extends IBaseWidget {
   readonly node: SubgraphNode
   readonly sourceNodeId: string
   readonly sourceWidgetName: string
+  readonly disambiguatingSourceNodeId?: string
 }
 
 export function isPromotedWidgetView(

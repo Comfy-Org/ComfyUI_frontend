@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { getSourceNodeId } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { usePromotionStore } from '@/stores/promotionStore'
@@ -78,6 +79,19 @@ function isWidgetShownOnParents(
 ): boolean {
   return parents.some((parent) => {
     if (isPromotedWidgetView(widget)) {
+      const sourceNodeId = getSourceNodeId(widget)
+      if (
+        sourceNodeId &&
+        promotionStore.isPromoted(
+          parent.rootGraph.id,
+          parent.id,
+          widget.sourceNodeId,
+          widget.sourceWidgetName,
+          sourceNodeId
+        )
+      )
+        return true
+
       return promotionStore.isPromoted(
         parent.rootGraph.id,
         parent.id,

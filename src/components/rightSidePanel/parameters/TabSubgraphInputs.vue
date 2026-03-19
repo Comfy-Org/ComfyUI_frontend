@@ -14,6 +14,10 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import {
+  getSourceNodeId,
+  getWidgetName
+} from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
@@ -84,13 +88,18 @@ const widgetsList = computed((): NodeWidgetsList => {
   const { widgets = [] } = node
 
   const result: NodeWidgetsList = []
-  for (const { interiorNodeId, widgetName } of entries) {
+  for (const { interiorNodeId, widgetName, sourceNodeId } of entries) {
     const widget = widgets.find((w) => {
       if (isPromotedWidgetView(w)) {
-        return (
-          String(w.sourceNodeId) === interiorNodeId &&
-          w.sourceWidgetName === widgetName
+        if (
+          String(w.sourceNodeId) !== interiorNodeId ||
+          w.sourceWidgetName !== widgetName
         )
+          return false
+
+        if (!sourceNodeId) return true
+
+        return (w.disambiguatingSourceNodeId ?? w.sourceNodeId) === sourceNodeId
       }
       return w.name === widgetName
     })
@@ -117,7 +126,8 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
         node.rootGraph.id,
         node.id,
         String(interiorNode.id),
-        widget.name
+        getWidgetName(widget),
+        getSourceNodeId(widget)
       )
   )
 })

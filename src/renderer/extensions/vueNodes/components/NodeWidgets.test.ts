@@ -257,6 +257,33 @@ describe('NodeWidgets', () => {
     expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
   })
 
+  it('does not deduplicate promoted duplicates that differ only by disambiguating source identity', () => {
+    const firstPromoted = createMockWidget({
+      name: 'text',
+      type: 'text',
+      nodeId: 'outer-subgraph:1',
+      storeNodeId: 'outer-subgraph:1',
+      storeName: 'text',
+      slotName: 'text'
+    })
+    const secondPromoted = createMockWidget({
+      name: 'text',
+      type: 'text',
+      nodeId: 'outer-subgraph:2',
+      storeNodeId: 'outer-subgraph:2',
+      storeName: 'text',
+      slotName: 'text'
+    })
+
+    const nodeData = createMockNodeData('SubgraphNode', [
+      firstPromoted,
+      secondPromoted
+    ])
+    const wrapper = mountComponent(nodeData)
+
+    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+  })
+
   it('hides widgets when merged store options mark them hidden', async () => {
     const nodeData = createMockNodeData('TestNode', [
       createMockWidget({

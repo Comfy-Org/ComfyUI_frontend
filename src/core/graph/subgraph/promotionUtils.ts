@@ -26,6 +26,19 @@ export function getWidgetName(w: IBaseWidget): string {
   return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
 }
 
+export function getSourceNodeId(w: IBaseWidget): string | undefined {
+  if (!isPromotedWidgetView(w)) return undefined
+  return w.disambiguatingSourceNodeId ?? w.sourceNodeId
+}
+
+function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
+  for (const parent of parents) {
+    parent.computeSize(parent.size)
+    parent.setDirtyCanvas(true, true)
+  }
+  useCanvasStore().canvas?.setDirty(true, true)
+}
+
 /** Known non-$$ preview widget types added by core or popular extensions. */
 const PREVIEW_WIDGET_TYPES = new Set(['preview', 'video', 'audioUI'])
 
@@ -51,13 +64,19 @@ export function promoteWidget(
   parents: SubgraphNode[]
 ) {
   const store = usePromotionStore()
-  const nodeId = String(
-    isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-  )
+  const nodeId = String(node.id)
   const widgetName = getWidgetName(widget)
+  const sourceNodeId = getSourceNodeId(widget)
   for (const parent of parents) {
-    store.promote(parent.rootGraph.id, parent.id, nodeId, widgetName)
+    store.promote(
+      parent.rootGraph.id,
+      parent.id,
+      nodeId,
+      widgetName,
+      sourceNodeId
+    )
   }
+  refreshPromotedWidgetRendering(parents)
   Sentry.addBreadcrumb({
     category: 'subgraph',
     message: `Promoted widget "${widgetName}" on node ${node.id}`,
@@ -71,13 +90,19 @@ export function demoteWidget(
   parents: SubgraphNode[]
 ) {
   const store = usePromotionStore()
-  const nodeId = String(
-    isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-  )
+  const nodeId = String(node.id)
   const widgetName = getWidgetName(widget)
+  const sourceNodeId = getSourceNodeId(widget)
   for (const parent of parents) {
-    store.demote(parent.rootGraph.id, parent.id, nodeId, widgetName)
+    store.demote(
+      parent.rootGraph.id,
+      parent.id,
+      nodeId,
+      widgetName,
+      sourceNodeId
+    )
   }
+  refreshPromotedWidgetRendering(parents)
   Sentry.addBreadcrumb({
     category: 'subgraph',
     message: `Demoted widget "${widgetName}" on node ${node.id}`,
@@ -112,8 +137,10 @@ export function addWidgetPromotionOptions(
   const parents = getParentNodes()
   const nodeId = String(node.id)
   const widgetName = getWidgetName(widget)
+  const sourceNodeId = getSourceNodeId(widget)
   const promotableParents = parents.filter(
-    (s) => !store.isPromoted(s.rootGraph.id, s.id, nodeId, widgetName)
+    (s) =>
+      !store.isPromoted(s.rootGraph.id, s.id, nodeId, widgetName, sourceNodeId)
   )
   if (promotableParents.length > 0)
     options.unshift({
@@ -149,8 +176,10 @@ export function tryToggleWidgetPromotion() {
   const store = usePromotionStore()
   const nodeId = String(node.id)
   const widgetName = getWidgetName(widget)
+  const sourceNodeId = getSourceNodeId(widget)
   const promotableParents = parents.filter(
-    (s) => !store.isPromoted(s.rootGraph.id, s.id, nodeId, widgetName)
+    (s) =>
+      !store.isPromoted(s.rootGraph.id, s.id, nodeId, widgetName, sourceNodeId)
   )
   if (promotableParents.length > 0)
     promoteWidget(node, widget, promotableParents)
@@ -315,6 +344,7 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
   }
 
   store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, validEntries)
+  refreshPromotedWidgetRendering([subgraphNode])
   Sentry.addBreadcrumb({
     category: 'subgraph',
     message: `Pruned ${removedEntries.length} disconnected promotion(s) from subgraph node ${subgraphNode.id}`,

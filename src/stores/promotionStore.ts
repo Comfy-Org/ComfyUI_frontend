@@ -7,6 +7,7 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 interface PromotionEntry {
   interiorNodeId: string
   widgetName: string
+  sourceNodeId?: string
 }
 
 const EMPTY_PROMOTIONS: PromotionEntry[] = []
@@ -35,14 +36,19 @@ export const usePromotionStore = defineStore('promotion', () => {
     return nextRefCounts
   }
 
-  function _makeKey(interiorNodeId: string, widgetName: string): string {
-    return `${interiorNodeId}:${widgetName}`
+  function _makeKey(
+    interiorNodeId: string,
+    widgetName: string,
+    sourceNodeId?: string
+  ): string {
+    const base = `${interiorNodeId}:${widgetName}`
+    return sourceNodeId ? `${base}:${sourceNodeId}` : base
   }
 
   function _incrementKeys(graphId: UUID, entries: PromotionEntry[]): void {
     const refCounts = _getRefCountsForGraph(graphId)
     for (const e of entries) {
-      const key = _makeKey(e.interiorNodeId, e.widgetName)
+      const key = _makeKey(e.interiorNodeId, e.widgetName, e.sourceNodeId)
       refCounts.set(key, (refCounts.get(key) ?? 0) + 1)
     }
   }
@@ -50,7 +56,7 @@ export const usePromotionStore = defineStore('promotion', () => {
   function _decrementKeys(graphId: UUID, entries: PromotionEntry[]): void {
     const refCounts = _getRefCountsForGraph(graphId)
     for (const e of entries) {
-      const key = _makeKey(e.interiorNodeId, e.widgetName)
+      const key = _makeKey(e.interiorNodeId, e.widgetName, e.sourceNodeId)
       const count = (refCounts.get(key) ?? 1) - 1
       if (count <= 0) {
         refCounts.delete(key)
@@ -80,20 +86,28 @@ export const usePromotionStore = defineStore('promotion', () => {
     graphId: UUID,
     subgraphNodeId: NodeId,
     interiorNodeId: string,
-    widgetName: string
+    widgetName: string,
+    sourceNodeId?: string
   ): boolean {
     return getPromotionsRef(graphId, subgraphNodeId).some(
-      (e) => e.interiorNodeId === interiorNodeId && e.widgetName === widgetName
+      (e) =>
+        e.interiorNodeId === interiorNodeId &&
+        e.widgetName === widgetName &&
+        e.sourceNodeId === sourceNodeId
     )
   }
 
   function isPromotedByAny(
     graphId: UUID,
     interiorNodeId: string,
-    widgetName: string
+    widgetName: string,
+    sourceNodeId?: string
   ): boolean {
     const refCounts = _getRefCountsForGraph(graphId)
-    return (refCounts.get(_makeKey(interiorNodeId, widgetName)) ?? 0) > 0
+    return (
+      (refCounts.get(_makeKey(interiorNodeId, widgetName, sourceNodeId)) ?? 0) >
+      0
+    )
   }
 
   function setPromotions(
@@ -118,22 +132,32 @@ export const usePromotionStore = defineStore('promotion', () => {
     graphId: UUID,
     subgraphNodeId: NodeId,
     interiorNodeId: string,
-    widgetName: string
+    widgetName: string,
+    sourceNodeId?: string
   ): void {
-    if (isPromoted(graphId, subgraphNodeId, interiorNodeId, widgetName)) return
+    if (
+      isPromoted(
+        graphId,
+        subgraphNodeId,
+        interiorNodeId,
+        widgetName,
+        sourceNodeId
+      )
+    )
+      return
 
     const entries = getPromotionsRef(graphId, subgraphNodeId)
-    setPromotions(graphId, subgraphNodeId, [
-      ...entries,
-      { interiorNodeId, widgetName }
-    ])
+    const entry: PromotionEntry = { interiorNodeId, widgetName }
+    if (sourceNodeId) entry.sourceNodeId = sourceNodeId
+    setPromotions(graphId, subgraphNodeId, [...entries, entry])
   }
 
   function demote(
     graphId: UUID,
     subgraphNodeId: NodeId,
     interiorNodeId: string,
-    widgetName: string
+    widgetName: string,
+    sourceNodeId?: string
   ): void {
     const entries = getPromotionsRef(graphId, subgraphNodeId)
     setPromotions(
@@ -141,7 +165,11 @@ export const usePromotionStore = defineStore('promotion', () => {
       subgraphNodeId,
       entries.filter(
         (e) =>
-          !(e.interiorNodeId === interiorNodeId && e.widgetName === widgetName)
+          !(
+            e.interiorNodeId === interiorNodeId &&
+            e.widgetName === widgetName &&
+            e.sourceNodeId === sourceNodeId
+          )
       )
     )
   }

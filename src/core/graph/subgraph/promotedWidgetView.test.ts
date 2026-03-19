@@ -27,6 +27,7 @@ import {
 } from '@/stores/widgetValueStore'
 
 import {
+  createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState,
@@ -114,6 +115,21 @@ describe(createPromotedWidgetView, () => {
     const view = createPromotedWidgetView(subgraphNode, '42', 'myWidget')
     expect(view.sourceNodeId).toBe('42')
     expect(view.sourceWidgetName).toBe('myWidget')
+    expect(view.disambiguatingSourceNodeId).toBeUndefined()
+  })
+
+  test('exposes disambiguatingSourceNodeId when provided', () => {
+    const [subgraphNode] = setupSubgraph()
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      '42',
+      'myWidget',
+      undefined,
+      '99'
+    )
+    expect(view.sourceNodeId).toBe('42')
+    expect(view.sourceWidgetName).toBe('myWidget')
+    expect(view.disambiguatingSourceNodeId).toBe('99')
   })
 
   test('name defaults to widgetName when no displayName given', () => {
@@ -1776,6 +1792,75 @@ describe('three-level nested value propagation', () => {
 
     concreteWidget.value = 999
     expect(subgraphNodeA.widgets[0].value).toBe(999)
+  })
+
+  test('nested duplicate-name promotions resolve and update independently by disambiguating source node id', () => {
+    const rootGraph = createTestRootGraph()
+
+    const innerSubgraph = createTestSubgraph({ rootGraph })
+    const firstTextNode = new LGraphNode('FirstTextNode')
+    firstTextNode.addWidget('text', 'text', '11111111111', () => {})
+    innerSubgraph.add(firstTextNode)
+
+    const secondTextNode = new LGraphNode('SecondTextNode')
+    secondTextNode.addWidget('text', 'text', '22222222222', () => {})
+    innerSubgraph.add(secondTextNode)
+
+    const outerSubgraph = createTestSubgraph({ rootGraph })
+    const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
+      id: 3,
+      parentGraph: outerSubgraph
+    })
+    outerSubgraph.add(innerSubgraphNode)
+
+    const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, {
+      id: 4,
+      parentGraph: rootGraph
+    })
+    rootGraph.add(outerSubgraphNode)
+
+    usePromotionStore().setPromotions(
+      innerSubgraphNode.rootGraph.id,
+      innerSubgraphNode.id,
+      [
+        { interiorNodeId: String(firstTextNode.id), widgetName: 'text' },
+        { interiorNodeId: String(secondTextNode.id), widgetName: 'text' }
+      ]
+    )
+
+    usePromotionStore().setPromotions(
+      outerSubgraphNode.rootGraph.id,
+      outerSubgraphNode.id,
+      [
+        {
+          interiorNodeId: String(innerSubgraphNode.id),
+          widgetName: 'text',
+          sourceNodeId: String(firstTextNode.id)
+        },
+        {
+          interiorNodeId: String(innerSubgraphNode.id),
+          widgetName: 'text',
+          sourceNodeId: String(secondTextNode.id)
+        }
+      ]
+    )
+
+    const widgets = promotedWidgets(outerSubgraphNode)
+    expect(widgets).toHaveLength(2)
+    expect(
+      widgets.map((widget) => widget.disambiguatingSourceNodeId)
+    ).toStrictEqual([String(firstTextNode.id), String(secondTextNode.id)])
+    expect(widgets.map((widget) => widget.value)).toStrictEqual([
+      '11111111111',
+      '22222222222'
+    ])
+
+    widgets[1].value = 'updated-second'
+
+    expect(firstTextNode.widgets?.[0]?.value).toBe('11111111111')
+    expect(secondTextNode.widgets?.[0]?.value).toBe('updated-second')
+    expect(widgets[0].value).toBe('11111111111')
+    expect(widgets[1].value).toBe('updated-second')
   })
 })
 

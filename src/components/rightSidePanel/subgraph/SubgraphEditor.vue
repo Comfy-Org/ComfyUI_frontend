@@ -5,9 +5,11 @@ import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   demoteWidget,
   getPromotableWidgets,
+  getSourceNodeId,
   getWidgetName,
   isRecommendedWidget,
   promoteWidget,
@@ -49,7 +51,7 @@ const activeWidgets = computed<WidgetItem[]>({
     if (!node) return []
 
     return promotionEntries.value.flatMap(
-      ({ interiorNodeId, widgetName }): WidgetItem[] => {
+      ({ interiorNodeId, widgetName, sourceNodeId }): WidgetItem[] => {
         if (interiorNodeId === '-1') {
           const widget = node.widgets.find((w) => w.name === widgetName)
           if (!widget) return []
@@ -59,9 +61,14 @@ const activeWidgets = computed<WidgetItem[]>({
         }
         const wNode = node.subgraph._nodes_by_id[interiorNodeId]
         if (!wNode) return []
-        const widget = getPromotableWidgets(wNode).find(
-          (w) => w.name === widgetName
-        )
+        const widget = getPromotableWidgets(wNode).find((w) => {
+          if (w.name !== widgetName) return false
+          if (sourceNodeId && isPromotedWidgetView(w))
+            return (
+              (w.disambiguatingSourceNodeId ?? w.sourceNodeId) === sourceNodeId
+            )
+          return true
+        })
         if (!widget) return []
         return [[wNode, widget]]
       }
@@ -76,11 +83,21 @@ const activeWidgets = computed<WidgetItem[]>({
     promotionStore.setPromotions(
       node.rootGraph.id,
       node.id,
-      value.map(([n, w]) => ({
-        interiorNodeId: String(n.id),
-        widgetName: getWidgetName(w)
-      }))
+      value.map(([n, w]) => {
+        const entry: {
+          interiorNodeId: string
+          widgetName: string
+          sourceNodeId?: string
+        } = {
+          interiorNodeId: String(n.id),
+          widgetName: getWidgetName(w)
+        }
+        const sid = getSourceNodeId(w)
+        if (sid) entry.sourceNodeId = sid
+        return entry
+      })
     )
+    refreshPromotedWidgetRendering()
   }
 })
 
@@ -107,7 +124,8 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
         node.rootGraph.id,
         node.id,
         String(n.id),
-        w.name
+        getWidgetName(w),
+        getSourceNodeId(w)
       )
   )
 })
@@ -137,8 +155,20 @@ const filteredActive = computed<WidgetItem[]>(() => {
   )
 })
 
+function refreshPromotedWidgetRendering() {
+  const node = activeNode.value
+  if (!node) return
+
+  node.computeSize(node.size)
+  node.setDirtyCanvas(true, true)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
 function toKey(item: WidgetItem) {
-  return `${item[0].id}: ${item[1].name}`
+  const sid = getSourceNodeId(item[1])
+  return sid
+    ? `${item[0].id}: ${item[1].name}:${sid}`
+    : `${item[0].id}: ${item[1].name}`
 }
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w) => [n, w])
@@ -147,30 +177,27 @@ function demote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   demoteWidget(node, widget, [subgraphNode])
-  promotionStore.demote(
-    subgraphNode.rootGraph.id,
-    subgraphNode.id,
-    String(node.id),
-    getWidgetName(widget)
-  )
+  refreshPromotedWidgetRendering()
 }
 function promote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   promoteWidget(node, widget, [subgraphNode])
-  promotionStore.promote(
-    subgraphNode.rootGraph.id,
-    subgraphNode.id,
-    String(node.id),
-    widget.name
-  )
+  refreshPromotedWidgetRendering()
 }
 function showAll() {
   const node = activeNode.value
   if (!node) return
   for (const [n, w] of filteredCandidates.value) {
-    promotionStore.promote(node.rootGraph.id, node.id, String(n.id), w.name)
+    promotionStore.promote(
+      node.rootGraph.id,
+      node.id,
+      String(n.id),
+      getWidgetName(w),
+      getSourceNodeId(w)
+    )
   }
+  refreshPromotedWidgetRendering()
 }
 function hideAll() {
   const node = activeNode.value
@@ -181,16 +208,25 @@ function hideAll() {
       node.rootGraph.id,
       node.id,
       String(n.id),
-      getWidgetName(w)
+      getWidgetName(w),
+      getSourceNodeId(w)
     )
   }
+  refreshPromotedWidgetRendering()
 }
 function showRecommended() {
   const node = activeNode.value
   if (!node) return
   for (const [n, w] of recommendedWidgets.value) {
-    promotionStore.promote(node.rootGraph.id, node.id, String(n.id), w.name)
+    promotionStore.promote(
+      node.rootGraph.id,
+      node.id,
+      String(n.id),
+      getWidgetName(w),
+      getSourceNodeId(w)
+    )
   }
+  refreshPromotedWidgetRendering()
 }
 
 onMounted(() => {
