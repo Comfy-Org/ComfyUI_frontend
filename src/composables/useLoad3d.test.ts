@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef } from 'vue'
 
 import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
-import Load3d from '@/extensions/core/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import Load3d from '@/extensions/core/extensions/load3d/Load3d'
+import Load3dUtils from '@/extensions/core/extensions/load3d/Load3dUtils'
 import type { Size } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -15,11 +15,11 @@ import {
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/extensions/core/load3d/Load3d', () => ({
+vi.mock('@/extensions/core/extensions/load3d/Load3d', () => ({
   default: vi.fn()
 }))
 
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
+vi.mock('@/extensions/core/extensions/load3d/Load3dUtils', () => ({
   default: {
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn(),

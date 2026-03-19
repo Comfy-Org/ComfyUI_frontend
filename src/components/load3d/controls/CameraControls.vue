@@ -26,7 +26,7 @@ import { computed } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { CameraType } from '@/extensions/core/load3d/interfaces'
+import type { CameraType } from '@/extensions/core/extensions/load3d/interfaces'
 
 const cameraType = defineModel<CameraType>('cameraType')
 const fov = defineModel<number>('fov')

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { GroupNodeHandler } from '@/extensions/core/groupNode'
+import type { GroupNodeHandler } from '@/extensions/core/extensions/groupNode'
 import type {
   ExecutableLGraphNode,
   ExecutionId,

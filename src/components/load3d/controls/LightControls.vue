@@ -36,7 +36,7 @@ import Slider from 'primevue/slider'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { MaterialMode } from '@/extensions/core/load3d/interfaces'
+import type { MaterialMode } from '@/extensions/core/extensions/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const lightIntensity = defineModel<number>('lightIntensity')

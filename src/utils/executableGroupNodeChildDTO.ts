@@ -1,4 +1,4 @@
-import type { GroupNodeHandler } from '@/extensions/core/groupNode'
+import type { GroupNodeHandler } from '@/extensions/core/extensions/groupNode'
 import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
 import type {
   ExecutableLGraphNode,

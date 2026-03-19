@@ -35,7 +35,10 @@ async function loadLoad3dExtensions(): Promise<ComfyExtension[]> {
   load3dExtensionsLoading = (async () => {
     const before = new Set(useExtensionStore().enabledExtensions)
     // Import both extensions - they will self-register via useExtensionService()
-    await Promise.all([import('./load3d'), import('./saveMesh')])
+    await Promise.all([
+      import('./extensions/load3d'),
+      import('./extensions/saveMesh')
+    ])
     load3dExtensionsLoaded = true
     return useExtensionStore().enabledExtensions.filter(
       (ext) => !before.has(ext)

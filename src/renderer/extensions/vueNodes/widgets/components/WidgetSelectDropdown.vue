@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
-import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
+import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/extensions/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import {

@@ -30,7 +30,7 @@ import { useI18n } from 'vue-i18n'
 import type {
   MaterialMode,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@/extensions/core/extensions/load3d/interfaces'
 
 const { t } = useI18n()
 const { hideMaterialMode = false, isPlyModel = false } = defineProps<{

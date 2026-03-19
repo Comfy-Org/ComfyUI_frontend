@@ -32,7 +32,7 @@ import Slider from 'primevue/slider'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { CameraType } from '@/extensions/core/load3d/interfaces'
+import type { CameraType } from '@/extensions/core/extensions/load3d/interfaces'
 
 const { t } = useI18n()
 const cameras = [

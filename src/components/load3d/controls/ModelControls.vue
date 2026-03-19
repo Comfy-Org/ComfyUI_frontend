@@ -100,7 +100,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type {
   MaterialMode,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@/extensions/core/extensions/load3d/interfaces'
 import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()

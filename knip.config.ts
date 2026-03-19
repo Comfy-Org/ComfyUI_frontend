@@ -9,7 +9,10 @@ const config: KnipConfig = {
         'src/main.ts',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
-        'src/storybook/mocks/**/*.ts'
+        'src/storybook/mocks/**/*.ts',
+        // Discovered at runtime via import.meta.glob in src/extensions/core/index.ts
+        'src/extensions/core/extensions/*/index.ts',
+        'src/extensions/core/extensions/*/comfy.ext.config.ts'
       ],
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}', '!.claude/**']
     },
@@ -61,6 +64,16 @@ const config: KnipConfig = {
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
+    // Pending migration to extensions/*/index.ts glob pattern
+    'src/extensions/core/customWidgets.ts',
+    'src/extensions/core/imageCompare.ts',
+    'src/extensions/core/imageCrop.ts',
+    'src/extensions/core/nightlyBadges.ts',
+    'src/extensions/core/painter.ts',
+    'src/extensions/core/load3dLazy.ts',
+    // Duplicates of old-path files, pending import path migration
+    'src/extensions/core/extensions/maskeditor/constants.ts',
+    'src/extensions/core/extensions/maskeditor/types.ts',
     // Loaded via @plugin directive in CSS, not detected by knip
     'packages/design-system/src/css/lucideStrokePlugin.js'
   ],

@@ -109,7 +109,7 @@ import { computed, ref } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { BackgroundRenderModeType } from '@/extensions/core/load3d/interfaces'
+import type { BackgroundRenderModeType } from '@/extensions/core/extensions/load3d/interfaces'
 import { cn } from '@/utils/tailwindUtil'
 
 const emit = defineEmits<{

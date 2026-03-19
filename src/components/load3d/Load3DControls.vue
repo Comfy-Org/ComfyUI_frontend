@@ -98,7 +98,7 @@ import type {
   LightConfig,
   ModelConfig,
   SceneConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@/extensions/core/extensions/load3d/interfaces'
 import { cn } from '@/utils/tailwindUtil'
 
 const {

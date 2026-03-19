@@ -73,6 +73,10 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
+import {
+  extensionsImportEventHas,
+  importExtensionsByEvent
+} from '@/extensions/dispatch'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 export interface HasInitialMinSize {
@@ -81,6 +85,38 @@ export interface HasInitialMinSize {
 
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
+
+function addInputsAndimportWidgetsAsNeeded(options: {
+  orderedInputSpecs: InputSpec[]
+  addInputSocket: (inputSpec: InputSpec) => void
+  addInputWidget: (inputSpec: InputSpec) => void
+}) {
+  const { orderedInputSpecs, addInputSocket, addInputWidget } = options
+  const awaitedInputSpecs: InputSpec[] = []
+  const syncInputSpecs: InputSpec[] = []
+  const importJobs: Promise<void>[] = []
+  for (const inputSpec of orderedInputSpecs) {
+    const widgetType = inputSpec.widgetType ?? inputSpec.type
+    if (extensionsImportEventHas(`onWidgets:${widgetType}`)) {
+      importJobs.push(importExtensionsByEvent(`onWidgets:${widgetType}`))
+      awaitedInputSpecs.push(inputSpec)
+    } else {
+      syncInputSpecs.push(inputSpec)
+    }
+  }
+
+  void (async () => {
+    await Promise.all(importJobs)
+    for (const inputSpec of awaitedInputSpecs) addInputSocket(inputSpec)
+    for (const inputSpec of awaitedInputSpecs) addInputWidget(inputSpec)
+  })().catch((error) => {
+    console.error('Failed to load widget extensions', error)
+  })
+
+  // Create sockets and widgets in the determined order
+  for (const inputSpec of syncInputSpecs) addInputSocket(inputSpec)
+  for (const inputSpec of syncInputSpecs) addInputWidget(inputSpec)
+}
 
 export function getExtraOptionsForWidget(
   node: LGraphNode,
@@ -249,10 +285,20 @@ export const useLitegraphService = () => {
     ) ?? {}
 
     if (widget) {
-      widget.label = st(
-        nameKey,
-        widget.label ?? widgetInputSpec.display_name ?? inputName
-      )
+      // Check if this is an Asset Browser button widget
+      const isAssetBrowserButton =
+        widget.type === 'button' && widget.value === 'Select model'
+
+      if (isAssetBrowserButton) {
+        // Preserve Asset Browser button label (don't translate)
+        widget.label = String(widget.value)
+      } else {
+        // Apply normal translation for other widgets
+        widget.label = st(
+          nameKey,
+          widget.label ?? widgetInputSpec.display_name ?? inputName
+        )
+      }
       widget.options ??= {}
       Object.assign(widget.options, {
         advanced: inputSpec.advanced,
@@ -289,9 +335,11 @@ export const useLitegraphService = () => {
     const nodeDefImpl = node.constructor.nodeData as ComfyNodeDefImpl
     const orderedInputSpecs = getOrderedInputSpecs(nodeDefImpl, inputs)
 
-    // Create sockets and widgets in the determined order
-    for (const inputSpec of orderedInputSpecs) addInputSocket(node, inputSpec)
-    for (const inputSpec of orderedInputSpecs) addInputWidget(node, inputSpec)
+    addInputsAndimportWidgetsAsNeeded({
+      orderedInputSpecs,
+      addInputSocket: (inputSpec) => addInputSocket(node, inputSpec),
+      addInputWidget: (inputSpec) => addInputWidget(node, inputSpec)
+    })
   }
 
   /**

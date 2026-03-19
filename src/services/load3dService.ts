@@ -7,14 +7,14 @@
  */
 import { toRaw } from 'vue'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@/extensions/core/extensions/load3d/Load3d'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
   CameraType,
   MaterialMode,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@/extensions/core/extensions/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Object3D } from 'three'

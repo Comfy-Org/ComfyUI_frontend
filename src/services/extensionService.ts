@@ -12,6 +12,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
+import { importExtensionsByEvent } from '@/extensions/dispatch'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
@@ -37,7 +38,12 @@ export const useExtensionService = () => {
 
     // Need to load core extensions first as some custom extensions
     // may depend on them.
-    await import('../extensions/core/index')
+    const { registerExtensions } = await import('../extensions/core/index')
+    await registerExtensions()
+
+    // Import Immediately Loaded Extensions
+    await importExtensionsByEvent('*')
+
     extensionStore.captureCoreExtensions()
     await Promise.all(
       extensions
