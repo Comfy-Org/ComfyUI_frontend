@@ -74,7 +74,7 @@ import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
 import {
-  extentionsImportEventHas,
+  extensionsImportEventHas,
   importExtensionsByEvent
 } from '@/extensions/dispatch'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
@@ -97,7 +97,7 @@ function addInputsAndimportWidgetsAsNeeded(options: {
   const importJobs: Promise<void>[] = []
   for (const inputSpec of orderedInputSpecs) {
     const widgetType = inputSpec.widgetType ?? inputSpec.type
-    if (extentionsImportEventHas(`onWidgets:${widgetType}`)) {
+    if (extensionsImportEventHas(`onWidgets:${widgetType}`)) {
       importJobs.push(importExtensionsByEvent(`onWidgets:${widgetType}`))
       awaitedInputSpecs.push(inputSpec)
     } else {
@@ -105,11 +105,13 @@ function addInputsAndimportWidgetsAsNeeded(options: {
     }
   }
 
-  ;(async () => {
+  void (async () => {
     await Promise.all(importJobs)
     for (const inputSpec of awaitedInputSpecs) addInputSocket(inputSpec)
     for (const inputSpec of awaitedInputSpecs) addInputWidget(inputSpec)
-  })()
+  })().catch((error) => {
+    console.error('Failed to load widget extensions', error)
+  })
 
   // Create sockets and widgets in the determined order
   for (const inputSpec of syncInputSpecs) addInputSocket(inputSpec)

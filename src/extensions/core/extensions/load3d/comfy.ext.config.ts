@@ -2,11 +2,15 @@ import { defineComfyExtConfig } from '@/extensions/utils'
 
 export default defineComfyExtConfig({
   name: 'Comfy.Load3D',
-  activationEvents: ['onWidgets:contributes', 'onCommands:contributes', 'onSettings:contributes'],
+  activationEvents: [
+    'onWidgets:contributes',
+    'onCommands:contributes',
+    'onSettings:contributes'
+  ],
   contributes: [
     {
       name: 'Comfy.Preview3D',
-      widgets: ['PREVIEW_3D'],
+      widgets: ['PREVIEW_3D']
     },
     {
       name: 'Comfy.Load3D',
@@ -97,15 +101,26 @@ export default defineComfyExtConfig({
           type: 'boolean',
           defaultValue: false,
           experimental: true
+        },
+        {
+          id: 'Comfy.Load3D.PLYEngine',
+          category: ['3D', 'PLY', 'PLY Engine'],
+          name: 'PLY Engine',
+          tooltip:
+            'Select the engine for loading PLY files. "threejs" uses the native Three.js PLYLoader (best for mesh PLY files). "fastply" uses an optimized loader for ASCII point cloud PLY files. "sparkjs" uses Spark.js for 3D Gaussian Splatting PLY files.',
+          type: 'combo',
+          options: ['threejs', 'fastply', 'sparkjs'],
+          defaultValue: 'threejs',
+          experimental: true
         }
       ],
       commands: [
         {
           id: 'Comfy.3DViewer.Open3DViewer',
           icon: 'pi pi-pencil',
-          label: 'Open 3D Viewer (Beta) for Selected Node',
+          label: 'Open 3D Viewer (Beta) for Selected Node'
         }
-      ],
-    },
-  ],
+      ]
+    }
+  ]
 })

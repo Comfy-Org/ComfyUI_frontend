@@ -63,7 +63,7 @@ export function normalizationActivationEvents(
     for (const contribute of contributes) {
       if (contribute.commands) {
         for (const command of contribute.commands) {
-          events.push(`onCommands:${command}`)
+          events.push(`onCommands:${command.id}`)
         }
       }
     }
@@ -101,6 +101,8 @@ function checkAboutCloud(
   if (comfyCloud) {
     if (!ctx.isCloud) return false
     if (comfyCloud === true) return true
+    // comfyCloud.subscriptionRequired: extension declares it needs a subscription
+    // ctx.subscriptionRequired: platform confirms the user has an active subscription
     return comfyCloud.subscriptionRequired && ctx.subscriptionRequired
   }
 
