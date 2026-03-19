@@ -134,14 +134,14 @@
             :value="opt"
             :class="
               cn(
-                'group flex h-10 cursor-pointer items-center gap-2 rounded-lg px-2 outline-none',
+                'group flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-lg px-2 outline-none',
                 'hover:bg-secondary-background-hover',
                 'data-highlighted:bg-secondary-background-selected data-highlighted:hover:bg-secondary-background-selected'
               )
             "
           >
             <div
-              class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background"
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
             >
               <ComboboxItemIndicator>
                 <i
