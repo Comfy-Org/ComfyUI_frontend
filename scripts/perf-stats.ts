@@ -61,3 +61,53 @@ export function formatSignificance(
 export function isNoteworthy(sig: Significance): boolean {
   return sig === 'regression'
 }
+
+const SPARK_CHARS = '▁▂▃▄▅▆▇█'
+
+export function sparkline(values: number[]): string {
+  if (values.length === 0) return ''
+  if (values.length === 1) return SPARK_CHARS[3]
+
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const range = max - min
+
+  return values
+    .map((v) => {
+      if (range === 0) return SPARK_CHARS[3]
+      const idx = Math.round(((v - min) / range) * (SPARK_CHARS.length - 1))
+      return SPARK_CHARS[idx]
+    })
+    .join('')
+}
+
+export type TrendDirection = 'rising' | 'falling' | 'stable'
+
+export function trendDirection(values: number[]): TrendDirection {
+  if (values.length < 3) return 'stable'
+
+  const half = Math.floor(values.length / 2)
+  const firstHalf = values.slice(0, half)
+  const secondHalf = values.slice(-half)
+
+  const firstMean = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length
+  const secondMean = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length
+
+  if (firstMean === 0) return secondMean > 0 ? 'rising' : 'stable'
+  const changePct = ((secondMean - firstMean) / firstMean) * 100
+
+  if (changePct > 10) return 'rising'
+  if (changePct < -10) return 'falling'
+  return 'stable'
+}
+
+export function trendArrow(dir: TrendDirection): string {
+  switch (dir) {
+    case 'rising':
+      return '📈'
+    case 'falling':
+      return '📉'
+    case 'stable':
+      return '➡️'
+  }
+}

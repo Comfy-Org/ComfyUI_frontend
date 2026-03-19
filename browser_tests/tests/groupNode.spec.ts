@@ -5,6 +5,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import type { NodeLibrarySidebarTab } from '../fixtures/components/SidebarTab'
+import { TestIds } from '../fixtures/selectors'
 import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
@@ -224,7 +225,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     await comfyPage.workflow.loadWorkflow('groupnodes/legacy_group_node')
     expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
-      comfyPage.page.locator('.comfy-missing-nodes')
+      comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     ).not.toBeVisible()
   })
 
