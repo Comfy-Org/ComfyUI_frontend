@@ -90,29 +90,17 @@ function handleHideInput() {
         widget.sourceWidgetName,
         sourceNodeId
       )
+      parent.computeSize(parent.size)
     }
+    canvasStore.canvas?.setDirty(true, true)
   } else {
-    // For regular widgets (not yet promoted), use them directly
     demoteWidget(node, widget, parents)
   }
-
-  for (const parent of parents) {
-    parent.computeSize(parent.size)
-  }
-
-  canvasStore.canvas?.setDirty(true, true)
 }
 
 function handleShowInput() {
   if (!parents?.length) return
-
   promoteWidget(node, widget, parents)
-
-  for (const parent of parents) {
-    parent.computeSize(parent.size)
-  }
-
-  canvasStore.canvas?.setDirty(true, true)
 }
 
 function handleToggleFavorite() {

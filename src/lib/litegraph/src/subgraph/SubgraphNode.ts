@@ -129,9 +129,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _resolveLinkedPromotionBySubgraphInput(
     subgraphInput: SubgraphInput
-  ):
-    | { interiorNodeId: string; widgetName: string; sourceNodeId?: string }
-    | undefined {
+  ): PromotionEntry | undefined {
     // Preserve deterministic representative selection for multi-linked inputs:
     // the first connected source remains the promoted linked view.
     for (const linkId of subgraphInput.linkIds) {
@@ -473,11 +471,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _toPromotionEntries(
     linkedEntries: LinkedPromotionEntry[]
   ): PromotionEntry[] {
-    return linkedEntries.map(({ interiorNodeId, widgetName, sourceNodeId }) => {
-      const entry: PromotionEntry = { interiorNodeId, widgetName }
-      if (sourceNodeId) entry.sourceNodeId = sourceNodeId
-      return entry
-    })
+    return linkedEntries.map(
+      ({ interiorNodeId, widgetName, sourceNodeId }) => ({
+        interiorNodeId,
+        widgetName,
+        ...(sourceNodeId && { sourceNodeId })
+      })
+    )
   }
 
   private _getFallbackStoredEntries(
@@ -622,6 +622,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           sourceNodeId
         ])
       : JSON.stringify([inputKey, interiorNodeId, widgetName, inputName])
+  }
+
+  private _serializeEntries(
+    entries: PromotionEntry[]
+  ): (string[] | [string, string, string])[] {
+    return entries.map((e) =>
+      e.sourceNodeId
+        ? [e.interiorNodeId, e.widgetName, e.sourceNodeId]
+        : [e.interiorNodeId, e.widgetName]
+    )
   }
 
   private _resolveLegacyEntry(
@@ -1038,15 +1048,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           }
           return null
         }
-        const entry: {
-          interiorNodeId: string
-          widgetName: string
-          sourceNodeId?: string
-        } = {
+        const entry: PromotionEntry = {
           interiorNodeId: nodeId,
-          widgetName
+          widgetName,
+          ...(sourceNodeId && { sourceNodeId })
         }
-        if (sourceNodeId) entry.sourceNodeId = sourceNodeId
         return entry
       })
       .filter((e): e is NonNullable<typeof e> => e !== null)
@@ -1055,11 +1061,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Write back resolved entries so legacy -1 format doesn't persist
     if (raw.some(([id]) => id === '-1')) {
-      this.properties.proxyWidgets = entries.map((e) =>
-        e.sourceNodeId
-          ? [e.interiorNodeId, e.widgetName, e.sourceNodeId]
-          : [e.interiorNodeId, e.widgetName]
-      )
+      this.properties.proxyWidgets = this._serializeEntries(entries)
     }
 
     // Check all inputs for connected widgets
@@ -1184,12 +1186,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             entry.sourceNodeId === sourceNodeId
         )
       ) {
-        const entry: PromotionEntry = {
+        this._pendingPromotions.push({
           interiorNodeId: nodeId,
-          widgetName
-        }
-        if (sourceNodeId) entry.sourceNodeId = sourceNodeId
-        this._pendingPromotions.push(entry)
+          widgetName,
+          ...(sourceNodeId && { sourceNodeId })
+        })
       }
     } else {
       // Add to promotion store
@@ -1560,11 +1561,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this.rootGraph.id,
       this.id
     )
-    this.properties.proxyWidgets = entries.map((e) =>
-      e.sourceNodeId
-        ? [e.interiorNodeId, e.widgetName, e.sourceNodeId]
-        : [e.interiorNodeId, e.widgetName]
-    )
+    this.properties.proxyWidgets = this._serializeEntries(entries)
 
     return super.serialize()
   }

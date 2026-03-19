@@ -6,6 +6,7 @@ import { reactiveComputed } from '@vueuse/core'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -238,11 +239,7 @@ function safeWidgetMapper(
 
   function resolvePromotedWidgetIdentity(widget: IBaseWidget): {
     displayName: string
-    promotedSource: {
-      sourceNodeId: string
-      sourceWidgetName: string
-      disambiguatingSourceNodeId?: string
-    } | null
+    promotedSource: PromotedWidgetSource | null
   } {
     if (!isPromotedWidgetView(widget)) {
       return {

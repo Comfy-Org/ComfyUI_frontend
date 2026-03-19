@@ -84,17 +84,12 @@ const activeWidgets = computed<WidgetItem[]>({
       node.rootGraph.id,
       node.id,
       value.map(([n, w]) => {
-        const entry: {
-          interiorNodeId: string
-          widgetName: string
-          sourceNodeId?: string
-        } = {
-          interiorNodeId: String(n.id),
-          widgetName: getWidgetName(w)
-        }
         const sid = getSourceNodeId(w)
-        if (sid) entry.sourceNodeId = sid
-        return entry
+        return {
+          interiorNodeId: String(n.id),
+          widgetName: getWidgetName(w),
+          ...(sid && { sourceNodeId: sid })
+        }
       })
     )
     refreshPromotedWidgetRendering()
@@ -184,47 +179,20 @@ function promote([node, widget]: WidgetItem) {
   promoteWidget(node, widget, [subgraphNode])
 }
 function showAll() {
-  const node = activeNode.value
-  if (!node) return
-  for (const [n, w] of filteredCandidates.value) {
-    promotionStore.promote(
-      node.rootGraph.id,
-      node.id,
-      String(n.id),
-      getWidgetName(w),
-      getSourceNodeId(w)
-    )
+  for (const item of filteredCandidates.value) {
+    promote(item)
   }
-  refreshPromotedWidgetRendering()
 }
 function hideAll() {
-  const node = activeNode.value
-  if (!node) return
-  for (const [n, w] of filteredActive.value) {
-    if (String(n.id) === '-1') continue
-    promotionStore.demote(
-      node.rootGraph.id,
-      node.id,
-      String(n.id),
-      getWidgetName(w),
-      getSourceNodeId(w)
-    )
+  for (const item of filteredActive.value) {
+    if (String(item[0].id) === '-1') continue
+    demote(item)
   }
-  refreshPromotedWidgetRendering()
 }
 function showRecommended() {
-  const node = activeNode.value
-  if (!node) return
-  for (const [n, w] of recommendedWidgets.value) {
-    promotionStore.promote(
-      node.rootGraph.id,
-      node.id,
-      String(n.id),
-      getWidgetName(w),
-      getSourceNodeId(w)
-    )
+  for (const item of recommendedWidgets.value) {
+    promote(item)
   }
-  refreshPromotedWidgetRendering()
 }
 
 onMounted(() => {
