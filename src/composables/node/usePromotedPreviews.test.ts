@@ -112,8 +112,7 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      'seed'
+      { sourceNodeId: '10', sourceWidgetName: 'seed' }
     )
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
@@ -126,8 +125,7 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     const mockUrls = ['/view?filename=output.png']
@@ -137,8 +135,8 @@ describe(usePromotedPreviews, () => {
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
       {
-        interiorNodeId: '10',
-        widgetName: '$$canvas-image-preview',
+        sourceNodeId: '10',
+        sourceWidgetName: '$$canvas-image-preview',
         type: 'image',
         urls: mockUrls
       }
@@ -151,8 +149,7 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     seedOutputs(setup.subgraph.id, [10])
@@ -168,8 +165,7 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     seedOutputs(setup.subgraph.id, [10])
@@ -192,14 +188,12 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '20',
-      '$$canvas-image-preview'
+      { sourceNodeId: '20', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     seedOutputs(setup.subgraph.id, [10, 20])
@@ -221,8 +215,7 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     const blobUrl = 'blob:http://localhost/glsl-preview'
@@ -232,8 +225,8 @@ describe(usePromotedPreviews, () => {
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
       {
-        interiorNodeId: '10',
-        widgetName: '$$canvas-image-preview',
+        sourceNodeId: '10',
+        sourceWidgetName: '$$canvas-image-preview',
         type: 'image',
         urls: [blobUrl]
       }
@@ -246,8 +239,7 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
@@ -259,8 +251,8 @@ describe(usePromotedPreviews, () => {
 
     expect(promotedPreviews.value).toEqual([
       {
-        interiorNodeId: '10',
-        widgetName: '$$canvas-image-preview',
+        sourceNodeId: '10',
+        sourceWidgetName: '$$canvas-image-preview',
         type: 'image',
         urls: [blobUrl]
       }
@@ -273,8 +265,7 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
@@ -286,8 +277,7 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '99',
-      '$$canvas-image-preview'
+      { sourceNodeId: '99', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
@@ -300,14 +290,12 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      'seed'
+      { sourceNodeId: '10', sourceWidgetName: 'seed' }
     )
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     const mockUrls = ['/view?filename=img.png']

@@ -35,6 +35,7 @@ import {
   isPromotedWidgetView
 } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
@@ -44,7 +45,10 @@ import {
 } from '@/composables/node/canvasImagePreviewTypes'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { usePromotionStore } from '@/stores/promotionStore'
+import {
+  makePromotionEntryKey,
+  usePromotionStore
+} from '@/stores/promotionStore'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -56,16 +60,9 @@ const workflowSvg = new Image()
 workflowSvg.src =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='white' stroke-linecap='round' stroke-width='1.3' d='M9.18613 3.09999H6.81377M9.18613 12.9H7.55288c-3.08678 0-5.35171-2.99581-4.60305-6.08843l.3054-1.26158M14.7486 2.1721l-.5931 2.45c-.132.54533-.6065.92789-1.1508.92789h-2.2993c-.77173 0-1.33797-.74895-1.1508-1.5221l.5931-2.45c.132-.54533.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.74896 1.1508 1.52211Zm-8.3033 0-.59309 2.45c-.13201.54533-.60646.92789-1.15076.92789H2.4021c-.7717 0-1.33793-.74895-1.15077-1.5221l.59309-2.45c.13201-.54533.60647-.9279 1.15077-.9279h2.29935c.77169 0 1.33792.74896 1.15076 1.52211Zm8.3033 9.8-.5931 2.45c-.132.5453-.6065.9279-1.1508.9279h-2.2993c-.77173 0-1.33797-.749-1.1508-1.5221l.5931-2.45c.132-.5453.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.7489 1.1508 1.5221Z'/%3E%3C/svg%3E %3C/svg%3E"
 
-type LinkedPromotionEntry = {
+type LinkedPromotionEntry = PromotedWidgetSource & {
   inputName: string
   inputKey: string
-  interiorNodeId: string
-  widgetName: string
-}
-
-type PromotionEntry = {
-  interiorNodeId: string
-  widgetName: string
 }
 // Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
@@ -103,7 +100,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    * `onAdded()`, so construction-time promotions require normal add-to-graph
    * lifecycle to persist.
    */
-  private _pendingPromotions: PromotionEntry[] = []
+  private _pendingPromotions: PromotedWidgetSource[] = []
   private _cacheVersion = 0
   private _linkedEntriesCache?: {
     version: number
@@ -112,7 +109,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
   private _promotedViewsCache?: {
     version: number
-    entriesRef: PromotionEntry[]
+    entriesRef: PromotedWidgetSource[]
     hasMissingBoundSourceWidget: boolean
     views: PromotedWidgetView[]
   }
@@ -124,7 +121,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _resolveLinkedPromotionBySubgraphInput(
     subgraphInput: SubgraphInput
-  ): { interiorNodeId: string; widgetName: string } | undefined {
+  ): PromotedWidgetSource | undefined {
     // Preserve deterministic representative selection for multi-linked inputs:
     // the first connected source remains the promoted linked view.
     for (const linkId of subgraphInput.linkIds) {
@@ -142,15 +139,25 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const targetWidget = inputNode.getWidgetFromSlot(targetInput)
       if (!targetWidget) continue
 
-      if (inputNode.isSubgraphNode())
-        return {
-          interiorNodeId: String(inputNode.id),
-          widgetName: targetInput.name
+      if (inputNode.isSubgraphNode()) {
+        if (isPromotedWidgetView(targetWidget)) {
+          return {
+            sourceNodeId: String(inputNode.id),
+            sourceWidgetName: targetWidget.sourceWidgetName,
+            disambiguatingSourceNodeId:
+              targetWidget.disambiguatingSourceNodeId ??
+              targetWidget.sourceNodeId
+          }
         }
+        return {
+          sourceNodeId: String(inputNode.id),
+          sourceWidgetName: targetInput.name
+        }
+      }
 
       return {
-        interiorNodeId: String(inputNode.id),
-        widgetName: targetWidget.name
+        sourceNodeId: String(inputNode.id),
+        sourceWidgetName: targetWidget.name
       }
     }
   }
@@ -185,8 +192,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           linkedEntries.push({
             inputName: input.label ?? input.name,
             inputKey: String(subgraphInput.id),
-            interiorNodeId: boundWidget.sourceNodeId,
-            widgetName: boundWidget.sourceWidgetName
+            sourceNodeId: boundWidget.sourceNodeId,
+            sourceWidgetName: boundWidget.sourceWidgetName
           })
           continue
         }
@@ -207,9 +214,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const deduplicatedEntries = linkedEntries.filter((entry) => {
       const entryKey = this._makePromotionViewKey(
         entry.inputKey,
-        entry.interiorNodeId,
-        entry.widgetName,
-        entry.inputName
+        entry.sourceNodeId,
+        entry.sourceWidgetName,
+        entry.inputName,
+        entry.disambiguatingSourceNodeId
       )
       if (seenEntryKeys.has(entryKey)) return false
 
@@ -266,9 +274,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (entry) =>
         createPromotedWidgetView(
           this,
-          entry.interiorNodeId,
-          entry.widgetName,
-          entry.viewKey ? displayNameByViewKey.get(entry.viewKey) : undefined
+          entry.sourceNodeId,
+          entry.sourceWidgetName,
+          entry.viewKey ? displayNameByViewKey.get(entry.viewKey) : undefined,
+          entry.disambiguatingSourceNodeId
         )
     )
 
@@ -303,23 +312,27 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       mergedEntries.length !== entries.length ||
       mergedEntries.some(
         (entry, index) =>
-          entry.interiorNodeId !== entries[index]?.interiorNodeId ||
-          entry.widgetName !== entries[index]?.widgetName
+          entry.sourceNodeId !== entries[index]?.sourceNodeId ||
+          entry.sourceWidgetName !== entries[index]?.sourceWidgetName ||
+          entry.disambiguatingSourceNodeId !==
+            entries[index]?.disambiguatingSourceNodeId
       )
+
     if (!hasChanged) return
 
     store.setPromotions(this.rootGraph.id, this.id, mergedEntries)
   }
 
   private _buildPromotionReconcileState(
-    entries: PromotionEntry[],
+    entries: PromotedWidgetSource[],
     linkedEntries: LinkedPromotionEntry[]
   ): {
     displayNameByViewKey: Map<string, string>
     reconcileEntries: Array<{
-      interiorNodeId: string
-      widgetName: string
+      sourceNodeId: string
+      sourceWidgetName: string
       viewKey?: string
+      disambiguatingSourceNodeId?: string
     }>
   } {
     const { fallbackStoredEntries } = this._collectLinkedAndFallbackEntries(
@@ -332,9 +345,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       linkedEntries,
       fallbackStoredEntries
     )
+    const fallbackReconcileEntries = fallbackStoredEntries.map((e) =>
+      e.disambiguatingSourceNodeId
+        ? {
+            sourceNodeId: e.sourceNodeId,
+            sourceWidgetName: e.sourceWidgetName,
+            disambiguatingSourceNodeId: e.disambiguatingSourceNodeId,
+            viewKey: `src:${e.sourceNodeId}:${e.sourceWidgetName}:${e.disambiguatingSourceNodeId}`
+          }
+        : e
+    )
     const reconcileEntries = shouldPersistLinkedOnly
       ? linkedReconcileEntries
-      : [...linkedReconcileEntries, ...fallbackStoredEntries]
+      : [...linkedReconcileEntries, ...fallbackReconcileEntries]
 
     return {
       displayNameByViewKey: this._buildDisplayNameByViewKey(linkedEntries),
@@ -343,10 +366,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   private _buildPromotionPersistenceState(
-    entries: PromotionEntry[],
+    entries: PromotedWidgetSource[],
     linkedEntries: LinkedPromotionEntry[]
   ): {
-    mergedEntries: PromotionEntry[]
+    mergedEntries: PromotedWidgetSource[]
   } {
     const { linkedPromotionEntries, fallbackStoredEntries } =
       this._collectLinkedAndFallbackEntries(entries, linkedEntries)
@@ -363,16 +386,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   private _collectLinkedAndFallbackEntries(
-    entries: PromotionEntry[],
+    entries: PromotedWidgetSource[],
     linkedEntries: LinkedPromotionEntry[]
   ): {
-    linkedPromotionEntries: PromotionEntry[]
-    fallbackStoredEntries: PromotionEntry[]
+    linkedPromotionEntries: PromotedWidgetSource[]
+    fallbackStoredEntries: PromotedWidgetSource[]
   } {
     const linkedPromotionEntries = this._toPromotionEntries(linkedEntries)
     const excludedEntryKeys = new Set(
       linkedPromotionEntries.map((entry) =>
-        this._makePromotionEntryKey(entry.interiorNodeId, entry.widgetName)
+        this._makePromotionEntryKey(
+          entry.sourceNodeId,
+          entry.sourceWidgetName,
+          entry.disambiguatingSourceNodeId
+        )
       )
     )
     const connectedEntryKeys = this._getConnectedPromotionEntryKeys()
@@ -397,28 +424,38 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _shouldPersistLinkedOnly(
     linkedEntries: LinkedPromotionEntry[],
-    fallbackStoredEntries: PromotionEntry[]
+    fallbackStoredEntries: PromotedWidgetSource[]
   ): boolean {
     if (
       !(this.inputs.length > 0 && linkedEntries.length === this.inputs.length)
     )
       return false
 
+    const linkedEntryKeys = new Set(
+      linkedEntries.map((entry) =>
+        this._makePromotionEntryKey(entry.sourceNodeId, entry.sourceWidgetName)
+      )
+    )
+
     const linkedWidgetNames = new Set(
-      linkedEntries.map((entry) => entry.widgetName)
+      linkedEntries.map((entry) => entry.sourceWidgetName)
     )
 
     const hasFallbackToKeep = fallbackStoredEntries.some((entry) => {
-      const sourceNode = this.subgraph.getNodeById(entry.interiorNodeId)
+      const sourceNode = this.subgraph.getNodeById(entry.sourceNodeId)
+      if (!sourceNode) return linkedWidgetNames.has(entry.sourceWidgetName)
+
       const hasSourceWidget =
-        sourceNode?.widgets?.some(
-          (widget) => widget.name === entry.widgetName
+        sourceNode.widgets?.some(
+          (widget) => widget.name === entry.sourceWidgetName
         ) === true
       if (hasSourceWidget) return true
 
-      // If the fallback widget name overlaps a linked widget name, keep it
+      // If the fallback entry overlaps a linked entry, keep it
       // until aliasing can be positively proven.
-      return linkedWidgetNames.has(entry.widgetName)
+      return linkedEntryKeys.has(
+        this._makePromotionEntryKey(entry.sourceNodeId, entry.sourceWidgetName)
+      )
     })
 
     return !hasFallbackToKeep
@@ -426,29 +463,36 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _toPromotionEntries(
     linkedEntries: LinkedPromotionEntry[]
-  ): PromotionEntry[] {
-    return linkedEntries.map(({ interiorNodeId, widgetName }) => ({
-      interiorNodeId,
-      widgetName
-    }))
+  ): PromotedWidgetSource[] {
+    return linkedEntries.map(
+      ({ sourceNodeId, sourceWidgetName, disambiguatingSourceNodeId }) => ({
+        sourceNodeId,
+        sourceWidgetName,
+        ...(disambiguatingSourceNodeId && { disambiguatingSourceNodeId })
+      })
+    )
   }
 
   private _getFallbackStoredEntries(
-    entries: PromotionEntry[],
+    entries: PromotedWidgetSource[],
     excludedEntryKeys: Set<string>
-  ): PromotionEntry[] {
+  ): PromotedWidgetSource[] {
     return entries.filter(
       (entry) =>
         !excludedEntryKeys.has(
-          this._makePromotionEntryKey(entry.interiorNodeId, entry.widgetName)
+          this._makePromotionEntryKey(
+            entry.sourceNodeId,
+            entry.sourceWidgetName,
+            entry.disambiguatingSourceNodeId
+          )
         )
     )
   }
 
   private _pruneStaleAliasFallbackEntries(
-    fallbackStoredEntries: PromotionEntry[],
-    linkedPromotionEntries: PromotionEntry[]
-  ): PromotionEntry[] {
+    fallbackStoredEntries: PromotedWidgetSource[],
+    linkedPromotionEntries: PromotedWidgetSource[]
+  ): PromotedWidgetSource[] {
     if (
       fallbackStoredEntries.length === 0 ||
       linkedPromotionEntries.length === 0
@@ -462,7 +506,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
     if (linkedConcreteKeys.size === 0) return fallbackStoredEntries
 
-    const prunedEntries: PromotionEntry[] = []
+    const prunedEntries: PromotedWidgetSource[] = []
 
     for (const entry of fallbackStoredEntries) {
       const concreteKey = this._resolveConcretePromotionEntryKey(entry)
@@ -475,12 +519,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   private _resolveConcretePromotionEntryKey(
-    entry: PromotionEntry
+    entry: PromotedWidgetSource
   ): string | undefined {
     const result = resolveConcretePromotedWidget(
       this,
-      entry.interiorNodeId,
-      entry.widgetName
+      entry.sourceNodeId,
+      entry.sourceWidgetName,
+      entry.disambiguatingSourceNodeId
     )
     if (result.status !== 'resolved') return undefined
 
@@ -513,16 +558,27 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _buildLinkedReconcileEntries(
     linkedEntries: LinkedPromotionEntry[]
-  ): Array<{ interiorNodeId: string; widgetName: string; viewKey: string }> {
+  ): Array<{
+    sourceNodeId: string
+    sourceWidgetName: string
+    viewKey: string
+  }> {
     return linkedEntries.map(
-      ({ inputKey, inputName, interiorNodeId, widgetName }) => ({
-        interiorNodeId,
-        widgetName,
+      ({
+        inputKey,
+        inputName,
+        sourceNodeId,
+        sourceWidgetName,
+        disambiguatingSourceNodeId
+      }) => ({
+        sourceNodeId,
+        sourceWidgetName,
         viewKey: this._makePromotionViewKey(
           inputKey,
-          interiorNodeId,
-          widgetName,
-          inputName
+          sourceNodeId,
+          sourceWidgetName,
+          inputName,
+          disambiguatingSourceNodeId
         )
       })
     )
@@ -535,9 +591,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       linkedEntries.map((entry) => [
         this._makePromotionViewKey(
           entry.inputKey,
-          entry.interiorNodeId,
-          entry.widgetName,
-          entry.inputName
+          entry.sourceNodeId,
+          entry.sourceWidgetName,
+          entry.inputName,
+          entry.disambiguatingSourceNodeId
         ),
         entry.inputName
       ])
@@ -545,19 +602,43 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   private _makePromotionEntryKey(
-    interiorNodeId: string,
-    widgetName: string
+    sourceNodeId: string,
+    sourceWidgetName: string,
+    disambiguatingSourceNodeId?: string
   ): string {
-    return `${interiorNodeId}:${widgetName}`
+    return makePromotionEntryKey({
+      sourceNodeId,
+      sourceWidgetName,
+      disambiguatingSourceNodeId
+    })
   }
 
   private _makePromotionViewKey(
     inputKey: string,
-    interiorNodeId: string,
-    widgetName: string,
-    inputName = ''
+    sourceNodeId: string,
+    sourceWidgetName: string,
+    inputName = '',
+    disambiguatingSourceNodeId?: string
   ): string {
-    return JSON.stringify([inputKey, interiorNodeId, widgetName, inputName])
+    return disambiguatingSourceNodeId
+      ? JSON.stringify([
+          inputKey,
+          sourceNodeId,
+          sourceWidgetName,
+          inputName,
+          disambiguatingSourceNodeId
+        ])
+      : JSON.stringify([inputKey, sourceNodeId, sourceWidgetName, inputName])
+  }
+
+  private _serializeEntries(
+    entries: PromotedWidgetSource[]
+  ): (string[] | [string, string, string])[] {
+    return entries.map((e) =>
+      e.disambiguatingSourceNodeId
+        ? [e.sourceNodeId, e.sourceWidgetName, e.disambiguatingSourceNodeId]
+        : [e.sourceNodeId, e.sourceWidgetName]
+    )
   }
 
   private _resolveLegacyEntry(
@@ -777,20 +858,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         // Keep the earliest bound view once present, and only bind from event
         // payload when this input has no representative yet.
         const nodeId = String(e.detail.node.id)
+        const source: PromotedWidgetSource = {
+          sourceNodeId: nodeId,
+          sourceWidgetName: e.detail.widget.name
+        }
         if (
-          usePromotionStore().isPromoted(
-            this.rootGraph.id,
-            this.id,
-            nodeId,
-            e.detail.widget.name
-          )
+          usePromotionStore().isPromoted(this.rootGraph.id, this.id, source)
         ) {
-          usePromotionStore().demote(
-            this.rootGraph.id,
-            this.id,
-            nodeId,
-            e.detail.widget.name
-          )
+          usePromotionStore().demote(this.rootGraph.id, this.id, source)
         }
 
         const didSetWidgetFromEvent = !input._widget
@@ -962,11 +1037,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const store = usePromotionStore()
 
     const entries = raw
-      .map(([nodeId, widgetName]) => {
+      .map(([nodeId, widgetName, sourceNodeId]) => {
         if (nodeId === '-1') {
           const resolved = this._resolveLegacyEntry(widgetName)
           if (resolved)
-            return { interiorNodeId: resolved[0], widgetName: resolved[1] }
+            return { sourceNodeId: resolved[0], sourceWidgetName: resolved[1] }
           if (import.meta.env.DEV) {
             console.warn(
               `[SubgraphNode] Failed to resolve legacy -1 entry for widget "${widgetName}"`
@@ -974,7 +1049,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           }
           return null
         }
-        return { interiorNodeId: nodeId, widgetName }
+        const entry: PromotedWidgetSource = {
+          sourceNodeId: nodeId,
+          sourceWidgetName: widgetName,
+          ...(sourceNodeId && { disambiguatingSourceNodeId: sourceNodeId })
+        }
+        return entry
       })
       .filter((e): e is NonNullable<typeof e> => e !== null)
 
@@ -982,10 +1062,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Write back resolved entries so legacy -1 format doesn't persist
     if (raw.some(([id]) => id === '-1')) {
-      this.properties.proxyWidgets = entries.map((e) => [
-        e.interiorNodeId,
-        e.widgetName
-      ])
+      this.properties.proxyWidgets = this._serializeEntries(entries)
     }
 
     // Check all inputs for connected widgets
@@ -1008,21 +1085,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     for (const node of this.subgraph.nodes) {
       if (!supportsVirtualCanvasImagePreview(node)) continue
-      if (
-        store.isPromoted(
-          this.rootGraph.id,
-          this.id,
-          String(node.id),
-          CANVAS_IMAGE_PREVIEW_WIDGET
-        )
-      )
-        continue
-      store.promote(
-        this.rootGraph.id,
-        this.id,
-        String(node.id),
-        CANVAS_IMAGE_PREVIEW_WIDGET
-      )
+      const source: PromotedWidgetSource = {
+        sourceNodeId: String(node.id),
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+      if (store.isPromoted(this.rootGraph.id, this.id, source)) continue
+      store.promote(this.rootGraph.id, this.id, source)
     }
   }
 
@@ -1078,6 +1146,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const nodeId = String(interiorNode.id)
     const widgetName = interiorWidget.name
+    const sourceNodeId =
+      interiorNode.isSubgraphNode() && isPromotedWidgetView(interiorWidget)
+        ? interiorWidget.sourceNodeId
+        : undefined
 
     const previousView = input._widget
 
@@ -1087,12 +1159,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (previousView.sourceNodeId !== nodeId ||
         previousView.sourceWidgetName !== widgetName)
     ) {
-      usePromotionStore().demote(
-        this.rootGraph.id,
-        this.id,
-        previousView.sourceNodeId,
-        previousView.sourceWidgetName
-      )
+      usePromotionStore().demote(this.rootGraph.id, this.id, previousView)
       this._removePromotedView(previousView)
     }
 
@@ -1100,22 +1167,24 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (
         !this._pendingPromotions.some(
           (entry) =>
-            entry.interiorNodeId === nodeId && entry.widgetName === widgetName
+            entry.sourceNodeId === nodeId &&
+            entry.sourceWidgetName === widgetName &&
+            entry.disambiguatingSourceNodeId === sourceNodeId
         )
       ) {
         this._pendingPromotions.push({
-          interiorNodeId: nodeId,
-          widgetName
+          sourceNodeId: nodeId,
+          sourceWidgetName: widgetName,
+          ...(sourceNodeId && { disambiguatingSourceNodeId: sourceNodeId })
         })
       }
     } else {
       // Add to promotion store
-      usePromotionStore().promote(
-        this.rootGraph.id,
-        this.id,
-        nodeId,
-        widgetName
-      )
+      usePromotionStore().promote(this.rootGraph.id, this.id, {
+        sourceNodeId: nodeId,
+        sourceWidgetName: widgetName,
+        disambiguatingSourceNodeId: sourceNodeId
+      })
     }
 
     // Create/retrieve the view from cache
@@ -1127,13 +1196,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           this,
           nodeId,
           widgetName,
-          input.label ?? subgraphInput.name
+          input.label ?? subgraphInput.name,
+          sourceNodeId
         ),
       this._makePromotionViewKey(
         String(subgraphInput.id),
         nodeId,
         widgetName,
-        input.label ?? input.name
+        input.label ?? input.name,
+        sourceNodeId
       )
     )
 
@@ -1157,12 +1228,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (this.id === -1 || this._pendingPromotions.length === 0) return
 
     for (const entry of this._pendingPromotions) {
-      usePromotionStore().promote(
-        this.rootGraph.id,
-        this.id,
-        entry.interiorNodeId,
-        entry.widgetName
-      )
+      usePromotionStore().promote(this.rootGraph.id, this.id, entry)
     }
 
     this._pendingPromotions = []
@@ -1318,11 +1384,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   /** Clear the DOM position override for a promoted view's interior widget. */
   private _clearDomOverrideForView(view: PromotedWidgetView): void {
-    const node = this.subgraph.getNodeById(view.sourceNodeId)
-    if (!node) return
-    const interiorWidget = node.widgets?.find(
-      (w: IBaseWidget) => w.name === view.sourceWidgetName
+    const resolved = resolveConcretePromotedWidget(
+      this,
+      view.sourceNodeId,
+      view.sourceWidgetName,
+      view.disambiguatingSourceNodeId
     )
+    if (resolved.status !== 'resolved') return
+
+    const interiorWidget = resolved.resolved.widget
     if (
       interiorWidget &&
       'id' in interiorWidget &&
@@ -1347,7 +1417,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           String(input._subgraphSlot.id),
           view.sourceNodeId,
           view.sourceWidgetName,
-          inputName
+          inputName,
+          view.disambiguatingSourceNodeId
         )
       )
     }
@@ -1357,20 +1428,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.ensureWidgetRemoved(widget)
   }
 
-  override removeWidgetByName(name: string): void {
-    const widget = this.widgets.find((w) => w.name === name)
-    if (widget) this.ensureWidgetRemoved(widget)
-  }
-
   override ensureWidgetRemoved(widget: IBaseWidget): void {
     if (isPromotedWidgetView(widget)) {
       this._clearDomOverrideForView(widget)
-      usePromotionStore().demote(
-        this.rootGraph.id,
-        this.id,
-        widget.sourceNodeId,
-        widget.sourceWidgetName
-      )
+      usePromotionStore().demote(this.rootGraph.id, this.id, widget)
       this._removePromotedView(widget)
     }
     for (const input of this.inputs) {
@@ -1472,10 +1533,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this.rootGraph.id,
       this.id
     )
-    this.properties.proxyWidgets = entries.map((e) => [
-      e.interiorNodeId,
-      e.widgetName
-    ])
+    this.properties.proxyWidgets = this._serializeEntries(entries)
 
     return super.serialize()
   }

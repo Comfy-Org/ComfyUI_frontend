@@ -27,6 +27,7 @@ import {
 } from '@/stores/widgetValueStore'
 
 import {
+  createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState,
@@ -78,9 +79,9 @@ function setPromotions(
   usePromotionStore().setPromotions(
     subgraphNode.rootGraph.id,
     subgraphNode.id,
-    entries.map(([interiorNodeId, widgetName]) => ({
-      interiorNodeId,
-      widgetName
+    entries.map(([sourceNodeId, sourceWidgetName]) => ({
+      sourceNodeId,
+      sourceWidgetName
     }))
   )
 }
@@ -114,6 +115,21 @@ describe(createPromotedWidgetView, () => {
     const view = createPromotedWidgetView(subgraphNode, '42', 'myWidget')
     expect(view.sourceNodeId).toBe('42')
     expect(view.sourceWidgetName).toBe('myWidget')
+    expect(view.disambiguatingSourceNodeId).toBeUndefined()
+  })
+
+  test('exposes disambiguatingSourceNodeId when provided', () => {
+    const [subgraphNode] = setupSubgraph()
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      '42',
+      'myWidget',
+      undefined,
+      '99'
+    )
+    expect(view.sourceNodeId).toBe('42')
+    expect(view.sourceWidgetName).toBe('myWidget')
+    expect(view.disambiguatingSourceNodeId).toBe('99')
   })
 
   test('name defaults to widgetName when no displayName given', () => {
@@ -454,8 +470,8 @@ describe('SubgraphNode.widgets getter', () => {
       store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
     ).toStrictEqual([
       {
-        interiorNodeId: String(innerNode.id),
-        widgetName: 'picker'
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'picker'
       }
     ])
   })
@@ -497,8 +513,8 @@ describe('SubgraphNode.widgets getter', () => {
 
     expect(promotions).toHaveLength(1)
     expect(promotions[0]).toStrictEqual({
-      interiorNodeId: String(secondNode.id),
-      widgetName: 'picker'
+      sourceNodeId: String(secondNode.id),
+      sourceWidgetName: 'picker'
     })
     expect(subgraphNode.widgets).toHaveLength(1)
     expect(subgraphNode.widgets[0].value).toBe('b')
@@ -591,18 +607,14 @@ describe('SubgraphNode.widgets getter', () => {
     subgraph.inputNode.slots[0].connect(linkedInputA, linkedNodeA)
     subgraph.inputNode.slots[0].connect(linkedInputB, linkedNodeB)
 
-    usePromotionStore().promote(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      String(promotedNode.id),
-      'string_a'
-    )
-    usePromotionStore().promote(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      String(linkedNodeA.id),
-      'string_a'
-    )
+    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
+      sourceNodeId: String(promotedNode.id),
+      sourceWidgetName: 'string_a'
+    })
+    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
+      sourceNodeId: String(linkedNodeA.id),
+      sourceWidgetName: 'string_a'
+    })
 
     const widgets = promotedWidgets(subgraphNode)
     expect(widgets).toHaveLength(2)
@@ -651,12 +663,10 @@ describe('SubgraphNode.widgets getter', () => {
     subgraph.add(independentNode)
 
     subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
-    usePromotionStore().promote(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      String(independentNode.id),
-      'string_a'
-    )
+    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
+      sourceNodeId: String(independentNode.id),
+      sourceWidgetName: 'string_a'
+    })
 
     const widgets = promotedWidgets(subgraphNode)
     const linkedView = widgets.find(
@@ -733,8 +743,8 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.id
     )
     expect(promotions).toStrictEqual([
-      { interiorNodeId: String(liveNode.id), widgetName: 'widgetA' },
-      { interiorNodeId: '9999', widgetName: 'widgetB' }
+      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' },
+      { sourceNodeId: '9999', sourceWidgetName: 'widgetB' }
     ])
   })
 
@@ -764,8 +774,8 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.id
     )
     expect(promotions).toStrictEqual([
-      { interiorNodeId: String(liveNode.id), widgetName: 'widgetA' },
-      { interiorNodeId: '9999', widgetName: 'widgetA' }
+      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' },
+      { sourceNodeId: '9999', sourceWidgetName: 'widgetA' }
     ])
   })
 
@@ -823,8 +833,8 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.id
     )
     expect(promotions).toStrictEqual([
-      { interiorNodeId: String(linkedNodeA.id), widgetName: 'string_a' },
-      { interiorNodeId: String(independentNode.id), widgetName: 'string_a' }
+      { sourceNodeId: String(linkedNodeA.id), sourceWidgetName: 'string_a' },
+      { sourceNodeId: String(independentNode.id), sourceWidgetName: 'string_a' }
     ])
   })
 
@@ -868,8 +878,8 @@ describe('SubgraphNode.widgets getter', () => {
     )
     expect(promotions).toStrictEqual([
       {
-        interiorNodeId: linkedEntry[0],
-        widgetName: linkedEntry[1]
+        sourceNodeId: linkedEntry[0],
+        sourceWidgetName: linkedEntry[1]
       }
     ])
   })
@@ -925,8 +935,8 @@ describe('SubgraphNode.widgets getter', () => {
     )
     expect(restoredPromotions).toStrictEqual([
       {
-        interiorNodeId: String(activeAliasNode.id),
-        widgetName: 'string_a'
+        sourceNodeId: String(activeAliasNode.id),
+        sourceWidgetName: 'string_a'
       }
     ])
 
@@ -1113,8 +1123,8 @@ describe('SubgraphNode.widgets getter', () => {
     )
     expect(entries).toStrictEqual([
       {
-        interiorNodeId: String(innerNodes[0].id),
-        widgetName: 'stringWidget'
+        sourceNodeId: String(innerNodes[0].id),
+        sourceWidgetName: 'stringWidget'
       }
     ])
   })
@@ -1142,8 +1152,8 @@ describe('SubgraphNode.widgets getter', () => {
     )
     expect(restoredEntries).toStrictEqual([
       {
-        interiorNodeId: String(innerNode.id),
-        widgetName: 'widgetA'
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'widgetA'
       }
     ])
   })
@@ -1280,8 +1290,8 @@ describe('SubgraphNode.widgets getter', () => {
 
     const promotions = usePromotionStore().getPromotions(graph.id, hostNode.id)
     expect(promotions).toStrictEqual([
-      { interiorNodeId: '20', widgetName: 'string_a' },
-      { interiorNodeId: '19', widgetName: 'string_a' }
+      { sourceNodeId: '20', sourceWidgetName: 'string_a' },
+      { sourceNodeId: '19', sourceWidgetName: 'string_a' }
     ])
 
     const linkedView = hostWidgets[0]
@@ -1416,8 +1426,8 @@ describe('SubgraphNode.widgets getter', () => {
     )
     expect(hydratedEntries).toStrictEqual([
       {
-        interiorNodeId: String(innerNode.id),
-        widgetName: 'widgetA'
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'widgetA'
       }
     ])
   })
@@ -1435,12 +1445,12 @@ describe('widgets getter caching', () => {
     const reconcileSpy = vi.spyOn(
       subgraphNode as unknown as {
         _buildPromotionReconcileState: (
-          entries: Array<{ interiorNodeId: string; widgetName: string }>,
+          entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
           linkedEntries: Array<{
             inputName: string
             inputKey: string
-            interiorNodeId: string
-            widgetName: string
+            sourceNodeId: string
+            sourceWidgetName: string
           }>
         ) => unknown
       },
@@ -1465,12 +1475,12 @@ describe('widgets getter caching', () => {
     const reconcileSpy = vi.spyOn(
       subgraphNode as unknown as {
         _buildPromotionReconcileState: (
-          entries: Array<{ interiorNodeId: string; widgetName: string }>,
+          entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
           linkedEntries: Array<{
             inputName: string
             inputKey: string
-            interiorNodeId: string
-            widgetName: string
+            sourceNodeId: string
+            sourceWidgetName: string
           }>
         ) => unknown
       },
@@ -1638,7 +1648,7 @@ describe('promote/demote cycle', () => {
       subgraphNode.id
     )
     expect(entries).toStrictEqual([
-      { interiorNodeId: innerIds[0], widgetName: 'widgetB' }
+      { sourceNodeId: innerIds[0], sourceWidgetName: 'widgetB' }
     ])
   })
 
@@ -1776,6 +1786,75 @@ describe('three-level nested value propagation', () => {
 
     concreteWidget.value = 999
     expect(subgraphNodeA.widgets[0].value).toBe(999)
+  })
+
+  test('nested duplicate-name promotions resolve and update independently by disambiguating source node id', () => {
+    const rootGraph = createTestRootGraph()
+
+    const innerSubgraph = createTestSubgraph({ rootGraph })
+    const firstTextNode = new LGraphNode('FirstTextNode')
+    firstTextNode.addWidget('text', 'text', '11111111111', () => {})
+    innerSubgraph.add(firstTextNode)
+
+    const secondTextNode = new LGraphNode('SecondTextNode')
+    secondTextNode.addWidget('text', 'text', '22222222222', () => {})
+    innerSubgraph.add(secondTextNode)
+
+    const outerSubgraph = createTestSubgraph({ rootGraph })
+    const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
+      id: 3,
+      parentGraph: outerSubgraph
+    })
+    outerSubgraph.add(innerSubgraphNode)
+
+    const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, {
+      id: 4,
+      parentGraph: rootGraph
+    })
+    rootGraph.add(outerSubgraphNode)
+
+    usePromotionStore().setPromotions(
+      innerSubgraphNode.rootGraph.id,
+      innerSubgraphNode.id,
+      [
+        { sourceNodeId: String(firstTextNode.id), sourceWidgetName: 'text' },
+        { sourceNodeId: String(secondTextNode.id), sourceWidgetName: 'text' }
+      ]
+    )
+
+    usePromotionStore().setPromotions(
+      outerSubgraphNode.rootGraph.id,
+      outerSubgraphNode.id,
+      [
+        {
+          sourceNodeId: String(innerSubgraphNode.id),
+          sourceWidgetName: 'text',
+          disambiguatingSourceNodeId: String(firstTextNode.id)
+        },
+        {
+          sourceNodeId: String(innerSubgraphNode.id),
+          sourceWidgetName: 'text',
+          disambiguatingSourceNodeId: String(secondTextNode.id)
+        }
+      ]
+    )
+
+    const widgets = promotedWidgets(outerSubgraphNode)
+    expect(widgets).toHaveLength(2)
+    expect(
+      widgets.map((widget) => widget.disambiguatingSourceNodeId)
+    ).toStrictEqual([String(firstTextNode.id), String(secondTextNode.id)])
+    expect(widgets.map((widget) => widget.value)).toStrictEqual([
+      '11111111111',
+      '22222222222'
+    ])
+
+    widgets[1].value = 'updated-second'
+
+    expect(firstTextNode.widgets?.[0]?.value).toBe('11111111111')
+    expect(secondTextNode.widgets?.[0]?.value).toBe('updated-second')
+    expect(widgets[0].value).toBe('11111111111')
+    expect(widgets[1].value).toBe('updated-second')
   })
 })
 
@@ -2179,12 +2258,12 @@ describe('promoted combo rendering', () => {
     )
 
     expect(promotions).toContainEqual({
-      interiorNodeId: String(subgraphNodeA.id),
-      widgetName: 'lora_name'
+      sourceNodeId: String(subgraphNodeA.id),
+      sourceWidgetName: 'lora_name'
     })
     expect(promotions).not.toContainEqual({
-      interiorNodeId: String(innerNode.id),
-      widgetName: 'lora_name'
+      sourceNodeId: String(innerNode.id),
+      sourceWidgetName: 'lora_name'
     })
   })
 
