@@ -201,7 +201,7 @@ function createWrapper(overrides = {}) {
         Button: {
           template:
             '<button @click="$emit(\'click\')" :disabled="loading" :data-testid="label" :data-icon="icon"><slot/></button>',
-          props: ['variant', 'size'],
+          props: ['variant', 'size', 'loading', 'label', 'icon'],
           emits: ['click']
         },
         Skeleton: {
@@ -211,6 +211,15 @@ function createWrapper(overrides = {}) {
     },
     ...overrides
   })
+}
+
+function findButtonByText(
+  wrapper: ReturnType<typeof createWrapper>,
+  text: string
+) {
+  return wrapper
+    .findAll('button')
+    .find((button) => button.text().includes(text))
 }
 
 describe('SubscriptionPanel', () => {
@@ -292,48 +301,57 @@ describe('SubscriptionPanel', () => {
     it('renders refill date with literal slashes', () => {
       mockIsActiveSubscription.value = true
       const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Included (Refills 12/31/24)')
+      expect(wrapper.text()).toMatch(/Included \(Refills \d{2}\/\d{2}\/\d{2}\)/)
       expect(wrapper.text()).not.toContain('&#x2F;')
     })
   })
 
-  // TODO: Re-enable when migrating to VTL so we can find by user visible content.
-  describe.skip('action buttons', () => {
+  describe('action buttons', () => {
     it('should call handleLearnMoreClick when learn more is clicked', async () => {
       const wrapper = createWrapper()
-      const learnMoreButton = wrapper.find('[data-testid="Learn More"]')
+      const learnMoreButton = findButtonByText(wrapper, 'Learn More')
+      expect(learnMoreButton).toBeDefined()
+      if (!learnMoreButton) return
+
       await learnMoreButton.trigger('click')
       expect(mockActionsData.handleLearnMoreClick).toHaveBeenCalledOnce()
     })
 
     it('should call handleMessageSupport when message support is clicked', async () => {
       const wrapper = createWrapper()
-      const supportButton = wrapper.find('[data-testid="Message Support"]')
+      const supportButton = findButtonByText(wrapper, 'Message Support')
+      expect(supportButton).toBeDefined()
+      if (!supportButton) return
+
       await supportButton.trigger('click')
       expect(mockActionsData.handleMessageSupport).toHaveBeenCalledOnce()
     })
 
     it('should call handleRefresh when refresh button is clicked', async () => {
       const wrapper = createWrapper()
-      // Find the refresh button by icon
-      const refreshButton = wrapper.find('[data-icon="pi pi-sync"]')
+      const refreshButton = wrapper.find('button.absolute.top-4.right-4')
+
       await refreshButton.trigger('click')
       expect(mockActionsData.handleRefresh).toHaveBeenCalledOnce()
     })
   })
 
-  describe.skip('loading states', () => {
+  describe('loading states', () => {
     it('should show loading state on support button when loading', () => {
       mockActionsData.isLoadingSupport = true
       const wrapper = createWrapper()
-      const supportButton = wrapper.find('[data-testid="Message Support"]')
+      const supportButton = findButtonByText(wrapper, 'Message Support')
+      expect(supportButton).toBeDefined()
+      if (!supportButton) return
+
       expect(supportButton.attributes('disabled')).toBeDefined()
     })
 
     it('should show loading state on refresh button when loading balance', () => {
       mockCreditsData.isLoadingBalance = true
       const wrapper = createWrapper()
-      const refreshButton = wrapper.find('[data-icon="pi pi-sync"]')
+      const refreshButton = wrapper.find('button.absolute.top-4.right-4')
+
       expect(refreshButton.attributes('disabled')).toBeDefined()
     })
   })

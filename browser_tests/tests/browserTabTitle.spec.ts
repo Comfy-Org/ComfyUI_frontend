@@ -19,24 +19,21 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
         .toBe(`*${workflowName} - ComfyUI`)
     })
 
-    // Failing on CI
-    // Cannot reproduce locally
-    test.skip('Can display workflow name with unsaved changes', async ({
+    test('Can display workflow name with unsaved changes', async ({
       comfyPage
     }) => {
-      const workflowName = await comfyPage.page.evaluate(async () => {
-        return (window.app!.extensionManager as WorkspaceStore).workflow
-          .activeWorkflow?.filename
-      })
-      expect(await comfyPage.page.title()).toBe(`${workflowName} - ComfyUI`)
-
-      await comfyPage.menu.topbar.saveWorkflow('test')
-      expect(await comfyPage.page.title()).toBe('test - ComfyUI')
+      const workflowName = `test-${Date.now()}`
+      await comfyPage.menu.topbar.saveWorkflow(workflowName)
+      await expect
+        .poll(() => comfyPage.page.title())
+        .toBe(`${workflowName} - ComfyUI`)
 
       const textBox = comfyPage.widgetTextBox
       await textBox.fill('Hello World')
       await comfyPage.canvasOps.clickEmptySpace()
-      expect(await comfyPage.page.title()).toBe(`*test - ComfyUI`)
+      await expect
+        .poll(() => comfyPage.page.title())
+        .toBe(`*${workflowName} - ComfyUI`)
 
       // Delete the saved workflow for cleanup.
       await comfyPage.page.evaluate(async () => {

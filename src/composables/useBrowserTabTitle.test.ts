@@ -133,9 +133,11 @@ describe('useBrowserTabTitle', () => {
       isModified: true,
       isPersisted: true
     }
-    useBrowserTabTitle()
+    const scope: EffectScope = effectScope()
+    scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('myFlow - ComfyUI')
+    scope.stop()
   })
 
   it('hides asterisk while Shift key is held', async () => {
@@ -150,14 +152,16 @@ describe('useBrowserTabTitle', () => {
       isModified: true,
       isPersisted: true
     }
-    useBrowserTabTitle()
+    const scope: EffectScope = effectScope()
+    scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('myFlow - ComfyUI')
+    scope.stop()
   })
 
   // Fails when run together with other tests. Suspect to be caused by leaked
   // state from previous tests.
-  it.skip('disables workflow title when menu disabled', async () => {
+  it('disables workflow title when menu disabled', async () => {
     vi.mocked(settingStore.get).mockReturnValue('Disabled')
     workflowStore.activeWorkflow = {
       filename: 'myFlow',

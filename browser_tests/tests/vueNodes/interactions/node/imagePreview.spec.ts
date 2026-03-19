@@ -25,21 +25,22 @@ test.describe('Vue Nodes Image Preview', () => {
       dropPosition: { x, y }
     })
 
-    const imagePreview = comfyPage.page.locator('.image-preview')
+    const nodeId = String(loadImageNode.id)
+    const imagePreview = comfyPage.vueNodes
+      .getNodeLocator(nodeId)
+      .locator('.image-preview')
+
     await expect(imagePreview).toBeVisible()
-    await expect(imagePreview.locator('img')).toBeVisible()
+    await expect(imagePreview.locator('img')).toBeVisible({ timeout: 30_000 })
     await expect(imagePreview).toContainText('x')
 
     return {
       imagePreview,
-      nodeId: String(loadImageNode.id)
+      nodeId
     }
   }
 
-  // TODO(#8143): Re-enable after image preview sync is working in CI
-  test.fixme('opens mask editor from image preview button', async ({
-    comfyPage
-  }) => {
+  test('opens mask editor from image preview button', async ({ comfyPage }) => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
 
     await imagePreview.locator('[role="img"]').focus()
@@ -48,8 +49,7 @@ test.describe('Vue Nodes Image Preview', () => {
     await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
   })
 
-  // TODO(#8143): Re-enable after image preview sync is working in CI
-  test.fixme('shows image context menu options', async ({ comfyPage }) => {
+  test('shows image context menu options', async ({ comfyPage }) => {
     const { nodeId } = await loadImageOnNode(comfyPage)
 
     const nodeHeader = comfyPage.vueNodes

@@ -1,5 +1,5 @@
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
   describe('extractFilesFromDragEvent', () => {
@@ -98,19 +98,28 @@ describe('eventUtils', () => {
       expect(actual).toEqual([file1, file2])
     })
 
-    // Skip until we can setup MSW
-    it.skip('should handle drops with URLs', async () => {
+    it('should handle drops with URLs', async () => {
       const urlWithWorkflow = 'https://fakewebsite.notreal/fake_workflow.json'
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(
+          new Response(new Blob(['{"nodes":[]}'], { type: 'application/json' }))
+        )
 
       const dataTransfer = new DataTransfer()
       dataTransfer.setData('text/uri-list', urlWithWorkflow)
       dataTransfer.setData('text/x-moz-url', urlWithWorkflow)
 
-      const actual = await extractFilesFromDragEvent(
-        new FakeDragEvent('drop', { dataTransfer })
-      )
-      expect(actual.length).toBe(1)
-      expect(actual[0]).toBeInstanceOf(File)
+      try {
+        const actual = await extractFilesFromDragEvent(
+          new FakeDragEvent('drop', { dataTransfer })
+        )
+        expect(fetchSpy).toHaveBeenCalledWith(urlWithWorkflow)
+        expect(actual.length).toBe(1)
+        expect(actual[0]).toBeInstanceOf(File)
+      } finally {
+        fetchSpy.mockRestore()
+      }
     })
   })
 })
