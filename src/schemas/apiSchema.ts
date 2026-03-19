@@ -469,6 +469,7 @@ const zSettings = z.object({
   'Comfy.RightSidePanel.IsOpen': z.boolean(),
   'Comfy.RightSidePanel.ShowErrorsTab': z.boolean(),
   'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean(),
+  'Comfy.Canvas.AlignNodesWhileDragging': z.boolean(),
   'LiteGraph.Group.SelectChildrenOnClick': z.boolean()
 })
 

@@ -1010,6 +1010,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.10.5'
   },
   {
+    id: 'Comfy.Canvas.AlignNodesWhileDragging',
+    category: ['LiteGraph', 'Canvas', 'AlignNodesWhileDragging'],
+    name: 'Align nodes while dragging',
+    tooltip:
+      'When enabled in Nodes 2.0, dragging a node selection near another node will snap matching edges and centers together.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.42.0'
+  },
+  {
     id: 'LiteGraph.Reroute.SplineOffset',
     name: 'Reroute spline offset',
     tooltip: 'The bezier control point offset from the reroute centre point',

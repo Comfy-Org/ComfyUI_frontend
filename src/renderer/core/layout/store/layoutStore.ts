@@ -30,6 +30,7 @@ import type {
   LinkSegmentLayout,
   MoveNodeOperation,
   MoveRerouteOperation,
+  NodeAlignmentGuide,
   NodeBoundsUpdate,
   NodeId,
   NodeLayout,
@@ -144,6 +145,7 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Vue dragging state for selection toolbox (public ref for direct mutation)
   public isDraggingVueNodes = ref(false)
+  public vueDragSnapGuides = ref<NodeAlignmentGuide[]>([])
   // Vue resizing state to prevent drag from activating during resize
   public isResizingVueNodes = ref(false)
 

@@ -50,6 +50,12 @@ const snapToGrid = computed({
   set: (value) => settingStore.set('pysssss.SnapToGrid', value)
 })
 
+const alignNodesWhileDragging = computed({
+  get: () => settingStore.get('Comfy.Canvas.AlignNodesWhileDragging'),
+  set: (value) =>
+    settingStore.set('Comfy.Canvas.AlignNodesWhileDragging', value)
+})
+
 // CONNECTION LINKS settings
 const linkShape = computed({
   get: () => settingStore.get('Comfy.Graph.LinkMarkers'),
@@ -159,6 +165,11 @@ function openFullSettings() {
           v-model="snapToGrid"
           :label="t('rightSidePanel.globalSettings.snapNodesToGrid')"
           :tooltip="t('settings.pysssss_SnapToGrid.tooltip')"
+        />
+        <FieldSwitch
+          v-model="alignNodesWhileDragging"
+          :label="t('settings.Comfy_Canvas_AlignNodesWhileDragging.name')"
+          :tooltip="t('settings.Comfy_Canvas_AlignNodesWhileDragging.tooltip')"
         />
       </div>
     </PropertiesAccordionItem>

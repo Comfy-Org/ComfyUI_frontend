@@ -55,6 +55,10 @@
     "name": "Show selection toolbox",
     "tooltip": "Display a floating toolbar when nodes are selected, providing quick access to common actions."
   },
+  "Comfy_Canvas_AlignNodesWhileDragging": {
+    "name": "Align nodes while dragging",
+    "tooltip": "When enabled in Nodes 2.0, dragging a node selection near another node will snap matching edges and centers together."
+  },
   "Comfy_ConfirmClear": {
     "name": "Require confirmation when clearing workflow"
   },

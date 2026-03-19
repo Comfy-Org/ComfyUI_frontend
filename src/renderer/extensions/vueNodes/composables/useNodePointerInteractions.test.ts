@@ -24,11 +24,13 @@ vi.mock('@/renderer/extensions/vueNodes/layout/useNodeDrag', () => {
   const startDrag = vi.fn()
   const handleDrag = vi.fn()
   const endDrag = vi.fn()
+  const cancelDrag = vi.fn()
   return {
     useNodeDrag: () => ({
       startDrag,
       handleDrag,
-      endDrag
+      endDrag,
+      cancelDrag
     })
   }
 })
@@ -93,6 +95,7 @@ const mockData = vi.hoisted(() => {
 vi.mock('@/renderer/core/layout/store/layoutStore', () => {
   const isDraggingVueNodes = ref(false)
   const isResizingVueNodes = ref(false)
+  const vueDragSnapGuides = ref([])
   const fakeNodeLayoutRef = ref(mockData.fakeNodeLayout)
   const getNodeLayoutRef = vi.fn(() => fakeNodeLayoutRef)
   const setSource = vi.fn()
@@ -100,6 +103,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => {
     layoutStore: {
       isDraggingVueNodes,
       isResizingVueNodes,
+      vueDragSnapGuides,
       getNodeLayoutRef,
       setSource
     }
@@ -136,6 +140,9 @@ describe('useNodePointerInteractions', () => {
     vi.resetAllMocks()
     selectedItemsState.items = []
     setActivePinia(createTestingPinia())
+    layoutStore.isDraggingVueNodes.value = false
+    layoutStore.isResizingVueNodes.value = false
+    layoutStore.vueDragSnapGuides.value = []
   })
 
   it('should only start drag on left-click', async () => {
@@ -184,6 +191,7 @@ describe('useNodePointerInteractions', () => {
 
   it('should handle drag termination via cancel and context menu', async () => {
     const { handleNodeSelect } = useNodeEventHandlers()
+    const { cancelDrag } = useNodeDrag()
 
     const { pointerHandlers } = useNodePointerInteractions('test-node-123')
 
@@ -229,6 +237,7 @@ describe('useNodePointerInteractions', () => {
     pointerHandlers.onContextmenu(contextMenuEvent)
 
     expect(preventDefaultSpy).toHaveBeenCalled()
+    expect(cancelDrag).toHaveBeenCalledTimes(1)
   })
 
   it('should integrate with layout store dragging state', async () => {

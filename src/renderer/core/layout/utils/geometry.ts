@@ -14,6 +14,14 @@ export function isBoundsEqual(a: Bounds, b: Bounds): boolean {
   )
 }
 
+export function translateBounds(bounds: Bounds, delta: Point): Bounds {
+  return {
+    ...bounds,
+    x: bounds.x + delta.x,
+    y: bounds.y + delta.y
+  }
+}
+
 export function isSizeEqual(a: Size, b: Size): boolean {
   return a.width === b.width && a.height === b.height
 }

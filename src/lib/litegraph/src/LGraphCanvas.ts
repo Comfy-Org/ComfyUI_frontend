@@ -5009,6 +5009,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       if (!LiteGraph.vueNodesMode || !this.overlayCtx) {
         this._drawConnectingLinks(ctx)
+        if (LiteGraph.vueNodesMode) {
+          this._drawVueDragAlignmentGuides(ctx)
+        }
       } else {
         this._drawOverlayLinks()
       }
@@ -5113,7 +5116,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height)
 
-    if (!this.linkConnector.isConnecting) return
+    const hasDragGuides = layoutStore.vueDragSnapGuides.value.length > 0
+    if (!this.linkConnector.isConnecting && !hasDragGuides) return
 
     octx.save()
 
@@ -5122,9 +5126,37 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.ds.toCanvasContext(octx)
 
-    this._drawConnectingLinks(octx)
+    if (this.linkConnector.isConnecting) {
+      this._drawConnectingLinks(octx)
+    }
+    this._drawVueDragAlignmentGuides(octx)
 
     octx.restore()
+  }
+
+  private _drawVueDragAlignmentGuides(ctx: CanvasRenderingContext2D): void {
+    const guides = layoutStore.vueDragSnapGuides.value
+    if (!guides.length) return
+
+    const scale = this.ds.scale || 1
+    ctx.save()
+    ctx.beginPath()
+    ctx.lineWidth = 1 / scale
+    ctx.strokeStyle = '#ff4d4f'
+    ctx.setLineDash([6 / scale, 4 / scale])
+
+    for (const guide of guides) {
+      if (guide.axis === 'vertical') {
+        ctx.moveTo(guide.coordinate, guide.start)
+        ctx.lineTo(guide.coordinate, guide.end)
+      } else {
+        ctx.moveTo(guide.start, guide.coordinate)
+        ctx.lineTo(guide.end, guide.coordinate)
+      }
+    }
+
+    ctx.stroke()
+    ctx.restore()
   }
 
   /** Get the target snap / highlight point in graph space */
