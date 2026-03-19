@@ -2935,20 +2935,26 @@ export class Subgraph
     ioNodeId: number,
     slotIndex: number
   ): void {
-    for (let i = 0; i < linkIds.length; i++) {
-      if (this._links.has(linkIds[i])) continue
+    const repaired = linkIds.map((id) =>
+      this._links.has(id)
+        ? id
+        : (this._findLinkBySlot(ioNodeId, slotIndex)?.id ?? id)
+    )
+    repaired.forEach((id, i) => {
+      linkIds[i] = id
+    })
+  }
 
-      // Find a surviving link that connects to this IO slot
-      for (const link of this._links.values()) {
-        const isOrigin =
-          link.origin_id === ioNodeId && link.origin_slot === slotIndex
-        const isTarget =
-          link.target_id === ioNodeId && link.target_slot === slotIndex
-        if (isOrigin || isTarget) {
-          linkIds[i] = link.id
-          break
-        }
-      }
+  private _findLinkBySlot(
+    nodeId: number,
+    slotIndex: number
+  ): LLink | undefined {
+    for (const link of this._links.values()) {
+      if (
+        (link.origin_id === nodeId && link.origin_slot === slotIndex) ||
+        (link.target_id === nodeId && link.target_slot === slotIndex)
+      )
+        return link
     }
   }
 
