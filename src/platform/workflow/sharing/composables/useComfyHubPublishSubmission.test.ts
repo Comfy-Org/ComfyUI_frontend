@@ -97,7 +97,7 @@ describe('useComfyHubPublishSubmission', () => {
     })
   })
 
-  it('maps imageComparison to image_comparison', async () => {
+  it('passes imageComparison thumbnail type to service for normalization', async () => {
     const beforeFile = new File(['before'], 'before.png', { type: 'image/png' })
     const afterFile = new File(['after'], 'after.png', { type: 'image/png' })
 
@@ -113,7 +113,7 @@ describe('useComfyHubPublishSubmission', () => {
 
     expect(mockPublishWorkflow).toHaveBeenCalledWith(
       expect.objectContaining({
-        thumbnailType: 'image_comparison'
+        thumbnailType: 'imageComparison'
       })
     )
   })

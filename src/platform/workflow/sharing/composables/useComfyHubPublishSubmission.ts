@@ -3,20 +3,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
-import type {
-  ComfyHubApiThumbnailType,
-  ComfyHubPublishFormData,
-  ThumbnailType
-} from '@/platform/workflow/sharing/types/comfyHubTypes'
+import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { normalizeTags } from '@/platform/workflow/sharing/utils/normalizeTags'
-
-function mapThumbnailType(type: ThumbnailType): ComfyHubApiThumbnailType {
-  if (type === 'imageComparison') {
-    return 'image_comparison'
-  }
-
-  return type
-}
 
 function getFileContentType(file: File): string {
   return file.type || 'application/octet-stream'
@@ -81,15 +69,15 @@ export function useComfyHubPublishSubmission() {
       await workflowShareService.getShareableAssets()
     )
 
-    const thumbnailType = mapThumbnailType(formData.thumbnailType)
     const thumbnailTokenOrUrl =
-      formData.thumbnailFile && thumbnailType !== 'image_comparison'
+      formData.thumbnailFile && formData.thumbnailType !== 'imageComparison'
         ? await uploadFileAndGetToken(formData.thumbnailFile)
         : formData.comparisonBeforeFile
           ? await uploadFileAndGetToken(formData.comparisonBeforeFile)
           : undefined
     const thumbnailComparisonTokenOrUrl =
-      thumbnailType === 'image_comparison' && formData.comparisonAfterFile
+      formData.thumbnailType === 'imageComparison' &&
+      formData.comparisonAfterFile
         ? await uploadFileAndGetToken(formData.comparisonAfterFile)
         : undefined
 
@@ -111,7 +99,7 @@ export function useComfyHubPublishSubmission() {
       models: formData.models.length > 0 ? formData.models : undefined,
       customNodes:
         formData.customNodes.length > 0 ? formData.customNodes : undefined,
-      thumbnailType,
+      thumbnailType: formData.thumbnailType,
       thumbnailTokenOrUrl,
       thumbnailComparisonTokenOrUrl,
       sampleImageTokensOrUrls,
