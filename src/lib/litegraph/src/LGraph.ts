@@ -1625,42 +1625,66 @@ export class LGraph
    * output.links and the graph's _links map.
    */
   _removeDuplicateLinks(): void {
-    const seen = new Map<string, LinkId>()
-    const toRemove: LinkId[] = []
-
+    // Group all link IDs by their connection tuple.
+    const groups = new Map<string, LinkId[]>()
     for (const [id, link] of this._links) {
       const key = LGraph._linkTupleKey(link)
-      if (seen.has(key)) {
-        const existingId = seen.get(key)!
-        // Keep the link that the input side references
-        const node = this.getNodeById(link.target_id)
-        const input = node?.inputs?.[link.target_slot]
-        if (input?.link === id) {
-          toRemove.push(existingId)
-          seen.set(key, id)
-        } else {
-          toRemove.push(id)
-        }
-      } else {
-        seen.set(key, id)
+      let group = groups.get(key)
+      if (!group) {
+        group = []
+        groups.set(key, group)
       }
+      group.push(id)
     }
 
-    for (const id of toRemove) {
-      const link = this._links.get(id)
-      if (!link) continue
+    for (const [, ids] of groups) {
+      if (ids.length <= 1) continue
 
-      // Remove from origin node's output.links array
-      const originNode = this.getNodeById(link.origin_id)
-      if (originNode) {
-        const output = originNode.outputs?.[link.origin_slot]
-        if (output?.links) {
-          const idx = output.links.indexOf(id)
-          if (idx !== -1) output.links.splice(idx, 1)
+      const sampleLink = this._links.get(ids[0])!
+      const node = this.getNodeById(sampleLink.target_id)
+
+      // Find which link ID is actually referenced by any input on the target
+      // node. Cannot rely on target_slot index because widget-to-input
+      // conversions during configure() can shift slot indices.
+      let keepId: LinkId | undefined
+      if (node) {
+        for (const input of node.inputs ?? []) {
+          const match = ids.find((id) => input.link === id)
+          if (match != null) {
+            keepId = match
+            break
+          }
         }
       }
+      keepId ??= ids[0]
 
-      this._links.delete(id)
+      for (const id of ids) {
+        if (id === keepId) continue
+
+        const link = this._links.get(id)
+        if (!link) continue
+
+        // Remove from origin node's output.links array
+        const originNode = this.getNodeById(link.origin_id)
+        if (originNode) {
+          const output = originNode.outputs?.[link.origin_slot]
+          if (output?.links) {
+            const idx = output.links.indexOf(id)
+            if (idx !== -1) output.links.splice(idx, 1)
+          }
+        }
+
+        this._links.delete(id)
+      }
+
+      // Ensure input.link points to the surviving link
+      if (node) {
+        for (const input of node.inputs ?? []) {
+          if (ids.includes(input.link as LinkId) && input.link !== keepId) {
+            input.link = keepId
+          }
+        }
+      }
     }
   }
 
