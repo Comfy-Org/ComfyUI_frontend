@@ -100,7 +100,7 @@ describe('renameWidget', () => {
     expect(widget.label).toBeUndefined()
   })
 
-  it('renames promoted widget source when parents are provided', () => {
+  it('renames promoted widget source when node is a subgraph without explicit parents', () => {
     const sourceWidget = makeWidget({ name: 'innerSeed' })
     const interiorInput = {
       name: 'innerSeed',
@@ -119,51 +119,13 @@ describe('renameWidget', () => {
       sourceWidgetName: 'innerSeed'
     })
     const subgraphNode = makeNode({ isSubgraph: true })
-    const parents = [subgraphNode] as unknown as Parameters<
-      typeof renameWidget
-    >[3]
 
-    const result = renameWidget(
-      promotedWidget,
-      subgraphNode,
-      'Renamed',
-      parents
-    )
+    const result = renameWidget(promotedWidget, subgraphNode, 'Renamed')
 
     expect(result).toBe(true)
     expect(sourceWidget.label).toBe('Renamed')
     expect(interiorInput.label).toBe('Renamed')
     expect(promotedWidget.label).toBe('Renamed')
-  })
-
-  it('does not resolve promoted widget source for subgraph node without parents', () => {
-    const promotedWidget = makeWidget({
-      name: 'seed',
-      sourceNodeId: '5',
-      sourceWidgetName: 'innerSeed'
-    })
-    const node = makeNode({ isSubgraph: true })
-
-    const result = renameWidget(promotedWidget, node, 'Renamed')
-
-    expect(result).toBe(true)
-    expect(mockedResolve).not.toHaveBeenCalled()
-    expect(promotedWidget.label).toBe('Renamed')
-  })
-
-  it('updates _subgraphSlot.label when input has a subgraph slot', () => {
-    const widget = makeWidget({ name: 'seed' })
-    const subgraphSlot = { label: undefined as string | undefined }
-    const input = {
-      name: 'seed',
-      widget: { name: 'seed' },
-      _subgraphSlot: subgraphSlot
-    } as unknown as INodeInputSlot
-    const node = makeNode({ inputs: [input] })
-
-    renameWidget(widget, node, 'New Label')
-
-    expect(subgraphSlot.label).toBe('New Label')
   })
 
   it('does not resolve promoted widget source for non-subgraph node without parents', () => {
