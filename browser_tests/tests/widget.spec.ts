@@ -273,38 +273,6 @@ test.describe(
   'Animated image widget',
   { tag: ['@screenshot', '@widget'] },
   () => {
-    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3718
-    test.skip('Shows preview of uploaded animated image', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/load_animated_webp')
-
-      // Get position of the load animated webp node
-      const nodes = await comfyPage.nodeOps.getNodeRefsByType(
-        'DevToolsLoadAnimatedImageTest'
-      )
-      const loadAnimatedWebpNode = nodes[0]
-      const { x, y } = await loadAnimatedWebpNode.getPosition()
-
-      // Drag and drop image file onto the load animated webp node
-      await comfyPage.dragDrop.dragAndDropFile('animated_webp.webp', {
-        dropPosition: { x, y }
-      })
-
-      // Expect the image preview to change automatically
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'animated_image_preview_drag_and_dropped.png'
-      )
-
-      // Move mouse and click on canvas to trigger render
-      await comfyPage.page.mouse.click(64, 64)
-
-      // Expect the image preview to change to the next frame of the animation
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'animated_image_preview_drag_and_dropped_next_frame.png'
-      )
-    })
-
     test('Can drag-and-drop animated webp image', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('widgets/load_animated_webp')
 

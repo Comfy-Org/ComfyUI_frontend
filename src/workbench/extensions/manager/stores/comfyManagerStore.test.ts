@@ -20,13 +20,15 @@ vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
 
 vi.mock('@/workbench/extensions/manager/composables/useManagerQueue', () => {
   const enqueueTaskMock = vi.fn()
+  const isProcessing = ref(false)
 
   return {
     useManagerQueue: () => ({
       statusMessage: ref(''),
       allTasksDone: ref(false),
       enqueueTask: enqueueTaskMock,
-      isProcessingTasks: ref(false)
+      isProcessing,
+      isProcessingTasks: isProcessing
     }),
     enqueueTask: enqueueTaskMock
   }
@@ -350,7 +352,7 @@ describe('useComfyManagerStore', () => {
     )
   })
 
-  describe.skip('isPackInstalling', () => {
+  describe('isPackInstalling', () => {
     it('should return false for packs not being installed', () => {
       const store = useComfyManagerStore()
       expect(store.isPackInstalling('test-pack')).toBe(false)
@@ -373,37 +375,6 @@ describe('useComfyManagerStore', () => {
 
       // Check that the pack is marked as installing
       expect(store.isPackInstalling('test-pack')).toBe(true)
-    })
-
-    it('should remove pack from installing list when explicitly removed', async () => {
-      const store = useComfyManagerStore()
-
-      // Call installPack
-      await store.installPack.call({
-        id: 'test-pack',
-        repository: 'https://github.com/test/test-pack',
-        channel: 'dev' as ManagerChannel,
-        mode: 'cache' as ManagerDatabaseSource,
-        selected_version: 'latest',
-        version: 'latest'
-      })
-
-      // Verify pack is installing
-      expect(store.isPackInstalling('test-pack')).toBe(true)
-
-      // Call installPack again for another pack to demonstrate multiple installs
-      await store.installPack.call({
-        id: 'another-pack',
-        repository: 'https://github.com/test/another-pack',
-        channel: 'dev' as ManagerChannel,
-        mode: 'cache' as ManagerDatabaseSource,
-        selected_version: 'latest',
-        version: 'latest'
-      })
-
-      // Both should be installing
-      expect(store.isPackInstalling('test-pack')).toBe(true)
-      expect(store.isPackInstalling('another-pack')).toBe(true)
     })
 
     it('should track multiple packs installing independently', async () => {
