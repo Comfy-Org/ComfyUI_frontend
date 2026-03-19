@@ -46,6 +46,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     getCanvas: () => app.canvas
   })
 }))
+vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
 
 // Get reference to mock canvas
 const mockCanvas = app.canvas
