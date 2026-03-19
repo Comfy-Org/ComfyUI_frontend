@@ -25,6 +25,7 @@ function renderWithDefaults<C>(
   options?: ComponentMountingOptions<C> & { setupUser?: boolean }
 ): RenderResult & { user: ReturnType<typeof userEvent.setup> | undefined } {
   const { setupUser = true, global: globalOptions, ...rest } = options ?? {}
+  const user = setupUser ? userEvent.setup() : undefined
 
   const result = render(
     component as Parameters<typeof render>[0],
@@ -40,7 +41,7 @@ function renderWithDefaults<C>(
 
   return {
     ...result,
-    user: setupUser ? userEvent.setup() : undefined
+    user
   }
 }
 
