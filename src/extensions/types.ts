@@ -21,7 +21,7 @@ export type StaticComfyMenuCommandGroup = StaticOnly<
   NonNullable<ComfyExtension['menuCommands']>[number]
 >
 
-export type ComfyExtensionActivationEvent =
+type ComfyExtensionActivationEvent =
   | '*'
   | 'onWidgets:contributes'
   | 'onCommands:contributes'
@@ -59,13 +59,13 @@ export interface ComfyExtensionLoadContext {
   readonly subscriptionRequired: boolean
 }
 
-export type ComfyExtensionEntry = () => Promise<Record<string, unknown>>
+type ComfyExtensionEntry = () => Promise<Record<string, unknown>>
 export type ComfyExtensionEntrance = Record<
   string,
   ComfyExtensionEntry | undefined
 >
 
-export interface ComfyExtensionPackage {
+interface ComfyExtensionPackage {
   name?: string
   path?: string
   config?: ComfyExtensionConfig

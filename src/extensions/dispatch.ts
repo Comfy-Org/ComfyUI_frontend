@@ -81,16 +81,19 @@ export const processExtensionSettings = _processExtensionSettings
 
 const { process: _processExtensionCommands, push: pushExtensionCommands } =
   defineProcessQueue<StaticComfyCommand>()
+/** @knipIgnoreUsedByStackedPR */
 export const processExtensionCommands = _processExtensionCommands
 
 const {
   process: _processExtensionMenuCommands,
   push: pushExtensionMenuCommands
 } = defineProcessQueue<StaticComfyMenuCommandGroup>()
+/** @knipIgnoreUsedByStackedPR */
 export const processExtensionMenuCommands = _processExtensionMenuCommands
 
 const {
   process: _processExtensionKeybindings,
   push: pushExtensionKeybindings
 } = defineProcessQueue<StaticComfyKeybinding>()
+/** @knipIgnoreUsedByStackedPR */
 export const processExtensionKeybindings = _processExtensionKeybindings
