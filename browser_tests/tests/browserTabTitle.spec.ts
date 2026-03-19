@@ -19,7 +19,8 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
         .toBe(`*${workflowName} - ComfyUI`)
     })
 
-    test('Can display workflow name with unsaved changes', async ({
+    // TODO: Flaky in CI — canvas click timeout (element not visible)
+    test.skip('Can display workflow name with unsaved changes', async ({
       comfyPage
     }) => {
       const workflowName = `test-${Date.now()}`
