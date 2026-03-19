@@ -114,11 +114,14 @@ jobs:
       - name: Pre-seed settings to skip onboarding
         shell: bash
         run: |
-          # Mark tutorial as completed so the template gallery doesn't appear
-          curl -sf -X POST http://127.0.0.1:8188/api/settings \
-            -H 'Content-Type: application/json' \
-            -d '{"Comfy.TutorialCompleted": true}'
-          echo "Pre-seeded Comfy.TutorialCompleted=true"
+          # Mark tutorial as completed so the template gallery doesn't appear.
+          # Try both /api/settings (new) and /settings (legacy) endpoints.
+          BODY='{"Comfy.TutorialCompleted": true}'
+          curl -sv -X POST http://127.0.0.1:8188/api/settings \
+            -H 'Content-Type: application/json' -d "$BODY" 2>&1 || true
+          curl -sv -X POST http://127.0.0.1:8188/settings \
+            -H 'Content-Type: application/json' -d "$BODY" 2>&1 || true
+          echo "Pre-seed attempted on both endpoints"
 
       - name: Install playwright-cli and Codex CLI
         shell: bash
