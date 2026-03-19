@@ -14,6 +14,7 @@ import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/
 import {
   syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
+  requestSlotLayoutSyncForAllNodes,
   useSlotElementTracking
 } from './useSlotElementTracking'
 
@@ -55,7 +56,10 @@ function createWrapperComponent(type: 'input' | 'output') {
  */
 async function mountAndRegisterSlot(type: 'input' | 'output') {
   const wrapper = mount(createWrapperComponent(type))
-  wrapper.vm.el = document.createElement('div')
+  const slotEl = document.createElement('div')
+  slotEl.getBoundingClientRect = vi.fn(() => new DOMRect(100, 200, 16, 16))
+  document.body.append(slotEl)
+  wrapper.vm.el = slotEl
   await nextTick()
   flushScheduledSlotLayoutSync()
   return wrapper
@@ -64,6 +68,7 @@ async function mountAndRegisterSlot(type: 'input' | 'output') {
 describe('useSlotElementTracking', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    document.body.innerHTML = ''
     layoutStore.initializeFromLiteGraph([])
     layoutStore.applyOperation({
       type: 'createNode',
@@ -134,9 +139,55 @@ describe('useSlotElementTracking', () => {
     expect(layoutStore.pendingSlotSync).toBe(true)
   })
 
+  it('keeps pendingSlotSync when all registered slots are hidden', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const hiddenSlot = document.createElement('div')
+
+    const registryStore = useNodeSlotRegistryStore()
+    const node = registryStore.ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: hiddenSlot,
+      index: SLOT_INDEX,
+      type: 'input'
+    })
+
+    layoutStore.setPendingSlotSync(true)
+    requestSlotLayoutSyncForAllNodes()
+
+    expect(layoutStore.pendingSlotSync).toBe(true)
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+  })
+
+  it('removes stale slot layouts when slot element is hidden', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const hiddenSlot = document.createElement('div')
+
+    const staleLayout: SlotLayout = {
+      nodeId: NODE_ID,
+      index: SLOT_INDEX,
+      type: 'input',
+      position: { x: 10, y: 20 },
+      bounds: { x: 6, y: 16, width: 8, height: 8 }
+    }
+    layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: staleLayout }])
+
+    const registryStore = useNodeSlotRegistryStore()
+    const node = registryStore.ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: hiddenSlot,
+      index: SLOT_INDEX,
+      type: 'input'
+    })
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+  })
+
   it('skips slot layout writeback when measured slot geometry is unchanged', () => {
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     const slotEl = document.createElement('div')
+    document.body.append(slotEl)
     slotEl.getBoundingClientRect = vi.fn(() => new DOMRect(100, 200, 16, 16))
 
     const registryStore = useNodeSlotRegistryStore()
