@@ -80,12 +80,17 @@ function isWidgetShownOnParents(
   return parents.some((parent) => {
     if (isPromotedWidgetView(widget)) {
       const sourceNodeId = getSourceNodeId(widget)
+      const interiorNodeId =
+        String(widgetNode.id) === String(parent.id)
+          ? widget.sourceNodeId
+          : String(widgetNode.id)
+
       if (
         sourceNodeId &&
         promotionStore.isPromoted(
           parent.rootGraph.id,
           parent.id,
-          widget.sourceNodeId,
+          interiorNodeId,
           widget.sourceWidgetName,
           sourceNodeId
         )
@@ -95,7 +100,7 @@ function isWidgetShownOnParents(
       return promotionStore.isPromoted(
         parent.rootGraph.id,
         parent.id,
-        widget.sourceNodeId,
+        interiorNodeId,
         widget.sourceWidgetName
       )
     }

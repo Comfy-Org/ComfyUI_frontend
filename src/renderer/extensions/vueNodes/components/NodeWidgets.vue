@@ -361,10 +361,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     widgetState,
     identity: { renderKey }
   } of uniqueWidgets) {
+    const hostNodeId = String(nodeId ?? '')
     const bareWidgetId = String(
       stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
     )
-    const isPromotedView = !!widget.nodeId
+    const promotionSourceNodeId =
+      widget.storeNodeId || widget.nodeId ? String(bareWidgetId) : undefined
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -384,8 +386,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const borderStyle =
       graphId &&
-      !isPromotedView &&
-      promotionStore.isPromotedByAny(graphId, String(bareWidgetId), widget.name)
+      promotionStore.isPromotedByAny(
+        graphId,
+        hostNodeId,
+        widget.storeName ?? widget.name,
+        promotionSourceNodeId
+      )
         ? 'ring ring-component-node-widget-promoted'
         : mergedOptions.advanced
           ? 'ring ring-component-node-widget-advanced'

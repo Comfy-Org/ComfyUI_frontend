@@ -7,15 +7,27 @@
     {
       "id": 4,
       "type": "f5d6b5f0-64e3-4d3e-bb28-d25d8a6c182f",
-      "pos": [689, 468],
-      "size": [400, 200],
+      "pos": [
+        689.0083557128902,
+        467.9999999999997
+      ],
+      "size": [
+        431.8999938964844,
+        206.60000610351562
+      ],
       "flags": {},
       "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {
-        "proxyWidgets": []
+        "proxyWidgets": [
+          [
+            "3",
+            "text",
+            "2"
+          ]
+        ]
       },
       "widgets_values": []
     }
@@ -38,11 +50,21 @@
         "name": "Inner Subgraph",
         "inputNode": {
           "id": -10,
-          "bounding": [330, 367, 120, 40]
+          "bounding": [
+            330,
+            367,
+            120,
+            40
+          ]
         },
         "outputNode": {
           "id": -20,
-          "bounding": [983, 367, 120, 40]
+          "bounding": [
+            983,
+            367,
+            120,
+            40
+          ]
         },
         "inputs": [],
         "outputs": [],
@@ -51,8 +73,14 @@
           {
             "id": 1,
             "type": "CLIPTextEncode",
-            "pos": [510, 166],
-            "size": [400, 200],
+            "pos": [
+              510,
+              166
+            ],
+            "size": [
+              400,
+              200
+            ],
             "flags": {},
             "order": 0,
             "mode": 0,
@@ -75,13 +103,21 @@
             "properties": {
               "Node name for S&R": "CLIPTextEncode"
             },
-            "widgets_values": ["11111111111"]
+            "widgets_values": [
+              "11111111111"
+            ]
           },
           {
             "id": 2,
             "type": "CLIPTextEncode",
-            "pos": [523, 438],
-            "size": [400, 200],
+            "pos": [
+              523,
+              438
+            ],
+            "size": [
+              400,
+              200
+            ],
             "flags": {},
             "order": 1,
             "mode": 0,
@@ -104,7 +140,9 @@
             "properties": {
               "Node name for S&R": "CLIPTextEncode"
             },
-            "widgets_values": ["22222222222"]
+            "widgets_values": [
+              "22222222222"
+            ]
           }
         ],
         "groups": [],
@@ -125,11 +163,21 @@
         "name": "Outer Subgraph",
         "inputNode": {
           "id": -10,
-          "bounding": [467, 446, 120, 40]
+          "bounding": [
+            467,
+            446,
+            120,
+            40
+          ]
         },
         "outputNode": {
           "id": -20,
-          "bounding": [932, 446, 120, 40]
+          "bounding": [
+            932,
+            446,
+            120,
+            40
+          ]
         },
         "inputs": [],
         "outputs": [],
@@ -138,8 +186,14 @@
           {
             "id": 3,
             "type": "9a3f232c-da11-4725-8927-b11e46d0cee4",
-            "pos": [647, 389],
-            "size": [400, 200],
+            "pos": [
+              647,
+              389
+            ],
+            "size": [
+              400,
+              200
+            ],
             "flags": {},
             "order": 0,
             "mode": 0,
@@ -147,8 +201,14 @@
             "outputs": [],
             "properties": {
               "proxyWidgets": [
-                ["1", "text"],
-                ["2", "text"]
+                [
+                  "1",
+                  "text"
+                ],
+                [
+                  "2",
+                  "text"
+                ]
               ]
             },
             "widgets_values": []
@@ -163,10 +223,13 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.9090909090909097,
-      "offset": [-83, -20]
+      "scale": 2.0975,
+      "offset": [
+        -581.4780189305006,
+        -356.3000030517576
+      ]
     },
-    "frontendVersion": "1.43.1"
+    "frontendVersion": "1.43.2"
   },
   "version": 0.4
 }

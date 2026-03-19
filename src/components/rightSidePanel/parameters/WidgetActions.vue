@@ -78,11 +78,16 @@ function handleHideInput() {
     const sourceNodeId = getSourceNodeId(widget)
 
     for (const parent of parents) {
+      const interiorNodeId =
+        String(node.id) === String(parent.id)
+          ? widget.sourceNodeId
+          : String(node.id)
+
       if (sourceNodeId)
         promotionStore.demote(
           parent.rootGraph.id,
           parent.id,
-          widget.sourceNodeId,
+          interiorNodeId,
           widget.sourceWidgetName,
           sourceNodeId
         )
@@ -90,7 +95,7 @@ function handleHideInput() {
       promotionStore.demote(
         parent.rootGraph.id,
         parent.id,
-        widget.sourceNodeId,
+        interiorNodeId,
         widget.sourceWidgetName
       )
     }
