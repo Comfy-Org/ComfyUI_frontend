@@ -156,6 +156,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const telemetry = useTelemetry()
 const { staticUrls } = useExternalLink()
+const commandStore = useCommandStore()
 const { displayedDetailsMap } = useErrorReport(() => card)
 
 function handleLocateNode() {
@@ -194,6 +195,6 @@ function handleGetHelp() {
     is_external: true,
     source: 'error_dialog'
   })
-  useCommandStore().execute('Comfy.ContactSupport')
+  commandStore.execute('Comfy.ContactSupport')
 }
 </script>

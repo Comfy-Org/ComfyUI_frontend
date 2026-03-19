@@ -290,13 +290,11 @@ const {
 const singleRuntimeErrorGroup = computed(() => {
   if (filteredGroups.value.length !== 1) return null
   const group = filteredGroups.value[0]
-  if (
-    group.type !== 'execution' ||
-    group.cards.length !== 1 ||
-    !group.cards[0].errors.some((e) => e.isRuntimeError)
-  )
-    return null
-  return group
+  const isSoleRuntimeError =
+    group.type === 'execution' &&
+    group.cards.length === 1 &&
+    group.cards[0].errors.every((e) => e.isRuntimeError)
+  return isSoleRuntimeError ? group : null
 })
 
 const singleRuntimeErrorCard = computed(

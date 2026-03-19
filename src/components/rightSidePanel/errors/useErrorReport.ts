@@ -1,4 +1,4 @@
-import { computed, onMounted, reactive, toValue } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, toValue } from 'vue'
 
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -26,6 +26,11 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
     )
   })
 
+  let cancelled = false
+  onUnmounted(() => {
+    cancelled = true
+  })
+
   onMounted(async () => {
     const card = toValue(cardSource)
     const runtimeErrors = card.errors
@@ -41,7 +46,7 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
         return
       }
     }
-    if (!systemStatsStore.systemStats) return
+    if (cancelled || !systemStatsStore.systemStats) return
 
     let logs: string
     try {
@@ -49,6 +54,8 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
     } catch {
       logs = 'Failed to retrieve server logs'
     }
+
+    if (cancelled) return
 
     const workflow = app.rootGraph.serialize()
 
