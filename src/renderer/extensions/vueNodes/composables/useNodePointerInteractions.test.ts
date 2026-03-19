@@ -24,11 +24,13 @@ vi.mock('@/renderer/extensions/vueNodes/layout/useNodeDrag', () => {
   const startDrag = vi.fn()
   const handleDrag = vi.fn()
   const endDrag = vi.fn()
+  const cancelDrag = vi.fn()
   return {
     useNodeDrag: () => ({
       startDrag,
       handleDrag,
-      endDrag
+      endDrag,
+      cancelDrag
     })
   }
 })
@@ -189,6 +191,7 @@ describe('useNodePointerInteractions', () => {
 
   it('should handle drag termination via cancel and context menu', async () => {
     const { handleNodeSelect } = useNodeEventHandlers()
+    const { cancelDrag } = useNodeDrag()
 
     const { pointerHandlers } = useNodePointerInteractions('test-node-123')
 
@@ -234,6 +237,7 @@ describe('useNodePointerInteractions', () => {
     pointerHandlers.onContextmenu(contextMenuEvent)
 
     expect(preventDefaultSpy).toHaveBeenCalled()
+    expect(cancelDrag).toHaveBeenCalledTimes(1)
   })
 
   it('should integrate with layout store dragging state', async () => {

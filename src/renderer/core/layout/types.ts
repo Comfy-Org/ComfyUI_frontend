@@ -32,6 +32,13 @@ export interface Bounds {
   height: number
 }
 
+export interface NodeAlignmentGuide {
+  axis: 'horizontal' | 'vertical'
+  coordinate: number
+  start: number
+  end: number
+}
+
 export interface NodeBoundsUpdate {
   nodeId: NodeId
   bounds: Bounds

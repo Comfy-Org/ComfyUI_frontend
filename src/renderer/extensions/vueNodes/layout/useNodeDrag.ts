@@ -10,20 +10,19 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   Bounds,
+  NodeAlignmentGuide,
   NodeBoundsUpdate,
   NodeId,
   Point
 } from '@/renderer/core/layout/types'
+import { translateBounds } from '@/renderer/core/layout/utils/geometry'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 import { createSharedComposable } from '@vueuse/core'
 
-import type {
-  NodeAlignmentGuide,
-  NodeAlignmentSnapResult
-} from './nodeAlignmentSnap'
+import type { NodeAlignmentSnapResult } from './nodeAlignmentSnap'
 import { resolveNodeAlignmentSnap } from './nodeAlignmentSnap'
 
 export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
@@ -40,7 +39,7 @@ function useNodeDragIndividual() {
   const transformState = useTransformState()
 
   // Snap-to-grid functionality
-  const { shouldSnap, applySnapToPosition } = useNodeSnap()
+  const { shouldSnap: shouldSnapToGrid, applySnapToPosition } = useNodeSnap()
 
   // Shift key sync for LiteGraph canvas preview
   const { trackShiftKey } = useShiftKeySync()
@@ -49,6 +48,7 @@ function useNodeDragIndividual() {
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<string, Point> | null = null
+  let pendingDragEvent: PointerEvent | null = null
   let rafId: number | null = null
   let stopShiftSync: (() => void) | null = null
 
@@ -68,16 +68,15 @@ function useNodeDragIndividual() {
 
     dragStartPos = { ...position }
     dragStartMouse = { x: event.clientX, y: event.clientY }
+    pendingDragEvent = null
 
     const selectedNodes = toValue(selectedNodeIds)
-    draggedSelectionNodeIds = new Set(selectedNodes)
-    draggedSelectionNodeIds.add(nodeId)
+    const isDraggedNodeInSelection = selectedNodes.has(nodeId)
+    draggedSelectionNodeIds = isDraggedNodeInSelection
+      ? new Set(selectedNodes)
+      : new Set([nodeId])
     draggedSelectionBounds = getDraggedSelectionBounds(draggedSelectionNodeIds)
     updateDragSnapGuides([])
-
-    // capture the starting positions of all other selected nodes
-    // Only move other selected items if the dragged node is part of the selection
-    const isDraggedNodeInSelection = selectedNodes.has(nodeId)
 
     if (isDraggedNodeInSelection && selectedNodes.size > 1) {
       otherSelectedNodesStartPositions = new Map()
@@ -113,23 +112,28 @@ function useNodeDragIndividual() {
       return
     }
 
-    // Throttle position updates using requestAnimationFrame for better performance
-    if (rafId !== null) return // Skip if frame already scheduled
-
     const { target, pointerId } = event
     if (target instanceof HTMLElement && !target.hasPointerCapture(pointerId)) {
       // Delay capture to drag to allow for the Node cloning
       target.setPointerCapture(pointerId)
     }
+    pendingDragEvent = event
+
+    // Throttle position updates using requestAnimationFrame for better performance
+    if (rafId !== null) return // Skip if frame already scheduled
+
     rafId = requestAnimationFrame(() => {
       rafId = null
 
-      if (!dragStartPos || !dragStartMouse) return
+      if (!dragStartPos || !dragStartMouse || !pendingDragEvent) return
+
+      const dragEvent = pendingDragEvent
+      pendingDragEvent = null
 
       // Calculate mouse delta in screen coordinates
       const mouseDelta = {
-        x: event.clientX - dragStartMouse.x,
-        y: event.clientY - dragStartMouse.y
+        x: dragEvent.clientX - dragStartMouse.x,
+        y: dragEvent.clientY - dragStartMouse.y
       }
 
       // Convert to canvas coordinates
@@ -139,7 +143,10 @@ function useNodeDragIndividual() {
         x: canvasWithDelta.x - canvasOrigin.x,
         y: canvasWithDelta.y - canvasOrigin.y
       }
-      const snappedCanvasDelta = maybeResolveAlignmentSnap(event, canvasDelta)
+      const snappedCanvasDelta = maybeResolveAlignmentSnap(
+        dragEvent,
+        canvasDelta
+      )
 
       // Calculate new position for the current node
       const newPosition = {
@@ -188,7 +195,7 @@ function useNodeDragIndividual() {
 
   function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
-    if (shouldSnap(event) && nodeId) {
+    if (shouldSnapToGrid(event) && nodeId) {
       const boundsUpdates: NodeBoundsUpdate[] = []
 
       // Snap main node
@@ -248,30 +255,18 @@ function useNodeDragIndividual() {
       }
     }
 
-    dragStartPos = null
-    dragStartMouse = null
-    otherSelectedNodesStartPositions = null
-    selectedGroups = null
-    lastCanvasDelta = null
-    draggedSelectionBounds = null
-    draggedSelectionNodeIds = null
-    updateDragSnapGuides([])
+    cleanupDrag()
+  }
 
-    // Stop tracking shift key state
-    stopShiftSync?.()
-    stopShiftSync = null
-
-    // Cancel any pending animation frame
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId)
-      rafId = null
-    }
+  function cancelDrag() {
+    cleanupDrag()
   }
 
   return {
     startDrag,
     handleDrag,
-    endDrag
+    endDrag,
+    cancelDrag
   }
 
   function maybeResolveAlignmentSnap(
@@ -283,8 +278,9 @@ function useNodeDragIndividual() {
       return canvasDelta
     }
 
+    const isGridSnapActive = shouldSnapToGrid(event)
     if (
-      shouldSnap(event) ||
+      isGridSnapActive ||
       !draggedSelectionBounds ||
       !draggedSelectionNodeIds
     ) {
@@ -350,8 +346,32 @@ function useNodeDragIndividual() {
   }
 
   function updateDragSnapGuides(guides: NodeAlignmentGuide[]) {
+    if (!guides.length && !layoutStore.vueDragSnapGuides.value.length) {
+      return
+    }
+
     layoutStore.vueDragSnapGuides.value = guides
     canvasStore.canvas?.setDirty(true)
+  }
+
+  function cleanupDrag() {
+    dragStartPos = null
+    dragStartMouse = null
+    otherSelectedNodesStartPositions = null
+    pendingDragEvent = null
+    selectedGroups = null
+    lastCanvasDelta = null
+    draggedSelectionBounds = null
+    draggedSelectionNodeIds = null
+    updateDragSnapGuides([])
+
+    stopShiftSync?.()
+    stopShiftSync = null
+
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId)
+      rafId = null
+    }
   }
 }
 
@@ -401,13 +421,5 @@ function expandBounds(bounds: Bounds, padding: number): Bounds {
     y: bounds.y - padding,
     width: bounds.width + padding * 2,
     height: bounds.height + padding * 2
-  }
-}
-
-function translateBounds(bounds: Bounds, delta: Point): Bounds {
-  return {
-    ...bounds,
-    x: bounds.x + delta.x,
-    y: bounds.y + delta.y
   }
 }

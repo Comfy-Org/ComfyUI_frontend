@@ -9,7 +9,6 @@ import { computed, customRef, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
-import type { NodeAlignmentGuide } from '@/renderer/extensions/vueNodes/layout/nodeAlignmentSnap'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
@@ -31,6 +30,7 @@ import type {
   LinkSegmentLayout,
   MoveNodeOperation,
   MoveRerouteOperation,
+  NodeAlignmentGuide,
   NodeBoundsUpdate,
   NodeId,
   NodeLayout,

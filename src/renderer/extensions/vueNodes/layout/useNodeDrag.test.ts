@@ -244,6 +244,55 @@ describe('useNodeDrag', () => {
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
   })
 
+  it('uses the latest pointer event when moves arrive before the next frame', () => {
+    testState.selectedNodeIds.value = new Set(['1'])
+    testState.nodeLayouts.set('1', {
+      position: { x: 50, y: 80 },
+      size: { width: 180, height: 110 }
+    })
+
+    const { startDrag, handleDrag } = useNodeDrag()
+
+    startDrag(
+      {
+        clientX: 5,
+        clientY: 10
+      } as PointerEvent,
+      '1'
+    )
+
+    const target = document.createElement('div')
+    target.hasPointerCapture = vi.fn(() => false)
+    target.setPointerCapture = vi.fn()
+
+    handleDrag(
+      {
+        clientX: 25,
+        clientY: 30,
+        target,
+        pointerId: 1
+      } as unknown as PointerEvent,
+      '1'
+    )
+
+    handleDrag(
+      {
+        clientX: 45,
+        clientY: 60,
+        target,
+        pointerId: 1
+      } as unknown as PointerEvent,
+      '1'
+    )
+
+    testState.requestAnimationFrameCallback?.(0)
+
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
+      { nodeId: '1', position: { x: 90, y: 130 } }
+    ])
+  })
+
   it('cancels pending RAF and applies snap updates on endDrag', () => {
     testState.selectedNodeIds.value = new Set(['1'])
     testState.nodeLayouts.set('1', {
@@ -497,7 +546,94 @@ describe('useNodeDrag', () => {
     testState.requestAnimationFrameCallback?.(0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
-      { nodeId: '1', position: { x: 193, y: 40 } }
+      { nodeId: '1', position: { x: 200, y: 40 } }
     ])
+  })
+
+  it('snaps unselected drags using only the dragged node bounds', () => {
+    testState.settingValues['Comfy.Canvas.AlignNodesWhileDragging'] = true
+    testState.selectedNodeIds.value = new Set(['2', '3'])
+    testState.nodeLayouts.set('1', {
+      position: { x: 0, y: 40 },
+      size: { width: 100, height: 60 }
+    })
+    testState.nodeLayouts.set('2', {
+      position: { x: -500, y: 40 },
+      size: { width: 100, height: 60 }
+    })
+    testState.nodeLayouts.set('3', {
+      position: { x: 400, y: 40 },
+      size: { width: 100, height: 60 }
+    })
+    testState.nodeLayouts.set('4', {
+      position: { x: 200, y: 40 },
+      size: { width: 100, height: 60 }
+    })
+
+    const { startDrag, handleDrag } = useNodeDrag()
+
+    startDrag({ clientX: 0, clientY: 0 } as PointerEvent, '1')
+
+    const target = document.createElement('div')
+    target.hasPointerCapture = vi.fn(() => false)
+    target.setPointerCapture = vi.fn()
+
+    handleDrag(
+      {
+        clientX: 193,
+        clientY: 0,
+        target,
+        pointerId: 1
+      } as unknown as PointerEvent,
+      '1'
+    )
+
+    testState.requestAnimationFrameCallback?.(0)
+
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
+      { nodeId: '1', position: { x: 200, y: 40 } }
+    ])
+    expect(testState.vueDragSnapGuides.value).toContainEqual({
+      axis: 'vertical',
+      coordinate: 200,
+      start: 10,
+      end: 100
+    })
+  })
+
+  it('skips redraw when clearing already-empty snap guides', () => {
+    testState.selectedNodeIds.value = new Set(['1'])
+    testState.nodeLayouts.set('1', {
+      position: { x: 50, y: 80 },
+      size: { width: 180, height: 110 }
+    })
+
+    const { startDrag, handleDrag } = useNodeDrag()
+
+    startDrag(
+      {
+        clientX: 5,
+        clientY: 10
+      } as PointerEvent,
+      '1'
+    )
+
+    const target = document.createElement('div')
+    target.hasPointerCapture = vi.fn(() => false)
+    target.setPointerCapture = vi.fn()
+
+    handleDrag(
+      {
+        clientX: 25,
+        clientY: 30,
+        target,
+        pointerId: 1
+      } as unknown as PointerEvent,
+      '1'
+    )
+
+    testState.requestAnimationFrameCallback?.(0)
+
+    expect(testState.canvas.setDirty).not.toHaveBeenCalled()
   })
 })

@@ -12,7 +12,7 @@ import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 export function useNodePointerInteractions(
   nodeIdRef: MaybeRefOrGetter<string>
 ) {
-  const { startDrag, endDrag, handleDrag } = useNodeDrag()
+  const { startDrag, endDrag, handleDrag, cancelDrag } = useNodeDrag()
   // Use canvas interactions for proper wheel event handling and pointer event capture control
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
@@ -125,6 +125,17 @@ export function useNodePointerInteractions(
     }
   }
 
+  function safeDragCancel() {
+    try {
+      cancelDrag()
+    } catch (error) {
+      console.error('Error during cancelDrag:', error)
+    } finally {
+      hasDraggingStarted = false
+      cleanupDragState()
+    }
+  }
+
   function onPointerup(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
@@ -167,12 +178,15 @@ export function useNodePointerInteractions(
     if (!layoutStore.isDraggingVueNodes.value) return
 
     event.preventDefault()
-    // Simply cleanup state without calling endDrag to avoid synthetic event creation
-    cleanupDragState()
+    safeDragCancel()
   }
 
   // Cleanup on unmount to prevent resource leaks
   onScopeDispose(() => {
+    if (hasDraggingStarted || layoutStore.isDraggingVueNodes.value) {
+      safeDragCancel()
+      return
+    }
     cleanupDragState()
   })
 

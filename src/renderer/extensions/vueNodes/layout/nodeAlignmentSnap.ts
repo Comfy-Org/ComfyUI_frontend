@@ -1,16 +1,14 @@
-import type { Bounds, Point } from '@/renderer/core/layout/types'
+import type {
+  Bounds,
+  NodeAlignmentGuide,
+  Point
+} from '@/renderer/core/layout/types'
+import { translateBounds } from '@/renderer/core/layout/utils/geometry'
 
 const DEFAULT_THRESHOLD_PX = 8
 
 type HorizontalAnchor = 'bottom' | 'centerY' | 'top'
 type VerticalAnchor = 'centerX' | 'left' | 'right'
-
-export interface NodeAlignmentGuide {
-  axis: 'horizontal' | 'vertical'
-  coordinate: number
-  start: number
-  end: number
-}
 
 export interface NodeAlignmentSnapResult {
   delta: Point
@@ -214,12 +212,4 @@ function getSharedAnchorValue<
   }
 
   return selectionAnchors[anchors[0]]
-}
-
-function translateBounds(bounds: Bounds, delta: Point): Bounds {
-  return {
-    ...bounds,
-    x: bounds.x + delta.x,
-    y: bounds.y + delta.y
-  }
 }
