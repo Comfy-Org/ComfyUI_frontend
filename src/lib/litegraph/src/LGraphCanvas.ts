@@ -682,6 +682,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private _visibleReroutes: Set<Reroute> = new Set()
   private _autoPan: AutoPanController | null = null
+  private _ghostPointerHandler: ((e: PointerEvent) => void) | null = null
 
   dirty_canvas: boolean = true
   dirty_bgcanvas: boolean = true
@@ -837,8 +838,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // @deprecated Workaround: Keep until connecting_links is removed.
     this.linkConnector.events.addEventListener('reset', () => {
-      this._autoPan?.stop()
-      this._autoPan = null
+      // Only stop link-drag autoPan; ghost placement manages its own.
+      if (this.state.ghostNodeId == null) {
+        this._autoPan?.stop()
+        this._autoPan = null
+      }
       this.connecting_links = null
       this.dirty_bgcanvas = true
     })
@@ -3607,6 +3611,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.processSelect(item, pointer.eDown, sticky)
     this.isDragging = true
 
+    this._startNodeAutoPan()
+  }
+
+  private _startNodeAutoPan(): void {
     this._autoPan = new AutoPanController({
       canvas: this.canvas,
       ds: this.ds,
@@ -3675,6 +3683,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.deselectAll()
     this.select(node)
     this.isDragging = true
+
+    this._startNodeAutoPan()
+
+    // Listen on document so autopan works when the pointer is over DOM elements.
+    this._ghostPointerHandler = (e: PointerEvent) => {
+      // Trigger mouse move so the ghost node follows the cursor the same as when dragging a node.
+      this.processMouseMove(e)
+    }
+    document.addEventListener('pointermove', this._ghostPointerHandler)
+    // When the pointer leaves the viewport quickly, ensure we still trigger auto-pan.
+    document.documentElement.addEventListener(
+      'pointerleave',
+      this._ghostPointerHandler
+    )
   }
 
   /**
@@ -3687,6 +3709,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.state.ghostNodeId = null
     this.isDragging = false
+    this._autoPan?.stop()
+    this._autoPan = null
+
+    if (this._ghostPointerHandler) {
+      document.removeEventListener('pointermove', this._ghostPointerHandler)
+      document.documentElement.removeEventListener(
+        'pointerleave',
+        this._ghostPointerHandler
+      )
+      this._ghostPointerHandler = null
+    }
 
     const node = this.graph?.getNodeById(nodeId)
     if (!node) return
