@@ -497,8 +497,8 @@ describe('SubgraphIO - Empty Slot Connection', () => {
           subgraphNode.id
         )
       ).toEqual([
-        { interiorNodeId: String(firstNode.id), widgetName: 'seed' },
-        { interiorNodeId: String(secondNode.id), widgetName: 'seed' }
+        { sourceNodeId: String(firstNode.id), sourceWidgetName: 'seed' },
+        { sourceNodeId: String(secondNode.id), sourceWidgetName: 'seed' }
       ])
     }
   )
