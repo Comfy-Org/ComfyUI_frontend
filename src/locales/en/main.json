@@ -3528,11 +3528,18 @@
       "downloadAll": "Download all"
     },
     "missingMedia": {
-      "missingMediaTitle": "Missing Media",
+      "missingMediaTitle": "Missing Inputs",
       "image": "Images",
       "video": "Videos",
       "audio": "Audio",
-      "locateNode": "Locate node"
+      "locateNode": "Locate node",
+      "expandNodes": "Show referencing nodes",
+      "collapseNodes": "Hide referencing nodes",
+      "uploadFile": "Upload {type}",
+      "uploading": "Uploading...",
+      "uploaded": "Uploaded",
+      "selectedFromLibrary": "Selected from library",
+      "useFromLibrary": "Use from Library"
     }
   },
   "errorOverlay": {

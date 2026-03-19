@@ -60,6 +60,14 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     )
   })
 
+  // Interaction state — persists across component re-mounts
+  const expandState = ref<Record<string, boolean>>({})
+  const uploadState = ref<
+    Record<string, { fileName: string; status: 'uploading' | 'uploaded' }>
+  >({})
+  /** Pending selection: value to apply on confirm. */
+  const pendingSelection = ref<Record<string, string>>({})
+
   let _verificationAbortController: AbortController | null = null
 
   function createVerificationAbortController(): AbortController {
@@ -80,10 +88,22 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     return activeMissingMediaGraphIds.value.has(String(node.id))
   }
 
+  function removeMissingMediaByName(name: string) {
+    if (!missingMediaCandidates.value) return
+    missingMediaCandidates.value = missingMediaCandidates.value.filter(
+      (m) => m.name !== name
+    )
+    if (!missingMediaCandidates.value.length)
+      missingMediaCandidates.value = null
+  }
+
   function clearMissingMedia() {
     _verificationAbortController?.abort()
     _verificationAbortController = null
     missingMediaCandidates.value = null
+    expandState.value = {}
+    uploadState.value = {}
+    pendingSelection.value = {}
   }
 
   return {
@@ -95,10 +115,15 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     activeMissingMediaGraphIds,
 
     setMissingMedia,
+    removeMissingMediaByName,
     clearMissingMedia,
     createVerificationAbortController,
 
     hasMissingMediaOnNode,
-    isContainerWithMissingMedia
+    isContainerWithMissingMedia,
+
+    expandState,
+    uploadState,
+    pendingSelection
   }
 })
