@@ -130,8 +130,19 @@ export function useRemoteWidget<
     return !isLoaded && isInitialized(dataCache.get(cacheKey))
   }
 
+  /** Populate the widget value on first remote data load, preserving any
+   *  value that was already restored by configure(). */
   const onFirstLoad = (data: T | T[]) => {
     isLoaded = true
+
+    // If configure() already restored a saved value, keep it — don't
+    // overwrite with the first item from the remote list.
+    const hasSavedValue =
+      widget.value != null &&
+      widget.value !== defaultValue &&
+      widget.value !== ''
+    if (hasSavedValue) return
+
     const nextValue =
       Array.isArray(data) && data.length > 0 ? data[0] : undefined
     widget.value = nextValue ?? (Array.isArray(data) ? defaultValue : data)
