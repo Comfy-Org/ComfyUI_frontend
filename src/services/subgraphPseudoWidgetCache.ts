@@ -1,6 +1,7 @@
 export interface SubgraphPromotionEntry {
   interiorNodeId: string
   widgetName: string
+  sourceNodeId?: string
 }
 
 export interface SubgraphPseudoWidget {

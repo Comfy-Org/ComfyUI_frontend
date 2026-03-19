@@ -87,14 +87,13 @@ function findWidgetByIdentity(
   if (!widgets) return undefined
 
   if (sourceNodeId) {
-    const match = widgets.find(
+    return widgets.find(
       (entry) =>
         isPromotedWidgetView(entry) &&
         (entry.disambiguatingSourceNodeId ?? entry.sourceNodeId) ===
           sourceNodeId &&
-        entry.sourceWidgetName === widgetName
+        (entry.sourceWidgetName === widgetName || entry.name === widgetName)
     )
-    if (match) return match
   }
 
   return widgets.find((entry) => entry.name === widgetName)

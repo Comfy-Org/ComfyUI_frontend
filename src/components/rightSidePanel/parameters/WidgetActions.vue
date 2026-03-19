@@ -83,20 +83,12 @@ function handleHideInput() {
           ? widget.sourceNodeId
           : String(node.id)
 
-      if (sourceNodeId)
-        promotionStore.demote(
-          parent.rootGraph.id,
-          parent.id,
-          interiorNodeId,
-          widget.sourceWidgetName,
-          sourceNodeId
-        )
-
       promotionStore.demote(
         parent.rootGraph.id,
         parent.id,
         interiorNodeId,
-        widget.sourceWidgetName
+        widget.sourceWidgetName,
+        sourceNodeId
       )
     }
   } else {

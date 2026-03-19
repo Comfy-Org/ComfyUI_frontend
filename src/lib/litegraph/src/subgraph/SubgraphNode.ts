@@ -44,7 +44,10 @@ import {
 } from '@/composables/node/canvasImagePreviewTypes'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { usePromotionStore } from '@/stores/promotionStore'
+import {
+  makePromotionEntryKey,
+  usePromotionStore
+} from '@/stores/promotionStore'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -590,8 +593,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     widgetName: string,
     sourceNodeId?: string
   ): string {
-    const base = `${interiorNodeId}:${widgetName}`
-    return sourceNodeId ? `${base}:${sourceNodeId}` : base
+    return makePromotionEntryKey(interiorNodeId, widgetName, sourceNodeId)
   }
 
   private _makePromotionViewKey(

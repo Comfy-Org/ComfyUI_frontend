@@ -12,6 +12,15 @@ interface PromotionEntry {
 
 const EMPTY_PROMOTIONS: PromotionEntry[] = []
 
+export function makePromotionEntryKey(
+  interiorNodeId: string,
+  widgetName: string,
+  sourceNodeId?: string
+): string {
+  const base = `${interiorNodeId}:${widgetName}`
+  return sourceNodeId ? `${base}:${sourceNodeId}` : base
+}
+
 export const usePromotionStore = defineStore('promotion', () => {
   const graphPromotions = ref(new Map<UUID, Map<NodeId, PromotionEntry[]>>())
   const graphRefCounts = ref(new Map<UUID, Map<string, number>>())
@@ -36,19 +45,14 @@ export const usePromotionStore = defineStore('promotion', () => {
     return nextRefCounts
   }
 
-  function _makeKey(
-    interiorNodeId: string,
-    widgetName: string,
-    sourceNodeId?: string
-  ): string {
-    const base = `${interiorNodeId}:${widgetName}`
-    return sourceNodeId ? `${base}:${sourceNodeId}` : base
-  }
-
   function _incrementKeys(graphId: UUID, entries: PromotionEntry[]): void {
     const refCounts = _getRefCountsForGraph(graphId)
     for (const e of entries) {
-      const key = _makeKey(e.interiorNodeId, e.widgetName, e.sourceNodeId)
+      const key = makePromotionEntryKey(
+        e.interiorNodeId,
+        e.widgetName,
+        e.sourceNodeId
+      )
       refCounts.set(key, (refCounts.get(key) ?? 0) + 1)
     }
   }
@@ -56,7 +60,11 @@ export const usePromotionStore = defineStore('promotion', () => {
   function _decrementKeys(graphId: UUID, entries: PromotionEntry[]): void {
     const refCounts = _getRefCountsForGraph(graphId)
     for (const e of entries) {
-      const key = _makeKey(e.interiorNodeId, e.widgetName, e.sourceNodeId)
+      const key = makePromotionEntryKey(
+        e.interiorNodeId,
+        e.widgetName,
+        e.sourceNodeId
+      )
       const count = (refCounts.get(key) ?? 1) - 1
       if (count <= 0) {
         refCounts.delete(key)
@@ -105,8 +113,9 @@ export const usePromotionStore = defineStore('promotion', () => {
   ): boolean {
     const refCounts = _getRefCountsForGraph(graphId)
     return (
-      (refCounts.get(_makeKey(interiorNodeId, widgetName, sourceNodeId)) ?? 0) >
-      0
+      (refCounts.get(
+        makePromotionEntryKey(interiorNodeId, widgetName, sourceNodeId)
+      ) ?? 0) > 0
     )
   }
 

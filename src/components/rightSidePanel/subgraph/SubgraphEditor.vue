@@ -177,13 +177,11 @@ function demote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   demoteWidget(node, widget, [subgraphNode])
-  refreshPromotedWidgetRendering()
 }
 function promote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   promoteWidget(node, widget, [subgraphNode])
-  refreshPromotedWidgetRendering()
 }
 function showAll() {
   const node = activeNode.value

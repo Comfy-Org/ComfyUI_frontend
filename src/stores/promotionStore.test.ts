@@ -371,4 +371,63 @@ describe(usePromotionStore, () => {
       expect(store.isPromotedByAny(graphB, '20', 'steps')).toBe(true)
     })
   })
+
+  describe('sourceNodeId disambiguation', () => {
+    it('promote with sourceNodeId is found by matching isPromoted', () => {
+      store.promote(graphA, nodeId, '10', 'text', '99')
+      expect(store.isPromoted(graphA, nodeId, '10', 'text', '99')).toBe(true)
+    })
+
+    it('isPromoted with different sourceNodeId returns false', () => {
+      store.promote(graphA, nodeId, '10', 'text', '99')
+      expect(store.isPromoted(graphA, nodeId, '10', 'text', '88')).toBe(false)
+    })
+
+    it('isPromoted with undefined sourceNodeId does not match entry with sourceNodeId', () => {
+      store.promote(graphA, nodeId, '10', 'text', '99')
+      expect(store.isPromoted(graphA, nodeId, '10', 'text')).toBe(false)
+    })
+
+    it('two entries with same interiorNodeId/widgetName but different sourceNodeId coexist', () => {
+      store.promote(graphA, nodeId, '3', 'text', '1')
+      store.promote(graphA, nodeId, '3', 'text', '2')
+      expect(store.getPromotions(graphA, nodeId)).toHaveLength(2)
+      expect(store.isPromoted(graphA, nodeId, '3', 'text', '1')).toBe(true)
+      expect(store.isPromoted(graphA, nodeId, '3', 'text', '2')).toBe(true)
+    })
+
+    it('demote with sourceNodeId removes only matching entry', () => {
+      store.promote(graphA, nodeId, '3', 'text', '1')
+      store.promote(graphA, nodeId, '3', 'text', '2')
+      store.demote(graphA, nodeId, '3', 'text', '1')
+      expect(store.getPromotions(graphA, nodeId)).toHaveLength(1)
+      expect(store.isPromoted(graphA, nodeId, '3', 'text', '1')).toBe(false)
+      expect(store.isPromoted(graphA, nodeId, '3', 'text', '2')).toBe(true)
+    })
+
+    it('isPromotedByAny with sourceNodeId only matches keyed entries', () => {
+      store.promote(graphA, nodeId, '3', 'text', '1')
+      expect(store.isPromotedByAny(graphA, '3', 'text', '1')).toBe(true)
+      expect(store.isPromotedByAny(graphA, '3', 'text', '2')).toBe(false)
+      expect(store.isPromotedByAny(graphA, '3', 'text')).toBe(false)
+    })
+
+    it('setPromotions with sourceNodeId entries maintains correct ref-counts', () => {
+      const nodeA = 1 as NodeId
+      const nodeB = 2 as NodeId
+      store.setPromotions(graphA, nodeA, [
+        { interiorNodeId: '3', widgetName: 'text', sourceNodeId: '1' }
+      ])
+      store.setPromotions(graphA, nodeB, [
+        { interiorNodeId: '3', widgetName: 'text', sourceNodeId: '1' }
+      ])
+      expect(store.isPromotedByAny(graphA, '3', 'text', '1')).toBe(true)
+
+      store.setPromotions(graphA, nodeA, [])
+      expect(store.isPromotedByAny(graphA, '3', 'text', '1')).toBe(true)
+
+      store.setPromotions(graphA, nodeB, [])
+      expect(store.isPromotedByAny(graphA, '3', 'text', '1')).toBe(false)
+    })
+  })
 })
