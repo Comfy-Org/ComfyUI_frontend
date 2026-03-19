@@ -111,6 +111,15 @@ jobs:
           done
           echo "::error::Server timeout"; exit 1
 
+      - name: Pre-seed settings to skip onboarding
+        shell: bash
+        run: |
+          # Mark tutorial as completed so the template gallery doesn't appear
+          curl -sf -X POST http://127.0.0.1:8188/api/settings \
+            -H 'Content-Type: application/json' \
+            -d '{"Comfy.TutorialCompleted": true}'
+          echo "Pre-seeded Comfy.TutorialCompleted=true"
+
       - name: Install playwright-cli and Codex CLI
         shell: bash
         run: |
