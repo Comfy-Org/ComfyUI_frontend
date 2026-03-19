@@ -838,6 +838,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         }
         this._setConcreteSlots()
         this._invalidatePromotedViewsCache()
+        this._syncPromotions()
         this.setDirtyCanvas(true, true)
       },
       { signal }
@@ -990,8 +991,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const canonicalOutputs = this.subgraph.outputNode.slots
     this.outputs.sort((a, b) => {
-      const ai = canonicalOutputs.findIndex((s) => s.name === a.name)
-      const bi = canonicalOutputs.findIndex((s) => s.name === b.name)
+      const aiRaw = canonicalOutputs.findIndex((s) => s.name === a.name)
+      const biRaw = canonicalOutputs.findIndex((s) => s.name === b.name)
+      const ai = aiRaw === -1 ? Number.MAX_SAFE_INTEGER : aiRaw
+      const bi = biRaw === -1 ? Number.MAX_SAFE_INTEGER : biRaw
       return ai - bi
     })
     // Fix output link origin_slot indices after reorder
