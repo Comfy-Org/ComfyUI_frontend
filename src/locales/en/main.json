@@ -3110,6 +3110,7 @@
   },
   "comfyHubPublish": {
     "title": "Publish to ComfyHub",
+    "unsavedDescription": "You must save your workflow before publishing to ComfyHub. Save it now to continue.",
     "stepDescribe": "Describe your workflow",
     "stepExamples": "Add output examples",
     "stepFinish": "Finish publishing",

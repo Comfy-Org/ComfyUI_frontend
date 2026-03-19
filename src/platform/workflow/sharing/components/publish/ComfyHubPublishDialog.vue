@@ -12,12 +12,45 @@
     </template>
 
     <template #leftPanel>
-      <ComfyHubPublishNav :current-step @step-click="goToStep" />
+      <ComfyHubPublishNav
+        v-if="!needsSave"
+        :current-step
+        @step-click="goToStep"
+      />
     </template>
 
     <template #header />
     <template #content>
+      <div v-if="needsSave" class="flex flex-col gap-4 p-6">
+        <p class="m-0 text-sm text-muted-foreground">
+          {{ $t('comfyHubPublish.unsavedDescription') }}
+        </p>
+        <label v-if="isTemporary" class="flex flex-col gap-1">
+          <span class="text-sm font-medium text-muted-foreground">
+            {{ $t('shareWorkflow.workflowNameLabel') }}
+          </span>
+          <Input
+            ref="nameInputRef"
+            v-model="workflowName"
+            :disabled="isSaving"
+            @keydown.enter="() => handleSave()"
+          />
+        </label>
+        <Button
+          variant="primary"
+          size="lg"
+          :loading="isSaving"
+          @click="() => handleSave()"
+        >
+          {{
+            isSaving
+              ? $t('shareWorkflow.saving')
+              : $t('shareWorkflow.saveButton')
+          }}
+        </Button>
+      </div>
       <ComfyHubPublishWizardContent
+        v-else
         :current-step
         :form-data
         :is-first-step
@@ -37,9 +70,22 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, provide, ref } from 'vue'
+import { useAsyncState } from '@vueuse/core'
+import { useToast } from 'primevue/usetoast'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  provide,
+  ref,
+  watch
+} from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
+import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import ComfyHubPublishNav from '@/platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue'
 import ComfyHubPublishWizardContent from '@/platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue'
 import { useComfyHubPublishSubmission } from '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission'
@@ -50,17 +96,22 @@ import {
 } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import { appendJsonExt } from '@/utils/formatUtil'
 import { OnCloseKey } from '@/types/widgetTypes'
 
 const { onClose } = defineProps<{
   onClose: () => void
 }>()
 
+const { t } = useI18n()
+const toast = useToast()
 const { fetchProfile } = useComfyHubProfileGate()
 const { submitToComfyHub } = useComfyHubPublishSubmission()
 const shareService = useWorkflowShareService()
+const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 const {
   currentStep,
@@ -75,6 +126,68 @@ const {
   applyPrefill
 } = useComfyHubPublishWizard()
 const isPublishing = ref(false)
+const needsSave = ref(false)
+const workflowName = ref('')
+const nameInputRef = ref<InstanceType<typeof Input> | null>(null)
+
+const isTemporary = computed(
+  () => workflowStore.activeWorkflow?.isTemporary ?? false
+)
+
+function checkNeedsSave() {
+  const workflow = workflowStore.activeWorkflow
+  needsSave.value = !workflow || workflow.isTemporary || workflow.isModified
+  if (workflow) {
+    workflowName.value = workflow.filename.replace(/\.json$/i, '')
+  }
+}
+
+watch(needsSave, async (needs) => {
+  if (needs && isTemporary.value) {
+    await nextTick()
+    nameInputRef.value?.focus()
+    nameInputRef.value?.select()
+  }
+})
+
+function buildWorkflowPath(directory: string, filename: string): string {
+  const normalizedDirectory = directory.replace(/\/+$/, '')
+  const normalizedFilename = appendJsonExt(filename.replace(/\.json$/i, ''))
+  return normalizedDirectory
+    ? `${normalizedDirectory}/${normalizedFilename}`
+    : normalizedFilename
+}
+
+const { isLoading: isSaving, execute: handleSave } = useAsyncState(
+  async () => {
+    const workflow = workflowStore.activeWorkflow
+    if (!workflow) return
+
+    if (workflow.isTemporary) {
+      const name = workflowName.value.trim()
+      if (!name) return
+      const newPath = buildWorkflowPath(workflow.directory, name)
+      await workflowService.renameWorkflow(workflow, newPath)
+      await workflowStore.saveWorkflow(workflow)
+    } else {
+      await workflowService.saveWorkflow(workflow)
+    }
+
+    checkNeedsSave()
+  },
+  undefined,
+  {
+    immediate: false,
+    onError: (error) => {
+      console.error('Failed to save workflow:', error)
+      toast.add({
+        severity: 'error',
+        summary: t('shareWorkflow.saveFailedTitle'),
+        detail: t('shareWorkflow.saveFailedDescription')
+      })
+    }
+  }
+)
 
 function handlePublishGateComplete() {
   closeProfileCreationStep()
@@ -132,6 +245,7 @@ async function fetchPublishPrefill() {
 }
 
 onMounted(() => {
+  checkNeedsSave()
   void fetchProfile()
   void fetchPublishPrefill()
 })

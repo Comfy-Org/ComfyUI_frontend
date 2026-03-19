@@ -2,6 +2,18 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+vi.mock('vue-i18n', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as Record<string, unknown>),
+    useI18n: () => ({ t: (key: string) => key })
+  }
+})
+
+vi.mock('primevue/usetoast', () => ({
+  useToast: () => ({ add: vi.fn() })
+}))
+
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
 
 const mockFetchProfile = vi.hoisted(() => vi.fn())
@@ -69,9 +81,23 @@ vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
   })
 }))
 
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
+  useWorkflowService: () => ({
+    renameWorkflow: vi.fn(),
+    saveWorkflow: vi.fn()
+  })
+}))
+
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
-    activeWorkflow: { path: 'workflows/test.json' }
+    activeWorkflow: {
+      path: 'workflows/test.json',
+      filename: 'test.json',
+      directory: 'workflows',
+      isTemporary: false,
+      isModified: false
+    },
+    saveWorkflow: vi.fn()
   })
 }))
 
