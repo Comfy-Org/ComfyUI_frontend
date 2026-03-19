@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -13,11 +13,15 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+import type { WidgetState } from '@/stores/widgetValueStore'
 import {
   resolveConcretePromotedWidget,
   resolvePromotedWidgetAtHost
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
+import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 
+import { isPromotedWidgetView } from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
 
 export type { PromotedWidgetView } from './promotedWidgetTypes'
@@ -131,6 +135,38 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   set value(value: IBaseWidget['value']) {
+    const linkedWidgets = this.getLinkedInputWidgets()
+    if (linkedWidgets.length > 0) {
+      const widgetStore = useWidgetValueStore()
+      let didUpdateState = false
+      for (const linkedWidget of linkedWidgets) {
+        const state = widgetStore.getWidget(
+          this.graphId,
+          linkedWidget.nodeId,
+          linkedWidget.widgetName
+        )
+        if (state) {
+          state.value = value
+          didUpdateState = true
+        }
+      }
+
+      const resolved = this.resolveDeepest()
+      if (resolved) {
+        const resolvedState = widgetStore.getWidget(
+          this.graphId,
+          stripGraphPrefix(String(resolved.node.id)),
+          resolved.widget.name
+        )
+        if (resolvedState) {
+          resolvedState.value = value
+          didUpdateState = true
+        }
+      }
+
+      if (didUpdateState) return
+    }
+
     const state = this.getWidgetState()
     if (state) {
       state.value = value
@@ -278,6 +314,9 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private getWidgetState() {
+    const linkedState = this.getLinkedInputWidgetStates()[0]
+    if (linkedState) return linkedState
+
     const resolved = this.resolveDeepest()
     if (!resolved) return undefined
     return useWidgetValueStore().getWidget(
@@ -285,6 +324,57 @@ class PromotedWidgetView implements IPromotedWidgetView {
       stripGraphPrefix(String(resolved.node.id)),
       resolved.widget.name
     )
+  }
+
+  private getLinkedInputWidgets(): Array<{
+    nodeId: NodeId
+    widgetName: string
+    widget: IBaseWidget
+  }> {
+    const linkedInputSlot = this.subgraphNode.inputs.find((input) => {
+      if (!input._subgraphSlot) return false
+      if (matchPromotedInput([input], this) !== input) return false
+
+      const boundWidget = input._widget
+      if (boundWidget === this) return true
+
+      if (boundWidget && isPromotedWidgetView(boundWidget)) {
+        return (
+          boundWidget.sourceNodeId === this.sourceNodeId &&
+          boundWidget.sourceWidgetName === this.sourceWidgetName
+        )
+      }
+
+      return input._subgraphSlot
+        .getConnectedWidgets()
+        .filter(hasWidgetNode)
+        .some(
+          (widget) =>
+            String(widget.node.id) === this.sourceNodeId &&
+            widget.name === this.sourceWidgetName
+        )
+    })
+    const linkedInput = linkedInputSlot?._subgraphSlot
+    if (!linkedInput) return []
+
+    return linkedInput
+      .getConnectedWidgets()
+      .filter(hasWidgetNode)
+      .map((widget) => ({
+        nodeId: stripGraphPrefix(String(widget.node.id)),
+        widgetName: widget.name,
+        widget
+      }))
+  }
+
+  private getLinkedInputWidgetStates(): WidgetState[] {
+    const widgetStore = useWidgetValueStore()
+
+    return this.getLinkedInputWidgets()
+      .map(({ nodeId, widgetName }) =>
+        widgetStore.getWidget(this.graphId, nodeId, widgetName)
+      )
+      .filter((state): state is WidgetState => state !== undefined)
   }
 
   private getProjectedWidget(resolved: {

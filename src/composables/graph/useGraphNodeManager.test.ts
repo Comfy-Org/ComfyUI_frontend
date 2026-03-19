@@ -14,6 +14,7 @@ import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -241,6 +242,88 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 
     expect(widgetData?.slotMetadata?.linked).toBe(false)
   })
+
+  it('prefers exact _widget input matches before same-name fallbacks for promoted widgets', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'seed', type: '*' },
+        { name: 'seed', type: '*' }
+      ]
+    })
+
+    const firstNode = new LGraphNode('FirstNode')
+    const firstInput = firstNode.addInput('seed', '*')
+    firstNode.addWidget('number', 'seed', 1, () => undefined, {})
+    firstInput.widget = { name: 'seed' }
+    subgraph.add(firstNode)
+
+    const secondNode = new LGraphNode('SecondNode')
+    const secondInput = secondNode.addInput('seed', '*')
+    secondNode.addWidget('number', 'seed', 2, () => undefined, {})
+    secondInput.widget = { name: 'seed' }
+    subgraph.add(secondNode)
+
+    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
+    subgraph.inputNode.slots[1].connect(secondInput, secondNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 124 })
+    const graph = subgraphNode.graph
+    if (!graph) throw new Error('Expected subgraph node graph')
+    graph.add(subgraphNode)
+
+    const promotedViews = subgraphNode.widgets
+    const secondPromotedView = promotedViews[1]
+    if (!secondPromotedView) throw new Error('Expected second promoted view')
+
+    ;(
+      secondPromotedView as unknown as {
+        sourceNodeId: string
+        sourceWidgetName: string
+      }
+    ).sourceNodeId = '9999'
+    ;(
+      secondPromotedView as unknown as {
+        sourceNodeId: string
+        sourceWidgetName: string
+      }
+    ).sourceWidgetName = 'stale_widget'
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const secondMappedWidget = nodeData?.widgets?.find(
+      (widget) => widget.slotMetadata?.index === 1
+    )
+    if (!secondMappedWidget)
+      throw new Error('Expected mapped widget for slot 1')
+
+    expect(secondMappedWidget.name).not.toBe('stale_widget')
+  })
+
+  it('clears stale slotMetadata when input no longer matches widget', async () => {
+    const { graph, node } = createWidgetInputGraph()
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    const nodeData = vueNodeData.get(String(node.id))!
+    const widgetData = nodeData.widgets!.find((w) => w.name === 'prompt')!
+
+    expect(widgetData.slotMetadata?.linked).toBe(true)
+
+    node.inputs[0].name = 'other'
+    node.inputs[0].widget = { name: 'other' }
+    node.inputs[0].link = null
+
+    graph.trigger('node:slot-links:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: 0,
+      connected: false,
+      linkId: 42
+    })
+
+    await nextTick()
+
+    expect(widgetData.slotMetadata).toBeUndefined()
+  })
 })
 
 describe('Subgraph output slot label reactivity', () => {
@@ -390,6 +473,56 @@ describe('Nested promoted widget mapping', () => {
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
     )
   })
+
+  it('keeps linked and independent same-name promotions as distinct sources', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'string_a', type: '*' }]
+    })
+
+    const linkedNode = new LGraphNode('LinkedNode')
+    const linkedInput = linkedNode.addInput('string_a', '*')
+    linkedNode.addWidget('text', 'string_a', 'linked', () => undefined, {})
+    linkedInput.widget = { name: 'string_a' }
+    subgraph.add(linkedNode)
+    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+
+    const independentNode = new LGraphNode('IndependentNode')
+    independentNode.addWidget(
+      'text',
+      'string_a',
+      'independent',
+      () => undefined,
+      {}
+    )
+    subgraph.add(independentNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 109 })
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+
+    usePromotionStore().promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      String(independentNode.id),
+      'string_a'
+    )
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const promotedWidgets = nodeData?.widgets?.filter(
+      (widget) => widget.name === 'string_a'
+    )
+
+    expect(promotedWidgets).toHaveLength(2)
+    expect(
+      new Set(promotedWidgets?.map((widget) => widget.storeNodeId))
+    ).toEqual(
+      new Set([
+        `${subgraph.id}:${linkedNode.id}`,
+        `${subgraph.id}:${independentNode.id}`
+      ])
+    )
+  })
 })
 
 describe('Promoted widget sourceExecutionId', () => {
@@ -472,6 +605,9 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+
+    const settingStore = useSettingStore()
+    settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
 
     // Initialize store (triggers watcher registration)
     useGraphNodeManager(graph)
@@ -647,6 +783,9 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+
+    const settingStore = useSettingStore()
+    settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
 
     useGraphNodeManager(graph)
     useExecutionErrorStore()

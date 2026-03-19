@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "密碼重設已發送",
   "cloudForgotPassword_sendResetLink": "寄送重設連結",
   "cloudForgotPassword_title": "忘記密碼",
+  "cloudNotification": {
+    "continueLocally": "在本地繼續",
+    "exploreCloud": "免費試用雲端",
+    "feature1Title": "每月 400 點免費額度",
+    "feature2Title": "隨處可用，立即啟動",
+    "feature3Title": "模型即刻可用",
+    "feature4Title": "頂級自訂節點包預先安裝",
+    "footer": "ComfyUI 持續免費且開源。雲端服務為選用項目。",
+    "message": "從設定到創作只需幾秒。熱門模型、擴充套件與強大 GPU，隨時待命。",
+    "title": "在雲端運行 ComfyUI"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -502,6 +513,7 @@
   "cloudWaitlist_contactLink": "此處",
   "cloudWaitlist_questionsText": "有問題？聯絡我們",
   "color": {
+    "alpha": "透明度",
     "black": "黑色",
     "blue": "藍色",
     "brown": "棕色",
@@ -509,11 +521,15 @@
     "cyan": "青色",
     "default": "預設",
     "green": "綠色",
+    "hex": "Hex",
+    "hue": "色相",
     "noColor": "無顏色",
     "pale_blue": "淡藍色",
     "pink": "粉紅色",
     "purple": "紫色",
     "red": "紅色",
+    "rgba": "RGBA",
+    "saturationBrightness": "色彩飽和度與亮度",
     "yellow": "黃色"
   },
   "comfyHubProfile": {
@@ -648,6 +664,7 @@
     "Open in Mask Editor": "在遮罩編輯器中開啟",
     "Outputs": "輸出",
     "Paste": "貼上",
+    "Paste Image": "貼上圖片",
     "Pin": "釘選",
     "Properties": "屬性",
     "Properties Panel": "屬性面板",
@@ -731,6 +748,10 @@
       "tooltip": "我們已統一 Comfy 的付款系統。現在一切都以 Comfy 點數運作：\n- 合作夥伴節點（原 API 節點）\n- 雲端工作流程\n\n您原有的合作夥伴節點餘額已轉換為點數。"
     },
     "yourCreditBalance": "您的點數餘額"
+  },
+  "curveWidget": {
+    "linear": "線性",
+    "monotone_cubic": "平滑"
   },
   "dataTypes": {
     "*": "*",
@@ -922,9 +943,11 @@
     "2x": "2倍速",
     "about": "關於",
     "add": "新增",
+    "addNewKeybinding": "新增快捷鍵",
     "addNode": "新增節點...",
     "addNodeFilterCondition": "新增節點篩選條件",
     "all": "全部",
+    "allKeybindingsReset": "所有快捷鍵已重設為預設值",
     "amount": "數量",
     "apply": "套用",
     "architecture": "架構",
@@ -943,6 +966,7 @@
     "cancelled": "已取消",
     "capture": "擷取",
     "category": "分類",
+    "changeKeybinding": "變更快捷鍵",
     "chart": "圖表",
     "chartLowercase": "圖表",
     "choose_file_to_upload": "選擇要上傳的檔案",
@@ -1095,6 +1119,7 @@
     "moreWorkflows": "更多工作流程",
     "mostRelevant": "最相關",
     "multiSelectDropdown": "多選下拉式選單",
+    "nMoreKeybindings": "+ 還有 {count} 個",
     "name": "名稱",
     "newFolder": "新資料夾",
     "next": "下一步",
@@ -1132,6 +1157,8 @@
     "playRecording": "播放錄製",
     "playbackSpeed": "播放速度",
     "playing": "播放中",
+    "preloadError": "必要資源載入失敗。請重新整理頁面。",
+    "preloadErrorTitle": "載入錯誤",
     "preview": "預覽",
     "previousImage": "上一張圖片",
     "profile": "個人檔案",
@@ -1155,7 +1182,11 @@
     "releaseTitle": "{package} {version} 版本發佈",
     "reloadToApplyChanges": "重新載入以套用變更",
     "remove": "移除",
+    "removeAll": "全部移除",
+    "removeAllKeybindingsMessage": "此指令的所有快捷鍵都將被移除",
+    "removeAllKeybindingsTitle": "要移除所有快捷鍵嗎？",
     "removeImage": "移除圖片",
+    "removeKeybinding": "移除快捷鍵",
     "removeTag": "移除標籤",
     "removeVideo": "移除影片",
     "rename": "重新命名",
@@ -1164,7 +1195,10 @@
     "reportSent": "已提交報告",
     "reset": "重設",
     "resetAll": "全部重設",
+    "resetAllKeybindingsMessage": "所有快捷鍵將會重設為預設值。此操作無法還原。",
+    "resetAllKeybindingsTitle": "要重設所有快捷鍵嗎？",
     "resetAllKeybindingsTooltip": "將所有快捷鍵重設為預設值",
+    "resetToDefault": "重設為預設值",
     "resizeFromBottomLeft": "從左下角調整大小",
     "resizeFromBottomRight": "從右下角調整大小",
     "resizeFromTopLeft": "從左上角調整大小",
@@ -1584,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "來自版本 {version} 的核心節點：",
     "outdatedVersion": "此工作流程是以較新版本的 ComfyUI（{version}）建立的。部分節點可能無法正確運作。",
-    "outdatedVersionGeneric": "此工作流程是以較新版本的 ComfyUI 建立的。部分節點可能無法正確運作。"
+    "outdatedVersionGeneric": "此工作流程是以較新版本的 ComfyUI 建立的。部分節點可能無法正確運作。",
+    "unknownVersion": "未知"
   },
   "maintenance": {
     "None": "無",
@@ -2406,6 +2441,7 @@
     "groupSettings": "群組設定",
     "groups": "群組",
     "hideAdvancedInputsButton": "隱藏進階輸入",
+    "hideAdvancedShort": "隱藏進階",
     "hideInput": "隱藏輸入",
     "info": "資訊",
     "inputs": "輸入",
@@ -2420,7 +2456,9 @@
       "collapseNodes": "隱藏參照節點",
       "confirmSelection": "確認選擇",
       "copyModelName": "複製模型名稱",
+      "copyUrl": "複製網址",
       "customNodeDownloadDisabled": "雲端環境不支援此區段自訂節點的模型匯入。請使用標準載入節點或以下資料庫中的模型替代。",
+      "downloadAll": "全部下載",
       "expandNodes": "顯示參照節點",
       "import": "匯入",
       "importAnyway": "仍要匯入",
@@ -2487,6 +2525,7 @@
     "seeError": "查看錯誤",
     "settings": "設定",
     "showAdvancedInputsButton": "顯示進階輸入",
+    "showAdvancedShort": "顯示進階",
     "showInput": "顯示輸入",
     "title": "未選取節點 | 已選取 1 個節點 | 已選取 {count} 個節點",
     "togglePanel": "切換屬性面板",

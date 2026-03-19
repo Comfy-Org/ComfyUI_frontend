@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "Restablecimiento de contraseña enviado",
   "cloudForgotPassword_sendResetLink": "Enviar enlace de restablecimiento",
   "cloudForgotPassword_title": "¿Olvidaste tu contraseña?",
+  "cloudNotification": {
+    "continueLocally": "Continuar Localmente",
+    "exploreCloud": "Probar la Nube Gratis",
+    "feature1Title": "400 Créditos Gratis al Mes",
+    "feature2Title": "Funciona en Cualquier Lugar, al Instante",
+    "feature3Title": "Modelos Listos para Usar",
+    "feature4Title": "Paquetes de Nodos Personalizados Preinstalados",
+    "footer": "ComfyUI sigue siendo gratuito y de código abierto. La nube es opcional.",
+    "message": "De la configuración a la creación en segundos. Modelos populares, extensiones y potentes GPUs — listos cuando los necesites.",
+    "title": "Ejecuta ComfyUI en la Nube"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -502,6 +513,7 @@
   "cloudWaitlist_contactLink": "aquí",
   "cloudWaitlist_questionsText": "¿Preguntas? Contáctanos",
   "color": {
+    "alpha": "Alfa",
     "black": "Negro",
     "blue": "Azul",
     "brown": "Marrón",
@@ -509,11 +521,15 @@
     "cyan": "Cian",
     "default": "Predeterminado",
     "green": "Verde",
+    "hex": "Hex",
+    "hue": "Tono",
     "noColor": "Sin Color",
     "pale_blue": "Azul Pálido",
     "pink": "Rosa",
     "purple": "Morado",
     "red": "Rojo",
+    "rgba": "RGBA",
+    "saturationBrightness": "Saturación y brillo del color",
     "yellow": "Amarillo"
   },
   "comfyHubProfile": {
@@ -648,6 +664,7 @@
     "Open in Mask Editor": "Abrir en Editor de Máscara",
     "Outputs": "Salidas",
     "Paste": "Pegar",
+    "Paste Image": "Pegar imagen",
     "Pin": "Anclar",
     "Properties": "Propiedades",
     "Properties Panel": "Panel de Propiedades",
@@ -731,6 +748,10 @@
       "tooltip": "Hemos unificado los pagos en Comfy. Ahora todo funciona con Comfy Credits:\n- Nodos de socios (antes nodos API)\n- Flujos de trabajo en la nube\n\nTu saldo existente de nodos de socios se ha convertido en créditos."
     },
     "yourCreditBalance": "Tu saldo de créditos"
+  },
+  "curveWidget": {
+    "linear": "Lineal",
+    "monotone_cubic": "Suave"
   },
   "dataTypes": {
     "*": "*",
@@ -922,9 +943,11 @@
     "2x": "2x",
     "about": "Acerca de",
     "add": "Añadir",
+    "addNewKeybinding": "Agregar nueva combinación de teclas",
     "addNode": "Agregar un nodo...",
     "addNodeFilterCondition": "Agregar condición de filtro de nodo",
     "all": "Todo",
+    "allKeybindingsReset": "Todas las combinaciones de teclas se restablecieron a los valores predeterminados",
     "amount": "Cantidad",
     "apply": "Aplicar",
     "architecture": "Arquitectura",
@@ -943,6 +966,7 @@
     "cancelled": "Cancelado",
     "capture": "captura",
     "category": "Categoría",
+    "changeKeybinding": "Cambiar combinación de teclas",
     "chart": "Gráfico",
     "chartLowercase": "gráfico",
     "choose_file_to_upload": "elige archivo para subir",
@@ -1095,6 +1119,7 @@
     "moreWorkflows": "Más flujos de trabajo",
     "mostRelevant": "Más relevante",
     "multiSelectDropdown": "Menú desplegable de selección múltiple",
+    "nMoreKeybindings": "+ {count} más",
     "name": "Nombre",
     "newFolder": "Nueva carpeta",
     "next": "Siguiente",
@@ -1132,6 +1157,8 @@
     "playRecording": "Reproducir grabación",
     "playbackSpeed": "Velocidad de reproducción",
     "playing": "Reproduciendo",
+    "preloadError": "No se pudo cargar un recurso necesario. Por favor, recarga la página.",
+    "preloadErrorTitle": "Error de carga",
     "preview": "VISTA PREVIA",
     "previousImage": "Imagen anterior",
     "profile": "Perfil",
@@ -1155,7 +1182,11 @@
     "releaseTitle": "Lanzamiento de {package} {version}",
     "reloadToApplyChanges": "Recargar para aplicar cambios",
     "remove": "Eliminar",
+    "removeAll": "Eliminar todo",
+    "removeAllKeybindingsMessage": "Se eliminarán todas las combinaciones de teclas para este comando",
+    "removeAllKeybindingsTitle": "¿Eliminar todas las combinaciones de teclas?",
     "removeImage": "Eliminar imagen",
+    "removeKeybinding": "Eliminar combinación de teclas",
     "removeTag": "Eliminar etiqueta",
     "removeVideo": "Eliminar video",
     "rename": "Renombrar",
@@ -1164,7 +1195,10 @@
     "reportSent": "Informe enviado",
     "reset": "Reiniciar",
     "resetAll": "Restablecer todo",
+    "resetAllKeybindingsMessage": "Todas las combinaciones de teclas se restablecerán a sus valores predeterminados. Esto no se puede deshacer.",
+    "resetAllKeybindingsTitle": "¿Restablecer todas las combinaciones de teclas?",
     "resetAllKeybindingsTooltip": "Restablecer todas las teclas de acceso rápido a la configuración predeterminada",
+    "resetToDefault": "Restablecer a predeterminado",
     "resizeFromBottomLeft": "Redimensionar desde la esquina inferior izquierda",
     "resizeFromBottomRight": "Redimensionar desde la esquina inferior derecha",
     "resizeFromTopLeft": "Redimensionar desde la esquina superior izquierda",
@@ -1584,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nodos principales de la versión {version}:",
     "outdatedVersion": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI ({version}). Es posible que algunos nodos no funcionen correctamente.",
-    "outdatedVersionGeneric": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI. Es posible que algunos nodos no funcionen correctamente."
+    "outdatedVersionGeneric": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI. Es posible que algunos nodos no funcionen correctamente.",
+    "unknownVersion": "desconocido"
   },
   "maintenance": {
     "None": "Ninguno",
@@ -2406,6 +2441,7 @@
     "groupSettings": "Configuración de grupo",
     "groups": "Grupos",
     "hideAdvancedInputsButton": "Ocultar entradas avanzadas",
+    "hideAdvancedShort": "Ocultar avanzado",
     "hideInput": "Ocultar entrada",
     "info": "Información",
     "inputs": "ENTRADAS",
@@ -2420,7 +2456,9 @@
       "collapseNodes": "Ocultar nodos de referencia",
       "confirmSelection": "Confirmar selección",
       "copyModelName": "Copiar nombre del modelo",
+      "copyUrl": "Copiar URL",
       "customNodeDownloadDisabled": "El entorno en la nube no admite la importación de modelos para nodos personalizados en esta sección. Por favor, utiliza nodos estándar de carga o sustituye con un modelo de la biblioteca de abajo.",
+      "downloadAll": "Descargar todo",
       "expandNodes": "Mostrar nodos de referencia",
       "import": "Importar",
       "importAnyway": "Importar de todos modos",
@@ -2487,6 +2525,7 @@
     "seeError": "Ver error",
     "settings": "Configuración",
     "showAdvancedInputsButton": "Mostrar entradas avanzadas",
+    "showAdvancedShort": "Mostrar avanzado",
     "showInput": "Mostrar entrada",
     "title": "Ningún nodo seleccionado | 1 nodo seleccionado | {count} nodos seleccionados",
     "togglePanel": "Mostrar/ocultar panel de propiedades",

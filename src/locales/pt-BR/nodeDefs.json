@@ -15251,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "Após inserir o modelo 3D, realize a repintura da textura do modelo 3D.",
+    "display_name": "Hunyuan3D: Edição de Textura 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Modelo 3D no formato FBX. O modelo deve ter menos de 100000 faces."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descreve a edição da textura. Suporta até 1024 caracteres UTF-8."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Imagem(ns) para Modelo (Pro)",
     "inputs": {
@@ -15298,6 +15333,22 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
         "tooltip": null
       }
     }
@@ -15399,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }

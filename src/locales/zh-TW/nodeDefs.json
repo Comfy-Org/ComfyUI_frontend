@@ -15251,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "輸入 3D 模型後，進行 3D 模型紋理重繪。",
+    "display_name": "Hunyuan3D：3D 紋理編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX 格式的 3D 模型。模型面數應少於 100000。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "描述紋理編輯內容。支援最多 1024 個 UTF-8 字元。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制節點是否重新執行；無論 seed 為何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D：圖片轉模型（專業版）",
     "inputs": {
@@ -15298,6 +15333,22 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
         "tooltip": null
       }
     }
@@ -15399,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }

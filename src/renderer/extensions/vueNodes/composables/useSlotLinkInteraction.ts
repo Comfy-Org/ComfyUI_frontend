@@ -748,6 +748,7 @@ export function useSlotLinkInteraction({
   })
 
   function onDoubleClick(e: PointerEvent) {
+    if (!app.canvas) return
     const { graph } = app.canvas
     if (!graph) return
     const node = graph.getNodeById(nodeId)
@@ -756,6 +757,7 @@ export function useSlotLinkInteraction({
     node.onInputDblClick?.(index, e)
   }
   function onClick(e: PointerEvent) {
+    if (!app.canvas) return
     const { graph } = app.canvas
     if (!graph) return
     const node = graph.getNodeById(nodeId)

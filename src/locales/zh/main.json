@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "密码重置邮件已发送",
   "cloudForgotPassword_sendResetLink": "发送重置链接",
   "cloudForgotPassword_title": "忘记密码",
+  "cloudNotification": {
+    "continueLocally": "本地继续",
+    "exploreCloud": "免费试用云端",
+    "feature1Title": "每月 400 免费积分",
+    "feature2Title": "随时随地，立即可用",
+    "feature3Title": "模型即刻可用",
+    "feature4Title": "顶级自定义节点包预装",
+    "footer": "ComfyUI 始终免费且开源。云服务为可选项。",
+    "message": "从设置到创作只需几秒。热门模型、扩展和强大 GPU —— 随时可用。",
+    "title": "在云端运行 ComfyUI"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -502,6 +513,7 @@
   "cloudWaitlist_contactLink": "这里",
   "cloudWaitlist_questionsText": "有问题？联系我们",
   "color": {
+    "alpha": "透明度",
     "black": "黑色",
     "blue": "蓝色",
     "brown": "棕色",
@@ -509,11 +521,15 @@
     "cyan": "青色",
     "default": "默认",
     "green": "绿色",
+    "hex": "十六进制",
+    "hue": "色相",
     "noColor": "无色",
     "pale_blue": "淡蓝色",
     "pink": "粉色",
     "purple": "紫色",
     "red": "红色",
+    "rgba": "RGBA",
+    "saturationBrightness": "颜色饱和度和亮度",
     "yellow": "黄色"
   },
   "comfyHubProfile": {
@@ -648,6 +664,7 @@
     "Open in Mask Editor": "用遮罩编辑器打开",
     "Outputs": "输出",
     "Paste": "粘贴",
+    "Paste Image": "粘贴图像",
     "Pin": "固定",
     "Properties": "属性",
     "Properties Panel": "属性面板",
@@ -731,6 +748,10 @@
       "tooltip": "我们统一了 Comfy 的支付方式。现在全部使用 Comfy 积分 :\n- 合作节点（API节点）\n- Cloud 工作流\n\n您现有的合作伙伴节点积分将自动转换为 Comfy 积分。"
     },
     "yourCreditBalance": "您的积分余额"
+  },
+  "curveWidget": {
+    "linear": "线性",
+    "monotone_cubic": "平滑"
   },
   "dataTypes": {
     "*": "*",
@@ -922,9 +943,11 @@
     "2x": "2倍",
     "about": "关于",
     "add": "添加",
+    "addNewKeybinding": "添加新快捷键",
     "addNode": "添加节点...",
     "addNodeFilterCondition": "添加节点筛选条件",
     "all": "全部",
+    "allKeybindingsReset": "所有快捷键已重置为默认值",
     "amount": "数量",
     "apply": "应用",
     "architecture": "架构",
@@ -943,6 +966,7 @@
     "cancelled": "已取消",
     "capture": "捕获",
     "category": "类别",
+    "changeKeybinding": "更改快捷键",
     "chart": "图表",
     "chartLowercase": "图表",
     "choose_file_to_upload": "选择要上传的文件",
@@ -1095,6 +1119,7 @@
     "moreWorkflows": "更多工作流",
     "mostRelevant": "最相关",
     "multiSelectDropdown": "多选下拉框",
+    "nMoreKeybindings": "还有 + {count} 个",
     "name": "名称",
     "newFolder": "新文件夹",
     "next": "下一个",
@@ -1132,6 +1157,8 @@
     "playRecording": "播放录音",
     "playbackSpeed": "播放速度",
     "playing": "播放中",
+    "preloadError": "所需资源加载失败。请重新加载页面。",
+    "preloadErrorTitle": "加载错误",
     "preview": "预览",
     "previousImage": "上一张图像",
     "profile": "档案",
@@ -1155,7 +1182,11 @@
     "releaseTitle": "{package} {version} 发布",
     "reloadToApplyChanges": "重新加载以应用更改",
     "remove": "移除",
+    "removeAll": "全部移除",
+    "removeAllKeybindingsMessage": "该命令的所有快捷键都将被移除",
+    "removeAllKeybindingsTitle": "移除所有快捷键？",
     "removeImage": "移除图片",
+    "removeKeybinding": "移除快捷键",
     "removeTag": "移除标签",
     "removeVideo": "移除视频",
     "rename": "重命名",
@@ -1164,7 +1195,10 @@
     "reportSent": "报告已提交",
     "reset": "重置",
     "resetAll": "重置所有",
+    "resetAllKeybindingsMessage": "所有快捷键将被重置为默认值。此操作无法撤销。",
+    "resetAllKeybindingsTitle": "重置所有快捷键？",
     "resetAllKeybindingsTooltip": "将所有键绑定重置为默认",
+    "resetToDefault": "重置为默认值",
     "resizeFromBottomLeft": "从左下角调整大小",
     "resizeFromBottomRight": "从右下角调整大小",
     "resizeFromTopLeft": "从左上角调整大小",
@@ -1584,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "核心节点来源于 {version} 版本。",
     "outdatedVersion": "这个工作流由新版 ComfyUI（{version}）创建，部分节点可能无法正常运行。",
-    "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。"
+    "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。",
+    "unknownVersion": "未知"
   },
   "maintenance": {
     "None": "无",
@@ -2406,6 +2441,7 @@
     "groupSettings": "分组设置",
     "groups": "分组",
     "hideAdvancedInputsButton": "隐藏高级输入",
+    "hideAdvancedShort": "隐藏高级选项",
     "hideInput": "隐藏输入",
     "info": "信息",
     "inputs": "输入",
@@ -2420,7 +2456,9 @@
       "collapseNodes": "隐藏引用节点",
       "confirmSelection": "确认选择",
       "copyModelName": "复制模型名称",
+      "copyUrl": "复制链接",
       "customNodeDownloadDisabled": "云环境不支持在此部分为自定义节点导入模型。请使用标准加载节点或在下方库中选择模型替代。",
+      "downloadAll": "全部下载",
       "expandNodes": "显示引用节点",
       "import": "导入",
       "importAnyway": "仍然导入",
@@ -2487,6 +2525,7 @@
     "seeError": "查看错误",
     "settings": "设置",
     "showAdvancedInputsButton": "显示高级输入",
+    "showAdvancedShort": "显示高级选项",
     "showInput": "显示输入",
     "title": "无选中节点 | 选中了 1 个节点 | 选中了 {count} 个节点",
     "togglePanel": "开关属性面板",

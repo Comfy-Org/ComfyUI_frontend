@@ -13,11 +13,10 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
-import { useMissingModelsDialog } from '@/composables/useMissingModelsDialog'
-import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
@@ -40,8 +39,6 @@ export const useWorkflowService = () => {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
-  const missingModelsDialog = useMissingModelsDialog()
-  const missingNodesDialog = useMissingNodesDialog()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const executionErrorStore = useExecutionErrorStore()
@@ -242,8 +239,8 @@ export const useWorkflowService = () => {
       /* restore_view=*/ true,
       workflow,
       {
-        showMissingModelsDialog: loadFromRemote,
-        showMissingNodesDialog: loadFromRemote,
+        showMissingModels: loadFromRemote,
+        showMissingNodes: true,
         checkForRerouteMigration: false,
         deferWarnings: true
       }
@@ -539,24 +536,11 @@ export const useWorkflowService = () => {
     const wf = workflow ?? workflowStore.activeWorkflow
     if (!wf?.pendingWarnings) return
 
-    const { missingNodeTypes, missingModels } = wf.pendingWarnings
+    const { missingNodeTypes } = wf.pendingWarnings
     wf.pendingWarnings = null
 
     if (missingNodeTypes?.length) {
-      // Remove modal once Node Replacement is implemented in TabErrors.
-      if (settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')) {
-        missingNodesDialog.show({ missingNodeTypes })
-      }
       executionErrorStore.surfaceMissingNodes(missingNodeTypes)
-    }
-
-    // Missing models are NOT surfaced to the Errors tab here.
-    // On Cloud, the dedicated pipeline in app.ts handles detection and
-    // surfacing via surfaceMissingModels(). OSS uses only this dialog.
-    if (missingModels) {
-      if (settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')) {
-        missingModelsDialog.show(missingModels)
-      }
     }
   }
 

@@ -481,6 +481,10 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Escala los menús de widgets combinados de nodos (listas) al acercar"
   },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "Seleccionar los elementos del grupo al hacer clic",
+    "tooltip": "Cuando está activado, al hacer clic en un grupo se seleccionan todos los nodos y elementos dentro de él"
+  },
   "LiteGraph_Node_DefaultPadding": {
     "name": "Reducir siempre los nuevos nodos",
     "tooltip": "Redimensiona los nodos al tamaño más pequeño posible al crearlos. Si está desactivado, un nodo recién añadido se ampliará ligeramente para mostrar los valores de los widgets."

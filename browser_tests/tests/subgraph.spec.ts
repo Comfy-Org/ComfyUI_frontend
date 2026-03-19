@@ -631,6 +631,29 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       expect(updatedBreadcrumbText).toContain(UPDATED_SUBGRAPH_TITLE)
       expect(updatedBreadcrumbText).not.toBe(initialBreadcrumbText)
     })
+
+    test('Switching workflows while inside subgraph returns to root graph context', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.nextFrame()
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+      await comfyPage.nextFrame()
+
+      expect(await isInSubgraph(comfyPage)).toBe(true)
+      await expect(comfyPage.page.locator(SELECTORS.breadcrumb)).toBeVisible()
+
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.nextFrame()
+
+      expect(await isInSubgraph(comfyPage)).toBe(false)
+
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.nextFrame()
+      expect(await isInSubgraph(comfyPage)).toBe(false)
+    })
   })
 
   test.describe('DOM Widget Promotion', () => {
@@ -744,11 +767,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       })
 
       // Click breadcrumb to navigate back to parent graph
-      const homeBreadcrumb = comfyPage.page.getByRole('link', {
-        // In the subgraph navigation breadcrumbs, the home/top level
-        // breadcrumb is just the workflow name without the folder path
-        name: 'subgraph-with-promoted-text-widget'
-      })
+      const homeBreadcrumb = comfyPage.page.locator(
+        '.p-breadcrumb-list > :first-child'
+      )
       await homeBreadcrumb.waitFor({ state: 'visible' })
       await homeBreadcrumb.click()
       await comfyPage.nextFrame()
