@@ -4,6 +4,6 @@ export default defineComfyExtConfig({
   name: 'Comfy.Cloud.Subscription',
   activationEvents: ['*'],
   comfyCloud: {
-    subscriptionRequired: true,
-  },
+    subscriptionRequired: true
+  }
 })
