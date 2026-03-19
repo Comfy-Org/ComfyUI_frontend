@@ -62,14 +62,16 @@
               @preview-click="emit('preview-asset', item.asset)"
               @stack-toggle="void toggleStack(item.asset)"
             >
-              <template v-if="hoveredAssetId === item.asset.id" #actions>
+              <template v-if="shouldShowActionsMenu(item.asset.id)" #actions>
                 <MediaAssetActionsMenu
+                  :open="openActionsAssetId === item.asset.id"
                   :asset="item.asset"
                   :asset-type="getAssetType(item.asset.tags)"
                   :file-kind="getAssetMediaType(item.asset)"
                   :show-delete-button
                   :selected-assets
                   :is-bulk-mode
+                  @update:open="onActionsMenuOpenChange(item.asset.id, $event)"
                   @zoom="emit('preview-asset', item.asset)"
                   @asset-deleted="emit('asset-deleted')"
                   @bulk-download="emit('bulk-download', $event)"
@@ -82,6 +84,7 @@
                     variant="secondary"
                     size="icon"
                     :aria-label="t('mediaAsset.actions.moreOptions')"
+                    @click.stop
                   >
                     <i class="icon-[lucide--ellipsis] size-4" />
                   </Button>
@@ -156,6 +159,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const hoveredAssetId = ref<string | null>(null)
+const openActionsAssetId = ref<string | null>(null)
 
 const listGridStyle = {
   display: 'grid',
@@ -222,6 +226,23 @@ function getAssetCardClass(selected: boolean): string {
     selected &&
       'bg-secondary-background-hover ring-1 ring-modal-card-border-highlighted ring-inset'
   )
+}
+
+function shouldShowActionsMenu(assetId: string): boolean {
+  return (
+    hoveredAssetId.value === assetId || openActionsAssetId.value === assetId
+  )
+}
+
+function onActionsMenuOpenChange(assetId: string, isOpen: boolean): void {
+  if (isOpen) {
+    openActionsAssetId.value = assetId
+    return
+  }
+
+  if (openActionsAssetId.value === assetId) {
+    openActionsAssetId.value = null
+  }
 }
 
 function onAssetEnter(assetId: string) {

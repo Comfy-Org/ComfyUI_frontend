@@ -119,4 +119,20 @@ describe('MediaAssetContextMenu', () => {
     expect(wrapper.emitted('zoom')).toEqual([[]])
     wrapper.unmount()
   })
+
+  it('closes on scroll', async () => {
+    const wrapper = mountComponent()
+
+    const menu = await showMenu()
+    expect(menu).not.toBeNull()
+
+    window.dispatchEvent(new Event('scroll'))
+    await waitForMenuUpdate()
+
+    expect(
+      document.body.querySelector('.media-asset-context-menu-content')
+    ).toBeNull()
+
+    wrapper.unmount()
+  })
 })

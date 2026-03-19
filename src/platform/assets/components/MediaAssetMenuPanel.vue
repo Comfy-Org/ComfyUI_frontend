@@ -101,28 +101,44 @@ useEventListener(
   { capture: true, passive: true }
 )
 
-const showAddToWorkflow = computed(() => {
+function canAddToWorkflow(candidate: AssetItem): boolean {
   if (assetType === 'output') return true
 
-  if (assetType === 'input' && asset?.name) {
-    const { nodeType } = detectNodeTypeFromFilename(asset.name)
+  if (assetType === 'input' && candidate.name) {
+    const { nodeType } = detectNodeTypeFromFilename(candidate.name)
     return nodeType !== null
   }
 
   return false
-})
+}
 
-const showWorkflowActions = computed(() => {
+function canShowWorkflowActions(candidate: AssetItem): boolean {
   if (assetType === 'output') return true
 
-  if (assetType === 'input' && asset?.name) {
-    return supportsWorkflowMetadata(asset.name)
+  if (assetType === 'input' && candidate.name) {
+    return supportsWorkflowMetadata(candidate.name)
   }
 
   return false
+}
+
+const showAddToWorkflow = computed(() => {
+  return asset ? canAddToWorkflow(asset) : false
+})
+
+const showWorkflowActions = computed(() => {
+  return asset ? canShowWorkflowActions(asset) : false
 })
 
 const showCopyJobId = computed(() => assetType !== 'input')
+
+const allSelectedCanAddToWorkflow = computed(() => {
+  return selectedAssets?.every(canAddToWorkflow) ?? false
+})
+
+const allSelectedShowWorkflowActions = computed(() => {
+  return selectedAssets?.every(canShowWorkflowActions) ?? false
+})
 
 const shouldShowDeleteButton = computed(() => {
   const propAllows = showDeleteButton ?? true
@@ -151,24 +167,31 @@ const contextMenuItems = computed<ContextMenuItem[]>(() => {
       label: t('mediaAsset.selection.multipleSelectedAssets'),
       disabled: true
     })
-    items.push({
-      key: 'bulk-add-to-workflow',
-      label: t('mediaAsset.selection.insertAllAssetsAsNodes'),
-      icon: 'icon-[comfy--node]',
-      onSelect: () => emit('bulk-add-to-workflow', selectedAssets)
-    })
-    items.push({
-      key: 'bulk-open-workflow',
-      label: t('mediaAsset.selection.openWorkflowAll'),
-      icon: 'icon-[comfy--workflow]',
-      onSelect: () => emit('bulk-open-workflow', selectedAssets)
-    })
-    items.push({
-      key: 'bulk-export-workflow',
-      label: t('mediaAsset.selection.exportWorkflowAll'),
-      icon: 'icon-[lucide--file-output]',
-      onSelect: () => emit('bulk-export-workflow', selectedAssets)
-    })
+
+    if (allSelectedCanAddToWorkflow.value) {
+      items.push({
+        key: 'bulk-add-to-workflow',
+        label: t('mediaAsset.selection.insertAllAssetsAsNodes'),
+        icon: 'icon-[comfy--node]',
+        onSelect: () => emit('bulk-add-to-workflow', selectedAssets)
+      })
+    }
+
+    if (allSelectedShowWorkflowActions.value) {
+      items.push({
+        key: 'bulk-open-workflow',
+        label: t('mediaAsset.selection.openWorkflowAll'),
+        icon: 'icon-[comfy--workflow]',
+        onSelect: () => emit('bulk-open-workflow', selectedAssets)
+      })
+      items.push({
+        key: 'bulk-export-workflow',
+        label: t('mediaAsset.selection.exportWorkflowAll'),
+        icon: 'icon-[lucide--file-output]',
+        onSelect: () => emit('bulk-export-workflow', selectedAssets)
+      })
+    }
+
     items.push({
       key: 'bulk-download',
       label: t('mediaAsset.selection.downloadSelectedAll'),

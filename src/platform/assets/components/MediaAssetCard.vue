@@ -66,6 +66,7 @@
           </Button>
           <MediaAssetActionsMenu
             v-if="asset"
+            v-model:open="isActionsMenuOpen"
             :asset
             :asset-type="assetType"
             :file-kind="fileKind"
@@ -84,6 +85,7 @@
               variant="overlay-white"
               size="icon"
               :aria-label="$t('mediaAsset.actions.moreOptions')"
+              @click.stop
             >
               <i class="icon-[lucide--ellipsis] size-4" />
             </Button>
@@ -230,6 +232,7 @@ const cardContainerRef = ref<HTMLElement>()
 
 const isVideoPlaying = ref(false)
 const showVideoControls = ref(false)
+const isActionsMenuOpen = ref(false)
 
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
@@ -317,7 +320,12 @@ const metaInfo = computed(() => {
 
 const showActionsOverlay = computed(() => {
   if (loading || !asset || isDeleting.value) return false
-  return isHovered.value || selected || isVideoPlaying.value
+  return (
+    isHovered.value ||
+    selected ||
+    isVideoPlaying.value ||
+    isActionsMenuOpen.value
+  )
 })
 
 const handleZoomClick = () => {

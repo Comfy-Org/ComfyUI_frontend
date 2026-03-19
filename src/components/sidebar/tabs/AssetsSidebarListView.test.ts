@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { defineComponent } from 'vue'
+import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
@@ -7,19 +8,24 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
-
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     isAssetDeleting: () => false
   })
 }))
 
-const VirtualGridStub = defineComponent({
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  fallbackLocale: 'en',
+  missingWarn: false,
+  fallbackWarn: false,
+  messages: {
+    en: {}
+  }
+})
+
+const VirtualGridStub = {
   name: 'VirtualGrid',
   props: {
     items: {
@@ -29,7 +35,34 @@ const VirtualGridStub = defineComponent({
   },
   template:
     '<div><slot v-for="item in items" :key="item.key" name="item" :item="item" /></div>'
-})
+}
+
+const AssetsListItemStub = {
+  name: 'AssetsListItem',
+  template:
+    '<div class="assets-list-item-stub"><slot /><slot name="actions" /></div>'
+}
+
+const MediaAssetContextMenuStub = {
+  name: 'MediaAssetContextMenu',
+  template: '<div class="media-asset-context-menu-stub"><slot /></div>'
+}
+
+const MediaAssetActionsMenuStub = {
+  name: 'MediaAssetActionsMenu',
+  props: {
+    open: {
+      type: Boolean,
+      default: false
+    }
+  },
+  template: '<div class="media-asset-actions-menu-stub"><slot /></div>'
+}
+
+const ButtonComponentStub = {
+  name: 'AppButton',
+  template: '<button class="button-stub" type="button"><slot /></button>'
+}
 
 const buildAsset = (id: string, name: string): AssetItem =>
   ({
@@ -53,7 +86,29 @@ const mountListView = (assetItems: OutputStackListItem[] = []) =>
       toggleStack: async () => {}
     },
     global: {
+      plugins: [i18n],
       stubs: {
+        VirtualGrid: VirtualGridStub
+      }
+    }
+  })
+
+const mountInteractiveListView = (assetItems: OutputStackListItem[] = []) =>
+  mount(AssetsSidebarListView, {
+    props: {
+      assetItems,
+      selectableAssets: [],
+      isSelected: () => false,
+      isStackExpanded: () => false,
+      toggleStack: async () => {}
+    },
+    global: {
+      plugins: [i18n],
+      stubs: {
+        AssetsListItem: AssetsListItemStub,
+        Button: ButtonComponentStub,
+        MediaAssetActionsMenu: MediaAssetActionsMenuStub,
+        MediaAssetContextMenu: MediaAssetContextMenuStub,
         VirtualGrid: VirtualGridStub
       }
     }
@@ -130,5 +185,51 @@ describe('AssetsSidebarListView', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.emitted('preview-asset')).toEqual([[imageAsset]])
+  })
+
+  it('keeps row actions mounted while the dropdown is open', async () => {
+    const imageAsset = {
+      ...buildAsset('image-asset-open', 'image.png'),
+      user_metadata: {}
+    } satisfies AssetItem
+
+    const wrapper = mountInteractiveListView([buildOutputItem(imageAsset)])
+    const assetListItem = wrapper.find('.assets-list-item-stub')
+
+    await assetListItem.trigger('mouseenter')
+
+    const actionsMenu = wrapper.findComponent(MediaAssetActionsMenuStub)
+    expect(actionsMenu.exists()).toBe(true)
+
+    actionsMenu.vm.$emit('update:open', true)
+    await nextTick()
+    await assetListItem.trigger('mouseleave')
+    await nextTick()
+
+    expect(wrapper.findComponent(MediaAssetActionsMenuStub).exists()).toBe(true)
+
+    wrapper
+      .findComponent(MediaAssetActionsMenuStub)
+      .vm.$emit('update:open', false)
+    await nextTick()
+
+    expect(wrapper.findComponent(MediaAssetActionsMenuStub).exists()).toBe(
+      false
+    )
+  })
+
+  it('does not select the row when clicking the actions trigger', async () => {
+    const imageAsset = {
+      ...buildAsset('image-asset-actions', 'image.png'),
+      user_metadata: {}
+    } satisfies AssetItem
+
+    const wrapper = mountInteractiveListView([buildOutputItem(imageAsset)])
+    const assetListItem = wrapper.find('.assets-list-item-stub')
+
+    await assetListItem.trigger('mouseenter')
+    await wrapper.find('.button-stub').trigger('click')
+
+    expect(wrapper.emitted('select-asset')).toBeUndefined()
   })
 })
