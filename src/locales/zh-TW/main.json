@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "密碼重設已發送",
   "cloudForgotPassword_sendResetLink": "寄送重設連結",
   "cloudForgotPassword_title": "忘記密碼",
+  "cloudNotification": {
+    "continueLocally": "在本地繼續",
+    "exploreCloud": "免費試用雲端",
+    "feature1Title": "每月 400 點免費額度",
+    "feature2Title": "隨處可用，立即啟動",
+    "feature3Title": "模型即刻可用",
+    "feature4Title": "頂級自訂節點包預先安裝",
+    "footer": "ComfyUI 持續免費且開源。雲端服務為選用項目。",
+    "message": "從設定到創作只需幾秒。熱門模型、擴充套件與強大 GPU，隨時待命。",
+    "title": "在雲端運行 ComfyUI"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -653,6 +664,7 @@
     "Open in Mask Editor": "在遮罩編輯器中開啟",
     "Outputs": "輸出",
     "Paste": "貼上",
+    "Paste Image": "貼上圖片",
     "Pin": "釘選",
     "Properties": "屬性",
     "Properties Panel": "屬性面板",
@@ -736,6 +748,10 @@
       "tooltip": "我們已統一 Comfy 的付款系統。現在一切都以 Comfy 點數運作：\n- 合作夥伴節點（原 API 節點）\n- 雲端工作流程\n\n您原有的合作夥伴節點餘額已轉換為點數。"
     },
     "yourCreditBalance": "您的點數餘額"
+  },
+  "curveWidget": {
+    "linear": "線性",
+    "monotone_cubic": "平滑"
   },
   "dataTypes": {
     "*": "*",
@@ -1602,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "來自版本 {version} 的核心節點：",
     "outdatedVersion": "此工作流程是以較新版本的 ComfyUI（{version}）建立的。部分節點可能無法正確運作。",
-    "outdatedVersionGeneric": "此工作流程是以較新版本的 ComfyUI 建立的。部分節點可能無法正確運作。"
+    "outdatedVersionGeneric": "此工作流程是以較新版本的 ComfyUI 建立的。部分節點可能無法正確運作。",
+    "unknownVersion": "未知"
   },
   "maintenance": {
     "None": "無",

@@ -104,7 +104,13 @@ describe('useLoad3dViewer', () => {
       }),
       forceRender: vi.fn(),
       remove: vi.fn(),
-      setTargetSize: vi.fn()
+      setTargetSize: vi.fn(),
+      loadModel: vi.fn().mockResolvedValue(undefined),
+      setCameraState: vi.fn(),
+      addEventListener: vi.fn(),
+      hasAnimations: vi.fn().mockReturnValue(false),
+      isSplatModel: vi.fn().mockReturnValue(false),
+      isPlyModel: vi.fn().mockReturnValue(false)
     }
 
     mockSourceLoad3d = {
@@ -533,7 +539,9 @@ describe('useLoad3dViewer', () => {
 
   describe('handleBackgroundImageUpdate', () => {
     it('should upload and set background image', async () => {
-      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded-image.jpg')
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        'uploaded-image.jpg'
+      )
 
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
@@ -550,7 +558,9 @@ describe('useLoad3dViewer', () => {
 
     it('should use resource folder for upload', async () => {
       mockNode.properties['Resource Folder'] = 'subfolder'
-      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded-image.jpg')
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        'uploaded-image.jpg'
+      )
 
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
@@ -594,6 +604,21 @@ describe('useLoad3dViewer', () => {
       expect(mockToastStore.addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToUploadBackgroundImage'
       )
+    })
+
+    it('should work in standalone mode without a node', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        'uploaded-image.jpg'
+      )
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      await viewer.initializeStandaloneViewer(containerRef, 'model.glb')
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await viewer.handleBackgroundImageUpdate(file)
+
+      expect(Load3dUtils.uploadFile).toHaveBeenCalledWith(file, '3d')
+      expect(viewer.backgroundImage.value).toBe('uploaded-image.jpg')
     })
   })
 
@@ -652,6 +677,65 @@ describe('useLoad3dViewer', () => {
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       expect(viewer.lightIntensity.value).toBe(1) // Default value
+    })
+  })
+
+  describe('standalone mode persistence', () => {
+    it('should save and restore configuration in standalone mode', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      const model1 = 'model1.glb'
+      const model2 = 'model2.glb'
+
+      await viewer.initializeStandaloneViewer(containerRef, model1)
+      expect(viewer.isStandaloneMode.value).toBe(true)
+
+      viewer.backgroundColor.value = '#ff0000'
+      viewer.showGrid.value = false
+      viewer.cameraType.value = 'orthographic'
+      viewer.fov.value = 45
+      viewer.lightIntensity.value = 2
+      viewer.backgroundImage.value = 'test.jpg'
+      viewer.backgroundRenderMode.value = 'tiled'
+      viewer.upDirection.value = '+y'
+      viewer.materialMode.value = 'wireframe'
+      await nextTick()
+
+      await viewer.initializeStandaloneViewer(containerRef, model2)
+      expect(viewer.backgroundColor.value).toBe('#282828')
+      expect(viewer.showGrid.value).toBe(true)
+      expect(viewer.backgroundImage.value).toBe('')
+
+      await viewer.initializeStandaloneViewer(containerRef, model1)
+      expect(viewer.backgroundColor.value).toBe('#ff0000')
+      expect(viewer.showGrid.value).toBe(false)
+      expect(viewer.cameraType.value).toBe('orthographic')
+      expect(viewer.fov.value).toBe(45)
+      expect(viewer.lightIntensity.value).toBe(2)
+      expect(viewer.backgroundImage.value).toBe('test.jpg')
+      expect(viewer.hasBackgroundImage.value).toBe(true)
+      expect(viewer.backgroundRenderMode.value).toBe('tiled')
+      expect(viewer.upDirection.value).toBe('+y')
+      expect(viewer.materialMode.value).toBe('wireframe')
+
+      await viewer.initializeStandaloneViewer(containerRef, model2)
+      expect(viewer.backgroundColor.value).toBe('#282828')
+    })
+
+    it('should save configuration during cleanup in standalone mode', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      const modelUrl = 'model_cleanup.glb'
+
+      await viewer.initializeStandaloneViewer(containerRef, modelUrl)
+      viewer.backgroundColor.value = '#0000ff'
+      await nextTick()
+
+      viewer.cleanup()
+
+      const newViewer = useLoad3dViewer()
+      await newViewer.initializeStandaloneViewer(containerRef, modelUrl)
+      expect(newViewer.backgroundColor.value).toBe('#0000ff')
     })
   })
 })

@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "密码重置邮件已发送",
   "cloudForgotPassword_sendResetLink": "发送重置链接",
   "cloudForgotPassword_title": "忘记密码",
+  "cloudNotification": {
+    "continueLocally": "本地继续",
+    "exploreCloud": "免费试用云端",
+    "feature1Title": "每月 400 免费积分",
+    "feature2Title": "随时随地，立即可用",
+    "feature3Title": "模型即刻可用",
+    "feature4Title": "顶级自定义节点包预装",
+    "footer": "ComfyUI 始终免费且开源。云服务为可选项。",
+    "message": "从设置到创作只需几秒。热门模型、扩展和强大 GPU —— 随时可用。",
+    "title": "在云端运行 ComfyUI"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -653,6 +664,7 @@
     "Open in Mask Editor": "用遮罩编辑器打开",
     "Outputs": "输出",
     "Paste": "粘贴",
+    "Paste Image": "粘贴图像",
     "Pin": "固定",
     "Properties": "属性",
     "Properties Panel": "属性面板",
@@ -736,6 +748,10 @@
       "tooltip": "我们统一了 Comfy 的支付方式。现在全部使用 Comfy 积分 :\n- 合作节点（API节点）\n- Cloud 工作流\n\n您现有的合作伙伴节点积分将自动转换为 Comfy 积分。"
     },
     "yourCreditBalance": "您的积分余额"
+  },
+  "curveWidget": {
+    "linear": "线性",
+    "monotone_cubic": "平滑"
   },
   "dataTypes": {
     "*": "*",
@@ -1602,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "核心节点来源于 {version} 版本。",
     "outdatedVersion": "这个工作流由新版 ComfyUI（{version}）创建，部分节点可能无法正常运行。",
-    "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。"
+    "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。",
+    "unknownVersion": "未知"
   },
   "maintenance": {
     "None": "无",
