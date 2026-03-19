@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  extractOutputText,
   extractPlatformFromArtifactDirName,
   pickLatestVideosByPlatform,
   selectVideoCandidateByFile
@@ -59,38 +58,6 @@ describe('pickLatestVideosByPlatform', () => {
         mtimeMs: 200
       }
     ])
-  })
-})
-
-describe('extractOutputText', () => {
-  it('reads output_text when available', () => {
-    expect(extractOutputText({ output_text: 'hello world' })).toBe(
-      'hello world'
-    )
-  })
-
-  it('reads nested output text chunks', () => {
-    const responseBody = {
-      output: [
-        {
-          content: [
-            { type: 'output_text', text: 'first block' },
-            { type: 'refusal', refusal: 'not relevant' }
-          ]
-        },
-        {
-          content: [{ type: 'output_text', text: 'second block' }]
-        }
-      ]
-    }
-
-    expect(extractOutputText(responseBody)).toBe('first block\n\nsecond block')
-  })
-
-  it('returns null when there is no usable text', () => {
-    expect(
-      extractOutputText({ output: [{ content: [{ type: 'tool_call' }] }] })
-    ).toBeNull()
   })
 })
 

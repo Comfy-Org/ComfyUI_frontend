@@ -372,7 +372,7 @@ jobs:
 
       - name: Run video review
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           mkdir -p video-reviews
           for vid in qa-artifacts/qa-report-*/qa-session.mp4; do
@@ -382,7 +382,7 @@ jobs:
               --artifacts-dir qa-artifacts \
               --output-dir video-reviews \
               --video-file "$vid" \
-              --model gpt-4.1-mini || true
+              --model gemini-2.5-flash || true
             echo "::endgroup::"
           done
 
@@ -428,14 +428,14 @@ jobs:
             REPORT_HTML=""
             if [ -f "$REPORT_FILE" ]; then
               cp "$REPORT_FILE" "$DEPLOY_DIR/report-${OS_LOWER}.md"
-              REPORT_LINK="<a class=download href=report-${OS_LOWER}.md>GPT Report</a>"
+              REPORT_LINK="<a class=download href=report-${OS_LOWER}.md>AI Report</a>"
 
               # Convert markdown to basic HTML for inline display
               REPORT_CONTENT=$(sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' "$REPORT_FILE" \
                 | sed 's/^## \(.*\)/<h3>\1<\/h3>/; s/^# \(.*\)/<h2>\1<\/h2>/' \
                 | sed 's/|\(.*\)|/<tr><td>\1<\/td><\/tr>/g' \
                 | sed '/^$/s/.*/<br>/')
-              REPORT_HTML="<details class=report><summary>GPT Video Review</summary><div class=report-body>${REPORT_CONTENT}</div></details>"
+              REPORT_HTML="<details class=report><summary>AI Video Review</summary><div class=report-body>${REPORT_CONTENT}</div></details>"
             fi
 
             if [ -f "$DEPLOY_DIR/qa-${os}.mp4" ]; then
