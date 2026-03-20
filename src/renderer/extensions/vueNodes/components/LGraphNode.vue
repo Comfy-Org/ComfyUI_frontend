@@ -166,7 +166,7 @@
             />
             <NodeContent
               v-for="preview in promotedPreviews"
-              :key="`${preview.interiorNodeId}-${preview.widgetName}`"
+              :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
               :node-data="nodeData"
               :media="preview"
             />
@@ -257,7 +257,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { hasUnpromotedWidgets } from '@/core/graph/subgraph/unpromotedWidgetUtils'
+import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
 import {
   LGraphCanvas,
