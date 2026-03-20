@@ -23,6 +23,27 @@ const {
 
 const dropZoneRef = ref<HTMLElement | null>(null)
 const canAcceptDrop = ref(false)
+const pointerStart = ref<{ x: number; y: number } | null>(null)
+
+function onPointerDown(e: PointerEvent) {
+  pointerStart.value = { x: e.clientX, y: e.clientY }
+}
+
+function onIndicatorClick(e: MouseEvent) {
+  if (e.detail !== 0) {
+    const start = pointerStart.value
+    if (start) {
+      const dx = e.clientX - start.x
+      const dy = e.clientY - start.y
+      if (dx * dx + dy * dy > 25) {
+        pointerStart.value = null
+        return
+      }
+    }
+  }
+  pointerStart.value = null
+  dropIndicator?.onClick?.(e)
+}
 
 const { isOverDropZone } = useDropZone(dropZoneRef, {
   onDrop: (_files, event) => {
@@ -70,16 +91,17 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
       data-slot="drop-zone-indicator"
       :class="
         cn(
-          'm-3 block w-[calc(100%-1.5rem)] appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
+          'm-3 block h-42 min-h-32 w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
           dropIndicator?.onClick && 'cursor-pointer'
         )
       "
-      @click.prevent="dropIndicator?.onClick?.($event)"
+      @pointerdown="onPointerDown"
+      @click.prevent="onIndicatorClick"
     >
       <div
         :class="
           cn(
-            'flex min-h-23 w-full flex-col items-center justify-center gap-2 rounded-[7px] p-6 text-center text-sm/tight transition-colors',
+            'flex h-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[7px] p-3 text-center text-sm/tight transition-colors',
             isHovered &&
               !dropIndicator?.imageUrl &&
               'border border-dashed border-component-node-foreground-secondary bg-component-node-widget-background-hovered'
@@ -88,7 +110,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
       >
         <img
           v-if="dropIndicator?.imageUrl"
-          class="max-h-23 rounded-md object-contain"
+          class="max-h-full max-w-full rounded-md object-contain"
           :alt="dropIndicator?.label ?? ''"
           :src="dropIndicator?.imageUrl"
         />
