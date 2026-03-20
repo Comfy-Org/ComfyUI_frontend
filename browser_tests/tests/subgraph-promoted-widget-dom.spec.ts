@@ -11,7 +11,6 @@ test.describe(
   { tag: '@subgraph' },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
     })
 
@@ -21,11 +20,16 @@ test.describe(
       const { page } = comfyPage
       await comfyPage.workflow.loadWorkflow('default')
 
-      // Convert KSampler (id 3) to subgraph — seed is auto-promoted
+      // Convert KSampler (id 3) to subgraph — seed is auto-promoted.
+      // Vue nodes must be disabled here because convertToSubgraph uses the
+      // litegraph context menu which is intercepted by Vue node overlays.
       const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
       await ksampler.click('title')
       const subgraphNode = await ksampler.convertToSubgraph()
       await comfyPage.nextFrame()
+
+      // Enable Vue nodes now that the subgraph has been created
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 
       const subgraphNodeId = String(subgraphNode.id)
       const promotedNames = await getPromotedWidgetNames(
