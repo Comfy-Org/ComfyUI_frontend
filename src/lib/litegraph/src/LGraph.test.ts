@@ -792,7 +792,7 @@ describe('_removeDuplicateLinks', () => {
     // Serialize and reconfigure — configure() calls _removeDuplicateLinks()
     const serialized = graph.asSerialisable()
     const freshGraph = new LGraph()
-    freshGraph.configure(serialized as never)
+    freshGraph.configure(serialized)
 
     expect(freshGraph._links.size).toBe(1)
     const survivingLink = freshGraph._links.values().next().value!
@@ -833,7 +833,7 @@ describe('_removeDuplicateLinks', () => {
 
     const serialized = graph.asSerialisable()
     const freshGraph = new LGraph()
-    freshGraph.configure(serialized as never)
+    freshGraph.configure(serialized)
 
     // Exactly one link survives
     expect(freshGraph._links.size).toBe(1)

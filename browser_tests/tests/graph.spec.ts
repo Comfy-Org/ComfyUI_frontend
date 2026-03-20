@@ -80,6 +80,9 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
         cfg86Linked,
         cfg85LinkValid,
         cfg86LinkValid,
+        cfg85LinkId: cfgInput85?.link ?? null,
+        cfg86LinkId: cfgInput86?.link ?? null,
+        switchOutputLinkIds: [...(switchCfg.outputs[0]?.links ?? [])],
         switchOutputLinkCount,
         cfgLinkToNode85Count
       }
@@ -96,5 +99,9 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
     expect(result.switchOutputLinkCount).toBe(2)
     // Only 1 link from Switch(CFG) to node 85 (duplicate removed)
     expect(result.cfgLinkToNode85Count).toBe(1)
+    // Output link IDs must match the input link IDs (source/target integrity)
+    expect(result.switchOutputLinkIds).toEqual(
+      expect.arrayContaining([result.cfg85LinkId, result.cfg86LinkId])
+    )
   })
 })

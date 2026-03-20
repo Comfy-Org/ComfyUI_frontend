@@ -169,7 +169,7 @@ export class LGraph
   static STATUS_RUNNING = 2
 
   /** Generates a unique string key for a link's connection tuple. */
-  static _linkTupleKey(link: LLink): string {
+  private static _linkTupleKey(link: LLink): string {
     return `${link.origin_id}\0${link.origin_slot}\0${link.target_id}\0${link.target_slot}`
   }
 
@@ -1664,6 +1664,7 @@ export class LGraph
     if (!node) return ids[0]
 
     for (const input of node.inputs ?? []) {
+      if (!input) continue
       const match = ids.find((id) => input.link === id)
       if (match != null) return match
     }
@@ -1698,7 +1699,8 @@ export class LGraph
     if (!node) return
 
     for (const input of node.inputs ?? []) {
-      if (ids.includes(input.link as LinkId) && input.link !== keepId) {
+      if (!input || input.link == null || input.link === keepId) continue
+      if (ids.includes(input.link as LinkId)) {
         input.link = keepId
       }
     }
