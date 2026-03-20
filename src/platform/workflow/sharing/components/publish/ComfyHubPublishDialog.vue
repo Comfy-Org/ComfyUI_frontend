@@ -59,7 +59,6 @@
         :on-update-form-data="updateFormData"
         :on-go-next="goNext"
         :on-go-back="goBack"
-        :on-cancel="onClose"
         :on-require-profile="handleRequireProfile"
         :on-gate-complete="handlePublishGateComplete"
         :on-gate-close="handlePublishGateClose"

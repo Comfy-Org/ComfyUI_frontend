@@ -62,7 +62,6 @@
         :is-publish-disabled
         :is-publishing="isPublishInFlight"
         @back="onGoBack"
-        @cancel="onCancel"
         @next="onGoNext"
         @publish="handlePublish"
       />
@@ -95,7 +94,6 @@ const {
   isPublishing = false,
   onGoNext,
   onGoBack,
-  onCancel,
   onUpdateFormData,
   onPublish,
   onRequireProfile,
@@ -109,7 +107,6 @@ const {
   isPublishing?: boolean
   onGoNext: () => void
   onGoBack: () => void
-  onCancel: () => void
   onUpdateFormData: (patch: Partial<ComfyHubPublishFormData>) => void
   onPublish: () => Promise<void>
   onRequireProfile: () => void
