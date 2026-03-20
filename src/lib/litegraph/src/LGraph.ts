@@ -78,7 +78,10 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
-import { deduplicateSubgraphNodeIds } from './utils/subgraphDeduplication'
+import {
+  deduplicateSubgraphNodeIds,
+  topologicalSortSubgraphs
+} from './subgraph/subgraphDeduplication'
 
 export type {
   LGraphTriggerAction,
@@ -1625,42 +1628,66 @@ export class LGraph
    * output.links and the graph's _links map.
    */
   _removeDuplicateLinks(): void {
-    const seen = new Map<string, LinkId>()
-    const toRemove: LinkId[] = []
-
+    // Group all link IDs by their connection tuple.
+    const groups = new Map<string, LinkId[]>()
     for (const [id, link] of this._links) {
       const key = LGraph._linkTupleKey(link)
-      if (seen.has(key)) {
-        const existingId = seen.get(key)!
-        // Keep the link that the input side references
-        const node = this.getNodeById(link.target_id)
-        const input = node?.inputs?.[link.target_slot]
-        if (input?.link === id) {
-          toRemove.push(existingId)
-          seen.set(key, id)
-        } else {
-          toRemove.push(id)
-        }
-      } else {
-        seen.set(key, id)
+      let group = groups.get(key)
+      if (!group) {
+        group = []
+        groups.set(key, group)
       }
+      group.push(id)
     }
 
-    for (const id of toRemove) {
-      const link = this._links.get(id)
-      if (!link) continue
+    for (const [, ids] of groups) {
+      if (ids.length <= 1) continue
 
-      // Remove from origin node's output.links array
-      const originNode = this.getNodeById(link.origin_id)
-      if (originNode) {
-        const output = originNode.outputs?.[link.origin_slot]
-        if (output?.links) {
-          const idx = output.links.indexOf(id)
-          if (idx !== -1) output.links.splice(idx, 1)
+      const sampleLink = this._links.get(ids[0])!
+      const node = this.getNodeById(sampleLink.target_id)
+
+      // Find which link ID is actually referenced by any input on the target
+      // node. Cannot rely on target_slot index because widget-to-input
+      // conversions during configure() can shift slot indices.
+      let keepId: LinkId | undefined
+      if (node) {
+        for (const input of node.inputs ?? []) {
+          const match = ids.find((id) => input.link === id)
+          if (match != null) {
+            keepId = match
+            break
+          }
         }
       }
+      keepId ??= ids[0]
 
-      this._links.delete(id)
+      for (const id of ids) {
+        if (id === keepId) continue
+
+        const link = this._links.get(id)
+        if (!link) continue
+
+        // Remove from origin node's output.links array
+        const originNode = this.getNodeById(link.origin_id)
+        if (originNode) {
+          const output = originNode.outputs?.[link.origin_slot]
+          if (output?.links) {
+            const idx = output.links.indexOf(id)
+            if (idx !== -1) output.links.splice(idx, 1)
+          }
+        }
+
+        this._links.delete(id)
+      }
+
+      // Ensure input.link points to the surviving link
+      if (node) {
+        for (const input of node.inputs ?? []) {
+          if (ids.includes(input.link as LinkId) && input.link !== keepId) {
+            input.link = keepId
+          }
+        }
+      }
     }
   }
 
@@ -2561,7 +2588,12 @@ export class LGraph
         effectiveNodesData = deduplicated?.rootNodes ?? nodesData
 
         for (const subgraph of finalSubgraphs) this.createSubgraph(subgraph)
-        for (const subgraph of finalSubgraphs)
+
+        // Configure in leaf-first order so that when a SubgraphNode is
+        // configured, its referenced subgraph definition already has its
+        // nodes/links/inputs populated.
+        const configureOrder = topologicalSortSubgraphs(finalSubgraphs)
+        for (const subgraph of configureOrder)
           this.subgraphs.get(subgraph.id)?.configure(subgraph)
       }
 
@@ -2854,6 +2886,10 @@ export class Subgraph
       }
     }
 
+    // Repair IO slot linkIds that reference links removed by
+    // _removeDuplicateLinks during super.configure().
+    this._repairIOSlotLinkIds()
+
     if (widgets) {
       this.widgets.length = 0
       for (const widget of widgets) {
@@ -2876,6 +2912,50 @@ export class Subgraph
 
     this._configureSubgraph(data)
     return r
+  }
+
+  /**
+   * Repairs SubgraphInput/Output `linkIds` that reference links removed
+   * by `_removeDuplicateLinks` during `super.configure()`.
+   *
+   * For each stale link ID, finds the surviving link that connects to the
+   * same IO node and slot index, and substitutes it.
+   */
+  private _repairIOSlotLinkIds(): void {
+    for (const [slotIndex, slot] of this.inputs.entries()) {
+      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_INPUT_ID, slotIndex)
+    }
+    for (const [slotIndex, slot] of this.outputs.entries()) {
+      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_OUTPUT_ID, slotIndex)
+    }
+  }
+
+  private _repairSlotLinkIds(
+    linkIds: LinkId[],
+    ioNodeId: number,
+    slotIndex: number
+  ): void {
+    const repaired = linkIds.map((id) =>
+      this._links.has(id)
+        ? id
+        : (this._findLinkBySlot(ioNodeId, slotIndex)?.id ?? id)
+    )
+    repaired.forEach((id, i) => {
+      linkIds[i] = id
+    })
+  }
+
+  private _findLinkBySlot(
+    nodeId: number,
+    slotIndex: number
+  ): LLink | undefined {
+    for (const link of this._links.values()) {
+      if (
+        (link.origin_id === nodeId && link.origin_slot === slotIndex) ||
+        (link.target_id === nodeId && link.target_slot === slotIndex)
+      )
+        return link
+    }
   }
 
   override attachCanvas(canvas: LGraphCanvas): void {

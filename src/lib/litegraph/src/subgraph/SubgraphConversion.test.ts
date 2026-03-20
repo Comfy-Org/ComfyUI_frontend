@@ -221,20 +221,16 @@ describe('SubgraphConversion', () => {
       const graphId = graph.id
       const subgraphNodeId = subgraphNode.id
 
-      promotionStore.promote(
-        graphId,
-        subgraphNodeId,
-        String(innerNode.id),
-        'myWidget'
-      )
+      promotionStore.promote(graphId, subgraphNodeId, {
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'myWidget'
+      })
 
       expect(
-        promotionStore.isPromoted(
-          graphId,
-          subgraphNodeId,
-          String(innerNode.id),
-          'myWidget'
-        )
+        promotionStore.isPromoted(graphId, subgraphNodeId, {
+          sourceNodeId: String(innerNode.id),
+          sourceWidgetName: 'myWidget'
+        })
       ).toBe(true)
 
       graph.unpackSubgraph(subgraphNode)

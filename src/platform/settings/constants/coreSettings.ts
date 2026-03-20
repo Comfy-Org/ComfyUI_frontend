@@ -311,6 +311,20 @@ export const CORE_SETTINGS: SettingParams[] = [
       step: 0.01
     }
   },
+  {
+    id: 'Comfy.Graph.AutoPanSpeed',
+    category: ['LiteGraph', 'Canvas', 'AutoPanSpeed'],
+    name: 'Auto-pan speed',
+    tooltip:
+      'Maximum speed when auto-panning by dragging to the canvas edge. Set to 0 to disable auto-panning.',
+    type: 'slider',
+    defaultValue: 15,
+    attrs: {
+      min: 0,
+      max: 30,
+      step: 1
+    }
+  },
   // Bookmarks are stored in the settings store.
   {
     id: 'Comfy.NodeLibrary.NewDesign',
@@ -661,6 +675,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: [] as Keybinding[],
     versionAdded: '1.3.7'
+  },
+  {
+    id: 'Comfy.Keybinding.CurrentPreset',
+    name: 'Current keybinding preset name',
+    type: 'hidden',
+    defaultValue: 'default',
+    versionAdded: '1.8.8'
   },
   {
     id: 'Comfy.Extension.Disabled',

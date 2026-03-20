@@ -43,9 +43,12 @@ const attrs = useAttrs()
   <article
     v-else-if="getMediaType(output) === 'text'"
     :class="
-      cn('m-auto my-12 w-full max-w-lg overflow-y-auto', attrs.class as string)
+      cn(
+        'm-auto my-12 size-full max-w-2xl scroll-shadows-secondary-background overflow-y-auto rounded-lg bg-secondary-background p-4 whitespace-pre-wrap',
+        attrs.class as string
+      )
     "
-    v-text="output.url"
+    v-text="output.content"
   />
   <Preview3d
     v-else-if="getMediaType(output) === '3d'"

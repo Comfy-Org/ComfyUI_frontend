@@ -33,6 +33,7 @@ import { FeatureFlagHelper } from './helpers/FeatureFlagHelper'
 import { KeyboardHelper } from './helpers/KeyboardHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
 import { SettingsHelper } from './helpers/SettingsHelper'
+import { AppModeHelper } from './helpers/AppModeHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
 import { ToastHelper } from './helpers/ToastHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
@@ -176,6 +177,7 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly vueNodes: VueNodeHelpers
+  public readonly appMode: AppModeHelper
   public readonly subgraph: SubgraphHelper
   public readonly canvasOps: CanvasHelper
   public readonly nodeOps: NodeOperationsHelper
@@ -221,12 +223,13 @@ export class ComfyPage {
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.vueNodes = new VueNodeHelpers(page)
+    this.appMode = new AppModeHelper(this)
     this.subgraph = new SubgraphHelper(this)
     this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
     this.nodeOps = new NodeOperationsHelper(this)
     this.settings = new SettingsHelper(page)
     this.keyboard = new KeyboardHelper(page, this.canvas)
-    this.clipboard = new ClipboardHelper(this.keyboard)
+    this.clipboard = new ClipboardHelper(this.keyboard, page)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
@@ -287,9 +290,7 @@ export class ComfyPage {
     clearStorage?: boolean
     mockReleases?: boolean
   } = {}) {
-    await this.goto()
-
-    // Mock release endpoint to prevent changelog popups
+    // Mock release endpoint to prevent changelog popups (before navigation)
     if (mockReleases) {
       await this.page.route('**/releases**', async (route) => {
         const url = route.request().url()
@@ -309,12 +310,16 @@ export class ComfyPage {
     }
 
     if (clearStorage) {
+      // Navigate to a lightweight same-origin endpoint to obtain a page
+      // context for clearing storage without loading the full frontend app.
+      await this.page.goto(`${this.url}/api/users`)
       await this.page.evaluate((id) => {
         localStorage.clear()
         sessionStorage.clear()
         localStorage.setItem('Comfy.userId', id)
       }, this.id)
     }
+
     await this.goto()
 
     await this.page.waitForFunction(() => document.fonts.ready)
