@@ -92,6 +92,8 @@ export interface SafeWidgetData {
    * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
    */
   sourceExecutionId?: string
+  /** Tooltip text from the resolved widget. */
+  tooltip?: string
   /** For promoted widgets, the display label from the subgraph input slot. */
   promotedLabel?: string
 }

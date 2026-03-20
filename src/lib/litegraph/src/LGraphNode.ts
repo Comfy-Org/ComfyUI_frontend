@@ -295,6 +295,12 @@ export class LGraphNode
    */
   freeWidgetSpace?: number
 
+  /**
+   * Set to true when widget-backed input slot positions need recalculation.
+   * Cleared after arrange() runs. Avoids per-frame O(N) scans in drawConnections.
+   */
+  _widgetSlotsDirty = true
+
   locked?: boolean
 
   /** Execution order, automatically computed during run @see {@link LGraph.computeExecutionOrder} */
@@ -1992,6 +1998,7 @@ export class LGraphNode
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
+    this._widgetSlotsDirty = true
 
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens
@@ -2031,9 +2038,11 @@ export class LGraphNode
         if (input._widget === widget) {
           input._widget = undefined
           input.widget = undefined
+          input.pos = undefined
         }
       }
     }
+    this._widgetSlotsDirty = true
 
     widget.onRemove?.()
     this.widgets.splice(widgetIndex, 1)
@@ -4258,6 +4267,7 @@ export class LGraphNode
       : 0
     this._arrangeWidgets(widgetStartY)
     this._arrangeWidgetInputSlots()
+    this._widgetSlotsDirty = false
   }
 
   /**

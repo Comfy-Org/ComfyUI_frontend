@@ -27,6 +27,12 @@ import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidget
 export type { PromotedWidgetView } from './promotedWidgetTypes'
 export { isPromotedWidgetView } from './promotedWidgetTypes'
 
+interface SubgraphSlotRef {
+  name: string
+  label?: string
+  displayName?: string
+}
+
 function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
   if (value === undefined) return true
   if (typeof value === 'string') return true
@@ -85,6 +91,10 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private cachedDeepestByFrame?: { node: LGraphNode; widget: IBaseWidget }
   private cachedDeepestFrame = -1
 
+  /** Cached reference to the bound subgraph slot, set at construction. */
+  private _boundSlot?: SubgraphSlotRef
+  private _boundSlotVersion = -1
+
   constructor(
     private readonly subgraphNode: SubgraphNode,
     nodeId: string,
@@ -103,13 +113,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get name(): string {
-    if (this.identityName) return this.identityName
-
-    // Resolve from the SubgraphNode's input by matching source IDs
-    const slot = this.findBoundSubgraphSlot()
-    if (slot?.name) return slot.name
-
-    return this.sourceWidgetName
+    return this.identityName ?? this.sourceWidgetName
   }
 
   get y(): number {
@@ -197,45 +201,46 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get label(): string | undefined {
-    // Live-read from the bound subgraph slot's display name
-    const slot = this.findBoundSubgraphSlot()
+    const slot = this.getBoundSubgraphSlot()
     if (slot) return slot.displayName ?? slot.name
     return this.displayName
   }
 
-  /** Finds the SubgraphInput slot bound to this promoted view. */
-  private findBoundSubgraphSlot():
-    | { name: string; displayName?: string }
-    | undefined {
+  set label(value: string | undefined) {
+    const slot = this.getBoundSubgraphSlot()
+    if (!slot) return
+    slot.label = value || undefined
+  }
+
+  /**
+   * Returns the cached bound subgraph slot reference, refreshing only when
+   * the subgraph node's input list has changed (version mismatch).
+   */
+  private getBoundSubgraphSlot(): SubgraphSlotRef | undefined {
+    const version = this.subgraphNode.inputs?.length ?? 0
+    if (this._boundSlotVersion === version) return this._boundSlot
+
+    this._boundSlot = this.findBoundSubgraphSlot()
+    this._boundSlotVersion = version
+    return this._boundSlot
+  }
+
+  private findBoundSubgraphSlot(): SubgraphSlotRef | undefined {
     for (const input of this.subgraphNode.inputs ?? []) {
-      const slot = input._subgraphSlot as
-        | { name: string; displayName?: string }
-        | undefined
+      const slot = input._subgraphSlot as SubgraphSlotRef | undefined
       if (!slot) continue
 
-      // Match by subgraph slot's connected interior node, not by _widget identity
       const w = input._widget
-      if (w && 'sourceNodeId' in w && 'sourceWidgetName' in w) {
-        if (
-          w.sourceNodeId === this.sourceNodeId &&
-          w.sourceWidgetName === this.sourceWidgetName
-        ) {
-          return slot
-        }
-      }
-
-      // Fallback: match by widget locator name against our composite key
       if (
-        input.widget?.name === `${this.sourceNodeId}:${this.sourceWidgetName}`
+        w &&
+        isPromotedWidgetView(w) &&
+        w.sourceNodeId === this.sourceNodeId &&
+        w.sourceWidgetName === this.sourceWidgetName
       ) {
         return slot
       }
     }
     return undefined
-  }
-
-  set label(_value: string | undefined) {
-    // No-op: label is derived from the subgraph input slot.
   }
 
   get hidden(): boolean {

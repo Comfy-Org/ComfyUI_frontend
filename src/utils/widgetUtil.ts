@@ -1,6 +1,7 @@
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ISubgraphInput } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -77,8 +78,7 @@ export function renameWidget(
   if (input) {
     input.label = newLabel || undefined
 
-    const subgraphSlot = (input as { _subgraphSlot?: { label?: string } })
-      ._subgraphSlot
+    const subgraphSlot = (input as Partial<ISubgraphInput>)._subgraphSlot
     if (subgraphSlot) {
       subgraphSlot.label = newLabel || undefined
     }

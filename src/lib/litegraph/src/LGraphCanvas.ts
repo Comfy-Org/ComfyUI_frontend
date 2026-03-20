@@ -82,7 +82,6 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
-import { isWidgetInputSlot } from './node/slotUtils'
 import type { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
@@ -5960,14 +5959,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // arrange() sets input.pos for widget-backed slots, but is normally called
     // in drawNode (foreground canvas). drawConnections runs on the background
     // canvas, which may render before drawNode has executed for this frame.
-    // In Vue mode, promoted widget inputs lack DOM-registered slot positions
-    // (NodeSlots filters them out), so the fallback needs input.pos set here.
-    // TODO: Add a dirty flag (e.g. node._widgetSlotsArranged) to avoid the
-    // per-frame .some() scan once slots have been positioned.
+    // The dirty flag avoids a per-frame O(N) scan of all inputs.
     for (const node of nodes) {
-      if (node.flags.collapsed || !node.widgets?.length) continue
-      if (!node.inputs?.some((inp) => isWidgetInputSlot(inp) && !inp.pos))
-        continue
+      if (node.flags.collapsed || !node._widgetSlotsDirty) continue
 
       node._setConcreteSlots()
       node.arrange()
