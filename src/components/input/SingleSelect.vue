@@ -36,7 +36,6 @@
         <SelectValue :placeholder="label" class="truncate" />
       </div>
       <div
-        v-if="!loading"
         class="flex shrink-0 cursor-pointer items-center justify-center px-3"
       >
         <i class="icon-[lucide--chevron-down] text-muted-foreground" />
