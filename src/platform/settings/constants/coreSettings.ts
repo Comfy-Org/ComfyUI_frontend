@@ -677,6 +677,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.7'
   },
   {
+    id: 'Comfy.Keybinding.CurrentPreset',
+    name: 'Current keybinding preset name',
+    type: 'hidden',
+    defaultValue: 'default',
+    versionAdded: '1.8.8'
+  },
+  {
     id: 'Comfy.Extension.Disabled',
     name: 'Disabled extension names',
     type: 'hidden',
