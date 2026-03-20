@@ -20,8 +20,8 @@ on:
         default: focused
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: qa-${{ github.ref }}-${{ github.run_id }}
+  cancel-in-progress: false
 
 jobs:
   resolve-matrix:
