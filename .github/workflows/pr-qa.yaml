@@ -385,6 +385,7 @@ jobs:
             echo "Converting $WEBM ($(du -h "$WEBM" | cut -f1)) to mp4"
             ffmpeg -y -i "$WEBM" \
               -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p \
+              -movflags +faststart -g 60 \
               "$dir/qa-session.mp4" 2>&1 | tail -5 \
             || echo "ffmpeg conversion failed for $WEBM (non-fatal)"
 
