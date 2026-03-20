@@ -11,6 +11,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 export function nodeTypeValidForApp(type: string) {
@@ -137,12 +139,24 @@ export const useAppModeStore = defineStore('appMode', () => {
     setMode('graph')
   }
 
+  function removeSelectedInput(widget: IBaseWidget, node: { id: NodeId }) {
+    const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+    const storeName = isPromotedWidgetView(widget)
+      ? widget.sourceWidgetName
+      : widget.name
+    const index = selectedInputs.findIndex(
+      ([id, name]) => storeId == id && storeName === name
+    )
+    if (index !== -1) selectedInputs.splice(index, 1)
+  }
+
   return {
     enterBuilder,
     exitBuilder,
     hasNodes,
     hasOutputs,
     pruneLinearData,
+    removeSelectedInput,
     resetSelectedToWorkflow,
     selectedInputs,
     selectedOutputs
