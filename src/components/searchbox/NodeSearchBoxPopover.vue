@@ -7,7 +7,7 @@
       :pt="{
         root: {
           class: useSearchBoxV2
-            ? 'w-4/5 min-w-[32rem] max-w-[56rem] border-0 bg-transparent max-md:w-[95%] max-md:min-w-0 overflow-visible'
+            ? 'w-full max-w-[56rem] min-w-[32rem] max-md:min-w-0 bg-transparent border-0 overflow-visible'
             : 'invisible-dialog-root'
         },
         mask: {

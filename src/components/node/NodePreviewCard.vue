@@ -25,7 +25,7 @@
         v-if="showCategoryPath && nodeDef.category"
         class="-mt-1 truncate text-xs text-muted-foreground"
       >
-        {{ nodeDef.category.replaceAll('/', ' / ') }}
+        {{ categoryPath }}
       </p>
 
       <!-- Badges -->
@@ -130,6 +130,8 @@ useResizeObserver(previewWrapperRef, (entries) => {
     previewContainerRef.value.style.height = `${scaledHeight + PREVIEW_CONTAINER_PADDING_PX}px`
   }
 })
+
+const categoryPath = computed(() => nodeDef.category?.replaceAll('/', ' / '))
 
 const inputs = computed(() => {
   if (!nodeDef.inputs) return []
