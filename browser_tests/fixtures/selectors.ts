@@ -33,6 +33,9 @@ export const TestIds = {
     about: 'about-panel',
     whatsNewSection: 'whats-new-section'
   },
+  keybindings: {
+    presetMenu: 'keybinding-preset-menu'
+  },
   topbar: {
     queueButton: 'queue-button',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
@@ -83,6 +86,7 @@ export type TestIdValue =
   | (typeof TestIds.tree)[keyof typeof TestIds.tree]
   | (typeof TestIds.canvas)[keyof typeof TestIds.canvas]
   | (typeof TestIds.dialogs)[keyof typeof TestIds.dialogs]
+  | (typeof TestIds.keybindings)[keyof typeof TestIds.keybindings]
   | (typeof TestIds.topbar)[keyof typeof TestIds.topbar]
   | (typeof TestIds.nodeLibrary)[keyof typeof TestIds.nodeLibrary]
   | (typeof TestIds.propertiesPanel)[keyof typeof TestIds.propertiesPanel]
