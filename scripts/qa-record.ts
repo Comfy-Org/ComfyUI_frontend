@@ -317,24 +317,40 @@ async function executeSteps(
 
 async function loginAsQaCi(page: Page) {
   console.warn('Logging in as qa-ci...')
+
+  // Check if user selection screen is present
   const dropdown = page
     .locator('select, [role="combobox"], .p-select, .p-dropdown')
     .first()
-  await dropdown.click()
-  await sleep(500)
 
-  try {
-    await page.locator('text=qa-ci').first().click({ timeout: 3000 })
-  } catch {
+  if (await dropdown.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await dropdown.click()
+    await sleep(500)
+
     try {
-      await dropdown.selectOption({ label: 'qa-ci' })
+      await page.locator('text=qa-ci').first().click({ timeout: 3000 })
     } catch {
-      console.warn('Could not select qa-ci user')
+      try {
+        await dropdown.selectOption({ label: 'qa-ci' })
+      } catch {
+        console.warn(
+          'Could not select qa-ci user, continuing without selection'
+        )
+      }
+    }
+    await sleep(300)
+
+    // Close dropdown overlay if still open (blocks Next button)
+    await page.keyboard.press('Escape')
+    await sleep(300)
+
+    // Click Next button
+    const nextBtn = page.getByRole('button', { name: 'Next' })
+    if (await nextBtn.isVisible().catch(() => false)) {
+      await nextBtn.click({ timeout: 5000 })
+      await sleep(5000)
     }
   }
-  await sleep(500)
-  await page.getByRole('button', { name: 'Next' }).click()
-  await sleep(5000)
 
   // Close template gallery
   await page.keyboard.press('Escape')
