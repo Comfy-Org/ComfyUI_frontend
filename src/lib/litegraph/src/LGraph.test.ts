@@ -18,6 +18,11 @@ import {
   createTestSubgraphNode
 } from './subgraph/__fixtures__/subgraphHelpers'
 
+import {
+  duplicateLinksRoot,
+  duplicateLinksSlotShift,
+  duplicateLinksSubgraph
+} from './__fixtures__/duplicateLinks'
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWidgets'
 import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
@@ -765,133 +770,42 @@ describe('_removeDuplicateLinks', () => {
   it('removes duplicate links via root graph configure()', () => {
     registerTestNodes()
     const graph = new LGraph()
+    graph.configure(duplicateLinksRoot)
 
-    const source = LiteGraph.createNode('test/DupTestNode', 'Source')!
-    const target = LiteGraph.createNode('test/DupTestNode', 'Target')!
-    graph.add(source)
-    graph.add(target)
-
-    source.connect(0, target, 0)
-    const existingLink = graph._links.values().next().value!
-
-    // Inject duplicates
-    for (let i = 0; i < 2; i++) {
-      const dup = new LLink(
-        ++graph.state.lastLinkId,
-        existingLink.type,
-        existingLink.origin_id,
-        existingLink.origin_slot,
-        existingLink.target_id,
-        existingLink.target_slot
-      )
-      graph._links.set(dup.id, dup)
-      source.outputs[0].links!.push(dup.id)
-    }
-    expect(graph._links.size).toBe(3)
-
-    // Serialize and reconfigure — configure() calls _removeDuplicateLinks()
-    const serialized = graph.asSerialisable()
-    const freshGraph = new LGraph()
-    freshGraph.configure(serialized)
-
-    expect(freshGraph._links.size).toBe(1)
-    const survivingLink = freshGraph._links.values().next().value!
-    const targetNode = freshGraph.getNodeById(survivingLink.target_id)!
+    expect(graph._links.size).toBe(1)
+    const survivingLink = graph._links.values().next().value!
+    const targetNode = graph.getNodeById(survivingLink.target_id)!
     expect(targetNode.inputs[0].link).toBe(survivingLink.id)
-    const sourceNode = freshGraph.getNodeById(survivingLink.origin_id)!
+    const sourceNode = graph.getNodeById(survivingLink.origin_id)!
     expect(sourceNode.outputs[0].links).toEqual([survivingLink.id])
   })
 
   it('preserves link integrity after configure() with slot-shifted duplicates', () => {
     registerTestNodes()
     const graph = new LGraph()
+    graph.configure(duplicateLinksSlotShift)
 
-    const source = LiteGraph.createNode('test/DupTestNode', 'Source')!
-    const target = LiteGraph.createNode('test/DupTestNode', 'Target')!
-    graph.add(source)
-    graph.add(target)
+    expect(graph._links.size).toBe(1)
 
-    source.connect(0, target, 0)
-
-    // Simulate widget-to-input conversion: add an extra input and shift
-    target.addInput('extra_widget', 'number')
-    const connectedInput = target.inputs[0]
-    target.inputs[0] = target.inputs[1]
-    target.inputs[1] = connectedInput
-
-    // Add a duplicate with the original (pre-shift) target_slot
-    const dup = new LLink(
-      ++graph.state.lastLinkId,
-      'number',
-      source.id,
-      0,
-      target.id,
-      0
-    )
-    graph._links.set(dup.id, dup)
-    source.outputs[0].links!.push(dup.id)
-
-    const serialized = graph.asSerialisable()
-    const freshGraph = new LGraph()
-    freshGraph.configure(serialized)
-
-    // Exactly one link survives
-    expect(freshGraph._links.size).toBe(1)
-
-    // All input.link and output.links are consistent
-    const link = freshGraph._links.values().next().value!
-    const freshTarget = freshGraph.getNodeById(link.target_id)!
-    const linkedInput = freshTarget.inputs.find((inp) => inp.link === link.id)
+    const link = graph._links.values().next().value!
+    const target = graph.getNodeById(link.target_id)!
+    const linkedInput = target.inputs.find((inp) => inp.link === link.id)
     expect(linkedInput).toBeDefined()
 
-    const freshSource = freshGraph.getNodeById(link.origin_id)!
-    expect(freshSource.outputs[link.origin_slot].links).toContain(link.id)
+    const source = graph.getNodeById(link.origin_id)!
+    expect(source.outputs[link.origin_slot].links).toContain(link.id)
   })
 
   it('deduplicates links inside subgraph definitions during root configure()', () => {
-    const rootGraph = new LGraph()
-    const subgraphData = createTestSubgraphData()
-    const subgraph = rootGraph.createSubgraph(subgraphData)
+    const graph = new LGraph()
+    graph.configure(duplicateLinksSubgraph)
 
-    const source = new LGraphNode('Source')
-    source.addOutput('out', 'number')
-    const target = new LGraphNode('Target')
-    target.addInput('in', 'number')
-    subgraph.add(source)
-    subgraph.add(target)
+    const subgraph = graph.subgraphs.values().next().value!
+    expect(subgraph._links.size).toBe(1)
 
-    source.connect(0, target, 0)
-    const existingLink = subgraph._links.values().next().value!
-
-    // Inject duplicates into the subgraph
-    for (let i = 0; i < 2; i++) {
-      const dup = new LLink(
-        ++subgraph.state.lastLinkId,
-        existingLink.type,
-        existingLink.origin_id,
-        existingLink.origin_slot,
-        existingLink.target_id,
-        existingLink.target_slot
-      )
-      subgraph._links.set(dup.id, dup)
-      source.outputs[0].links!.push(dup.id)
-    }
-
-    // A SubgraphNode must reference the subgraph for it to be serialized
-    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [0, 0] })
-    rootGraph.add(subgraphNode)
-
-    // Serialize entire root graph (includes subgraph definitions)
-    const serialized = rootGraph.asSerialisable()
-    const freshRoot = new LGraph()
-    freshRoot.configure(serialized as never)
-
-    const freshSubgraph = freshRoot.subgraphs.values().next().value!
-    expect(freshSubgraph._links.size).toBe(1)
-
-    const link = freshSubgraph._links.values().next().value!
-    const freshTarget = freshSubgraph.getNodeById(link.target_id)!
-    expect(freshTarget.inputs[0].link).toBe(link.id)
+    const link = subgraph._links.values().next().value!
+    const target = subgraph.getNodeById(link.target_id)!
+    expect(target.inputs[0].link).toBe(link.id)
   })
 })
 
