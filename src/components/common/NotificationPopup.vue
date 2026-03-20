@@ -1,5 +1,6 @@
 <template>
   <div
+    role="status"
     :class="
       cn(
         'pointer-events-auto absolute z-1000 flex max-h-96 w-96 flex-col rounded-lg border border-border-default bg-base-background shadow-interface',
@@ -39,7 +40,10 @@
         </Button>
       </div>
 
-      <div v-if="$slots.default" class="min-h-0 flex-1 overflow-y-auto pl-14">
+      <div
+        v-if="$slots.default"
+        class="min-h-0 flex-1 overflow-y-auto text-sm text-muted-foreground"
+      >
         <slot />
       </div>
     </div>

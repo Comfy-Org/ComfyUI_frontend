@@ -7,7 +7,7 @@
       :position
     >
       <div
-        class="text-sm leading-[1.21] font-normal text-muted-foreground"
+        class="pl-14 text-sm leading-[1.21] font-normal text-muted-foreground"
         v-html="formattedContent"
       ></div>
 
