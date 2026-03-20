@@ -158,9 +158,9 @@ describe('useWorkflowPersistenceV2', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2025-01-01T00:00:00Z'))
     setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
     localStorage.clear()
     sessionStorage.clear()
-    vi.clearAllMocks()
     settingMocks.persistRef!.value = true
     mocks.state.graphChangedHandler = null
     mocks.state.currentGraph = { initial: true }
@@ -207,9 +207,42 @@ describe('useWorkflowPersistenceV2', () => {
     )
   }
 
+  function createDeferred<T = void>() {
+    let resolve!: (value: T | PromiseLike<T>) => void
+    const promise = new Promise<T>((res) => {
+      resolve = res
+    })
+    return { promise, resolve }
+  }
+
   describe('loadPreviousWorkflowFromStorage', () => {
+    it('waits for workflow metadata before restoring the session workflow', async () => {
+      const workflowStore = useWorkflowStore()
+      const loadWorkflowsSpy = vi.spyOn(workflowStore, 'loadWorkflows')
+      const savedWorkflow = workflowStore.createTemporary('SavedWorkflow.json')
+      writeActivePath(savedWorkflow.path)
+
+      const gate = createDeferred<void>()
+      loadWorkflowsSpy.mockReturnValue(gate.promise)
+
+      const { initializeWorkflow } = useWorkflowPersistenceV2()
+      const pending = initializeWorkflow()
+
+      await Promise.resolve()
+
+      expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+
+      gate.resolve()
+      await pending
+
+      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow)
+    })
+
     it('loads saved workflow when draft is missing for session path', async () => {
       const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const savedWorkflow = workflowStore.createTemporary('SavedWorkflow.json')
 
       // Set session path to the saved workflow but do NOT create a draft
@@ -226,6 +259,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('prefers draft over saved workflow when draft exists', async () => {
       const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const draftStore = useWorkflowDraftStoreV2()
 
       const workflow = workflowStore.createTemporary('DraftWorkflow.json')
@@ -247,6 +281,7 @@ describe('useWorkflowPersistenceV2', () => {
     })
 
     it('falls back to latest draft only when no session path exists', async () => {
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
       const draftStore = useWorkflowDraftStoreV2()
 
       // No session path set, but a draft exists
@@ -268,8 +303,33 @@ describe('useWorkflowPersistenceV2', () => {
   })
 
   describe('restoreWorkflowTabsState', () => {
+    it('waits for workflow metadata before restoring tab pointers', async () => {
+      const workflowStore = useWorkflowStore()
+      const loadWorkflowsSpy = vi.spyOn(workflowStore, 'loadWorkflows')
+      const workflowA = workflowStore.createTemporary('WorkflowA.json')
+      const workflowB = workflowStore.createTemporary('WorkflowB.json')
+      writeTabState([workflowA.path, workflowB.path], 1)
+
+      const gate = createDeferred<void>()
+      loadWorkflowsSpy.mockReturnValue(gate.promise)
+
+      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      const pending = restoreWorkflowTabsState()
+
+      await Promise.resolve()
+
+      expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+
+      gate.resolve()
+      await pending
+
+      expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+    })
+
     it('activates the correct workflow at storedActiveIndex', async () => {
       const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const draftStore = useWorkflowDraftStoreV2()
 
       // Create two temporary workflows with drafts
@@ -296,6 +356,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('activates first tab when storedActiveIndex is 0', async () => {
       const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const draftStore = useWorkflowDraftStoreV2()
 
       const workflowA = workflowStore.createTemporary('WorkflowA.json')
@@ -319,6 +380,7 @@ describe('useWorkflowPersistenceV2', () => {
     })
 
     it('does not call openWorkflow when no restorable state', async () => {
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
       // No tab state written to sessionStorage
       const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
       await restoreWorkflowTabsState()
@@ -328,6 +390,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('restores temporary workflows and adds them to tabs', async () => {
       const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const draftStore = useWorkflowDraftStoreV2()
 
       // Save a draft for a workflow that doesn't exist in the store yet
@@ -350,6 +413,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('skips activation when persistence is disabled', async () => {
       settingMocks.persistRef!.value = false
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
 
       const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
       await restoreWorkflowTabsState()
