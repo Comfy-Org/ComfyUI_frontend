@@ -16,10 +16,10 @@ function isTruncated(e: MouseEvent): boolean {
   const el = e.currentTarget as HTMLElement
   return el.scrollWidth > el.clientWidth
 }
-const { title, rename, remove } = defineProps<{
+const { title, canRename, remove } = defineProps<{
   title: string
   subTitle?: string
-  rename?: () => void
+  canRename?: boolean
   remove?: () => void
 }>()
 
@@ -35,10 +35,10 @@ function onEditComplete(newName: string) {
 
 const entries = computed(() => {
   const items = []
-  if (rename)
+  if (canRename)
     items.push({
       label: t('g.rename'),
-      command: rename,
+      command: () => setTimeout(() => (isEditing.value = true)),
       icon: 'icon-[lucide--pencil]'
     })
   if (remove)
@@ -68,7 +68,9 @@ const entries = computed(() => {
           )
         "
         data-testid="builder-io-item-title"
-        @dblclick="rename && (isEditing = true)"
+        label-class="drag-handle"
+        label-type="div"
+        @dblclick="canRename && (isEditing = true)"
         @edit="onEditComplete"
         @cancel="isEditing = false"
       />

@@ -25,7 +25,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
-import { promptRenameWidget, renameWidget } from '@/utils/widgetUtil'
+import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
@@ -63,7 +63,7 @@ const inputsWithState = computed(() =>
       widgetName,
       label: widget.label,
       subLabel: node.title,
-      rename: () => promptRenameWidget(widget, node, t)
+      canRename: true
     }
   })
 )
@@ -244,7 +244,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
               widgetName,
               label,
               subLabel,
-              rename
+              canRename
             } in inputsWithState"
             :key="`${nodeId}: ${widgetName}`"
             :class="
@@ -252,7 +252,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             "
             :title="label ?? widgetName"
             :sub-title="subLabel"
-            :rename
+            :can-rename="canRename"
             :remove="
               () =>
                 remove(

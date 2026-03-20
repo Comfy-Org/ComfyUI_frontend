@@ -125,4 +125,42 @@ export class AppModeHelper {
     await dialogInput.waitFor({ state: 'hidden' })
     await this.comfyPage.nextFrame()
   }
+
+  /**
+   * Rename a builder IoItem via the popover menu "Rename" action.
+   * @param title The current widget title shown in the IoItem.
+   * @param newName The new name to assign.
+   */
+  async renameBuilderInputViaMenu(title: string, newName: string) {
+    const menu = this.getBuilderInputItemMenu(title)
+    await menu.click()
+    await this.page.getByText('Rename', { exact: true }).click()
+
+    const input = this.page
+      .getByTestId(TestIds.builder.ioItemTitle)
+      .getByRole('textbox')
+    await input.fill(newName)
+    await this.page.keyboard.press('Enter')
+    await this.comfyPage.nextFrame()
+  }
+
+  /**
+   * Rename a builder IoItem by double-clicking its title to trigger
+   * inline editing.
+   * @param title The current widget title shown in the IoItem.
+   * @param newName The new name to assign.
+   */
+  async renameBuilderInput(title: string, newName: string) {
+    const titleEl = this.page
+      .getByTestId(TestIds.builder.ioItemTitle)
+      .filter({ hasText: title })
+    await titleEl.dblclick()
+
+    const input = this.page
+      .getByTestId(TestIds.builder.ioItemTitle)
+      .getByRole('textbox')
+    await input.fill(newName)
+    await this.page.keyboard.press('Enter')
+    await this.comfyPage.nextFrame()
+  }
 }
