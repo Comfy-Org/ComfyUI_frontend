@@ -320,10 +320,24 @@ function buildReviewPrompt(
       ? '(Explain what the PR intended and whether the video confirms it works)'
       : '',
     '## Confirmed Issues',
+    'For each confirmed issue, use this exact format (one block per issue):',
+    '',
+    '### [Short issue title]',
+    '`HIGH` `01:03` `Confidence: High`',
+    '',
+    '[Description of the issue — what went wrong and what was expected]',
+    '',
+    '**Evidence:** [What you observed in the video at the given timestamp]',
+    '',
+    '**Suggested Fix:** [Actionable recommendation]',
+    '',
+    '---',
+    '',
+    'The first line after the heading MUST be exactly three backtick-wrapped labels:',
+    '`SEVERITY` `TIMESTAMP` `Confidence: LEVEL`',
+    'Do NOT use a table for issues — use the block format above.',
     '## Possible Issues (Needs Human Verification)',
-    '## Overall Risk',
-    'Under Confirmed Issues include a markdown table with columns:',
-    'Severity | Timestamp | Issue | Evidence | Confidence | Suggested Fix'
+    '## Overall Risk'
   )
 
   return basePrompt.filter(Boolean).join('\n')

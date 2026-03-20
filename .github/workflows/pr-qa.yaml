@@ -529,7 +529,10 @@ jobs:
           .report-body p{margin:.4rem 0}
           .report-body ul,.report-body ol{margin:.4rem 0 .4rem 1.5rem}
           .report-body li{margin:.25rem 0}
-          .report-body code{background:oklch(16% 0.02 265);padding:.125rem .375rem;border-radius:.25rem;font-size:.75rem;font-family:var(--font-mono);border:1px solid var(--border-faint)}
+          .report-body code{background:oklch(16% 0.02 265);padding:.125rem .375rem;border-radius:.25rem;font-size:.7rem;font-family:var(--font-mono);border:1px solid var(--border-faint)}
+          .report-body h3+p>code:first-child{background:oklch(62% 0.22 25/.15);color:var(--err);border-color:oklch(62% 0.22 25/.25)}
+          .report-body h3+p>code:nth-child(2){background:oklch(62% 0.21 265/.15);color:var(--primary-up);border-color:oklch(62% 0.21 265/.25)}
+          .report-body h3+p>code:nth-child(3){background:oklch(65% 0.01 265/.15);color:var(--fg-muted);border-color:var(--border)}
           .report-body table{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.75rem;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
           .report-body th,.report-body td{border:1px solid var(--border-faint);padding:.5rem .75rem;text-align:left}
           .report-body th{background:oklch(14% 0.02 265);color:var(--fg);font-weight:600;font-size:.6875rem;text-transform:uppercase;letter-spacing:.05em}
@@ -556,11 +559,11 @@ jobs:
 
           BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
           URL=$(wrangler pages deploy "$DEPLOY_DIR" \
-            --project-name="comfyui-qa-videos" \
+            --project-name="comfy-qa" \
             --branch="$BRANCH" 2>&1 \
             | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
 
-          echo "url=${URL:-https://${BRANCH}.comfyui-qa-videos.pages.dev}" >> "$GITHUB_OUTPUT"
+          echo "url=${URL:-https://${BRANCH}.comfy-qa.pages.dev}" >> "$GITHUB_OUTPUT"
           echo "Deployed to: ${URL}"
 
       - name: Post unified QA comment on PR
