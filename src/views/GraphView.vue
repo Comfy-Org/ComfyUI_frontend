@@ -307,6 +307,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  disconnectedAt = null
+  activeJobCountAtDisconnect = 0
   executionStore.unbindExecutionEvents()
 })
 
