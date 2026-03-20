@@ -13,6 +13,13 @@ import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
+import {
+  groupLinksByTuple,
+  purgeOrphanedLinks,
+  repairInputLinks,
+  selectSurvivorLink
+} from './linkDeduplication'
+
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
@@ -167,11 +174,6 @@ export class LGraph
 
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
-
-  /** Generates a unique string key for a link's connection tuple. */
-  private static _linkTupleKey(link: LLink): string {
-    return `${link.origin_id}\0${link.origin_slot}\0${link.target_id}\0${link.target_slot}`
-  }
 
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
@@ -1630,79 +1632,17 @@ export class LGraph
    * Three phases: group links by tuple, select the survivor, purge duplicates.
    */
   _removeDuplicateLinks(): void {
-    const groups = this._groupLinksByTuple()
+    const groups = groupLinksByTuple(this._links)
 
     for (const ids of groups.values()) {
       if (ids.length <= 1) continue
 
       const sampleLink = this._links.get(ids[0])!
       const node = this.getNodeById(sampleLink.target_id)
-      const keepId = this._selectSurvivorLink(ids, node)
+      const keepId = selectSurvivorLink(ids, node)
 
-      this._purgeOrphanedLinks(ids, keepId)
-      this._repairInputLinks(ids, keepId, node)
-    }
-  }
-
-  /** Groups all link IDs by their connection tuple key. */
-  private _groupLinksByTuple(): Map<string, LinkId[]> {
-    const groups = new Map<string, LinkId[]>()
-    for (const [id, link] of this._links) {
-      const key = LGraph._linkTupleKey(link)
-      if (!groups.has(key)) groups.set(key, [])
-      groups.get(key)!.push(id)
-    }
-    return groups
-  }
-
-  /**
-   * Finds the link ID actually referenced by an input on the target node.
-   * Cannot rely on target_slot index because widget-to-input conversions
-   * during configure() can shift slot indices.
-   */
-  private _selectSurvivorLink(ids: LinkId[], node: LGraphNode | null): LinkId {
-    if (!node) return ids[0]
-
-    for (const input of node.inputs ?? []) {
-      if (!input) continue
-      const match = ids.find((id) => input.link === id)
-      if (match != null) return match
-    }
-    return ids[0]
-  }
-
-  /** Removes duplicate links from origin outputs and the graph's link map. */
-  private _purgeOrphanedLinks(ids: LinkId[], keepId: LinkId): void {
-    for (const id of ids) {
-      if (id === keepId) continue
-
-      const link = this._links.get(id)
-      if (!link) continue
-
-      const originNode = this.getNodeById(link.origin_id)
-      const output = originNode?.outputs?.[link.origin_slot]
-      if (output?.links) {
-        const idx = output.links.indexOf(id)
-        if (idx !== -1) output.links.splice(idx, 1)
-      }
-
-      this._links.delete(id)
-    }
-  }
-
-  /** Ensures input.link on the target node points to the surviving link. */
-  private _repairInputLinks(
-    ids: LinkId[],
-    keepId: LinkId,
-    node: LGraphNode | null
-  ): void {
-    if (!node) return
-
-    for (const input of node.inputs ?? []) {
-      if (!input || input.link == null || input.link === keepId) continue
-      if (ids.includes(input.link as LinkId)) {
-        input.link = keepId
-      }
+      purgeOrphanedLinks(ids, keepId, this._links, (id) => this.getNodeById(id))
+      repairInputLinks(ids, keepId, node)
     }
   }
 
