@@ -118,27 +118,13 @@ jobs:
         with:
           launch_server: 'false'
 
-      - name: Install playwright-cli and Codex CLI
+      - name: Install Playwright browser
         shell: bash
         run: |
-          npm install -g @playwright/cli@latest @openai/codex@latest
-          which playwright-cli
-          playwright-cli --version || true
-          npx playwright install chromium
+          npx playwright install firefox
+          mkdir -p "$QA_ARTIFACTS"
 
-      - name: Configure playwright-cli output
-        shell: bash
-        run: |
-          mkdir -p "$QA_ARTIFACTS" .playwright
-          cat > .playwright/cli.config.json <<CEOF
-          {
-            "outputDir": "$QA_ARTIFACTS",
-            "saveVideo": { "width": 1280, "height": 720 }
-          }
-          CEOF
-
-      - name: Get PR diff for focused QA
-        if: needs.resolve-matrix.outputs.mode == 'focused'
+      - name: Get PR diff
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -150,121 +136,6 @@ jobs:
           echo "Changed files:"
           grep '^diff --git' "${{ runner.temp }}/pr-diff.txt" | \
             sed 's|diff --git a/||;s| b/.*||' | sort -u | tee "${{ runner.temp }}/changed-files.txt"
-
-      - name: Write QA prompts
-        shell: bash
-        env:
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-          PR_NUM: ${{ github.event.pull_request.number || 'N/A' }}
-          SHA: ${{ github.sha }}
-        run: |
-          OS_LOWER=$(echo "$RUNNER_OS" | tr '[:upper:]' '[:lower:]')
-
-          COMMON_HEADER="CRITICAL: \"playwright-cli\" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
-          Chromium is already installed. Just run the commands directly."
-
-          COMMON_STEPS="You MUST follow these exact steps in order:
-          1. playwright-cli open http://127.0.0.1:8188
-          2. QUICK LOGIN (before video): snapshot, fill the username input with \"qa-ci\", click Next button, wait for graph editor to load
-          3. playwright-cli snapshot — verify graph editor is loaded
-          4. playwright-cli video-start"
-
-          COMMON_RULES="RULES:
-          - Do NOT browse templates, explore sidebar panels, or test unrelated features
-          - Do NOT use pnpm/npx to run playwright-cli
-          - Do NOT create a PR, post PR comments, commit, or push anything"
-
-          if [ "$QA_MODE" = "full" ]; then
-            cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
-          You are running a FULL automated QA pass on the ComfyUI frontend.
-          Read the file .claude/skills/comfy-qa/SKILL.md and follow the FULL QA test plan.
-
-          Environment: CI=true, OS=${{ runner.os }}
-          Server URL: http://127.0.0.1:8188
-          Branch: ${BRANCH}, PR: #${PR_NUM}, Commit: ${SHA}
-
-          ${COMMON_HEADER}
-
-          ${COMMON_STEPS}
-          5. Test the UI (click, fill, navigate — use snapshot between actions to get refs)
-          6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
-          7. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
-
-          Do NOT skip any steps. Skip tests not available in CI (file dialogs, GPU execution).
-          PROMPT
-          else
-            # Focused QA — write separate before/after prompts with identical test steps
-            DIFF_CONTEXT="CHANGED FILES:
-          $(cat "${{ runner.temp }}/changed-files.txt" 2>/dev/null || echo "Unknown")
-
-          DIFF (truncated to 500 lines):
-          $(head -500 "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || echo "No diff available")"
-
-            TEST_DESIGN="## Instructions
-          1. Read the diff above carefully. Identify what UI behavior changed.
-          2. Design 3-6 targeted test steps that exercise EXACTLY that behavior.
-          3. Execute ONLY those steps.
-
-          ## Time budget: keep the video recording under 30 seconds."
-
-            # BEFORE prompt (main branch — brief snapshot of old behavior / missing feature)
-            cat > "${{ runner.temp }}/qa-before-prompt.txt" <<PROMPT
-          You are recording a BEFORE snapshot on the main branch for PR #${PR_NUM}.
-          Keep this SHORT — under 15 seconds of video. Your ONLY goal is to briefly
-          show the OLD state so reviewers can see the contrast with the AFTER video.
-
-          Environment: CI=true, OS=${{ runner.os }}
-          Server URL: http://127.0.0.1:8188
-          Branch: main (before PR)
-
-          ${DIFF_CONTEXT}
-
-          ## What to record
-          Read the diff and identify what changed. Then do ONE of these:
-          - **New feature**: Show the UI WHERE the feature would appear. Open the
-            relevant menu/panel/dialog to prove it doesn't exist yet. That's it.
-          - **Bug fix**: Trigger the bug ONCE. Show the broken behavior. Stop.
-          - **Behavior change**: Perform the action ONCE with the OLD behavior. Stop.
-
-          Do NOT explore, test exhaustively, or try multiple variations.
-          One clear demonstration is all that's needed.
-
-          ${COMMON_HEADER}
-
-          ${COMMON_STEPS}
-          5. Perform ONE action that shows the old/missing behavior (snapshot before and after)
-          6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-before-session.webm
-          7. Write a 2-line report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-before-${OS_LOWER}-report.md
-
-          ${COMMON_RULES}
-          - KEEP IT SHORT — stop recording within 15 seconds of starting video
-          PROMPT
-
-            # AFTER prompt (PR branch — prove the fix works)
-            cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
-          You are running the AFTER pass of a focused QA comparison on PR #${PR_NUM}.
-          This is the PR branch (after the changes). Your goal is to prove the PR's
-          changes work correctly and the intended behavior is now in place.
-
-          Environment: CI=true, OS=${{ runner.os }}
-          Server URL: http://127.0.0.1:8188
-          Branch: ${BRANCH} (PR)
-
-          ${DIFF_CONTEXT}
-
-          ${TEST_DESIGN}
-
-          ${COMMON_HEADER}
-
-          ${COMMON_STEPS}
-          5. Execute ONLY your PR-targeted test steps (snapshot between each action)
-          6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
-          7. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
-             Include PASS/FAIL for each test step.
-
-          ${COMMON_RULES}
-          PROMPT
-          fi
 
       # ── BEFORE run (main branch) ──
       - name: Start server with main branch frontend
@@ -284,15 +155,13 @@ jobs:
         if: needs.resolve-matrix.outputs.mode == 'focused'
         shell: bash
         env:
-          CODEX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          CI: 'true'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          codex exec \
-            --model gpt-5.4-mini \
-            --sandbox danger-full-access \
-            - < "${{ runner.temp }}/qa-before-prompt.txt"
+          pnpm exec tsx scripts/qa-record.ts \
+            --mode before \
+            --diff "${{ runner.temp }}/pr-diff.txt" \
+            --output-dir "$QA_ARTIFACTS" \
+            --url http://127.0.0.1:8188
 
       - name: Stop server after BEFORE run
         if: needs.resolve-matrix.outputs.mode == 'focused'
@@ -323,15 +192,13 @@ jobs:
       - name: Run AFTER QA (PR branch)
         shell: bash
         env:
-          CODEX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          CI: 'true'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          codex exec \
-            --model gpt-5.4-mini \
-            --sandbox danger-full-access \
-            - < "${{ runner.temp }}/qa-prompt.txt"
+          pnpm exec tsx scripts/qa-record.ts \
+            --mode after \
+            --diff "${{ runner.temp }}/pr-diff.txt" \
+            --output-dir "$QA_ARTIFACTS" \
+            --url http://127.0.0.1:8188
 
       - name: Collect artifacts
         if: always()
