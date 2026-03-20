@@ -13,6 +13,8 @@ import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
+export const VIEWPORT_CACHE_MAX_SIZE = 32
+
 /**
  * Stores the current subgraph navigation state; a stack representing subgraph
  * navigation history from the root graph to the subgraph that is currently
@@ -34,7 +36,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     /** LRU cache for viewport states. Key: subgraph ID or 'root' for root graph */
     const viewportCache = new QuickLRU<string, DragAndScaleState>({
-      maxSize: 32
+      maxSize: VIEWPORT_CACHE_MAX_SIZE
     })
 
     /**
