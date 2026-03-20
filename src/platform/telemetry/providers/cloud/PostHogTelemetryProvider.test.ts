@@ -236,6 +236,48 @@ describe('PostHogTelemetryProvider', () => {
     })
   })
 
+  describe('websocket reconnect', () => {
+    it('captures reconnect event with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWebSocketReconnected({
+        disconnect_duration_ms: 5000,
+        had_active_jobs: true,
+        active_job_count: 3
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.WEBSOCKET_RECONNECTED,
+        {
+          disconnect_duration_ms: 5000,
+          had_active_jobs: true,
+          active_job_count: 3
+        }
+      )
+    })
+
+    it('captures reconnect event when no jobs were active', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWebSocketReconnected({
+        disconnect_duration_ms: 1200,
+        had_active_jobs: false,
+        active_job_count: 0
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.WEBSOCKET_RECONNECTED,
+        {
+          disconnect_duration_ms: 1200,
+          had_active_jobs: false,
+          active_job_count: 0
+        }
+      )
+    })
+  })
+
   describe('page view', () => {
     it('captures page view with page_name property', async () => {
       const provider = createProvider()
