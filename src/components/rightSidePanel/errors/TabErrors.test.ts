@@ -242,5 +242,9 @@ describe('TabErrors.vue', () => {
     // Should render in the dedicated runtime error panel, not inside accordion
     const runtimePanel = wrapper.find('[data-testid="runtime-error-panel"]')
     expect(runtimePanel.exists()).toBe(true)
+    // Verify the error message appears exactly once (not duplicated in accordion)
+    expect(
+      wrapper.text().match(/RuntimeError: Out of memory/g) ?? []
+    ).toHaveLength(1)
   })
 })

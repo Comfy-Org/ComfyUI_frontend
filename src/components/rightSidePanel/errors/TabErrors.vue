@@ -371,13 +371,13 @@ watch(
     if (!graphNodeId) return
     const prefix = `${graphNodeId}:`
     for (const group of allErrorGroups.value) {
-      const hasMatch =
-        group.type === 'execution' &&
-        group.cards.some(
-          (card) =>
-            card.graphNodeId === graphNodeId ||
-            (card.nodeId?.startsWith(prefix) ?? false)
-        )
+      if (group.type !== 'execution') continue
+
+      const hasMatch = group.cards.some(
+        (card) =>
+          card.graphNodeId === graphNodeId ||
+          (card.nodeId?.startsWith(prefix) ?? false)
+      )
       setSectionCollapsed(group.title, !hasMatch)
     }
     rightSidePanelStore.focusedErrorNodeId = null

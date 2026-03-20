@@ -2,6 +2,8 @@ import { computed, onMounted, onUnmounted, reactive, toValue } from 'vue'
 
 import type { MaybeRefOrGetter } from 'vue'
 
+import { until } from '@vueuse/core'
+
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -40,26 +42,33 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
     if (runtimeErrors.length === 0) return
 
     if (!systemStatsStore.systemStats) {
-      try {
-        await systemStatsStore.refetchSystemStats()
-      } catch (e) {
-        console.warn('Failed to fetch system stats for error report:', e)
-        return
+      if (systemStatsStore.isLoading) {
+        await until(systemStatsStore.isLoading).toBe(false)
+      } else {
+        try {
+          await systemStatsStore.refetchSystemStats()
+        } catch (e) {
+          console.warn('Failed to fetch system stats for error report:', e)
+          return
+        }
       }
     }
     if (!systemStatsStore.systemStats || cancelled) return
 
-    let logs: string
-    try {
-      logs = await api.getLogs()
-    } catch {
-      logs = 'Failed to retrieve server logs'
-    }
+    const logs = await api
+      .getLogs()
+      .catch(() => 'Failed to retrieve server logs')
     if (cancelled) return
 
-    if (cancelled) return
-
-    const workflow = app.rootGraph.serialize()
+    const workflow = (() => {
+      try {
+        return app.rootGraph.serialize()
+      } catch (e) {
+        console.warn('Failed to serialize workflow for error report:', e)
+        return null
+      }
+    })()
+    if (!workflow) return
 
     for (const { error, idx } of runtimeErrors) {
       try {

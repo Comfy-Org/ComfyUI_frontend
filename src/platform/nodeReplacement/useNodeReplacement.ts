@@ -329,7 +329,7 @@ export function useNodeReplacement() {
 
   /**
    * Replaces all nodes in a single swap group and removes successfully
-   * replaced types from the execution error store.
+   * replaced types from the missing nodes error store.
    */
   function replaceGroup(group: ReplacementGroup): void {
     const replaced = replaceNodesInPlace(group.nodeTypes)
@@ -340,7 +340,7 @@ export function useNodeReplacement() {
 
   /**
    * Replaces every available node across all swap groups and removes
-   * the succeeded types from the execution error store.
+   * the succeeded types from the missing nodes error store.
    */
   function replaceAllGroups(groups: ReplacementGroup[]): void {
     const allNodeTypes = groups.flatMap((g) => g.nodeTypes)

@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -80,21 +80,27 @@ export function useNodeErrorFlagSync(
   lastNodeErrors: Ref<Record<string, NodeError> | null>,
   missingModelStore: ReturnType<typeof useMissingModelStore>
 ): () => void {
+  const settingStore = useSettingStore()
+  const showErrorsTab = computed(() =>
+    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+  )
+
   const stop = watch(
-    [lastNodeErrors, () => missingModelStore.missingModelNodeIds],
+    [
+      lastNodeErrors,
+      () => missingModelStore.missingModelNodeIds,
+      showErrorsTab
+    ],
     () => {
       if (!app.isGraphReady) return
       // Legacy (LGraphNode) only: suppress missing-model error flags when
       // the Errors tab is hidden, since legacy nodes lack the per-widget
       // red highlight that Vue nodes use to indicate *why* a node has errors.
       // Vue nodes compute hasAnyError independently and are unaffected.
-      const showErrorsTab = useSettingStore().get(
-        'Comfy.RightSidePanel.ShowErrorsTab'
-      )
       reconcileNodeErrorFlags(
         app.rootGraph,
         lastNodeErrors.value,
-        showErrorsTab
+        showErrorsTab.value
           ? missingModelStore.missingModelAncestorExecutionIds
           : new Set()
       )

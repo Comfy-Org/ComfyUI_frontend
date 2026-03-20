@@ -551,7 +551,11 @@ describe('useErrorGroups', () => {
       ])
       await nextTick()
 
-      expect(groups.groupedErrorMessages.value.length).toBeGreaterThan(0)
+      const missingGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'missing_node'
+      )
+      expect(missingGroup).toBeDefined()
+      expect(groups.groupedErrorMessages.value).toContain(missingGroup!.title)
     })
   })
 

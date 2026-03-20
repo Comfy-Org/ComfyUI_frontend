@@ -82,7 +82,9 @@ export const useMissingNodesErrorStore = defineStore(
 
     const hasMissingNodes = computed(() => !!missingNodesError.value)
 
-    const missingNodeCount = computed(() => (missingNodesError.value ? 1 : 0))
+    const missingNodeCount = computed(
+      () => missingNodesError.value?.nodeTypes.length ?? 0
+    )
 
     /**
      * Set of all execution ID prefixes derived from missing node execution IDs,

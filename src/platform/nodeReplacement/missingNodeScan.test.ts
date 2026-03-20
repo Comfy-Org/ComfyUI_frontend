@@ -21,7 +21,7 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 }))
 
 vi.mock('@/platform/nodeReplacement/cnrIdUtil', () => ({
-  getCnrIdFromNode: vi.fn(() => null)
+  getCnrIdFromNode: vi.fn(() => undefined)
 }))
 
 vi.mock('@/i18n', () => ({
