@@ -104,7 +104,8 @@ jobs:
           git stash --include-untracked || true
           git checkout origin/main -- .
           pnpm install --frozen-lockfile
-          pnpm build
+          # Skip typecheck — main may have transient TS errors with our lockfile
+          pnpm exec nx build
           mv dist dist-before
           # Restore PR branch
           git checkout - -- .
