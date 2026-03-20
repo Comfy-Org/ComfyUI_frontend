@@ -207,11 +207,11 @@ jobs:
 
           ## Time budget: keep the video recording under 30 seconds."
 
-            # BEFORE prompt (main branch — demonstrate the old behavior / bug)
+            # BEFORE prompt (main branch — brief snapshot of old behavior / missing feature)
             cat > "${{ runner.temp }}/qa-before-prompt.txt" <<PROMPT
-          You are running the BEFORE pass of a focused QA comparison on PR #${PR_NUM}.
-          This is the MAIN branch (before the PR). Your goal is to demonstrate the
-          OLD behavior that this PR intends to change or fix.
+          You are recording a BEFORE snapshot on the main branch for PR #${PR_NUM}.
+          Keep this SHORT — under 15 seconds of video. Your ONLY goal is to briefly
+          show the OLD state so reviewers can see the contrast with the AFTER video.
 
           Environment: CI=true, OS=${{ runner.os }}
           Server URL: http://127.0.0.1:8188
@@ -219,17 +219,25 @@ jobs:
 
           ${DIFF_CONTEXT}
 
-          ${TEST_DESIGN}
+          ## What to record
+          Read the diff and identify what changed. Then do ONE of these:
+          - **New feature**: Show the UI WHERE the feature would appear. Open the
+            relevant menu/panel/dialog to prove it doesn't exist yet. That's it.
+          - **Bug fix**: Trigger the bug ONCE. Show the broken behavior. Stop.
+          - **Behavior change**: Perform the action ONCE with the OLD behavior. Stop.
+
+          Do NOT explore, test exhaustively, or try multiple variations.
+          One clear demonstration is all that's needed.
 
           ${COMMON_HEADER}
 
           ${COMMON_STEPS}
-          5. Execute ONLY your PR-targeted test steps (snapshot between each action)
+          5. Perform ONE action that shows the old/missing behavior (snapshot before and after)
           6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-before-session.webm
-          7. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-before-${OS_LOWER}-report.md
-             Include PASS/FAIL for each test step.
+          7. Write a 2-line report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-before-${OS_LOWER}-report.md
 
           ${COMMON_RULES}
+          - KEEP IT SHORT — stop recording within 15 seconds of starting video
           PROMPT
 
             # AFTER prompt (PR branch — prove the fix works)
@@ -506,6 +514,56 @@ jobs:
               --model gemini-2.5-flash $PR_CTX_FLAG $BEFORE_FLAG || true
             echo "::endgroup::"
           done
+
+      - name: Generate regression test from QA report
+        if: needs.resolve-matrix.outputs.mode == 'focused'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM="${{ steps.pr.outputs.number }}"
+          PR_BRANCH="${{ github.head_ref || github.ref_name }}"
+          if [ -z "$PR_NUM" ]; then
+            echo "No PR number, skipping test generation"
+            exit 0
+          fi
+
+          # Find the first QA report
+          REPORT=$(find video-reviews -name '*-qa-video-report.md' -type f | head -1)
+          if [ ! -f "$REPORT" ]; then
+            echo "No QA report found, skipping test generation"
+            exit 0
+          fi
+
+          # Ensure we have the PR diff
+          DIFF_FILE="${{ runner.temp }}/pr-diff.txt"
+          if [ ! -f "$DIFF_FILE" ]; then
+            gh pr diff "$PR_NUM" --repo "${{ github.repository }}" > "$DIFF_FILE" 2>/dev/null || true
+          fi
+
+          # Generate the test
+          TEST_NAME="qa-pr${PR_NUM}"
+          TEST_PATH="browser_tests/tests/${TEST_NAME}.spec.ts"
+          echo "::group::Generating regression test from QA report"
+          pnpm exec tsx scripts/qa-generate-test.ts \
+            --qa-report "$REPORT" \
+            --pr-diff "$DIFF_FILE" \
+            --output "$TEST_PATH" || {
+            echo "Test generation failed (non-fatal)"
+            exit 0
+          }
+          echo "::endgroup::"
+
+          # Push to {branch}-add-qa-test
+          TEST_BRANCH="${PR_BRANCH}-add-qa-test"
+          git checkout -b "$TEST_BRANCH" HEAD 2>/dev/null || git checkout "$TEST_BRANCH" 2>/dev/null || true
+          git add "$TEST_PATH"
+          git commit -m "test: add QA regression test for PR #${PR_NUM}" || {
+            echo "Nothing to commit"
+            exit 0
+          }
+          git push origin "$TEST_BRANCH" --force-with-lease || echo "Push failed (non-fatal)"
+          echo "Pushed regression test to branch: $TEST_BRANCH"
 
       - name: Deploy to Cloudflare Pages
         id: deploy-videos
