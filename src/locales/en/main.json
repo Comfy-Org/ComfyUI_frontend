@@ -31,6 +31,7 @@
     "audioProgress": "Audio progress",
     "viewImageOfTotal": "View image {index} of {total}",
     "viewVideoOfTotal": "View video {index} of {total}",
+    "imageLightbox": "Image preview",
     "imagePreview": "Image preview - Use arrow keys to navigate between images",
     "videoPreview": "Video preview - Use arrow keys to navigate between videos",
     "galleryImage": "Gallery image",
@@ -104,6 +105,8 @@
     "usageHint": "Usage hint",
     "triggerPhrase": "Trigger phrase",
     "findIssues": "Find Issues",
+    "findOnGithub": "Find on GitHub",
+    "getHelpAction": "Get Help",
     "reportIssue": "Send Report",
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
@@ -1162,6 +1165,7 @@
   },
   "maskEditor": {
     "title": "Mask Editor",
+    "openMaskEditor": "Open in Mask Editor",
     "invert": "Invert",
     "clear": "Clear",
     "undo": "Undo",
@@ -3394,6 +3398,8 @@
     "errors": "Errors",
     "noErrors": "No errors",
     "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
+    "findOnGithubTooltip": "Search GitHub issues for related problems",
+    "getHelpTooltip": "Report this error and we'll help you resolve it",
     "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
     "promptErrors": {

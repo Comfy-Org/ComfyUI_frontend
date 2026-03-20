@@ -28,6 +28,7 @@ export const TestIds = {
     settingsTabAbout: 'settings-tab-about',
     confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
+    runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section'
@@ -58,6 +59,10 @@ export const TestIds = {
     domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button'
   },
+  builder: {
+    ioItem: 'builder-io-item',
+    widgetActionsMenu: 'widget-actions-menu'
+  },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
   },
@@ -84,6 +89,7 @@ export type TestIdValue =
   | (typeof TestIds.node)[keyof typeof TestIds.node]
   | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
+  | (typeof TestIds.builder)[keyof typeof TestIds.builder]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
       (typeof TestIds.templates)[keyof typeof TestIds.templates],

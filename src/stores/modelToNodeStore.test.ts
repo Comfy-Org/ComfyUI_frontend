@@ -178,6 +178,71 @@ describe('useModelToNodeStore', () => {
       ).toBeUndefined()
     })
 
+    describe('progressive hierarchical fallback', () => {
+      it('should resolve 1-level path via exact match', () => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.quickRegister('level1', 'UNETLoader', 'key1')
+
+        const provider = modelToNodeStore.getNodeProvider('level1')
+        expect(provider?.nodeDef?.name).toBe('UNETLoader')
+      })
+
+      it('should resolve 2-level path to registered parent', () => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.quickRegister('level1', 'UNETLoader', 'key1')
+
+        const provider = modelToNodeStore.getNodeProvider('level1/child')
+        expect(provider?.nodeDef?.name).toBe('UNETLoader')
+      })
+
+      it('should resolve 3-level path to nearest registered ancestor', () => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.quickRegister('level1', 'UNETLoader', 'key1')
+        modelToNodeStore.quickRegister('level1/level2', 'VAELoader', 'key2')
+
+        // 3 levels: should match level1/level2 (nearest), not level1
+        const provider = modelToNodeStore.getNodeProvider('level1/level2/child')
+        expect(provider?.nodeDef?.name).toBe('VAELoader')
+      })
+
+      it('should resolve 4-level path to nearest registered ancestor', () => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.quickRegister('a', 'UNETLoader', 'k1')
+        modelToNodeStore.quickRegister('a/b', 'VAELoader', 'k2')
+        modelToNodeStore.quickRegister('a/b/c', 'StyleModelLoader', 'k3')
+
+        // 4 levels: should match a/b/c (nearest), not a/b or a
+        const provider = modelToNodeStore.getNodeProvider('a/b/c/d')
+        expect(provider?.nodeDef?.name).toBe('StyleModelLoader')
+      })
+
+      it('should skip intermediate unregistered levels', () => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.quickRegister('a', 'UNETLoader', 'k1')
+        // a/b is NOT registered
+
+        // 3 levels: a/b not found, falls back to a
+        const provider = modelToNodeStore.getNodeProvider('a/b/c')
+        expect(provider?.nodeDef?.name).toBe('UNETLoader')
+      })
+
+      it('should prefer exact match over any fallback', () => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.quickRegister('a', 'UNETLoader', 'k1')
+        modelToNodeStore.quickRegister('a/b/c', 'VAELoader', 'k2')
+
+        const provider = modelToNodeStore.getNodeProvider('a/b/c')
+        expect(provider?.nodeDef?.name).toBe('VAELoader')
+      })
+
+      it('should return undefined when no ancestor is registered', () => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.quickRegister('x', 'UNETLoader', 'k1')
+
+        expect(modelToNodeStore.getNodeProvider('y/z/w')).toBeUndefined()
+      })
+    })
+
     it('should return provider for chatterbox nodes with empty key', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
