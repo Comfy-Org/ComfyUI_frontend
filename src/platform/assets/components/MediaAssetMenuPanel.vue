@@ -3,18 +3,29 @@
     class="media-asset-menu-panel flex min-w-56 flex-col rounded-lg border border-border-subtle bg-secondary-background p-2 text-base-foreground"
   >
     <template v-for="item in contextMenuItems" :key="item.key">
-      <div v-if="item.kind === 'divider'" class="m-1 h-px bg-border-subtle" />
-      <Button
+      <component
+        :is="separatorComponent"
+        v-if="item.kind === 'divider'"
+        class="m-1 h-px bg-border-subtle"
+      />
+      <component
+        :is="itemComponent"
         v-else
-        variant="secondary"
-        size="sm"
-        class="w-full justify-start"
+        as-child
         :disabled="item.disabled"
-        @click="onItemSelect(item)"
+        :text-value="item.label"
+        @select="void onItemSelect(item)"
       >
-        <i v-if="item.icon" :class="item.icon" class="size-4" />
-        <span>{{ item.label }}</span>
-      </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          class="w-full justify-start"
+          :disabled="item.disabled"
+        >
+          <i v-if="item.icon" :class="item.icon" class="size-4" />
+          <span>{{ item.label }}</span>
+        </Button>
+      </component>
     </template>
   </div>
 </template>
@@ -22,6 +33,10 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import {
+  ContextMenuItem,
+  ContextMenuSeparator,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
   injectContextMenuRootContext,
   injectDropdownMenuRootContext
 } from 'reka-ui'
@@ -84,6 +99,12 @@ const actions = useMediaAssetActions()
 const { t } = useI18n()
 const dropdownMenuRootContext = injectDropdownMenuRootContext(null)
 const contextMenuRootContext = injectContextMenuRootContext(null)
+const itemComponent = dropdownMenuRootContext
+  ? DropdownMenuItem
+  : ContextMenuItem
+const separatorComponent = dropdownMenuRootContext
+  ? DropdownMenuSeparator
+  : ContextMenuSeparator
 
 function closeMenu() {
   dropdownMenuRootContext?.onOpenChange(false)

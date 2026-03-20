@@ -101,6 +101,9 @@ describe('MediaAssetContextMenu', () => {
 
     const menu = await showMenu()
     expect(menu).not.toBeNull()
+    expect(
+      document.body.querySelectorAll('[role="menuitem"]').length
+    ).toBeGreaterThan(0)
     wrapper.unmount()
   })
 

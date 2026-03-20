@@ -83,8 +83,8 @@ describe('JobContextMenu', () => {
 
     const buttons = getRenderedButtons()
     expect(buttons).toHaveLength(2)
-    expect(buttons[0].dataset.disabled).toBe('false')
-    expect(buttons[1].dataset.disabled).toBe('true')
+    expect(buttons[0].disabled).toBe(false)
+    expect(buttons[1].disabled).toBe(true)
 
     wrapper.unmount()
   })
@@ -108,6 +108,9 @@ describe('JobContextMenu', () => {
     await openMenu()
 
     expect(isMenuVisible()).toBe(true)
+    expect(
+      document.body.querySelectorAll('[role="menuitem"]').length
+    ).toBeGreaterThan(0)
 
     wrapper.unmount()
   })
