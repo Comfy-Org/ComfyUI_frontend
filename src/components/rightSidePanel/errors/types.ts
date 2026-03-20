@@ -2,6 +2,7 @@ export interface ErrorItem {
   message: string
   details?: string
   isRuntimeError?: boolean
+  exceptionType?: string
 }
 
 export interface ErrorCardData {

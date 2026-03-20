@@ -73,6 +73,7 @@ export class NodeOperationsHelper {
     return new NodeReference(id, this.comfyPage)
   }
 
+  /** Reads from `window.app.graph` (the root workflow graph). */
   async getNodeCount(): Promise<number> {
     return await this.page.evaluate(() => window.app!.graph.nodes.length)
   }
