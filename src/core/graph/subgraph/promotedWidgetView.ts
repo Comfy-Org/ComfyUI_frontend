@@ -49,9 +49,16 @@ export function createPromotedWidgetView(
   subgraphNode: SubgraphNode,
   nodeId: string,
   widgetName: string,
-  displayName?: string
+  displayName?: string,
+  disambiguatingSourceNodeId?: string
 ): IPromotedWidgetView {
-  return new PromotedWidgetView(subgraphNode, nodeId, widgetName, displayName)
+  return new PromotedWidgetView(
+    subgraphNode,
+    nodeId,
+    widgetName,
+    displayName,
+    disambiguatingSourceNodeId
+  )
 }
 
 class PromotedWidgetView implements IPromotedWidgetView {
@@ -80,7 +87,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
     private readonly subgraphNode: SubgraphNode,
     nodeId: string,
     widgetName: string,
-    private readonly displayName?: string
+    private readonly displayName?: string,
+    readonly disambiguatingSourceNodeId?: string
   ) {
     this.sourceNodeId = nodeId
     this.sourceWidgetName = widgetName
@@ -287,7 +295,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return resolvePromotedWidgetAtHost(
       this.subgraphNode,
       this.sourceNodeId,
-      this.sourceWidgetName
+      this.sourceWidgetName,
+      this.disambiguatingSourceNodeId
     )
   }
 
@@ -301,7 +310,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const result = resolveConcretePromotedWidget(
       this.subgraphNode,
       this.sourceNodeId,
-      this.sourceWidgetName
+      this.sourceWidgetName,
+      this.disambiguatingSourceNodeId
     )
     const resolved = result.status === 'resolved' ? result.resolved : undefined
 
@@ -341,7 +351,9 @@ class PromotedWidgetView implements IPromotedWidgetView {
       if (boundWidget && isPromotedWidgetView(boundWidget)) {
         return (
           boundWidget.sourceNodeId === this.sourceNodeId &&
-          boundWidget.sourceWidgetName === this.sourceWidgetName
+          boundWidget.sourceWidgetName === this.sourceWidgetName &&
+          boundWidget.disambiguatingSourceNodeId ===
+            this.disambiguatingSourceNodeId
         )
       }
 
