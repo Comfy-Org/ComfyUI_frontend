@@ -55,7 +55,7 @@ const entries = computed(() => {
     class="my-2 flex items-center-safe gap-2 rounded-lg p-2"
     data-testid="builder-io-item"
   >
-    <div class="drag-handle mr-auto flex min-w-0 flex-col gap-1">
+    <div class="drag-handle mr-auto flex w-full min-w-0 flex-col gap-1">
       <EditableText
         :model-value="title"
         :is-editing="isEditing"
