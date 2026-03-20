@@ -7,6 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
@@ -22,6 +23,7 @@ const { t } = useI18n()
 const workflowStore = useWorkflowStore()
 
 const rightSidePanelStore = useRightSidePanelStore()
+const advancedOverridesStore = useAdvancedWidgetOverridesStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
 
 const { widgetsSectionDataList, includesAdvanced } = computedSectionDataList(
@@ -38,7 +40,8 @@ const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
       const advancedWidgets = widgets
         .filter(
           (w) =>
-            !(w.options?.canvasOnly || w.options?.hidden) && w.options?.advanced
+            !(w.options?.canvasOnly || w.options?.hidden) &&
+            advancedOverridesStore.getAdvancedState(node, w)
         )
         .map((widget) => ({ node, widget }))
       return { widgets: advancedWidgets, node }
@@ -116,6 +119,14 @@ const advancedLabel = computed(() => {
     ? t('rightSidePanel.advancedInputs')
     : undefined // SectionWidgets display node titles by default
 })
+
+const showAdvancedSection = computed(
+  () =>
+    advancedWidgetsSectionDataList.value.length > 0 &&
+    !isSearching.value &&
+    !isMultipleNodesSelected.value &&
+    !mustShowNodeTitle
+)
 </script>
 
 <template>
@@ -165,7 +176,7 @@ const advancedLabel = computed(() => {
       @update:collapse="setSectionCollapsed(String(node.id), $event)"
     />
   </TransitionGroup>
-  <template v-if="advancedWidgetsSectionDataList.length > 0 && !isSearching">
+  <template v-if="showAdvancedSection">
     <SectionWidgets
       v-for="{ widgets, node } in advancedWidgetsSectionDataList"
       :key="`advanced-${node.id}`"

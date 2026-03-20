@@ -23,7 +23,10 @@
   >
     <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
-        v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
+        v-if="
+          !widget.simplified.hidden &&
+          (!widget.simplified.advanced || showAdvanced)
+        "
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
         <!-- Widget Input Slot Dot -->
@@ -91,6 +94,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -108,6 +112,7 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import {
@@ -130,15 +135,17 @@ import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
   nodeData?: VueNodeData
+  node?: LGraphNode | null
 }
 
-const { nodeData } = defineProps<NodeWidgetsProps>()
+const { nodeData, node: lgraphNode = null } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { isSelectInputsMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
+const advancedOverridesStore = useAdvancedWidgetOverridesStore()
 const promotionStore = usePromotionStore()
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
@@ -177,10 +184,11 @@ const canSelectInputs = computed(
 )
 const nodeType = computed(() => nodeData?.type || '')
 const settingStore = useSettingStore()
+const alwaysShowAdvancedWidgets = computed(() =>
+  settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+)
 const showAdvanced = computed(
-  () =>
-    nodeData?.showAdvanced ||
-    settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+  () => nodeData?.showAdvanced || alwaysShowAdvancedWidgets.value
 )
 const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
   nodeType.value
@@ -405,6 +413,10 @@ const processedWidgets = computed((): ProcessedWidget[] => {
           }
         : undefined
 
+    const resolvedAdvanced = lgraphNode
+      ? advancedOverridesStore.getAdvancedState(lgraphNode, widget)
+      : !!widget.options?.advanced
+
     const simplified: SimplifiedWidget = {
       name: widget.name,
       type: widget.type,
@@ -415,7 +427,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       label: widgetState?.label,
       linkedUpstream,
       options: widgetOptions,
-      spec: widget.spec
+      spec: widget.spec,
+      advanced: resolvedAdvanced,
+      hidden: widget.options?.hidden
     }
 
     const updateHandler = createWidgetUpdateHandler(
@@ -441,7 +455,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     }
 
     result.push({
-      advanced: mergedOptions.advanced ?? false,
+      advanced: resolvedAdvanced,
       handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError: hasWidgetError(widget, nodeExecId, nodeErrors),
@@ -459,13 +473,33 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     })
   }
 
+  if (nodeData?.showAdvanced && !alwaysShowAdvancedWidgets.value) {
+    const normal = result.filter((w) => !w.simplified.advanced)
+    const advanced = result.filter((w) => w.simplified.advanced)
+    return [...normal, ...advanced]
+  }
+
   return result
 })
 
+/**
+ * Grid rows must follow the original `nodeData.widgets` order; the rendered list
+ * may reorder widgets (e.g. grouping advanced widgets at the end).
+ */
 const gridTemplateRows = computed((): string => {
-  // Use processedWidgets directly since it already has store-based hidden/advanced
-  return toValue(processedWidgets)
-    .filter((w) => !w.hidden && (!w.advanced || showAdvanced.value))
+  if (!nodeData?.widgets) return ''
+  const processedNames = new Set(toValue(processedWidgets).map((w) => w.name))
+  return nodeData.widgets
+    .filter((w) => {
+      if (!processedNames.has(w.name)) return false
+      if (w.options?.hidden) return false
+
+      const resolved = lgraphNode
+        ? advancedOverridesStore.getAdvancedState(lgraphNode, w)
+        : !!w.options?.advanced
+
+      return !resolved || showAdvanced.value
+    })
     .map((w) =>
       shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
     )

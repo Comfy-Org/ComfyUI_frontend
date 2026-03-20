@@ -162,7 +162,11 @@
         >
           <NodeSlots :node-data="nodeData" />
 
-          <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
+          <NodeWidgets
+            v-if="nodeData.widgets?.length"
+            :node-data="nodeData"
+            :node="lgraphNode"
+          />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent
@@ -270,6 +274,7 @@ import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
+import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 import { st } from '@/i18n'
 import {
   LGraphCanvas,
@@ -728,21 +733,20 @@ const lgraphNode = computed(() => {
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 
+const advancedOverridesStore = useAdvancedWidgetOverridesStore()
+
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
 
-  // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
     return hasUnpromotedWidgets(node)
   }
 
-  // For regular nodes: show button if there are advanced widgets and they're currently hidden
-  const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
   )
-  return hasAdvancedWidgets && !alwaysShowAdvanced
+  return advancedOverridesStore.hasAnyAdvanced(node) && !alwaysShowAdvanced
 })
 
 const showAdvancedState = customRef((track, trigger) => {
@@ -772,6 +776,9 @@ const showAdvancedState = customRef((track, trigger) => {
       } else {
         node.showAdvanced = value
         internalState = value
+        nextTick(() => {
+          node.expandToFitContent()
+        })
       }
       trigger()
     }
