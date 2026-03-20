@@ -56,14 +56,14 @@ export function useSubgraphDragBridge() {
   /** Wires up LinkConnector event listeners and returns a cleanup function. */
   function setupBridge(lgCanvas: LGraphCanvas): () => void {
     const linkConnector: LinkConnector = lgCanvas.linkConnector
-    let teardownDrag: (() => void) | undefined
+    let pointerTracking: { cleanup: () => void; flush: () => void } | undefined
     let isBridgeDrag = false
 
     const onConnecting = (
       event: CustomEvent<{ connectingTo: 'input' | 'output' }>
     ) => {
-      teardownDrag?.()
-      teardownDrag = undefined
+      pointerTracking?.cleanup()
+      pointerTracking = undefined
 
       const { connectingTo } = event.detail
 
@@ -105,12 +105,13 @@ export function useSubgraphDragBridge() {
         setCompatibleForKey(key, ok)
       }
 
-      teardownDrag = startPointerTracking(lgCanvas, linkConnector)
+      pointerTracking = startPointerTracking(lgCanvas, linkConnector)
     }
 
     const onBeforeDropOnCanvas = (event: CustomEvent) => {
       if (!isBridgeDrag) return
 
+      pointerTracking?.flush()
       const candidate = dragState.candidate
       if (!candidate?.compatible) return
 
@@ -128,8 +129,8 @@ export function useSubgraphDragBridge() {
 
     const onReset = () => {
       if (!isBridgeDrag) return
-      teardownDrag?.()
-      teardownDrag = undefined
+      pointerTracking?.cleanup()
+      pointerTracking = undefined
       isBridgeDrag = false
       endDrag()
     }
@@ -148,8 +149,8 @@ export function useSubgraphDragBridge() {
         onBeforeDropOnCanvas
       )
       linkConnector.events.removeEventListener('reset', onReset)
-      teardownDrag?.()
-      teardownDrag = undefined
+      pointerTracking?.cleanup()
+      pointerTracking = undefined
       if (isBridgeDrag) {
         isBridgeDrag = false
         endDrag()
@@ -160,12 +161,11 @@ export function useSubgraphDragBridge() {
   /**
    * Tracks pointer movement during a bridge drag to resolve Vue slot
    * candidates, update snap positions, and toggle snap-target highlights.
-   * Returns a cleanup function that removes the listener and RAF batch.
    */
   function startPointerTracking(
     lgCanvas: LGraphCanvas,
     linkConnector: LinkConnector
-  ): () => void {
+  ): { cleanup: () => void; flush: () => void } {
     const ownerDoc = lgCanvas.getCanvasWindow().document
     const session = createSlotLinkDragContext()
     const slotRegistry = useNodeSlotRegistryStore()
@@ -304,16 +304,19 @@ export function useSubgraphDragBridge() {
 
     ownerDoc.addEventListener('pointermove', onPointerMove, { capture: true })
 
-    return () => {
-      ownerDoc.removeEventListener('pointermove', onPointerMove, {
-        capture: true
-      })
-      raf.cancel()
-      if (highlightedSlotEl) {
-        highlightedSlotEl.classList.remove(SNAP_CLASS)
-        highlightedSlotEl = null
+    return {
+      flush: () => raf.flush(),
+      cleanup: () => {
+        ownerDoc.removeEventListener('pointermove', onPointerMove, {
+          capture: true
+        })
+        raf.cancel()
+        if (highlightedSlotEl) {
+          highlightedSlotEl.classList.remove(SNAP_CLASS)
+          highlightedSlotEl = null
+        }
+        session.dispose()
       }
-      session.dispose()
     }
   }
 }
