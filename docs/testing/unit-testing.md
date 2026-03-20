@@ -95,7 +95,7 @@ Testing with ComfyUI workflow files:
 ```typescript
 // Example from: tests-ui/tests/comfyWorkflow.test.ts
 import { describe, expect, it } from 'vitest'
-import { validateComfyWorkflow } from '@/domains/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 describe('workflow validation', () => {

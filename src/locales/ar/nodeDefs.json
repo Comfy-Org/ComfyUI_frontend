@@ -3207,6 +3207,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "يُمكّن تحسين KV Cache لصور المرجع على نماذج عائلة Flux.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج الذي سيتم تفعيل KV Cache عليه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "النموذج المعدّل مع تفعيل KV Cache."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "تعيد هذه العقدة ضبط حجم الصورة إلى حجم أكثر ملاءمة لـ flux kontext.",
     "display_name": "FluxKontextImageScale",
@@ -11291,6 +11306,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "الرسام",
+    "inputs": {
+      "bg_color": {
+        "name": "لون الخلفية"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "صورة أساسية اختيارية للرسم فوقها"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "دمج زوج الشرط",
     "inputs": {
@@ -12852,6 +12896,133 @@
       "1": {
         "name": "الارتفاع",
         "tooltip": "الارتفاع المحسوب بالبكسل (مضاعف للعدد ٨)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "توليد الصور من أوصاف نصية باستخدام Reve.",
+    "display_name": "إنشاء صورة Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "إصدار النموذج المستخدم في التوليد."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة الأبعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "اختبار التحجيم الزمني"
+      },
+      "prompt": {
+        "name": "الوصف النصي",
+        "tooltip": "الوصف النصي للصورة المطلوبة. الحد الأقصى ٢٥٦٠ حرفًا."
+      },
+      "remove_background": {
+        "name": "إزالة الخلفية",
+        "tooltip": "إزالة الخلفية من الصورة المولدة. قد يضيف تكلفة إضافية."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "upscale": {
+        "name": "تكبير",
+        "tooltip": "تكبير الصورة المولدة. قد يضيف تكلفة إضافية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "تعديل الصور باستخدام تعليمات لغة طبيعية مع Reve.",
+    "display_name": "تعديل صورة Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "edit_instruction": {
+        "name": "تعليمات التعديل",
+        "tooltip": "الوصف النصي لكيفية تعديل الصورة. الحد الأقصى ٢٥٦٠ حرفًا."
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "الصورة المراد تعديلها."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "إصدار النموذج المستخدم في التعديل."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة الأبعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "اختبار التحجيم الزمني"
+      },
+      "remove_background": {
+        "name": "إزالة الخلفية",
+        "tooltip": "إزالة الخلفية من الصورة المولدة. قد يضيف تكلفة إضافية."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "upscale": {
+        "name": "تكبير",
+        "tooltip": "تكبير الصورة المولدة. قد يضيف تكلفة إضافية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "دمج الصور المرجعية مع الأوصاف النصية لإنشاء صور جديدة باستخدام Reve.",
+    "display_name": "ريمكس صورة Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "إصدار النموذج المستخدم في الريمكس."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة الأبعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "اختبار التحجيم الزمني"
+      },
+      "prompt": {
+        "name": "الوصف النصي",
+        "tooltip": "الوصف النصي للصورة المطلوبة. يمكن أن يتضمن وسوم XML للصور للإشارة إلى صور محددة حسب الفهرس، مثل <img>0</img>، <img>1</img>، إلخ."
+      },
+      "reference_images": {
+        "name": "الصور المرجعية"
+      },
+      "remove_background": {
+        "name": "إزالة الخلفية",
+        "tooltip": "إزالة الخلفية من الصورة المولدة. قد يضيف تكلفة إضافية."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "upscale": {
+        "name": "تكبير",
+        "tooltip": "تكبير الصورة المولدة. قد يضيف تكلفة إضافية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15080,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "بعد إدخال النموذج ثلاثي الأبعاد، يتم إعادة رسم نسيج النموذج ثلاثي الأبعاد.",
+    "display_name": "Hunyuan3D: تحرير نسيج ثلاثي الأبعاد",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "نموذج ثلاثي الأبعاد بصيغة FBX. يجب أن يحتوي النموذج على أقل من ١٠٠٬٠٠٠ وجه."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "يصف تحرير النسيج. يدعم حتى ١٠٢٤ حرف UTF-8."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: من صورة إلى نموذج (احترافي)",
     "inputs": {
@@ -15127,6 +15333,22 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
         "tooltip": null
       }
     }
@@ -15228,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }

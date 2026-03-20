@@ -15,7 +15,11 @@ import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
-import { isAnimatedOutput, isVideoNode } from '@/utils/litegraphUtil'
+import {
+  isAnimatedOutput,
+  isVideoNode,
+  resolveNode
+} from '@/utils/litegraphUtil'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -127,6 +131,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   /**
+   * Check if an output contains input-type preview images (from upload widgets).
+   * These are synthetic previews set by LoadImage/LoadVideo widgets, not
+   * execution results from the backend.
+   */
+  function isInputPreviewOutput(
+    output: ExecutedWsMessage['output'] | ResultItem | undefined
+  ): boolean {
+    const images = (output as ExecutedWsMessage['output'] | undefined)?.images
+    return (
+      Array.isArray(images) &&
+      images.length > 0 &&
+      images.every((i) => i?.type === 'input')
+    )
+  }
+
+  /**
    * Internal function to set outputs by NodeLocatorId.
    * Handles the merge logic when needed.
    */
@@ -139,6 +159,26 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     // This can happen when backend returns null for cached/deduplicated nodes
     // (e.g., two LoadImage nodes selecting the same image)
     if (outputs == null) return
+
+    // Preserve input preview images (from upload widgets) when execution
+    // sends outputs with no images. Without this guard, execution results
+    // overwrite the upload widget's preview, causing LoadImage/LoadVideo
+    // nodes to lose their preview after execution + tab switch.
+    // Note: intentional preview clears go through setNodeOutputs (widget
+    // path), not setNodeOutputsByExecutionId, so this guard does not
+    // interfere with user-initiated clears.
+    const incomingImages = (outputs as ExecutedWsMessage['output']).images
+    const hasIncomingImages =
+      Array.isArray(incomingImages) && incomingImages.length > 0
+    if (
+      !hasIncomingImages &&
+      isInputPreviewOutput(app.nodeOutputs[nodeLocatorId])
+    ) {
+      outputs = {
+        ...outputs,
+        images: app.nodeOutputs[nodeLocatorId].images
+      }
+    }
 
     if (options.merge) {
       const existingOutput = app.nodeOutputs[nodeLocatorId]
@@ -428,7 +468,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (!LiteGraph.vueNodesMode) return
 
-    const node = app.rootGraph?.getNodeById(Number(nodeId))
+    const node = resolveNode(Number(nodeId))
     if (!node) return
 
     node.imgs = [element]

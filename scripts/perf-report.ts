@@ -7,6 +7,9 @@ import {
   computeStats,
   formatSignificance,
   isNoteworthy,
+  sparkline,
+  trendArrow,
+  trendDirection,
   zScore
 } from './perf-stats'
 
@@ -19,6 +22,12 @@ interface PerfMeasurement {
   layoutDurationMs: number
   taskDurationMs: number
   heapDeltaBytes: number
+  domNodes: number
+  jsHeapTotalBytes: number
+  scriptDurationMs: number
+  eventListeners: number
+  totalBlockingTimeMs: number
+  frameDurationMs: number
 }
 
 interface PerfReport {
@@ -32,11 +41,24 @@ const CURRENT_PATH = 'test-results/perf-metrics.json'
 const BASELINE_PATH = 'temp/perf-baseline/perf-metrics.json'
 const HISTORY_DIR = 'temp/perf-history'
 
-type MetricKey = 'styleRecalcs' | 'layouts' | 'taskDurationMs'
+type MetricKey =
+  | 'styleRecalcs'
+  | 'layouts'
+  | 'taskDurationMs'
+  | 'domNodes'
+  | 'scriptDurationMs'
+  | 'eventListeners'
+  | 'totalBlockingTimeMs'
+  | 'frameDurationMs'
 const REPORTED_METRICS: { key: MetricKey; label: string; unit: string }[] = [
   { key: 'styleRecalcs', label: 'style recalcs', unit: '' },
   { key: 'layouts', label: 'layouts', unit: '' },
-  { key: 'taskDurationMs', label: 'task duration', unit: 'ms' }
+  { key: 'taskDurationMs', label: 'task duration', unit: 'ms' },
+  { key: 'domNodes', label: 'DOM nodes', unit: '' },
+  { key: 'scriptDurationMs', label: 'script duration', unit: 'ms' },
+  { key: 'eventListeners', label: 'event listeners', unit: '' },
+  { key: 'totalBlockingTimeMs', label: 'TBT', unit: 'ms' },
+  { key: 'frameDurationMs', label: 'frame duration', unit: 'ms' }
 ]
 
 function groupByName(
@@ -54,8 +76,11 @@ function groupByName(
 function loadHistoricalReports(): PerfReport[] {
   if (!existsSync(HISTORY_DIR)) return []
   const reports: PerfReport[] = []
-  for (const dir of readdirSync(HISTORY_DIR)) {
-    const filePath = join(HISTORY_DIR, dir, 'perf-metrics.json')
+  for (const entry of readdirSync(HISTORY_DIR)) {
+    const entryPath = join(HISTORY_DIR, entry)
+    const filePath = entry.endsWith('.json')
+      ? entryPath
+      : join(entryPath, 'perf-metrics.json')
     if (!existsSync(filePath)) continue
     try {
       reports.push(JSON.parse(readFileSync(filePath, 'utf-8')) as PerfReport)
@@ -76,12 +101,32 @@ function getHistoricalStats(
     const group = groupByName(r.measurements)
     const samples = group.get(testName)
     if (samples) {
-      const mean =
-        samples.reduce((sum, s) => sum + s[metric], 0) / samples.length
-      values.push(mean)
+      const mean = meanMetric(samples, metric)
+      if (mean !== null) values.push(mean)
     }
   }
   return computeStats(values)
+}
+
+function getHistoricalTimeSeries(
+  reports: PerfReport[],
+  testName: string,
+  metric: MetricKey
+): number[] {
+  const sorted = [...reports].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
+  const values: number[] = []
+  for (const r of sorted) {
+    const group = groupByName(r.measurements)
+    const samples = group.get(testName)
+    if (samples) {
+      values.push(
+        samples.reduce((sum, s) => sum + s[metric], 0) / samples.length
+      )
+    }
+  }
+  return values
 }
 
 function computeCV(stats: MetricStats): number {
@@ -98,8 +143,20 @@ function formatDelta(pct: number | null): string {
   return `${sign}${pct.toFixed(0)}%`
 }
 
-function meanMetric(samples: PerfMeasurement[], key: MetricKey): number {
-  return samples.reduce((sum, s) => sum + s[key], 0) / samples.length
+function getMetricValue(
+  sample: PerfMeasurement,
+  key: MetricKey
+): number | null {
+  const value = sample[key]
+  return Number.isFinite(value) ? value : null
+}
+
+function meanMetric(samples: PerfMeasurement[], key: MetricKey): number | null {
+  const values = samples
+    .map((s) => getMetricValue(s, key))
+    .filter((v): v is number => v !== null)
+  if (values.length === 0) return null
+  return values.reduce((sum, v) => sum + v, 0) / values.length
 }
 
 function formatBytes(bytes: number): string {
@@ -127,8 +184,8 @@ function renderFullReport(
     const baseSamples = baselineGroups.get(testName)
 
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const prValues = prSamples.map((s) => s[key])
-      const prMean = prValues.reduce((a, b) => a + b, 0) / prValues.length
+      const prMean = meanMetric(prSamples, key)
+      if (prMean === null) continue
       const histStats = getHistoricalStats(historical, testName, key)
       const cv = computeCV(histStats)
 
@@ -140,6 +197,12 @@ function renderFullReport(
       }
 
       const baseVal = meanMetric(baseSamples, key)
+      if (baseVal === null) {
+        allRows.push(
+          `| ${testName}: ${label} | — | ${formatValue(prMean, unit)} | new | — |`
+        )
+        continue
+      }
       const deltaPct =
         baseVal === 0
           ? prMean === 0
@@ -197,6 +260,34 @@ function renderFullReport(
   }
   lines.push('', '</details>')
 
+  const trendRows: string[] = []
+  for (const [testName] of prGroups) {
+    for (const { key, label, unit } of REPORTED_METRICS) {
+      const series = getHistoricalTimeSeries(historical, testName, key)
+      if (series.length < 3) continue
+      const dir = trendDirection(series)
+      const arrow = trendArrow(dir)
+      const spark = sparkline(series)
+      const last = series[series.length - 1]
+      trendRows.push(
+        `| ${testName}: ${label} | ${spark} | ${arrow} | ${formatValue(last, unit)} |`
+      )
+    }
+  }
+
+  if (trendRows.length > 0) {
+    lines.push(
+      '',
+      `<details><summary>Trend (last ${historical.length} commits on main)</summary>`,
+      '',
+      '| Metric | Trend | Dir | Latest |',
+      '|--------|-------|-----|--------|',
+      ...trendRows,
+      '',
+      '</details>'
+    )
+  }
+
   return lines
 }
 
@@ -218,8 +309,8 @@ function renderColdStartReport(
     const baseSamples = baselineGroups.get(testName)
 
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const prValues = prSamples.map((s) => s[key])
-      const prMean = prValues.reduce((a, b) => a + b, 0) / prValues.length
+      const prMean = meanMetric(prSamples, key)
+      if (prMean === null) continue
 
       if (!baseSamples?.length) {
         lines.push(
@@ -229,6 +320,12 @@ function renderColdStartReport(
       }
 
       const baseVal = meanMetric(baseSamples, key)
+      if (baseVal === null) {
+        lines.push(
+          `| ${testName}: ${label} | — | ${formatValue(prMean, unit)} | new |`
+        )
+        continue
+      }
       const deltaPct =
         baseVal === 0
           ? prMean === 0
@@ -254,18 +351,14 @@ function renderNoBaselineReport(
     '|--------|-------|'
   )
   for (const [testName, prSamples] of prGroups) {
-    const prMean = (key: MetricKey) =>
-      prSamples.reduce((sum, s) => sum + s[key], 0) / prSamples.length
-
-    lines.push(
-      `| ${testName}: style recalcs | ${prMean('styleRecalcs').toFixed(0)} |`
-    )
-    lines.push(`| ${testName}: layouts | ${prMean('layouts').toFixed(0)} |`)
-    lines.push(
-      `| ${testName}: task duration | ${prMean('taskDurationMs').toFixed(0)}ms |`
-    )
+    for (const { key, label, unit } of REPORTED_METRICS) {
+      const prMean = meanMetric(prSamples, key)
+      if (prMean === null) continue
+      lines.push(`| ${testName}: ${label} | ${formatValue(prMean, unit)} |`)
+    }
     const heapMean =
-      prSamples.reduce((sum, s) => sum + s.heapDeltaBytes, 0) / prSamples.length
+      prSamples.reduce((sum, s) => sum + (s.heapDeltaBytes ?? 0), 0) /
+      prSamples.length
     lines.push(`| ${testName}: heap delta | ${formatBytes(heapMean)} |`)
   }
   return lines

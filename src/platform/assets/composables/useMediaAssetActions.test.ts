@@ -119,15 +119,29 @@ vi.mock('@/platform/assets/utils/assetTypeUtil', () => ({
   getAssetType: mockGetAssetType
 }))
 
+const mockGetOutputAssetMetadata = vi.hoisted(() =>
+  vi.fn().mockReturnValue(null)
+)
 vi.mock('../schemas/assetMetadataSchema', () => ({
-  getOutputAssetMetadata: vi.fn().mockReturnValue(null)
+  getOutputAssetMetadata: mockGetOutputAssetMetadata
 }))
 
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
+const mockCreateAssetExport = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({ task_id: 'test-task-id', status: 'pending' })
+)
 vi.mock('../services/assetService', () => ({
   assetService: {
-    deleteAsset: mockDeleteAsset
+    deleteAsset: mockDeleteAsset,
+    createAssetExport: mockCreateAssetExport
   }
+}))
+
+const mockTrackExport = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/assetExportStore', () => ({
+  useAssetExportStore: () => ({
+    trackExport: mockTrackExport
+  })
 }))
 
 vi.mock('@/scripts/api', () => ({
@@ -255,6 +269,106 @@ describe('useMediaAssetActions', () => {
         expect(capturedFilenames.values).toContain('hash2.jpeg')
         expect(capturedFilenames.values).not.toContain('file1.jpeg')
         expect(capturedFilenames.values).not.toContain('file2.jpeg')
+      })
+    })
+  })
+
+  describe('downloadMultipleAssets - job_asset_name_filters', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockCreateAssetExport.mockClear()
+      mockTrackExport.mockClear()
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockImplementation(
+        (meta: Record<string, unknown> | undefined) =>
+          meta && 'jobId' in meta ? meta : null
+      )
+    })
+
+    function createOutputAsset(
+      id: string,
+      name: string,
+      jobId: string,
+      outputCount?: number
+    ): AssetItem {
+      return createMockAsset({
+        id,
+        name,
+        tags: ['output'],
+        user_metadata: { jobId, nodeId: '1', subfolder: '', outputCount }
+      })
+    }
+
+    it('should omit name filters for job-level selections (outputCount known)', async () => {
+      const assets = [
+        createOutputAsset('a1', 'img1.png', 'job1', 3),
+        createOutputAsset('a2', 'img2.png', 'job1', 3),
+        createOutputAsset('a3', 'img3.png', 'job1', 3)
+      ]
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets(assets)
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      const payload = mockCreateAssetExport.mock.calls[0][0]
+      expect(payload.job_ids).toEqual(['job1'])
+      expect(payload.job_asset_name_filters).toBeUndefined()
+    })
+
+    it('should omit name filters for multiple job-level selections', async () => {
+      const j1a = createOutputAsset('a1', 'out1a.png', 'job1', 2)
+      const j1b = createOutputAsset('a2', 'out1b.png', 'job1', 2)
+      const j2 = createOutputAsset('a3', 'out2.png', 'job2', 1)
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets([j1a, j1b, j2])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      const payload = mockCreateAssetExport.mock.calls[0][0]
+      expect(payload.job_ids).toEqual(['job1', 'job2'])
+      expect(payload.job_asset_name_filters).toBeUndefined()
+    })
+
+    it('should include name filters when outputCount is unknown', async () => {
+      const asset1 = createOutputAsset('a1', 'img1.png', 'job1')
+      const asset2 = createOutputAsset('a2', 'img2.png', 'job2')
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets([asset1, asset2])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      const payload = mockCreateAssetExport.mock.calls[0][0]
+      expect(payload.job_asset_name_filters).toEqual({
+        job1: ['img1.png'],
+        job2: ['img2.png']
+      })
+    })
+
+    it('should mix: omit filters for known outputCount, keep for unknown', async () => {
+      const j1a = createOutputAsset('a1', 'img1a.png', 'job1', 2)
+      const j1b = createOutputAsset('a2', 'img1b.png', 'job1', 2)
+      const j2 = createOutputAsset('a3', 'img2.png', 'job2')
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets([j1a, j1b, j2])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      const payload = mockCreateAssetExport.mock.calls[0][0]
+      expect(payload.job_ids).toEqual(['job1', 'job2'])
+      expect(payload.job_asset_name_filters).toEqual({
+        job2: ['img2.png']
       })
     })
   })

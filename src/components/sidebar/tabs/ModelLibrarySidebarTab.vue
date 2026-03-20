@@ -21,7 +21,7 @@
       </Button>
     </template>
     <template #header>
-      <div class="px-2 2xl:px-4">
+      <SidebarTopArea>
         <SearchInput
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
@@ -32,7 +32,7 @@
           "
           @search="handleSearch"
         />
-      </div>
+      </SidebarTopArea>
     </template>
     <template #body>
       <ElectronDownloadItems v-if="isDesktop" />
@@ -57,6 +57,7 @@ import { Divider } from 'primevue'
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'

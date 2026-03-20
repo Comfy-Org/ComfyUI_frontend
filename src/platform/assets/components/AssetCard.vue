@@ -186,7 +186,7 @@ const tooltipDelay = computed<number>(() =>
 
 const { isLoading, error } = useImage({
   src: asset.preview_url ?? '',
-  alt: asset.display_name || asset.name
+  alt: displayName.value
 })
 
 function handleSelect() {

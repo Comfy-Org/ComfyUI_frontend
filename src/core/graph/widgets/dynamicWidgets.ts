@@ -16,7 +16,8 @@ import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
   zAutogrowOptions,
-  zDynamicComboInputSpec
+  zDynamicComboInputSpec,
+  zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
@@ -215,6 +216,7 @@ export function applyDynamicInputs(
   dynamicInputs[inputSpec.type](node, inputSpec)
   return true
 }
+
 function spliceInputs(
   node: LGraphNode,
   startIndex: number,
@@ -329,11 +331,10 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
 function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
   const name = inputSpec.name
-  const { allowed_types, template_id } = (
-    inputSpec as InputSpecV2 & {
-      template: { allowed_types: string; template_id: string }
-    }
-  ).template
+  const matchTypeSpec = zMatchTypeOptions.safeParse(inputSpec).data
+  if (!matchTypeSpec) return
+
+  const { allowed_types, template_id } = matchTypeSpec.template
   const typedSpec = { ...inputSpec, type: allowed_types }
   addNodeInput(node, typedSpec)
   withComfyMatchType(node)

@@ -26,6 +26,7 @@ dist-ssr
 .claude/*.local.json
 .claude/*.local.md
 .claude/*.local.txt
+.claude/worktrees
 CLAUDE.local.md
 
 # Editor directories and files

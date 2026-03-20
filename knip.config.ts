@@ -11,7 +11,7 @@ const config: KnipConfig = {
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts'
       ],
-      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
+      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}', '!.claude/**']
     },
     'apps/desktop-ui': {
       entry: ['src/main.ts', 'src/i18n.ts'],
@@ -26,9 +26,13 @@ const config: KnipConfig = {
     },
     'packages/registry-types': {
       project: ['src/**/*.{js,ts}']
+    },
+    'packages/ingest-types': {
+      project: ['src/**/*.{js,ts}'],
+      entry: ['src/index.ts']
     }
   },
-  ignoreBinaries: ['python3', 'gh'],
+  ignoreBinaries: ['python3', 'gh', 'generate'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify-json/lucide',
@@ -41,9 +45,12 @@ const config: KnipConfig = {
     '@iconify/utils'
   ],
   ignore: [
-    // Auto generated manager types
+    // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/registry-types/src/comfyRegistryTypes.ts',
+    'packages/ingest-types/src/types.gen.ts',
+    'packages/ingest-types/src/zod.gen.ts',
+    'packages/ingest-types/openapi-ts.config.ts',
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts',
     // Used by stacked PR (feat/glsl-live-preview)

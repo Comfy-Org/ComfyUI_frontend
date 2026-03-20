@@ -29,48 +29,81 @@ import {
   getExecutionIdByNode,
   getActiveGraphNodeIds
 } from '@/utils/graphTraversalUtil'
+import {
+  isValueStillOutOfRange,
+  SIMPLE_ERROR_TYPES
+} from '@/utils/executionErrorUtil'
 
 interface MissingNodesError {
   message: string
   nodeTypes: MissingNodeType[]
 }
 
-function clearAllNodeErrorFlags(rootGraph: LGraph): void {
-  forEachNode(rootGraph, (node) => {
-    node.has_errors = false
-    if (node.inputs) {
-      for (const slot of node.inputs) {
-        slot.hasErrors = false
-      }
-    }
+function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
+  if (node.has_errors === hasErrors) return
+  const oldValue = node.has_errors
+  node.has_errors = hasErrors
+  node.graph?.trigger('node:property:changed', {
+    type: 'node:property:changed',
+    nodeId: node.id,
+    property: 'has_errors',
+    oldValue,
+    newValue: hasErrors
   })
 }
 
-function markNodeSlotErrors(node: LGraphNode, nodeError: NodeError): void {
-  if (!node.inputs) return
-  for (const error of nodeError.errors) {
-    const slotName = error.extra_info?.input_name
-    if (!slotName) continue
-    const slot = node.inputs.find((s) => s.name === slotName)
-    if (slot) slot.hasErrors = true
-  }
-}
-
-function applyNodeError(
+/**
+ * Single-pass reconciliation of node error flags.
+ * Collects the set of nodes that should have errors, then walks all nodes
+ * once, setting each flag exactly once. This avoids the redundant
+ * true→false→true transition (and duplicate events) that a clear-then-apply
+ * approach would cause.
+ */
+function reconcileNodeErrorFlags(
   rootGraph: LGraph,
-  executionId: NodeExecutionId,
-  nodeError: NodeError
+  nodeErrors: Record<string, NodeError> | null,
+  missingModelExecIds: Set<string>
 ): void {
-  const node = getNodeByExecutionId(rootGraph, executionId)
-  if (!node) return
+  // Collect nodes and slot info that should be flagged
+  // Includes both error-owning nodes and their ancestor containers
+  const flaggedNodes = new Set<LGraphNode>()
+  const errorSlots = new Map<LGraphNode, Set<string>>()
 
-  node.has_errors = true
-  markNodeSlotErrors(node, nodeError)
+  if (nodeErrors) {
+    for (const [executionId, nodeError] of Object.entries(nodeErrors)) {
+      const node = getNodeByExecutionId(rootGraph, executionId)
+      if (!node) continue
 
-  for (const parentId of getParentExecutionIds(executionId)) {
-    const parentNode = getNodeByExecutionId(rootGraph, parentId)
-    if (parentNode) parentNode.has_errors = true
+      flaggedNodes.add(node)
+      const slotNames = new Set<string>()
+      for (const error of nodeError.errors) {
+        const name = error.extra_info?.input_name
+        if (name) slotNames.add(name)
+      }
+      if (slotNames.size > 0) errorSlots.set(node, slotNames)
+
+      for (const parentId of getParentExecutionIds(executionId)) {
+        const parentNode = getNodeByExecutionId(rootGraph, parentId)
+        if (parentNode) flaggedNodes.add(parentNode)
+      }
+    }
   }
+
+  for (const execId of missingModelExecIds) {
+    const node = getNodeByExecutionId(rootGraph, execId)
+    if (node) flaggedNodes.add(node)
+  }
+
+  forEachNode(rootGraph, (node) => {
+    setNodeHasErrors(node, flaggedNodes.has(node))
+
+    if (node.inputs) {
+      const nodeSlotNames = errorSlots.get(node)
+      for (const slot of node.inputs) {
+        slot.hasErrors = !!nodeSlotNames?.has(slot.name)
+      }
+    }
+  })
 }
 
 /** Execution error state: node errors, runtime errors, prompt errors, and missing assets. */
@@ -110,6 +143,99 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Clear only prompt-level errors. Called during resetExecutionState. */
   function clearPromptError() {
     lastPromptError.value = null
+  }
+
+  /**
+   * Removes a node's errors if they consist entirely of simple, auto-resolvable
+   * types. When `slotName` is provided, only errors for that slot are checked.
+   */
+  function clearSimpleNodeErrors(executionId: string, slotName?: string): void {
+    if (!lastNodeErrors.value) return
+    const nodeError = lastNodeErrors.value[executionId]
+    if (!nodeError) return
+
+    const isSlotScoped = slotName !== undefined
+
+    const relevantErrors = isSlotScoped
+      ? nodeError.errors.filter((e) => e.extra_info?.input_name === slotName)
+      : nodeError.errors
+
+    if (relevantErrors.length === 0) return
+    if (!relevantErrors.every((e) => SIMPLE_ERROR_TYPES.has(e.type))) return
+
+    const updated = { ...lastNodeErrors.value }
+
+    if (isSlotScoped) {
+      // Remove only the target slot's errors if they were all simple
+      const remainingErrors = nodeError.errors.filter(
+        (e) => e.extra_info?.input_name !== slotName
+      )
+      if (remainingErrors.length === 0) {
+        delete updated[executionId]
+      } else {
+        updated[executionId] = {
+          ...nodeError,
+          errors: remainingErrors
+        }
+      }
+    } else {
+      // If no slot specified and all errors were simple, clear the whole node
+      delete updated[executionId]
+    }
+
+    lastNodeErrors.value = Object.keys(updated).length > 0 ? updated : null
+  }
+
+  /**
+   * Attempts to clear an error for a given widget, but avoids clearing it if
+   * the error is a range violation and the new value is still out of bounds.
+   *
+   * Note: `value_not_in_list` errors are optimistically cleared without
+   * list-membership validation because combo widgets constrain choices to
+   * valid values at the UI level, and the valid-values source varies
+   * (asset system vs objectInfo) making runtime validation non-trivial.
+   */
+  function clearSlotErrorsWithRangeCheck(
+    executionId: string,
+    widgetName: string,
+    newValue: unknown,
+    options?: { min?: number; max?: number }
+  ): void {
+    if (typeof newValue === 'number' && lastNodeErrors.value) {
+      const nodeErrors = lastNodeErrors.value[executionId]
+      if (nodeErrors) {
+        const errs = nodeErrors.errors.filter(
+          (e) => e.extra_info?.input_name === widgetName
+        )
+        if (isValueStillOutOfRange(newValue, errs, options || {})) return
+      }
+    }
+    clearSimpleNodeErrors(executionId, widgetName)
+  }
+
+  /**
+   * Clears both validation errors and missing model state for a widget.
+   *
+   * @param errorInputName Name matched against `error.extra_info.input_name`.
+   *   For promoted subgraph widgets this is the subgraph input slot name
+   *   (`widget.slotName`), which differs from the interior widget name.
+   * @param widgetName The actual widget name, used for missing model lookup.
+   *   At the legacy canvas call site both names are identical (`widget.name`).
+   */
+  function clearWidgetRelatedErrors(
+    executionId: string,
+    errorInputName: string,
+    widgetName: string,
+    newValue: unknown,
+    options?: { min?: number; max?: number }
+  ): void {
+    clearSlotErrorsWithRangeCheck(
+      executionId,
+      errorInputName,
+      newValue,
+      options
+    )
+    missingModelStore.removeMissingModelByWidget(executionId, widgetName)
   }
 
   /** Set missing node types and open the error overlay if the Errors tab is enabled. */
@@ -375,20 +501,27 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return missingAncestorExecutionIds.value.has(execId)
   }
 
-  watch(lastNodeErrors, () => {
-    if (!app.isGraphReady) return
-    const rootGraph = app.rootGraph
-
-    clearAllNodeErrorFlags(rootGraph)
-
-    if (!lastNodeErrors.value) return
-
-    for (const [executionId, nodeError] of Object.entries(
-      lastNodeErrors.value
-    )) {
-      applyNodeError(rootGraph, executionId, nodeError)
-    }
-  })
+  watch(
+    [lastNodeErrors, () => missingModelStore.missingModelNodeIds],
+    () => {
+      if (!app.isGraphReady) return
+      // Legacy (LGraphNode) only: suppress missing-model error flags when
+      // the Errors tab is hidden, since legacy nodes lack the per-widget
+      // red highlight that Vue nodes use to indicate *why* a node has errors.
+      // Vue nodes compute hasAnyError independently and are unaffected.
+      const showErrorsTab = useSettingStore().get(
+        'Comfy.RightSidePanel.ShowErrorsTab'
+      )
+      reconcileNodeErrorFlags(
+        app.rootGraph,
+        lastNodeErrors.value,
+        showErrorsTab
+          ? missingModelStore.missingModelAncestorExecutionIds
+          : new Set()
+      )
+    },
+    { flush: 'post' }
+  )
 
   return {
     // Raw state
@@ -417,6 +550,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     lastExecutionErrorNodeId,
     activeGraphErrorNodeIds,
     activeMissingNodeGraphIds,
+
+    // Clearing (targeted)
+    clearSimpleNodeErrors,
+    clearWidgetRelatedErrors,
 
     // Missing node actions
     setMissingNodeTypes,
