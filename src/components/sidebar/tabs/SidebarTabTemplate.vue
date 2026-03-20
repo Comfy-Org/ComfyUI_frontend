@@ -7,9 +7,9 @@
       )
     "
   >
-    <div class="comfy-vue-side-bar-header flex flex-col gap-2">
+    <div class="comfy-vue-side-bar-header flex flex-col">
       <Toolbar
-        class="min-h-16 rounded-none border-x-0 border-t-0 bg-transparent px-2 2xl:px-4"
+        class="min-h-16 rounded-none border-x-0 border-t-0 bg-transparent px-3 2xl:px-4"
         :pt="sidebarPt"
       >
         <template #start>

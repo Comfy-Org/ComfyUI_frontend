@@ -31,6 +31,16 @@
       </div>
 
       <Button
+        v-if="!isCloud && model.representative.url && !isAssetSupported"
+        variant="secondary"
+        size="sm"
+        class="h-8 shrink-0 rounded-lg text-sm"
+        @click="copyToClipboard(toBrowsableUrl(model.representative.url!))"
+      >
+        {{ t('rightSidePanel.missingModels.copyUrl') }}
+      </Button>
+
+      <Button
         variant="textonly"
         size="icon-sm"
         :aria-label="t('rightSidePanel.missingModels.confirmSelection')"
@@ -59,6 +69,7 @@
             ? t('rightSidePanel.missingModels.collapseNodes')
             : t('rightSidePanel.missingModels.expandNodes')
         "
+        :aria-expanded="expanded"
         :class="
           cn(
             'size-8 shrink-0 transition-transform duration-200 hover:bg-transparent',
@@ -123,22 +134,42 @@
     <TransitionCollapse>
       <div
         v-if="!selectedLibraryModel[modelKey]"
-        class="mt-1 flex flex-col gap-2"
+        class="mt-1 flex flex-col gap-1"
       >
-        <template v-if="isAssetSupported">
+        <div v-if="isAssetSupported" class="flex w-full flex-col py-1">
           <MissingModelUrlInput
             :model-key="modelKey"
             :directory="directory"
             :type-mismatch="typeMismatch"
           />
-        </template>
+        </div>
+        <div
+          v-else-if="!isCloud && downloadable"
+          class="flex w-full items-start py-1"
+        >
+          <Button
+            variant="secondary"
+            size="md"
+            class="flex w-full flex-1"
+            :aria-label="`${t('g.download')} ${model.name}`"
+            @click="handleDownload"
+          >
+            <i
+              aria-hidden="true"
+              class="text-foreground mr-1 icon-[lucide--download] size-4 shrink-0"
+            />
+            <span class="text-foreground min-w-0 truncate text-sm">
+              {{ downloadLabel }}
+            </span>
+          </Button>
+        </div>
 
         <TransitionCollapse>
           <MissingModelLibrarySelect
             v-if="!urlInputs[modelKey]"
             :model-value="getComboValue(model.representative)"
             :options="comboOptions"
-            :show-divider="model.representative.isAssetSupported"
+            :show-divider="isAssetSupported || downloadable"
             @select="handleComboSelect(modelKey, $event)"
           />
         </TransitionCollapse>
@@ -167,6 +198,13 @@ import {
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { isCloud } from '@/platform/distribution/types'
+import {
+  downloadModel,
+  isModelDownloadable,
+  toBrowsableUrl
+} from '@/platform/missingModel/missingModelDownload'
+import { formatSize } from '@/utils/formatUtil'
 
 const { model, directory, isAssetSupported } = defineProps<{
   model: MissingModelViewModel
@@ -200,6 +238,39 @@ const isDownloadActive = computed(
 const store = useMissingModelStore()
 const { selectedLibraryModel, importCategoryMismatch, urlInputs } =
   storeToRefs(store)
+
+const downloadable = computed(() => {
+  const rep = model.representative
+  return !!(
+    !isAssetSupported &&
+    rep.url &&
+    rep.directory &&
+    isModelDownloadable({
+      name: rep.name,
+      url: rep.url,
+      directory: rep.directory
+    })
+  )
+})
+
+const downloadLabel = computed(() => {
+  const base = t('g.download')
+  const url = model.representative.url
+  const size = url ? store.fileSizes[url] : undefined
+  return size ? `${base} (${formatSize(size)})` : base
+})
+
+function handleDownload() {
+  const rep = model.representative
+  if (rep.url && rep.directory) {
+    downloadModel(
+      { name: rep.name, url: rep.url, directory: rep.directory },
+      store.folderPaths
+    )
+  } else {
+    console.warn('[MissingModelRow] Cannot download: missing url or directory')
+  }
+}
 
 const {
   toggleModelExpand,

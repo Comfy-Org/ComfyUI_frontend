@@ -90,3 +90,38 @@ export function classifyCloudValidationError(
 
   return null
 }
+
+/**
+ * Error types that can be resolved automatically when the user changes a
+ * widget value or establishes a connection, without requiring a re-run.
+ *
+ * When adding new types, review {@link isValueStillOutOfRange} to ensure
+ * the new type does not require range validation before auto-clearing.
+ */
+export const SIMPLE_ERROR_TYPES = new Set([
+  'value_bigger_than_max',
+  'value_smaller_than_min',
+  'value_not_in_list',
+  'required_input_missing'
+])
+
+/**
+ * Returns true if `value` still violates a recorded range constraint.
+ * Pass errors already filtered to the target widget (by `input_name`).
+ * `options` should contain the widget's configured `min` / `max`.
+ *
+ * Returns true (keeps the error) when a bound is unknown (`undefined`).
+ */
+export function isValueStillOutOfRange(
+  value: number,
+  errors: NodeError['errors'],
+  options: { min?: number; max?: number }
+): boolean {
+  const hasMaxError = errors.some((e) => e.type === 'value_bigger_than_max')
+  const hasMinError = errors.some((e) => e.type === 'value_smaller_than_min')
+
+  return (
+    (hasMaxError && (options.max === undefined || value > options.max)) ||
+    (hasMinError && (options.min === undefined || value < options.min))
+  )
+}

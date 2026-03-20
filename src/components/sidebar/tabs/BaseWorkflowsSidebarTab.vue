@@ -20,15 +20,14 @@
       </Button>
     </template>
     <template #header>
-      <div class="px-2 2xl:px-4">
+      <SidebarTopArea>
         <SearchInput
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
-          class="workflows-search-box"
           :placeholder="$t('g.searchPlaceholder', { subject: searchSubject })"
           @search="handleSearch"
         />
-      </div>
+      </SidebarTopArea>
     </template>
     <template #body>
       <div v-if="!isSearching" class="comfyui-workflows-panel">
@@ -147,6 +146,7 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import TextDivider from '@/components/common/TextDivider.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'

@@ -481,6 +481,10 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "ズームイン時にノードコンボウィジェットメニュー（リスト）をスケーリングする"
   },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "グループ内の子要素をクリックで選択",
+    "tooltip": "有効にすると、グループをクリックした際に内部のすべてのノードとアイテムが選択されます"
+  },
   "LiteGraph_Node_DefaultPadding": {
     "name": "新しいノードを常に縮小",
     "tooltip": "ノード作成時に可能な限り小さいサイズにリサイズします。無効にすると、新しく追加されたノードはウィジェットの値が表示されるように少し幅広くなります。"

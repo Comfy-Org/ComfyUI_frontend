@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { createI18n } from 'vue-i18n'
 
 import type {
@@ -14,6 +15,13 @@ vi.mock('./MissingModelRow.vue', () => ({
     template: '<div class="model-row" />',
     props: ['model', 'directory', 'showNodeIdBadge', 'isAssetSupported'],
     emits: ['locate-model']
+  }
+}))
+
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
   }
 }))
 
@@ -90,6 +98,10 @@ function mountCard(
 }
 
 describe('MissingModelCard', () => {
+  beforeEach(() => {
+    mockIsCloud.value = true
+  })
+
   describe('Rendering & Props', () => {
     it('renders directory name in category header', () => {
       const wrapper = mountCard({
@@ -189,5 +201,44 @@ describe('MissingModelCard', () => {
       expect(wrapper.emitted('locateModel')).toBeTruthy()
       expect(wrapper.emitted('locateModel')?.[0]).toEqual(['42'])
     })
+  })
+})
+
+describe('MissingModelCard (OSS)', () => {
+  beforeEach(() => {
+    mockIsCloud.value = false
+  })
+
+  afterEach(() => {
+    mockIsCloud.value = true
+  })
+
+  it('shows directory name instead of "Import Not Supported" for unsupported groups', () => {
+    const wrapper = mountCard({
+      missingModelGroups: [
+        makeGroup({ directory: 'checkpoints', isAssetSupported: false })
+      ]
+    })
+    expect(wrapper.text()).toContain('checkpoints')
+    expect(wrapper.text()).not.toContain('Import Not Supported')
+  })
+
+  it('hides info notice for unsupported groups', () => {
+    const wrapper = mountCard({
+      missingModelGroups: [makeGroup({ isAssetSupported: false })]
+    })
+    expect(wrapper.text()).not.toContain(
+      'Cloud environment does not support model imports'
+    )
+  })
+
+  it('renders unknown category for null directory in OSS', () => {
+    const wrapper = mountCard({
+      missingModelGroups: [
+        makeGroup({ directory: null, isAssetSupported: false })
+      ]
+    })
+    expect(wrapper.text()).toContain('Unknown Category')
+    expect(wrapper.text()).not.toContain('Import Not Supported')
   })
 })

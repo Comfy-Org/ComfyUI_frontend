@@ -70,20 +70,35 @@ describe('assetMetadataUtils', () => {
       {
         name: 'returns name from user_metadata when present',
         user_metadata: { name: 'My Custom Name' },
+        display_name: 'ComfyUI_00001_.png',
         expected: 'My Custom Name'
       },
       {
-        name: 'falls back to asset name for non-string',
-        user_metadata: { name: 123 },
+        name: 'returns display_name when user_metadata.name is absent',
+        user_metadata: undefined,
+        display_name: 'ComfyUI_00001_.png',
+        expected: 'ComfyUI_00001_.png'
+      },
+      {
+        name: 'falls back to asset name when both are absent',
+        user_metadata: undefined,
+        display_name: undefined,
         expected: 'test-model'
       },
       {
-        name: 'falls back to asset name for undefined',
+        name: 'skips non-string user_metadata.name',
+        user_metadata: { name: 123 },
+        display_name: 'ComfyUI_00001_.png',
+        expected: 'ComfyUI_00001_.png'
+      },
+      {
+        name: 'falls back to asset name when display_name is empty',
         user_metadata: undefined,
+        display_name: '',
         expected: 'test-model'
       }
-    ])('$name', ({ user_metadata, expected }) => {
-      const asset = { ...mockAsset, user_metadata }
+    ])('$name', ({ user_metadata, display_name, expected }) => {
+      const asset = { ...mockAsset, user_metadata, display_name }
       expect(getAssetDisplayName(asset)).toBe(expected)
     })
   })

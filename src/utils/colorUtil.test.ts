@@ -3,8 +3,10 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
   adjustColor,
+  hexToHsva,
   hexToRgb,
   hsbToRgb,
+  hsvaToHex,
   parseToRgb,
   rgbToHex
 } from '@/utils/colorUtil'
@@ -132,6 +134,65 @@ describe('colorUtil conversions', () => {
       expect(rgbToHex(rgb)).toBe('#7f0000')
     })
   })
+
+  describe('hexToHsva / hsvaToHex', () => {
+    it('round-trips hex -> hsva -> hex for primary colors', () => {
+      expect(hsvaToHex(hexToHsva('#ff0000'))).toBe('#ff0000')
+      expect(hsvaToHex(hexToHsva('#00ff00'))).toBe('#00ff00')
+      expect(hsvaToHex(hexToHsva('#0000ff'))).toBe('#0000ff')
+    })
+
+    it('handles black (v=0)', () => {
+      const hsva = hexToHsva('#000000')
+      expect(hsva.v).toBe(0)
+      expect(hsvaToHex(hsva)).toBe('#000000')
+    })
+
+    it('handles white (s=0, v=100)', () => {
+      const hsva = hexToHsva('#ffffff')
+      expect(hsva.s).toBe(0)
+      expect(hsva.v).toBe(100)
+      expect(hsvaToHex(hsva)).toBe('#ffffff')
+    })
+
+    it('handles pure hues', () => {
+      const red = hexToHsva('#ff0000')
+      expect(red.h).toBeCloseTo(0)
+      expect(red.s).toBeCloseTo(100)
+      expect(red.v).toBeCloseTo(100)
+
+      const green = hexToHsva('#00ff00')
+      expect(green.h).toBeCloseTo(120)
+
+      const blue = hexToHsva('#0000ff')
+      expect(blue.h).toBeCloseTo(240)
+    })
+
+    it('preserves alpha=100 (no alpha suffix in hex)', () => {
+      const hsva = hexToHsva('#ff0000')
+      expect(hsva.a).toBe(100)
+      expect(hsvaToHex(hsva)).toBe('#ff0000')
+    })
+
+    it('preserves alpha=0', () => {
+      const hsva = hexToHsva('#ff000000')
+      expect(hsva.a).toBe(0)
+      expect(hsvaToHex(hsva)).toBe('#ff000000')
+    })
+
+    it('round-trips hex with alpha', () => {
+      const hex = '#ff000080'
+      const hsva = hexToHsva(hex)
+      expect(hsva.a).toBe(50)
+      expect(hsvaToHex(hsva)).toBe(hex)
+    })
+
+    it('handles 5-char hex with alpha', () => {
+      const hsva = hexToHsva('#f008')
+      expect(hsva.a).toBe(53)
+      expect(hsvaToHex(hsva)).toMatch(/^#ff0000/)
+    })
+  })
 })
 describe('colorUtil - adjustColor', () => {
   const runAdjustColorTests = (
@@ -170,8 +231,7 @@ describe('colorUtil - adjustColor', () => {
       'xyz(255, 255, 255)',
       'hsl(100, 50, 50%)',
       'hsl(100, 50%, 50)',
-      '#GGGGGG',
-      '#3333'
+      '#GGGGGG'
     ]
 
     invalidColors.forEach((color) => {
@@ -181,6 +241,15 @@ describe('colorUtil - adjustColor', () => {
       })
       expect(result).toBe(color)
     })
+  })
+
+  it('treats 5-char hex as valid color with alpha', () => {
+    const result = adjustColor('#f008', {
+      lightness: targetLightness,
+      opacity: targetOpacity
+    })
+    expect(result).not.toBe('#f008')
+    expect(result).toMatch(/^hsla\(/)
   })
 
   it('returns the original value for null or undefined inputs', () => {

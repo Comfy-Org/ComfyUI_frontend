@@ -223,8 +223,8 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 interface ImagePreviewProps {
@@ -329,7 +329,7 @@ const handleImageError = () => {
 
 const handleEditMask = () => {
   if (!props.nodeId) return
-  const node = app.rootGraph?.getNodeById(Number(props.nodeId))
+  const node = resolveNode(Number(props.nodeId))
   if (!node) return
   maskEditor.openMaskEditor(node)
 }
@@ -348,7 +348,7 @@ const handleDownload = () => {
 
 const handleRemove = () => {
   if (!props.nodeId) return
-  const node = app.rootGraph?.getNodeById(Number(props.nodeId))
+  const node = resolveNode(Number(props.nodeId))
   nodeOutputStore.removeNodeOutputs(props.nodeId)
   if (node) {
     node.imgs = undefined
