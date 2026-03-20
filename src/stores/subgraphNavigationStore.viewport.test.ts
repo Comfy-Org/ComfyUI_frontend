@@ -7,7 +7,10 @@ import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import {
+  useSubgraphNavigationStore,
+  VIEWPORT_CACHE_MAX_SIZE
+} from '@/stores/subgraphNavigationStore'
 
 const { mockSetDirty } = vi.hoisted(() => ({
   mockSetDirty: vi.fn()
@@ -46,6 +49,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     getCanvas: () => app.canvas
   })
 }))
+vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
 
 // Get reference to mock canvas
 const mockCanvas = app.canvas
@@ -259,6 +263,65 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(navigationStore.viewportCache.size).toBe(2)
       expect(navigationStore.viewportCache.has('root')).toBe(true)
       expect(navigationStore.viewportCache.has('sub1')).toBe(true)
+    })
+
+    it('should save/restore viewports correctly across multiple subgraphs', () => {
+      const navigationStore = useSubgraphNavigationStore()
+
+      navigationStore.viewportCache.set('root', {
+        scale: 1,
+        offset: [0, 0]
+      })
+      navigationStore.viewportCache.set('sub-1', {
+        scale: 2,
+        offset: [100, 200]
+      })
+      navigationStore.viewportCache.set('sub-2', {
+        scale: 0.5,
+        offset: [-50, -75]
+      })
+
+      navigationStore.restoreViewport('sub-1')
+      expect(mockCanvas.ds.scale).toBe(2)
+      expect(mockCanvas.ds.offset).toEqual([100, 200])
+
+      navigationStore.restoreViewport('sub-2')
+      expect(mockCanvas.ds.scale).toBe(0.5)
+      expect(mockCanvas.ds.offset).toEqual([-50, -75])
+
+      navigationStore.restoreViewport('root')
+      expect(mockCanvas.ds.scale).toBe(1)
+      expect(mockCanvas.ds.offset).toEqual([0, 0])
+    })
+
+    it('should evict oldest viewport entry when LRU cache exceeds capacity', () => {
+      const navigationStore = useSubgraphNavigationStore()
+      const overflowEntryCount = VIEWPORT_CACHE_MAX_SIZE * 2 + 1
+
+      // QuickLRU uses double-buffering: effective capacity is up to 2 * maxSize.
+      // Fill enough entries so the earliest ones are fully evicted.
+      for (let i = 0; i < overflowEntryCount; i++) {
+        navigationStore.viewportCache.set(`sub-${i}`, {
+          scale: i + 1,
+          offset: [i * 10, i * 20]
+        })
+      }
+
+      expect(navigationStore.viewportCache.has('sub-0')).toBe(false)
+
+      expect(
+        navigationStore.viewportCache.has(`sub-${overflowEntryCount - 1}`)
+      ).toBe(true)
+
+      mockCanvas.ds.scale = 99
+      mockCanvas.ds.offset = [999, 999]
+      mockSetDirty.mockClear()
+
+      navigationStore.restoreViewport('sub-0')
+
+      expect(mockCanvas.ds.scale).toBe(99)
+      expect(mockCanvas.ds.offset).toEqual([999, 999])
+      expect(mockSetDirty).not.toHaveBeenCalled()
     })
   })
 })

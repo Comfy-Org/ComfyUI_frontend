@@ -1208,6 +1208,14 @@ export class LGraphNode
   }
 
   /**
+   * Resolves the output source for cross-graph virtual nodes (e.g. Set/Get),
+   * bypassing {@link getInputLink} when the source lives in a different graph.
+   */
+  resolveVirtualOutput?(
+    slot: number
+  ): { node: LGraphNode; slot: number } | undefined
+
+  /**
    * Returns the link info in the connection of an input slot
    * @returns object or null
    */
@@ -2008,11 +2016,6 @@ export class LGraphNode
       node: this,
       button: button
     })
-  }
-
-  removeWidgetByName(name: string): void {
-    const widget = this.widgets?.find((x) => x.name === name)
-    if (widget) this.removeWidget(widget)
   }
 
   removeWidget(widget: IBaseWidget): void {

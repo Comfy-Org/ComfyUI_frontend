@@ -308,6 +308,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Desktop.CloudNotificationShown',
+    name: 'Cloud notification shown',
+    type: 'hidden',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.Graph.ZoomSpeed',
     category: ['LiteGraph', 'Canvas', 'ZoomSpeed'],
     name: 'Canvas zoom speed',
@@ -317,6 +323,20 @@ export const CORE_SETTINGS: SettingParams[] = [
       min: 1.01,
       max: 2.5,
       step: 0.01
+    }
+  },
+  {
+    id: 'Comfy.Graph.AutoPanSpeed',
+    category: ['LiteGraph', 'Canvas', 'AutoPanSpeed'],
+    name: 'Auto-pan speed',
+    tooltip:
+      'Maximum speed when auto-panning by dragging to the canvas edge. Set to 0 to disable auto-panning.',
+    type: 'slider',
+    defaultValue: 15,
+    attrs: {
+      min: 0,
+      max: 30,
+      step: 1
     }
   },
   // Bookmarks are stored in the settings store.
@@ -583,6 +603,19 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'Default',
     migrateDeprecatedValue: (value: unknown) =>
       value === 'Integrated' ? 'Default' : value
+  },
+  {
+    id: 'Comfy.Appearance.DisableAnimations',
+    category: ['Appearance', 'General'],
+    name: 'Disable animations',
+    type: 'boolean',
+    defaultValue: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    tooltip:
+      'Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation.',
+    onChange: (value: unknown) => {
+      document.body.classList.toggle('disable-animations', !!value)
+    },
+    versionAdded: '1.43.0'
   },
   {
     id: 'Comfy.UseNewMenu',

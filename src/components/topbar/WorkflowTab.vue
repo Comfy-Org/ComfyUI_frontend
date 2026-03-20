@@ -1,5 +1,5 @@
 <template>
-  <ContextMenuRoot>
+  <ContextMenuRoot :modal="false">
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"

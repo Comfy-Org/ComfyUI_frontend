@@ -244,7 +244,10 @@ describe('Graph Clearing and Callbacks', () => {
     graph.id = graphId
 
     const promotionStore = usePromotionStore()
-    promotionStore.promote(graphId, 1 as NodeId, '10', 'seed')
+    promotionStore.promote(graphId, 1 as NodeId, {
+      sourceNodeId: '10',
+      sourceWidgetName: 'seed'
+    })
 
     const widgetValueStore = useWidgetValueStore()
     widgetValueStore.registerWidget(graphId, {
@@ -258,14 +261,24 @@ describe('Graph Clearing and Callbacks', () => {
       disabled: undefined
     })
 
-    expect(promotionStore.isPromotedByAny(graphId, '10', 'seed')).toBe(true)
+    expect(
+      promotionStore.isPromotedByAny(graphId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+    ).toBe(true)
     expect(widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')).toEqual(
       expect.objectContaining({ value: 1 })
     )
 
     graph.clear()
 
-    expect(promotionStore.isPromotedByAny(graphId, '10', 'seed')).toBe(false)
+    expect(
+      promotionStore.isPromotedByAny(graphId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+    ).toBe(false)
     expect(
       widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')
     ).toBeUndefined()
@@ -612,6 +625,87 @@ describe('_removeDuplicateLinks', () => {
     expect(target.inputs[0].link).toBe(keptLinkId)
     expect(graph._links.has(keptLinkId)).toBe(true)
     expect(graph._links.has(dupLink.id)).toBe(false)
+  })
+
+  it('keeps the valid link when input.link is at a shifted slot index', () => {
+    LiteGraph.registerNodeType('test/DupTestNode', TestNode)
+    const graph = new LGraph()
+
+    const source = LiteGraph.createNode('test/DupTestNode', 'Source')!
+    const target = LiteGraph.createNode('test/DupTestNode', 'Target')!
+    graph.add(source)
+    graph.add(target)
+
+    // Connect source:0 -> target:0, establishing input.link on target
+    source.connect(0, target, 0)
+    const validLinkId = target.inputs[0].link!
+    expect(graph._links.has(validLinkId)).toBe(true)
+
+    // Simulate widget-to-input conversion shifting the slot: insert a new
+    // input BEFORE the connected one, moving it from index 0 to index 1.
+    target.addInput('extra_widget', 'number')
+    const connectedInput = target.inputs[0]
+    target.inputs[0] = target.inputs[1]
+    target.inputs[1] = connectedInput
+    // Now target.inputs[1].link === validLinkId, but target.inputs[0].link is null
+
+    // Add a duplicate link with the same connection tuple (target_slot=0
+    // in the LLink, matching the original slot before the shift).
+    const dupLink = new LLink(
+      ++graph.state.lastLinkId,
+      'number',
+      source.id,
+      0,
+      target.id,
+      0
+    )
+    graph._links.set(dupLink.id, dupLink)
+    source.outputs[0].links!.push(dupLink.id)
+
+    expect(graph._links.size).toBe(2)
+
+    graph._removeDuplicateLinks()
+
+    // The valid link (referenced by an actual input) must survive
+    expect(graph._links.size).toBe(1)
+    expect(graph._links.has(validLinkId)).toBe(true)
+    expect(graph._links.has(dupLink.id)).toBe(false)
+    expect(target.inputs[1].link).toBe(validLinkId)
+  })
+
+  it('repairs input.link when it points to a removed duplicate', () => {
+    LiteGraph.registerNodeType('test/DupTestNode', TestNode)
+    const graph = new LGraph()
+
+    const source = LiteGraph.createNode('test/DupTestNode', 'Source')!
+    const target = LiteGraph.createNode('test/DupTestNode', 'Target')!
+    graph.add(source)
+    graph.add(target)
+
+    source.connect(0, target, 0)
+
+    // Create a duplicate link
+    const dupLink = new LLink(
+      ++graph.state.lastLinkId,
+      'number',
+      source.id,
+      0,
+      target.id,
+      0
+    )
+    graph._links.set(dupLink.id, dupLink)
+    source.outputs[0].links!.push(dupLink.id)
+
+    // Point input.link to the duplicate (simulating corrupted state)
+    target.inputs[0].link = dupLink.id
+
+    graph._removeDuplicateLinks()
+
+    expect(graph._links.size).toBe(1)
+    // input.link must point to whichever link survived
+    const survivingId = graph._links.keys().next().value!
+    expect(target.inputs[0].link).toBe(survivingId)
+    expect(graph._links.has(target.inputs[0].link!)).toBe(true)
   })
 
   it('is a no-op when no duplicates exist', () => {

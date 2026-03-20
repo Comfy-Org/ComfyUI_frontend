@@ -125,7 +125,36 @@ export function createMockCanvasRenderingContext2D(
   overrides: Partial<CanvasRenderingContext2D> = {}
 ): CanvasRenderingContext2D {
   const partial: Partial<CanvasRenderingContext2D> = {
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    fillRect: vi.fn(),
+    strokeRect: vi.fn(),
+    fillText: vi.fn(),
     measureText: vi.fn(() => ({ width: 10 }) as TextMetrics),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    fill: vi.fn(),
+    closePath: vi.fn(),
+    arc: vi.fn(),
+    rect: vi.fn(),
+    clip: vi.fn(),
+    clearRect: vi.fn(),
+    setTransform: vi.fn(),
+    roundRect: vi.fn(),
+    getTransform: vi.fn(
+      () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) as DOMMatrix
+    ),
+    font: '',
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    globalAlpha: 1,
+    textAlign: 'left' as CanvasTextAlign,
+    textBaseline: 'alphabetic' as CanvasTextBaseline,
     ...overrides
   }
   return partial as CanvasRenderingContext2D

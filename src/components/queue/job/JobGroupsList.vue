@@ -36,12 +36,11 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
-
 import QueueJobItem from '@/components/queue/job/QueueJobItem.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
+import { useJobDetailsHover } from '@/composables/queue/useJobDetailsHover'
 
-const props = defineProps<{ displayedJobGroups: JobGroup[] }>()
+const { displayedJobGroups } = defineProps<{ displayedJobGroups: JobGroup[] }>()
 
 const emit = defineEmits<{
   (e: 'cancelItem', item: JobListItem): void
@@ -50,65 +49,34 @@ const emit = defineEmits<{
   (e: 'viewItem', item: JobListItem): void
 }>()
 
-const emitCancelItem = (item: JobListItem) => {
+const {
+  activeDetails: activeDetailsId,
+  clearHoverTimers,
+  scheduleDetailsHide,
+  scheduleDetailsShow
+} = useJobDetailsHover<string>({
+  getActiveId: (jobId) => jobId,
+  getDisplayedJobGroups: () => displayedJobGroups
+})
+
+function emitCancelItem(item: JobListItem) {
   emit('cancelItem', item)
 }
 
-const emitDeleteItem = (item: JobListItem) => {
+function emitDeleteItem(item: JobListItem) {
   emit('deleteItem', item)
 }
 
-const activeDetailsId = ref<string | null>(null)
-const hideTimer = ref<number | null>(null)
-const showTimer = ref<number | null>(null)
-const clearHideTimer = () => {
-  if (hideTimer.value !== null) {
-    clearTimeout(hideTimer.value)
-    hideTimer.value = null
+function onDetailsEnter(jobId: string) {
+  if (activeDetailsId.value === jobId) {
+    clearHoverTimers()
+    return
   }
-}
-const clearShowTimer = () => {
-  if (showTimer.value !== null) {
-    clearTimeout(showTimer.value)
-    showTimer.value = null
-  }
-}
-const onDetailsEnter = (jobId: string) => {
-  clearHideTimer()
-  clearShowTimer()
-  showTimer.value = window.setTimeout(() => {
-    activeDetailsId.value = jobId
-    showTimer.value = null
-  }, 200)
-}
-const onDetailsLeave = (jobId: string) => {
-  clearHideTimer()
-  clearShowTimer()
-  hideTimer.value = window.setTimeout(() => {
-    if (activeDetailsId.value === jobId) activeDetailsId.value = null
-    hideTimer.value = null
-  }, 150)
+
+  scheduleDetailsShow(jobId)
 }
 
-const resetActiveDetails = () => {
-  clearHideTimer()
-  clearShowTimer()
-  activeDetailsId.value = null
+function onDetailsLeave(jobId: string) {
+  scheduleDetailsHide(jobId)
 }
-
-watch(
-  () => props.displayedJobGroups,
-  (groups) => {
-    const activeId = activeDetailsId.value
-    if (!activeId) return
-
-    const hasActiveJob = groups.some((group) =>
-      group.items.some((item) => item.id === activeId)
-    )
-
-    if (!hasActiveJob) resetActiveDetails()
-  }
-)
-
-onBeforeUnmount(resetActiveDetails)
 </script>

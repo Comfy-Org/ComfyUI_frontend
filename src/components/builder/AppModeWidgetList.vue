@@ -10,6 +10,8 @@ import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
@@ -17,6 +19,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -38,6 +41,7 @@ const { mobile = false, builderMode = false } = defineProps<{
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
+const maskEditor = useMaskEditor()
 
 provide(HideLayoutFieldKey, true)
 
@@ -97,21 +101,27 @@ const mappedSelections = computed((): WidgetEntry[] => {
 function getDropIndicator(node: LGraphNode) {
   if (node.type !== 'LoadImage') return undefined
 
-  const filename = node.widgets?.[0]?.value
-  const resultItem = { type: 'input', filename: `${filename}` }
+  const stringValue = extractWidgetStringValue(node.widgets?.[0]?.value)
+
+  const { filename, subfolder, type } = stringValue
+    ? parseImageWidgetValue(stringValue)
+    : { filename: '', subfolder: '', type: 'input' }
 
   const buildImageUrl = () => {
     if (!filename) return undefined
-    const params = new URLSearchParams(resultItem)
-    appendCloudResParam(params, resultItem.filename)
+    const params = new URLSearchParams({ filename, subfolder, type })
+    appendCloudResParam(params, filename)
     return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
   }
 
+  const imageUrl = buildImageUrl()
+
   return {
     iconClass: 'icon-[lucide--image]',
-    imageUrl: buildImageUrl(),
+    imageUrl,
     label: mobile ? undefined : t('linearMode.dragAndDropImage'),
-    onClick: () => node.widgets?.[1]?.callback?.(undefined)
+    onClick: () => node.widgets?.[1]?.callback?.(undefined),
+    onMaskEdit: imageUrl ? () => maskEditor.openMaskEditor(node) : undefined
   }
 }
 
@@ -127,6 +137,21 @@ function nodeToNodeData(node: LGraphNode) {
     onDragOver: node.onDragOver
   }
 }
+
+async function handleDragDrop(e: DragEvent) {
+  for (const { nodeData } of mappedSelections.value) {
+    if (!nodeData?.onDragOver?.(e)) continue
+
+    const rawResult = nodeData?.onDragDrop?.(e)
+    if (rawResult === false) continue
+
+    e.stopPropagation()
+    e.preventDefault()
+    if ((await rawResult) === true) return
+  }
+}
+
+defineExpose({ handleDragDrop })
 </script>
 <template>
   <div
@@ -181,7 +206,11 @@ function nodeToNodeData(node: LGraphNode) {
         ]"
       >
         <template #button>
-          <Button variant="textonly" size="icon">
+          <Button
+            variant="textonly"
+            size="icon"
+            data-testid="widget-actions-menu"
+          >
             <i class="icon-[lucide--ellipsis]" />
           </Button>
         </template>
