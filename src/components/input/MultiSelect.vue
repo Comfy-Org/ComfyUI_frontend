@@ -81,7 +81,7 @@
             :class="
               cn(
                 'flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5',
-                showSelectedCount || showClearButton ? 'mb-2' : ''
+                (showSelectedCount || showClearButton) && 'mb-2'
               )
             "
           >
@@ -102,9 +102,7 @@
               v-if="showSelectedCount"
               class="px-1 text-sm text-base-foreground"
             >
-              {{
-                $t('g.itemsSelected', { count: selectedCount }, selectedCount)
-              }}
+              {{ $t('g.itemsSelected', { count: selectedCount }) }}
             </span>
             <Button
               v-if="showClearButton"
