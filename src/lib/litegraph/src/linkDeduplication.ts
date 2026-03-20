@@ -54,8 +54,9 @@ export function purgeOrphanedLinks(
     const originNode = getNodeById(link.origin_id)
     const output = originNode?.outputs?.[link.origin_slot]
     if (output?.links) {
-      const idx = output.links.indexOf(id)
-      if (idx !== -1) output.links.splice(idx, 1)
+      for (let i = output.links.length - 1; i >= 0; i--) {
+        if (output.links[i] === id) output.links.splice(i, 1)
+      }
     }
 
     links.delete(id)
@@ -70,9 +71,11 @@ export function repairInputLinks(
 ): void {
   if (!node) return
 
+  const duplicateIds = new Set(ids)
+
   for (const input of node.inputs ?? []) {
-    if (!input?.link || input.link === keepId) continue
-    if (ids.includes(input.link)) {
+    if (input?.link == null || input.link === keepId) continue
+    if (duplicateIds.has(input.link)) {
       input.link = keepId
     }
   }
