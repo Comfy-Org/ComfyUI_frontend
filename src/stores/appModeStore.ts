@@ -54,8 +54,8 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   function loadSelections(data: Partial<LinearData> | undefined) {
     const { inputs, outputs } = pruneLinearData(data)
-    selectedInputs.value.splice(0, selectedInputs.value.length, ...inputs)
-    selectedOutputs.value.splice(0, selectedOutputs.value.length, ...outputs)
+    selectedInputs.value = inputs
+    selectedOutputs.value = outputs
   }
 
   function resetSelectedToWorkflow() {
