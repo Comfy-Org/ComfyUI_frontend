@@ -90,44 +90,38 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup frontend
+      - name: Setup frontend (PR branch)
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
 
-      - name: Setup and start ComfyUI server
+      - name: Build main branch frontend for before comparison
+        if: needs.resolve-matrix.outputs.mode == 'focused'
+        shell: bash
+        run: |
+          # Save PR dist, build main dist
+          mv dist dist-after
+          git stash --include-untracked || true
+          git checkout origin/main -- .
+          pnpm install --frozen-lockfile
+          pnpm build
+          mv dist dist-before
+          # Restore PR branch
+          git checkout - -- .
+          git stash pop || true
+          mv dist-after dist
+          echo "Built both: dist-before/ (main) and dist/ (PR)"
+          ls -la dist-before/index.html dist/index.html
+
+      - name: Setup ComfyUI server (no launch)
         uses: ./.github/actions/setup-comfyui-server
         with:
-          launch_server: 'true'
-
-      - name: Wait for ComfyUI server
-        shell: bash
-        run: |
-          echo "Waiting for ComfyUI server..."
-          for i in $(seq 1 60); do
-            if curl -sf http://127.0.0.1:8188/api/system_stats >/dev/null 2>&1; then
-              echo "Server ready"; exit 0
-            fi; sleep 2
-          done
-          echo "::error::Server timeout"; exit 1
-
-      - name: Pre-seed settings to skip onboarding
-        shell: bash
-        run: |
-          # Mark tutorial as completed so the template gallery doesn't appear.
-          # Try both /api/settings (new) and /settings (legacy) endpoints.
-          BODY='{"Comfy.TutorialCompleted": true}'
-          curl -sv -X POST http://127.0.0.1:8188/api/settings \
-            -H 'Content-Type: application/json' -d "$BODY" 2>&1 || true
-          curl -sv -X POST http://127.0.0.1:8188/settings \
-            -H 'Content-Type: application/json' -d "$BODY" 2>&1 || true
-          echo "Pre-seed attempted on both endpoints"
+          launch_server: 'false'
 
       - name: Install playwright-cli and Codex CLI
         shell: bash
         run: |
           npm install -g @playwright/cli@latest @openai/codex@latest
-          # Verify playwright-cli is in PATH and install browser
           which playwright-cli
           playwright-cli --version || true
           npx playwright install chromium
@@ -136,16 +130,12 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$QA_ARTIFACTS" .playwright
-
-          # Auto-record video + save screenshots to artifacts dir
           cat > .playwright/cli.config.json <<CEOF
           {
             "outputDir": "$QA_ARTIFACTS",
             "saveVideo": { "width": 1280, "height": 720 }
           }
           CEOF
-          echo "playwright-cli config:"
-          cat .playwright/cli.config.json
 
       - name: Get PR diff for focused QA
         if: needs.resolve-matrix.outputs.mode == 'focused'
@@ -157,12 +147,11 @@ jobs:
             --repo ${{ github.repository }} > "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || \
           git diff origin/main...HEAD > "${{ runner.temp }}/pr-diff.txt"
 
-          # Summarize changed files for the prompt
           echo "Changed files:"
           grep '^diff --git' "${{ runner.temp }}/pr-diff.txt" | \
             sed 's|diff --git a/||;s| b/.*||' | sort -u | tee "${{ runner.temp }}/changed-files.txt"
 
-      - name: Write QA prompt
+      - name: Write QA prompts
         shell: bash
         env:
           BRANCH: ${{ github.head_ref || github.ref_name }}
@@ -171,6 +160,20 @@ jobs:
         run: |
           OS_LOWER=$(echo "$RUNNER_OS" | tr '[:upper:]' '[:lower:]')
 
+          COMMON_HEADER="CRITICAL: \"playwright-cli\" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
+          Chromium is already installed. Just run the commands directly."
+
+          COMMON_STEPS="You MUST follow these exact steps in order:
+          1. playwright-cli open http://127.0.0.1:8188
+          2. QUICK LOGIN (before video): snapshot, fill the username input with \"qa-ci\", click Next button, wait for graph editor to load
+          3. playwright-cli snapshot — verify graph editor is loaded
+          4. playwright-cli video-start"
+
+          COMMON_RULES="RULES:
+          - Do NOT browse templates, explore sidebar panels, or test unrelated features
+          - Do NOT use pnpm/npx to run playwright-cli
+          - Do NOT create a PR, post PR comments, commit, or push anything"
+
           if [ "$QA_MODE" = "full" ]; then
             cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
           You are running a FULL automated QA pass on the ComfyUI frontend.
@@ -178,78 +181,138 @@ jobs:
 
           Environment: CI=true, OS=${{ runner.os }}
           Server URL: http://127.0.0.1:8188
-          Branch: ${BRANCH}
-          PR: #${PR_NUM}
-          Commit: ${SHA}
+          Branch: ${BRANCH}, PR: #${PR_NUM}, Commit: ${SHA}
 
-          CRITICAL: "playwright-cli" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
-          Chromium is already installed. Just run the commands directly.
+          ${COMMON_HEADER}
 
-          You MUST follow these exact steps in order:
-          1. playwright-cli open http://127.0.0.1:8188
-          2. QUICK LOGIN (before video): snapshot, fill the username input with "qa-ci", click Next button, wait for graph editor to load
-          3. playwright-cli video-start
-          4. playwright-cli snapshot (you should see the graph editor now)
+          ${COMMON_STEPS}
           5. Test the UI (click, fill, navigate — use snapshot between actions to get refs)
           6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
           7. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
 
-          Do NOT skip any steps. Do NOT use pnpm/npx to run playwright-cli.
-          Do NOT create a PR, post PR comments, commit, or push anything.
-          Skip tests not available in CI (file dialogs, GPU execution).
+          Do NOT skip any steps. Skip tests not available in CI (file dialogs, GPU execution).
           PROMPT
           else
-            cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
-          You are running a FOCUSED QA pass on PR #${PR_NUM} to the ComfyUI frontend.
-          Your ONLY goal is to test the SPECIFIC BEHAVIOR this PR changes — nothing else.
-
-          Environment: CI=true, OS=${{ runner.os }}
-          Server URL: http://127.0.0.1:8188
-          Branch: ${BRANCH}
-
-          CHANGED FILES:
+            # Focused QA — write separate before/after prompts with identical test steps
+            DIFF_CONTEXT="CHANGED FILES:
           $(cat "${{ runner.temp }}/changed-files.txt" 2>/dev/null || echo "Unknown")
 
           DIFF (truncated to 500 lines):
-          $(head -500 "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || echo "No diff available")
+          $(head -500 "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || echo "No diff available")"
 
-          ## Instructions
-
+            TEST_DESIGN="## Instructions
           1. Read the diff above carefully. Identify what UI behavior changed.
           2. Design 3-6 targeted test steps that exercise EXACTLY that behavior.
-          3. Execute ONLY those steps. Do NOT do general smoke testing, template
-             browsing, sidebar exploration, or anything unrelated to the PR.
+          3. Execute ONLY those steps.
 
-          Examples:
-          - PR changes a menu item → find and click that menu item, verify the change
-          - PR fixes a bug → reproduce the bug scenario, confirm it's fixed
-          - PR adds a feature → use that feature end-to-end
+          ## Time budget: keep the video recording under 30 seconds."
 
-          ## Time budget: keep the video recording under 30 seconds.
-          Only record the PR-relevant interactions. Login happens BEFORE recording.
+            # BEFORE prompt (main branch — demonstrate the old behavior / bug)
+            cat > "${{ runner.temp }}/qa-before-prompt.txt" <<PROMPT
+          You are running the BEFORE pass of a focused QA comparison on PR #${PR_NUM}.
+          This is the MAIN branch (before the PR). Your goal is to demonstrate the
+          OLD behavior that this PR intends to change or fix.
 
-          CRITICAL: "playwright-cli" is already installed globally in PATH. Do NOT use pnpm dlx or npx.
-          Chromium is already installed. Just run the commands directly.
+          Environment: CI=true, OS=${{ runner.os }}
+          Server URL: http://127.0.0.1:8188
+          Branch: main (before PR)
 
-          You MUST follow these exact steps in order:
-          1. playwright-cli open http://127.0.0.1:8188
-          2. QUICK LOGIN (before video): snapshot, fill the username input with "qa-ci",
-             click Next button, wait for graph editor to load
-          3. playwright-cli snapshot — verify graph editor is loaded
-          4. playwright-cli video-start
+          ${DIFF_CONTEXT}
+
+          ${TEST_DESIGN}
+
+          ${COMMON_HEADER}
+
+          ${COMMON_STEPS}
+          5. Execute ONLY your PR-targeted test steps (snapshot between each action)
+          6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-before-session.webm
+          7. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-before-${OS_LOWER}-report.md
+             Include PASS/FAIL for each test step.
+
+          ${COMMON_RULES}
+          PROMPT
+
+            # AFTER prompt (PR branch — prove the fix works)
+            cat > "${{ runner.temp }}/qa-prompt.txt" <<PROMPT
+          You are running the AFTER pass of a focused QA comparison on PR #${PR_NUM}.
+          This is the PR branch (after the changes). Your goal is to prove the PR's
+          changes work correctly and the intended behavior is now in place.
+
+          Environment: CI=true, OS=${{ runner.os }}
+          Server URL: http://127.0.0.1:8188
+          Branch: ${BRANCH} (PR)
+
+          ${DIFF_CONTEXT}
+
+          ${TEST_DESIGN}
+
+          ${COMMON_HEADER}
+
+          ${COMMON_STEPS}
           5. Execute ONLY your PR-targeted test steps (snapshot between each action)
           6. playwright-cli video-stop ${QA_ARTIFACTS}/qa-session.webm
           7. Write report to ${QA_ARTIFACTS}/$(date +%Y-%m-%d)-001-${OS_LOWER}-report.md
-             Include PASS/FAIL for each test step in the report.
+             Include PASS/FAIL for each test step.
 
-          RULES:
-          - Do NOT browse templates, explore sidebar panels, or test unrelated features
-          - Do NOT use pnpm/npx to run playwright-cli
-          - Do NOT create a PR, post PR comments, commit, or push anything
+          ${COMMON_RULES}
           PROMPT
           fi
 
-      - name: Run Codex QA
+      # ── BEFORE run (main branch) ──
+      - name: Start server with main branch frontend
+        if: needs.resolve-matrix.outputs.mode == 'focused'
+        shell: bash
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --multi-user --front-end-root ../dist-before &
+          echo $! > /tmp/comfyui-server.pid
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8188/api/system_stats >/dev/null 2>&1 && echo "Server ready (main)" && exit 0
+            sleep 2
+          done
+          echo "::error::Server timeout (main)"; exit 1
+
+      - name: Run BEFORE QA (main branch)
+        if: needs.resolve-matrix.outputs.mode == 'focused'
+        shell: bash
+        env:
+          CODEX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CI: 'true'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          codex exec \
+            --model gpt-5.4-mini \
+            --sandbox danger-full-access \
+            - < "${{ runner.temp }}/qa-before-prompt.txt"
+
+      - name: Stop server after BEFORE run
+        if: needs.resolve-matrix.outputs.mode == 'focused'
+        shell: bash
+        run: |
+          kill "$(cat /tmp/comfyui-server.pid)" 2>/dev/null || true
+          sleep 2
+          # Ensure port is free
+          for i in $(seq 1 10); do
+            curl -sf http://127.0.0.1:8188/ >/dev/null 2>&1 || break
+            sleep 1
+          done
+          echo "Server stopped"
+
+      # ── AFTER run (PR branch) ──
+      - name: Start server with PR branch frontend
+        shell: bash
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --multi-user --front-end-root ../dist &
+          echo $! > /tmp/comfyui-server.pid
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8188/api/system_stats >/dev/null 2>&1 && echo "Server ready (PR)" && exit 0
+            sleep 2
+          done
+          echo "::error::Server timeout (PR)"; exit 1
+
+      - name: Run AFTER QA (PR branch)
         shell: bash
         env:
           CODEX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -266,16 +329,16 @@ jobs:
         if: always()
         shell: bash
         run: |
+          kill "$(cat /tmp/comfyui-server.pid)" 2>/dev/null || true
           mkdir -p "$QA_ARTIFACTS"
           echo "=== QA artifacts ==="
           ls -la "$QA_ARTIFACTS/" 2>/dev/null | head -30
 
-          # Check for video from explicit video-stop command
+          # Check for after video
           if [ -f "$QA_ARTIFACTS/qa-session.webm" ]; then
-            echo "Found video: $QA_ARTIFACTS/qa-session.webm ($(du -h "$QA_ARTIFACTS/qa-session.webm" | cut -f1))"
+            echo "Found after video: $(du -h "$QA_ARTIFACTS/qa-session.webm" | cut -f1)"
           else
-            echo "No qa-session.webm found at expected path"
-            # Search for any .webm in artifacts dir or playwright-cli output
+            echo "No qa-session.webm found"
             VIDEO=$(find "$QA_ARTIFACTS" . -maxdepth 3 -name '*.webm' -not -path '*/node_modules/*' 2>/dev/null | head -1)
             if [ -n "$VIDEO" ]; then
               echo "Found fallback video: $VIDEO ($(du -h "$VIDEO" | cut -f1))"
@@ -369,28 +432,29 @@ jobs:
 
       - name: Convert videos to mp4
         run: |
-          for dir in qa-artifacts/qa-report-*; do
-            [ -d "$dir" ] || continue
-            # Prefer explicitly-saved qa-session.webm over auto-recorded files
-            if [ -f "$dir/qa-session.webm" ] && [ -s "$dir/qa-session.webm" ]; then
-              WEBM="$dir/qa-session.webm"
-            else
-              # Fallback: find any non-empty webm
-              WEBM=$(find "$dir" -name '*.webm' -type f -size +0c | head -1)
-            fi
-            if [ -z "$WEBM" ]; then
-              echo "No valid .webm video in $dir, skipping"
-              continue
-            fi
-            echo "Converting $WEBM ($(du -h "$WEBM" | cut -f1)) to mp4"
+          convert_video() {
+            local WEBM="$1" MP4="$2"
+            echo "Converting $WEBM ($(du -h "$WEBM" | cut -f1)) to $MP4"
             ffmpeg -y -i "$WEBM" \
               -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p \
               -movflags +faststart -g 60 \
-              "$dir/qa-session.mp4" 2>&1 | tail -5 \
+              "$MP4" 2>&1 | tail -5 \
             || echo "ffmpeg conversion failed for $WEBM (non-fatal)"
+            [ -f "$MP4" ] && echo "Created: $MP4 ($(du -h "$MP4" | cut -f1))"
+          }
 
-            if [ -f "$dir/qa-session.mp4" ]; then
-              echo "Created: $dir/qa-session.mp4 ($(du -h "$dir/qa-session.mp4" | cut -f1))"
+          for dir in qa-artifacts/qa-report-*; do
+            [ -d "$dir" ] || continue
+            # Convert after video (qa-session.webm)
+            for name in qa-session qa-before-session; do
+              if [ -f "$dir/${name}.webm" ] && [ -s "$dir/${name}.webm" ]; then
+                convert_video "$dir/${name}.webm" "$dir/${name}.mp4"
+              fi
+            done
+            # Fallback: find any non-empty webm not yet converted
+            if [ ! -f "$dir/qa-session.mp4" ]; then
+              WEBM=$(find "$dir" -name '*.webm' -type f -size +0c | head -1)
+              [ -n "$WEBM" ] && convert_video "$WEBM" "$dir/qa-session.mp4"
             fi
           done
 
@@ -429,12 +493,17 @@ jobs:
           fi
           for vid in qa-artifacts/qa-report-*/qa-session.mp4; do
             [ -f "$vid" ] || continue
+            DIR=$(dirname "$vid")
+            BEFORE_FLAG=""
+            if [ -f "$DIR/qa-before-session.mp4" ]; then
+              BEFORE_FLAG="--before-video $DIR/qa-before-session.mp4"
+            fi
             echo "::group::Reviewing $vid"
             pnpm exec tsx scripts/qa-video-review.ts \
               --artifacts-dir qa-artifacts \
               --output-dir video-reviews \
               --video-file "$vid" \
-              --model gemini-2.5-flash $PR_CTX_FLAG || true
+              --model gemini-2.5-flash $PR_CTX_FLAG $BEFORE_FLAG || true
             echo "::endgroup::"
           done
 
@@ -451,19 +520,21 @@ jobs:
           mkdir -p "$DEPLOY_DIR"
 
           for os in Linux macOS Windows; do
-            VID="qa-artifacts/qa-report-${os}-${{ github.run_id }}/qa-session.mp4"
-            if [ -f "$VID" ]; then
-              cp "$VID" "$DEPLOY_DIR/qa-${os}.mp4"
-              echo "Found ${os} video ($(du -h "$VID" | cut -f1))"
-
-              # Generate GIF thumbnail
-              ffmpeg -y -ss 10 -i "$VID" -t 8 \
+            DIR="qa-artifacts/qa-report-${os}-${{ github.run_id }}"
+            for prefix in qa qa-before; do
+              VID="${DIR}/${prefix}-session.mp4"
+              if [ -f "$VID" ]; then
+                DEST="$DEPLOY_DIR/${prefix}-${os}.mp4"
+                cp "$VID" "$DEST"
+                echo "Found ${prefix} ${os} video ($(du -h "$VID" | cut -f1))"
+              fi
+            done
+            # Generate GIF thumbnail from after video
+            if [ -f "$DEPLOY_DIR/qa-${os}.mp4" ]; then
+              ffmpeg -y -ss 10 -i "$DEPLOY_DIR/qa-${os}.mp4" -t 8 \
                 -vf "fps=8,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer" \
                 -loop 0 "$DEPLOY_DIR/qa-${os}-thumb.gif" 2>/dev/null \
-                || ffmpeg -y -i "$VID" -t 8 \
-                  -vf "fps=8,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer" \
-                  -loop 0 "$DEPLOY_DIR/qa-${os}-thumb.gif" 2>/dev/null \
-                || echo "GIF generation failed for ${os} (non-fatal)"
+              || echo "GIF generation failed for ${os} (non-fatal)"
             fi
           done
 
@@ -471,9 +542,14 @@ jobs:
           CARDS=""
           ICONS_Linux="&#x1F427;" ICONS_macOS="&#x1F34E;" ICONS_Windows="&#x1FA9F;"
           CARD_COUNT=0
+          DL_ICON="<svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1=12 y1=15 x2=12 y2=3'/></svg>"
+
           for os in Linux macOS Windows; do
             eval "ICON=\$ICONS_${os}"
             OS_LOWER=$(echo "$os" | tr '[:upper:]' '[:lower:]')
+            HAS_BEFORE=$([ -f "$DEPLOY_DIR/qa-before-${os}.mp4" ] && echo 1 || echo 0)
+            HAS_AFTER=$([ -f "$DEPLOY_DIR/qa-${os}.mp4" ] && echo 1 || echo 0)
+            [ "$HAS_AFTER" = "0" ] && continue
 
             REPORT_FILE="video-reviews/${OS_LOWER}-qa-video-report.md"
             REPORT_LINK=""
@@ -483,13 +559,17 @@ jobs:
               REPORT_LINK="<a class=dl href=report-${OS_LOWER}.md><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1=16 y1=13 x2=8 y2=13/><line x1=16 y1=17 x2=8 y2=17'/></svg>Report</a>"
 
               REPORT_MD=$(cat "$REPORT_FILE" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-              REPORT_HTML="<details class=report><summary><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><circle cx=12 cy=12 r=10/><line x1=12 y1=16 x2=12 y2=12/><line x1=12 y1=8 x2=12.01 y2=8'/></svg> AI Video Review</summary><div class=report-body data-md>${REPORT_MD}</div></details>"
+              REPORT_HTML="<details class=report open><summary><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><circle cx=12 cy=12 r=10/><line x1=12 y1=16 x2=12 y2=12/><line x1=12 y1=8 x2=12.01 y2=8'/></svg> AI Comparative Review</summary><div class=report-body data-md>${REPORT_MD}</div></details>"
             fi
 
-            if [ -f "$DEPLOY_DIR/qa-${os}.mp4" ]; then
-              CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=card-body><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links><a class=dl href=qa-${os}.mp4 download><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1=12 y1=15 x2=12 y2=3'/></svg>Download</a>${REPORT_LINK}</span></div>${REPORT_HTML}</div>"
-              CARD_COUNT=$((CARD_COUNT + 1))
+            if [ "$HAS_BEFORE" = "1" ]; then
+              # Side-by-side before/after layout
+              CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=card-header><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links>${REPORT_LINK}</span></div><div class=comparison><div class=comp-panel><div class=comp-label>Before <span class=comp-tag>main</span></div><div class=video-wrap><video controls muted preload=metadata><source src=qa-before-${os}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-before-${os}.mp4 download>${DL_ICON}Before</a></div></div><div class=comp-panel><div class=comp-label>After <span class=comp-tag>PR</span></div><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-${os}.mp4 download>${DL_ICON}After</a></div></div></div>${REPORT_HTML}</div>"
+            else
+              # Single video (full QA mode or no before available)
+              CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=card-body><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links><a class=dl href=qa-${os}.mp4 download>${DL_ICON}Download</a>${REPORT_LINK}</span></div>${REPORT_HTML}</div>"
             fi
+            CARD_COUNT=$((CARD_COUNT + 1))
           done
 
           cat > "$DEPLOY_DIR/index.html" <<INDEXEOF
@@ -519,6 +599,15 @@ jobs:
           .dl{color:var(--fg-muted);text-decoration:none;font-size:.75rem;font-weight:500;display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .6rem;border-radius:9999px;border:1px solid var(--border);background:oklch(100% 0 0/.03);transition:all var(--dur-base) var(--ease-out)}
           .dl:hover{color:var(--primary-up);border-color:var(--primary);background:oklch(62% 0.21 265/.08)}
           .badge{font-size:.6875rem;font-weight:600;padding:.2rem .625rem;border-radius:9999px;text-transform:uppercase;letter-spacing:.05em}
+          .card-header{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-faint)}
+          .comparison{display:grid;grid-template-columns:1fr 1fr;gap:0}
+          .comp-panel{border-right:1px solid var(--border-faint)}
+          .comp-panel:last-child{border-right:none}
+          .comp-label{padding:.4rem .75rem;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-muted);background:oklch(10% 0.01 265);display:flex;align-items:center;gap:.4rem}
+          .comp-tag{font-size:.6rem;padding:.1rem .4rem;border-radius:9999px;font-weight:600}
+          .comp-panel:first-child .comp-tag{background:oklch(65% 0.01 265/.15);color:var(--fg-muted);border:1px solid var(--border)}
+          .comp-panel:last-child .comp-tag{background:oklch(62% 0.18 155/.15);color:var(--ok);border:1px solid oklch(62% 0.18 155/.25)}
+          .comp-dl{padding:.4rem .75rem;display:flex;justify-content:center}
           .report{border-top:1px solid var(--border-faint);padding:.75rem 1rem;font-size:.8125rem}
           .report summary{cursor:pointer;color:var(--fg-muted);font-weight:500;display:flex;align-items:center;gap:.4rem;user-select:none;transition:color var(--dur-base) var(--ease-out)}
           .report summary:hover{color:var(--fg)}

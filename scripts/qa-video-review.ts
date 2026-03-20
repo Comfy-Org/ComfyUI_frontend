@@ -9,6 +9,7 @@ import { globSync } from 'glob'
 interface CliOptions {
   artifactsDir: string
   videoFile: string
+  beforeVideo: string
   outputDir: string
   model: string
   requestTimeoutMs: number
@@ -25,6 +26,7 @@ interface VideoCandidate {
 const DEFAULT_OPTIONS: CliOptions = {
   artifactsDir: './tmp/qa-artifacts',
   videoFile: '',
+  beforeVideo: '',
   outputDir: './tmp',
   model: 'gemini-2.5-flash',
   requestTimeoutMs: 300_000,
@@ -40,6 +42,9 @@ Options:
                                  (default: ./tmp/qa-artifacts)
   --video-file <name-or-path>   Video file to analyze (required)
                                  (supports basename or relative/absolute path)
+  --before-video <path>         Before video (main branch) for comparison
+                                 When provided, sends both videos to Gemini
+                                 for comparative before/after analysis
   --output-dir <path>           Output directory for markdown reports
                                  (default: ./tmp)
   --model <name>                Gemini model
@@ -107,6 +112,11 @@ function parseCliOptions(args: string[]): CliOptions {
         requireValue(argument),
         argument
       )
+      continue
+    }
+
+    if (argument === '--before-video') {
+      options.beforeVideo = requireValue(argument)
       continue
     }
 
@@ -279,18 +289,94 @@ function getMimeType(filePath: string): string {
   return mimeMap[ext] || 'video/mp4'
 }
 
-function buildReviewPrompt(
+function buildReviewPrompt(options: {
+  platformName: string
+  videoPath: string
+  prContext: string
+  isComparative: boolean
+}): string {
+  const { platformName, videoPath, prContext, isComparative } = options
+
+  if (isComparative) {
+    return buildComparativePrompt(platformName, videoPath, prContext)
+  }
+
+  return buildSingleVideoPrompt(platformName, videoPath, prContext)
+}
+
+function buildComparativePrompt(
   platformName: string,
   videoPath: string,
   prContext: string
 ): string {
-  const basePrompt = [
+  const lines = [
+    'You are a senior QA engineer performing a BEFORE/AFTER comparison review.',
+    '',
+    'You are given TWO videos:',
+    '- **Video 1 (BEFORE)**: The main branch BEFORE the PR. This shows the OLD behavior.',
+    '- **Video 2 (AFTER)**: The PR branch AFTER the changes. This shows the NEW behavior.',
+    '',
+    'Both videos show the same test steps executed on different code versions.',
+    ''
+  ]
+
+  if (prContext) {
+    lines.push('## PR Context', prContext, '')
+  }
+
+  lines.push(
+    '## Your Task',
+    `Platform: "${platformName}". After video: ${toProjectRelativePath(videoPath)}.`,
+    '',
+    '1. **BEFORE video**: Does it demonstrate the old behavior or bug that the PR aims to fix?',
+    '   Describe what you observe — this establishes the baseline.',
+    '2. **AFTER video**: Does it prove the PR fix works? Is the intended new behavior visible?',
+    '3. **Comparison**: What specifically changed between before and after?',
+    '4. **Regressions**: Did the PR introduce any new problems visible in the AFTER video',
+    '   that were NOT present in the BEFORE video?',
+    '',
+    'Note: Brief black frames during page transitions are NORMAL.',
+    'Report only concrete, visible differences. Avoid speculation.',
+    '',
+    'Return markdown with these sections exactly:',
+    '## Summary',
+    '(What the PR changes, whether BEFORE confirms the old behavior, whether AFTER proves the fix)',
+    '## Before vs After',
+    '(Side-by-side behavioral comparison with timestamps from both videos)',
+    '## Confirmed Issues',
+    'For each issue, use this exact format:',
+    '',
+    '### [Short issue title]',
+    '`SEVERITY` `TIMESTAMP` `Confidence: LEVEL`',
+    '',
+    '[Description — specify whether it appears in BEFORE, AFTER, or both]',
+    '',
+    '**Evidence:** [What you observed at the given timestamp in which video]',
+    '',
+    '**Suggested Fix:** [Actionable recommendation]',
+    '',
+    '---',
+    '',
+    '## Possible Issues (Needs Human Verification)',
+    '## Overall Risk',
+    '(Assess whether the PR achieves its goal based on the before/after comparison)'
+  )
+
+  return lines.filter(Boolean).join('\n')
+}
+
+function buildSingleVideoPrompt(
+  platformName: string,
+  videoPath: string,
+  prContext: string
+): string {
+  const lines = [
     'You are a senior QA engineer reviewing a UI test session recording.',
     ''
   ]
 
   if (prContext) {
-    basePrompt.push(
+    lines.push(
       '## PR Context',
       'The video is a QA session testing a specific pull request.',
       'Your review MUST evaluate whether the PR achieves its stated purpose.',
@@ -305,7 +391,7 @@ function buildReviewPrompt(
     )
   }
 
-  basePrompt.push(
+  lines.push(
     `Review this QA session video for platform "${platformName}".`,
     `Source video: ${toProjectRelativePath(videoPath)}.`,
     'The video shows the full test session — analyze it chronologically.',
@@ -340,7 +426,7 @@ function buildReviewPrompt(
     '## Overall Risk'
   )
 
-  return basePrompt.filter(Boolean).join('\n')
+  return lines.filter(Boolean).join('\n')
 }
 
 async function requestGeminiReview(options: {
@@ -348,31 +434,50 @@ async function requestGeminiReview(options: {
   model: string
   platformName: string
   videoPath: string
+  beforeVideoPath: string
   timeoutMs: number
   prContext: string
 }): Promise<string> {
   const genAI = new GoogleGenerativeAI(options.apiKey)
   const model = genAI.getGenerativeModel({ model: options.model })
 
-  const videoBuffer = await readFile(options.videoPath)
-  const base64Video = videoBuffer.toString('base64')
-  const mimeType = getMimeType(options.videoPath)
-  const prompt = buildReviewPrompt(
-    options.platformName,
-    options.videoPath,
-    options.prContext
-  )
+  const isComparative = options.beforeVideoPath.length > 0
+  const prompt = buildReviewPrompt({
+    platformName: options.platformName,
+    videoPath: options.videoPath,
+    prContext: options.prContext,
+    isComparative
+  })
 
-  const result = await model.generateContent([
-    { text: prompt },
-    {
-      inlineData: {
-        mimeType,
-        data: base64Video
+  const parts: Array<
+    { text: string } | { inlineData: { mimeType: string; data: string } }
+  > = [{ text: prompt }]
+
+  if (isComparative) {
+    const beforeBuffer = await readFile(options.beforeVideoPath)
+    parts.push(
+      { text: 'Video 1 — BEFORE (main branch):' },
+      {
+        inlineData: {
+          mimeType: getMimeType(options.beforeVideoPath),
+          data: beforeBuffer.toString('base64')
+        }
       }
-    }
-  ])
+    )
+  }
 
+  const afterBuffer = await readFile(options.videoPath)
+  if (isComparative) {
+    parts.push({ text: 'Video 2 — AFTER (PR branch):' })
+  }
+  parts.push({
+    inlineData: {
+      mimeType: getMimeType(options.videoPath),
+      data: afterBuffer.toString('base64')
+    }
+  })
+
+  const result = await model.generateContent(parts)
   const response = result.response
   const text = response.text()
 
@@ -394,21 +499,32 @@ function buildReportMarkdown(input: {
   model: string
   videoPath: string
   videoSizeBytes: number
+  beforeVideoPath?: string
+  beforeVideoSizeBytes?: number
   reviewText: string
 }): string {
-  const header = [
+  const headerLines = [
     `# ${input.platformName} QA Video Report`,
     '',
     `- Generated at: ${new Date().toISOString()}`,
-    `- Model: \`${input.model}\``,
-    `- Source video: \`${toProjectRelativePath(input.videoPath)}\``,
-    `- Video size: ${formatBytes(input.videoSizeBytes)}`,
-    '',
-    '## AI Review',
-    ''
-  ].join('\n')
+    `- Model: \`${input.model}\``
+  ]
 
-  return `${header}${input.reviewText.trim()}\n`
+  if (input.beforeVideoPath) {
+    headerLines.push(
+      `- Before video: \`${toProjectRelativePath(input.beforeVideoPath)}\` (${formatBytes(input.beforeVideoSizeBytes ?? 0)})`,
+      `- After video: \`${toProjectRelativePath(input.videoPath)}\` (${formatBytes(input.videoSizeBytes)})`,
+      '- Mode: **Comparative (before/after)**'
+    )
+  } else {
+    headerLines.push(
+      `- Source video: \`${toProjectRelativePath(input.videoPath)}\``,
+      `- Video size: ${formatBytes(input.videoSizeBytes)}`
+    )
+  }
+
+  headerLines.push('', '## AI Review', '')
+  return `${headerLines.join('\n')}${input.reviewText.trim()}\n`
 }
 
 async function reviewVideo(
@@ -430,8 +546,19 @@ async function reviewVideo(
     }
   }
 
+  const beforeVideoPath = options.beforeVideo
+    ? resolve(options.beforeVideo)
+    : ''
+
+  if (beforeVideoPath) {
+    const beforeStat = await stat(beforeVideoPath)
+    process.stdout.write(
+      `[${video.platformName}] Before video: ${toProjectRelativePath(beforeVideoPath)} (${formatBytes(beforeStat.size)})\n`
+    )
+  }
+
   process.stdout.write(
-    `[${video.platformName}] Sending video ${toProjectRelativePath(video.videoPath)} to ${options.model}\n`
+    `[${video.platformName}] Sending ${beforeVideoPath ? '2 videos (comparative)' : 'video'} to ${options.model}\n`
   )
 
   const reviewText = await requestGeminiReview({
@@ -439,6 +566,7 @@ async function reviewVideo(
     model: options.model,
     platformName: video.platformName,
     videoPath: video.videoPath,
+    beforeVideoPath,
     timeoutMs: options.requestTimeoutMs,
     prContext
   })
@@ -448,13 +576,22 @@ async function reviewVideo(
     options.outputDir,
     `${video.platformName}-qa-video-report.md`
   )
-  const reportMarkdown = buildReportMarkdown({
+
+  const reportInput: Parameters<typeof buildReportMarkdown>[0] = {
     platformName: video.platformName,
     model: options.model,
     videoPath: video.videoPath,
     videoSizeBytes: videoStat.size,
     reviewText
-  })
+  }
+
+  if (beforeVideoPath) {
+    const beforeStat = await stat(beforeVideoPath)
+    reportInput.beforeVideoPath = beforeVideoPath
+    reportInput.beforeVideoSizeBytes = beforeStat.size
+  }
+
+  const reportMarkdown = buildReportMarkdown(reportInput)
 
   await mkdir(dirname(outputPath), { recursive: true })
   await writeFile(outputPath, reportMarkdown, 'utf-8')
