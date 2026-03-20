@@ -64,6 +64,83 @@ function handleResourceError(url: string, tagName: string) {
   }
 }
 
+const PRELOAD_RECOVERY_KEY = `comfy.preload-recovery:${config.app_version ?? 'unknown'}`
+let preloadRecoveryTriggered = false
+let preloadToastShown = false
+
+function shouldAttemptPreloadRecovery(): boolean {
+  if (preloadRecoveryTriggered) {
+    return false
+  }
+
+  try {
+    return !sessionStorage.getItem(PRELOAD_RECOVERY_KEY)
+  } catch {
+    return false
+  }
+}
+
+function markPreloadRecoveryAttempted(): void {
+  preloadRecoveryTriggered = true
+
+  try {
+    sessionStorage.setItem(PRELOAD_RECOVERY_KEY, '1')
+  } catch {
+    // Ignore storage access failures and fall through to normal toast handling.
+  }
+}
+
+function handlePreloadError(event: Event) {
+  const preloadEvent = event as Event & {
+    payload: Error
+    preventDefault: () => void
+  }
+  preloadEvent.preventDefault()
+
+  const info = parsePreloadError(preloadEvent.payload)
+  console.error('[vite:preloadError]', {
+    url: info.url,
+    fileType: info.fileType,
+    chunkName: info.chunkName,
+    message: info.message
+  })
+
+  if (__DISTRIBUTION__ === 'cloud') {
+    captureException(preloadEvent.payload, {
+      tags: {
+        error_type: 'vite_preload_error',
+        file_type: info.fileType,
+        chunk_name: info.chunkName ?? undefined
+      },
+      contexts: {
+        preload: {
+          url: info.url,
+          fileType: info.fileType,
+          chunkName: info.chunkName
+        }
+      }
+    })
+  }
+
+  if (shouldAttemptPreloadRecovery()) {
+    markPreloadRecoveryAttempted()
+    window.location.reload()
+    return
+  }
+
+  if (preloadToastShown) {
+    return
+  }
+
+  preloadToastShown = true
+  useToastStore().add({
+    severity: 'error',
+    summary: t('g.preloadErrorTitle'),
+    detail: t('g.preloadError'),
+    life: 10000
+  })
+}
+
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
 
@@ -73,38 +150,7 @@ onMounted(() => {
 
   // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
   // See: https://vite.dev/guide/build#load-error-handling
-  window.addEventListener('vite:preloadError', (event) => {
-    event.preventDefault()
-    const info = parsePreloadError(event.payload)
-    console.error('[vite:preloadError]', {
-      url: info.url,
-      fileType: info.fileType,
-      chunkName: info.chunkName,
-      message: info.message
-    })
-    if (__DISTRIBUTION__ === 'cloud') {
-      captureException(event.payload, {
-        tags: {
-          error_type: 'vite_preload_error',
-          file_type: info.fileType,
-          chunk_name: info.chunkName ?? undefined
-        },
-        contexts: {
-          preload: {
-            url: info.url,
-            fileType: info.fileType,
-            chunkName: info.chunkName
-          }
-        }
-      })
-    }
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.preloadErrorTitle'),
-      detail: t('g.preloadError'),
-      life: 10000
-    })
-  })
+  window.addEventListener('vite:preloadError', handlePreloadError)
 
   // Capture resource load failures (CSS, scripts) in non-localhost distributions
   if (__DISTRIBUTION__ !== 'localhost') {
@@ -149,5 +195,6 @@ onMounted(() => {
 let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
 onUnmounted(() => {
   if (cloudNotificationTimer) clearTimeout(cloudNotificationTimer)
+  window.removeEventListener('vite:preloadError', handlePreloadError)
 })
 </script>
