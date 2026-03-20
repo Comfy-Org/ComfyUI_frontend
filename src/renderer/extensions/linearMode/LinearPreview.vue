@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -10,6 +10,7 @@ import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAsse
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
+import AppTemplateView from '@/renderer/extensions/linearMode/AppTemplateView.vue'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
@@ -20,11 +21,14 @@ import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
+import { useAppModeStore } from '@/stores/appModeStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
+const appModeStore = useAppModeStore()
+const hasLayoutTemplate = computed(() => !!appModeStore.layoutTemplateId)
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
 const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
@@ -144,6 +148,7 @@ async function rerun(e: Event) {
   />
   <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
   <LinearArrange v-else-if="isArrangeMode" />
+  <AppTemplateView v-else-if="hasLayoutTemplate" />
   <LinearWelcome v-else />
   <div
     v-if="!mobile"

@@ -323,8 +323,9 @@ export function resolveNode(
 export function resolveNodeWidget(
   nodeId: NodeId,
   widgetName?: string,
-  graph: LGraph = app.rootGraph
+  graph: LGraph | null | undefined = app.rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
+  if (!graph) return []
   const node = graph.getNodeById(nodeId)
   if (!widgetName) return node ? [node] : []
   if (node) {

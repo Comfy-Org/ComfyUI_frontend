@@ -5,19 +5,47 @@ import type { ChangeTracker } from '@/scripts/changeTracker'
 import type { AppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { UserFile } from '@/stores/userFileStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyWorkflowJSON,
+  ModelFile
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
 
 export interface LinearData {
   inputs: [NodeId, string][]
   outputs: NodeId[]
+  layoutTemplateId?: string
+  /** @deprecated Use zoneAssignmentsPerTemplate instead */
+  zoneAssignments?: Record<string, string>
+  /** @deprecated Use gridOverridesPerTemplate instead */
+  gridOverrides?: {
+    zoneOrder?: string[]
+    columnFractions?: number[]
+    rowFractions?: number[]
+  }
+  /** @deprecated Use runControlsZoneIdPerTemplate instead */
+  runControlsZoneId?: string
+  zoneAssignmentsPerTemplate?: Record<string, Record<string, string>>
+  gridOverridesPerTemplate?: Record<
+    string,
+    {
+      zoneOrder?: string[]
+      columnFractions?: number[]
+      rowFractions?: number[]
+    }
+  >
+  runControlsZoneIdPerTemplate?: Record<string, string>
+  zoneItemOrderPerTemplate?: Record<string, Record<string, string[]>>
+  zoneAlignPerTemplate?: Record<string, Record<string, 'top' | 'bottom'>>
 }
 
 export interface PendingWarnings {
   missingNodeTypes?: MissingNodeType[]
-  // TODO: Currently unused — missing models are surfaced directly on every
-  // graph load. Reserved for future per-workflow missing model state management.
+  missingModels?: {
+    missingModels: ModelFile[]
+    paths: Record<string, string[]>
+  }
   missingModelCandidates?: MissingModelCandidate[]
 }
 

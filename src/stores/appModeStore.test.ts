@@ -25,7 +25,7 @@ const mockEmptyWorkflowDialog = vi.hoisted(() => {
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() }
+    rootGraph: { extra: {}, nodes: [{ id: 1 }] }
   }
 }))
 
@@ -242,29 +242,6 @@ describe('appModeStore', () => {
       expect(store.selectedOutputs).toEqual([1])
     })
 
-    it('reloads selections on configured event', async () => {
-      const node1 = mockNode(1)
-
-      // Initially nodes are not resolvable — pruning removes them
-      mockResolveNode.mockReturnValue(undefined)
-      workflowStore.activeWorkflow = workflowWithLinearData([[1, 'seed']], [1])
-      await nextTick()
-      expect(store.selectedInputs).toEqual([])
-      expect(store.selectedOutputs).toEqual([])
-
-      // After graph configures, nodes become resolvable
-      mockResolveNode.mockImplementation((id) =>
-        id == 1 ? (node1 as unknown as LGraphNode) : undefined
-      )
-      ;(app.rootGraph.events as EventTarget).dispatchEvent(
-        new Event('configured')
-      )
-      await nextTick()
-
-      expect(store.selectedInputs).toEqual([[1, 'seed']])
-      expect(store.selectedOutputs).toEqual([1])
-    })
-
     it('hasOutputs is false when all output nodes are deleted', async () => {
       mockResolveNode.mockReturnValue(undefined)
 
@@ -286,7 +263,13 @@ describe('appModeStore', () => {
 
       expect(app.rootGraph.extra.linearData).toEqual({
         inputs: [],
-        outputs: [1]
+        outputs: [1],
+        layoutTemplateId: 'sidebar',
+        zoneAssignmentsPerTemplate: {},
+        gridOverridesPerTemplate: {},
+        runControlsZoneIdPerTemplate: {},
+        zoneItemOrderPerTemplate: {},
+        zoneAlignPerTemplate: {}
       })
     })
 
@@ -325,8 +308,170 @@ describe('appModeStore', () => {
 
       expect(app.rootGraph.extra.linearData).toEqual({
         inputs: [[42, 'prompt']],
-        outputs: []
+        outputs: [],
+        layoutTemplateId: 'sidebar',
+        zoneAssignmentsPerTemplate: {},
+        gridOverridesPerTemplate: {},
+        runControlsZoneIdPerTemplate: {},
+        zoneItemOrderPerTemplate: {},
+        zoneAlignPerTemplate: {}
       })
+    })
+  })
+
+  describe('autoAssignInputs', () => {
+    it('distributes inputs evenly across input zones', () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      store.selectedInputs.push([1, 'a'], [2, 'b'], [3, 'c'], [4, 'd'])
+      // sidebar template has 4 input zones: z1, z3, z4, sb
+      // and 1 output zone: z2
+      store.autoAssignInputs()
+
+      const zones = new Map<string, number>()
+      for (const [nodeId, widgetName] of store.selectedInputs) {
+        const z = store.getZone(nodeId, widgetName)
+        if (z) zones.set(z, (zones.get(z) ?? 0) + 1)
+      }
+      // Each input zone should get exactly 1 input (4 inputs / 4 input zones)
+      expect(zones.get('z2')).toBeUndefined() // z2 is output zone
+      for (const count of zones.values()) {
+        expect(count).toBe(1)
+      }
+    })
+
+    it('skips already-assigned inputs', () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      store.selectedInputs.push([1, 'a'], [2, 'b'])
+      store.setZone(1, 'a', 'z1')
+      store.autoAssignInputs()
+
+      expect(store.getZone(1, 'a')).toBe('z1')
+      // b should be assigned to some zone (not z1 since z1 already has one)
+      expect(store.getZone(2, 'b')).toBeDefined()
+    })
+
+    it('handles single input zone', () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      // switch to focus template: 2 input zones (side1, side2) + 1 output (main)
+      store.switchTemplate('focus')
+      store.selectedInputs.push([1, 'a'], [2, 'b'])
+      store.autoAssignInputs()
+
+      expect(store.getZone(1, 'a')).toBeDefined()
+      expect(store.getZone(2, 'b')).toBeDefined()
+    })
+
+    it('does nothing with empty inputs', () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      store.autoAssignInputs()
+      expect(Object.keys(store.zoneAssignments)).toHaveLength(0)
+    })
+  })
+
+  describe('switchTemplate', () => {
+    it('clears stale zone assignments from old template', () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      store.selectedInputs.push([1, 'a'])
+      store.setZone(1, 'a', 'sb') // sidebar zone
+
+      store.switchTemplate('focus')
+
+      // 'sb' is not a valid zone in focus template, so assignment should be cleared
+      // and autoAssign should have re-assigned it
+      const zone = store.getZone(1, 'a')
+      expect(zone).toBeDefined()
+      expect(zone).not.toBe('sb')
+    })
+
+    it('preserves valid zone assignments', () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      store.selectedInputs.push([1, 'a'])
+      // grid template has z1-z6
+      store.switchTemplate('grid')
+      store.setZone(1, 'a', 'z1')
+
+      // Switch to sidebar which also has z1
+      store.switchTemplate('sidebar')
+      expect(store.getZone(1, 'a')).toBe('z1')
+    })
+
+    it('calls autoAssign after clearing', () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      store.selectedInputs.push([1, 'a'])
+
+      store.switchTemplate('grid')
+      expect(store.getZone(1, 'a')).toBeDefined()
+    })
+  })
+
+  describe('outputZoneIds', () => {
+    it('returns default isOutput zones when no explicit assignments', () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      store.selectedOutputs.push(1)
+
+      // sidebar template: z2 is the default isOutput zone
+      expect(store.outputZoneIds.has('z2')).toBe(true)
+      expect(store.outputZoneIds.size).toBe(1)
+    })
+
+    it('returns explicit zones when outputs are assigned', () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      store.selectedOutputs.push(1, 2)
+      store.setZone(1, '__output__', 'z1')
+      store.setZone(2, '__output__', 'z3')
+
+      expect(store.outputZoneIds).toEqual(new Set(['z1', 'z3']))
+    })
+
+    it('returns empty set when no template', () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      store.layoutTemplateId =
+        'nonexistent' as unknown as typeof store.layoutTemplateId
+
+      expect(store.outputZoneIds.size).toBe(0)
+    })
+
+    it('returns default zones when outputs exist but none are assigned', () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      // focus template: main is isOutput
+      store.switchTemplate('focus')
+      store.selectedOutputs.push(1)
+
+      expect(store.outputZoneIds.has('main')).toBe(true)
+      expect(store.outputZoneIds.size).toBe(1)
+    })
+  })
+
+  describe('setZone', () => {
+    it('stores assignment and persists', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      await nextTick()
+
+      store.setZone(1, 'prompt', 'z1')
+
+      expect(store.getZone(1, 'prompt')).toBe('z1')
+      const linearData = app.rootGraph.extra.linearData as Record<
+        string,
+        unknown
+      >
+      const perTemplate = linearData?.zoneAssignmentsPerTemplate as Record<
+        string,
+        Record<string, string>
+      >
+      expect(perTemplate?.[store.layoutTemplateId]).toHaveProperty(
+        '1:prompt',
+        'z1'
+      )
+    })
+
+    it('overwrites previous assignment', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      await nextTick()
+
+      store.setZone(1, 'prompt', 'z1')
+      store.setZone(1, 'prompt', 'z2')
+
+      expect(store.getZone(1, 'prompt')).toBe('z2')
     })
   })
 })

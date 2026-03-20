@@ -3253,7 +3253,50 @@
       "outputExamples": "Examples: 'Save Image' or 'Save Video'",
       "switchToOutputsButton": "Switch to Outputs",
       "outputs": "Outputs",
-      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
+      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app",
+      "layout": "Layout",
+      "dropHere": "Drop inputs here",
+      "outputZone": "Output",
+      "alignToBottom": "Align to bottom",
+      "alignToTop": "Align to top",
+      "mobileOrder": "Mobile: stacks top to bottom (#{order})",
+      "shiftClickPriority": "Shift+click to prioritize",
+      "queueFailed": "Failed to queue prompt"
+    },
+    "layout": {
+      "templates": {
+        "focus": "Focus",
+        "focusDesc": "1 large area with 2 smaller zones",
+        "grid": "Grid",
+        "gridDesc": "2x3 equal grid zones",
+        "sidebar": "Sidebar",
+        "sidebarDesc": "4 zones with a sidebar"
+      },
+      "zones": {
+        "main": "Main",
+        "topRight": "Top Right",
+        "bottomRight": "Bottom Right",
+        "zone1": "Zone 1",
+        "zone2": "Zone 2",
+        "zone3": "Zone 3",
+        "zone4": "Zone 4",
+        "zone5": "Zone 5",
+        "zone6": "Zone 6",
+        "sidebar": "Sidebar"
+      }
+    },
+    "error": {
+      "header": "Something went wrong",
+      "requiresGraph": "This error needs to be resolved in the node graph.",
+      "promptVisitGraph": "Switch to graph mode to inspect and fix the issue.",
+      "mobileFixable": "Some inputs need attention. Go to {0} to fix them.",
+      "promptShow": "Show error details",
+      "getHelp": "Need help? Check the {0}, report on {1}, or ask for {2}.",
+      "guide": "troubleshooting guide",
+      "github": "GitHub",
+      "support": "support",
+      "log": "Error log",
+      "goto": "Go to errors"
     },
     "builder": {
       "title": "App builder mode",
