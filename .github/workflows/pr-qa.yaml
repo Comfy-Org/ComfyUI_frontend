@@ -104,10 +104,11 @@ jobs:
           mv dist dist-after
           git stash --include-untracked || true
           git checkout origin/main -- .
-          # Build main with PR branch's node_modules (skip typecheck and reinstall)
+          # Install main's deps (may differ from PR), then build
+          pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
           pnpm exec vite build
           mv dist dist-before
-          # Restore PR branch files and deps
+          # Restore PR branch files and reinstall PR deps
           git checkout HEAD -- .
           git stash pop || true
           pnpm install --frozen-lockfile
