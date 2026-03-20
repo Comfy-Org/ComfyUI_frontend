@@ -47,6 +47,9 @@
             data-key="id"
             :global-filter-fields="['id', 'label']"
             :filters="filters"
+            :paginator="true"
+            :rows="50"
+            :rows-per-page-options="[25, 50, 100]"
             selection-mode="single"
             context-menu
             striped-rows
@@ -109,11 +112,7 @@
                     <span v-if="idx > 0" class="text-muted-foreground">,</span>
                     <KeyComboDisplay
                       :key-combo="binding.combo"
-                      :is-modified="
-                        keybindingStore.isCommandKeybindingModified(
-                          slotProps.data.id
-                        )
-                      "
+                      :is-modified="slotProps.data.isModified"
                     />
                   </template>
                   <span
@@ -173,11 +172,7 @@
                     variant="textonly"
                     size="icon"
                     :aria-label="$t('g.reset')"
-                    :disabled="
-                      !keybindingStore.isCommandKeybindingModified(
-                        slotProps.data.id
-                      )
-                    "
+                    :disabled="!slotProps.data.isModified"
                     @click="resetKeybinding(slotProps.data)"
                   >
                     <i class="icon-[lucide--rotate-ccw]" />
@@ -209,11 +204,7 @@
                     }}</span>
                     <KeyComboDisplay
                       :key-combo="binding.combo"
-                      :is-modified="
-                        keybindingStore.isCommandKeybindingModified(
-                          slotProps.data.id
-                        )
-                      "
+                      :is-modified="slotProps.data.isModified"
                     />
                   </div>
                   <div class="flex flex-row">
@@ -266,10 +257,7 @@
           <ContextMenuSeparator class="my-1 h-px bg-border-subtle" />
           <ContextMenuItem
             class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered data-disabled:cursor-default data-disabled:opacity-50"
-            :disabled="
-              !contextMenuTarget ||
-              !keybindingStore.isCommandKeybindingModified(contextMenuTarget.id)
-            "
+            :disabled="!contextMenuTarget?.isModified"
             @select="ctxResetToDefault"
           >
             <i class="icon-[lucide--rotate-ccw] size-4" />
@@ -431,6 +419,7 @@ interface ICommandData {
   keybindings: KeybindingImpl[]
   label: string
   source?: string
+  isModified: boolean
 }
 
 const commandsData = computed<ICommandData[]>(() => {
@@ -441,7 +430,8 @@ const commandsData = computed<ICommandData[]>(() => {
       command.label ?? ''
     ),
     keybindings: keybindingStore.getKeybindingsByCommandId(command.id),
-    source: command.source
+    source: command.source,
+    isModified: keybindingStore.isCommandKeybindingModified(command.id)
   }))
 })
 
