@@ -47,7 +47,7 @@ test.describe('Job History Sidebar', { tag: '@ui' }, () => {
     )
     await expect(menuPanel).toBeVisible()
 
-    await menuPanel.getByRole('button', { name: /copy job id/i }).click()
+    await menuPanel.getByRole('menuitem', { name: /copy job id/i }).click()
     await expect(menuPanel).toBeHidden()
   })
 })
