@@ -104,14 +104,13 @@ jobs:
           mv dist dist-after
           git stash --include-untracked || true
           git checkout origin/main -- .
-          pnpm install --frozen-lockfile
-          # Use vite directly — skip typecheck since main may have TS errors
-          # when built with the PR branch's lockfile/deps
+          # Build main with PR branch's node_modules (skip typecheck and reinstall)
           pnpm exec vite build
           mv dist dist-before
-          # Restore PR branch files from HEAD (not 'git checkout -' which needs @{-1})
+          # Restore PR branch files and deps
           git checkout HEAD -- .
           git stash pop || true
+          pnpm install --frozen-lockfile
           mv dist-after dist
           echo "Built both: dist-before/ (main) and dist/ (PR)"
           ls -la dist-before/index.html dist/index.html
