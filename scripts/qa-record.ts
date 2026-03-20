@@ -40,6 +40,7 @@ interface Options {
   serverUrl: string
   model: string
   apiKey: string
+  testPlanFile?: string
 }
 
 // ── CLI parsing ──
@@ -69,9 +70,12 @@ function parseArgs(): Options {
       case '--model':
         opts.model = args[++i]
         break
+      case '--test-plan':
+        opts.testPlanFile = args[++i]
+        break
       case '--help':
         console.warn(
-          'Usage: qa-record.ts --mode before|after --diff <path> --output-dir <path> [--url <url>] [--model <model>]'
+          'Usage: qa-record.ts --mode before|after --diff <path> --output-dir <path> [--url <url>] [--model <model>] [--test-plan <path>]'
         )
         process.exit(0)
     }
@@ -94,11 +98,21 @@ function parseArgs(): Options {
 
 // ── Gemini test step generation ──
 
-function buildPrompt(mode: string, diff: string): string {
+function buildPrompt(mode: string, diff: string, testPlan?: string): string {
   const modeDesc =
     mode === 'before'
       ? 'BEFORE (main branch). Show the OLD state briefly — under 15 seconds. One quick demonstration of missing feature / old behavior.'
       : 'AFTER (PR branch). Prove the changes work — 3-6 targeted steps, under 30 seconds.'
+
+  const testPlanSection = testPlan
+    ? `
+## QA Test Plan Reference
+Use this test plan to identify which test categories are relevant to the PR diff.
+Pick test steps from the most relevant categories.
+
+${testPlan.slice(0, 4000)}
+`
+    : ''
 
   return `You are generating test steps for a ComfyUI frontend QA recording.
 
@@ -114,7 +128,7 @@ Each step is an object with an "action" field:
 - { "action": "click", "text": "Button Text" } — clicks an element by visible text
 - { "action": "wait", "ms": 1000 } — waits (use sparingly, max 3000ms)
 - { "action": "screenshot", "name": "step-name" } — takes a screenshot
-
+${testPlanSection}
 ## PR Diff
 \`\`\`
 ${diff.slice(0, 3000)}
@@ -126,6 +140,7 @@ ${diff.slice(0, 3000)}
 - Always include at least one screenshot
 - Do NOT include login steps (handled automatically)
 - Menu navigation pattern: openMenu → hoverMenuItem → clickMenuItem (or screenshot)
+- Pick test steps from the QA test plan categories that are most relevant to the diff
 
 ## Example output
 [
@@ -142,7 +157,10 @@ ${diff.slice(0, 3000)}
 
 async function generateTestSteps(opts: Options): Promise<TestAction[]> {
   const diff = readFileSync(opts.diffFile, 'utf-8')
-  const prompt = buildPrompt(opts.mode, diff)
+  const testPlan = opts.testPlanFile
+    ? readFileSync(opts.testPlanFile, 'utf-8')
+    : undefined
+  const prompt = buildPrompt(opts.mode, diff, testPlan)
 
   const genAI = new GoogleGenerativeAI(opts.apiKey)
   const model = genAI.getGenerativeModel({ model: opts.model })
