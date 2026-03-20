@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
 import { getTextSlotPosition } from '../helpers/subgraphTestUtils'
 
 test.describe(
@@ -71,11 +70,7 @@ test.describe(
       await comfyPage.page.waitForSelector(dialog, { state: 'hidden' })
 
       // Navigate back to parent graph
-      const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
-      await breadcrumb.waitFor({ state: 'visible', timeout: 5000 })
-      await breadcrumb.getByRole('link').first().click()
-      await comfyPage.nextFrame()
-      await comfyPage.nextFrame()
+      await comfyPage.subgraph.exitViaBreadcrumb()
 
       // Verify slot position is still at the widget row after rename
       const after = await getTextSlotPosition(comfyPage.page, '11')
