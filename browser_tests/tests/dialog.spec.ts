@@ -144,6 +144,42 @@ test.describe('Execution error', () => {
   })
 })
 
+test.describe('Error actions in Errors Tab', { tag: '@ui' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
+  })
+
+  test('Should show Find on GitHub and Copy buttons in error card after execution error', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('nodes/execution_error')
+    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+    await comfyPage.nextFrame()
+
+    // Wait for error overlay and click "See Errors"
+    const errorOverlay = comfyPage.page.getByTestId(
+      TestIds.dialogs.errorOverlay
+    )
+    await expect(errorOverlay).toBeVisible()
+    await errorOverlay.getByRole('button', { name: 'See Errors' }).click()
+    await expect(errorOverlay).not.toBeVisible()
+
+    // Verify Find on GitHub button is present in the error card
+    const findOnGithubButton = comfyPage.page.getByRole('button', {
+      name: 'Find on GitHub'
+    })
+    await expect(findOnGithubButton).toBeVisible()
+
+    // Verify Copy button is present in the error card
+    const copyButton = comfyPage.page.getByRole('button', { name: 'Copy' })
+    await expect(copyButton).toBeVisible()
+  })
+})
+
 test.describe('Missing models in Error Tab', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')

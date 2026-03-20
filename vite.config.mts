@@ -638,6 +638,7 @@ export default defineConfig({
 
   optimizeDeps: {
     exclude: ['@comfyorg/comfyui-electron-types'],
+    include: ['primevue/datatable', 'primevue/column'],
     entries: ['index.html']
   },
 
