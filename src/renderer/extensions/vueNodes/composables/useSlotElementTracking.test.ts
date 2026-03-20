@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -92,12 +92,6 @@ async function mountAndRegisterSlot(type: 'input' | 'output') {
 }
 
 describe('useSlotElementTracking', () => {
-  afterEach(() => {
-    for (const el of document.body.querySelectorAll('[data-node-id]')) {
-      el.remove()
-    }
-  })
-
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     document.body.innerHTML = ''
@@ -218,17 +212,19 @@ describe('useSlotElementTracking', () => {
 
   it('skips slot layout writeback when measured slot geometry is unchanged', () => {
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
-    const slotEl = document.createElement('div')
-    document.body.append(slotEl)
-    slotEl.getBoundingClientRect = vi.fn(() => new DOMRect(100, 200, 16, 16))
+    const slotEl = createSlotElement()
 
     const registryStore = useNodeSlotRegistryStore()
     const node = registryStore.ensureNode(NODE_ID)
+
+    const expectedX = 15
+    const expectedY = 35 - LiteGraph.NODE_TITLE_HEIGHT
+
     node.slots.set(slotKey, {
       el: slotEl,
       index: SLOT_INDEX,
       type: 'input',
-      cachedOffset: { x: 108, y: 208 }
+      cachedOffset: { x: expectedX, y: expectedY }
     })
 
     const slotSize = LiteGraph.NODE_SLOT_HEIGHT
@@ -237,10 +233,10 @@ describe('useSlotElementTracking', () => {
       nodeId: NODE_ID,
       index: SLOT_INDEX,
       type: 'input',
-      position: { x: 108, y: 208 },
+      position: { x: expectedX, y: expectedY },
       bounds: {
-        x: 108 - halfSlotSize,
-        y: 208 - halfSlotSize,
+        x: expectedX - halfSlotSize,
+        y: expectedY - halfSlotSize,
         width: slotSize,
         height: slotSize
       }

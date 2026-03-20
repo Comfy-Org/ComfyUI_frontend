@@ -7,6 +7,20 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+interface SlotMeasurement {
+  key: string
+  offsetX: number
+  offsetY: number
+}
+
+interface NodeSlotData {
+  nodeId: string
+  isSubgraph: boolean
+  nodeW: number
+  nodeH: number
+  slots: SlotMeasurement[]
+}
+
 /**
  * Regression test for link misalignment on SubgraphNodes when loading
  * workflows with workflowRendererVersion: "LG".
@@ -23,6 +37,7 @@ test.describe(
     test('slot positions stay within node bounds after loading LG workflow', async ({
       comfyPage
     }) => {
+      const SLOT_BOUNDS_MARGIN = 20
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 
       const workflowPath = resolve(
@@ -49,19 +64,9 @@ test.describe(
       // Wait for slot elements to appear in DOM
       await comfyPage.page.locator('[data-slot-key]').first().waitFor()
 
-      const result = await comfyPage.page.evaluate(() => {
+      const result: NodeSlotData[] = await comfyPage.page.evaluate(() => {
         const nodes = window.app!.graph._nodes
-        const slotData: Array<{
-          nodeId: string
-          isSubgraph: boolean
-          nodeW: number
-          nodeH: number
-          slots: Array<{
-            key: string
-            offsetX: number
-            offsetY: number
-          }>
-        }> = []
+        const slotData: NodeSlotData[] = []
 
         for (const node of nodes) {
           const nodeId = String(node.id)
@@ -73,11 +78,7 @@ test.describe(
           const slotEls = nodeEl.querySelectorAll('[data-slot-key]')
           if (slotEls.length === 0) continue
 
-          const slots: Array<{
-            key: string
-            offsetX: number
-            offsetY: number
-          }> = []
+          const slots: SlotMeasurement[] = []
 
           const nodeRect = nodeEl.getBoundingClientRect()
           for (const slotEl of slotEls) {
@@ -107,24 +108,23 @@ test.describe(
 
       for (const node of subgraphNodes) {
         for (const slot of node.slots) {
-          const margin = 20
           expect(
             slot.offsetX,
             `Slot ${slot.key} on node ${node.nodeId}: X offset ${slot.offsetX} outside node width ${node.nodeW}`
-          ).toBeGreaterThanOrEqual(-margin)
+          ).toBeGreaterThanOrEqual(-SLOT_BOUNDS_MARGIN)
           expect(
             slot.offsetX,
             `Slot ${slot.key} on node ${node.nodeId}: X offset ${slot.offsetX} outside node width ${node.nodeW}`
-          ).toBeLessThanOrEqual(node.nodeW + margin)
+          ).toBeLessThanOrEqual(node.nodeW + SLOT_BOUNDS_MARGIN)
 
           expect(
             slot.offsetY,
             `Slot ${slot.key} on node ${node.nodeId}: Y offset ${slot.offsetY} outside node height ${node.nodeH}`
-          ).toBeGreaterThanOrEqual(-margin)
+          ).toBeGreaterThanOrEqual(-SLOT_BOUNDS_MARGIN)
           expect(
             slot.offsetY,
             `Slot ${slot.key} on node ${node.nodeId}: Y offset ${slot.offsetY} outside node height ${node.nodeH}`
-          ).toBeLessThanOrEqual(node.nodeH + margin)
+          ).toBeLessThanOrEqual(node.nodeH + SLOT_BOUNDS_MARGIN)
         }
       }
     })
