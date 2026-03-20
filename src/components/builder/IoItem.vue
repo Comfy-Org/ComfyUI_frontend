@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import EditableText from '@/components/common/EditableText.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
@@ -58,7 +59,14 @@ const entries = computed(() => {
       <EditableText
         :model-value="title"
         :is-editing="isEditing"
-        class="drag-handle min-h-5 truncate text-sm"
+        :input-attrs="{ class: 'p-1' }"
+        :class="
+          cn(
+            'drag-handle h-5 text-sm',
+            isEditing && 'relative -top-0.5 -left-1 -mt-px mb-px -ml-px',
+            !isEditing && 'truncate'
+          )
+        "
         data-testid="builder-io-item-title"
         @dblclick="rename && (isEditing = true)"
         @edit="onEditComplete"
