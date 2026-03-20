@@ -441,44 +441,92 @@ jobs:
           # Build video cards and report sections
           CARDS=""
           ICONS_Linux="&#x1F427;" ICONS_macOS="&#x1F34E;" ICONS_Windows="&#x1FA9F;"
+          CARD_COUNT=0
           for os in Linux macOS Windows; do
             eval "ICON=\$ICONS_${os}"
             OS_LOWER=$(echo "$os" | tr '[:upper:]' '[:lower:]')
 
-            # Copy GPT report if available
             REPORT_FILE="video-reviews/${OS_LOWER}-qa-video-report.md"
             REPORT_LINK=""
             REPORT_HTML=""
             if [ -f "$REPORT_FILE" ]; then
               cp "$REPORT_FILE" "$DEPLOY_DIR/report-${OS_LOWER}.md"
-              REPORT_LINK="<a class=download href=report-${OS_LOWER}.md>AI Report</a>"
+              REPORT_LINK="<a class=dl href=report-${OS_LOWER}.md><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1=16 y1=13 x2=8 y2=13/><line x1=16 y1=17 x2=8 y2=17'/></svg>Report</a>"
 
-              # Embed raw markdown for client-side rendering
               REPORT_MD=$(cat "$REPORT_FILE" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-              REPORT_HTML="<details class=report><summary>AI Video Review</summary><div class=report-body data-md>${REPORT_MD}</div></details>"
+              REPORT_HTML="<details class=report><summary><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><circle cx=12 cy=12 r=10/><line x1=12 y1=16 x2=12 y2=12/><line x1=12 y1=8 x2=12.01 y2=8'/></svg> AI Video Review</summary><div class=report-body data-md>${REPORT_MD}</div></details>"
             fi
 
             if [ -f "$DEPLOY_DIR/qa-${os}.mp4" ]; then
-              CARDS="${CARDS}<div class=card><video controls autoplay muted loop preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video><div class=card-body><span class=platform><span class=icon>${ICON}</span> ${os}</span><span class=links><a class=download href=qa-${os}.mp4 download>Download</a>${REPORT_LINK}</span></div>${REPORT_HTML}</div>"
+              CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=video-wrap><video controls autoplay muted loop preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=card-body><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links><a class=dl href=qa-${os}.mp4 download><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1=12 y1=15 x2=12 y2=3'/></svg>Download</a>${REPORT_LINK}</span></div>${REPORT_HTML}</div>"
             else
-              CARDS="${CARDS}<div class=card><div class=empty-card>No recording available</div><div class=card-body><span class=platform><span class=icon>${ICON}</span> ${os}</span><span class='badge missing'>Missing</span></div></div>"
+              CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=empty-card><svg width=40 height=40 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=1.5 opacity=.3><rect x=2 y=2 width=20 height=20 rx=2.18 ry=2.18/><line x1=7 y1=2 x2=7 y2=22/><line x1=17 y1=2 x2=17 y2=22/><line x1=2 y1=12 x2=22 y2=12/><line x1=2 y1=7 x2=22 y2=7/><line x1=2 y1=17 x2=22 y2=17'/></svg><span>No recording</span></div><div class=card-body><span class=platform><span class=icon>${ICON}</span>${os}</span><span class='badge missing'>Missing</span></div></div>"
             fi
+            CARD_COUNT=$((CARD_COUNT + 1))
           done
 
           cat > "$DEPLOY_DIR/index.html" <<INDEXEOF
           <!DOCTYPE html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>QA Session Recordings</title>
+          <link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel=stylesheet>
           <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
           <style>
-          *{margin:0;padding:0;box-sizing:border-box}body{background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;min-height:100vh;padding:2rem 1rem}.container{max-width:1200px;margin:0 auto}header{display:flex;align-items:center;gap:.75rem;margin-bottom:2rem;padding-bottom:1rem;border-bottom:1px solid #30363d}h1{font-size:1.5rem;font-weight:600}.meta{color:#8b949e;font-size:.875rem;margin-top:.25rem}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.25rem}.card{background:#161b22;border:1px solid #30363d;border-radius:.5rem;overflow:hidden;transition:border-color .15s}.card:hover{border-color:#58a6ff}.card video{width:100%;display:block;background:#010409;aspect-ratio:16/9;object-fit:contain}.card-body{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between}.platform{display:flex;align-items:center;gap:.5rem;font-weight:500}.icon{font-size:1.25rem}.links{display:flex;gap:.75rem}.badge{font-size:.75rem;padding:.125rem .5rem;border-radius:999px;background:#1f6feb33;color:#58a6ff;border:1px solid #1f6feb55}.badge.missing{background:#da363333;color:#f85149;border-color:#da363355}.empty-card{display:flex;align-items:center;justify-content:center;min-height:200px;color:#484f58;font-size:.875rem}a.download{color:#58a6ff;text-decoration:none;font-size:.8125rem}a.download:hover{text-decoration:underline}.report{border-top:1px solid #30363d;padding:.75rem 1rem;font-size:.8125rem}.report summary{cursor:pointer;color:#8b949e;font-weight:500}.report summary:hover{color:#e6edf3}.report-body{margin-top:.75rem;line-height:1.6;color:#c9d1d9;overflow-x:auto}.report-body h1,.report-body h2{margin:1rem 0 .5rem;color:#e6edf3;font-size:1.1rem;border-bottom:1px solid #30363d;padding-bottom:.3rem}.report-body h3{margin:.75rem 0 .4rem;color:#e6edf3;font-size:.95rem}.report-body p{margin:.4rem 0}.report-body ul,.report-body ol{margin:.4rem 0 .4rem 1.5rem}.report-body li{margin:.2rem 0}.report-body code{background:#1f2937;padding:.1rem .3rem;border-radius:3px;font-size:.8rem}.report-body table{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.8rem}.report-body th,.report-body td{border:1px solid #30363d;padding:.4rem .6rem;text-align:left}.report-body th{background:#1c2128;color:#e6edf3;font-weight:600}.report-body tr:nth-child(even){background:#161b2266}.report-body strong{color:#e6edf3}.report-body hr{border:none;border-top:1px solid #30363d;margin:.75rem 0}
+          :root{--bg:oklch(8% 0.02 265);--surface:oklch(12% 0.02 265);--surface-up:oklch(16% 0.02 265);--fg:oklch(96% 0.01 95);--fg-muted:oklch(65% 0.01 265);--fg-dim:oklch(45% 0.01 265);--primary:oklch(62% 0.21 265);--primary-up:oklch(68% 0.21 265);--primary-glow:oklch(62% 0.15 265);--ok:oklch(62% 0.18 155);--err:oklch(62% 0.22 25);--border:oklch(22% 0.02 265);--border-faint:oklch(15% 0.01 265);--r:0.75rem;--r-lg:1rem;--ease-out:cubic-bezier(0.22,1,0.36,1);--dur-base:250ms;--dur-slow:500ms;--font:'Inter',system-ui,sans-serif;--font-mono:'JetBrains Mono',monospace}
+          *{margin:0;padding:0;box-sizing:border-box}
+          body{background:var(--bg);color:var(--fg);font-family:var(--font);min-height:100vh;padding:clamp(1.5rem,4vw,3rem) clamp(1rem,3vw,2rem);position:relative}
+          body::after{content:'';position:fixed;inset:0;pointer-events:none;opacity:.03;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+          .container{max-width:1200px;margin:0 auto}
+          header{display:flex;align-items:center;gap:1rem;margin-bottom:clamp(1.5rem,4vw,3rem);padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+          .header-icon{width:36px;height:36px;display:grid;place-items:center;background:linear-gradient(135deg,oklch(100% 0 0/.06),oklch(100% 0 0/.02));backdrop-filter:blur(12px);border:1px solid oklch(100% 0 0/.1);border-radius:var(--r);flex-shrink:0}
+          .header-icon svg{color:var(--primary)}
+          h1{font-size:clamp(1.25rem,2.5vw,1.625rem);font-weight:700;letter-spacing:-.03em;background:linear-gradient(135deg,var(--fg),var(--fg-muted));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+          .meta{color:var(--fg-dim);font-size:.8125rem;margin-top:.15rem;letter-spacing:.01em}
+          .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.5rem}
+          .card{background:linear-gradient(135deg,oklch(100% 0 0/.05),oklch(100% 0 0/.015));backdrop-filter:blur(16px) saturate(150%);border:1px solid oklch(100% 0 0/.08);border-radius:var(--r-lg);overflow:hidden;transition:border-color var(--dur-base) var(--ease-out),box-shadow var(--dur-base) var(--ease-out),transform var(--dur-base) var(--ease-out)}
+          .card:hover{border-color:oklch(100% 0 0/.16);box-shadow:0 8px 32px oklch(0% 0 0/.3),inset 0 1px 0 oklch(100% 0 0/.1);transform:translateY(-2px)}
+          .video-wrap{position:relative;background:oklch(4% 0.01 265);border-bottom:1px solid var(--border-faint)}
+          .video-wrap video{width:100%;display:block;aspect-ratio:16/9;object-fit:contain}
+          .card-body{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between}
+          .platform{display:flex;align-items:center;gap:.5rem;font-weight:600;font-size:.9375rem;letter-spacing:-.01em}
+          .icon{font-size:1.125rem}
+          .links{display:flex;gap:.5rem}
+          .dl{color:var(--fg-muted);text-decoration:none;font-size:.75rem;font-weight:500;display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .6rem;border-radius:9999px;border:1px solid var(--border);background:oklch(100% 0 0/.03);transition:all var(--dur-base) var(--ease-out)}
+          .dl:hover{color:var(--primary-up);border-color:var(--primary);background:oklch(62% 0.21 265/.08)}
+          .badge{font-size:.6875rem;font-weight:600;padding:.2rem .625rem;border-radius:9999px;text-transform:uppercase;letter-spacing:.05em}
+          .badge.missing{background:oklch(62% 0.22 25/.1);color:var(--err);border:1px solid oklch(62% 0.22 25/.2)}
+          .empty-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;min-height:200px;color:var(--fg-dim);font-size:.8125rem;background:oklch(4% 0.01 265)}
+          .report{border-top:1px solid var(--border-faint);padding:.75rem 1rem;font-size:.8125rem}
+          .report summary{cursor:pointer;color:var(--fg-muted);font-weight:500;display:flex;align-items:center;gap:.4rem;user-select:none;transition:color var(--dur-base) var(--ease-out)}
+          .report summary:hover{color:var(--fg)}
+          .report summary svg{flex-shrink:0;opacity:.5}
+          .report[open] summary{margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border-faint)}
+          .report-body{line-height:1.7;color:oklch(80% 0.01 265);overflow-x:auto}
+          .report-body h1,.report-body h2{margin:1.25rem 0 .5rem;color:var(--fg);font-size:1rem;font-weight:600;letter-spacing:-.02em;border-bottom:1px solid var(--border-faint);padding-bottom:.4rem}
+          .report-body h3{margin:.75rem 0 .4rem;color:var(--fg);font-size:.875rem;font-weight:600}
+          .report-body p{margin:.4rem 0}
+          .report-body ul,.report-body ol{margin:.4rem 0 .4rem 1.5rem}
+          .report-body li{margin:.25rem 0}
+          .report-body code{background:oklch(16% 0.02 265);padding:.125rem .375rem;border-radius:.25rem;font-size:.75rem;font-family:var(--font-mono);border:1px solid var(--border-faint)}
+          .report-body table{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.75rem;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+          .report-body th,.report-body td{border:1px solid var(--border-faint);padding:.5rem .75rem;text-align:left}
+          .report-body th{background:oklch(14% 0.02 265);color:var(--fg);font-weight:600;font-size:.6875rem;text-transform:uppercase;letter-spacing:.05em}
+          .report-body tr:nth-child(even){background:oklch(10% 0.01 265/.5)}
+          .report-body tr:hover{background:oklch(16% 0.02 265/.5)}
+          .report-body strong{color:var(--fg)}
+          .report-body hr{border:none;border-top:1px solid var(--border-faint);margin:1rem 0}
+          @keyframes fade-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+          .reveal{animation:fade-up var(--dur-slow) var(--ease-out) both;animation-delay:calc(var(--i,0) * 120ms)}
+          @media(prefers-reduced-motion:reduce){.reveal{animation:none}}
+          @media(max-width:480px){.grid{grid-template-columns:1fr}.card-body{flex-wrap:wrap;gap:.5rem}}
           </style></head><body><div class=container>
-          <header><svg width=28 height=28 viewBox="0 0 24 24" fill=none stroke=#58a6ff stroke-width=2 stroke-linecap=round stroke-linejoin=round><polygon points="23 7 16 12 23 17 23 7"/><rect x=1 y=5 width=15 height=14 rx=2 ry=2/></svg><div><h1>QA Session Recordings</h1><div class=meta>ComfyUI Frontend &middot; Automated QA</div></div></header>
+          <header><div class=header-icon><svg width=20 height=20 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2 stroke-linecap=round stroke-linejoin=round><polygon points="23 7 16 12 23 17 23 7"/><rect x=1 y=5 width=15 height=14 rx=2 ry=2/></svg></div><div><h1>QA Session Recordings</h1><div class=meta>ComfyUI Frontend &middot; Automated QA</div></div></header>
           <div class=grid>${CARDS}</div>
           </div><script>document.querySelectorAll('[data-md]').forEach(el=>{const t=el.textContent;el.removeAttribute('data-md');el.innerHTML=marked.parse(t)})</script></body></html>
           INDEXEOF
 
           cat > "$DEPLOY_DIR/404.html" <<'ERROREOF'
-          <!DOCTYPE html><html><head><meta charset=utf-8><title>404</title>
-          <style>body{background:#0d1117;color:#8b949e;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}div{text-align:center}h1{color:#f85149;font-size:3rem;margin-bottom:.5rem}p{font-size:1rem}</style>
+          <!DOCTYPE html><html lang=en><head><meta charset=utf-8><title>404</title>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel=stylesheet>
+          <style>:root{--bg:oklch(8% 0.02 265);--fg:oklch(45% 0.01 265);--err:oklch(62% 0.22 25)}*{margin:0;padding:0;box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}div{text-align:center}h1{color:var(--err);font-size:clamp(3rem,8vw,5rem);font-weight:700;letter-spacing:-.04em;margin-bottom:.5rem}p{font-size:1rem;max-width:32ch;line-height:1.5}</style>
           </head><body><div><h1>404</h1><p>File not found. The QA recording may have failed or been cancelled.</p></div></body></html>
           ERROREOF
 
