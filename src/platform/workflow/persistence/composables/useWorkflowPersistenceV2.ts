@@ -174,6 +174,7 @@ export function useWorkflowPersistenceV2() {
     if (!workflowPersistenceEnabled.value) return
 
     try {
+      await workflowStore.loadWorkflows()
       const restored = await loadPreviousWorkflowFromStorage()
       if (!restored) {
         await loadDefaultWorkflow()
@@ -256,6 +257,8 @@ export function useWorkflowPersistenceV2() {
       tabStateRestored = true
       return
     }
+
+    await workflowStore.loadWorkflows()
 
     // Read storage fresh at restore time, not at composable init,
     // to ensure workspace is properly determined
