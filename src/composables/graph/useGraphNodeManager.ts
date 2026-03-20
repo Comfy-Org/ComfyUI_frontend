@@ -6,6 +6,7 @@ import { reactiveComputed } from '@vueuse/core'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -224,19 +225,21 @@ function safeWidgetMapper(
   function resolvePromotedSourceByInputName(inputName: string): {
     sourceNodeId: string
     sourceWidgetName: string
+    disambiguatingSourceNodeId?: string
   } | null {
     const resolvedTarget = resolveSubgraphInputTarget(node, inputName)
     if (!resolvedTarget) return null
 
     return {
       sourceNodeId: resolvedTarget.nodeId,
-      sourceWidgetName: resolvedTarget.widgetName
+      sourceWidgetName: resolvedTarget.widgetName,
+      disambiguatingSourceNodeId: resolvedTarget.sourceNodeId
     }
   }
 
   function resolvePromotedWidgetIdentity(widget: IBaseWidget): {
     displayName: string
-    promotedSource: { sourceNodeId: string; sourceWidgetName: string } | null
+    promotedSource: PromotedWidgetSource | null
   } {
     if (!isPromotedWidgetView(widget)) {
       return {
@@ -250,7 +253,8 @@ function safeWidgetMapper(
     const displayName = promotedInputName ?? widget.name
     const directSource = {
       sourceNodeId: widget.sourceNodeId,
-      sourceWidgetName: widget.sourceWidgetName
+      sourceWidgetName: widget.sourceWidgetName,
+      disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
     }
     const promotedSource =
       matchedInput?._widget === widget
@@ -297,7 +301,8 @@ function safeWidgetMapper(
           ? resolveConcretePromotedWidget(
               node,
               promotedSource.sourceNodeId,
-              promotedSource.sourceWidgetName
+              promotedSource.sourceWidgetName,
+              promotedSource.disambiguatingSourceNodeId
             )
           : null
       const resolvedSource =
@@ -310,7 +315,11 @@ function safeWidgetMapper(
       const effectiveWidget = sourceWidget ?? widget
 
       const localId = isPromotedWidgetView(widget)
-        ? String(sourceNode?.id ?? promotedSource?.sourceNodeId)
+        ? String(
+            sourceNode?.id ??
+              promotedSource?.disambiguatingSourceNodeId ??
+              promotedSource?.sourceNodeId
+          )
         : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined
