@@ -79,7 +79,9 @@ export async function getOutputsForTask(
 
 function getPreviewableOutputs(outputs?: TaskOutput): ResultItemImpl[] {
   if (!outputs) return []
-  return ResultItemImpl.filterPreviewable(parseTaskOutput(outputs))
+  return ResultItemImpl.filterPreviewable(parseTaskOutput(outputs)).filter(
+    (i) => i.filename
+  )
 }
 
 export function getPreviewableOutputsFromJobDetail(
