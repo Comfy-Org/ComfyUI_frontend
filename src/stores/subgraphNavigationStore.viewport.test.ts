@@ -240,15 +240,15 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     it('should save/restore viewports correctly across multiple subgraphs', () => {
       const navigationStore = useSubgraphNavigationStore()
 
-      navigationStore.viewportCache.set('root', {
+      navigationStore.viewportCache.set(':root', {
         scale: 1,
         offset: [0, 0]
       })
-      navigationStore.viewportCache.set('sub-1', {
+      navigationStore.viewportCache.set(':sub-1', {
         scale: 2,
         offset: [100, 200]
       })
-      navigationStore.viewportCache.set('sub-2', {
+      navigationStore.viewportCache.set(':sub-2', {
         scale: 0.5,
         offset: [-50, -75]
       })
