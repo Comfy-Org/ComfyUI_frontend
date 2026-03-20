@@ -259,6 +259,9 @@ let activeJobCountAtDisconnect = 0
 const onReconnecting = () => {
   if (disconnectedAt === null) {
     disconnectedAt = Date.now()
+    // Includes pending + running tasks. Pending tasks matter because their
+    // pending→running transition is delivered via WebSocket — if the connection
+    // drops while tasks are queued, the user never sees them start.
     activeJobCountAtDisconnect = queueStore.activeJobsCount
   }
   if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
