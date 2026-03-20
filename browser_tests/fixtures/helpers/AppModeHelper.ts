@@ -68,6 +68,41 @@ export class AppModeHelper {
     await this.comfyPage.nextFrame()
   }
 
+  /**
+   * Inject linearData into the current graph and enter app mode.
+   *
+   * Serializes the graph, injects linearData with the given inputs and
+   * auto-detected output node IDs, then reloads so the appModeStore
+   * picks up the data via its activeWorkflow watcher.
+   *
+   * @param inputs - Widget selections as [nodeId, widgetName] tuples
+   */
+  async enterAppModeWithInputs(inputs: [string, string][]) {
+    await this.page.evaluate(async (inputTuples) => {
+      const graph = window.app!.graph
+      if (!graph) return
+
+      const outputNodeIds = graph.nodes
+        .filter(
+          (n: { type?: string }) =>
+            n.type === 'SaveImage' || n.type === 'PreviewImage'
+        )
+        .map((n: { id: number | string }) => String(n.id))
+
+      const workflow = graph.serialize() as unknown as Record<string, unknown>
+      const extra = (workflow.extra ?? {}) as Record<string, unknown>
+      extra.linearData = { inputs: inputTuples, outputs: outputNodeIds }
+      workflow.extra = extra
+      await window.app!.loadGraphData(
+        workflow as unknown as Parameters<
+          NonNullable<typeof window.app>['loadGraphData']
+        >[0]
+      )
+    }, inputs)
+    await this.comfyPage.nextFrame()
+    await this.toggleAppMode()
+  }
+
   /** The linear-mode widget list container (visible in app mode). */
   get linearWidgets(): Locator {
     return this.page.locator('[data-testid="linear-widgets"]')
