@@ -393,11 +393,39 @@ jobs:
             fi
           done
 
+      - name: Build PR context for video review
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM="${{ github.event.pull_request.number || '' }}"
+          if [ -n "$PR_NUM" ]; then
+            {
+              echo "### PR #${PR_NUM}"
+              gh pr view "$PR_NUM" --repo "${{ github.repository }}" \
+                --json title,body --jq '"Title: \(.title)\n\nDescription:\n\(.body)"' 2>/dev/null || true
+              echo ""
+              echo "### Changed files"
+              gh pr diff "$PR_NUM" --repo "${{ github.repository }}" 2>/dev/null \
+                | grep '^diff --git' | sed 's|diff --git a/||;s| b/.*||' | sort -u || true
+              echo ""
+              echo "### Diff (truncated to 300 lines)"
+              gh pr diff "$PR_NUM" --repo "${{ github.repository }}" 2>/dev/null \
+                | head -300 || true
+            } > pr-context.txt
+            echo "PR context saved ($(wc -l < pr-context.txt) lines)"
+          else
+            echo "No PR number available, skipping PR context"
+          fi
+
       - name: Run video review
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           mkdir -p video-reviews
+          PR_CTX_FLAG=""
+          if [ -f pr-context.txt ]; then
+            PR_CTX_FLAG="--pr-context pr-context.txt"
+          fi
           for vid in qa-artifacts/qa-report-*/qa-session.mp4; do
             [ -f "$vid" ] || continue
             echo "::group::Reviewing $vid"
@@ -405,7 +433,7 @@ jobs:
               --artifacts-dir qa-artifacts \
               --output-dir video-reviews \
               --video-file "$vid" \
-              --model gemini-2.5-flash || true
+              --model gemini-2.5-flash $PR_CTX_FLAG || true
             echo "::endgroup::"
           done
 
@@ -458,11 +486,9 @@ jobs:
             fi
 
             if [ -f "$DEPLOY_DIR/qa-${os}.mp4" ]; then
-              CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=video-wrap><video controls autoplay muted loop preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=card-body><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links><a class=dl href=qa-${os}.mp4 download><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1=12 y1=15 x2=12 y2=3'/></svg>Download</a>${REPORT_LINK}</span></div>${REPORT_HTML}</div>"
-            else
-              CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=empty-card><svg width=40 height=40 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=1.5 opacity=.3><rect x=2 y=2 width=20 height=20 rx=2.18 ry=2.18/><line x1=7 y1=2 x2=7 y2=22/><line x1=17 y1=2 x2=17 y2=22/><line x1=2 y1=12 x2=22 y2=12/><line x1=2 y1=7 x2=22 y2=7/><line x1=2 y1=17 x2=22 y2=17'/></svg><span>No recording</span></div><div class=card-body><span class=platform><span class=icon>${ICON}</span>${os}</span><span class='badge missing'>Missing</span></div></div>"
+              CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=card-body><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links><a class=dl href=qa-${os}.mp4 download><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1=12 y1=15 x2=12 y2=3'/></svg>Download</a>${REPORT_LINK}</span></div>${REPORT_HTML}</div>"
+              CARD_COUNT=$((CARD_COUNT + 1))
             fi
-            CARD_COUNT=$((CARD_COUNT + 1))
           done
 
           cat > "$DEPLOY_DIR/index.html" <<INDEXEOF
@@ -480,7 +506,7 @@ jobs:
           .header-icon svg{color:var(--primary)}
           h1{font-size:clamp(1.25rem,2.5vw,1.625rem);font-weight:700;letter-spacing:-.03em;background:linear-gradient(135deg,var(--fg),var(--fg-muted));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
           .meta{color:var(--fg-dim);font-size:.8125rem;margin-top:.15rem;letter-spacing:.01em}
-          .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.5rem}
+          .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(480px,100%),1fr));gap:1.5rem}
           .card{background:linear-gradient(135deg,oklch(100% 0 0/.05),oklch(100% 0 0/.015));backdrop-filter:blur(16px) saturate(150%);border:1px solid oklch(100% 0 0/.08);border-radius:var(--r-lg);overflow:hidden;transition:border-color var(--dur-base) var(--ease-out),box-shadow var(--dur-base) var(--ease-out),transform var(--dur-base) var(--ease-out)}
           .card:hover{border-color:oklch(100% 0 0/.16);box-shadow:0 8px 32px oklch(0% 0 0/.3),inset 0 1px 0 oklch(100% 0 0/.1);transform:translateY(-2px)}
           .video-wrap{position:relative;background:oklch(4% 0.01 265);border-bottom:1px solid var(--border-faint)}
@@ -492,8 +518,6 @@ jobs:
           .dl{color:var(--fg-muted);text-decoration:none;font-size:.75rem;font-weight:500;display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .6rem;border-radius:9999px;border:1px solid var(--border);background:oklch(100% 0 0/.03);transition:all var(--dur-base) var(--ease-out)}
           .dl:hover{color:var(--primary-up);border-color:var(--primary);background:oklch(62% 0.21 265/.08)}
           .badge{font-size:.6875rem;font-weight:600;padding:.2rem .625rem;border-radius:9999px;text-transform:uppercase;letter-spacing:.05em}
-          .badge.missing{background:oklch(62% 0.22 25/.1);color:var(--err);border:1px solid oklch(62% 0.22 25/.2)}
-          .empty-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;min-height:200px;color:var(--fg-dim);font-size:.8125rem;background:oklch(4% 0.01 265)}
           .report{border-top:1px solid var(--border-faint);padding:.75rem 1rem;font-size:.8125rem}
           .report summary{cursor:pointer;color:var(--fg-muted);font-weight:500;display:flex;align-items:center;gap:.4rem;user-select:none;transition:color var(--dur-base) var(--ease-out)}
           .report summary:hover{color:var(--fg)}
