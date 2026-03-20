@@ -19,9 +19,10 @@ on:
         options: [focused, full]
         default: focused
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# TODO: restore concurrency group before merge (stuck-run issue on dev branches)
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: true
 
 jobs:
   resolve-matrix:
