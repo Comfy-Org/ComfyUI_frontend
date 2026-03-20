@@ -206,6 +206,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
       '10',
       'prompt',
       'value',
+      undefined,
       'value'
     )
 

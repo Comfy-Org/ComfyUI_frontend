@@ -145,6 +145,7 @@ describe(createPromotedWidgetView, () => {
       '1',
       'myWidget',
       'Custom Label',
+      undefined,
       'my_slot'
     )
     expect(view.name).toBe('my_slot')
