@@ -13,6 +13,7 @@ interface CliOptions {
   model: string
   requestTimeoutMs: number
   dryRun: boolean
+  prContext: string
 }
 
 interface VideoCandidate {
@@ -27,7 +28,8 @@ const DEFAULT_OPTIONS: CliOptions = {
   outputDir: './tmp',
   model: 'gemini-2.5-flash',
   requestTimeoutMs: 300_000,
-  dryRun: false
+  dryRun: false,
+  prContext: ''
 }
 
 const USAGE = `Usage:
@@ -44,6 +46,8 @@ Options:
                                  (default: gemini-2.5-flash)
   --request-timeout-ms <n>      Request timeout in milliseconds
                                  (default: 300000)
+  --pr-context <file>           File with PR context (title, body, diff)
+                                 for PR-aware review
   --dry-run                     Discover videos and output targets only
   --help                        Show this help text
 
@@ -103,6 +107,11 @@ function parseCliOptions(args: string[]): CliOptions {
         requireValue(argument),
         argument
       )
+      continue
+    }
+
+    if (argument === '--pr-context') {
+      options.prContext = requireValue(argument)
       continue
     }
 
@@ -270,26 +279,54 @@ function getMimeType(filePath: string): string {
   return mimeMap[ext] || 'video/mp4'
 }
 
-function buildReviewPrompt(platformName: string, videoPath: string): string {
-  return [
+function buildReviewPrompt(
+  platformName: string,
+  videoPath: string,
+  prContext: string
+): string {
+  const basePrompt = [
     'You are a senior QA engineer reviewing a UI test session recording.',
-    'Report only concrete, visible problems and avoid speculation.',
-    'If confidence is low, mark it explicitly.',
-    '',
+    ''
+  ]
+
+  if (prContext) {
+    basePrompt.push(
+      '## PR Context',
+      'The video is a QA session testing a specific pull request.',
+      'Your review MUST evaluate whether the PR achieves its stated purpose.',
+      '',
+      prContext,
+      '',
+      '## Review Instructions',
+      "1. Does the video demonstrate the PR's intended behavior working correctly?",
+      '2. Are there regressions or side effects caused by the PR changes?',
+      '3. Does the observed behavior match what the PR claims to implement/fix?',
+      ''
+    )
+  }
+
+  basePrompt.push(
     `Review this QA session video for platform "${platformName}".`,
     `Source video: ${toProjectRelativePath(videoPath)}.`,
     'The video shows the full test session — analyze it chronologically.',
     'Focus on UI regressions, broken states, visual glitches, unreadable text, missing labels/i18n, and clear workflow failures.',
     'Note: Brief black frames during page transitions are NORMAL and should NOT be reported as issues.',
+    'Report only concrete, visible problems and avoid speculation.',
+    'If confidence is low, mark it explicitly.',
     '',
     'Return markdown with these sections exactly:',
     '## Summary',
+    prContext
+      ? '(Explain what the PR intended and whether the video confirms it works)'
+      : '',
     '## Confirmed Issues',
     '## Possible Issues (Needs Human Verification)',
     '## Overall Risk',
     'Under Confirmed Issues include a markdown table with columns:',
     'Severity | Timestamp | Issue | Evidence | Confidence | Suggested Fix'
-  ].join('\n')
+  )
+
+  return basePrompt.filter(Boolean).join('\n')
 }
 
 async function requestGeminiReview(options: {
@@ -298,6 +335,7 @@ async function requestGeminiReview(options: {
   platformName: string
   videoPath: string
   timeoutMs: number
+  prContext: string
 }): Promise<string> {
   const genAI = new GoogleGenerativeAI(options.apiKey)
   const model = genAI.getGenerativeModel({ model: options.model })
@@ -305,7 +343,11 @@ async function requestGeminiReview(options: {
   const videoBuffer = await readFile(options.videoPath)
   const base64Video = videoBuffer.toString('base64')
   const mimeType = getMimeType(options.videoPath)
-  const prompt = buildReviewPrompt(options.platformName, options.videoPath)
+  const prompt = buildReviewPrompt(
+    options.platformName,
+    options.videoPath,
+    options.prContext
+  )
 
   const result = await model.generateContent([
     { text: prompt },
@@ -360,6 +402,20 @@ async function reviewVideo(
   options: CliOptions,
   apiKey: string
 ): Promise<void> {
+  let prContext = ''
+  if (options.prContext) {
+    try {
+      prContext = await readFile(options.prContext, 'utf-8')
+      process.stdout.write(
+        `[${video.platformName}] Loaded PR context from ${options.prContext}\n`
+      )
+    } catch {
+      process.stdout.write(
+        `[${video.platformName}] Warning: Could not read PR context file ${options.prContext}\n`
+      )
+    }
+  }
+
   process.stdout.write(
     `[${video.platformName}] Sending video ${toProjectRelativePath(video.videoPath)} to ${options.model}\n`
   )
@@ -369,7 +425,8 @@ async function reviewVideo(
     model: options.model,
     platformName: video.platformName,
     videoPath: video.videoPath,
-    timeoutMs: options.requestTimeoutMs
+    timeoutMs: options.requestTimeoutMs,
+    prContext
   })
 
   const videoStat = await stat(video.videoPath)
