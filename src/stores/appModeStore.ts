@@ -65,20 +65,6 @@ export const useAppModeStore = defineStore('appMode', () => {
     loadSelections(activeWorkflow.changeTracker?.activeState?.extra?.linearData)
   }
 
-  watch(
-    () => workflowStore.activeWorkflow,
-    (newWorkflow) => {
-      if (newWorkflow) {
-        loadSelections(
-          newWorkflow.changeTracker?.activeState?.extra?.linearData
-        )
-      } else {
-        loadSelections(undefined)
-      }
-    },
-    { immediate: true }
-  )
-
   useEventListener(
     () => app.rootGraph?.events,
     'configured',
@@ -155,6 +141,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     exitBuilder,
     hasNodes,
     hasOutputs,
+    loadSelections,
     pruneLinearData,
     removeSelectedInput,
     resetSelectedToWorkflow,
