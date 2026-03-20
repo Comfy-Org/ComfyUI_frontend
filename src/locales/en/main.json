@@ -37,6 +37,7 @@
     "viewGrid": "Grid view",
     "viewGallery": "Gallery view",
     "imageCount": "{count} images | {count} image | {count} images",
+    "imageGallery": "image gallery",
     "galleryImage": "Gallery image",
     "galleryThumbnail": "Gallery thumbnail",
     "previousImage": "Previous image",

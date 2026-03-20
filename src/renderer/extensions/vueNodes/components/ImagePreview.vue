@@ -66,7 +66,8 @@
       v-if="viewMode === 'gallery'"
       class="relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-sm bg-transparent"
       tabindex="0"
-      role="img"
+      role="region"
+      :aria-roledescription="$t('g.imageGallery')"
       :aria-label="$t('g.imagePreview')"
       :aria-busy="showLoader"
       @mouseenter="handleMouseEnter"
@@ -162,7 +163,7 @@
       v-if="viewMode === 'gallery'"
       class="pt-2 text-center text-xs text-base-foreground"
     >
-      <span v-if="imageError" class="text-red-400">
+      <span v-if="imageError" class="text-error">
         {{ $t('g.errorLoadingImage') }}
       </span>
       <span v-else-if="showLoader" class="text-base-foreground">
@@ -234,7 +235,7 @@ interface ImagePreviewProps {
   readonly nodeId?: string
 }
 
-const props = defineProps<ImagePreviewProps>()
+const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
@@ -246,9 +247,12 @@ const actionButtonClass =
 
 type ViewMode = 'gallery' | 'grid'
 
-// Component state
+function defaultViewMode(urls: readonly string[]): ViewMode {
+  return urls.length > 1 ? 'grid' : 'gallery'
+}
+
 const currentIndex = ref(0)
-const viewMode = ref<ViewMode>(props.imageUrls.length > 1 ? 'grid' : 'gallery')
+const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
 const isHovered = ref(false)
 const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
@@ -264,22 +268,23 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   { immediate: false }
 )
 
-// Computed values
-const currentImageUrl = computed(
-  () => props.imageUrls[currentIndex.value] ?? ''
+const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
+const hasMultipleImages = computed(() => imageUrls.length > 1)
+const imageAltText = computed(() =>
+  t('g.viewImageOfTotal', {
+    index: currentIndex.value + 1,
+    total: imageUrls.length
+  })
 )
-const hasMultipleImages = computed(() => props.imageUrls.length > 1)
-const imageAltText = computed(() => `Node output ${currentIndex.value + 1}`)
 const gridCols = computed(() => {
-  const count = props.imageUrls.length
+  const count = imageUrls.length
   if (count <= 4) return 2
   if (count <= 9) return 3
   return 4
 })
 
-// Watch for URL changes and reset state
 watch(
-  () => props.imageUrls,
+  () => imageUrls,
   (newUrls, oldUrls) => {
     // Only reset state if URLs actually changed (not just array reference)
     const urlsChanged =
@@ -297,15 +302,14 @@ watch(
     // Reset loading and error states when URLs change
     actualDimensions.value = null
 
-    viewMode.value = newUrls.length > 1 ? 'grid' : 'gallery'
+    viewMode.value = defaultViewMode(newUrls)
     imageError.value = false
     if (newUrls.length > 0) startDelayedLoader()
   },
   { immediate: true }
 )
 
-// Event handlers
-const handleImageLoad = (event: Event) => {
+function handleImageLoad(event: Event) {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
   stopDelayedLoader()
@@ -315,26 +319,26 @@ const handleImageLoad = (event: Event) => {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
 
-  if (props.nodeId) {
-    nodeOutputStore.syncLegacyNodeImgs(props.nodeId, img, currentIndex.value)
+  if (nodeId) {
+    nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)
   }
 }
 
-const handleImageError = () => {
+function handleImageError() {
   stopDelayedLoader()
   showLoader.value = false
   imageError.value = true
   actualDimensions.value = null
 }
 
-const handleEditMask = () => {
-  if (!props.nodeId) return
-  const node = resolveNode(Number(props.nodeId))
+function handleEditMask() {
+  if (!nodeId) return
+  const node = resolveNode(Number(nodeId))
   if (!node) return
   maskEditor.openMaskEditor(node)
 }
 
-const handleDownload = () => {
+function handleDownload() {
   try {
     downloadFile(currentImageUrl.value)
   } catch {
@@ -346,10 +350,10 @@ const handleDownload = () => {
   }
 }
 
-const handleRemove = () => {
-  if (!props.nodeId) return
-  const node = resolveNode(Number(props.nodeId))
-  nodeOutputStore.removeNodeOutputs(props.nodeId)
+function handleRemove() {
+  if (!nodeId) return
+  const node = resolveNode(Number(nodeId))
+  nodeOutputStore.removeNodeOutputs(nodeId)
   if (node) {
     node.imgs = undefined
     const imageWidget = node.widgets?.find((w) => w.name === 'image')
@@ -359,10 +363,10 @@ const handleRemove = () => {
   }
 }
 
-const setCurrentIndex = (index: number) => {
+function setCurrentIndex(index: number) {
   if (currentIndex.value === index) return
-  if (index >= 0 && index < props.imageUrls.length) {
-    const urlChanged = props.imageUrls[index] !== currentImageUrl.value
+  if (index >= 0 && index < imageUrls.length) {
+    const urlChanged = imageUrls[index] !== currentImageUrl.value
     currentIndex.value = index
     imageError.value = false
     if (urlChanged) startDelayedLoader()
@@ -374,22 +378,27 @@ function openImageInGallery(index: number) {
   viewMode.value = 'gallery'
 }
 
-const handleMouseEnter = () => {
+function handleMouseEnter() {
   isHovered.value = true
 }
 
-const handleMouseLeave = () => {
+function handleMouseLeave() {
   isHovered.value = false
 }
 
-const handleFocusIn = () => {
+function handleFocusIn() {
   isFocused.value = true
 }
 
-const handleFocusOut = (event: FocusEvent) => {
-  // Only unfocus if focus is leaving the container entirely
-  const container = event.currentTarget as HTMLElement | null
-  if (!container?.contains(event.relatedTarget as Node)) {
+function handleFocusOut(event: FocusEvent) {
+  const container = event.currentTarget
+  if (
+    !(container instanceof HTMLElement) ||
+    !(
+      event.relatedTarget instanceof Node &&
+      container.contains(event.relatedTarget)
+    )
+  ) {
     isFocused.value = false
   }
 }
@@ -403,24 +412,20 @@ function getNavigationDotClass(index: number) {
   )
 }
 
-const handleKeyDown = (event: KeyboardEvent) => {
-  if (props.imageUrls.length <= 1 || viewMode.value === 'grid') return
+function handleKeyDown(event: KeyboardEvent) {
+  if (imageUrls.length <= 1 || viewMode.value === 'grid') return
 
   switch (event.key) {
     case 'ArrowLeft':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value > 0
-          ? currentIndex.value - 1
-          : props.imageUrls.length - 1
+        currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
       )
       break
     case 'ArrowRight':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value < props.imageUrls.length - 1
-          ? currentIndex.value + 1
-          : 0
+        currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
       )
       break
     case 'Home':
@@ -429,12 +434,12 @@ const handleKeyDown = (event: KeyboardEvent) => {
       break
     case 'End':
       event.preventDefault()
-      setCurrentIndex(props.imageUrls.length - 1)
+      setCurrentIndex(imageUrls.length - 1)
       break
   }
 }
 
-const getImageFilename = (url: string): string => {
+function getImageFilename(url: string): string {
   if (!url) return t('g.imageDoesNotExist')
   try {
     return new URL(url).searchParams.get('filename') || t('g.unknownFile')
