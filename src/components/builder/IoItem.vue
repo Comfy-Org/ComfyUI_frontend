@@ -2,24 +2,35 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import EditableText from '@/components/common/EditableText.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 
 const { t } = useI18n()
 
-const titleTooltip = ref<string | null>(null)
 const subTitleTooltip = ref<string | null>(null)
+const isEditing = ref(false)
 
 function isTruncated(e: MouseEvent): boolean {
   const el = e.currentTarget as HTMLElement
   return el.scrollWidth > el.clientWidth
 }
-const { rename, remove } = defineProps<{
+const { title, rename, remove } = defineProps<{
   title: string
   subTitle?: string
   rename?: () => void
   remove?: () => void
 }>()
+
+const emit = defineEmits<{
+  rename: [newName: string]
+}>()
+
+function onEditComplete(newName: string) {
+  isEditing.value = false
+  const trimmed = newName.trim()
+  if (trimmed && trimmed !== title) emit('rename', trimmed)
+}
 
 const entries = computed(() => {
   const items = []
@@ -44,12 +55,14 @@ const entries = computed(() => {
     data-testid="builder-io-item"
   >
     <div class="drag-handle mr-auto flex min-w-0 flex-col gap-1">
-      <div
-        v-tooltip.left="{ value: titleTooltip, showDelay: 300 }"
-        class="drag-handle truncate text-sm"
+      <EditableText
+        :model-value="title"
+        :is-editing="isEditing"
+        class="drag-handle min-h-5 truncate text-sm"
         data-testid="builder-io-item-title"
-        @mouseenter="titleTooltip = isTruncated($event) ? title : null"
-        v-text="title"
+        @dblclick="rename && (isEditing = true)"
+        @edit="onEditComplete"
+        @cancel="isEditing = false"
       />
       <div
         v-tooltip.left="{ value: subTitleTooltip, showDelay: 300 }"

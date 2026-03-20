@@ -25,7 +25,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
-import { promptRenameWidget } from '@/utils/widgetUtil'
+import { promptRenameWidget, renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
@@ -73,6 +73,16 @@ const outputsWithState = computed<[NodeId, string][]>(() =>
     app.rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
   ])
 )
+
+function inlineRenameInput(
+  nodeId: NodeId,
+  widgetName: string,
+  newLabel: string
+) {
+  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
+  if (!node || !widget) return
+  renameWidget(widget, node, newLabel)
+}
 
 function getHovered(
   e: MouseEvent
@@ -250,6 +260,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
                   ([id, name]) => nodeId == id && widgetName === name
                 )
             "
+            @rename="inlineRenameInput(nodeId, widgetName, $event)"
           />
         </DraggableList>
       </PropertiesAccordionItem>
