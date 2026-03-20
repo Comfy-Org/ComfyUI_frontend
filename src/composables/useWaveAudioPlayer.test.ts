@@ -3,13 +3,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
 
-vi.mock('@vueuse/core', () => ({
-  useMediaControls: () => ({
-    playing: ref(false),
-    currentTime: ref(0),
-    duration: ref(0)
-  })
-}))
+vi.mock('@vueuse/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return {
+    ...actual,
+    useMediaControls: () => ({
+      playing: ref(false),
+      currentTime: ref(0),
+      duration: ref(0)
+    })
+  }
+})
 
 const mockFetchApi = vi.fn()
 const originalAudioContext = globalThis.AudioContext
@@ -99,5 +103,28 @@ describe('useWaveAudioPlayer', () => {
     )
     expect(mockDecodeAudioData).toHaveBeenCalled()
     expect(bars.value).toHaveLength(10)
+  })
+
+  it('clears blobUrl and shows placeholder bars when fetch fails', async () => {
+    mockFetchApi.mockRejectedValue(new Error('Network error'))
+
+    const src = ref('/api/view?filename=audio.wav&type=output')
+    const { bars, loading, audioSrc } = useWaveAudioPlayer({
+      src,
+      barCount: 10
+    })
+
+    await vi.waitFor(() => {
+      expect(loading.value).toBe(false)
+    })
+
+    expect(bars.value).toHaveLength(10)
+    expect(audioSrc.value).toBe('/api/view?filename=audio.wav&type=output')
+  })
+
+  it('does not call decodeAudioSource when src is empty', () => {
+    const src = ref('')
+    useWaveAudioPlayer({ src })
+    expect(mockFetchApi).not.toHaveBeenCalled()
   })
 })

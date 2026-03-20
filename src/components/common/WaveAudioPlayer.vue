@@ -6,6 +6,7 @@
       cn('flex w-full gap-2', align === 'center' ? 'items-center' : 'items-end')
     "
     @pointerdown.stop
+    @click.stop
   >
     <Button
       variant="textonly"
@@ -38,7 +39,7 @@
         :key="index"
         :class="
           cn(
-            'flex-1 rounded-full',
+            'min-h-0.5 flex-1 rounded-full',
             loading
               ? 'bg-muted-foreground/20'
               : index <= playedBarIndex
@@ -46,10 +47,7 @@
                 : 'bg-muted-foreground/40'
           )
         "
-        :style="{
-          height: (bar.height / 100) * height + 'px',
-          minHeight: '2px'
-        }"
+        :style="{ height: (bar.height / 100) * height + 'px' }"
       />
     </div>
 
@@ -59,7 +57,7 @@
   </div>
 
   <!-- Expanded: waveform / progress bar + times / transport -->
-  <div v-else class="flex w-full flex-col gap-4" @pointerdown.stop>
+  <div v-else class="flex w-full flex-col gap-4" @pointerdown.stop @click.stop>
     <div
       class="flex w-full items-center gap-0.5"
       :style="{ height: height + 'px' }"
@@ -69,14 +67,11 @@
         :key="index"
         :class="
           cn(
-            'flex-1 rounded-full',
+            'min-h-0.5 flex-1 rounded-full',
             loading ? 'bg-muted-foreground/20' : 'bg-base-foreground'
           )
         "
-        :style="{
-          height: (bar.height / 100) * height + 'px',
-          minHeight: '2px'
-        }"
+        :style="{ height: (bar.height / 100) * height + 'px' }"
       />
     </div>
 

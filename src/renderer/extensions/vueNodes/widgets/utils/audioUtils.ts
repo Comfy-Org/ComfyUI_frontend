@@ -1,8 +1,6 @@
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 
-export { formatTime } from '@/utils/formatUtil'
-
 export function getResourceURL(
   subfolder: string,
   filename: string,

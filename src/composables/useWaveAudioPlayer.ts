@@ -1,5 +1,5 @@
-import { useMediaControls } from '@vueuse/core'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { useMediaControls, whenever } from '@vueuse/core'
+import { computed, onUnmounted, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { api } from '@/scripts/api'
@@ -35,7 +35,9 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
   const formattedCurrentTime = computed(() => formatTime(currentTime.value))
   const formattedDuration = computed(() => formatTime(duration.value))
 
-  const audioSrc = computed(() => blobUrl.value ?? src.value)
+  const audioSrc = computed(() =>
+    src.value ? (blobUrl.value ?? src.value) : ''
+  )
 
   function generatePlaceholderBars(): WaveformBar[] {
     return Array.from({ length: barCount }, () => ({
@@ -100,6 +102,10 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
       generateBarsFromBuffer(audioBuffer)
     } catch {
       if (requestId === decodeRequestId) {
+        if (blobUrl.value) {
+          URL.revokeObjectURL(blobUrl.value)
+          blobUrl.value = undefined
+        }
         bars.value = generatePlaceholderBars()
       }
     } finally {
@@ -157,21 +163,23 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     }
   }
 
-  watch(
+  whenever(
     src,
     (url) => {
-      if (url) {
-        playing.value = false
-        currentTime.value = 0
-        void decodeAudioSource(url)
-      }
+      playing.value = false
+      currentTime.value = 0
+      void decodeAudioSource(url)
     },
     { immediate: true }
   )
 
   onUnmounted(() => {
+    decodeRequestId += 1
     audioRef.value?.pause()
-    if (blobUrl.value) URL.revokeObjectURL(blobUrl.value)
+    if (blobUrl.value) {
+      URL.revokeObjectURL(blobUrl.value)
+      blobUrl.value = undefined
+    }
   })
 
   return {
