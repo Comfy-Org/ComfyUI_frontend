@@ -26,6 +26,11 @@ interface RunControlsDragData {
   sourceZone: string
 }
 
+interface PresetStripDragData {
+  type: 'zone-preset-strip'
+  sourceZone: string
+}
+
 function isWidgetDragData(
   data: Record<string | symbol, unknown>
 ): data is Record<string | symbol, unknown> & WidgetDragData {
@@ -42,6 +47,12 @@ function isRunControlsDragData(
   data: Record<string | symbol, unknown>
 ): data is Record<string | symbol, unknown> & RunControlsDragData {
   return data.type === 'zone-run-controls'
+}
+
+function isPresetStripDragData(
+  data: Record<string | symbol, unknown>
+): data is Record<string | symbol, unknown> & PresetStripDragData {
+  return data.type === 'zone-preset-strip'
 }
 
 interface DragBindingValue {
@@ -135,6 +146,31 @@ export const vRunControlsDraggable: Directive<HTMLElement, string> = {
   }
 }
 
+type PresetStripDragEl = HTMLElement & {
+  __dragCleanup?: () => void
+  __sourceZone?: string
+}
+
+export const vPresetStripDraggable: Directive<HTMLElement, string> = {
+  mounted(el, { value: sourceZone }) {
+    const typedEl = el as PresetStripDragEl
+    typedEl.__sourceZone = sourceZone
+    typedEl.__dragCleanup = draggable({
+      element: el,
+      getInitialData: () => ({
+        type: 'zone-preset-strip',
+        sourceZone: typedEl.__sourceZone!
+      })
+    })
+  },
+  updated(el, { value: sourceZone }) {
+    ;(el as PresetStripDragEl).__sourceZone = sourceZone
+  },
+  unmounted(el) {
+    ;(el as PresetStripDragEl).__dragCleanup?.()
+  }
+}
+
 export const vZoneDropTarget: Directive<HTMLElement, string> = {
   mounted(el, { value: zoneId }) {
     const typedEl = el as DragEl
@@ -147,6 +183,8 @@ export const vZoneDropTarget: Directive<HTMLElement, string> = {
         if (isWidgetDragData(data)) return data.sourceZone !== typedEl.__zoneId
         if (isOutputDragData(data)) return data.sourceZone !== typedEl.__zoneId
         if (isRunControlsDragData(data))
+          return data.sourceZone !== typedEl.__zoneId
+        if (isPresetStripDragData(data))
           return data.sourceZone !== typedEl.__zoneId
         return false
       },
@@ -161,6 +199,8 @@ export const vZoneDropTarget: Directive<HTMLElement, string> = {
           appModeStore.setZone(data.nodeId, OUTPUT_ZONE_KEY, typedEl.__zoneId!)
         } else if (isRunControlsDragData(data)) {
           appModeStore.setRunControlsZone(typedEl.__zoneId!)
+        } else if (isPresetStripDragData(data)) {
+          appModeStore.setPresetStripZone(typedEl.__zoneId!)
         }
       }
     })

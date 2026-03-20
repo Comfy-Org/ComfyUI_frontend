@@ -28,7 +28,11 @@ const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const appModeStore = useAppModeStore()
-const hasLayoutTemplate = computed(() => !!appModeStore.layoutTemplateId)
+const hasAppContent = computed(
+  () =>
+    appModeStore.selectedInputs.length > 0 ||
+    appModeStore.selectedOutputs.length > 0
+)
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
 const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
@@ -148,7 +152,7 @@ async function rerun(e: Event) {
   />
   <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
   <LinearArrange v-else-if="isArrangeMode" />
-  <AppTemplateView v-else-if="hasLayoutTemplate" />
+  <AppTemplateView v-else-if="hasAppContent" />
   <LinearWelcome v-else />
   <div
     v-if="!mobile"

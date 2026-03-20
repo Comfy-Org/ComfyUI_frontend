@@ -27,11 +27,11 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     ).toBeVisible({ timeout: 5000 })
   })
 
-  test('Workflow info section visible', async ({ comfyPage }) => {
+  test('Run controls visible in app mode', async ({ comfyPage }) => {
     await comfyPage.appMode.enterAppModeWithInputs([])
 
     await expect(
-      comfyPage.page.locator('[data-testid="linear-workflow-info"]')
+      comfyPage.page.locator('[data-testid="linear-run-button"]')
     ).toBeVisible({ timeout: 5000 })
   })
 

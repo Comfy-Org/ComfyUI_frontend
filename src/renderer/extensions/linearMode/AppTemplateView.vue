@@ -4,8 +4,10 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import LayoutZoneGrid from '@/components/builder/LayoutZoneGrid.vue'
+import PresetStrip from '@/components/builder/PresetStrip.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { getTemplate } from '@/components/builder/layoutTemplates'
+import type { EnrichedNodeData } from '@/components/builder/useZoneWidgets'
 import {
   OUTPUT_ZONE_KEY,
   useAppZoneWidgets
@@ -46,6 +48,13 @@ const runControlsZoneId = computed(() => {
   const zones = template.value.zones
   const inputZones = zones.filter((z) => !z.isOutput)
   return inputZones.at(-1)?.id ?? zones.at(-1)?.id ?? ''
+})
+
+const presetStripZoneId = computed(() => {
+  if (appModeStore.presetStripZoneId) return appModeStore.presetStripZoneId
+  const zones = template.value.zones
+  const inputZones = zones.filter((z) => !z.isOutput)
+  return inputZones.at(0)?.id ?? zones.at(0)?.id ?? ''
 })
 
 /** Per-zone output results — each zone gets its own assigned outputs. */
@@ -99,8 +108,15 @@ function outputItemsForZone(zoneId: string) {
     .map((nodeId) => ({ nodeId }))
 }
 
-/** Get ordered item keys for a zone respecting builder reorder. */
-function getOrderedItems(zoneId: string) {
+interface ZoneRenderItem {
+  key: string
+  type: 'output' | 'input' | 'run-controls' | 'preset-strip'
+  /** For input items: the nodeData with widgets filtered to only this group. */
+  nodeData?: EnrichedNodeData
+}
+
+/** Build deduplicated render items for a zone. Groups input keys by node. */
+function getZoneRenderItems(zoneId: string): ZoneRenderItem[] {
   const outputs = outputItemsForZone(zoneId)
   const widgets = (zoneWidgets.value.get(zoneId) ?? []).flatMap((nd) =>
     (nd.widgets ?? []).map((w) => ({
@@ -109,7 +125,60 @@ function getOrderedItems(zoneId: string) {
     }))
   )
   const hasRun = zoneId === runControlsZoneId.value
-  return appModeStore.getZoneItems(zoneId, outputs, widgets, hasRun)
+  const hasPreset =
+    appModeStore.presetsEnabled && zoneId === presetStripZoneId.value
+  const orderedKeys = appModeStore.getZoneItems(
+    zoneId,
+    outputs,
+    widgets,
+    hasRun,
+    hasPreset
+  )
+
+  const nodeDataMap = new Map<string, EnrichedNodeData>()
+  for (const nd of zoneWidgets.value.get(zoneId) ?? []) {
+    nodeDataMap.set(String(nd.id), nd)
+  }
+
+  const items: ZoneRenderItem[] = []
+  const renderedNodes = new Set<string>()
+
+  for (const key of orderedKeys) {
+    if (key === 'preset-strip') {
+      items.push({ key, type: 'preset-strip' })
+    } else if (key === 'run-controls') {
+      items.push({ key, type: 'run-controls' })
+    } else if (key.startsWith('output:')) {
+      items.push({ key, type: 'output' })
+    } else if (key.startsWith('input:')) {
+      const nodeId = key.split(':')[1]
+      if (renderedNodes.has(nodeId)) continue
+      renderedNodes.add(nodeId)
+
+      const nd = nodeDataMap.get(nodeId)
+      if (!nd) continue
+
+      // Collect all widget names for this node from the ordered keys
+      const nodeWidgetNames = new Set(
+        orderedKeys
+          .filter((k) => k.startsWith(`input:${nodeId}:`))
+          .map((k) => k.split(':').slice(2).join(':'))
+      )
+
+      // Filter nodeData widgets to only the ones in this zone
+      const filteredWidgets = (nd.widgets ?? []).filter((w) =>
+        nodeWidgetNames.has(w.name)
+      )
+
+      items.push({
+        key: `input-group:${nodeId}`,
+        type: 'input',
+        nodeData: { ...nd, widgets: filteredWidgets }
+      })
+    }
+  }
+
+  return items
 }
 
 /** Zones that have any content (inputs, outputs, or run controls). */
@@ -120,34 +189,17 @@ const filledZones = computed(() => {
     const hasOutputs =
       zoneOutputs.value.has(zone.id) || zoneOutputNodeCount.value.has(zone.id)
     const hasRun = zone.id === runControlsZoneId.value
-    if (hasWidgets || hasOutputs || hasRun) filled.add(zone.id)
+    const hasPreset =
+      appModeStore.presetsEnabled && zone.id === presetStripZoneId.value
+    if (hasWidgets || hasOutputs || hasRun || hasPreset) filled.add(zone.id)
   }
   return filled
-})
-
-/** Zone IDs that appear in the bottom row of the grid template. */
-const bottomRowZoneIds = computed(() => {
-  const lines = template.value.gridTemplate
-    .trim()
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.startsWith('"'))
-  if (lines.length === 0) return new Set<string>()
-  const lastRow = lines[lines.length - 1]
-  const match = lastRow.match(/"([^"]+)"/)
-  if (!match) return new Set<string>()
-  return new Set(match[1].split(/\s+/))
 })
 
 /** Border style for a zone using ring (inset, no overflow clipping). */
 function zoneBorderClass(zoneId: string): string {
   if (!filledZones.value.has(zoneId)) return ''
-  const isOutput =
-    zoneOutputs.value.has(zoneId) || zoneOutputNodeCount.value.has(zoneId)
-  const isBottom = bottomRowZoneIds.value.has(zoneId)
-  if (isOutput || isBottom)
-    return 'rounded-xl ring-2 ring-border-subtle ring-inset'
-  return 'rounded-t-xl ring-2 ring-border-subtle ring-inset'
+  return 'rounded-xl ring-2 ring-border-subtle ring-inset'
 }
 
 async function runPrompt(e: Event) {
@@ -215,6 +267,7 @@ async function runPrompt(e: Event) {
           <DropZone
             :on-drag-over="nodeData.onDragOver"
             :on-drag-drop="nodeData.onDragDrop"
+            :drop-indicator="nodeData.dropIndicator"
           >
             <NodeWidgets
               :node-data
@@ -242,6 +295,7 @@ async function runPrompt(e: Event) {
           </div>
           <Button
             v-tooltip.top="t('linearMode.arrange.shiftClickPriority')"
+            data-testid="linear-run-button"
             variant="primary"
             size="lg"
             class="w-full"
@@ -255,13 +309,17 @@ async function runPrompt(e: Event) {
     </template>
   </div>
   <!-- Desktop: grid layout -->
-  <div v-else class="mx-auto flex size-full max-w-[90%] flex-col py-4">
+  <div
+    v-else
+    data-testid="linear-widgets"
+    class="mx-auto flex size-full min-h-0 max-w-[90%] flex-col overflow-hidden px-4 pt-12 pb-4"
+  >
     <LayoutZoneGrid
       :template="template"
       :dashed="false"
       :grid-overrides="appModeStore.gridOverrides"
       :filled-zones="filledZones"
-      class="min-h-0 overflow-visible"
+      class="min-h-0"
     >
       <template #zone="{ zone }">
         <!-- Outer: full cell height, alignment controlled per zone -->
@@ -275,7 +333,7 @@ async function runPrompt(e: Event) {
             )
           "
         >
-          <!-- Inner: border wraps only the content -->
+          <!-- Inner: border wraps content, scrolls when needed -->
           <div
             :class="
               cn(
@@ -287,14 +345,14 @@ async function runPrompt(e: Event) {
               )
             "
           >
-            <!-- Unified item order — respects builder reorder -->
+            <!-- Unified item order — deduplicated by node -->
             <template
-              v-for="itemKey in getOrderedItems(zone.id)"
-              :key="itemKey"
+              v-for="item in getZoneRenderItems(zone.id)"
+              :key="item.key"
             >
               <!-- Output node -->
               <div
-                v-if="itemKey.startsWith('output:')"
+                v-if="item.type === 'output'"
                 :class="
                   cn(
                     'min-h-0 flex-1 overflow-hidden rounded-lg border border-warning-background/50',
@@ -326,37 +384,32 @@ async function runPrompt(e: Event) {
                   </p>
                 </div>
               </div>
-              <!-- Input widget group -->
-              <template v-else-if="itemKey.startsWith('input:')">
-                <template
-                  v-for="nodeData of zoneWidgets.get(zone.id) ?? []"
-                  :key="nodeData.id"
-                >
-                  <DropZone
-                    v-if="
-                      (nodeData.widgets ?? []).some(
-                        (w) => itemKey === `input:${nodeData.id}:${w.name}`
-                      )
-                    "
-                    :on-drag-over="nodeData.onDragOver"
-                    :on-drag-drop="nodeData.onDragDrop"
-                  >
-                    <NodeWidgets
-                      :node-data
-                      :class="
-                        cn(
-                          'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
-                          nodeData.hasErrors &&
-                            'ring-2 ring-node-stroke-error ring-inset'
-                        )
-                      "
-                    />
-                  </DropZone>
-                </template>
-              </template>
+              <!-- Input widget group (one render per node, filtered widgets) -->
+              <DropZone
+                v-else-if="item.type === 'input' && item.nodeData"
+                :on-drag-over="item.nodeData.onDragOver"
+                :on-drag-drop="item.nodeData.onDragDrop"
+                :drop-indicator="item.nodeData.dropIndicator"
+              >
+                <NodeWidgets
+                  :node-data="item.nodeData"
+                  :class="
+                    cn(
+                      'gap-y-3 rounded-lg py-3 *:has-[textarea]:h-50 **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
+                      item.nodeData.hasErrors &&
+                        'ring-2 ring-node-stroke-error ring-inset'
+                    )
+                  "
+                />
+              </DropZone>
+              <!-- Preset strip -->
+              <PresetStrip
+                v-else-if="item.type === 'preset-strip'"
+                :display-mode="appModeStore.presetDisplayMode"
+              />
               <!-- Run controls -->
               <div
-                v-else-if="itemKey === 'run-controls'"
+                v-else-if="item.type === 'run-controls'"
                 class="flex flex-col gap-2 border-t border-border-subtle pt-3"
               >
                 <div class="flex w-full flex-col gap-1">
@@ -373,6 +426,8 @@ async function runPrompt(e: Event) {
                   />
                 </div>
                 <Button
+                  v-tooltip.top="t('linearMode.arrange.shiftClickPriority')"
+                  data-testid="linear-run-button"
                   variant="primary"
                   size="lg"
                   class="w-full"

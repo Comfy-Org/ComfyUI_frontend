@@ -1,11 +1,15 @@
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import type { DropIndicatorData } from '@/components/builder/dropIndicatorUtil'
+import { buildDropIndicator } from '@/components/builder/dropIndicatorUtil'
 import { getTemplate } from '@/components/builder/layoutTemplates'
 import type {
   SafeWidgetData,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -23,8 +27,9 @@ export interface ResolvedArrangeWidget {
   widget: IBaseWidget
 }
 
-interface EnrichedNodeData extends VueNodeData {
+export interface EnrichedNodeData extends VueNodeData {
   hasErrors: boolean
+  dropIndicator?: DropIndicatorData
   onDragDrop?: LGraphNode['onDragDrop']
   onDragOver?: LGraphNode['onDragOver']
 }
@@ -82,10 +87,18 @@ export function useArrangeZoneWidgets() {
 export function useAppZoneWidgets() {
   const appModeStore = useAppModeStore()
   const executionErrorStore = useExecutionErrorStore()
+  const maskEditor = useMaskEditor()
+  const { t } = useI18n()
 
   const template = computed(
     () => getTemplate(appModeStore.layoutTemplateId) ?? getTemplate('sidebar')!
   )
+
+  const dropIndicatorOptions = computed(() => ({
+    imageLabel: t('linearMode.dragAndDropImage'),
+    videoLabel: t('linearMode.dragAndDropVideo'),
+    openMaskEditor: maskEditor.openMaskEditor
+  }))
 
   return computed(() => {
     const map = new Map<string, EnrichedNodeData[]>()
@@ -96,7 +109,14 @@ export function useAppZoneWidgets() {
         appModeStore.getZone,
         zone.id
       )
-      map.set(zone.id, resolveAppWidgets(inputs, executionErrorStore))
+      map.set(
+        zone.id,
+        resolveAppWidgets(
+          inputs,
+          executionErrorStore,
+          dropIndicatorOptions.value
+        )
+      )
     }
 
     return map
@@ -110,7 +130,8 @@ export function useAppZoneWidgets() {
  */
 function resolveAppWidgets(
   inputs: [NodeId, string][],
-  executionErrorStore: ReturnType<typeof useExecutionErrorStore>
+  executionErrorStore: ReturnType<typeof useExecutionErrorStore>,
+  dropIndicatorOptions?: Parameters<typeof buildDropIndicator>[1]
 ): EnrichedNodeData[] {
   const nodeWidgetMap = new Map<LGraphNode, IBaseWidget[]>()
 
@@ -130,6 +151,9 @@ function resolveAppWidgets(
     const enriched: EnrichedNodeData = {
       ...nodeData,
       hasErrors: !!executionErrorStore.lastNodeErrors?.[node.id],
+      dropIndicator: dropIndicatorOptions
+        ? buildDropIndicator(node, dropIndicatorOptions)
+        : undefined,
       onDragDrop: node.onDragDrop,
       onDragOver: node.onDragOver
     }

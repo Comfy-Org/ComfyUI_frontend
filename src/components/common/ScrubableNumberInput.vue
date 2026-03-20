@@ -142,8 +142,12 @@ const { distanceX, isSwiping } = usePointerSwipe(swipeElement, {
 
 whenever(distanceX, () => {
   if (disabled) return
-  const delta = ((distanceX.value - dragDelta) / 10) | 0
-  dragDelta += delta * 10
+  // Scale sensitivity: small steps (floats) need less drag distance.
+  // For step >= 1, use 10px per increment. For step < 1, scale proportionally
+  // so 0.01 step requires ~2px per increment instead of 10px.
+  const pxPerStep = step >= 1 ? 10 : Math.max(2, Math.round(step * 100))
+  const delta = ((distanceX.value - dragDelta) / pxPerStep) | 0
+  dragDelta += delta * pxPerStep
   modelValue.value = clamp(modelValue.value - delta * step)
 })
 

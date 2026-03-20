@@ -1188,6 +1188,7 @@
   "maskEditor": {
     "title": "Mask Editor",
     "openMaskEditor": "Open in Mask Editor",
+    "editMask": "Edit Mask",
     "invert": "Invert",
     "clear": "Clear",
     "undo": "Undo",
@@ -3242,6 +3243,7 @@
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
+    "dragAndDropVideo": "Click to browse or drag a video",
     "mobileControls": "Edit & Run",
     "runCount": "Number of runs",
     "rerun": "Rerun",
@@ -3290,6 +3292,28 @@
       "mobileOrder": "Mobile: stacks top to bottom (#{order})",
       "shiftClickPriority": "Shift+click to prioritize",
       "queueFailed": "Failed to queue prompt"
+    },
+    "presets": {
+      "label": "Presets",
+      "empty": "No saved presets yet.",
+      "save": "Save current as preset",
+      "saveTitle": "Save preset",
+      "saveMessage": "Enter a name for this preset.",
+      "namePlaceholder": "Preset name",
+      "builtinMin": "Min",
+      "builtinMid": "Mid",
+      "builtinMax": "Max",
+      "builtinMinTip": "Set all inputs to minimum values",
+      "builtinMidTip": "Set all inputs to midpoint values",
+      "builtinMaxTip": "Set all inputs to maximum values",
+      "builtinSection": "Quick presets",
+      "savedSection": "Saved",
+      "displayAs": "Display as",
+      "displayTabs": "Tabs",
+      "displayButtons": "Buttons",
+      "displayMenu": "Menu",
+      "overwrite": "Save current values to this preset",
+      "presetCount": "{count} saved preset | {count} saved presets"
     },
     "layout": {
       "templates": {

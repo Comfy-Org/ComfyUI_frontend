@@ -1,5 +1,35 @@
 @import '@comfyorg/design-system/css/style.css';
 
+/* PrimeVue tooltip override — white on black, consistent everywhere. */
+.p-tooltip .p-tooltip-text {
+  background: #000;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.25;
+  max-width: 18.75rem;
+  box-shadow: none;
+}
+
+.p-tooltip-top .p-tooltip-arrow {
+  border-top-color: #000;
+}
+
+.p-tooltip-bottom .p-tooltip-arrow {
+  border-bottom-color: #000;
+}
+
+.p-tooltip-left .p-tooltip-arrow {
+  border-left-color: #000;
+}
+
+.p-tooltip-right .p-tooltip-arrow {
+  border-right-color: #000;
+}
+
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire
    and JS listeners aren't broken. */
 .disable-animations *,

@@ -103,8 +103,17 @@ const stepValue = computed(() => {
     // precision 1 → 0.1, precision 2 → 0.01, etc.
     return Number((1 / Math.pow(10, precision.value)).toFixed(precision.value))
   }
-  // Default to 'any' for unrestricted stepping
-  return 0
+  // Infer step from the value range — use 0.01 for small ranges (likely floats),
+  // 1 for integers. This ensures +/- buttons always increment.
+  const { min: rangeMin, max: rangeMax } = filteredProps.value
+  if (
+    rangeMin !== undefined &&
+    rangeMax !== undefined &&
+    rangeMax - rangeMin <= 100
+  ) {
+    return rangeMax - rangeMin <= 1 ? 0.01 : 0.1
+  }
+  return 1
 })
 
 // Disable grouping separators by default unless explicitly enabled by the node author

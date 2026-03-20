@@ -17,6 +17,12 @@ export interface LayoutTemplate {
   icon: string
   gridTemplate: string
   zones: LayoutZone[]
+  /** Zone ID where run controls go by default */
+  defaultRunControlsZone: string
+  /** Zone ID where preset strip goes by default */
+  defaultPresetStripZone: string
+  /** Zone IDs that default to bottom alignment */
+  defaultBottomAlignZones?: string[]
 }
 
 export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
@@ -47,7 +53,10 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
         label: 'linearMode.layout.zones.bottomRight',
         gridArea: 'side2'
       }
-    ]
+    ],
+    defaultRunControlsZone: 'side2',
+    defaultPresetStripZone: 'side1',
+    defaultBottomAlignZones: ['side2']
   },
   {
     id: 'grid',
@@ -71,7 +80,10 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
         isOutput: true
       },
       { id: 'z6', label: 'linearMode.layout.zones.zone6', gridArea: 'z6' }
-    ]
+    ],
+    defaultRunControlsZone: 'z6',
+    defaultPresetStripZone: 'z3',
+    defaultBottomAlignZones: ['z6']
   },
   {
     id: 'sidebar',
@@ -98,7 +110,10 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
         label: 'linearMode.layout.zones.sidebar',
         gridArea: 'sb'
       }
-    ]
+    ],
+    defaultRunControlsZone: 'sb',
+    defaultPresetStripZone: 'sb',
+    defaultBottomAlignZones: ['sb']
   }
 ]
 

@@ -24,6 +24,7 @@ function getDragKey(data: Record<string | symbol, unknown>): string | null {
     return `input:${data.nodeId}:${data.widgetName}`
   if (data.type === 'zone-output') return `output:${data.nodeId}`
   if (data.type === 'zone-run-controls') return 'run-controls'
+  if (data.type === 'zone-preset-strip') return 'preset-strip'
   return null
 }
 

@@ -11,6 +11,7 @@ import {
 import type { ResolvedArrangeWidget } from '@/components/builder/useZoneWidgets'
 import {
   vOutputDraggable,
+  vPresetStripDraggable,
   vRunControlsDraggable,
   vWidgetDraggable,
   vZoneDropTarget
@@ -49,6 +50,13 @@ const runControlsZoneId = computed(() => {
   const zones = template.value.zones
   const inputZones = zones.filter((z) => !z.isOutput)
   return inputZones.at(-1)?.id ?? zones.at(-1)?.id ?? ''
+})
+
+const presetStripZoneId = computed(() => {
+  if (appModeStore.presetStripZoneId) return appModeStore.presetStripZoneId
+  const zones = template.value.zones
+  const inputZones = zones.filter((z) => !z.isOutput)
+  return inputZones.at(0)?.id ?? zones.at(0)?.id ?? ''
 })
 
 onMounted(() => appModeStore.autoAssignInputs())
@@ -124,7 +132,9 @@ function getOrderedItems(zoneId: string) {
   const outputs = zoneOutputs.value.get(zoneId) ?? []
   const widgets = zoneWidgets.value.get(zoneId) ?? []
   const hasRun = zoneId === runControlsZoneId.value
-  return appModeStore.getZoneItems(zoneId, outputs, widgets, hasRun)
+  const hasPreset =
+    appModeStore.presetsEnabled && zoneId === presetStripZoneId.value
+  return appModeStore.getZoneItems(zoneId, outputs, widgets, hasRun, hasPreset)
 }
 </script>
 
@@ -181,7 +191,7 @@ function getOrderedItems(zoneId: string) {
                 @click="appModeStore.toggleZoneAlign(zone.id)"
               >
                 <i
-                  class="icon-[lucide--triangle] size-4 text-muted-foreground/50 transition-transform"
+                  class="icon-[lucide--triangle] size-4 text-muted-foreground/50 transition-transform duration-300 ease-in-out"
                   :class="
                     (appModeStore.zoneAlign[zone.id] ?? 'top') === 'bottom'
                       ? 'rotate-180'
@@ -243,6 +253,20 @@ function getOrderedItems(zoneId: string) {
                     show-node-name
                   />
                 </div>
+              </div>
+              <!-- Preset strip -->
+              <div
+                v-else-if="itemKey === 'preset-strip'"
+                v-preset-strip-draggable="zone.id"
+                v-zone-item-reorder-target="{
+                  itemKey,
+                  zone: zone.id,
+                  order: getOrderedItems(zone.id)
+                }"
+                class="flex cursor-grab items-center gap-2 rounded-lg border border-dashed border-primary-background/30 px-3 py-2 text-sm text-muted-foreground [&.reorder-after]:border-b-2 [&.reorder-after]:border-b-primary-background [&.reorder-before]:border-t-2 [&.reorder-before]:border-t-primary-background"
+              >
+                <i class="icon-[lucide--layers] size-4" />
+                {{ t('linearMode.presets.label') }}
               </div>
               <!-- Run controls -->
               <div

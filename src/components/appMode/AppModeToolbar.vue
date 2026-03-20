@@ -46,7 +46,7 @@ function showApps() {
 </script>
 
 <template>
-  <div class="pointer-events-auto flex flex-row items-start gap-2">
+  <div class="pointer-events-auto flex w-fit flex-row items-start gap-2">
     <div class="pointer-events-auto flex flex-col gap-2">
       <Button
         v-if="enableAppBuilder"

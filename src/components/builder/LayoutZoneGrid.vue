@@ -220,8 +220,7 @@ function onRowResizeEnd(fractions: number[]) {
         :style="{ gridArea: zone.gridArea }"
         :class="
           cn(
-            'relative flex flex-col rounded-xl transition-colors',
-            'overflow-y-auto',
+            'relative flex flex-col overflow-y-auto rounded-xl transition-colors',
             dashed
               ? 'border-2 border-dashed border-border-subtle'
               : filledZones

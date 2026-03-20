@@ -268,8 +268,12 @@ describe('appModeStore', () => {
         zoneAssignmentsPerTemplate: {},
         gridOverridesPerTemplate: {},
         runControlsZoneIdPerTemplate: {},
+        presetStripZoneIdPerTemplate: {},
         zoneItemOrderPerTemplate: {},
-        zoneAlignPerTemplate: {}
+        zoneAlignPerTemplate: {},
+        widgetOverrides: undefined,
+        presets: undefined,
+        presetDisplayMode: undefined
       })
     })
 
@@ -313,8 +317,12 @@ describe('appModeStore', () => {
         zoneAssignmentsPerTemplate: {},
         gridOverridesPerTemplate: {},
         runControlsZoneIdPerTemplate: {},
+        presetStripZoneIdPerTemplate: {},
         zoneItemOrderPerTemplate: {},
-        zoneAlignPerTemplate: {}
+        zoneAlignPerTemplate: {},
+        widgetOverrides: undefined,
+        presets: undefined,
+        presetDisplayMode: undefined
       })
     })
   })

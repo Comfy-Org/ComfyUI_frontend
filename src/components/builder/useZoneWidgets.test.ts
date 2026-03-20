@@ -8,7 +8,8 @@ vi.mock('@/composables/graph/useGraphNodeManager', () => ({
 vi.mock('@/core/graph/subgraph/promotedWidgetTypes', () => ({
   isPromotedWidgetView: vi.fn()
 }))
-vi.mock('@/lib/litegraph/src/types/globalEnums', () => ({
+vi.mock('@/lib/litegraph/src/types/globalEnums', async (importOriginal) => ({
+  ...(await importOriginal()),
   LGraphEventMode: { ALWAYS: 0 }
 }))
 vi.mock('@/utils/litegraphUtil', () => ({

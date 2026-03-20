@@ -124,13 +124,14 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     await expect(appMode.linearWidgets.getByText('Dblclick Seed')).toBeVisible()
   })
 
-  test('Rename from builder preview sidebar', async ({ comfyPage }) => {
+  test('Rename from builder preview step', async ({ comfyPage }) => {
     const { appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
 
-    await appMode.goToPreview()
+    // In the new zone layout, rename is done from the inputs step
+    await appMode.goToInputs()
 
-    const menu = appMode.getBuilderPreviewWidgetMenu('seed — New Subgraph')
+    const menu = appMode.getBuilderInputItemMenu('seed')
     await expect(menu).toBeVisible({ timeout: 5000 })
     await appMode.renameWidget(menu, 'Preview Seed')
 

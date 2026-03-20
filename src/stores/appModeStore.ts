@@ -10,7 +10,12 @@ import type {
 import { OUTPUT_ZONE_KEY } from '@/components/builder/useZoneWidgets'
 import { useAppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type {
+  AppModePreset,
+  LinearData,
+  PresetDisplayMode,
+  WidgetOverride
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -36,6 +41,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   >({})
   const gridOverridesPerTemplate = reactive<Record<string, GridOverride>>({})
   const runControlsZoneIdPerTemplate = reactive<Record<string, string>>({})
+  const presetStripZoneIdPerTemplate = reactive<Record<string, string>>({})
   /** Per-zone item order — unified list of item keys per zone, per template. */
   const zoneItemOrderPerTemplate = reactive<
     Record<string, Record<string, string[]>>
@@ -44,6 +50,14 @@ export const useAppModeStore = defineStore('appMode', () => {
   const zoneAlignPerTemplate = reactive<
     Record<string, Record<string, 'top' | 'bottom'>>
   >({})
+  /** Per-widget overrides (min/max, display type). Keyed by `nodeId:widgetName`. */
+  const widgetOverrides = reactive<Record<string, WidgetOverride>>({})
+  /** Saved presets for quick input value switching. */
+  const presets = reactive<AppModePreset[]>([])
+  /** Whether the preset strip is visible in app mode. */
+  const presetsEnabled = ref(true)
+  /** How the preset switcher renders in app view. */
+  const presetDisplayMode = ref<PresetDisplayMode>('tabs')
 
   const zoneAssignments = computed(
     () => zoneAssignmentsPerTemplate[layoutTemplateId.value] ?? {}
@@ -51,15 +65,31 @@ export const useAppModeStore = defineStore('appMode', () => {
   const gridOverrides = computed<GridOverride | undefined>(
     () => gridOverridesPerTemplate[layoutTemplateId.value]
   )
-  const runControlsZoneId = computed(
-    () => runControlsZoneIdPerTemplate[layoutTemplateId.value]
-  )
+  const runControlsZoneId = computed(() => {
+    const stored = runControlsZoneIdPerTemplate[layoutTemplateId.value]
+    if (stored) return stored
+    const tmpl = getTemplate(layoutTemplateId.value)
+    return tmpl?.defaultRunControlsZone
+  })
+  const presetStripZoneId = computed(() => {
+    const stored = presetStripZoneIdPerTemplate[layoutTemplateId.value]
+    if (stored) return stored
+    const tmpl = getTemplate(layoutTemplateId.value)
+    return tmpl?.defaultPresetStripZone
+  })
   const zoneItemOrder = computed(
     () => zoneItemOrderPerTemplate[layoutTemplateId.value] ?? {}
   )
-  const zoneAlign = computed(
-    () => zoneAlignPerTemplate[layoutTemplateId.value] ?? {}
-  )
+  const zoneAlign = computed(() => {
+    const stored = zoneAlignPerTemplate[layoutTemplateId.value] ?? {}
+    const tmpl = getTemplate(layoutTemplateId.value)
+    if (!tmpl?.defaultBottomAlignZones) return stored
+    const merged: Record<string, 'top' | 'bottom'> = {}
+    for (const zoneId of tmpl.defaultBottomAlignZones) {
+      merged[zoneId] = 'bottom'
+    }
+    return { ...merged, ...stored }
+  })
   const hasOutputs = computed(() => !!selectedOutputs.length)
   const hasNodes = computed(() => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
@@ -104,6 +134,11 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   function setRunControlsZone(zoneId: string) {
     runControlsZoneIdPerTemplate[layoutTemplateId.value] = zoneId
+    persistLinearData()
+  }
+
+  function setPresetStripZone(zoneId: string) {
+    presetStripZoneIdPerTemplate[layoutTemplateId.value] = zoneId
     persistLinearData()
   }
 
@@ -204,8 +239,13 @@ export const useAppModeStore = defineStore('appMode', () => {
         (data?.runControlsZoneId && data?.layoutTemplateId
           ? { [data.layoutTemplateId]: data.runControlsZoneId }
           : undefined),
+      presetStripZoneIdPerTemplate: data?.presetStripZoneIdPerTemplate,
       zoneItemOrderPerTemplate: data?.zoneItemOrderPerTemplate,
-      zoneAlignPerTemplate: data?.zoneAlignPerTemplate
+      zoneAlignPerTemplate: data?.zoneAlignPerTemplate,
+      widgetOverrides: data?.widgetOverrides,
+      presets: data?.presets,
+      presetDisplayMode: data?.presetDisplayMode,
+      presetsEnabled: data?.presetsEnabled
     }
   }
 
@@ -244,6 +284,13 @@ export const useAppModeStore = defineStore('appMode', () => {
       runControlsZoneIdPerTemplate,
       pruned.runControlsZoneIdPerTemplate ?? {}
     )
+    Object.keys(presetStripZoneIdPerTemplate).forEach(
+      (k) => delete presetStripZoneIdPerTemplate[k]
+    )
+    Object.assign(
+      presetStripZoneIdPerTemplate,
+      pruned.presetStripZoneIdPerTemplate ?? {}
+    )
     Object.keys(zoneItemOrderPerTemplate).forEach(
       (k) => delete zoneItemOrderPerTemplate[k]
     )
@@ -255,6 +302,13 @@ export const useAppModeStore = defineStore('appMode', () => {
       (k) => delete zoneAlignPerTemplate[k]
     )
     Object.assign(zoneAlignPerTemplate, pruned.zoneAlignPerTemplate ?? {})
+
+    Object.keys(widgetOverrides).forEach((k) => delete widgetOverrides[k])
+    Object.assign(widgetOverrides, pruned.widgetOverrides ?? {})
+
+    presets.splice(0, presets.length, ...(pruned.presets ?? []))
+    presetDisplayMode.value = pruned.presetDisplayMode ?? 'tabs'
+    presetsEnabled.value = pruned.presetsEnabled ?? true
   }
 
   function resetSelectedToWorkflow() {
@@ -298,10 +352,20 @@ export const useAppModeStore = defineStore('appMode', () => {
         JSON.stringify(gridOverridesPerTemplate)
       ),
       runControlsZoneIdPerTemplate: { ...runControlsZoneIdPerTemplate },
+      presetStripZoneIdPerTemplate: { ...presetStripZoneIdPerTemplate },
       zoneItemOrderPerTemplate: JSON.parse(
         JSON.stringify(zoneItemOrderPerTemplate)
       ),
-      zoneAlignPerTemplate: JSON.parse(JSON.stringify(zoneAlignPerTemplate))
+      zoneAlignPerTemplate: JSON.parse(JSON.stringify(zoneAlignPerTemplate)),
+      widgetOverrides: Object.keys(widgetOverrides).length
+        ? JSON.parse(JSON.stringify(widgetOverrides))
+        : undefined,
+      presets: presets.length ? JSON.parse(JSON.stringify(presets)) : undefined,
+      presetDisplayMode:
+        presetDisplayMode.value !== 'tabs'
+          ? presetDisplayMode.value
+          : undefined,
+      presetsEnabled: presetsEnabled.value ? undefined : false
     }
   }
 
@@ -357,12 +421,14 @@ export const useAppModeStore = defineStore('appMode', () => {
     zoneId: string,
     outputs: { nodeId: NodeId }[],
     widgets: { nodeId: NodeId; widgetName: string }[],
-    hasRunControls: boolean
+    hasRunControls: boolean,
+    hasPresetStrip: boolean = false
   ): string[] {
     const existing = zoneItemOrder.value[zoneId]
     if (existing && existing.length > 0) {
       // Filter out stale keys that no longer exist, append new ones
       const validKeys = new Set<string>()
+      if (hasPresetStrip) validKeys.add('preset-strip')
       for (const o of outputs) validKeys.add(`output:${o.nodeId}`)
       for (const w of widgets)
         validKeys.add(`input:${w.nodeId}:${w.widgetName}`)
@@ -375,8 +441,9 @@ export const useAppModeStore = defineStore('appMode', () => {
       }
       return kept
     }
-    // Default order: outputs, inputs, run controls
+    // Default order: preset strip, outputs, inputs, run controls
     const keys: string[] = []
+    if (hasPresetStrip) keys.push('preset-strip')
     for (const o of outputs) keys.push(`output:${o.nodeId}`)
     for (const w of widgets) keys.push(`input:${w.nodeId}:${w.widgetName}`)
     if (hasRunControls) keys.push('run-controls')
@@ -412,7 +479,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   function toggleZoneAlign(zoneId: string) {
     const tid = layoutTemplateId.value
     if (!zoneAlignPerTemplate[tid]) zoneAlignPerTemplate[tid] = {}
-    const current = zoneAlignPerTemplate[tid][zoneId] ?? 'top'
+    const current = zoneAlign.value[zoneId] ?? 'top'
     zoneAlignPerTemplate[tid][zoneId] = current === 'top' ? 'bottom' : 'top'
     persistLinearData()
   }
@@ -428,6 +495,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     layoutTemplateId,
     getZoneItems,
     outputZoneIds,
+    persistLinearData,
     pruneLinearData,
     reorderZoneItem,
     resetSelectedToWorkflow,
@@ -439,6 +507,12 @@ export const useAppModeStore = defineStore('appMode', () => {
     setZone,
     switchTemplate,
     toggleZoneAlign,
+    widgetOverrides,
+    presets,
+    presetsEnabled,
+    presetDisplayMode,
+    presetStripZoneId,
+    setPresetStripZone,
     zoneAlign,
     zoneAssignments
   }

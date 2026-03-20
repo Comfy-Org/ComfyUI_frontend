@@ -113,10 +113,18 @@ export class AppModeHelper {
    * @param widgetName Text shown in the widget label (e.g. "seed").
    */
   getAppModeWidgetMenu(widgetName: string): Locator {
+    // In the zone-based layout, widgets render inside NodeWidgets within zones.
+    // Fall back to searching the entire linear-widgets container by text.
     return this.linearWidgets
-      .locator(`div:has(> div > span:text-is("${widgetName}"))`)
+      .locator(`[aria-label*="${widgetName}"]`)
       .getByTestId(TestIds.builder.widgetActionsMenu)
       .first()
+      .or(
+        this.linearWidgets
+          .locator(`div:has(> div > span:text-is("${widgetName}"))`)
+          .getByTestId(TestIds.builder.widgetActionsMenu)
+          .first()
+      )
   }
 
   /**

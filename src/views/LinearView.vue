@@ -7,7 +7,6 @@ import { computed, useTemplateRef } from 'vue'
 
 import ArrangeLayout from '@/components/builder/ArrangeLayout.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
-import AppTemplateView from '@/renderer/extensions/linearMode/AppTemplateView.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
@@ -17,7 +16,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
 import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useStablePrimeVueSplitterSizer } from '@/composables/useStablePrimeVueSplitterSizer'
 import {
@@ -28,11 +26,7 @@ import {
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
-const appModeStore = useAppModeStore()
 const { isBuilderMode } = useAppMode()
-const useTemplateLayout = computed(
-  () => Object.keys(appModeStore.zoneAssignments).length > 0
-)
 
 const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 const activeTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
@@ -97,10 +91,9 @@ const { onResizeEnd } = useStablePrimeVueSplitterSizer(
           class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
         />
         <ArrangeLayout v-if="isBuilderMode" />
-        <AppTemplateView v-else-if="useTemplateLayout" />
         <LinearPreview v-else />
-        <div class="absolute top-2 left-4.5 z-21">
-          <AppModeToolbar v-if="!isBuilderMode" />
+        <div class="pointer-events-none absolute top-2 left-4.5 z-21">
+          <AppModeToolbar v-if="!isBuilderMode" class="pointer-events-auto" />
         </div>
       </SplitterPanel>
       <SplitterPanel

@@ -12,6 +12,32 @@ import type {
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
 
+/** Display type override for a widget in app mode. */
+type WidgetDisplayType = 'tabs' | 'menu' | 'number' | 'slider'
+
+/** Per-widget overrides set by the workflow author in the builder. */
+export interface WidgetOverride {
+  min?: number
+  max?: number
+  displayType?: WidgetDisplayType
+}
+
+/** Scope determines which widgets a preset targets. */
+type PresetScope = 'app' | 'graph'
+
+/** How the preset switcher renders in app view. */
+export type PresetDisplayMode = 'tabs' | 'buttons' | 'menu'
+
+/** A named preset that captures widget values for selected inputs. */
+export interface AppModePreset {
+  id: string
+  name: string
+  /** Map of `nodeId:widgetName` → serialised widget value. */
+  values: Record<string, unknown>
+  /** Defaults to 'app'. 'graph' presets target all graph widgets (future). */
+  scope?: PresetScope
+}
+
 export interface LinearData {
   inputs: [NodeId, string][]
   outputs: NodeId[]
@@ -38,6 +64,15 @@ export interface LinearData {
   runControlsZoneIdPerTemplate?: Record<string, string>
   zoneItemOrderPerTemplate?: Record<string, Record<string, string[]>>
   zoneAlignPerTemplate?: Record<string, Record<string, 'top' | 'bottom'>>
+  presetStripZoneIdPerTemplate?: Record<string, string>
+  /** Per-widget overrides (min/max constraints, display type). Keyed by `nodeId:widgetName`. */
+  widgetOverrides?: Record<string, WidgetOverride>
+  /** Saved presets for quick input value switching. */
+  presets?: AppModePreset[]
+  /** How the preset switcher renders in app view. Defaults to 'tabs'. */
+  presetDisplayMode?: PresetDisplayMode
+  /** Whether the preset strip is visible. Defaults to true. */
+  presetsEnabled?: boolean
 }
 
 export interface PendingWarnings {
