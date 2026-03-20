@@ -1,11 +1,7 @@
 <template>
   <footer
-    class="flex shrink items-center gap-4 border-t border-border-default px-6 py-4"
+    class="flex shrink items-center justify-end gap-4 border-t border-border-default px-6 py-4"
   >
-    <Button variant="textonly" size="lg" @click="$emit('cancel')">
-      {{ $t('comfyHubPublish.cancel') }}
-    </Button>
-    <div class="flex-1" />
     <Button v-if="!isFirstStep" size="lg" @click="$emit('back')">
       {{ $t('comfyHubPublish.back') }}
     </Button>
@@ -44,7 +40,6 @@ defineProps<{
 
 defineEmits<{
   back: []
-  cancel: []
   next: []
   publish: []
 }>()

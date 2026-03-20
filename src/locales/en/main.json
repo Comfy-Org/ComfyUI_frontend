@@ -3138,7 +3138,6 @@
     "uploadComparisonBeforePrompt": "Before",
     "uploadComparisonAfterPrompt": "After",
     "uploadThumbnailHint": "1:1 preferred, 1080p max",
-    "cancel": "Cancel",
     "back": "Back",
     "next": "Next",
     "publishButton": "Publish to ComfyHub",
