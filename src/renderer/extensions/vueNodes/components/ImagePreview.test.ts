@@ -122,77 +122,10 @@ describe('ImagePreview', () => {
     expect(navigationDots).toHaveLength(0)
   })
 
-  it('shows action buttons on hover in gallery mode', async () => {
-    const wrapper = mountImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
-    })
-
-    // Initially buttons should not be visible
-    expect(wrapper.find('.actions').exists()).toBe(false)
-
-    // Trigger hover on the image wrapper
-    const imageWrapper = wrapper.find('[role="region"]')
-    await imageWrapper.trigger('mouseenter')
-    await nextTick()
-
-    // Action buttons should now be visible
-    expect(wrapper.find('.actions').exists()).toBe(true)
-    expect(wrapper.find('[aria-label="Download image"]').exists()).toBe(true)
-    expect(wrapper.find('[aria-label="Remove image"]').exists()).toBe(true)
-  })
-
-  it('hides action buttons when not hovering', async () => {
-    const wrapper = mountImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
-    })
-    const imageWrapper = wrapper.find('[role="region"]')
-
-    // Trigger hover
-    await imageWrapper.trigger('mouseenter')
-    await nextTick()
-    expect(wrapper.find('.actions').exists()).toBe(true)
-
-    // Trigger mouse leave
-    await imageWrapper.trigger('mouseleave')
-    await nextTick()
-    expect(wrapper.find('.actions').exists()).toBe(false)
-  })
-
-  it('shows action buttons on focus', async () => {
-    const wrapper = mountImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
-    })
-
-    expect(wrapper.find('.actions').exists()).toBe(false)
-
-    const imageWrapper = wrapper.find('[role="region"]')
-    await imageWrapper.trigger('focusin')
-    await nextTick()
-
-    expect(wrapper.find('.actions').exists()).toBe(true)
-  })
-
-  it('hides action buttons on blur', async () => {
-    const wrapper = mountImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
-    })
-    const imageWrapper = wrapper.find('[role="region"]')
-
-    await imageWrapper.trigger('focusin')
-    await nextTick()
-    expect(wrapper.find('.actions').exists()).toBe(true)
-
-    await imageWrapper.trigger('focusout')
-    await nextTick()
-    expect(wrapper.find('.actions').exists()).toBe(false)
-  })
-
   it('shows mask/edit button only for single images', async () => {
     // Multiple images in gallery mode - should not show mask button
     const multipleImagesWrapper = mountImagePreview()
     await switchToGallery(multipleImagesWrapper)
-    await multipleImagesWrapper.find('[role="region"]').trigger('mouseenter')
-    await nextTick()
 
     expect(
       multipleImagesWrapper.find('[aria-label="Edit or mask image"]').exists()
@@ -202,8 +135,6 @@ describe('ImagePreview', () => {
     const singleImageWrapper = mountImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
     })
-    await singleImageWrapper.find('[role="region"]').trigger('mouseenter')
-    await nextTick()
 
     expect(
       singleImageWrapper.find('[aria-label="Edit or mask image"]').exists()
@@ -214,9 +145,6 @@ describe('ImagePreview', () => {
     const wrapper = mountImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
     })
-
-    await wrapper.find('[role="region"]').trigger('mouseenter')
-    await nextTick()
 
     const downloadButton = wrapper.find('[aria-label="Download image"]')
     expect(downloadButton.exists()).toBe(true)
@@ -459,24 +387,15 @@ describe('ImagePreview', () => {
       expect(gridThumbnails).toHaveLength(2)
     })
 
-    it('shows gallery toggle in grid hover actions', async () => {
+    it('shows gallery toggle in grid actions', () => {
       const wrapper = mountImagePreview()
-
-      // Hover on grid container
-      const gridContainer = wrapper.find('[data-testid="image-grid"]')
-      await gridContainer.trigger('mouseenter')
-      await nextTick()
 
       const galleryToggle = wrapper.find('[aria-label="Gallery view"]')
       expect(galleryToggle.exists()).toBe(true)
     })
 
-    it('switches to gallery via hover action toggle', async () => {
+    it('switches to gallery via action toggle', async () => {
       const wrapper = mountImagePreview()
-
-      const gridContainer = wrapper.find('[data-testid="image-grid"]')
-      await gridContainer.trigger('mouseenter')
-      await nextTick()
 
       const galleryToggle = wrapper.find('[aria-label="Gallery view"]')
       await galleryToggle.trigger('click')

@@ -8,12 +8,8 @@
     <div
       v-if="viewMode === 'grid'"
       data-testid="image-grid"
-      class="relative grid w-full gap-1 overflow-hidden rounded-sm bg-muted-background p-1"
+      class="group/panel relative grid w-full gap-1 overflow-hidden rounded-sm bg-muted-background p-1"
       :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
-      @mouseenter="handleMouseEnter"
-      @mouseleave="handleMouseLeave"
-      @focusin="handleFocusIn"
-      @focusout="handleFocusOut"
     >
       <button
         v-for="(url, index) in imageUrls"
@@ -36,8 +32,7 @@
 
       <!-- Floating Action Buttons (grid mode) -->
       <div
-        v-if="isHovered || isFocused"
-        class="actions absolute top-2 right-2 flex gap-2.5"
+        class="actions invisible absolute top-2 right-2 flex gap-2.5 group-focus-within/panel:visible group-hover/panel:visible"
       >
         <!-- View Mode Toggle -->
         <button
@@ -64,16 +59,12 @@
     <!-- Gallery View (Image Wrapper) -->
     <div
       v-if="viewMode === 'gallery'"
-      class="relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-sm bg-transparent"
+      class="group/panel relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-sm bg-transparent"
       tabindex="0"
       role="region"
       :aria-roledescription="$t('g.imageGallery')"
       :aria-label="$t('g.imagePreview')"
       :aria-busy="showLoader"
-      @mouseenter="handleMouseEnter"
-      @mouseleave="handleMouseLeave"
-      @focusin="handleFocusIn"
-      @focusout="handleFocusOut"
     >
       <!-- Error State -->
       <div
@@ -99,20 +90,14 @@
         data-testid="main-image"
         :src="currentImageUrl"
         :alt="imageAltText"
-        :class="
-          cn(
-            'pointer-events-none absolute inset-0 block size-full object-contain transition-opacity',
-            (isHovered || isFocused) && 'opacity-60'
-          )
-        "
+        class="pointer-events-none absolute inset-0 block size-full object-contain transition-opacity group-focus-within/panel:opacity-60 group-hover/panel:opacity-60"
         @load="handleImageLoad"
         @error="handleImageError"
       />
 
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
-        v-if="isHovered || isFocused"
-        class="actions absolute top-2 right-2 flex gap-1"
+        class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
       >
         <!-- Grid View Toggle (only for multiple images) -->
         <button
@@ -253,8 +238,6 @@ function defaultViewMode(urls: readonly string[]): ViewMode {
 
 const currentIndex = ref(0)
 const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
-const isHovered = ref(false)
-const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
@@ -376,31 +359,6 @@ function setCurrentIndex(index: number) {
 function openImageInGallery(index: number) {
   setCurrentIndex(index)
   viewMode.value = 'gallery'
-}
-
-function handleMouseEnter() {
-  isHovered.value = true
-}
-
-function handleMouseLeave() {
-  isHovered.value = false
-}
-
-function handleFocusIn() {
-  isFocused.value = true
-}
-
-function handleFocusOut(event: FocusEvent) {
-  const container = event.currentTarget
-  if (
-    !(container instanceof HTMLElement) ||
-    !(
-      event.relatedTarget instanceof Node &&
-      container.contains(event.relatedTarget)
-    )
-  ) {
-    isFocused.value = false
-  }
 }
 
 function getNavigationDotClass(index: number) {
