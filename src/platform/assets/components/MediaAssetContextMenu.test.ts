@@ -1,15 +1,10 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
@@ -47,6 +42,17 @@ const asset: AssetItem = {
   user_metadata: {}
 }
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  fallbackLocale: 'en',
+  missingWarn: false,
+  fallbackWarn: false,
+  messages: {
+    en: {}
+  }
+})
+
 const buttonStub = {
   template: '<button class="button-stub" type="button"><slot /></button>'
 }
@@ -63,6 +69,7 @@ const mountComponent = () =>
       default: '<button class="context-trigger" type="button">Trigger</button>'
     },
     global: {
+      plugins: [i18n],
       stubs: {
         Button: buttonStub
       }

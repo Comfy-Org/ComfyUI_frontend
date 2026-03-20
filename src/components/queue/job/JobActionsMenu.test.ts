@@ -1,15 +1,10 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import JobActionsMenu from '@/components/queue/job/JobActionsMenu.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
 
 const buttonStub = {
   props: {
@@ -41,11 +36,23 @@ const createEntries = (): MenuEntry[] => [
   }
 ]
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  fallbackLocale: 'en',
+  missingWarn: false,
+  fallbackWarn: false,
+  messages: {
+    en: {}
+  }
+})
+
 const mountComponent = (entries: MenuEntry[]) =>
   mount(JobActionsMenu, {
     attachTo: document.body,
     props: { entries },
     global: {
+      plugins: [i18n],
       stubs: {
         Button: buttonStub
       }
