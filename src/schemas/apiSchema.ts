@@ -382,6 +382,7 @@ const zSettings = z.object({
   'Comfy.WorkflowActions.SeenItems': z.array(z.string()),
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
+  'Comfy.Keybinding.CurrentPreset': z.string(),
   'Comfy.Extension.Disabled': z.array(z.string()),
   'Comfy.LinkRenderMode': z.number(),
   'Comfy.Node.AutoSnapLinkToSlot': z.boolean(),
