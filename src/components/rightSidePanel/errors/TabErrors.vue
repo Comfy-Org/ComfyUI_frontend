@@ -11,8 +11,31 @@
       />
     </div>
 
-    <!-- Scrollable content -->
-    <div class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
+    <!-- Runtime error: full-height panel outside accordion -->
+    <div
+      v-if="singleRuntimeErrorCard"
+      data-testid="runtime-error-panel"
+      class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3"
+    >
+      <div
+        class="shrink-0 pb-2 text-sm font-semibold text-destructive-background-hover"
+      >
+        {{ singleRuntimeErrorGroup?.title }}
+      </div>
+      <ErrorNodeCard
+        :key="singleRuntimeErrorCard.id"
+        :card="singleRuntimeErrorCard"
+        :show-node-id-badge="showNodeIdBadge"
+        full-height
+        class="min-h-0 flex-1"
+        @locate-node="handleLocateNode"
+        @enter-subgraph="handleEnterSubgraph"
+        @copy-to-clipboard="copyToClipboard"
+      />
+    </div>
+
+    <!-- Scrollable content (non-runtime or mixed errors) -->
+    <div v-else class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
       <TransitionGroup tag="div" name="list-scale" class="relative">
         <div
           v-if="filteredGroups.length === 0"
@@ -75,6 +98,18 @@
                     ? t('rightSidePanel.missingNodePacks.installing')
                     : t('rightSidePanel.missingNodePacks.installAll')
                 }}
+              </Button>
+              <Button
+                v-else-if="
+                  group.type === 'missing_model' &&
+                  downloadableModels.length > 0
+                "
+                variant="secondary"
+                size="sm"
+                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
+                @click.stop="downloadAllModels"
+              >
+                {{ downloadAllLabel }}
               </Button>
               <Button
                 v-else-if="group.type === 'swap_nodes'"
@@ -192,6 +227,13 @@ import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
+import { isCloud } from '@/platform/distribution/types'
+import {
+  downloadModel,
+  isModelDownloadable
+} from '@/platform/missingModel/missingModelDownload'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { formatSize } from '@/utils/formatUtil'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
@@ -244,6 +286,59 @@ const {
   missingModelGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
+
+const singleRuntimeErrorGroup = computed(() => {
+  if (filteredGroups.value.length !== 1) return null
+  const group = filteredGroups.value[0]
+  const isSoleRuntimeError =
+    group.type === 'execution' &&
+    group.cards.length === 1 &&
+    group.cards[0].errors.every((e) => e.isRuntimeError)
+  return isSoleRuntimeError ? group : null
+})
+
+const singleRuntimeErrorCard = computed(
+  () => singleRuntimeErrorGroup.value?.cards[0] ?? null
+)
+
+const missingModelStore = useMissingModelStore()
+
+const downloadableModels = computed(() => {
+  if (isCloud) return []
+  return missingModelGroups.value.flatMap((group) =>
+    group.models
+      .filter(
+        (m) =>
+          m.representative.url &&
+          m.representative.directory &&
+          isModelDownloadable({
+            name: m.representative.name,
+            url: m.representative.url,
+            directory: m.representative.directory
+          })
+      )
+      .map((m) => ({
+        name: m.representative.name,
+        url: m.representative.url!,
+        directory: m.representative.directory!
+      }))
+  )
+})
+
+const downloadAllLabel = computed(() => {
+  const base = t('rightSidePanel.missingModels.downloadAll')
+  const total = downloadableModels.value.reduce(
+    (sum, m) => sum + (missingModelStore.fileSizes[m.url] ?? 0),
+    0
+  )
+  return total > 0 ? `${base} (${formatSize(total)})` : base
+})
+
+function downloadAllModels() {
+  for (const model of downloadableModels.value) {
+    downloadModel(model, missingModelStore.folderPaths)
+  }
+}
 
 const isAllCollapsed = computed({
   get() {

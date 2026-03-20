@@ -15251,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "3D modeli girdikten sonra, 3D modelin dokusunu yeniden çiz.",
+    "display_name": "Hunyuan3D: 3D Doku Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX formatında 3D model. Model 100000'den az yüzeye sahip olmalıdır."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Doku düzenlemesini açıklar. En fazla 1024 UTF-8 karakteri destekler."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "doku_görseli",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
     "inputs": {
@@ -15298,6 +15333,22 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "doku_görseli",
+        "tooltip": null
+      },
+      "4": {
+        "name": "isteğe_bağlı_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "isteğe_bağlı_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "isteğe_bağlı_roughness",
         "tooltip": null
       }
     }
@@ -15399,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "doku_görseli",
         "tooltip": null
       }
     }

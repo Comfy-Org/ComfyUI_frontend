@@ -80,8 +80,12 @@ export function showNodeOptions(
 }
 
 /**
- * Hide the node options popover
+ * Check if the node options menu is currently open
  */
+export function isNodeOptionsOpen(): boolean {
+  return nodeOptionsInstance?.isOpen.value ?? false
+}
+
 interface NodeOptionsInstance {
   toggle: (event: Event) => void
   show: (event: MouseEvent) => void
@@ -161,8 +165,7 @@ export function useMoreOptionsMenu() {
 
   const menuOptions = computed((): MenuOption[] => {
     // Reference selection flags to ensure re-computation when they change
-
-    optionsVersion.value
+    void optionsVersion.value
     const states = computeSelectionFlags()
 
     // Detect single group selection context (and no nodes explicitly selected)

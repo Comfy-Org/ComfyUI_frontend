@@ -388,6 +388,32 @@ describe('scanAllModelCandidates', () => {
     expect(result[0].isAssetSupported).toBe(true)
     expect(result[1].widgetName).toBe('vae_name')
   })
+
+  it('skips subgraph container nodes whose promoted widgets are already scanned via interior nodes', () => {
+    const containerNode = {
+      id: 65,
+      type: 'abc-def-uuid',
+      widgets: [makeComboWidget('ckpt_name', 'model.safetensors', [])],
+      isSubgraphNode: () => true,
+      _testExecutionId: '65'
+    } as unknown as LGraphNode
+
+    const interiorNode = makeNode(
+      42,
+      'CheckpointLoaderSimple',
+      [
+        makeComboWidget('ckpt_name', 'model.safetensors', ['model.safetensors'])
+      ],
+      '65:42'
+    )
+
+    const graph = makeGraph([containerNode, interiorNode])
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].nodeId).toBe('65:42')
+    expect(result[0].nodeType).toBe('CheckpointLoaderSimple')
+  })
 })
 
 function makeCandidate(

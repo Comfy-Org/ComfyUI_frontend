@@ -7,7 +7,7 @@
     <!-- Video Wrapper -->
     <div
       ref="videoWrapperEl"
-      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-transparent"
+      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
       tabindex="0"
       role="region"
       :aria-label="$t('g.videoPreview')"
@@ -203,6 +203,7 @@ const handleDownload = () => {
       severity: 'error',
       summary: 'Error',
       detail: t('g.failedToDownloadVideo'),
+      life: 3000,
       group: 'video-preview'
     })
   }

@@ -11,7 +11,7 @@ function makeOutput(
 
 describe(flattenNodeOutput, () => {
   it('returns empty array for output with no known media types', () => {
-    const result = flattenNodeOutput(['1', makeOutput({ text: 'hello' })])
+    const result = flattenNodeOutput(['1', makeOutput({ unknown: 'hello' })])
     expect(result).toEqual([])
   })
 
@@ -81,5 +81,72 @@ describe(flattenNodeOutput, () => {
     const output = makeOutput({ images: [], audio: [] })
     const result = flattenNodeOutput(['1', output])
     expect(result).toEqual([])
+  })
+
+  it('flattens non-standard output keys with ResultItem-like values', () => {
+    const output = makeOutput({
+      a_images: [{ filename: 'before.png', subfolder: '', type: 'output' }],
+      b_images: [{ filename: 'after.png', subfolder: '', type: 'output' }]
+    } as unknown as Partial<NodeExecutionOutput>)
+
+    const result = flattenNodeOutput(['10', output])
+
+    expect(result).toHaveLength(2)
+    expect(result.map((r) => r.filename)).toContain('before.png')
+    expect(result.map((r) => r.filename)).toContain('after.png')
+  })
+
+  it('excludes animated key', () => {
+    const output = makeOutput({
+      images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
+      animated: [true]
+    })
+
+    const result = flattenNodeOutput(['1', output])
+
+    expect(result).toHaveLength(1)
+    expect(result[0].mediaType).toBe('images')
+  })
+
+  it('excludes non-ResultItem array items', () => {
+    const output = {
+      images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
+      custom_data: [{ randomKey: 123 }]
+    } as unknown as NodeExecutionOutput
+
+    const result = flattenNodeOutput(['1', output])
+
+    expect(result).toHaveLength(1)
+    expect(result[0].mediaType).toBe('images')
+  })
+
+  it('accepts items with filename but no subfolder', () => {
+    const output = {
+      images: [
+        { filename: 'valid.png', subfolder: '', type: 'output' },
+        { filename: 'no-subfolder.png' }
+      ]
+    } as unknown as NodeExecutionOutput
+
+    const result = flattenNodeOutput(['1', output])
+
+    expect(result).toHaveLength(2)
+    expect(result[0].filename).toBe('valid.png')
+    expect(result[1].filename).toBe('no-subfolder.png')
+    expect(result[1].subfolder).toBe('')
+  })
+
+  it('excludes items missing filename', () => {
+    const output = {
+      images: [
+        { filename: 'valid.png', subfolder: '', type: 'output' },
+        { subfolder: '', type: 'output' }
+      ]
+    } as unknown as NodeExecutionOutput
+
+    const result = flattenNodeOutput(['1', output])
+
+    expect(result).toHaveLength(1)
+    expect(result[0].filename).toBe('valid.png')
   })
 })

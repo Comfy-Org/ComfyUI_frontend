@@ -7,10 +7,12 @@
     ref="nodeContainerRef"
     tabindex="0"
     :data-node-id="nodeData.id"
+    :data-collapsed="isCollapsed || undefined"
     :class="
       cn(
-        'group/node lg-node absolute text-sm',
-        'flex min-w-[225px] flex-col contain-layout contain-style',
+        'group/node lg-node absolute isolate text-sm',
+        'flex flex-col contain-layout contain-style',
+        isRerouteNode ? 'h-(--node-height)' : 'min-w-(--min-node-width)',
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
@@ -19,13 +21,12 @@
           : 'pointer-events-none'
       )
     "
-    :style="[
-      {
-        transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex,
-        opacity: nodeOpacity
-      }
-    ]"
+    :style="{
+      '--min-node-width': `${MIN_NODE_WIDTH}px`,
+      transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+      zIndex: zIndex,
+      opacity: nodeOpacity
+    }"
     v-bind="remainingPointerHandlers"
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
@@ -75,7 +76,8 @@
       :class="
         cn(
           'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
-          'min-h-(--node-height) w-(--node-width)',
+          'w-(--node-width)',
+          !isRerouteNode && 'min-h-(--node-height) min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
           {
@@ -129,7 +131,11 @@
         :style="{ width: `${Math.min(progress * 100, 100)}%` }"
       />
 
-      <template v-if="!isCollapsed">
+      <template v-if="!isCollapsed && isRerouteNode">
+        <NodeSlots :node-data="nodeData" />
+      </template>
+
+      <template v-else-if="!isCollapsed">
         <div class="relative">
           <!-- Progress bar for executing state -->
           <div
@@ -166,7 +172,7 @@
             />
             <NodeContent
               v-for="preview in promotedPreviews"
-              :key="`${preview.interiorNodeId}-${preview.widgetName}`"
+              :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
               :node-data="nodeData"
               :media="preview"
             />
@@ -186,6 +192,7 @@
       </template>
     </div>
     <NodeFooter
+      v-if="!isRerouteNode"
       :is-subgraph="!!lgraphNode?.isSubgraphNode()"
       :has-any-error="hasAnyError"
       :show-errors-tab-enabled="showErrorsTabEnabled"
@@ -199,7 +206,12 @@
       @toggle-advanced="handleToggleAdvanced"
     />
     <template
-      v-if="!isCollapsed && nodeData.resizable !== false && !isSelectMode"
+      v-if="
+        !isCollapsed &&
+        !isRerouteNode &&
+        nodeData.resizable !== false &&
+        !isSelectMode
+      "
     >
       <div
         v-for="handle in RESIZE_HANDLES"
@@ -257,7 +269,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { hasUnpromotedWidgets } from '@/core/graph/subgraph/unpromotedWidgetUtils'
+import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
 import {
   LGraphCanvas,
@@ -275,6 +287,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutChange } from '@/renderer/core/layout/types'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -303,6 +316,7 @@ import { isTransparent } from '@/utils/colorUtil'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 import { RESIZE_HANDLES } from '../interactions/resize/resizeHandleConfig'
 import { useNodeResize } from '../interactions/resize/useNodeResize'
@@ -364,6 +378,8 @@ const showErrorsTabEnabled = computed(() =>
 )
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
+
+const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(
@@ -452,18 +468,13 @@ function initSizeStyles() {
  * Handle external size changes (e.g., from extensions calling node.setSize()).
  * Updates CSS variables when layoutStore changes from Canvas/External source.
  */
-function handleLayoutChange(change: {
-  source: LayoutSource
-  nodeIds: string[]
-}) {
+function handleLayoutChange(change: LayoutChange) {
   // Only handle Canvas or External source (extensions calling setSize)
   if (
     change.source !== LayoutSource.Canvas &&
     change.source !== LayoutSource.External
   )
     return
-
-  if (!change.nodeIds.includes(nodeData.id)) return
   if (layoutStore.isResizingVueNodes.value) return
   if (isCollapsed.value) return
 
@@ -480,7 +491,10 @@ let unsubscribeLayoutChange: (() => void) | null = null
 
 onMounted(() => {
   initSizeStyles()
-  unsubscribeLayoutChange = layoutStore.onChange(handleLayoutChange)
+  unsubscribeLayoutChange = layoutStore.onNodeChange(
+    nodeData.id,
+    handleLayoutChange
+  )
 })
 
 onUnmounted(() => {
@@ -490,7 +504,6 @@ onUnmounted(() => {
 const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
-const MIN_NODE_WIDTH = 225
 const mutations = useLayoutMutations()
 
 const { startResize } = useNodeResize((result, element) => {

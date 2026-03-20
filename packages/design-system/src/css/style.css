@@ -15,10 +15,10 @@
 @plugin "./lucideStrokePlugin.js";
 
 /* Safelist dynamic comfy icons for node library folders */
-@source inline("icon-[comfy--{ai-model,bfl,bria,bytedance,credits,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow}]");
+@source inline("icon-[comfy--{ai-model,bfl,bria,bytedance,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow}]");
 
 /* Safelist dynamic comfy icons for essential nodes (kebab-case of node names) */
-@source inline("icon-[comfy--{save-image,load-video,save-video,load-3-d,save-glb,image-batch,batch-images-node,image-crop,image-scale,image-rotate,image-blur,image-invert,canny,recraft-remove-background-node,kling-lip-sync-audio-to-video-node,load-audio,save-audio,stability-text-to-audio,lora-loader,lora-loader-model-only,primitive-string-multiline,get-video-components,video-slice,tencent-text-to-model-node,tencent-image-to-model-node,open-ai-chat-node,subgraph-blueprint-canny-to-video-ltx-2-0,subgraph-blueprint-pose-to-video-ltx-2-0,preview-image,image-and-mask-preview,layer-mask-mask-preview,mask-preview,image-preview-from-latent}]");
+@source inline("icon-[comfy--{save-image,load-video,save-video,load-3-d,save-glb,image-batch,batch-images-node,image-crop,image-scale,image-rotate,image-blur,image-invert,canny,recraft-remove-background-node,kling-lip-sync-audio-to-video-node,load-audio,save-audio,stability-text-to-audio,lora-loader,lora-loader-model-only,primitive-string-multiline,get-video-components,video-slice,tencent-text-to-model-node,tencent-image-to-model-node,open-ai-chat-node,preview-image,image-and-mask-preview,layer-mask-mask-preview,mask-preview,image-preview-from-latent,i-tools-preview-image,i-tools-compare-image,canny-to-image,image-edit,text-to-image,pose-to-image,depth-to-video,image-to-image,canny-to-video,depth-to-image,image-to-video,pose-to-video,text-to-video,image-inpainting,image-outpainting}]");
 
 @custom-variant touch (@media (hover: none));
 
@@ -1900,4 +1900,38 @@ audio.comfy-audio.empty-audio-widget {
   50% {
     background-position: 0 0;
   }
+}
+
+@utility scroll-shadows-* {
+  overflow: auto;
+
+  background:
+    /* Shadow Cover TOP */
+    linear-gradient(--value(--color-*) 30%, transparent) center top,
+    /* Shadow Cover BOTTOM */
+      linear-gradient(transparent, --value(--color-*) 70%) center bottom,
+    /* Shadow TOP */
+      radial-gradient(
+        farthest-side at 50% 0,
+        color-mix(in oklab, --value(--color-*), #777777 35%),
+        60%,
+        transparent
+      )
+      center top,
+    /* Shadow BOTTOM */
+      radial-gradient(
+        farthest-side at 50% 100%,
+        color-mix(in oklab, --value(--color-*), #777777 35%),
+        60%,
+        transparent
+      )
+      center bottom;
+
+  background-repeat: no-repeat;
+  background-size:
+    300% 40px,
+    300% 40px,
+    300% 14px,
+    300% 14px;
+  background-attachment: local, local, scroll, scroll;
 }

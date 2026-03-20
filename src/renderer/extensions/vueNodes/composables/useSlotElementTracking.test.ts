@@ -4,6 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -11,7 +12,9 @@ import type { SlotLayout } from '@/renderer/core/layout/types'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
+  syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
+  requestSlotLayoutSyncForAllNodes,
   useSlotElementTracking
 } from './useSlotElementTracking'
 
@@ -53,7 +56,10 @@ function createWrapperComponent(type: 'input' | 'output') {
  */
 async function mountAndRegisterSlot(type: 'input' | 'output') {
   const wrapper = mount(createWrapperComponent(type))
-  wrapper.vm.el = document.createElement('div')
+  const slotEl = document.createElement('div')
+  slotEl.getBoundingClientRect = vi.fn(() => new DOMRect(100, 200, 16, 16))
+  document.body.append(slotEl)
+  wrapper.vm.el = slotEl
   await nextTick()
   flushScheduledSlotLayoutSync()
   return wrapper
@@ -62,6 +68,7 @@ async function mountAndRegisterSlot(type: 'input' | 'output') {
 describe('useSlotElementTracking', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    document.body.innerHTML = ''
     layoutStore.initializeFromLiteGraph([])
     layoutStore.applyOperation({
       type: 'createNode',
@@ -130,5 +137,90 @@ describe('useSlotElementTracking', () => {
 
     // Should remain pending — waiting for Vue components to mount
     expect(layoutStore.pendingSlotSync).toBe(true)
+  })
+
+  it('keeps pendingSlotSync when all registered slots are hidden', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const hiddenSlot = document.createElement('div')
+
+    const registryStore = useNodeSlotRegistryStore()
+    const node = registryStore.ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: hiddenSlot,
+      index: SLOT_INDEX,
+      type: 'input'
+    })
+
+    layoutStore.setPendingSlotSync(true)
+    requestSlotLayoutSyncForAllNodes()
+
+    expect(layoutStore.pendingSlotSync).toBe(true)
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+  })
+
+  it('removes stale slot layouts when slot element is hidden', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const hiddenSlot = document.createElement('div')
+
+    const staleLayout: SlotLayout = {
+      nodeId: NODE_ID,
+      index: SLOT_INDEX,
+      type: 'input',
+      position: { x: 10, y: 20 },
+      bounds: { x: 6, y: 16, width: 8, height: 8 }
+    }
+    layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: staleLayout }])
+
+    const registryStore = useNodeSlotRegistryStore()
+    const node = registryStore.ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: hiddenSlot,
+      index: SLOT_INDEX,
+      type: 'input'
+    })
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+  })
+
+  it('skips slot layout writeback when measured slot geometry is unchanged', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const slotEl = document.createElement('div')
+    document.body.append(slotEl)
+    slotEl.getBoundingClientRect = vi.fn(() => new DOMRect(100, 200, 16, 16))
+
+    const registryStore = useNodeSlotRegistryStore()
+    const node = registryStore.ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: slotEl,
+      index: SLOT_INDEX,
+      type: 'input',
+      cachedOffset: { x: 108, y: 208 }
+    })
+
+    const slotSize = LiteGraph.NODE_SLOT_HEIGHT
+    const halfSlotSize = slotSize / 2
+    const initialLayout: SlotLayout = {
+      nodeId: NODE_ID,
+      index: SLOT_INDEX,
+      type: 'input',
+      position: { x: 108, y: 208 },
+      bounds: {
+        x: 108 - halfSlotSize,
+        y: 208 - halfSlotSize,
+        width: slotSize,
+        height: slotSize
+      }
+    }
+    layoutStore.batchUpdateSlotLayouts([
+      { key: slotKey, layout: initialLayout }
+    ])
+
+    const batchUpdateSpy = vi.spyOn(layoutStore, 'batchUpdateSlotLayouts')
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(batchUpdateSpy).not.toHaveBeenCalled()
   })
 })

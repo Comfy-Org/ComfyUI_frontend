@@ -186,4 +186,62 @@ describe('missingModelStore', () => {
       expect(store.isWidgetMissingModel('1', 'ckpt_name')).toBe(false)
     })
   })
+
+  describe('removeMissingModelByWidget', () => {
+    it('removes the matching model entry by nodeId and widgetName', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', {
+          nodeId: '5',
+          widgetName: 'ckpt_name'
+        }),
+        makeModelCandidate('model_b.safetensors', {
+          nodeId: '8',
+          widgetName: 'lora_name'
+        })
+      ])
+
+      store.removeMissingModelByWidget('5', 'ckpt_name')
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.missingModelCandidates![0].name).toBe('model_b.safetensors')
+    })
+
+    it('sets candidates to null when last entry is removed', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', {
+          nodeId: '5',
+          widgetName: 'ckpt_name'
+        })
+      ])
+
+      store.removeMissingModelByWidget('5', 'ckpt_name')
+
+      expect(store.missingModelCandidates).toBeNull()
+      expect(store.hasMissingModels).toBe(false)
+    })
+
+    it('does nothing when no candidates exist', () => {
+      const store = useMissingModelStore()
+      store.removeMissingModelByWidget('5', 'ckpt_name')
+      expect(store.missingModelCandidates).toBeNull()
+    })
+
+    it('does nothing when nodeId or widgetName does not match', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', {
+          nodeId: '5',
+          widgetName: 'ckpt_name'
+        })
+      ])
+
+      store.removeMissingModelByWidget('5', 'lora_name')
+      expect(store.missingModelCandidates).toHaveLength(1)
+
+      store.removeMissingModelByWidget('99', 'ckpt_name')
+      expect(store.missingModelCandidates).toHaveLength(1)
+    })
+  })
 })

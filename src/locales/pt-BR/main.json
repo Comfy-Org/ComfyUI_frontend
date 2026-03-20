@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "Redefinição de senha enviada",
   "cloudForgotPassword_sendResetLink": "Enviar link de redefinição",
   "cloudForgotPassword_title": "Esqueceu a senha",
+  "cloudNotification": {
+    "continueLocally": "Continuar Localmente",
+    "exploreCloud": "Experimente a Nuvem Gratuitamente",
+    "feature1Title": "400 Créditos Grátis por Mês",
+    "feature2Title": "Funciona em Qualquer Lugar, Instantaneamente",
+    "feature3Title": "Modelos Prontos para Usar",
+    "feature4Title": "Principais Pacotes de Nodes Personalizados Pré-instalados",
+    "footer": "O ComfyUI continua gratuito e de código aberto. A nuvem é opcional.",
+    "message": "Da configuração à criação em segundos. Modelos populares, extensões e GPUs potentes — prontos quando você quiser.",
+    "title": "Execute o ComfyUI na Nuvem"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -502,6 +513,7 @@
   "cloudWaitlist_contactLink": "aqui",
   "cloudWaitlist_questionsText": "Dúvidas? Entre em contato conosco",
   "color": {
+    "alpha": "Alfa",
     "black": "Preto",
     "blue": "Azul",
     "brown": "Marrom",
@@ -509,11 +521,15 @@
     "cyan": "Ciano",
     "default": "Padrão",
     "green": "Verde",
+    "hex": "Hex",
+    "hue": "Matiz",
     "noColor": "Sem Cor",
     "pale_blue": "Azul Claro",
     "pink": "Rosa",
     "purple": "Roxo",
     "red": "Vermelho",
+    "rgba": "RGBA",
+    "saturationBrightness": "Saturação e brilho da cor",
     "yellow": "Amarelo"
   },
   "comfyHubProfile": {
@@ -648,6 +664,7 @@
     "Open in Mask Editor": "Abrir no Editor de Máscara",
     "Outputs": "Saídas",
     "Paste": "Colar",
+    "Paste Image": "Colar imagem",
     "Pin": "Fixar",
     "Properties": "Propriedades",
     "Properties Panel": "Painel de Propriedades",
@@ -731,6 +748,10 @@
       "tooltip": "Unificamos os pagamentos no Comfy. Agora tudo funciona com Créditos Comfy:\n- Nós parceiros (anteriormente nós de API)\n- Fluxos de trabalho na nuvem\n\nSeu saldo existente de nós parceiros foi convertido em créditos."
     },
     "yourCreditBalance": "Seu saldo de créditos"
+  },
+  "curveWidget": {
+    "linear": "Linear",
+    "monotone_cubic": "Suave"
   },
   "dataTypes": {
     "*": "*",
@@ -922,9 +943,11 @@
     "2x": "2x",
     "about": "Sobre",
     "add": "Adicionar",
+    "addNewKeybinding": "Adicionar novo atalho",
     "addNode": "Adicionar um nó...",
     "addNodeFilterCondition": "Adicionar condição de filtro de nó",
     "all": "Todos",
+    "allKeybindingsReset": "Todos os atalhos redefinidos para o padrão",
     "amount": "Quantidade",
     "apply": "Aplicar",
     "architecture": "Arquitetura",
@@ -943,6 +966,7 @@
     "cancelled": "Cancelado",
     "capture": "capturar",
     "category": "Categoria",
+    "changeKeybinding": "Alterar atalho",
     "chart": "Gráfico",
     "chartLowercase": "gráfico",
     "choose_file_to_upload": "escolha o arquivo para enviar",
@@ -1095,6 +1119,7 @@
     "moreWorkflows": "Mais fluxos de trabalho",
     "mostRelevant": "Mais relevante",
     "multiSelectDropdown": "Menu suspenso de seleção múltipla",
+    "nMoreKeybindings": "+ {count} mais",
     "name": "Nome",
     "newFolder": "Nova pasta",
     "next": "Próximo",
@@ -1132,6 +1157,8 @@
     "playRecording": "Reproduzir gravação",
     "playbackSpeed": "Velocidade de reprodução",
     "playing": "Reproduzindo",
+    "preloadError": "Um recurso necessário falhou ao carregar. Por favor, recarregue a página.",
+    "preloadErrorTitle": "Erro de Carregamento",
     "preview": "PRÉVIA",
     "previousImage": "Imagem anterior",
     "profile": "Perfil",
@@ -1155,7 +1182,11 @@
     "releaseTitle": "Lançamento {package} {version}",
     "reloadToApplyChanges": "Recarregue para aplicar as alterações",
     "remove": "Remover",
+    "removeAll": "Remover todos",
+    "removeAllKeybindingsMessage": "Todos os atalhos para este comando serão removidos",
+    "removeAllKeybindingsTitle": "Remover todos os atalhos?",
     "removeImage": "Remover imagem",
+    "removeKeybinding": "Remover atalho",
     "removeTag": "Remover tag",
     "removeVideo": "Remover vídeo",
     "rename": "Renomear",
@@ -1164,7 +1195,10 @@
     "reportSent": "Relatório enviado",
     "reset": "Redefinir",
     "resetAll": "Redefinir tudo",
+    "resetAllKeybindingsMessage": "Todos os atalhos serão redefinidos para seus valores padrão. Esta ação não pode ser desfeita.",
+    "resetAllKeybindingsTitle": "Redefinir todos os atalhos?",
     "resetAllKeybindingsTooltip": "Redefinir todos os atalhos para o padrão",
+    "resetToDefault": "Redefinir para o padrão",
     "resizeFromBottomLeft": "Redimensionar pelo canto inferior esquerdo",
     "resizeFromBottomRight": "Redimensionar pelo canto inferior direito",
     "resizeFromTopLeft": "Redimensionar pelo canto superior esquerdo",
@@ -1584,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nós principais da versão {version}:",
     "outdatedVersion": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI ({version}). Alguns nós podem não funcionar corretamente.",
-    "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente."
+    "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente.",
+    "unknownVersion": "desconhecida"
   },
   "maintenance": {
     "None": "Nenhum",
@@ -2406,6 +2441,7 @@
     "groupSettings": "Configurações de Grupo",
     "groups": "Grupos",
     "hideAdvancedInputsButton": "Ocultar entradas avançadas",
+    "hideAdvancedShort": "Ocultar avançado",
     "hideInput": "Ocultar entrada",
     "info": "Informações",
     "inputs": "ENTRADAS",
@@ -2420,7 +2456,9 @@
       "collapseNodes": "Ocultar nós de referência",
       "confirmSelection": "Confirmar seleção",
       "copyModelName": "Copiar nome do modelo",
+      "copyUrl": "Copiar URL",
       "customNodeDownloadDisabled": "O ambiente em nuvem não suporta importação de modelos para nós personalizados nesta seção. Utilize nós de carregamento padrão ou substitua por um modelo da biblioteca abaixo.",
+      "downloadAll": "Baixar tudo",
       "expandNodes": "Mostrar nós de referência",
       "import": "Importar",
       "importAnyway": "Importar mesmo assim",
@@ -2487,6 +2525,7 @@
     "seeError": "Ver erro",
     "settings": "Configurações",
     "showAdvancedInputsButton": "Mostrar entradas avançadas",
+    "showAdvancedShort": "Mostrar avançado",
     "showInput": "Mostrar entrada",
     "title": "Nenhum nó selecionado | 1 nó selecionado | {count} nós selecionados",
     "togglePanel": "Alternar painel de propriedades",

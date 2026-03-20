@@ -1,3 +1,5 @@
+import { cachedMeasureText } from './textMeasureCache'
+
 /**
  * Truncates text to fit within a given width using binary search for optimal performance.
  * @param ctx The canvas rendering context used for text measurement
@@ -12,13 +14,13 @@ export function truncateText(
   maxWidth: number,
   ellipsis: string = '...'
 ): string {
-  const textWidth = ctx.measureText(text).width
+  const textWidth = cachedMeasureText(ctx, text)
 
   if (textWidth <= maxWidth || maxWidth <= 0) {
     return text
   }
 
-  const ellipsisWidth = ctx.measureText(ellipsis).width
+  const ellipsisWidth = cachedMeasureText(ctx, ellipsis)
   const availableWidth = maxWidth - ellipsisWidth
 
   if (availableWidth <= 0) {
@@ -33,7 +35,7 @@ export function truncateText(
   while (low <= high) {
     const mid = Math.floor((low + high) / 2)
     const testText = text.substring(0, mid)
-    const testWidth = ctx.measureText(testText).width
+    const testWidth = cachedMeasureText(ctx, testText)
 
     if (testWidth <= availableWidth) {
       bestFit = mid

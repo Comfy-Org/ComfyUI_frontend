@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "لینک بازنشانی رمز عبور ارسال شد",
   "cloudForgotPassword_sendResetLink": "ارسال لینک بازنشانی",
   "cloudForgotPassword_title": "فراموشی رمز عبور",
+  "cloudNotification": {
+    "continueLocally": "ادامه به صورت محلی",
+    "exploreCloud": "امتحان رایگان فضای ابری",
+    "feature1Title": "۴۰۰ اعتبار رایگان ماهانه",
+    "feature2Title": "قابل استفاده در هر مکان، بلافاصله",
+    "feature3Title": "مدل‌ها آماده استفاده",
+    "feature4Title": "برترین بسته‌های Node سفارشی از پیش نصب‌شده",
+    "footer": "ComfyUI رایگان و متن‌باز باقی می‌ماند. استفاده از فضای ابری اختیاری است.",
+    "message": "از راه‌اندازی تا خلق اثر در چند ثانیه. مدل‌های محبوب، افزونه‌ها و GPUهای قدرتمند — آماده برای شما.",
+    "title": "اجرای ComfyUI در فضای ابری"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -502,6 +513,7 @@
   "cloudWaitlist_contactLink": "اینجا",
   "cloudWaitlist_questionsText": "سؤالی دارید؟ با ما تماس بگیرید",
   "color": {
+    "alpha": "آلفا",
     "black": "مشکی",
     "blue": "آبی",
     "brown": "قهوه‌ای",
@@ -509,11 +521,15 @@
     "cyan": "فیروزه‌ای",
     "default": "پیش‌فرض",
     "green": "سبز",
+    "hex": "Hex",
+    "hue": "ته‌رنگ",
     "noColor": "بدون رنگ",
     "pale_blue": "آبی کم‌رنگ",
     "pink": "صورتی",
     "purple": "بنفش",
     "red": "قرمز",
+    "rgba": "RGBA",
+    "saturationBrightness": "اشباع و روشنایی رنگ",
     "yellow": "زرد"
   },
   "comfyHubProfile": {
@@ -648,6 +664,7 @@
     "Open in Mask Editor": "باز کردن در Mask Editor",
     "Outputs": "خروجی‌ها",
     "Paste": "چسباندن",
+    "Paste Image": "چسباندن تصویر",
     "Pin": "سنجاق کردن",
     "Properties": "ویژگی‌ها",
     "Properties Panel": "پنل ویژگی‌ها",
@@ -731,6 +748,10 @@
       "tooltip": "پرداخت‌ها در Comfy یکپارچه شده‌اند. اکنون همه چیز با اعتبار Comfy انجام می‌شود:\n- nodeهای شریک (قبلاً nodeهای API)\n- workflowهای ابری\n\nموجودی nodeهای شریک شما به اعتبار تبدیل شده است."
     },
     "yourCreditBalance": "موجودی اعتبار شما"
+  },
+  "curveWidget": {
+    "linear": "خطی",
+    "monotone_cubic": "صاف"
   },
   "dataTypes": {
     "*": "*",
@@ -922,9 +943,11 @@
     "2x": "۲x",
     "about": "درباره",
     "add": "افزودن",
+    "addNewKeybinding": "افزودن کلید میانبر جدید",
     "addNode": "افزودن node...",
     "addNodeFilterCondition": "افزودن شرط فیلتر node",
     "all": "همه",
+    "allKeybindingsReset": "همه کلیدهای میانبر به پیش‌فرض بازنشانی شدند",
     "amount": "مقدار",
     "apply": "اعمال",
     "architecture": "معماری",
@@ -943,6 +966,7 @@
     "cancelled": "لغو شده",
     "capture": "گرفتن",
     "category": "دسته‌بندی",
+    "changeKeybinding": "تغییر کلید میانبر",
     "chart": "نمودار",
     "chartLowercase": "نمودار",
     "choose_file_to_upload": "انتخاب فایل برای بارگذاری",
@@ -1095,6 +1119,7 @@
     "moreWorkflows": "workflowهای بیشتر",
     "mostRelevant": "مرتبط‌ترین",
     "multiSelectDropdown": "لیست کشویی چندانتخابی",
+    "nMoreKeybindings": "+ {count} بیشتر",
     "name": "نام",
     "newFolder": "پوشه جدید",
     "next": "بعدی",
@@ -1132,6 +1157,8 @@
     "playRecording": "پخش ضبط",
     "playbackSpeed": "سرعت پخش",
     "playing": "در حال پخش",
+    "preloadError": "یک منبع مورد نیاز بارگذاری نشد. لطفاً صفحه را مجدداً بارگذاری کنید.",
+    "preloadErrorTitle": "خطا در بارگذاری",
     "preview": "پیش‌نمایش",
     "previousImage": "تصویر قبلی",
     "profile": "پروفایل",
@@ -1155,7 +1182,11 @@
     "releaseTitle": "انتشار {package} نسخه {version}",
     "reloadToApplyChanges": "برای اعمال تغییرات بارگذاری مجدد کنید",
     "remove": "حذف",
+    "removeAll": "حذف همه",
+    "removeAllKeybindingsMessage": "همه کلیدهای میانبر این فرمان حذف خواهند شد",
+    "removeAllKeybindingsTitle": "حذف همه کلیدهای میانبر؟",
     "removeImage": "حذف تصویر",
+    "removeKeybinding": "حذف کلید میانبر",
     "removeTag": "حذف برچسب",
     "removeVideo": "حذف ویدیو",
     "rename": "تغییر نام",
@@ -1164,7 +1195,10 @@
     "reportSent": "گزارش ارسال شد",
     "reset": "بازنشانی",
     "resetAll": "بازنشانی همه",
+    "resetAllKeybindingsMessage": "همه کلیدهای میانبر به مقادیر پیش‌فرض بازنشانی خواهند شد. این عمل قابل بازگشت نیست.",
+    "resetAllKeybindingsTitle": "بازنشانی همه کلیدهای میانبر؟",
     "resetAllKeybindingsTooltip": "بازنشانی همه کلیدهای میانبر به حالت پیش‌فرض",
+    "resetToDefault": "بازنشانی به پیش‌فرض",
     "resizeFromBottomLeft": "تغییر اندازه از گوشه پایین-چپ",
     "resizeFromBottomRight": "تغییر اندازه از گوشه پایین-راست",
     "resizeFromTopLeft": "تغییر اندازه از گوشه بالا-چپ",
@@ -1584,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "nodeهای اصلی از نسخه {version}:",
     "outdatedVersion": "این workflow با نسخه جدیدتری از ComfyUI ({version}) ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
-    "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند."
+    "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
+    "unknownVersion": "نامشخص"
   },
   "maintenance": {
     "None": "هیچ‌کدام",
@@ -2406,6 +2441,7 @@
     "groupSettings": "تنظیمات گروه",
     "groups": "گروه‌ها",
     "hideAdvancedInputsButton": "مخفی کردن ورودی‌های پیشرفته",
+    "hideAdvancedShort": "مخفی کردن پیشرفته",
     "hideInput": "مخفی کردن ورودی",
     "info": "اطلاعات",
     "inputs": "ورودی‌ها",
@@ -2420,7 +2456,9 @@
       "collapseNodes": "مخفی کردن nodeهای مرتبط",
       "confirmSelection": "تأیید انتخاب",
       "copyModelName": "کپی نام مدل",
+      "copyUrl": "کپی نشانی اینترنتی",
       "customNodeDownloadDisabled": "محیط ابری از وارد کردن مدل برای custom nodeها در این بخش پشتیبانی نمی‌کند. لطفاً از nodeهای بارگذار استاندارد استفاده کنید یا مدلی از کتابخانه زیر جایگزین نمایید.",
+      "downloadAll": "دانلود همه",
       "expandNodes": "نمایش nodeهای مرتبط",
       "import": "وارد کردن",
       "importAnyway": "به هر حال وارد کن",
@@ -2487,6 +2525,7 @@
     "seeError": "مشاهده خطا",
     "settings": "تنظیمات",
     "showAdvancedInputsButton": "نمایش ورودی‌های پیشرفته",
+    "showAdvancedShort": "نمایش پیشرفته",
     "showInput": "نمایش ورودی",
     "title": "هیچ نودی انتخاب نشده است | ۱ نود انتخاب شده است | {count} نود انتخاب شده‌اند",
     "togglePanel": "نمایش/پنهان کردن پنل ویژگی‌ها",
