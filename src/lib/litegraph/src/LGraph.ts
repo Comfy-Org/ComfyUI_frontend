@@ -1626,67 +1626,80 @@ export class LGraph
    * (origin_id, origin_slot, target_id, target_slot). Keeps the link
    * referenced by input.link and removes orphaned duplicates from
    * output.links and the graph's _links map.
+   *
+   * Three phases: group links by tuple, select the survivor, purge duplicates.
    */
   _removeDuplicateLinks(): void {
-    // Group all link IDs by their connection tuple.
-    const groups = new Map<string, LinkId[]>()
-    for (const [id, link] of this._links) {
-      const key = LGraph._linkTupleKey(link)
-      let group = groups.get(key)
-      if (!group) {
-        group = []
-        groups.set(key, group)
-      }
-      group.push(id)
-    }
+    const groups = this._groupLinksByTuple()
 
-    for (const [, ids] of groups) {
+    for (const ids of groups.values()) {
       if (ids.length <= 1) continue
 
       const sampleLink = this._links.get(ids[0])!
       const node = this.getNodeById(sampleLink.target_id)
+      const keepId = this._selectSurvivorLink(ids, node)
 
-      // Find which link ID is actually referenced by any input on the target
-      // node. Cannot rely on target_slot index because widget-to-input
-      // conversions during configure() can shift slot indices.
-      let keepId: LinkId | undefined
-      if (node) {
-        for (const input of node.inputs ?? []) {
-          const match = ids.find((id) => input.link === id)
-          if (match != null) {
-            keepId = match
-            break
-          }
-        }
+      this._purgeOrphanedLinks(ids, keepId)
+      this._repairInputLinks(ids, keepId, node)
+    }
+  }
+
+  /** Groups all link IDs by their connection tuple key. */
+  private _groupLinksByTuple(): Map<string, LinkId[]> {
+    const groups = new Map<string, LinkId[]>()
+    for (const [id, link] of this._links) {
+      const key = LGraph._linkTupleKey(link)
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(id)
+    }
+    return groups
+  }
+
+  /**
+   * Finds the link ID actually referenced by an input on the target node.
+   * Cannot rely on target_slot index because widget-to-input conversions
+   * during configure() can shift slot indices.
+   */
+  private _selectSurvivorLink(ids: LinkId[], node: LGraphNode | null): LinkId {
+    if (!node) return ids[0]
+
+    for (const input of node.inputs ?? []) {
+      const match = ids.find((id) => input.link === id)
+      if (match != null) return match
+    }
+    return ids[0]
+  }
+
+  /** Removes duplicate links from origin outputs and the graph's link map. */
+  private _purgeOrphanedLinks(ids: LinkId[], keepId: LinkId): void {
+    for (const id of ids) {
+      if (id === keepId) continue
+
+      const link = this._links.get(id)
+      if (!link) continue
+
+      const originNode = this.getNodeById(link.origin_id)
+      const output = originNode?.outputs?.[link.origin_slot]
+      if (output?.links) {
+        const idx = output.links.indexOf(id)
+        if (idx !== -1) output.links.splice(idx, 1)
       }
-      keepId ??= ids[0]
 
-      for (const id of ids) {
-        if (id === keepId) continue
+      this._links.delete(id)
+    }
+  }
 
-        const link = this._links.get(id)
-        if (!link) continue
+  /** Ensures input.link on the target node points to the surviving link. */
+  private _repairInputLinks(
+    ids: LinkId[],
+    keepId: LinkId,
+    node: LGraphNode | null
+  ): void {
+    if (!node) return
 
-        // Remove from origin node's output.links array
-        const originNode = this.getNodeById(link.origin_id)
-        if (originNode) {
-          const output = originNode.outputs?.[link.origin_slot]
-          if (output?.links) {
-            const idx = output.links.indexOf(id)
-            if (idx !== -1) output.links.splice(idx, 1)
-          }
-        }
-
-        this._links.delete(id)
-      }
-
-      // Ensure input.link points to the surviving link
-      if (node) {
-        for (const input of node.inputs ?? []) {
-          if (ids.includes(input.link as LinkId) && input.link !== keepId) {
-            input.link = keepId
-          }
-        }
+    for (const input of node.inputs ?? []) {
+      if (ids.includes(input.link as LinkId) && input.link !== keepId) {
+        input.link = keepId
       }
     }
   }
