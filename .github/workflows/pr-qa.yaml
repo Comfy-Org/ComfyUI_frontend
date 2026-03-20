@@ -163,7 +163,8 @@ jobs:
             --mode before \
             --diff "${{ runner.temp }}/pr-diff.txt" \
             --output-dir "$QA_ARTIFACTS" \
-            --url http://127.0.0.1:8188
+            --url http://127.0.0.1:8188 \
+            --test-plan .claude/skills/comfy-qa/SKILL.md
 
       - name: Stop server after BEFORE run
         if: needs.resolve-matrix.outputs.mode == 'focused'
@@ -200,7 +201,8 @@ jobs:
             --mode after \
             --diff "${{ runner.temp }}/pr-diff.txt" \
             --output-dir "$QA_ARTIFACTS" \
-            --url http://127.0.0.1:8188
+            --url http://127.0.0.1:8188 \
+            --test-plan .claude/skills/comfy-qa/SKILL.md
 
       - name: Collect artifacts
         if: always()
