@@ -23,7 +23,8 @@ test.describe(
     test('slot positions stay within node bounds after loading LG workflow', async ({
       comfyPage
     }) => {
-      // Read the workflow from Node.js and inject LG renderer version
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+
       const workflowPath = resolve(
         import.meta.dirname,
         '../assets/subgraphs/basic-subgraph.json'
@@ -36,22 +37,23 @@ test.describe(
         workflowRendererVersion: 'LG'
       }
 
-      const result = await comfyPage.page.evaluate(async (wf) => {
-        const app = window.app!
+      await comfyPage.page.evaluate(
+        (wf) =>
+          window.app!.loadGraphData(wf as ComfyWorkflowJSON, true, true, null, {
+            openSource: 'template'
+          }),
+        workflow
+      )
+      await comfyPage.nextFrame()
 
-        await app.loadGraphData(wf as ComfyWorkflowJSON, true, true, null, {
-          openSource: 'template'
-        })
+      // Wait for slot elements to appear in DOM
+      await comfyPage.page.locator('[data-slot-key]').first().waitFor()
 
-        // Wait for slot layout sync (RAF + nextTick)
-        await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 50)))
-
-        // Collect node positions/sizes and their slot positions
-        const nodes = app.graph._nodes
+      const result = await comfyPage.page.evaluate(() => {
+        const nodes = window.app!.graph._nodes
         const slotData: Array<{
           nodeId: string
-          nodeX: number
-          nodeY: number
+          isSubgraph: boolean
           nodeW: number
           nodeH: number
           slots: Array<{
@@ -90,8 +92,7 @@ test.describe(
 
           slotData.push({
             nodeId,
-            nodeX: node.pos[0],
-            nodeY: node.pos[1],
+            isSubgraph: !!node.isSubgraphNode?.(),
             nodeW: nodeRect.width,
             nodeH: nodeRect.height,
             slots
@@ -99,15 +100,13 @@ test.describe(
         }
 
         return slotData
-      }, workflow)
+      })
 
-      // Verify we found at least one node with slots (the SubgraphNode)
-      expect(result.length).toBeGreaterThan(0)
+      const subgraphNodes = result.filter((n) => n.isSubgraph)
+      expect(subgraphNodes.length).toBeGreaterThan(0)
 
-      for (const node of result) {
+      for (const node of subgraphNodes) {
         for (const slot of node.slots) {
-          // Slot center should be within reasonable bounds of the node element.
-          // Allow small overflow for slot connectors that sit on the edge.
           const margin = 20
           expect(
             slot.offsetX,

@@ -93,9 +93,9 @@ async function mountAndRegisterSlot(type: 'input' | 'output') {
 
 describe('useSlotElementTracking', () => {
   afterEach(() => {
-    document.body.querySelectorAll('[data-node-id]').forEach((el) => {
+    for (const el of document.body.querySelectorAll('[data-node-id]')) {
       el.remove()
-    })
+    }
   })
 
   beforeEach(() => {
