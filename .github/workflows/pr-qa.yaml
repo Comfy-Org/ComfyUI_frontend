@@ -20,8 +20,8 @@ on:
         default: focused
 
 concurrency:
-  group: qa-${{ github.ref }}-${{ github.run_id }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   resolve-matrix:
@@ -108,8 +108,8 @@ jobs:
           # when built with the PR branch's lockfile/deps
           pnpm exec vite build
           mv dist dist-before
-          # Restore PR branch
-          git checkout - -- .
+          # Restore PR branch files from HEAD (not 'git checkout -' which needs @{-1})
+          git checkout HEAD -- .
           git stash pop || true
           mv dist-after dist
           echo "Built both: dist-before/ (main) and dist/ (PR)"
