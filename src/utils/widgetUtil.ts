@@ -76,6 +76,12 @@ export function renameWidget(
   widget.label = newLabel || undefined
   if (input) {
     input.label = newLabel || undefined
+
+    const subgraphSlot = (input as { _subgraphSlot?: { label?: string } })
+      ._subgraphSlot
+    if (subgraphSlot) {
+      subgraphSlot.label = newLabel || undefined
+    }
   }
 
   return true
