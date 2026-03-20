@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs'
-import path from 'path'
+import { resolve } from 'path'
 
 import { expect } from '@playwright/test'
 
@@ -24,8 +24,8 @@ test.describe(
       comfyPage
     }) => {
       // Read the workflow from Node.js and inject LG renderer version
-      const workflowPath = path.resolve(
-        __dirname,
+      const workflowPath = resolve(
+        import.meta.dirname,
         '../assets/subgraphs/basic-subgraph.json'
       )
       const workflow = JSON.parse(
