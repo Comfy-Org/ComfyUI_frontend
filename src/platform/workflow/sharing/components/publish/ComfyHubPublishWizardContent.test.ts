@@ -63,7 +63,6 @@ describe('ComfyHubPublishWizardContent', () => {
   const onPublish = vi.fn()
   const onGoNext = vi.fn()
   const onGoBack = vi.fn()
-  const onCancel = vi.fn()
   const onUpdateFormData = vi.fn()
   const onRequireProfile = vi.fn()
   const onGateComplete = vi.fn()
@@ -92,7 +91,6 @@ describe('ComfyHubPublishWizardContent', () => {
         isLastStep: true,
         onGoNext,
         onGoBack,
-        onCancel,
         onUpdateFormData,
         onPublish,
         onRequireProfile,
@@ -139,14 +137,14 @@ describe('ComfyHubPublishWizardContent', () => {
           },
           ComfyHubPublishFooter: {
             template:
-              '<div data-testid="publish-footer" :data-publish-disabled="isPublishDisabled" :data-is-publishing="isPublishing"><button data-testid="publish-btn" @click="$emit(\'publish\')" /><button data-testid="next-btn" @click="$emit(\'next\')" /><button data-testid="back-btn" @click="$emit(\'back\')" /><button data-testid="cancel-btn" @click="$emit(\'cancel\')" /></div>',
+              '<div data-testid="publish-footer" :data-publish-disabled="isPublishDisabled" :data-is-publishing="isPublishing"><button data-testid="publish-btn" @click="$emit(\'publish\')" /><button data-testid="next-btn" @click="$emit(\'next\')" /><button data-testid="back-btn" @click="$emit(\'back\')" /></div>',
             props: [
               'isFirstStep',
               'isLastStep',
               'isPublishDisabled',
               'isPublishing'
             ],
-            emits: ['publish', 'next', 'back', 'cancel']
+            emits: ['publish', 'next', 'back']
           }
         }
       }
