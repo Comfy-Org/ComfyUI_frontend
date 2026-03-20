@@ -21,10 +21,12 @@
       )
     "
     :data-selected="selected"
+    :draggable="true"
     @click.stop="$emit('click')"
     @contextmenu.prevent.stop="
       asset ? emit('context-menu', $event, asset) : undefined
     "
+    @dragstart="dragStart"
   >
     <!-- Top Area: Media Preview -->
     <div class="relative aspect-square overflow-hidden p-0">
@@ -303,5 +305,16 @@ const handleImageLoaded = (width: number, height: number) => {
 
 const handleOutputCountClick = () => {
   emit('output-count-click')
+}
+function dragStart(e: DragEvent) {
+  if (!asset?.preview_url) return
+
+  const { dataTransfer } = e
+  if (!dataTransfer) return
+
+  const url = URL.parse(asset.preview_url, location.href)
+  if (!url) return
+
+  dataTransfer.items.add(url.toString(), 'text/uri-list')
 }
 </script>
