@@ -167,8 +167,7 @@ function nodeToNodeData(node: LGraphNode) {
             icon: 'icon-[lucide--x]',
             command: () => {
               const idx = appModeStore.selectedInputs.findIndex(
-                ([nId, wName]) =>
-                  nId === action.node.id && wName === action.widget.name
+                ([nId, wName]) => `${nId}:${wName}` === key
               )
               if (idx !== -1) appModeStore.selectedInputs.splice(idx, 1)
             }

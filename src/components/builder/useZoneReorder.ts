@@ -75,7 +75,8 @@ export const vZoneReorderDropTarget: Directive<HTMLElement, string> = {
 
         const newOrder = [...order]
         newOrder.splice(fromIdx, 1)
-        newOrder.splice(toIdx, 0, data.zoneId)
+        const insertIdx = fromIdx < toIdx ? toIdx - 1 : toIdx
+        newOrder.splice(insertIdx, 0, data.zoneId)
 
         appModeStore.setGridOverrides({
           ...appModeStore.gridOverrides,

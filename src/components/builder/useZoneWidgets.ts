@@ -37,11 +37,14 @@ export interface EnrichedNodeData extends VueNodeData {
 export function inputsForZone(
   selectedInputs: [NodeId, string][],
   getZone: (nodeId: NodeId, widgetName: string) => string | undefined,
-  zoneId: string
+  zoneId: string,
+  defaultZoneId?: string
 ): [NodeId, string][] {
-  return selectedInputs.filter(
-    ([nodeId, widgetName]) => getZone(nodeId, widgetName) === zoneId
-  )
+  return selectedInputs.filter(([nodeId, widgetName]) => {
+    const assigned = getZone(nodeId, widgetName)
+    if (assigned) return assigned === zoneId
+    return defaultZoneId ? zoneId === defaultZoneId : false
+  })
 }
 
 /**
@@ -57,12 +60,16 @@ export function useArrangeZoneWidgets() {
 
   return computed(() => {
     const map = new Map<string, ResolvedArrangeWidget[]>()
+    const defaultZoneId =
+      template.value.zones.find((z) => !z.isOutput)?.id ??
+      template.value.zones[0]?.id
 
     for (const zone of template.value.zones) {
       const inputs = inputsForZone(
         appModeStore.selectedInputs,
         appModeStore.getZone,
-        zone.id
+        zone.id,
+        defaultZoneId
       )
       const resolved = inputs
         .map(([nodeId, widgetName]) => {
@@ -102,12 +109,16 @@ export function useAppZoneWidgets() {
 
   return computed(() => {
     const map = new Map<string, EnrichedNodeData[]>()
+    const defaultZoneId =
+      template.value.zones.find((z) => !z.isOutput)?.id ??
+      template.value.zones[0]?.id
 
     for (const zone of template.value.zones) {
       const inputs = inputsForZone(
         appModeStore.selectedInputs,
         appModeStore.getZone,
-        zone.id
+        zone.id,
+        defaultZoneId
       )
       map.set(
         zone.id,

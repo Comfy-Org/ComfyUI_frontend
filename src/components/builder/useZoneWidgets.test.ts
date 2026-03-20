@@ -77,6 +77,23 @@ describe('useZoneWidgets', () => {
       expect(result).toEqual([[1, 'prompt']])
     })
 
+    it('routes unassigned inputs to defaultZoneId when provided', () => {
+      const getZone = makeGetZone({ '1:prompt': 'z1' })
+
+      const z1 = inputsForZone(inputs, getZone, 'z1', 'z1')
+      const z2 = inputsForZone(inputs, getZone, 'z2', 'z1')
+
+      // 1:prompt is explicitly z1; unassigned ones also go to z1 (default)
+      expect(z1).toEqual([
+        [1, 'prompt'],
+        [2, 'width'],
+        [1, 'steps'],
+        [3, 'seed']
+      ])
+      // z2 gets nothing since unassigned defaults to z1
+      expect(z2).toEqual([])
+    })
+
     it('filters non-contiguous inputs for the same node across zones', () => {
       const getZone = makeGetZone({
         '1:prompt': 'z1',

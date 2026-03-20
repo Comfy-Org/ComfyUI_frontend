@@ -65,11 +65,19 @@ function onPointerDown(e: PointerEvent) {
     emit('resizeEnd', latestFractions)
   }
 
+  function onPointerCancel() {
+    dragging.value = false
+    cleanupDrag?.()
+    cleanupDrag = null
+  }
+
   el.addEventListener('pointermove', onPointerMove)
   el.addEventListener('pointerup', onPointerUp)
+  el.addEventListener('pointercancel', onPointerCancel)
   cleanupDrag = () => {
     el.removeEventListener('pointermove', onPointerMove)
     el.removeEventListener('pointerup', onPointerUp)
+    el.removeEventListener('pointercancel', onPointerCancel)
   }
 }
 </script>
@@ -78,7 +86,7 @@ function onPointerDown(e: PointerEvent) {
   <div
     :class="
       cn(
-        'absolute z-10 flex transition-opacity hover:opacity-100',
+        'absolute z-10 flex touch-none transition-opacity hover:opacity-100',
         dragging ? 'opacity-100' : 'opacity-30',
         direction === 'column'
           ? 'top-0 h-full w-4 -translate-x-1/2 cursor-col-resize justify-center'

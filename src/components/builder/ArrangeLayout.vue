@@ -187,6 +187,12 @@ function getOrderedItems(zoneId: string) {
                     ? t('linearMode.arrange.alignToBottom')
                     : t('linearMode.arrange.alignToTop')
                 "
+                type="button"
+                :aria-label="
+                  (appModeStore.zoneAlign[zone.id] ?? 'top') === 'top'
+                    ? t('linearMode.arrange.alignToBottom')
+                    : t('linearMode.arrange.alignToTop')
+                "
                 class="flex size-5 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
                 @click="appModeStore.toggleZoneAlign(zone.id)"
               >
