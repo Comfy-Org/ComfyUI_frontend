@@ -276,14 +276,14 @@ export default defineConfig([
     files: ['**/*.test.ts'],
     plugins: { 'testing-library': testingLibrary },
     rules: {
-      'testing-library/prefer-screen-queries': 'warn',
-      'testing-library/no-container': 'warn',
-      'testing-library/no-node-access': 'warn',
-      'testing-library/no-wait-for-multiple-assertions': 'warn',
-      'testing-library/prefer-find-by': 'warn',
-      'testing-library/prefer-presence-queries': 'warn',
-      'testing-library/prefer-user-event': 'warn',
-      'testing-library/no-debugging-utils': 'warn'
+      'testing-library/prefer-screen-queries': 'error',
+      'testing-library/no-container': 'error',
+      'testing-library/no-node-access': 'error',
+      'testing-library/no-wait-for-multiple-assertions': 'error',
+      'testing-library/prefer-find-by': 'error',
+      'testing-library/prefer-presence-queries': 'error',
+      'testing-library/prefer-user-event': 'error',
+      'testing-library/no-debugging-utils': 'error'
     }
   },
   {
