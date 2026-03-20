@@ -2018,11 +2018,6 @@ export class LGraphNode
     })
   }
 
-  removeWidgetByName(name: string): void {
-    const widget = this.widgets?.find((x) => x.name === name)
-    if (widget) this.removeWidget(widget)
-  }
-
   removeWidget(widget: IBaseWidget): void {
     if (!this.widgets)
       throw new Error('removeWidget called on node without widgets')

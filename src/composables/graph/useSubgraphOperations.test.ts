@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 
 const mocks = vi.hoisted(() => ({
   publishSubgraph: vi.fn(),
@@ -46,6 +46,10 @@ function createSubgraphNode(): SubgraphNode {
   return node
 }
 
+function createRegularNode(): LGraphNode {
+  return new LGraphNode('testnode')
+}
+
 describe('useSubgraphOperations', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -78,6 +82,18 @@ describe('useSubgraphOperations', () => {
 
   it('addSubgraphToLibrary does not call publishSubgraph when multiple items selected', async () => {
     mocks.selectedItems = [createSubgraphNode(), createSubgraphNode()]
+
+    const { useSubgraphOperations } =
+      await import('@/composables/graph/useSubgraphOperations')
+    const { addSubgraphToLibrary } = useSubgraphOperations()
+
+    await addSubgraphToLibrary()
+
+    expect(mocks.publishSubgraph).not.toHaveBeenCalled()
+  })
+
+  it('addSubgraphToLibrary does not call publishSubgraph when selected item is not a SubgraphNode', async () => {
+    mocks.selectedItems = [createRegularNode()]
 
     const { useSubgraphOperations } =
       await import('@/composables/graph/useSubgraphOperations')

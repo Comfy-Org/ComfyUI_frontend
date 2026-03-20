@@ -3,6 +3,7 @@ import { readFileSync } from 'fs'
 import type { Page } from '@playwright/test'
 
 import type { Position } from '../types'
+import { getMimeType } from './mimeTypeUtil'
 
 export class DragDropHelper {
   constructor(
@@ -48,20 +49,8 @@ export class DragDropHelper {
       const filePath = this.assetPath(fileName)
       const buffer = readFileSync(filePath)
 
-      const getFileType = (fileName: string) => {
-        if (fileName.endsWith('.png')) return 'image/png'
-        if (fileName.endsWith('.svg')) return 'image/svg+xml'
-        if (fileName.endsWith('.webp')) return 'image/webp'
-        if (fileName.endsWith('.webm')) return 'video/webm'
-        if (fileName.endsWith('.json')) return 'application/json'
-        if (fileName.endsWith('.glb')) return 'model/gltf-binary'
-        if (fileName.endsWith('.avif')) return 'image/avif'
-        if (fileName.endsWith('.ogg')) return 'audio/ogg'
-        return 'application/octet-stream'
-      }
-
       evaluateParams.fileName = fileName
-      evaluateParams.fileType = getFileType(fileName)
+      evaluateParams.fileType = getMimeType(fileName)
       evaluateParams.buffer = [...new Uint8Array(buffer)]
     }
 
