@@ -244,7 +244,10 @@ describe('Graph Clearing and Callbacks', () => {
     graph.id = graphId
 
     const promotionStore = usePromotionStore()
-    promotionStore.promote(graphId, 1 as NodeId, '10', 'seed')
+    promotionStore.promote(graphId, 1 as NodeId, {
+      sourceNodeId: '10',
+      sourceWidgetName: 'seed'
+    })
 
     const widgetValueStore = useWidgetValueStore()
     widgetValueStore.registerWidget(graphId, {
@@ -258,14 +261,24 @@ describe('Graph Clearing and Callbacks', () => {
       disabled: undefined
     })
 
-    expect(promotionStore.isPromotedByAny(graphId, '10', 'seed')).toBe(true)
+    expect(
+      promotionStore.isPromotedByAny(graphId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+    ).toBe(true)
     expect(widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')).toEqual(
       expect.objectContaining({ value: 1 })
     )
 
     graph.clear()
 
-    expect(promotionStore.isPromotedByAny(graphId, '10', 'seed')).toBe(false)
+    expect(
+      promotionStore.isPromotedByAny(graphId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+    ).toBe(false)
     expect(
       widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')
     ).toBeUndefined()

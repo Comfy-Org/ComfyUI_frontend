@@ -8,6 +8,7 @@ import type {
   SafeWidgetData,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
@@ -41,9 +42,10 @@ describe('NodeWidgets', () => {
 
   const createMockNodeData = (
     nodeType: string = 'TestNode',
-    widgets: SafeWidgetData[] = []
+    widgets: SafeWidgetData[] = [],
+    id: string = '1'
   ): VueNodeData => ({
-    id: '1',
+    id,
     type: nodeType,
     widgets,
     title: 'Test Node',
@@ -54,9 +56,10 @@ describe('NodeWidgets', () => {
     outputs: []
   })
 
-  const mountComponent = (nodeData?: VueNodeData) => {
+  const mountComponent = (nodeData?: VueNodeData, setupStores?: () => void) => {
     const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
+    setupStores?.()
 
     return mount(NodeWidgets, {
       props: {
@@ -74,6 +77,20 @@ describe('NodeWidgets', () => {
       }
     })
   }
+
+  const getBorderStyles = (wrapper: ReturnType<typeof mount>) =>
+    (
+      wrapper.vm as unknown as { processedWidgets: unknown[] }
+    ).processedWidgets.map(
+      (entry) =>
+        (
+          entry as {
+            simplified: {
+              borderStyle?: string
+            }
+          }
+        ).simplified.borderStyle
+    )
 
   describe('node-type prop passing', () => {
     it('passes node type to widget components', () => {
@@ -253,6 +270,81 @@ describe('NodeWidgets', () => {
     const wrapper = mountComponent(nodeData)
 
     expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+  })
+
+  it('does not deduplicate promoted duplicates that differ only by disambiguating source identity', () => {
+    const firstPromoted = createMockWidget({
+      name: 'text',
+      type: 'text',
+      nodeId: 'outer-subgraph:1',
+      storeNodeId: 'outer-subgraph:1',
+      storeName: 'text',
+      slotName: 'text'
+    })
+    const secondPromoted = createMockWidget({
+      name: 'text',
+      type: 'text',
+      nodeId: 'outer-subgraph:2',
+      storeNodeId: 'outer-subgraph:2',
+      storeName: 'text',
+      slotName: 'text'
+    })
+
+    const nodeData = createMockNodeData('SubgraphNode', [
+      firstPromoted,
+      secondPromoted
+    ])
+    const wrapper = mountComponent(nodeData)
+
+    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+  })
+
+  it('applies promoted border styling to intermediate promoted widgets using host node identity', async () => {
+    const promotedWidget = createMockWidget({
+      name: 'text',
+      type: 'combo',
+      nodeId: 'inner-subgraph:1',
+      storeNodeId: 'inner-subgraph:1',
+      storeName: 'text',
+      slotName: 'text'
+    })
+    const nodeData = createMockNodeData('SubgraphNode', [promotedWidget], '3')
+    const wrapper = mountComponent(nodeData, () => {
+      usePromotionStore().promote('graph-test', '4', {
+        sourceNodeId: '3',
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
+      })
+    })
+    await nextTick()
+    const borderStyles = getBorderStyles(wrapper)
+
+    expect(borderStyles.some((style) => style?.includes('promoted'))).toBe(true)
+  })
+
+  it('does not apply promoted border styling to outermost widgets', async () => {
+    const promotedWidget = createMockWidget({
+      name: 'text',
+      type: 'combo',
+      nodeId: 'inner-subgraph:1',
+      storeNodeId: 'inner-subgraph:1',
+      storeName: 'text',
+      slotName: 'text'
+    })
+    const nodeData = createMockNodeData('SubgraphNode', [promotedWidget], '4')
+    const wrapper = mountComponent(nodeData, () => {
+      usePromotionStore().promote('graph-test', '4', {
+        sourceNodeId: '3',
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
+      })
+    })
+    await nextTick()
+    const borderStyles = getBorderStyles(wrapper)
+
+    expect(borderStyles.some((style) => style?.includes('promoted'))).toBe(
+      false
+    )
   })
 
   it('hides widgets when merged store options mark them hidden', async () => {

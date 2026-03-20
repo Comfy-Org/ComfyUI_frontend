@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 // Constants
 const RENAMED_INPUT_NAME = 'renamed_input'
@@ -630,6 +631,51 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const updatedBreadcrumbText = await breadcrumb.textContent()
       expect(updatedBreadcrumbText).toContain(UPDATED_SUBGRAPH_TITLE)
       expect(updatedBreadcrumbText).not.toBe(initialBreadcrumbText)
+    })
+
+    test('Switching workflows while inside subgraph returns to root graph context', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.nextFrame()
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+      await comfyPage.nextFrame()
+
+      expect(await isInSubgraph(comfyPage)).toBe(true)
+      await expect(comfyPage.page.locator(SELECTORS.breadcrumb)).toBeVisible()
+
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.nextFrame()
+
+      expect(await isInSubgraph(comfyPage)).toBe(false)
+
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.nextFrame()
+      expect(await isInSubgraph(comfyPage)).toBe(false)
+    })
+
+    test('Breadcrumb disappears after switching workflows while inside subgraph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.nextFrame()
+
+      const breadcrumb = comfyPage.page
+        .getByTestId(TestIds.breadcrumb.subgraph)
+        .locator('.p-breadcrumb')
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+      await comfyPage.nextFrame()
+
+      await expect(breadcrumb).toBeVisible()
+
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.nextFrame()
+
+      await expect(breadcrumb).toBeHidden()
     })
   })
 
