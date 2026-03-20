@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { reactive, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
@@ -25,9 +25,9 @@ export const useAppModeStore = defineStore('appMode', () => {
   const { mode, setMode, isBuilderMode, isSelectMode } = useAppMode()
   const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
-  const selectedInputs = reactive<[NodeId, string][]>([])
-  const selectedOutputs = reactive<NodeId[]>([])
-  const hasOutputs = computed(() => !!selectedOutputs.length)
+  const selectedInputs = ref<[NodeId, string][]>([])
+  const selectedOutputs = ref<NodeId[]>([])
+  const hasOutputs = computed(() => !!selectedOutputs.value.length)
   const hasNodes = computed(() => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
     void workflowStore.activeWorkflow
@@ -54,8 +54,8 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   function loadSelections(data: Partial<LinearData> | undefined) {
     const { inputs, outputs } = pruneLinearData(data)
-    selectedInputs.splice(0, selectedInputs.length, ...inputs)
-    selectedOutputs.splice(0, selectedOutputs.length, ...outputs)
+    selectedInputs.value.splice(0, selectedInputs.value.length, ...inputs)
+    selectedOutputs.value.splice(0, selectedOutputs.value.length, ...outputs)
   }
 
   function resetSelectedToWorkflow() {
@@ -74,7 +74,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   watch(
     () =>
       isBuilderMode.value
-        ? { inputs: selectedInputs, outputs: selectedOutputs }
+        ? { inputs: selectedInputs.value, outputs: selectedOutputs.value }
         : null,
     (data) => {
       if (!data || ChangeTracker.isLoadingGraph) return
@@ -130,10 +130,10 @@ export const useAppModeStore = defineStore('appMode', () => {
     const storeName = isPromotedWidgetView(widget)
       ? widget.sourceWidgetName
       : widget.name
-    const index = selectedInputs.findIndex(
+    const index = selectedInputs.value.findIndex(
       ([id, name]) => storeId == id && storeName === name
     )
-    if (index !== -1) selectedInputs.splice(index, 1)
+    if (index !== -1) selectedInputs.value.splice(index, 1)
   }
 
   return {
