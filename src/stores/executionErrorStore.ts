@@ -160,6 +160,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       options
     )
     missingModelStore.removeMissingModelByWidget(executionId, widgetName)
+    missingMediaStore.removeMissingMediaByWidget(executionId, widgetName)
   }
 
   /** Set missing models and open the error overlay if the Errors tab is enabled. */

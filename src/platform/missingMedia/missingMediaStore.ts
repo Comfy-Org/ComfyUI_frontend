@@ -97,6 +97,15 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
       missingMediaCandidates.value = null
   }
 
+  function removeMissingMediaByWidget(nodeId: string, widgetName: string) {
+    if (!missingMediaCandidates.value) return
+    missingMediaCandidates.value = missingMediaCandidates.value.filter(
+      (m) => !(String(m.nodeId) === nodeId && m.widgetName === widgetName)
+    )
+    if (!missingMediaCandidates.value.length)
+      missingMediaCandidates.value = null
+  }
+
   function clearMissingMedia() {
     _verificationAbortController?.abort()
     _verificationAbortController = null
@@ -116,6 +125,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
     setMissingMedia,
     removeMissingMediaByName,
+    removeMissingMediaByWidget,
     clearMissingMedia,
     createVerificationAbortController,
 

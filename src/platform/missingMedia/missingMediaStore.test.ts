@@ -102,6 +102,38 @@ describe('useMissingMediaStore', () => {
     expect(store.hasMissingMediaOnNode('99')).toBe(false)
   })
 
+  it('removeMissingMediaByWidget removes matching node+widget entry', () => {
+    const store = useMissingMediaStore()
+    store.setMissingMedia([
+      makeCandidate('1', 'photo.png'),
+      makeCandidate('2', 'clip.mp4', 'video')
+    ])
+
+    store.removeMissingMediaByWidget('1', 'image')
+
+    expect(store.missingMediaCandidates).toHaveLength(1)
+    expect(store.missingMediaCandidates![0].name).toBe('clip.mp4')
+  })
+
+  it('removeMissingMediaByWidget nulls candidates when last entry removed', () => {
+    const store = useMissingMediaStore()
+    store.setMissingMedia([makeCandidate('1', 'photo.png')])
+
+    store.removeMissingMediaByWidget('1', 'image')
+
+    expect(store.missingMediaCandidates).toBeNull()
+    expect(store.hasMissingMedia).toBe(false)
+  })
+
+  it('removeMissingMediaByWidget ignores non-matching entries', () => {
+    const store = useMissingMediaStore()
+    store.setMissingMedia([makeCandidate('1', 'photo.png')])
+
+    store.removeMissingMediaByWidget('99', 'image')
+
+    expect(store.missingMediaCandidates).toHaveLength(1)
+  })
+
   it('createVerificationAbortController aborts previous controller', () => {
     const store = useMissingMediaStore()
     const first = store.createVerificationAbortController()
