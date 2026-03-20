@@ -15,7 +15,7 @@
       <DropdownMenuContent
         :side-offset="4"
         :collision-padding="8"
-        class="z-50 bg-transparent p-0 shadow-lg"
+        class="z-1700 bg-transparent p-0 shadow-lg"
       >
         <MediaAssetMenuPanel
           :asset
@@ -24,6 +24,7 @@
           :show-delete-button
           :selected-assets
           :is-bulk-mode
+          close-on-scroll
           @zoom="emit('zoom')"
           @asset-deleted="emit('asset-deleted')"
           @bulk-download="emit('bulk-download', $event)"

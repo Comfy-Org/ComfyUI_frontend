@@ -9,7 +9,7 @@
     <Teleport to="body">
       <div
         v-if="!isPreviewVisible && showDetails && popoverPosition"
-        class="fixed z-50"
+        class="fixed z-1700"
         :style="{
           top: `${popoverPosition.top}px`,
           left: `${popoverPosition.left}px`
@@ -23,7 +23,7 @@
     <Teleport to="body">
       <div
         v-if="isPreviewVisible && canShowPreview && popoverPosition"
-        class="fixed z-50"
+        class="fixed z-1700"
         :style="{
           top: `${popoverPosition.top}px`,
           left: `${popoverPosition.left}px`

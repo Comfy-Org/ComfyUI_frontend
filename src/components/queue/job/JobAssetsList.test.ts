@@ -3,10 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
-import type { JobListItem as ApiJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 import JobAssetsList from './JobAssetsList.vue'
+
+vi.mock('@/components/queue/job/JobDetailsPopover.vue', () => ({
+  default: {
+    name: 'JobDetailsPopover',
+    template: '<div class="job-details-popover-stub" />'
+  }
+}))
 
 const JobDetailsPopoverStub = defineComponent({
   name: 'JobDetailsPopover',
@@ -32,43 +37,34 @@ vi.mock('vue-i18n', () => {
   }
 })
 
-const createResultItem = (
+const createPreviewOutput = (
   filename: string,
   mediaType: string = 'images'
-): ResultItemImpl => {
-  const item = new ResultItemImpl({
+): NonNullable<NonNullable<JobListItem['taskRef']>['previewOutput']> =>
+  ({
     filename,
-    subfolder: '',
-    type: 'output',
-    nodeId: 'node-1',
-    mediaType
-  })
-  Object.defineProperty(item, 'url', {
-    get: () => `/api/view/${filename}`
-  })
-  return item
-}
+    mediaType,
+    isImage: mediaType === 'images',
+    isVideo: mediaType === 'video',
+    isAudio: mediaType === 'audio',
+    is3D: mediaType === 'model',
+    url: `/api/view/${filename}`
+  }) as NonNullable<NonNullable<JobListItem['taskRef']>['previewOutput']>
 
-const createTaskRef = (preview?: ResultItemImpl): TaskItemImpl => {
-  const job: ApiJobListItem = {
-    id: `task-${Math.random().toString(36).slice(2)}`,
-    status: 'completed',
-    create_time: Date.now(),
-    preview_output: null,
-    outputs_count: preview ? 1 : 0,
-    workflow_id: 'workflow-1',
-    priority: 0
-  }
-  const flatOutputs = preview ? [preview] : []
-  return new TaskItemImpl(job, {}, flatOutputs)
-}
+const createTaskRef = (
+  preview?: NonNullable<NonNullable<JobListItem['taskRef']>['previewOutput']>
+): JobListItem['taskRef'] =>
+  ({
+    workflowId: 'workflow-1',
+    previewOutput: preview
+  }) as JobListItem['taskRef']
 
 const buildJob = (overrides: Partial<JobListItem> = {}): JobListItem => ({
   id: 'job-1',
   title: 'Job 1',
   meta: 'meta',
   state: 'completed',
-  taskRef: createTaskRef(createResultItem('job-1.png')),
+  taskRef: createTaskRef(createPreviewOutput('job-1.png')),
   ...overrides
 })
 
@@ -150,7 +146,7 @@ describe('JobAssetsList', () => {
   it('emits viewItem on double-click for completed video jobs without icon image', async () => {
     const job = buildJob({
       iconImageUrl: undefined,
-      taskRef: createTaskRef(createResultItem('job-1.webm', 'video'))
+      taskRef: createTaskRef(createPreviewOutput('job-1.webm', 'video'))
     })
     const wrapper = mountJobAssetsList([job])
 
@@ -167,7 +163,7 @@ describe('JobAssetsList', () => {
   it('emits viewItem on icon click for completed 3D jobs without preview tile', async () => {
     const job = buildJob({
       iconImageUrl: undefined,
-      taskRef: createTaskRef(createResultItem('job-1.glb', 'model'))
+      taskRef: createTaskRef(createPreviewOutput('job-1.glb', 'model'))
     })
     const wrapper = mountJobAssetsList([job])
 
@@ -182,7 +178,7 @@ describe('JobAssetsList', () => {
   it('does not emit viewItem on double-click for non-completed jobs', async () => {
     const job = buildJob({
       state: 'running',
-      taskRef: createTaskRef(createResultItem('job-1.png'))
+      taskRef: createTaskRef(createPreviewOutput('job-1.png'))
     })
     const wrapper = mountJobAssetsList([job])
 

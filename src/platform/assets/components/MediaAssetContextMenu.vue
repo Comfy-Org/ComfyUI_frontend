@@ -6,7 +6,7 @@
     <ContextMenuPortal>
       <ContextMenuContent
         :collision-padding="8"
-        class="z-50 bg-transparent p-0 shadow-lg"
+        class="z-1700 bg-transparent p-0 shadow-lg"
       >
         <MediaAssetMenuPanel
           class="media-asset-context-menu-content"

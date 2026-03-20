@@ -5,6 +5,49 @@ import { defineComponent, nextTick } from 'vue'
 
 import JobHistorySidebarTab from './JobHistorySidebarTab.vue'
 
+vi.mock('@/components/queue/job/JobDetailsPopover.vue', () => ({
+  default: {
+    name: 'JobDetailsPopover',
+    template: '<div class="job-details-popover-stub" />'
+  }
+}))
+
+vi.mock('@/components/queue/JobHistoryActionsMenu.vue', () => ({
+  default: {
+    name: 'JobHistoryActionsMenu',
+    template: '<div />'
+  }
+}))
+
+vi.mock('@/components/queue/job/JobFilterActions.vue', () => ({
+  default: {
+    name: 'JobFilterActions',
+    template: '<div />'
+  }
+}))
+
+vi.mock('@/components/queue/job/JobFilterTabs.vue', () => ({
+  default: {
+    name: 'JobFilterTabs',
+    template: '<div />'
+  }
+}))
+
+vi.mock('@/components/sidebar/tabs/SidebarTabTemplate.vue', () => ({
+  default: {
+    name: 'SidebarTabTemplate',
+    template:
+      '<div><slot name="alt-title" /><slot name="header" /><slot name="body" /></div>'
+  }
+}))
+
+vi.mock('@/components/sidebar/tabs/queue/MediaLightbox.vue', () => ({
+  default: {
+    name: 'MediaLightbox',
+    template: '<div />'
+  }
+}))
+
 const JobDetailsPopoverStub = defineComponent({
   name: 'JobDetailsPopover',
   props: {

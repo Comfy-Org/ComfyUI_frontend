@@ -39,7 +39,7 @@
             @preview-click="emitViewItem(job)"
             @click.stop
           >
-            <template v-if="hoveredJobId === job.id" #actions>
+            <template v-if="shouldShowActionsMenu(job.id)" #actions>
               <Button
                 v-if="isCancelable(job)"
                 variant="destructive"
@@ -67,7 +67,9 @@
                 {{ t('menuLabels.View') }}
               </Button>
               <JobActionsMenu
+                :open="openActionsJobId === job.id"
                 :entries="getMenuEntries(job)"
+                @update:open="onActionsMenuOpenChange(job.id, $event)"
                 @action="emit('menu-action', $event)"
               />
             </template>
@@ -80,7 +82,7 @@
   <Teleport to="body">
     <div
       v-if="activeDetails && popoverPosition"
-      class="job-details-popover fixed z-50"
+      class="job-details-popover fixed z-1700"
       :style="{
         top: `${popoverPosition.top}px`,
         left: `${popoverPosition.left}px`
@@ -127,6 +129,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const hoveredJobId = ref<string | null>(null)
+const openActionsJobId = ref<string | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
 const popoverPosition = ref<{ top: number; left: number } | null>(null)
 const {
@@ -192,6 +195,21 @@ function isCancelable(job: JobListItem) {
 
 function isFailedDeletable(job: JobListItem) {
   return job.showClear !== false && job.state === 'failed'
+}
+
+function shouldShowActionsMenu(jobId: string) {
+  return hoveredJobId.value === jobId || openActionsJobId.value === jobId
+}
+
+function onActionsMenuOpenChange(jobId: string, isOpen: boolean) {
+  if (isOpen) {
+    openActionsJobId.value = jobId
+    return
+  }
+
+  if (openActionsJobId.value === jobId) {
+    openActionsJobId.value = null
+  }
 }
 
 function getPreviewOutput(job: JobListItem) {

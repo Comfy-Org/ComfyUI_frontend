@@ -1,5 +1,5 @@
 <template>
-  <DropdownMenuRoot>
+  <DropdownMenuRoot v-model:open="open">
     <DropdownMenuTrigger as-child>
       <slot>
         <Button
@@ -16,7 +16,7 @@
       <DropdownMenuContent
         :side-offset="4"
         :collision-padding="8"
-        class="z-50 bg-transparent p-0 shadow-lg"
+        class="z-1700 bg-transparent p-0 shadow-lg"
       >
         <JobMenuPanel :entries @action="emit('action', $event)" />
       </DropdownMenuContent>
@@ -37,6 +37,8 @@ import Button from '@/components/ui/button/Button.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 
 import JobMenuPanel from './JobMenuPanel.vue'
+
+const open = defineModel<boolean>('open', { default: false })
 
 defineProps<{ entries: MenuEntry[] }>()
 

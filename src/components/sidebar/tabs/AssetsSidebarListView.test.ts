@@ -8,6 +8,20 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 
+vi.mock('@/platform/assets/components/MediaAssetActionsMenu.vue', () => ({
+  default: {
+    name: 'MediaAssetActionsMenu',
+    template: '<div class="media-asset-actions-menu-stub"><slot /></div>'
+  }
+}))
+
+vi.mock('@/platform/assets/components/MediaAssetContextMenu.vue', () => ({
+  default: {
+    name: 'MediaAssetContextMenu',
+    template: '<div class="media-asset-context-menu-stub"><slot /></div>'
+  }
+}))
+
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     isAssetDeleting: () => false
