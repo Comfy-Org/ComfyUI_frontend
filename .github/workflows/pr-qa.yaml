@@ -124,7 +124,7 @@ jobs:
       - name: Install Playwright browser
         shell: bash
         run: |
-          npx playwright install firefox
+          npx playwright install chromium
           mkdir -p "$QA_ARTIFACTS"
 
       - name: Get PR diff
