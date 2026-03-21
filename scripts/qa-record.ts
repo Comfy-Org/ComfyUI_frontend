@@ -409,7 +409,10 @@ async function main() {
   // Rename the recorded video to expected filename
   const videoName =
     opts.mode === 'before' ? 'qa-before-session.webm' : 'qa-session.webm'
-  const files = readdirSync(opts.outputDir).filter((f) => f.endsWith('.webm'))
+  const knownNames = new Set(['qa-before-session.webm', 'qa-session.webm'])
+  const files = readdirSync(opts.outputDir).filter(
+    (f) => f.endsWith('.webm') && !knownNames.has(f)
+  )
   if (files.length > 0) {
     const recorded = files[files.length - 1]
     renameSync(
