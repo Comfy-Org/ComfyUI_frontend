@@ -51,6 +51,8 @@ const zoneWidgets = useAppZoneWidgets()
 
 const runControlsZoneId = computed(() => {
   if (appModeStore.runControlsZoneId) return appModeStore.runControlsZoneId
+  if (template.value.defaultRunControlsZone)
+    return template.value.defaultRunControlsZone
   const zones = template.value.zones
   const inputZones = zones.filter((z) => !z.isOutput)
   return inputZones.at(-1)?.id ?? zones.at(-1)?.id ?? ''
@@ -58,6 +60,8 @@ const runControlsZoneId = computed(() => {
 
 const presetStripZoneId = computed(() => {
   if (appModeStore.presetStripZoneId) return appModeStore.presetStripZoneId
+  if (template.value.defaultPresetStripZone)
+    return template.value.defaultPresetStripZone
   const zones = template.value.zones
   const inputZones = zones.filter((z) => !z.isOutput)
   return inputZones.at(0)?.id ?? zones.at(0)?.id ?? ''
@@ -132,6 +136,8 @@ interface ZoneRenderItem {
   type: 'output' | 'input' | 'run-controls' | 'preset-strip'
   /** For input items: the nodeData with widgets filtered to only this group. */
   nodeData?: EnrichedNodeData
+  /** For output items: the output node ID from the ordered key. */
+  outputNodeId?: string
 }
 
 /** Build deduplicated render items for a zone. Groups input keys by node. */
@@ -168,7 +174,7 @@ function getZoneRenderItems(zoneId: string): ZoneRenderItem[] {
     } else if (key === 'run-controls') {
       items.push({ key, type: 'run-controls' })
     } else if (key.startsWith('output:')) {
-      items.push({ key, type: 'output' })
+      items.push({ key, type: 'output', outputNodeId: key.split(':')[1] })
     } else if (key.startsWith('input:')) {
       const nodeId = key.split(':')[1]
       if (renderedNodes.has(nodeId)) continue
@@ -414,27 +420,28 @@ async function runPrompt(e: Event) {
               v-for="item in getZoneRenderItems(zone.id)"
               :key="item.key"
             >
-              <!-- Output node -->
+              <!-- Output node (one per output:nodeId key) -->
               <div
                 v-if="item.type === 'output'"
                 :class="
                   cn(
                     'min-h-0 flex-1 overflow-hidden rounded-lg border border-warning-background/50',
-                    (zoneOutputs.get(zone.id)?.length ?? 0) > 0
+                    (zoneOutputs.get(zone.id) ?? []).some(
+                      (o) => String(o.nodeId) === item.outputNodeId
+                    )
                       ? 'bg-black'
                       : 'bg-warning-background/5 p-4'
                   )
                 "
               >
-                <div
-                  v-if="(zoneOutputs.get(zone.id)?.length ?? 0) > 0"
-                  class="flex size-full flex-col gap-2"
+                <template
+                  v-for="(output, idx) in zoneOutputs.get(zone.id) ?? []"
+                  :key="idx"
                 >
                   <button
-                    v-for="(output, idx) in zoneOutputs.get(zone.id)"
-                    :key="idx"
+                    v-if="String(output.nodeId) === item.outputNodeId"
                     type="button"
-                    class="min-h-0 flex-1 cursor-pointer overflow-hidden"
+                    class="flex min-h-0 flex-1 cursor-pointer overflow-hidden"
                     @dblclick="output.url && openLightbox(output.url)"
                   >
                     <MediaOutputPreview
@@ -442,9 +449,13 @@ async function runPrompt(e: Event) {
                       class="size-full bg-black [&_div]:bg-black [&_span]:hidden"
                     />
                   </button>
-                </div>
+                </template>
                 <div
-                  v-else
+                  v-if="
+                    !(zoneOutputs.get(zone.id) ?? []).some(
+                      (o) => String(o.nodeId) === item.outputNodeId
+                    )
+                  "
                   class="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground"
                 >
                   <i
@@ -513,6 +524,6 @@ async function runPrompt(e: Event) {
         </div>
       </template>
     </LayoutZoneGrid>
-    <ImageLightbox v-model="lightboxOpen" :src="lightboxSrc" />
   </div>
+  <ImageLightbox v-model="lightboxOpen" :src="lightboxSrc" />
 </template>

@@ -33,6 +33,7 @@ function onPointerDown(e: PointerEvent) {
     direction === 'column' ? parent.clientWidth : parent.clientHeight
 
   const startFractions = [...fractions]
+  if (index < 0 || index >= startFractions.length - 1) return
   const totalFr = startFractions[index] + startFractions[index + 1]
   let latestFractions = startFractions
 

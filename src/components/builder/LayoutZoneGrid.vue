@@ -152,6 +152,10 @@ const effectiveRowFractions = computed(
   () => effectiveOverrides.value?.rowFractions ?? defaultRowFractions.value
 )
 
+// Matches p-3 and gap-3 on the grid container
+const GRID_PADDING_PX = 12
+const GRID_GAP_PX = 12
+
 /** Column handle positions as CSS calc() values accounting for padding and gaps. */
 const columnHandles = computed(() => {
   const fracs = effectiveColumnFractions.value
@@ -159,13 +163,14 @@ const columnHandles = computed(() => {
   if (total === 0) return []
   const handles: { index: number; cssLeft: string }[] = []
   let cumulative = 0
+  const totalPadding = GRID_PADDING_PX * 2
   const gapCount = fracs.length - 1
   for (let i = 0; i < fracs.length - 1; i++) {
     cumulative += fracs[i]
     const pct = (cumulative / total) * 100
     handles.push({
       index: i,
-      cssLeft: `calc(12px + (100% - ${24 + gapCount * 12}px) * ${pct / 100} + ${i * 12 + 6}px)`
+      cssLeft: `calc(${GRID_PADDING_PX}px + (100% - ${totalPadding + gapCount * GRID_GAP_PX}px) * ${pct / 100} + ${i * GRID_GAP_PX + GRID_GAP_PX / 2}px)`
     })
   }
   return handles
@@ -178,13 +183,14 @@ const rowHandles = computed(() => {
   if (total === 0) return []
   const handles: { index: number; cssTop: string }[] = []
   let cumulative = 0
+  const totalPadding = GRID_PADDING_PX * 2
   const gapCount = fracs.length - 1
   for (let i = 0; i < fracs.length - 1; i++) {
     cumulative += fracs[i]
     const pct = (cumulative / total) * 100
     handles.push({
       index: i,
-      cssTop: `calc(12px + (100% - ${24 + gapCount * 12}px) * ${pct / 100} + ${i * 12 + 6}px)`
+      cssTop: `calc(${GRID_PADDING_PX}px + (100% - ${totalPadding + gapCount * GRID_GAP_PX}px) * ${pct / 100} + ${i * GRID_GAP_PX + GRID_GAP_PX / 2}px)`
     })
   }
   return handles
@@ -225,7 +231,7 @@ function onRowResizeEnd(fractions: number[]) {
             'relative flex flex-col overflow-y-auto rounded-xl transition-colors',
             dashed
               ? 'border-2 border-dashed border-border-subtle'
-              : filledZones
+              : filledZones?.has(zone.id)
                 ? 'border-0'
                 : 'border-2 border-solid border-border-subtle',
             highlightedZone === zone.id &&
