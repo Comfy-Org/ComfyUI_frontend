@@ -41,6 +41,7 @@ interface Options {
   model: string
   apiKey: string
   testPlanFile?: string
+  qaGuideFile?: string
 }
 
 // ── CLI parsing ──
@@ -73,9 +74,12 @@ function parseArgs(): Options {
       case '--test-plan':
         opts.testPlanFile = args[++i]
         break
+      case '--qa-guide':
+        opts.qaGuideFile = args[++i]
+        break
       case '--help':
         console.warn(
-          'Usage: qa-record.ts --mode before|after --diff <path> --output-dir <path> [--url <url>] [--model <model>] [--test-plan <path>]'
+          'Usage: qa-record.ts --mode before|after --diff <path> --output-dir <path> [--url <url>] [--model <model>] [--test-plan <path>] [--qa-guide <path>]'
         )
         process.exit(0)
     }
@@ -98,11 +102,27 @@ function parseArgs(): Options {
 
 // ── Gemini test step generation ──
 
-function buildPrompt(mode: string, diff: string, testPlan?: string): string {
+function buildPrompt(
+  mode: string,
+  diff: string,
+  testPlan?: string,
+  qaGuide?: string
+): string {
   const modeDesc =
     mode === 'before'
       ? 'BEFORE (main branch). Show the OLD state briefly — under 15 seconds. One quick demonstration of missing feature / old behavior.'
       : 'AFTER (PR branch). Prove the changes work — 3-6 targeted steps, under 30 seconds.'
+
+  const qaGuideSection = qaGuide
+    ? `
+## QA Analysis Guide (follow closely)
+A deep analysis of this PR has produced the following targeted test guide.
+Follow these steps closely — they were generated from the full PR thread,
+screenshots, and reviewer comments.
+
+${qaGuide.slice(0, 6000)}
+`
+    : ''
 
   const testPlanSection = testPlan
     ? `
@@ -128,7 +148,7 @@ Each step is an object with an "action" field:
 - { "action": "click", "text": "Button Text" } — clicks an element by visible text
 - { "action": "wait", "ms": 1000 } — waits (use sparingly, max 3000ms)
 - { "action": "screenshot", "name": "step-name" } — takes a screenshot
-${testPlanSection}
+${qaGuideSection}${testPlanSection}
 ## PR Diff
 \`\`\`
 ${diff.slice(0, 3000)}
@@ -140,7 +160,7 @@ ${diff.slice(0, 3000)}
 - Always include at least one screenshot
 - Do NOT include login steps (handled automatically)
 - Menu navigation pattern: openMenu → hoverMenuItem → clickMenuItem (or screenshot)
-- Pick test steps from the QA test plan categories that are most relevant to the diff
+${qaGuide ? '- Follow the QA Analysis Guide steps closely — they are PR-specific and well-researched' : '- Pick test steps from the QA test plan categories that are most relevant to the diff'}
 
 ## Example output
 [
@@ -160,7 +180,18 @@ async function generateTestSteps(opts: Options): Promise<TestAction[]> {
   const testPlan = opts.testPlanFile
     ? readFileSync(opts.testPlanFile, 'utf-8')
     : undefined
-  const prompt = buildPrompt(opts.mode, diff, testPlan)
+  let qaGuide: string | undefined
+  if (opts.qaGuideFile) {
+    try {
+      qaGuide = readFileSync(opts.qaGuideFile, 'utf-8')
+      console.warn(`Using QA guide: ${opts.qaGuideFile}`)
+    } catch {
+      console.warn(
+        `QA guide not found: ${opts.qaGuideFile}, continuing without`
+      )
+    }
+  }
+  const prompt = buildPrompt(opts.mode, diff, testPlan, qaGuide)
 
   const genAI = new GoogleGenerativeAI(opts.apiKey)
   const model = genAI.getGenerativeModel({ model: opts.model })
