@@ -98,6 +98,17 @@
         >
           <i class="icon-[lucide--download] size-4" />
         </button>
+
+        <!-- Back to Grid Button -->
+        <button
+          v-if="hasMultipleImages"
+          :class="actionButtonClass"
+          :title="$t('g.viewGrid')"
+          :aria-label="$t('g.viewGrid')"
+          @click="viewMode = 'grid'"
+        >
+          <i class="icon-[lucide--layout-grid] size-4" />
+        </button>
       </div>
     </div>
 
