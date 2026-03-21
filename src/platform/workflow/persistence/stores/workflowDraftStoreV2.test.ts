@@ -76,6 +76,30 @@ describe('workflowDraftStoreV2', () => {
       expect(draft!.data).toBe('{"nodes":[1,2,3]}')
       expect(draft!.name).toBe('test-updated')
       expect(draft!.isTemporary).toBe(false)
+      expect(draft!.updatedAt).toEqual(expect.any(Number))
+    })
+
+    it('marks draft as recently used after successful load', async () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/a.json', '{"id":"a"}', {
+        name: 'a',
+        isTemporary: true
+      })
+      store.saveDraft('workflows/b.json', '{"id":"b"}', {
+        name: 'b',
+        isTemporary: true
+      })
+
+      expect(store.getMostRecentPath()).toBe('workflows/b.json')
+
+      const loaded = await store.loadPersistedWorkflow({
+        workflowName: 'a',
+        preferredPath: 'workflows/a.json'
+      })
+
+      expect(loaded).toBe(true)
+      expect(store.getMostRecentPath()).toBe('workflows/a.json')
     })
 
     it('evicts oldest when over limit', () => {
