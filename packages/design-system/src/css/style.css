@@ -280,8 +280,8 @@
   --base-background: var(--color-white);
   --primary-background: var(--color-azure-400);
   --primary-background-hover: var(--color-cobalt-800);
-  --destructive-background: var(--color-magenta-300);
-  --destructive-background-hover: var(--color-magenta-700);
+  --destructive-background: var(--color-gold-400);
+  --destructive-background-hover: var(--color-gold-500);
   --inverted-background-hover: var(--color-charcoal-600);
   --warning-background: var(--color-gold-400);
   --warning-background-hover: var(--color-gold-500);
@@ -427,8 +427,8 @@
   --base-background: var(--color-charcoal-800);
   --primary-background: var(--color-azure-600);
   --primary-background-hover: var(--color-azure-400);
-  --destructive-background: var(--color-magenta-700);
-  --destructive-background-hover: var(--color-magenta-300);
+  --destructive-background: var(--color-gold-600);
+  --destructive-background-hover: var(--color-gold-500);
   --inverted-background-hover: var(--color-smoke-200);
   --warning-background: var(--color-gold-600);
   --warning-background-hover: var(--color-gold-500);
