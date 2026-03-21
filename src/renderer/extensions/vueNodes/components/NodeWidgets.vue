@@ -429,7 +429,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       options: widgetOptions,
       spec: widget.spec,
       advanced: resolvedAdvanced,
-      hidden: widget.options?.hidden
+      hidden: mergedOptions.hidden
     }
 
     const updateHandler = createWidgetUpdateHandler(
