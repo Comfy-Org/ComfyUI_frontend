@@ -33,8 +33,6 @@ const i18n = createI18n({
         unknownFile: 'Unknown file',
         loading: 'Loading',
         viewGrid: 'Grid view',
-        viewGallery: 'Gallery view',
-        imageCount: '{count} images',
         galleryThumbnail: 'Gallery thumbnail'
       }
     }
@@ -385,28 +383,6 @@ describe('ImagePreview', () => {
 
       const gridThumbnails = wrapper.findAll('button[aria-label^="View image"]')
       expect(gridThumbnails).toHaveLength(2)
-    })
-
-    it('shows gallery toggle in grid actions', () => {
-      const wrapper = mountImagePreview()
-
-      const galleryToggle = wrapper.find('[aria-label="Gallery view"]')
-      expect(galleryToggle.exists()).toBe(true)
-    })
-
-    it('switches to gallery via action toggle', async () => {
-      const wrapper = mountImagePreview()
-
-      const galleryToggle = wrapper.find('[aria-label="Gallery view"]')
-      await galleryToggle.trigger('click')
-      await nextTick()
-
-      expect(wrapper.find('[role="region"]').exists()).toBe(true)
-    })
-
-    it('shows image count in grid mode', () => {
-      const wrapper = mountImagePreview()
-      expect(wrapper.text()).toContain('2 images')
     })
 
     it('resets to grid mode when URLs change to multiple images', async () => {

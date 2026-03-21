@@ -35,8 +35,6 @@
     "imagePreview": "Image preview - Use arrow keys to navigate between images",
     "videoPreview": "Video preview - Use arrow keys to navigate between videos",
     "viewGrid": "Grid view",
-    "viewGallery": "Gallery view",
-    "imageCount": "{count} images | {count} image | {count} images",
     "imageGallery": "image gallery",
     "galleryImage": "Gallery image",
     "galleryThumbnail": "Gallery thumbnail",

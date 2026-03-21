@@ -8,13 +8,13 @@
     <div
       v-if="viewMode === 'grid'"
       data-testid="image-grid"
-      class="group/panel relative grid w-full gap-1 overflow-hidden rounded-sm bg-muted-background p-1"
+      class="group/panel relative grid w-full gap-1 overflow-hidden rounded-sm p-1"
       :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
     >
       <button
         v-for="(url, index) in imageUrls"
         :key="index"
-        class="focus-visible:ring-ring relative aspect-square cursor-pointer overflow-hidden rounded-sm border-0 bg-transparent p-0 transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:outline-none"
+        class="focus-visible:ring-ring relative cursor-pointer overflow-hidden rounded-sm border-0 bg-transparent p-0 transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:outline-none"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
@@ -29,31 +29,6 @@
           class="size-full object-contain"
         />
       </button>
-
-      <!-- Floating Action Buttons (grid mode) -->
-      <div
-        class="actions invisible absolute top-2 right-2 flex gap-2.5 group-focus-within/panel:visible group-hover/panel:visible"
-      >
-        <!-- View Mode Toggle -->
-        <button
-          :class="actionButtonClass"
-          :title="$t('g.viewGallery')"
-          :aria-label="$t('g.viewGallery')"
-          @click="viewMode = 'gallery'"
-        >
-          <i class="icon-[lucide--image] size-4" />
-        </button>
-
-        <!-- Close Button -->
-        <button
-          :class="actionButtonClass"
-          :title="$t('g.removeImage')"
-          :aria-label="$t('g.removeImage')"
-          @click="handleRemove"
-        >
-          <i class="icon-[lucide--x] size-4" />
-        </button>
-      </div>
     </div>
 
     <!-- Gallery View (Image Wrapper) -->
@@ -90,7 +65,7 @@
         data-testid="main-image"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="pointer-events-none absolute inset-0 block size-full object-contain transition-opacity group-focus-within/panel:opacity-60 group-hover/panel:opacity-60"
+        class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -99,17 +74,6 @@
       <div
         class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
       >
-        <!-- Grid View Toggle (only for multiple images) -->
-        <button
-          v-if="hasMultipleImages"
-          :class="actionButtonClass"
-          :title="$t('g.viewGrid')"
-          :aria-label="$t('g.viewGrid')"
-          @click="viewMode = 'grid'"
-        >
-          <i class="icon-[lucide--layout-grid] size-4" />
-        </button>
-
         <!-- Mask/Edit Button -->
         <button
           v-if="!hasMultipleImages"
@@ -131,14 +95,25 @@
           <i class="icon-[lucide--download] size-4" />
         </button>
 
-        <!-- Close Button -->
+        <!-- Back to Grid (multiple images) / Remove (single image) -->
         <button
           :class="actionButtonClass"
-          :title="$t('g.removeImage')"
-          :aria-label="$t('g.removeImage')"
-          @click="handleRemove"
+          :title="hasMultipleImages ? $t('g.viewGrid') : $t('g.removeImage')"
+          :aria-label="
+            hasMultipleImages ? $t('g.viewGrid') : $t('g.removeImage')
+          "
+          @click="hasMultipleImages ? (viewMode = 'grid') : handleRemove()"
         >
-          <i class="icon-[lucide--circle-x] size-4" />
+          <i
+            :class="
+              cn(
+                'size-4',
+                hasMultipleImages
+                  ? 'icon-[lucide--layout-grid]'
+                  : 'icon-[lucide--circle-x]'
+              )
+            "
+          />
         </button>
       </div>
     </div>
@@ -157,14 +132,6 @@
       <span v-else>
         {{ actualDimensions || $t('g.calculatingDimensions') }}
       </span>
-    </div>
-
-    <!-- Image Count (grid mode) -->
-    <div
-      v-if="viewMode === 'grid'"
-      class="pt-2 text-center text-xs text-base-foreground"
-    >
-      {{ $t('g.imageCount', imageUrls.length) }}
     </div>
 
     <!-- Multiple Images Navigation (gallery mode only) -->
