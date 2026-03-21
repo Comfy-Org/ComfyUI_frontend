@@ -36,6 +36,7 @@ const mountActionbar = (showRunProgressBar: boolean) => {
     global: {
       plugins: [pinia, i18n],
       stubs: {
+        BaseTooltip: { template: '<slot />' },
         ContextMenu: {
           name: 'ContextMenu',
           template: '<div />'
@@ -50,9 +51,6 @@ const mountActionbar = (showRunProgressBar: boolean) => {
           template: '<button type="button">Run</button>'
         },
         QueueInlineProgress: true
-      },
-      directives: {
-        tooltip: () => {}
       }
     }
   })

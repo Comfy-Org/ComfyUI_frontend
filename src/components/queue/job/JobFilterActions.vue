@@ -13,18 +13,22 @@
     >
       <Popover :show-arrow="false">
         <template #button>
-          <Button
-            v-tooltip.top="filterTooltipConfig"
-            variant="secondary"
-            size="icon"
-            :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
+          <BaseTooltip
+            :text="t('sideToolbar.queueProgressOverlay.filterBy')"
+            side="top"
           >
-            <i class="icon-[lucide--list-filter] size-4" />
-            <span
-              v-if="selectedWorkflowFilter !== 'all'"
-              class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
-            />
-          </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
+            >
+              <i class="icon-[lucide--list-filter] size-4" />
+              <span
+                v-if="selectedWorkflowFilter !== 'all'"
+                class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
+              />
+            </Button>
+          </BaseTooltip>
         </template>
         <template #default="{ close }">
           <div class="flex min-w-48 flex-col items-stretch">
@@ -62,18 +66,22 @@
       </Popover>
       <Popover :show-arrow="false">
         <template #button>
-          <Button
-            v-tooltip.top="sortTooltipConfig"
-            variant="secondary"
-            size="icon"
-            :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
+          <BaseTooltip
+            :text="t('sideToolbar.queueProgressOverlay.sortBy')"
+            side="top"
           >
-            <i class="icon-[lucide--arrow-up-down] size-4" />
-            <span
-              v-if="selectedSortMode !== 'mostRecent'"
-              class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
-            />
-          </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
+            >
+              <i class="icon-[lucide--arrow-up-down] size-4" />
+              <span
+                v-if="selectedSortMode !== 'mostRecent'"
+                class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
+              />
+            </Button>
+          </BaseTooltip>
         </template>
         <template #default="{ close }">
           <div class="flex min-w-48 flex-col items-stretch">
@@ -98,16 +106,20 @@
           </div>
         </template>
       </Popover>
-      <Button
+      <BaseTooltip
         v-if="showAssetsAction"
-        v-tooltip.top="showAssetsTooltipConfig"
-        variant="secondary"
-        size="icon"
-        :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
-        @click="emit('showAssets')"
+        :text="t('sideToolbar.queueProgressOverlay.showAssets')"
+        side="top"
       >
-        <i class="icon-[comfy--image-ai-edit] size-4" />
-      </Button>
+        <Button
+          variant="secondary"
+          size="icon"
+          :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
+          @click="emit('showAssets')"
+        >
+          <i class="icon-[comfy--image-ai-edit] size-4" />
+        </Button>
+      </BaseTooltip>
     </div>
   </div>
 </template>
@@ -121,7 +133,7 @@ import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { jobSortModes } from '@/composables/queue/useJobList'
 import type { JobSortMode } from '@/composables/queue/useJobList'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 
 const {
   hideShowAssetsAction = false,
@@ -148,15 +160,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const filterTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.filterBy'))
-)
-const sortTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.sortBy'))
-)
-const showAssetsTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.showAssets'))
-)
 const showAssetsAction = computed(() => !hideShowAssetsAction)
 const searchPlaceholderText = computed(
   () => searchPlaceholder ?? t('sideToolbar.queueProgressOverlay.searchJobs')

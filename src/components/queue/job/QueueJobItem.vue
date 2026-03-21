@@ -124,30 +124,38 @@
             key="actions"
             class="inline-flex items-center gap-2 pr-1"
           >
-            <Button
+            <BaseTooltip
               v-if="state === 'failed' && computedShowClear"
-              v-tooltip.top="deleteTooltipConfig"
-              variant="destructive"
-              size="icon"
-              :aria-label="t('g.delete')"
-              @click.stop="onDeleteClick"
+              :text="t('g.delete')"
+              side="top"
             >
-              <i class="icon-[lucide--trash-2] size-4" />
-            </Button>
-            <Button
+              <Button
+                variant="destructive"
+                size="icon"
+                :aria-label="t('g.delete')"
+                @click.stop="onDeleteClick"
+              >
+                <i class="icon-[lucide--trash-2] size-4" />
+              </Button>
+            </BaseTooltip>
+            <BaseTooltip
               v-else-if="
                 state !== 'completed' &&
                 state !== 'running' &&
                 computedShowClear
               "
-              v-tooltip.top="cancelTooltipConfig"
-              variant="destructive"
-              size="icon"
-              :aria-label="t('g.cancel')"
-              @click.stop="onCancelClick"
+              :text="t('g.cancel')"
+              side="top"
             >
-              <i class="icon-[lucide--x] size-4" />
-            </Button>
+              <Button
+                variant="destructive"
+                size="icon"
+                :aria-label="t('g.cancel')"
+                @click.stop="onCancelClick"
+              >
+                <i class="icon-[lucide--x] size-4" />
+              </Button>
+            </BaseTooltip>
             <Button
               v-else-if="state === 'completed'"
               variant="textonly"
@@ -155,32 +163,40 @@
               @click.stop="emit('view')"
               >{{ t('menuLabels.View') }}</Button
             >
-            <Button
+            <BaseTooltip
               v-if="showMenu !== undefined ? showMenu : true"
-              v-tooltip.top="moreTooltipConfig"
-              variant="textonly"
-              size="icon-sm"
-              :aria-label="t('g.more')"
-              @click.stop="emit('menu', $event)"
+              :text="t('g.more')"
+              side="top"
             >
-              <i class="icon-[lucide--more-horizontal] size-4" />
-            </Button>
+              <Button
+                variant="textonly"
+                size="icon-sm"
+                :aria-label="t('g.more')"
+                @click.stop="emit('menu', $event)"
+              >
+                <i class="icon-[lucide--more-horizontal] size-4" />
+              </Button>
+            </BaseTooltip>
           </div>
           <div v-else-if="state !== 'running'" key="secondary" class="pr-2">
             <slot name="secondary">{{ rightText }}</slot>
           </div>
         </Transition>
         <!-- Running job cancel button - always visible -->
-        <Button
+        <BaseTooltip
           v-if="state === 'running' && computedShowClear"
-          v-tooltip.top="cancelTooltipConfig"
-          variant="destructive"
-          size="icon"
-          :aria-label="t('g.cancel')"
-          @click.stop="onCancelClick"
+          :text="t('g.cancel')"
+          side="top"
         >
-          <i class="icon-[lucide--x] size-4" />
-        </Button>
+          <Button
+            variant="destructive"
+            size="icon"
+            :aria-label="t('g.cancel')"
+            @click.stop="onCancelClick"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </Button>
+        </BaseTooltip>
       </div>
     </div>
   </div>
@@ -195,7 +211,7 @@ import { getHoverPopoverPosition } from '@/components/queue/job/getHoverPopoverP
 import QueueAssetPreview from '@/components/queue/job/QueueAssetPreview.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 import type { JobState } from '@/types/queue'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
@@ -246,10 +262,6 @@ const {
   hasAnyProgressPercent,
   progressPercentStyle
 } = useProgressBarBackground()
-
-const cancelTooltipConfig = computed(() => buildTooltipConfig(t('g.cancel')))
-const deleteTooltipConfig = computed(() => buildTooltipConfig(t('g.delete')))
-const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 
 const rowRef = ref<HTMLDivElement | null>(null)
 const showDetails = computed(() => activeDetailsId === jobId)

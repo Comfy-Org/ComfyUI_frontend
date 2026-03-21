@@ -52,11 +52,17 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
   useSidebarTabStore: () => mockSidebarTabStore
 }))
 
+const BaseTooltipStub = {
+  template: '<slot />'
+}
+
 const mountMenu = () =>
   mount(JobHistoryActionsMenu, {
     global: {
       plugins: [i18n],
-      directives: { tooltip: () => {} }
+      stubs: {
+        BaseTooltip: BaseTooltipStub
+      }
     }
   })
 

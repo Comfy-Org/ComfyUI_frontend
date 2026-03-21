@@ -2,16 +2,17 @@
   <div class="flex items-center gap-1">
     <Popover :show-arrow="false">
       <template #button>
-        <Button
-          v-tooltip.top="moreTooltipConfig"
-          variant="textonly"
-          size="icon"
-          :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
-        >
-          <i
-            class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
-          />
-        </Button>
+        <BaseTooltip :text="t('g.more')" side="top">
+          <Button
+            variant="textonly"
+            size="icon"
+            :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
+          >
+            <i
+              class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
+            />
+          </Button>
+        </BaseTooltip>
       </template>
       <template #default="{ close }">
         <div class="flex min-w-56 flex-col items-stretch font-inter">
@@ -95,7 +96,7 @@ import { useI18n } from 'vue-i18n'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -108,7 +109,6 @@ const { t } = useI18n()
 const settingStore = useSettingStore()
 const sidebarTabStore = useSidebarTabStore()
 
-const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 const showClearHistoryAction = computed(() => !isCloud)

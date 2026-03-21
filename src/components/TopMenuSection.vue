@@ -16,22 +16,23 @@
             v-if="managerState.shouldShowManagerButtons.value"
             class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
           >
-            <Button
-              v-tooltip.bottom="customNodesManagerTooltipConfig"
-              variant="secondary"
-              :aria-label="t('menu.manageExtensions')"
-              class="relative"
-              @click="openCustomNodeManager"
-            >
-              <i class="icon-[comfy--extensions-blocks] size-4" />
-              <span class="not-md:hidden">
-                {{ t('menu.manageExtensions') }}
-              </span>
-              <span
-                v-if="shouldShowRedDot"
-                class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
-              />
-            </Button>
+            <BaseTooltip :text="t('menu.manageExtensions')" side="bottom">
+              <Button
+                variant="secondary"
+                :aria-label="t('menu.manageExtensions')"
+                class="relative"
+                @click="openCustomNodeManager"
+              >
+                <i class="icon-[comfy--extensions-blocks] size-4" />
+                <span class="not-md:hidden">
+                  {{ t('menu.manageExtensions') }}
+                </span>
+                <span
+                  v-if="shouldShowRedDot"
+                  class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+                />
+              </Button>
+            </BaseTooltip>
           </div>
 
           <div ref="actionbarContainerRef" :class="actionbarContainerClass">
@@ -54,29 +55,37 @@
               class="shrink-0"
             />
             <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
-            <Button
+            <BaseTooltip
               v-if="isCloud && flags.workflowSharingEnabled"
-              v-tooltip.bottom="shareTooltipConfig"
-              variant="secondary"
-              :aria-label="t('actionbar.shareTooltip')"
-              @click="() => openShareDialog().catch(toastErrorHandler)"
-              @pointerenter="prefetchShareDialog"
+              :text="t('actionbar.shareTooltip')"
+              side="bottom"
             >
-              <i class="icon-[comfy--send] size-4" />
-              <span class="not-md:hidden">
-                {{ t('actionbar.share') }}
-              </span>
-            </Button>
-            <Button
+              <Button
+                variant="secondary"
+                :aria-label="t('actionbar.shareTooltip')"
+                @click="() => openShareDialog().catch(toastErrorHandler)"
+                @pointerenter="prefetchShareDialog"
+              >
+                <i class="icon-[comfy--send] size-4" />
+                <span class="not-md:hidden">
+                  {{ t('actionbar.share') }}
+                </span>
+              </Button>
+            </BaseTooltip>
+            <BaseTooltip
               v-if="!isRightSidePanelOpen"
-              v-tooltip.bottom="rightSidePanelTooltipConfig"
-              type="secondary"
-              size="icon"
-              :aria-label="t('rightSidePanel.togglePanel')"
-              @click="rightSidePanelStore.togglePanel"
+              :text="t('rightSidePanel.togglePanel')"
+              side="bottom"
             >
-              <i class="icon-[lucide--panel-right] size-4" />
-            </Button>
+              <Button
+                type="secondary"
+                size="icon"
+                :aria-label="t('rightSidePanel.togglePanel')"
+                @click="rightSidePanelStore.togglePanel"
+              >
+                <i class="icon-[lucide--panel-right] size-4" />
+              </Button>
+            </BaseTooltip>
           </div>
         </div>
         <ErrorOverlay />
@@ -133,7 +142,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -243,12 +252,6 @@ const inlineProgressSummaryTarget = computed(() => {
 const shouldHideInlineProgressSummary = computed(
   () => isQueueProgressOverlayEnabled.value && isQueueOverlayExpanded.value
 )
-const customNodesManagerTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.manageExtensions'))
-)
-const shareTooltipConfig = computed(() =>
-  buildTooltipConfig(t('actionbar.shareTooltip'))
-)
 
 const shouldShowRedDot = computed((): boolean => {
   return shouldShowConflictRedDot.value
@@ -258,9 +261,6 @@ const { hasAnyError } = storeToRefs(executionErrorStore)
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
-const rightSidePanelTooltipConfig = computed(() =>
-  buildTooltipConfig(t('rightSidePanel.togglePanel'))
-)
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()

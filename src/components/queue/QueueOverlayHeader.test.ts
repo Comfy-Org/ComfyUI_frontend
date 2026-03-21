@@ -48,11 +48,9 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
 }))
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 
-const tooltipDirectiveStub = {
-  mounted: vi.fn(),
-  updated: vi.fn()
+const BaseTooltipStub = {
+  template: '<slot />'
 }
 
 const mountHeader = (props = {}) =>
@@ -64,7 +62,9 @@ const mountHeader = (props = {}) =>
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: tooltipDirectiveStub }
+      stubs: {
+        BaseTooltip: BaseTooltipStub
+      }
     }
   })
 
@@ -105,14 +105,11 @@ describe('QueueOverlayHeader', () => {
   })
 
   it('emits clear history from the menu', async () => {
-    const spy = vi.spyOn(tooltipConfig, 'buildTooltipConfig')
-
     const wrapper = mountHeader()
 
     expect(wrapper.find('button[aria-label="More options"]').exists()).toBe(
       true
     )
-    expect(spy).toHaveBeenCalledWith('More')
 
     const clearHistoryButton = wrapper.get(
       '[data-testid="clear-history-action"]'
