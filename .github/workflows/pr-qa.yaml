@@ -336,33 +336,48 @@ jobs:
         if: needs.qa-before.result == 'success'
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
-          path: qa-artifacts
+          path: qa-artifacts/before
           pattern: qa-before-*
-          merge-multiple: false
 
       - name: Download AFTER artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
-          path: qa-artifacts
+          path: qa-artifacts/after
           pattern: qa-after-*
-          merge-multiple: false
 
       - name: Merge artifacts into per-OS report directories
         run: |
-          echo "=== Downloaded artifacts ==="
-          find qa-artifacts -type f 2>/dev/null | head -30
+          echo "=== Downloaded BEFORE artifacts ==="
+          find qa-artifacts/before -type f 2>/dev/null | head -20
+          echo "=== Downloaded AFTER artifacts ==="
+          find qa-artifacts/after -type f 2>/dev/null | head -20
 
           for os in Linux macOS Windows; do
-            BEFORE_DIR="qa-artifacts/qa-before-${os}-${{ github.run_id }}"
-            AFTER_DIR="qa-artifacts/qa-after-${os}-${{ github.run_id }}"
             REPORT_DIR="qa-artifacts/qa-report-${os}-${{ github.run_id }}"
+            HAS_FILES=false
 
-            if [ -d "$AFTER_DIR" ] || [ -d "$BEFORE_DIR" ]; then
+            # Check for before files (flat or in subdirectory)
+            if [ -d "qa-artifacts/before" ] && find qa-artifacts/before -name '*.webm' -o -name '*.png' 2>/dev/null | grep -q .; then
+              HAS_FILES=true
+            fi
+            # Check for after files
+            if [ -d "qa-artifacts/after" ] && find qa-artifacts/after -name '*.webm' -o -name '*.png' 2>/dev/null | grep -q .; then
+              HAS_FILES=true
+            fi
+
+            if [ "$HAS_FILES" = true ]; then
               mkdir -p "$REPORT_DIR"
-              [ -d "$BEFORE_DIR" ] && cp -r "$BEFORE_DIR"/* "$REPORT_DIR/" 2>/dev/null || true
-              [ -d "$AFTER_DIR" ] && cp -r "$AFTER_DIR"/* "$REPORT_DIR/" 2>/dev/null || true
+              # Copy all before files (handles both flat and nested layouts)
+              find qa-artifacts/before -type f 2>/dev/null | while read f; do
+                cp "$f" "$REPORT_DIR/" 2>/dev/null || true
+              done
+              # Copy all after files (overwrites duplicates with after versions)
+              find qa-artifacts/after -type f 2>/dev/null | while read f; do
+                cp "$f" "$REPORT_DIR/" 2>/dev/null || true
+              done
               echo "Merged $os artifacts into $REPORT_DIR"
               ls -la "$REPORT_DIR/" | head -20
+              break  # Only create one report dir (multi-OS not yet supported in parallel mode)
             fi
           done
 
