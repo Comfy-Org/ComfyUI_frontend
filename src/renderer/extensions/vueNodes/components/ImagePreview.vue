@@ -98,25 +98,15 @@
           <i class="icon-[lucide--download] size-4" />
         </button>
 
-        <!-- Back to Grid (multiple images) / Remove (single image) -->
+        <!-- Remove Button (single image only) -->
         <button
+          v-if="!hasMultipleImages"
           :class="actionButtonClass"
-          :title="hasMultipleImages ? $t('g.viewGrid') : $t('g.removeImage')"
-          :aria-label="
-            hasMultipleImages ? $t('g.viewGrid') : $t('g.removeImage')
-          "
-          @click="hasMultipleImages ? (viewMode = 'grid') : handleRemove()"
+          :title="$t('g.removeImage')"
+          :aria-label="$t('g.removeImage')"
+          @click="handleRemove"
         >
-          <i
-            :class="
-              cn(
-                'size-4',
-                hasMultipleImages
-                  ? 'icon-[lucide--layout-grid]'
-                  : 'icon-[lucide--circle-x]'
-              )
-            "
-          />
+          <i class="icon-[lucide--circle-x] size-4" />
         </button>
       </div>
     </div>
