@@ -357,8 +357,14 @@ async function executeSteps(
         await fillDialogAndConfirm(page, step.text)
         break
       case 'pressKey':
-        await page.keyboard.press(step.key)
-        await sleep(300)
+        try {
+          await page.keyboard.press(step.key)
+          await sleep(300)
+        } catch (e) {
+          console.warn(
+            `Skipping invalid key "${step.key}": ${e instanceof Error ? e.message : e}`
+          )
+        }
         break
       case 'click':
         await clickByText(page, step.text)
