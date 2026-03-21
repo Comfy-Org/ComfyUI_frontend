@@ -447,23 +447,36 @@ async function analyzeWithGemini(
   console.warn('Raw response (first 500 chars):', text.slice(0, 500))
   const parsed = JSON.parse(text)
 
-  // Handle possible nesting — Gemini may wrap in an extra object
-  const guide =
-    parsed.before && parsed.after
-      ? parsed
-      : (parsed.qa_guide ?? parsed.guides ?? parsed)
+  // Handle different response shapes from Gemini
+  let before: QaGuide
+  let after: QaGuide
 
-  if (!guide.before || !guide.after) {
-    console.warn(
-      'Full response:',
-      JSON.stringify(parsed, null, 2).slice(0, 2000)
-    )
-    throw new Error(
-      `Response missing "before" or "after" keys. Got keys: ${Object.keys(parsed).join(', ')}`
-    )
+  if (Array.isArray(parsed) && parsed.length >= 2) {
+    // Array format: [before, after]
+    before = parsed[0]
+    after = parsed[1]
+  } else if (parsed.before && parsed.after) {
+    // Object format: { before, after }
+    before = parsed.before
+    after = parsed.after
+  } else {
+    // Try nested wrapper keys
+    const inner = parsed.qa_guide ?? parsed.guides ?? parsed
+    if (inner.before && inner.after) {
+      before = inner.before
+      after = inner.after
+    } else {
+      console.warn(
+        'Full response:',
+        JSON.stringify(parsed, null, 2).slice(0, 2000)
+      )
+      throw new Error(
+        `Unexpected response shape. Got keys: ${Object.keys(parsed).join(', ')}`
+      )
+    }
   }
 
-  return { before: guide.before, after: guide.after }
+  return { before, after }
 }
 
 // ── Main ──
