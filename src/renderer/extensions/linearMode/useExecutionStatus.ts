@@ -10,6 +10,22 @@ import {
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
 
+function resolveStatus(
+  t: (key: string) => string,
+  nodeDefStore: ReturnType<typeof useNodeDefStore>,
+  executionId: string | number
+): string | null {
+  const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+  if (!locatorId) return null
+
+  const node = getNodeByLocatorId(app.rootGraph, locatorId)
+  const nodeType = node?.type
+  if (!nodeType) return null
+
+  const nodeDef = nodeDefStore.nodeDefsByName[nodeType] ?? null
+  return getExecutionStatusMessage(t, nodeType, nodeDef, node.properties)
+}
+
 export function useExecutionStatus() {
   const { t } = useI18n()
   const executionStore = useExecutionStore()
@@ -18,18 +34,7 @@ export function useExecutionStatus() {
   const executionStatusMessage = computed<string | null>(() => {
     const executionId = executionStore.executingNodeId
     if (!executionId) return null
-
-    const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
-    if (!locatorId) return null
-
-    const node = getNodeByLocatorId(app.rootGraph, locatorId)
-    if (!node) return null
-
-    const nodeType = node.type
-    if (!nodeType) return null
-
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeType] ?? null
-    return getExecutionStatusMessage(t, nodeType, nodeDef, node.properties)
+    return resolveStatus(t, nodeDefStore, executionId) || t('execution.running')
   })
 
   return { executionStatusMessage }

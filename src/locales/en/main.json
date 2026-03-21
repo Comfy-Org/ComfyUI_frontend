@@ -3695,6 +3695,7 @@
     "resizing": "Resizing…",
     "generatingVideo": "Generating video…",
     "training": "Training…",
-    "processingVideo": "Processing video…"
+    "processingVideo": "Processing video…",
+    "running": "Running…"
   }
 }

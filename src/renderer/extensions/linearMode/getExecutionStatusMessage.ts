@@ -17,13 +17,6 @@ type ExecutionStatusKey =
  * identifier patterns (e.g. unconventional naming, spaces).
  */
 const statusMap: Record<string, ExecutionStatusKey> = {
-  // Sampling / generation — can't use `Sampler` identifier because it
-  // would match nodes like KSamplerSelect
-  KSampler: 'generating',
-  KSamplerAdvanced: 'generating',
-  SamplerCustom: 'generating',
-  SamplerCustomAdvanced: 'generating',
-
   // Video utility nodes with non-standard naming
   'Video Slice': 'processingVideo',
   GetVideoComponents: 'processingVideo',
@@ -47,7 +40,8 @@ const identifierRules: [RegExp, ExecutionStatusKey][] = [
   [pascalId('Decode'), 'decoding'],
   [pascalId('Compile', 'Conditioning', 'Merge'), 'processing'],
   [pascalId('Upscale', 'Resize'), 'resizing'],
-  [pascalId('ToVideo'), 'generatingVideo']
+  [pascalId('ToVideo'), 'generatingVideo'],
+  [pascalId('Sampler'), 'generating']
 ]
 
 export function getExecutionStatusMessage(
