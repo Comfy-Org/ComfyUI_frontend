@@ -19,6 +19,5 @@ const { executionStatusMessage } = useExecutionStatus()
     >
       {{ executionStatusMessage }}
     </span>
-    </span>
   </div>
 </template>
