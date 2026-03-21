@@ -9,6 +9,7 @@ defineOptions({ inheritAttrs: false })
 const { src } = defineProps<{
   src: string
   mobile?: boolean
+  label?: string
 }>()
 
 const imageRef = useTemplateRef('imageRef')
@@ -48,5 +49,8 @@ const height = ref('')
       }
     "
   />
-  <span class="self-center md:z-10" v-text="`${width} x ${height}`" />
+  <span class="self-center md:z-10">
+    {{ `${width} x ${height}` }}
+    <template v-if="label"> | {{ label }}</template>
+  </span>
 </template>
