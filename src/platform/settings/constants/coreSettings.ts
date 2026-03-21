@@ -677,6 +677,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.7'
   },
   {
+    id: 'Comfy.Keybinding.CurrentPreset',
+    name: 'Current keybinding preset name',
+    type: 'hidden',
+    defaultValue: 'default',
+    versionAdded: '1.8.8'
+  },
+  {
     id: 'Comfy.Extension.Disabled',
     name: 'Disabled extension names',
     type: 'hidden',
@@ -1190,6 +1197,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     sortOrder: 100,
     experimental: true,
     versionAdded: '1.27.1'
+  },
+  {
+    id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
+    name: 'App Builder Vue Node switch dismissed',
+    type: 'hidden',
+    defaultValue: false
   },
   {
     id: 'Comfy.VueNodes.AutoScaleLayout',
