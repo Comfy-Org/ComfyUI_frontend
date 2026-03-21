@@ -21,12 +21,14 @@
             total: imageUrls.length
           })
         "
-        @click="openImageInGallery(index)"
+        @pointerdown="trackPointerStart"
+        @click="handleGridThumbnailClick($event, index)"
       >
         <img
           :src="url"
           :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
-          class="size-full object-contain"
+          draggable="false"
+          class="pointer-events-none size-full object-contain"
         />
       </button>
     </div>
@@ -65,6 +67,7 @@
         data-testid="main-image"
         :src="currentImageUrl"
         :alt="imageAltText"
+        draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
@@ -321,6 +324,20 @@ function setCurrentIndex(index: number) {
     imageError.value = false
     if (urlChanged) startDelayedLoader()
   }
+}
+
+const CLICK_THRESHOLD = 3
+let pointerStartPos = { x: 0, y: 0 }
+
+function trackPointerStart(event: PointerEvent) {
+  pointerStartPos = { x: event.clientX, y: event.clientY }
+}
+
+function handleGridThumbnailClick(event: MouseEvent, index: number) {
+  const dx = event.clientX - pointerStartPos.x
+  const dy = event.clientY - pointerStartPos.y
+  if (Math.abs(dx) > CLICK_THRESHOLD || Math.abs(dy) > CLICK_THRESHOLD) return
+  openImageInGallery(index)
 }
 
 function openImageInGallery(index: number) {
