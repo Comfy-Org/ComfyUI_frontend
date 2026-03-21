@@ -129,6 +129,10 @@ function handlePreloadError(event: Event) {
     return
   }
 
+  if (!isResourcePreloadFailure) {
+    return
+  }
+
   if (preloadToastShown) {
     return
   }
