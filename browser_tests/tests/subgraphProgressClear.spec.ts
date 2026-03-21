@@ -73,5 +73,59 @@ test.describe(
         expect(progressAfter).toBeUndefined()
       }).toPass({ timeout: 2_000 })
     })
+
+    test('Stale progress is cleared when switching workflows while inside subgraph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.nextFrame()
+
+      const subgraphNodeId = await comfyPage.page.evaluate(() => {
+        const graph = window.app!.canvas.graph!
+        const subgraphNode = graph.nodes.find(
+          (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+        )
+        return subgraphNode ? String(subgraphNode.id) : null
+      })
+      expect(subgraphNodeId).not.toBeNull()
+
+      await comfyPage.page.evaluate((nodeId) => {
+        const node = window.app!.canvas.graph!.getNodeById(nodeId)!
+        node.progress = 0.7
+      }, subgraphNodeId!)
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById(
+        subgraphNodeId!
+      )
+      await subgraphNode.navigateIntoSubgraph()
+
+      const inSubgraph = await comfyPage.page.evaluate(() => {
+        const graph = window.app!.canvas.graph
+        return !!graph && 'inputNode' in graph
+      })
+      expect(inSubgraph).toBe(true)
+
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.nextFrame()
+
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.nextFrame()
+
+      await expect(async () => {
+        const subgraphProgressState = await comfyPage.page.evaluate(() => {
+          const graph = window.app!.canvas.graph!
+          const subgraphNode = graph.nodes.find(
+            (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+          )
+          if (!subgraphNode) {
+            return { exists: false, progress: null }
+          }
+
+          return { exists: true, progress: subgraphNode.progress }
+        })
+        expect(subgraphProgressState.exists).toBe(true)
+        expect(subgraphProgressState.progress).toBeUndefined()
+      }).toPass({ timeout: 5_000 })
+    })
   }
 )

@@ -129,4 +129,74 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     const undoCount = await comfyPage.nodeOps.getGraphNodesCount()
     expect(undoCount).toBe(initialCount)
   })
+
+  test(
+    'Copy paste node, image paste onto LoadImage, image paste on empty canvas',
+    { tag: ['@node'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/load_image_with_ksampler')
+      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+
+      // Step 1: Copy a KSampler node with Ctrl+C and paste with Ctrl+V
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+      await ksamplerNodes[0].copy()
+      await comfyPage.canvas.click({ position: { x: 50, y: 500 } })
+      await comfyPage.nextFrame()
+      await comfyPage.clipboard.paste()
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
+          timeout: 5_000
+        })
+        .toBe(3)
+
+      // Step 2: Paste image onto selected LoadImage node
+      const loadImageNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+      await loadImageNodes[0].click('title')
+      await comfyPage.nextFrame()
+
+      const uploadPromise = comfyPage.page.waitForResponse(
+        (resp) => resp.url().includes('/upload/') && resp.status() === 200,
+        { timeout: 10_000 }
+      )
+      await comfyPage.clipboard.pasteFile(
+        comfyPage.assetPath('image32x32.webp')
+      )
+      await uploadPromise
+
+      await expect
+        .poll(
+          async () => {
+            const fileWidget = await loadImageNodes[0].getWidget(0)
+            return fileWidget.getValue()
+          },
+          { timeout: 5_000 }
+        )
+        .toContain('image32x32')
+      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
+
+      // Step 3: Click empty canvas area, paste image → creates new LoadImage
+      await comfyPage.canvas.click({ position: { x: 50, y: 500 } })
+      await comfyPage.nextFrame()
+
+      const uploadPromise2 = comfyPage.page.waitForResponse(
+        (resp) => resp.url().includes('/upload/') && resp.status() === 200,
+        { timeout: 10_000 }
+      )
+      await comfyPage.clipboard.pasteFile(
+        comfyPage.assetPath('image32x32.webp')
+      )
+      await uploadPromise2
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
+          timeout: 5_000
+        })
+        .toBe(4)
+      const allLoadImageNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+      expect(allLoadImageNodes).toHaveLength(2)
+    }
+  )
 })
