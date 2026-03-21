@@ -3684,5 +3684,17 @@
     "footer": "ComfyUI stays free and open source. Cloud is optional.",
     "continueLocally": "Continue Locally",
     "exploreCloud": "Try Cloud for Free"
+  },
+  "execution": {
+    "generating": "Generating…",
+    "saving": "Saving…",
+    "loading": "Loading…",
+    "encoding": "Encoding…",
+    "decoding": "Decoding…",
+    "processing": "Processing…",
+    "resizing": "Resizing…",
+    "generatingVideo": "Generating video…",
+    "training": "Training…",
+    "processingVideo": "Processing video…"
   }
 }
