@@ -122,7 +122,8 @@ function handlePreloadError(event: Event) {
     })
   }
 
-  if (shouldAttemptPreloadRecovery()) {
+  const isResourcePreloadFailure = info.url !== null
+  if (isResourcePreloadFailure && shouldAttemptPreloadRecovery()) {
     markPreloadRecoveryAttempted()
     window.location.reload()
     return
