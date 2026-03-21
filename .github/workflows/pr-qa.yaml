@@ -95,13 +95,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUM: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.ref_name }}
         run: |
           if [ -n "$PR_NUM" ]; then
             echo "number=$PR_NUM" >> "$GITHUB_OUTPUT"
           else
+            # Try open PR for this branch
             NUM=$(gh pr list --repo "${{ github.repository }}" \
-              --head "${{ github.ref_name }}" --state open \
+              --head "$BRANCH" --state open \
               --json number --jq '.[0].number // empty')
+            # Fallback: extract from sno-qa-<number> branch name
+            if [ -z "$NUM" ]; then
+              NUM=$(echo "$BRANCH" | sed -n 's/^sno-qa-\([0-9]\+\)$/\1/p')
+            fi
             echo "number=${NUM}" >> "$GITHUB_OUTPUT"
           fi
 
@@ -402,14 +408,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUM: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.ref_name }}
         run: |
           if [ -n "$PR_NUM" ]; then
             echo "number=$PR_NUM" >> "$GITHUB_OUTPUT"
           else
             # Push event: look up open PR for this branch
             NUM=$(gh pr list --repo "${{ github.repository }}" \
-              --head "${{ github.ref_name }}" --state open \
+              --head "$BRANCH" --state open \
               --json number --jq '.[0].number // empty')
+            # Fallback: extract from sno-qa-<number> branch name
+            if [ -z "$NUM" ]; then
+              NUM=$(echo "$BRANCH" | sed -n 's/^sno-qa-\([0-9]\+\)$/\1/p')
+            fi
             echo "number=${NUM}" >> "$GITHUB_OUTPUT"
           fi
 
