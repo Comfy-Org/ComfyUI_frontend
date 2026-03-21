@@ -98,6 +98,16 @@ describe('useComfyHubProfileGate', () => {
       expect(mockGetMyProfile).toHaveBeenCalledTimes(2)
     })
 
+    it('sets hasProfile to false when fetch throws', async () => {
+      mockGetMyProfile.mockRejectedValue(new Error('Network error'))
+
+      await gate.fetchProfile()
+
+      expect(gate.hasProfile.value).toBe(false)
+      expect(gate.profile.value).toBe(null)
+      expect(mockToastErrorHandler).toHaveBeenCalledOnce()
+    })
+
     it('sets isFetchingProfile during fetch', async () => {
       let resolvePromise: (v: ComfyHubProfile | null) => void
       mockGetMyProfile.mockReturnValue(

@@ -57,17 +57,18 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
-import { computed } from 'vue'
 
 const { profile } = defineProps<{
   profile: ComfyHubProfile
 }>()
 
 const acknowledged = defineModel<boolean>('acknowledged', { default: false })
+const ready = defineModel<boolean>('ready', { default: false })
 
 const shareService = useWorkflowShareService()
 
@@ -82,5 +83,11 @@ const isReady = computed(
     !isLoadingAssets.value && (!hasPrivateAssets.value || acknowledged.value)
 )
 
-defineExpose({ isReady })
+watch(
+  isReady,
+  (val) => {
+    ready.value = val
+  },
+  { immediate: true }
+)
 </script>

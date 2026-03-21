@@ -119,9 +119,13 @@ describe('ComfyHubPublishWizardContent', () => {
           },
           ComfyHubFinishStep: {
             template: '<div data-testid="finish-step" />',
-            props: ['profile', 'acknowledged'],
-            setup() {
-              return { isReady: true }
+            props: ['profile', 'acknowledged', 'ready'],
+            emits: ['update:ready', 'update:acknowledged'],
+            setup(
+              _: unknown,
+              { emit }: { emit: (e: string, v: boolean) => void }
+            ) {
+              emit('update:ready', true)
             }
           },
           ComfyHubExamplesStep: {
@@ -289,9 +293,10 @@ describe('ComfyHubPublishWizardContent', () => {
       expect(footer.attributes('data-publish-disabled')).toBe('true')
     })
 
-    it('enables publish when gate enabled and hasProfile is true', () => {
+    it('enables publish when gate enabled and hasProfile is true', async () => {
       mockHasProfile.value = true
       const wrapper = createWrapper()
+      await flushPromises()
 
       const footer = wrapper.find('[data-testid="publish-footer"]')
       expect(footer.attributes('data-publish-disabled')).toBe('false')
