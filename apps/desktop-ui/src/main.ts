@@ -20,8 +20,10 @@ const ComfyUIPreset = definePreset(Aura, {
   }
 })
 
-// Load the initial locale before mounting to avoid rendering with missing translations
-await loadLocale(i18n.global.locale.value)
+// Load the initial locale before mounting to avoid rendering with missing translations.
+// Errors are caught to prevent a failed locale fetch from bricking startup; the app
+// falls back to English in that case.
+await loadLocale(i18n.global.locale.value).catch(() => {})
 
 const app = createApp(App)
 const pinia = createPinia()
