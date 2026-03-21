@@ -20,7 +20,9 @@ const { output } = defineProps<{
 
 const attrs = useAttrs()
 const mediaType = computed(() => getMediaType(output))
-const outputLabel = computed(() => output.display_name ?? output.filename)
+const outputLabel = computed(
+  () => output.display_name?.trim() || output.filename
+)
 </script>
 <template>
   <template v-if="mediaType === 'images' || mediaType === 'video'">
