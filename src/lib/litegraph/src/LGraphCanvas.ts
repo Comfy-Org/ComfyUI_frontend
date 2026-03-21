@@ -7,6 +7,7 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -4270,6 +4271,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (newPositions.length) layoutStore.setSource(LayoutSource.Canvas)
     layoutStore.batchUpdateNodeBounds(newPositions)
+
+    const { bringNodeToFront } = useLayoutMutations()
+    for (const { nodeId } of newPositions) {
+      bringNodeToFront(nodeId)
+    }
 
     this.selectItems(created)
     forEachNode(graph, (n) => n.onGraphConfigured?.())
