@@ -444,13 +444,26 @@ async function analyzeWithGemini(
     .trim()
 
   console.warn('Gemini response received')
+  console.warn('Raw response (first 500 chars):', text.slice(0, 500))
   const parsed = JSON.parse(text)
 
-  if (!parsed.before || !parsed.after) {
-    throw new Error('Response missing "before" or "after" keys')
+  // Handle possible nesting — Gemini may wrap in an extra object
+  const guide =
+    parsed.before && parsed.after
+      ? parsed
+      : (parsed.qa_guide ?? parsed.guides ?? parsed)
+
+  if (!guide.before || !guide.after) {
+    console.warn(
+      'Full response:',
+      JSON.stringify(parsed, null, 2).slice(0, 2000)
+    )
+    throw new Error(
+      `Response missing "before" or "after" keys. Got keys: ${Object.keys(parsed).join(', ')}`
+    )
   }
 
-  return { before: parsed.before, after: parsed.after }
+  return { before: guide.before, after: guide.after }
 }
 
 // ── Main ──
