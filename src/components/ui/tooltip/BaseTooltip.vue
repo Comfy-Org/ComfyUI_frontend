@@ -17,7 +17,7 @@ const {
   text = '',
   side = 'top',
   sideOffset = 4,
-  variant = 'default',
+  size = 'small',
   delayDuration,
   disabled = false,
   class: className
@@ -25,7 +25,7 @@ const {
   text?: string
   side?: 'top' | 'bottom' | 'left' | 'right'
   sideOffset?: number
-  variant?: NonNullable<TooltipVariants['variant']>
+  size?: NonNullable<TooltipVariants['size']>
   delayDuration?: number
   disabled?: boolean
   class?: HTMLAttributes['class']
@@ -41,11 +41,10 @@ const {
       <TooltipContent
         :side="side"
         :side-offset="sideOffset"
-        :class="cn(tooltipVariants({ variant }), className)"
+        :class="cn(tooltipVariants({ size }), className)"
       >
         {{ text }}
         <TooltipArrow
-          v-if="variant !== 'default'"
           :width="8"
           :height="5"
           class="fill-node-component-tooltip-surface"
