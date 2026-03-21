@@ -1,7 +1,12 @@
-# Automated QA of ComfyUI frontend using Claude CLI + playwright-cli.
+# Automated QA of ComfyUI frontend using Playwright video recordings + Gemini review.
+# Architecture:
+#   resolve-matrix → qa-before (main) ─┐
+#                  → qa-after  (PR)   ─┴→ report
+#
+# Before/after run in PARALLEL on separate runners for clean isolation.
 # Two modes:
-#   Focused (qa-changes label): Linux-only, tests areas affected by PR changes
-#   Full (qa-full label): 3-OS matrix, full test plan
+#   Focused (qa-changes label): Linux-only, before/after comparison
+#   Full (qa-full label): 3-OS matrix, after-only
 name: 'PR: QA'
 
 on:
@@ -66,19 +71,18 @@ jobs:
           fi
           echo "Mode: $([ "$FULL" = "true" ] && echo full || echo focused)"
 
-  qa:
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BEFORE recording — main branch frontend on its own runner
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  qa-before:
     needs: resolve-matrix
-    if: needs.resolve-matrix.outputs.skip != 'true'
+    if: needs.resolve-matrix.outputs.skip != 'true' && needs.resolve-matrix.outputs.mode == 'focused'
     strategy:
       fail-fast: false
       matrix:
         os: ${{ fromJson(needs.resolve-matrix.outputs.os) }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-    permissions:
-      pull-requests: write
-    env:
-      QA_MODE: ${{ needs.resolve-matrix.outputs.mode }}
+    timeout-minutes: 30
     steps:
       - name: Set QA artifacts path
         shell: bash
@@ -91,30 +95,24 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup frontend (PR branch)
+      # Install pnpm/node for PR checkout (needed for tsx scripts later)
+      - name: Setup frontend (scripts only)
         uses: ./.github/actions/setup-frontend
         with:
-          include_build_step: true
+          include_build_step: false
 
-      - name: Build main branch frontend for before comparison
-        if: needs.resolve-matrix.outputs.mode == 'focused'
+      - name: Build main branch frontend via worktree
         shell: bash
         run: |
-          # Save PR dist, build main dist
-          mv dist dist-after
-          git stash --include-untracked || true
-          git checkout origin/main -- .
-          # Install main's deps (may differ from PR), then build
-          pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+          git worktree add ../main-build origin/main
+          cd ../main-build
+          pnpm install --frozen-lockfile || pnpm install
           pnpm exec vite build
-          mv dist dist-before
-          # Restore PR branch files and reinstall PR deps
-          git checkout HEAD -- .
-          git stash pop || true
-          pnpm install --frozen-lockfile
-          mv dist-after dist
-          echo "Built both: dist-before/ (main) and dist/ (PR)"
-          ls -la dist-before/index.html dist/index.html
+          cd "$GITHUB_WORKSPACE"
+          mv ../main-build/dist dist
+          git worktree remove ../main-build --force
+          echo "Built main branch frontend"
+          ls -la dist/index.html
 
       - name: Setup ComfyUI server (no launch)
         uses: ./.github/actions/setup-comfyui-server
@@ -138,15 +136,13 @@ jobs:
 
           echo "Changed files:"
           grep '^diff --git' "${{ runner.temp }}/pr-diff.txt" | \
-            sed 's|diff --git a/||;s| b/.*||' | sort -u | tee "${{ runner.temp }}/changed-files.txt"
+            sed 's|diff --git a/||;s| b/.*||' | sort -u
 
-      # ── BEFORE run (main branch) ──
       - name: Start server with main branch frontend
-        if: needs.resolve-matrix.outputs.mode == 'focused'
         shell: bash
         working-directory: ComfyUI
         run: |
-          python main.py --cpu --multi-user --front-end-root ../dist-before &
+          python main.py --cpu --multi-user --front-end-root ../dist &
           echo $! > /tmp/comfyui-server.pid
           for i in $(seq 1 60); do
             curl -sf http://127.0.0.1:8188/api/system_stats >/dev/null 2>&1 && echo "Server ready (main)" && exit 0
@@ -154,15 +150,12 @@ jobs:
           done
           echo "::error::Server timeout (main)"; exit 1
 
-      - name: Pre-seed settings (main)
-        if: needs.resolve-matrix.outputs.mode == 'focused'
+      - name: Pre-seed settings
         shell: bash
         run: |
-          # Create qa-ci user via API so login screen is bypassed
           curl -sf -X POST http://127.0.0.1:8188/api/users \
             -H 'Content-Type: application/json' \
             -d '{"username":"qa-ci"}' || echo "User creation failed (may already exist)"
-          # Pre-seed settings to skip tutorial/template gallery
           curl -sf -X POST http://127.0.0.1:8188/api/devtools/set_settings \
             -H 'Content-Type: application/json' \
             -d '{"Comfy.TutorialCompleted":true}' || \
@@ -170,8 +163,7 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"Comfy.TutorialCompleted":true}' || echo "Settings pre-seed skipped"
 
-      - name: Run BEFORE QA (main branch)
-        if: needs.resolve-matrix.outputs.mode == 'focused'
+      - name: Run BEFORE QA recording
         shell: bash
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -183,20 +175,75 @@ jobs:
             --url http://127.0.0.1:8188 \
             --test-plan .claude/skills/comfy-qa/SKILL.md
 
-      - name: Stop server after BEFORE run
-        if: needs.resolve-matrix.outputs.mode == 'focused'
+      - name: Collect artifacts
+        if: always()
         shell: bash
         run: |
           kill "$(cat /tmp/comfyui-server.pid)" 2>/dev/null || true
-          sleep 2
-          # Ensure port is free
-          for i in $(seq 1 10); do
-            curl -sf http://127.0.0.1:8188/ >/dev/null 2>&1 || break
-            sleep 1
-          done
-          echo "Server stopped"
+          echo "=== QA BEFORE artifacts ==="
+          ls -la "$QA_ARTIFACTS/" 2>/dev/null | head -30
 
-      # ── AFTER run (PR branch) ──
+      - name: Upload QA artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v6.2.0
+        with:
+          name: qa-before-${{ runner.os }}-${{ github.run_id }}
+          path: ${{ env.QA_ARTIFACTS }}/
+          retention-days: 14
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # AFTER recording — PR branch frontend on its own runner
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  qa-after:
+    needs: resolve-matrix
+    if: needs.resolve-matrix.outputs.skip != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJson(needs.resolve-matrix.outputs.os) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - name: Set QA artifacts path
+        shell: bash
+        run: echo "QA_ARTIFACTS=$RUNNER_TEMP/qa-artifacts" >> "$GITHUB_ENV"
+
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup frontend (PR branch)
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Setup ComfyUI server (no launch)
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'false'
+
+      - name: Install Playwright browser
+        shell: bash
+        run: |
+          npx playwright install chromium
+          mkdir -p "$QA_ARTIFACTS"
+
+      - name: Get PR diff
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr diff ${{ github.event.pull_request.number || '' }} \
+            --repo ${{ github.repository }} > "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || \
+          git diff origin/main...HEAD > "${{ runner.temp }}/pr-diff.txt"
+
+          echo "Changed files:"
+          grep '^diff --git' "${{ runner.temp }}/pr-diff.txt" | \
+            sed 's|diff --git a/||;s| b/.*||' | sort -u
+
       - name: Start server with PR branch frontend
         shell: bash
         working-directory: ComfyUI
@@ -209,7 +256,7 @@ jobs:
           done
           echo "::error::Server timeout (PR)"; exit 1
 
-      - name: Pre-seed settings (PR)
+      - name: Pre-seed settings
         shell: bash
         run: |
           curl -sf -X POST http://127.0.0.1:8188/api/users \
@@ -222,7 +269,7 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"Comfy.TutorialCompleted":true}' || echo "Settings pre-seed skipped"
 
-      - name: Run AFTER QA (PR branch)
+      - name: Run AFTER QA recording
         shell: bash
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -239,38 +286,26 @@ jobs:
         shell: bash
         run: |
           kill "$(cat /tmp/comfyui-server.pid)" 2>/dev/null || true
-          mkdir -p "$QA_ARTIFACTS"
-          echo "=== QA artifacts ==="
-          ls -la "$QA_ARTIFACTS/" 2>/dev/null | head -30
-
-          # Check for after video
-          if [ -f "$QA_ARTIFACTS/qa-session.webm" ]; then
-            echo "Found after video: $(du -h "$QA_ARTIFACTS/qa-session.webm" | cut -f1)"
-          else
-            echo "No qa-session.webm found"
-            VIDEO=$(find "$QA_ARTIFACTS" . -maxdepth 3 -name '*.webm' -not -path '*/node_modules/*' 2>/dev/null | head -1)
-            if [ -n "$VIDEO" ]; then
-              echo "Found fallback video: $VIDEO ($(du -h "$VIDEO" | cut -f1))"
-              cp "$VIDEO" "$QA_ARTIFACTS/qa-session.webm"
-            else
-              echo "WARNING: No .webm video found anywhere"
-            fi
-          fi
-
-          echo "=== Final artifacts ==="
+          echo "=== QA AFTER artifacts ==="
           ls -la "$QA_ARTIFACTS/" 2>/dev/null | head -30
 
       - name: Upload QA artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v6.2.0
         with:
-          name: qa-report-${{ runner.os }}-${{ github.run_id }}
+          name: qa-after-${{ runner.os }}-${{ github.run_id }}
           path: ${{ env.QA_ARTIFACTS }}/
           retention-days: 14
 
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Report — merges artifacts, runs Gemini video review, deploys
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   report:
-    needs: [resolve-matrix, qa]
-    if: always() && (github.event.pull_request.number || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [resolve-matrix, qa-before, qa-after]
+    if: >-
+      always() &&
+      (needs.qa-after.result == 'success' || needs.qa-before.result == 'success') &&
+      (github.event.pull_request.number || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -297,41 +332,37 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      - name: Download QA artifacts
+      - name: Download BEFORE artifacts
+        if: needs.qa-before.result == 'success'
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           path: qa-artifacts
-          pattern: qa-report-*
+          pattern: qa-before-*
 
-      - name: Normalize artifact layout
+      - name: Download AFTER artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          path: qa-artifacts
+          pattern: qa-after-*
+
+      - name: Merge artifacts into per-OS report directories
         run: |
-          # download-artifact v7 extracts flat when there's only 1 artifact.
-          # If qa-report-* subdirs don't exist, move flat files into the right subdir.
-          if ! ls -d qa-artifacts/qa-report-* >/dev/null 2>&1; then
-            echo "No qa-report-* subdirs found — reorganizing flat download"
-            DEST=""
-            # Try to detect OS from report filename (e.g. *-linux-report.md)
-            for os in Linux macOS Windows; do
-              OS_LOWER=$(echo "$os" | tr '[:upper:]' '[:lower:]')
-              if ls qa-artifacts/*-${OS_LOWER}-report.md >/dev/null 2>&1; then
-                DEST="qa-artifacts/qa-report-${os}-${{ github.run_id }}"
-                break
-              fi
-            done
-            # Fallback: if no report.md found, detect from webm files
-            if [ -z "$DEST" ] && ls qa-artifacts/*.webm >/dev/null 2>&1; then
-              DEST="qa-artifacts/qa-report-Linux-${{ github.run_id }}"
-              echo "No report.md found, using fallback: $DEST"
+          echo "=== Downloaded artifacts ==="
+          find qa-artifacts -type f 2>/dev/null | head -30
+
+          for os in Linux macOS Windows; do
+            BEFORE_DIR="qa-artifacts/qa-before-${os}-${{ github.run_id }}"
+            AFTER_DIR="qa-artifacts/qa-after-${os}-${{ github.run_id }}"
+            REPORT_DIR="qa-artifacts/qa-report-${os}-${{ github.run_id }}"
+
+            if [ -d "$AFTER_DIR" ] || [ -d "$BEFORE_DIR" ]; then
+              mkdir -p "$REPORT_DIR"
+              [ -d "$BEFORE_DIR" ] && cp -r "$BEFORE_DIR"/* "$REPORT_DIR/" 2>/dev/null || true
+              [ -d "$AFTER_DIR" ] && cp -r "$AFTER_DIR"/* "$REPORT_DIR/" 2>/dev/null || true
+              echo "Merged $os artifacts into $REPORT_DIR"
+              ls -la "$REPORT_DIR/" | head -20
             fi
-            if [ -n "$DEST" ]; then
-              mkdir -p "$DEST"
-              find qa-artifacts -maxdepth 1 -type f -exec mv {} "$DEST/" \;
-              [ -d qa-artifacts/videos ] && mv qa-artifacts/videos "$DEST/"
-              echo "Moved flat files into $DEST"
-            fi
-          fi
-          echo "=== Artifact structure ==="
-          find qa-artifacts -type f 2>/dev/null | head -20
+          done
 
       - name: Install ffmpeg
         run: |
