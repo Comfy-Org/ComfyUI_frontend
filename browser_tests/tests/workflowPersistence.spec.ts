@@ -32,23 +32,53 @@ const waitForV2DraftSave = async (comfyPage: ComfyPage, since: number) => {
   }, since)
 }
 
-const waitForTabStatePersistence = async (comfyPage: ComfyPage) => {
-  await comfyPage.page.waitForFunction(() => {
-    let sawActivePath = false
-    let sawOpenPaths = false
+const waitForTabStatePersistence = async (
+  comfyPage: ComfyPage,
+  minPaths = 2
+) => {
+  await comfyPage.page.waitForFunction((expectedMinPaths) => {
+    let activePathKey: string | null = null
+    let openPathsKey: string | null = null
 
     for (let i = 0; i < window.sessionStorage.length; i++) {
       const key = window.sessionStorage.key(i)
       if (key?.startsWith('Comfy.Workflow.ActivePath:')) {
-        sawActivePath = true
+        activePathKey = key
       }
       if (key?.startsWith('Comfy.Workflow.OpenPaths:')) {
-        sawOpenPaths = true
+        openPathsKey = key
       }
     }
 
-    return sawActivePath && sawOpenPaths
-  })
+    if (!activePathKey || !openPathsKey) {
+      return false
+    }
+
+    const activePointerRaw = window.sessionStorage.getItem(activePathKey)
+    const openPointerRaw = window.sessionStorage.getItem(openPathsKey)
+    if (!activePointerRaw || !openPointerRaw) {
+      return false
+    }
+
+    try {
+      const activePointer = JSON.parse(activePointerRaw) as {
+        workspaceId?: unknown
+        path?: unknown
+      }
+      const openPointer = JSON.parse(openPointerRaw) as {
+        paths?: unknown[]
+      }
+
+      return (
+        typeof activePointer.workspaceId === 'string' &&
+        typeof activePointer.path === 'string' &&
+        Array.isArray(openPointer.paths) &&
+        openPointer.paths.length >= expectedMinPaths
+      )
+    } catch {
+      return false
+    }
+  }, minPaths)
 }
 
 const forceActivePathToFirstOpenWorkflow = async (comfyPage: ComfyPage) => {
