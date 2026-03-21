@@ -197,14 +197,12 @@ describe('appModeStore', () => {
         id == 1 ? (node1 as unknown as LGraphNode) : undefined
       )
 
-      workflowStore.activeWorkflow = workflowWithLinearData(
-        [
+      store.loadSelections({
+        inputs: [
           [1, 'prompt'],
           [99, 'width']
-        ],
-        []
-      )
-      await nextTick()
+        ]
+      })
 
       expect(store.selectedInputs).toEqual([[1, 'prompt']])
     })
@@ -215,14 +213,12 @@ describe('appModeStore', () => {
         id == 1 ? (node1 as unknown as LGraphNode) : undefined
       )
 
-      workflowStore.activeWorkflow = workflowWithLinearData(
-        [
+      store.loadSelections({
+        inputs: [
           [1, 'prompt'],
           [1, 'deleted_widget']
-        ],
-        []
-      )
-      await nextTick()
+        ]
+      })
 
       expect(store.selectedInputs).toEqual([
         [1, 'prompt'],
@@ -236,8 +232,7 @@ describe('appModeStore', () => {
         id == 1 ? (node1 as unknown as LGraphNode) : undefined
       )
 
-      workflowStore.activeWorkflow = workflowWithLinearData([], [1, 99])
-      await nextTick()
+      store.loadSelections({ outputs: [1, 99] })
 
       expect(store.selectedOutputs).toEqual([1])
     })
@@ -247,8 +242,11 @@ describe('appModeStore', () => {
 
       // Initially nodes are not resolvable — pruning removes them
       mockResolveNode.mockReturnValue(undefined)
-      workflowStore.activeWorkflow = workflowWithLinearData([[1, 'seed']], [1])
+      const inputs: [number, string][] = [[1, 'seed']]
+      workflowStore.activeWorkflow = workflowWithLinearData(inputs, [1])
+      store.loadSelections({ inputs })
       await nextTick()
+
       expect(store.selectedInputs).toEqual([])
       expect(store.selectedOutputs).toEqual([])
 
@@ -268,8 +266,7 @@ describe('appModeStore', () => {
     it('hasOutputs is false when all output nodes are deleted', async () => {
       mockResolveNode.mockReturnValue(undefined)
 
-      workflowStore.activeWorkflow = workflowWithLinearData([], [10, 20])
-      await nextTick()
+      store.loadSelections({ outputs: [10, 20] })
 
       expect(store.selectedOutputs).toEqual([])
       expect(store.hasOutputs).toBe(false)

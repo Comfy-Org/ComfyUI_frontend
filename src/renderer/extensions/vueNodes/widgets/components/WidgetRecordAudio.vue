@@ -96,7 +96,7 @@ import { useAudioService } from '@/services/audioService'
 import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
 import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
-import { formatTime } from '../utils/audioUtils'
+import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()
 
