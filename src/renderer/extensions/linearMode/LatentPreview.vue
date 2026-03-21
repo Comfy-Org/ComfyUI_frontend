@@ -15,9 +15,10 @@ const { executionStatusMessage } = useExecutionStatus()
 
     <span
       v-if="executionStatusMessage"
-      class="animate-pulse text-sm text-muted capitalize"
+      class="animate-pulse text-sm text-muted"
     >
-      {{ executionStatusMessage }}…
+      {{ executionStatusMessage }}
+    </span>
     </span>
   </div>
 </template>
