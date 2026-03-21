@@ -15,9 +15,8 @@
         @mouseenter="onJobEnter(job, $event)"
         @mouseleave="onJobLeave(job.id)"
       >
-        <JobContextMenu
-          :entries="getMenuEntries(job)"
-          @action="emit('menu-action', $event)"
+        <ContextMenu
+          content-class="z-1700 bg-transparent p-0 font-inter shadow-lg"
         >
           <AssetsListItem
             :class="
@@ -66,15 +65,48 @@
               >
                 {{ t('menuLabels.View') }}
               </Button>
-              <JobActionsMenu
+              <DropdownMenu
                 :open="openActionsJobId === job.id"
-                :entries="getMenuEntries(job)"
+                :show-arrow="false"
+                content-class="z-1700 bg-transparent p-0 shadow-lg"
+                :side-offset="4"
+                :collision-padding="8"
                 @update:open="onActionsMenuOpenChange(job.id, $event)"
-                @action="emit('menu-action', $event)"
-              />
+              >
+                <template #button>
+                  <Button
+                    class="job-actions-menu-trigger"
+                    variant="secondary"
+                    size="icon"
+                    :aria-label="t('g.more')"
+                  >
+                    <i class="icon-[lucide--ellipsis] size-4" />
+                  </Button>
+                </template>
+                <template
+                  #content="{ close, itemComponent, separatorComponent }"
+                >
+                  <MenuPanel
+                    :entries="getMenuEntries(job)"
+                    :item-component="itemComponent"
+                    :separator-component="separatorComponent"
+                    v-bind="jobMenuPanelProps"
+                    @action="onMenuAction($event, close)"
+                  />
+                </template>
+              </DropdownMenu>
             </template>
           </AssetsListItem>
-        </JobContextMenu>
+          <template #content="{ close, itemComponent, separatorComponent }">
+            <MenuPanel
+              :entries="getMenuEntries(job)"
+              :item-component="itemComponent"
+              :separator-component="separatorComponent"
+              v-bind="jobMenuPanelProps"
+              @action="onMenuAction($event, close)"
+            />
+          </template>
+        </ContextMenu>
       </div>
     </div>
   </div>
@@ -102,12 +134,13 @@
 import { useI18n } from 'vue-i18n'
 import { nextTick, ref } from 'vue'
 
+import ContextMenu from '@/components/common/ContextMenu.vue'
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import MenuPanel from '@/components/common/MenuPanel.vue'
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import { getHoverPopoverPosition } from '@/components/queue/job/getHoverPopoverPosition'
-import JobActionsMenu from '@/components/queue/job/JobActionsMenu.vue'
-import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import type { MenuActionEntry, MenuEntry } from '@/types/menuTypes'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import { useJobDetailsHover } from '@/composables/queue/useJobDetailsHover'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
@@ -123,9 +156,20 @@ const { displayedJobGroups, getMenuEntries } = defineProps<{
 const emit = defineEmits<{
   (e: 'cancelItem', item: JobListItem): void
   (e: 'deleteItem', item: JobListItem): void
-  (e: 'menu-action', entry: MenuEntry): void
+  (e: 'menu-action', entry: MenuActionEntry): void
   (e: 'viewItem', item: JobListItem): void
 }>()
+
+const jobMenuPanelProps = {
+  panelClass:
+    'job-menu-panel flex min-w-56 flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 font-inter',
+  separatorWrapperClass: 'px-2 py-1',
+  separatorClass: 'h-px bg-interface-stroke',
+  buttonVariant: 'textonly',
+  buttonClass:
+    'w-full justify-start bg-transparent data-highlighted:bg-secondary-background-hover',
+  iconClass: 'block size-4 shrink-0 leading-none text-text-secondary'
+} as const
 
 const { t } = useI18n()
 const hoveredJobId = ref<string | null>(null)
@@ -210,6 +254,11 @@ function onActionsMenuOpenChange(jobId: string, isOpen: boolean) {
   if (openActionsJobId.value === jobId) {
     openActionsJobId.value = null
   }
+}
+
+function onMenuAction(entry: MenuActionEntry, close: () => void) {
+  close()
+  emit('menu-action', entry)
 }
 
 function getPreviewOutput(job: JobListItem) {

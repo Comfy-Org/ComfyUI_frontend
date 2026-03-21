@@ -30,10 +30,6 @@ const JobAssetsListStub = {
   template: '<div class="job-assets-list-stub" />'
 }
 
-const JobContextMenuStub = {
-  template: '<div />'
-}
-
 const createJob = (): JobListItem => ({
   id: 'job-1',
   title: 'Job 1',
@@ -56,8 +52,7 @@ const mountComponent = () =>
       stubs: {
         QueueOverlayHeader: QueueOverlayHeaderStub,
         JobFiltersBar: JobFiltersBarStub,
-        JobAssetsList: JobAssetsListStub,
-        JobContextMenu: JobContextMenuStub
+        JobAssetsList: JobAssetsListStub
       }
     }
   })

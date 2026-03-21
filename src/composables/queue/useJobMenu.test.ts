@@ -3,7 +3,7 @@ import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
-import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import type { MenuEntry } from '@/types/menuTypes'
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false

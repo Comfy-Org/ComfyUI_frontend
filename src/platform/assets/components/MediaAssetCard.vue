@@ -66,32 +66,35 @@
           >
             <i class="icon-[lucide--zoom-in] size-4" />
           </Button>
-          <MediaAssetActionsMenu
+          <DropdownMenu
             v-if="asset"
             v-model:open="isActionsMenuOpen"
-            :asset
-            :asset-type="assetType"
-            :file-kind="fileKind"
-            :show-delete-button
-            :selected-assets
-            :is-bulk-mode
-            @zoom="handleZoomClick"
-            @asset-deleted="emit('asset-deleted')"
-            @bulk-download="emit('bulk-download', $event)"
-            @bulk-delete="emit('bulk-delete', $event)"
-            @bulk-add-to-workflow="emit('bulk-add-to-workflow', $event)"
-            @bulk-open-workflow="emit('bulk-open-workflow', $event)"
-            @bulk-export-workflow="emit('bulk-export-workflow', $event)"
+            :show-arrow="false"
+            content-class="z-1700 bg-transparent p-0 shadow-lg"
+            :side-offset="4"
+            :collision-padding="8"
+            close-on-scroll
           >
-            <Button
-              variant="overlay-white"
-              size="icon"
-              :aria-label="$t('mediaAsset.actions.moreOptions')"
-              @click.stop
-            >
-              <i class="icon-[lucide--ellipsis] size-4" />
-            </Button>
-          </MediaAssetActionsMenu>
+            <template #button>
+              <Button
+                variant="overlay-white"
+                size="icon"
+                :aria-label="$t('mediaAsset.actions.moreOptions')"
+                @click.stop
+              >
+                <i class="icon-[lucide--ellipsis] size-4" />
+              </Button>
+            </template>
+            <template #content="{ close, itemComponent, separatorComponent }">
+              <MenuPanel
+                :entries="getAssetMenuEntries()"
+                :item-component="itemComponent"
+                :separator-component="separatorComponent"
+                v-bind="mediaAssetMenuPanelProps"
+                @action="void onAssetMenuAction($event, close)"
+              />
+            </template>
+          </DropdownMenu>
         </IconGroup>
       </div>
     </div>
@@ -152,9 +155,12 @@ import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import MenuPanel from '@/components/common/MenuPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAssetsStore } from '@/stores/assetsStore'
+import type { MenuActionEntry, MenuEntry } from '@/types/menuTypes'
 import {
   formatDuration,
   formatSize,
@@ -167,12 +173,13 @@ import { cn } from '@/utils/tailwindUtil'
 import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import { useMediaAssetMenu } from '../composables/useMediaAssetMenu'
 import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
-import MediaAssetActionsMenu from './MediaAssetActionsMenu.vue'
+import { mediaAssetMenuPanelProps } from './mediaAssetMenuPanelConfig'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
 
@@ -242,6 +249,15 @@ const imageDimensions = ref<{ width: number; height: number } | undefined>()
 const isHovered = useElementHover(cardContainerRef)
 
 const actions = useMediaAssetActions()
+const { getMenuEntries } = useMediaAssetMenu({
+  inspectAsset: (target) => emit('zoom', target),
+  assetDeleted: () => emit('asset-deleted'),
+  bulkDownload: (assets) => emit('bulk-download', assets),
+  bulkDelete: (assets) => emit('bulk-delete', assets),
+  bulkAddToWorkflow: (assets) => emit('bulk-add-to-workflow', assets),
+  bulkOpenWorkflow: (assets) => emit('bulk-open-workflow', assets),
+  bulkExportWorkflow: (assets) => emit('bulk-export-workflow', assets)
+})
 
 // Get asset type from tags
 const assetType = computed(() => {
@@ -343,6 +359,27 @@ const handleImageLoaded = (width: number, height: number) => {
 const handleOutputCountClick = () => {
   emit('output-count-click')
 }
+
+function getAssetMenuEntries(): MenuEntry[] {
+  if (!asset) {
+    return []
+  }
+
+  return getMenuEntries({
+    asset,
+    assetType: assetType.value,
+    fileKind: fileKind.value,
+    showDeleteButton,
+    selectedAssets,
+    isBulkMode
+  })
+}
+
+async function onAssetMenuAction(entry: MenuActionEntry, close: () => void) {
+  close()
+  await entry.onClick?.()
+}
+
 function dragStart(e: DragEvent) {
   if (!asset?.preview_url) return
 

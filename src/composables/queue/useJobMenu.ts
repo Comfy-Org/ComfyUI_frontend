@@ -20,19 +20,9 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import type { MenuEntry } from '@/types/menuTypes'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { appendJsonExt } from '@/utils/formatUtil'
-
-export type MenuEntry =
-  | {
-      kind?: 'item'
-      key: string
-      label: string
-      icon?: string
-      disabled?: boolean
-      onClick?: () => void | Promise<void>
-    }
-  | { kind: 'divider'; key: string }
 
 /**
  * Provides job context menu entries and actions.

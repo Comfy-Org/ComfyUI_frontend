@@ -8,18 +8,10 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 
-vi.mock('@/platform/assets/components/MediaAssetActionsMenu.vue', () => ({
-  default: {
-    name: 'MediaAssetActionsMenu',
-    template: '<div class="media-asset-actions-menu-stub"><slot /></div>'
-  }
-}))
-
-vi.mock('@/platform/assets/components/MediaAssetContextMenu.vue', () => ({
-  default: {
-    name: 'MediaAssetContextMenu',
-    template: '<div class="media-asset-context-menu-stub"><slot /></div>'
-  }
+vi.mock('@/platform/assets/composables/useMediaAssetMenu', () => ({
+  useMediaAssetMenu: () => ({
+    getMenuEntries: () => []
+  })
 }))
 
 vi.mock('@/stores/assetsStore', () => ({
@@ -57,25 +49,32 @@ const AssetsListItemStub = {
     '<div class="assets-list-item-stub"><slot /><slot name="actions" /></div>'
 }
 
-const MediaAssetContextMenuStub = {
-  name: 'MediaAssetContextMenu',
-  template: '<div class="media-asset-context-menu-stub"><slot /></div>'
+const ContextMenuStub = {
+  name: 'ContextMenu',
+  template:
+    '<div class="context-menu-stub"><slot /><slot name="content" v-bind="{ close: () => {}, itemComponent: \'div\', separatorComponent: \'div\' }" /></div>'
 }
 
-const MediaAssetActionsMenuStub = {
-  name: 'MediaAssetActionsMenu',
+const DropdownMenuStub = {
+  name: 'DropdownMenu',
   props: {
     open: {
       type: Boolean,
       default: false
     }
   },
-  template: '<div class="media-asset-actions-menu-stub"><slot /></div>'
+  template:
+    '<div class="dropdown-menu-stub"><slot name="button" /><slot name="content" v-bind="{ close: () => {}, itemComponent: \'div\', separatorComponent: \'div\' }" /></div>'
 }
 
 const ButtonComponentStub = {
   name: 'AppButton',
   template: '<button class="button-stub" type="button"><slot /></button>'
+}
+
+const MenuPanelStub = {
+  name: 'MenuPanel',
+  template: '<div class="menu-panel-stub" />'
 }
 
 const buildAsset = (id: string, name: string): AssetItem =>
@@ -121,8 +120,9 @@ const mountInteractiveListView = (assetItems: OutputStackListItem[] = []) =>
       stubs: {
         AssetsListItem: AssetsListItemStub,
         Button: ButtonComponentStub,
-        MediaAssetActionsMenu: MediaAssetActionsMenuStub,
-        MediaAssetContextMenu: MediaAssetContextMenuStub,
+        ContextMenu: ContextMenuStub,
+        DropdownMenu: DropdownMenuStub,
+        MenuPanel: MenuPanelStub,
         VirtualGrid: VirtualGridStub
       }
     }
@@ -212,7 +212,7 @@ describe('AssetsSidebarListView', () => {
 
     await assetListItem.trigger('mouseenter')
 
-    const actionsMenu = wrapper.findComponent(MediaAssetActionsMenuStub)
+    const actionsMenu = wrapper.findComponent(DropdownMenuStub)
     expect(actionsMenu.exists()).toBe(true)
 
     actionsMenu.vm.$emit('update:open', true)
@@ -220,16 +220,12 @@ describe('AssetsSidebarListView', () => {
     await assetListItem.trigger('mouseleave')
     await nextTick()
 
-    expect(wrapper.findComponent(MediaAssetActionsMenuStub).exists()).toBe(true)
+    expect(wrapper.findComponent(DropdownMenuStub).exists()).toBe(true)
 
-    wrapper
-      .findComponent(MediaAssetActionsMenuStub)
-      .vm.$emit('update:open', false)
+    wrapper.findComponent(DropdownMenuStub).vm.$emit('update:open', false)
     await nextTick()
 
-    expect(wrapper.findComponent(MediaAssetActionsMenuStub).exists()).toBe(
-      false
-    )
+    expect(wrapper.findComponent(DropdownMenuStub).exists()).toBe(false)
   })
 
   it('does not select the row when clicking the actions trigger', async () => {

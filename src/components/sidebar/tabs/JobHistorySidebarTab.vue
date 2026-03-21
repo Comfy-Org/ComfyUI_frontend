@@ -70,7 +70,7 @@ import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
 import JobFilterTabs from '@/components/queue/job/JobFilterTabs.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
-import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import type { MenuActionEntry } from '@/types/menuTypes'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
@@ -188,8 +188,9 @@ const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   await queueStore.delete(item.taskRef)
 })
 
-const onJobMenuAction = wrapWithErrorHandlingAsync(async (entry: MenuEntry) => {
-  if (entry.kind === 'divider') return
-  if (entry.onClick) await entry.onClick()
-})
+const onJobMenuAction = wrapWithErrorHandlingAsync(
+  async (entry: MenuActionEntry) => {
+    if (entry.onClick) await entry.onClick()
+  }
+)
 </script>

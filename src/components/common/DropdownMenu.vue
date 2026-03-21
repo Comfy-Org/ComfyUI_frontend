@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
 import {
   DropdownMenuArrow,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuRoot,
+  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from 'reka-ui'
 import { computed, toValue } from 'vue'
@@ -18,7 +21,23 @@ defineOptions({
   inheritAttrs: false
 })
 
-const { itemClass: itemProp, contentClass: contentProp } = defineProps<{
+const open = defineModel<boolean>('open', { default: false })
+
+const {
+  entries,
+  icon,
+  to,
+  itemClass: itemProp,
+  contentClass: contentProp,
+  buttonSize,
+  buttonClass,
+  align,
+  showArrow = true,
+  side = 'bottom',
+  sideOffset = 5,
+  collisionPadding = 10,
+  closeOnScroll = false
+} = defineProps<{
   entries?: MenuItem[]
   icon?: string
   to?: string | HTMLElement
@@ -26,6 +45,12 @@ const { itemClass: itemProp, contentClass: contentProp } = defineProps<{
   contentClass?: string
   buttonSize?: ButtonVariants['size']
   buttonClass?: string
+  align?: 'start' | 'center' | 'end'
+  showArrow?: boolean
+  side?: 'top' | 'right' | 'bottom' | 'left'
+  sideOffset?: number
+  collisionPadding?: number
+  closeOnScroll?: boolean
 }>()
 
 const itemClass = computed(() =>
@@ -41,10 +66,25 @@ const contentClass = computed(() =>
     contentProp
   )
 )
+
+function closeMenu() {
+  open.value = false
+}
+
+useEventListener(
+  window,
+  'scroll',
+  () => {
+    if (closeOnScroll) {
+      closeMenu()
+    }
+  },
+  { capture: true, passive: true }
+)
 </script>
 
 <template>
-  <DropdownMenuRoot>
+  <DropdownMenuRoot v-model:open="open">
     <DropdownMenuTrigger as-child>
       <slot name="button">
         <Button :size="buttonSize ?? 'icon'" :class="buttonClass">
@@ -55,22 +95,39 @@ const contentClass = computed(() =>
 
     <DropdownMenuPortal :to>
       <DropdownMenuContent
-        side="bottom"
-        :side-offset="5"
-        :collision-padding="10"
+        :align
+        :side
+        :side-offset="sideOffset"
+        :collision-padding="collisionPadding"
         v-bind="$attrs"
         :class="contentClass"
       >
-        <slot :item-class>
-          <DropdownItem
-            v-for="(item, index) in entries ?? []"
-            :key="toValue(item.label) ?? index"
-            :item-class
-            :content-class
-            :item
-          />
+        <slot
+          name="content"
+          :close="closeMenu"
+          :item-class="itemClass"
+          :item-component="DropdownMenuItem"
+          :separator-component="DropdownMenuSeparator"
+        >
+          <slot
+            :close="closeMenu"
+            :item-class="itemClass"
+            :item-component="DropdownMenuItem"
+            :separator-component="DropdownMenuSeparator"
+          >
+            <DropdownItem
+              v-for="(item, index) in entries ?? []"
+              :key="toValue(item.label) ?? index"
+              :item-class
+              :content-class
+              :item
+            />
+          </slot>
         </slot>
-        <DropdownMenuArrow class="fill-base-background stroke-border-subtle" />
+        <DropdownMenuArrow
+          v-if="showArrow"
+          class="fill-base-background stroke-border-subtle"
+        />
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>

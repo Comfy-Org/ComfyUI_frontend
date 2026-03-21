@@ -40,7 +40,7 @@ import type {
   JobSortMode,
   JobTab
 } from '@/composables/queue/useJobList'
-import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import type { MenuActionEntry } from '@/types/menuTypes'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 
@@ -84,8 +84,9 @@ const onDeleteItemEvent = (item: JobListItem) => {
   emit('deleteItem', item)
 }
 
-const onJobMenuAction = wrapWithErrorHandlingAsync(async (entry: MenuEntry) => {
-  if (entry.kind === 'divider') return
-  if (entry.onClick) await entry.onClick()
-})
+const onJobMenuAction = wrapWithErrorHandlingAsync(
+  async (entry: MenuActionEntry) => {
+    if (entry.onClick) await entry.onClick()
+  }
+)
 </script>
