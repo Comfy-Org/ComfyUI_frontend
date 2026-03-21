@@ -64,6 +64,7 @@ export const TestIds = {
   },
   builder: {
     ioItem: 'builder-io-item',
+    ioItemTitle: 'builder-io-item-title',
     widgetActionsMenu: 'widget-actions-menu'
   },
   breadcrumb: {
