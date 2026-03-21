@@ -36,6 +36,15 @@ function getAssetIds(assets: AssetInfo[]): string[] {
   return assets.map((asset) => asset.id)
 }
 
+function resolveThumbnailFile(
+  formData: ComfyHubPublishFormData
+): File | undefined {
+  if (formData.thumbnailType === 'imageComparison') {
+    return formData.comparisonBeforeFile ?? undefined
+  }
+  return formData.thumbnailFile ?? undefined
+}
+
 export function useComfyHubPublishSubmission() {
   const { profile } = useComfyHubProfileGate()
   const workflowStore = useWorkflowStore()
@@ -69,12 +78,10 @@ export function useComfyHubPublishSubmission() {
       await workflowShareService.getShareableAssets()
     )
 
-    const thumbnailTokenOrUrl =
-      formData.thumbnailFile && formData.thumbnailType !== 'imageComparison'
-        ? await uploadFileAndGetToken(formData.thumbnailFile)
-        : formData.comparisonBeforeFile
-          ? await uploadFileAndGetToken(formData.comparisonBeforeFile)
-          : undefined
+    const thumbnailFile = resolveThumbnailFile(formData)
+    const thumbnailTokenOrUrl = thumbnailFile
+      ? await uploadFileAndGetToken(thumbnailFile)
+      : undefined
     const thumbnailComparisonTokenOrUrl =
       formData.thumbnailType === 'imageComparison' &&
       formData.comparisonAfterFile

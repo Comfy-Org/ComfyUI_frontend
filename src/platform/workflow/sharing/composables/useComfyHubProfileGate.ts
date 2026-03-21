@@ -77,6 +77,7 @@ export function useComfyHubProfileGate() {
       profile.value = nextProfile
       return nextProfile
     } catch (error) {
+      hasProfile.value = false
       toastErrorHandler(error)
       return null
     } finally {

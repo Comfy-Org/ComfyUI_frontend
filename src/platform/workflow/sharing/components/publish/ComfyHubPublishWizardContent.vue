@@ -47,7 +47,7 @@
         </div>
         <ComfyHubFinishStep
           v-else-if="currentStep === 'finish' && hasProfile && profile"
-          ref="finishStepRef"
+          v-model:ready="finishStepReady"
           v-model:acknowledged="assetsAcknowledged"
           :profile
         />
@@ -121,17 +121,23 @@ const { checkProfile, hasProfile, isFetchingProfile, profile } =
 const isProfileLoading = computed(
   () => hasProfile.value === null || isFetchingProfile.value
 )
-const finishStepRef = ref<InstanceType<typeof ComfyHubFinishStep> | null>(null)
+const finishStepReady = ref(false)
 const assetsAcknowledged = ref(false)
 const isResolvingPublishAccess = ref(false)
 const isPublishInFlight = computed(
   () => isPublishing || isResolvingPublishAccess.value
 )
+const isFinishStepVisible = computed(
+  () =>
+    currentStep === 'finish' &&
+    hasProfile.value === true &&
+    profile.value !== null
+)
 const isPublishDisabled = computed(
   () =>
     isPublishInFlight.value ||
     (flags.comfyHubProfileGateEnabled && hasProfile.value !== true) ||
-    (finishStepRef.value !== null && !finishStepRef.value.isReady)
+    (isFinishStepVisible.value && !finishStepReady.value)
 )
 
 async function handlePublish() {

@@ -214,6 +214,13 @@ async function handlePublish(): Promise<void> {
       cachePublishPrefill(path, formData.value)
     }
     onClose()
+  } catch (error) {
+    console.error('Failed to publish workflow:', error)
+    toast.add({
+      severity: 'error',
+      summary: t('comfyHubPublish.publishFailedTitle'),
+      detail: t('comfyHubPublish.publishFailedDescription')
+    })
   } finally {
     isPublishing.value = false
   }
@@ -235,7 +242,8 @@ async function fetchPublishPrefill() {
     if (prefill) {
       applyPrefill(prefill)
     }
-  } catch {
+  } catch (error) {
+    console.warn('Failed to fetch publish prefill:', error)
     const cached = getCachedPrefill(path)
     if (cached) {
       applyPrefill(cached)
