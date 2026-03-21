@@ -154,6 +154,22 @@ jobs:
           done
           echo "::error::Server timeout (main)"; exit 1
 
+      - name: Pre-seed settings (main)
+        if: needs.resolve-matrix.outputs.mode == 'focused'
+        shell: bash
+        run: |
+          # Create qa-ci user via API so login screen is bypassed
+          curl -sf -X POST http://127.0.0.1:8188/api/users \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"qa-ci"}' || echo "User creation failed (may already exist)"
+          # Pre-seed settings to skip tutorial/template gallery
+          curl -sf -X POST http://127.0.0.1:8188/api/devtools/set_settings \
+            -H 'Content-Type: application/json' \
+            -d '{"Comfy.TutorialCompleted":true}' || \
+          curl -sf -X POST http://127.0.0.1:8188/api/settings \
+            -H 'Content-Type: application/json' \
+            -d '{"Comfy.TutorialCompleted":true}' || echo "Settings pre-seed skipped"
+
       - name: Run BEFORE QA (main branch)
         if: needs.resolve-matrix.outputs.mode == 'focused'
         shell: bash
@@ -192,6 +208,19 @@ jobs:
             sleep 2
           done
           echo "::error::Server timeout (PR)"; exit 1
+
+      - name: Pre-seed settings (PR)
+        shell: bash
+        run: |
+          curl -sf -X POST http://127.0.0.1:8188/api/users \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"qa-ci"}' || echo "User creation failed (may already exist)"
+          curl -sf -X POST http://127.0.0.1:8188/api/devtools/set_settings \
+            -H 'Content-Type: application/json' \
+            -d '{"Comfy.TutorialCompleted":true}' || \
+          curl -sf -X POST http://127.0.0.1:8188/api/settings \
+            -H 'Content-Type: application/json' \
+            -d '{"Comfy.TutorialCompleted":true}' || echo "Settings pre-seed skipped"
 
       - name: Run AFTER QA (PR branch)
         shell: bash

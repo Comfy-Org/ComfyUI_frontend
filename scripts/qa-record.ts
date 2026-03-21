@@ -315,46 +315,44 @@ async function executeSteps(
 
 // ── Login flow ──
 
-async function loginAsQaCi(page: Page) {
+async function loginAsQaCi(page: Page, serverUrl: string) {
   console.warn('Logging in as qa-ci...')
 
-  // Check if user selection screen is present
-  const dropdown = page
-    .locator('select, [role="combobox"], .p-select, .p-dropdown')
-    .first()
+  // Pre-seed localStorage to bypass login and template gallery
+  await page.evaluate(() => {
+    localStorage.setItem('Comfy.userId', 'qa-ci')
+    localStorage.setItem('Comfy.userName', 'qa-ci')
+    localStorage.setItem('Comfy.TutorialCompleted', 'true')
+  })
 
-  if (await dropdown.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await dropdown.click()
-    await sleep(500)
+  // Reload so the router guard picks up the seeded user
+  await page.goto(serverUrl, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30000
+  })
+  await sleep(3000)
 
-    try {
-      await page.locator('text=qa-ci').first().click({ timeout: 3000 })
-    } catch {
-      try {
-        await dropdown.selectOption({ label: 'qa-ci' })
-      } catch {
-        console.warn(
-          'Could not select qa-ci user, continuing without selection'
-        )
-      }
+  // If still on user-select (e.g. multi-user server with strict auth),
+  // create a new user via the text input
+  if (page.url().includes('user-select')) {
+    console.warn('Still on user-select, creating new user...')
+    const newUserInput = page
+      .locator('input[placeholder*="user"], input[type="text"]')
+      .first()
+    if (await newUserInput.isVisible().catch(() => false)) {
+      await newUserInput.fill('qa-ci')
+      await sleep(300)
     }
-    await sleep(300)
-
-    // Close dropdown overlay if still open (blocks Next button)
-    await page.keyboard.press('Escape')
-    await sleep(300)
-
-    // Click Next button
     const nextBtn = page.getByRole('button', { name: 'Next' })
     if (await nextBtn.isVisible().catch(() => false)) {
       await nextBtn.click({ timeout: 5000 })
-      await sleep(5000)
+      await sleep(3000)
     }
   }
 
-  // Close template gallery
+  // Close template gallery if it appeared
   await page.keyboard.press('Escape')
-  await sleep(2000)
+  await sleep(1000)
 
   // Dismiss error popup if present
   const dismissBtn = page.locator('text=Dismiss').first()
@@ -395,7 +393,7 @@ async function main() {
     })
     await sleep(2000)
 
-    await loginAsQaCi(page)
+    await loginAsQaCi(page, opts.serverUrl)
     console.warn('Editor ready — executing test steps')
 
     await executeSteps(page, steps, opts.outputDir)
