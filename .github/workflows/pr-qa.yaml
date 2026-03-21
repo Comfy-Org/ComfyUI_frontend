@@ -72,11 +72,69 @@ jobs:
           echo "Mode: $([ "$FULL" = "true" ] && echo full || echo focused)"
 
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Analyze PR — deep analysis via Gemini Pro to generate QA guides
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  analyze-pr:
+    needs: [resolve-matrix]
+    if: needs.resolve-matrix.outputs.skip != 'true' && needs.resolve-matrix.outputs.mode == 'focused'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+
+      - name: Setup frontend (scripts only)
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+
+      - name: Resolve PR number
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -n "$PR_NUM" ]; then
+            echo "number=$PR_NUM" >> "$GITHUB_OUTPUT"
+          else
+            NUM=$(gh pr list --repo "${{ github.repository }}" \
+              --head "${{ github.ref_name }}" --state open \
+              --json number --jq '.[0].number // empty')
+            echo "number=${NUM}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run PR analysis
+        if: steps.pr.outputs.number
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p qa-guides
+          pnpm exec tsx scripts/qa-analyze-pr.ts \
+            --pr-number "${{ steps.pr.outputs.number }}" \
+            --repo "${{ github.repository }}" \
+            --output-dir qa-guides
+
+      - name: Upload QA guides
+        if: always() && steps.pr.outputs.number
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v6.2.0
+        with:
+          name: qa-guides-${{ github.run_id }}
+          path: qa-guides/qa-guide-*.json
+          retention-days: 14
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   # BEFORE recording — main branch frontend on its own runner
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   qa-before:
-    needs: resolve-matrix
-    if: needs.resolve-matrix.outputs.skip != 'true' && needs.resolve-matrix.outputs.mode == 'focused'
+    needs: [resolve-matrix, analyze-pr]
+    if: >-
+      always() &&
+      needs.resolve-matrix.outputs.skip != 'true' &&
+      needs.resolve-matrix.outputs.mode == 'focused' &&
+      (needs.analyze-pr.result == 'success' || needs.analyze-pr.result == 'skipped')
     strategy:
       fail-fast: false
       matrix:
@@ -138,6 +196,13 @@ jobs:
           grep '^diff --git' "${{ runner.temp }}/pr-diff.txt" | \
             sed 's|diff --git a/||;s| b/.*||' | sort -u
 
+      - name: Download QA guide
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: qa-guides-${{ github.run_id }}
+          path: qa-guides
+
       - name: Start server with main branch frontend
         shell: bash
         working-directory: ComfyUI
@@ -168,12 +233,18 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
+          QA_GUIDE_FLAG=""
+          if [ -f qa-guides/qa-guide-before.json ]; then
+            echo "Using QA guide for before recording"
+            QA_GUIDE_FLAG="--qa-guide qa-guides/qa-guide-before.json"
+          fi
           pnpm exec tsx scripts/qa-record.ts \
             --mode before \
             --diff "${{ runner.temp }}/pr-diff.txt" \
             --output-dir "$QA_ARTIFACTS" \
             --url http://127.0.0.1:8188 \
-            --test-plan .claude/skills/comfy-qa/SKILL.md
+            --test-plan .claude/skills/comfy-qa/SKILL.md \
+            $QA_GUIDE_FLAG
 
       - name: Collect artifacts
         if: always()
@@ -195,8 +266,11 @@ jobs:
   # AFTER recording — PR branch frontend on its own runner
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   qa-after:
-    needs: resolve-matrix
-    if: needs.resolve-matrix.outputs.skip != 'true'
+    needs: [resolve-matrix, analyze-pr]
+    if: >-
+      always() &&
+      needs.resolve-matrix.outputs.skip != 'true' &&
+      (needs.analyze-pr.result == 'success' || needs.analyze-pr.result == 'skipped')
     strategy:
       fail-fast: false
       matrix:
@@ -244,6 +318,13 @@ jobs:
           grep '^diff --git' "${{ runner.temp }}/pr-diff.txt" | \
             sed 's|diff --git a/||;s| b/.*||' | sort -u
 
+      - name: Download QA guide
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: qa-guides-${{ github.run_id }}
+          path: qa-guides
+
       - name: Start server with PR branch frontend
         shell: bash
         working-directory: ComfyUI
@@ -274,12 +355,18 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
+          QA_GUIDE_FLAG=""
+          if [ -f qa-guides/qa-guide-after.json ]; then
+            echo "Using QA guide for after recording"
+            QA_GUIDE_FLAG="--qa-guide qa-guides/qa-guide-after.json"
+          fi
           pnpm exec tsx scripts/qa-record.ts \
             --mode after \
             --diff "${{ runner.temp }}/pr-diff.txt" \
             --output-dir "$QA_ARTIFACTS" \
             --url http://127.0.0.1:8188 \
-            --test-plan .claude/skills/comfy-qa/SKILL.md
+            --test-plan .claude/skills/comfy-qa/SKILL.md \
+            $QA_GUIDE_FLAG
 
       - name: Collect artifacts
         if: always()
@@ -301,7 +388,7 @@ jobs:
   # Report — merges artifacts, runs Gemini video review, deploys
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   report:
-    needs: [resolve-matrix, qa-before, qa-after]
+    needs: [resolve-matrix, analyze-pr, qa-before, qa-after]
     if: >-
       always() &&
       (needs.qa-after.result == 'success' || needs.qa-before.result == 'success') &&
