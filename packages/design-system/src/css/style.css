@@ -105,8 +105,8 @@
   --color-ocean-600: #2f687a;
   --color-ocean-900: #253236;
 
-  --color-danger-100: #c02323;
-  --color-danger-200: #d62952;
+  --color-danger-100: #000000;
+  --color-danger-200: #000000;
 
   --color-coral-red-600: #973a40;
   --color-coral-red-500: #c53f49;
@@ -280,8 +280,8 @@
   --base-background: var(--color-white);
   --primary-background: var(--color-azure-400);
   --primary-background-hover: var(--color-cobalt-800);
-  --destructive-background: var(--color-coral-500);
-  --destructive-background-hover: var(--color-coral-600);
+  --destructive-background: var(--color-magenta-300);
+  --destructive-background-hover: var(--color-magenta-700);
   --inverted-background-hover: var(--color-charcoal-600);
   --warning-background: var(--color-gold-400);
   --warning-background-hover: var(--color-gold-500);
@@ -427,8 +427,8 @@
   --base-background: var(--color-charcoal-800);
   --primary-background: var(--color-azure-600);
   --primary-background-hover: var(--color-azure-400);
-  --destructive-background: var(--color-coral-700);
-  --destructive-background-hover: var(--color-coral-600);
+  --destructive-background: var(--color-magenta-700);
+  --destructive-background-hover: var(--color-magenta-300);
   --inverted-background-hover: var(--color-smoke-200);
   --warning-background: var(--color-gold-600);
   --warning-background-hover: var(--color-gold-500);
