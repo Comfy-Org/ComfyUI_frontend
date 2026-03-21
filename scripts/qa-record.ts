@@ -348,43 +348,31 @@ async function executeSteps(
 
 // ── Login flow ──
 
-async function loginAsQaCi(page: Page, serverUrl: string) {
+async function loginAsQaCi(page: Page, _serverUrl: string) {
   console.warn('Logging in as qa-ci...')
 
-  // Pre-seed localStorage to bypass login and template gallery
+  // Detect login page by looking for the "New user" input
+  const newUserInput = page.locator('input[placeholder*="username"]').first()
+  const isLoginPage = await newUserInput
+    .isVisible({ timeout: 5000 })
+    .catch(() => false)
+
+  if (isLoginPage) {
+    console.warn('Login page detected, creating user via text input...')
+    await newUserInput.fill('qa-ci')
+    await sleep(500)
+    const nextBtn = page.getByRole('button', { name: 'Next' })
+    await nextBtn.click({ timeout: 5000 })
+    console.warn('Clicked Next to create qa-ci user')
+    await sleep(5000)
+  } else {
+    console.warn('No login page detected, continuing...')
+  }
+
+  // Skip tutorial/template gallery
   await page.evaluate(() => {
-    localStorage.setItem('Comfy.userId', 'qa-ci')
-    localStorage.setItem('Comfy.userName', 'qa-ci')
     localStorage.setItem('Comfy.TutorialCompleted', 'true')
   })
-
-  // Reload so the router guard picks up the seeded user
-  await page.goto(serverUrl, {
-    waitUntil: 'networkidle',
-    timeout: 30000
-  })
-
-  // Wait for async router guard to settle (it may redirect to user-select)
-  await sleep(5000)
-  console.warn(`After reload, URL: ${page.url()}`)
-
-  // If still on user-select, create a new user via the text input
-  if (page.url().includes('user-select')) {
-    console.warn('Still on user-select, creating new user via text input...')
-    const newUserInput = page.locator('input[placeholder*="username"]').first()
-    if (await newUserInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await newUserInput.fill('qa-ci')
-      await sleep(500)
-      const nextBtn = page.getByRole('button', { name: 'Next' })
-      if (await nextBtn.isVisible().catch(() => false)) {
-        await nextBtn.click({ timeout: 5000 })
-        console.warn('Clicked Next after creating qa-ci user')
-        await sleep(5000)
-      }
-    } else {
-      console.warn('Could not find new user input, pressing Escape')
-    }
-  }
 
   // Close template gallery if it appeared
   await page.keyboard.press('Escape')
@@ -401,14 +389,11 @@ async function loginAsQaCi(page: Page, serverUrl: string) {
   try {
     await page
       .locator('.comfy-menu-button-wrapper')
-      .waitFor({ state: 'visible', timeout: 10000 })
+      .waitFor({ state: 'visible', timeout: 15000 })
     console.warn('Editor UI loaded (menu button visible)')
   } catch {
-    console.warn('Menu button not visible after 10s')
-    // Log current URL and page state for debugging
+    console.warn('Menu button not visible after 15s')
     console.warn(`Current URL: ${page.url()}`)
-    const title = await page.title().catch(() => 'unknown')
-    console.warn(`Page title: ${title}`)
   }
   await sleep(1000)
 }
