@@ -36,6 +36,7 @@
     <!-- Gallery View (Image Wrapper) -->
     <div
       v-if="viewMode === 'gallery'"
+      ref="galleryPanelEl"
       class="group/panel relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-sm bg-transparent"
       tabindex="0"
       role="region"
@@ -151,7 +152,7 @@
 
 <script setup lang="ts">
 import { useTimeoutFn } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -187,6 +188,7 @@ function defaultViewMode(urls: readonly string[]): ViewMode {
 
 const currentIndex = ref(0)
 const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
+const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
@@ -306,9 +308,11 @@ function handleGridThumbnailClick(event: MouseEvent, index: number) {
   openImageInGallery(index)
 }
 
-function openImageInGallery(index: number) {
+async function openImageInGallery(index: number) {
   setCurrentIndex(index)
   viewMode.value = 'gallery'
+  await nextTick()
+  galleryPanelEl.value?.focus()
 }
 
 function getNavigationDotClass(index: number) {
@@ -321,6 +325,16 @@ function getNavigationDotClass(index: number) {
 }
 
 function handleKeyDown(event: KeyboardEvent) {
+  if (
+    event.key === 'Escape' &&
+    viewMode.value === 'gallery' &&
+    hasMultipleImages.value
+  ) {
+    event.preventDefault()
+    viewMode.value = 'grid'
+    return
+  }
+
   if (imageUrls.length <= 1 || viewMode.value === 'grid') return
 
   switch (event.key) {
