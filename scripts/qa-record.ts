@@ -16,7 +16,7 @@
  * Env: GEMINI_API_KEY (required)
  */
 
-import { firefox } from '@playwright/test'
+import { chromium } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { readFileSync, mkdirSync, readdirSync, renameSync } from 'fs'
@@ -360,26 +360,29 @@ async function loginAsQaCi(page: Page, serverUrl: string) {
 
   // Reload so the router guard picks up the seeded user
   await page.goto(serverUrl, {
-    waitUntil: 'domcontentloaded',
+    waitUntil: 'networkidle',
     timeout: 30000
   })
-  await sleep(3000)
 
-  // If still on user-select (e.g. multi-user server with strict auth),
-  // create a new user via the text input
+  // Wait for async router guard to settle (it may redirect to user-select)
+  await sleep(5000)
+  console.warn(`After reload, URL: ${page.url()}`)
+
+  // If still on user-select, create a new user via the text input
   if (page.url().includes('user-select')) {
-    console.warn('Still on user-select, creating new user...')
-    const newUserInput = page
-      .locator('input[placeholder*="user"], input[type="text"]')
-      .first()
-    if (await newUserInput.isVisible().catch(() => false)) {
+    console.warn('Still on user-select, creating new user via text input...')
+    const newUserInput = page.locator('input[placeholder*="username"]').first()
+    if (await newUserInput.isVisible({ timeout: 3000 }).catch(() => false)) {
       await newUserInput.fill('qa-ci')
-      await sleep(300)
-    }
-    const nextBtn = page.getByRole('button', { name: 'Next' })
-    if (await nextBtn.isVisible().catch(() => false)) {
-      await nextBtn.click({ timeout: 5000 })
-      await sleep(3000)
+      await sleep(500)
+      const nextBtn = page.getByRole('button', { name: 'Next' })
+      if (await nextBtn.isVisible().catch(() => false)) {
+        await nextBtn.click({ timeout: 5000 })
+        console.warn('Clicked Next after creating qa-ci user')
+        await sleep(5000)
+      }
+    } else {
+      console.warn('Could not find new user input, pressing Escape')
     }
   }
 
@@ -425,8 +428,8 @@ async function main() {
     steps = opts.mode === 'before' ? FALLBACK_BEFORE : FALLBACK_AFTER
   }
 
-  // Launch browser with video recording
-  const browser = await firefox.launch({ headless: true })
+  // Launch browser with video recording (Chromium for WebGL support)
+  const browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({
     viewport: { width: 1280, height: 720 },
     recordVideo: { dir: opts.outputDir, size: { width: 1280, height: 720 } }
