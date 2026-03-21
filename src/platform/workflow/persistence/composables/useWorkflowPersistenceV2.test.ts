@@ -216,6 +216,23 @@ describe('useWorkflowPersistenceV2', () => {
   }
 
   describe('loadPreviousWorkflowFromStorage', () => {
+    it('does not restore the active workflow early when open tab state exists', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+
+      const workflowA = workflowStore.createTemporary('WorkflowA.json')
+      const workflowB = workflowStore.createTemporary('WorkflowB.json')
+
+      writeTabState([workflowA.path, workflowB.path], 0)
+      writeActivePath(workflowB.path)
+
+      const { initializeWorkflow } = useWorkflowPersistenceV2()
+      await initializeWorkflow()
+
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+    })
+
     it('waits for workflow metadata before restoring the session workflow', async () => {
       const workflowStore = useWorkflowStore()
       const loadWorkflowsSpy = vi.spyOn(workflowStore, 'loadWorkflows')

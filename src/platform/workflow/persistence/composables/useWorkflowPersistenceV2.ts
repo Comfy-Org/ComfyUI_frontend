@@ -170,10 +170,22 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
+  const hasRestorableTabState = () => {
+    const storedTabState = tabState.getOpenPaths()
+    const paths = storedTabState?.paths ?? []
+    const activeIndex = storedTabState?.activeIndex ?? -1
+
+    return paths.length > 0 && activeIndex >= 0 && activeIndex < paths.length
+  }
+
   const initializeWorkflow = async () => {
     if (!workflowPersistenceEnabled.value) return
 
     try {
+      if (hasRestorableTabState()) {
+        return
+      }
+
       await workflowStore.loadWorkflows()
       const restored = await loadPreviousWorkflowFromStorage()
       if (!restored) {
