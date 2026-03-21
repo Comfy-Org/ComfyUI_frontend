@@ -97,17 +97,6 @@
         >
           <i class="icon-[lucide--download] size-4" />
         </button>
-
-        <!-- Remove Button (single image only) -->
-        <button
-          v-if="!hasMultipleImages"
-          :class="actionButtonClass"
-          :title="$t('g.removeImage')"
-          :aria-label="$t('g.removeImage')"
-          @click="handleRemove"
-        >
-          <i class="icon-[lucide--circle-x] size-4" />
-        </button>
       </div>
     </div>
 
@@ -290,19 +279,6 @@ function handleDownload() {
       summary: t('g.error'),
       detail: t('g.failedToDownloadImage')
     })
-  }
-}
-
-function handleRemove() {
-  if (!nodeId) return
-  const node = resolveNode(Number(nodeId))
-  nodeOutputStore.removeNodeOutputs(nodeId)
-  if (node) {
-    node.imgs = undefined
-    const imageWidget = node.widgets?.find((w) => w.name === 'image')
-    if (imageWidget) {
-      imageWidget.value = ''
-    }
   }
 }
 
