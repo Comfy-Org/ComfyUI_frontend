@@ -6,7 +6,6 @@ const config: KnipConfig = {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
         'src/assets/css/style.css',
-        'src/main.ts',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts'
@@ -14,25 +13,23 @@ const config: KnipConfig = {
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}', '!.claude/**']
     },
     'apps/desktop-ui': {
-      entry: ['src/main.ts', 'src/i18n.ts'],
+      entry: ['src/i18n.ts'],
       project: ['src/**/*.{js,ts,vue}']
     },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
     'packages/shared-frontend-utils': {
-      project: ['src/**/*.{js,ts}'],
-      entry: ['src/formatUtil.ts', 'src/networkUtil.ts']
+      project: ['src/**/*.{js,ts}']
     },
     'packages/registry-types': {
       project: ['src/**/*.{js,ts}']
     },
     'packages/ingest-types': {
-      project: ['src/**/*.{js,ts}'],
-      entry: ['src/index.ts']
+      project: ['src/**/*.{js,ts}']
     }
   },
-  ignoreBinaries: ['python3', 'gh', 'generate'],
+  ignoreBinaries: ['python3'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify-json/lucide',
@@ -40,19 +37,12 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons',
-    // Used by lucideStrokePlugin.js (CSS @plugin)
-    '@iconify/utils'
+    '@primevue/icons'
   ],
   ignore: [
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
-    'packages/registry-types/src/comfyRegistryTypes.ts',
-    'packages/ingest-types/src/types.gen.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    'packages/ingest-types/openapi-ts.config.ts',
-    // Used by a custom node (that should move off of this)
-    'src/scripts/ui/components/splitButton.ts',
     // Used by stacked PR (feat/glsl-live-preview)
     'src/renderer/glsl/useGLSLRenderer.ts',
     // Workflow files contain license names that knip misinterprets as binaries
@@ -66,13 +56,6 @@ const config: KnipConfig = {
     // Legacy V1 workflow draft store retained during V2 transition/rollback window
     'src/platform/workflow/persistence/stores/workflowDraftStore.ts'
   ],
-  compilers: {
-    // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
-    css: (text: string) =>
-      [...text.replaceAll('plugin', 'import').matchAll(/(?<=@)import[^;]+/g)]
-        .map((match) => match[0].replace(/url\(['"]?([^'"()]+)['"]?\)/, '$1'))
-        .join('\n')
-  },
   vite: {
     config: ['vite?(.*).config.mts']
   },
