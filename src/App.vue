@@ -1,12 +1,15 @@
 <template>
-  <router-view />
-  <GlobalDialog />
-  <BlockUI full-screen :blocked="isLoading" />
+  <TooltipProvider :delay-duration="300" disable-hoverable-content>
+    <router-view />
+    <GlobalDialog />
+    <BlockUI full-screen :blocked="isLoading" />
+  </TooltipProvider>
 </template>
 
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
+import { TooltipProvider } from 'reka-ui'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 
 import { useI18n } from 'vue-i18n'
