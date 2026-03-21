@@ -13,10 +13,10 @@ catalog:
   '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.1.1
   '@lobehub/i18n-cli': ^1.26.1
-  '@nx/eslint': 22.5.2
-  '@nx/playwright': 22.5.2
-  '@nx/storybook': 22.5.2
-  '@nx/vite': 22.5.2
+  '@nx/eslint': 22.6.1
+  '@nx/playwright': 22.6.1
+  '@nx/storybook': 22.6.1
+  '@nx/vite': 22.6.1
   '@pinia/testing': ^1.0.3
   '@playwright/test': ^1.58.1
   '@primeuix/forms': 0.0.2
@@ -83,7 +83,7 @@ catalog:
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
-  nx: 22.5.2
+  nx: 22.6.1
   oxfmt: ^0.40.0
   oxlint: ^1.55.0
   oxlint-tsgolint: ^0.17.0
