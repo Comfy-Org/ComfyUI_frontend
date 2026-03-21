@@ -181,6 +181,17 @@ describe('useSurveyEligibility', () => {
 
       expect(isEligible.value).toBe(false)
     })
+
+    it('is not eligible when isFeatureActive returns false', () => {
+      setFeatureUsage('test-feature', 5)
+
+      const { isEligible } = useSurveyEligibility({
+        ...defaultConfig,
+        isFeatureActive: () => false
+      })
+
+      expect(isEligible.value).toBe(false)
+    })
   })
 
   describe('actions', () => {

@@ -123,6 +123,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
   })
 
   test('Can pin and unpin', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.Graph.AutoPanSpeed', 0)
     await comfyPage.canvas.click({
       position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'

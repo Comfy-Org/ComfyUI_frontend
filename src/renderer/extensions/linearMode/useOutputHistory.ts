@@ -124,7 +124,8 @@ export function useOutputHistory(): {
     if (
       user_metadata.allOutputs?.length &&
       (!user_metadata.outputCount ||
-        user_metadata.outputCount <= user_metadata.allOutputs.length)
+        user_metadata.outputCount <= user_metadata.allOutputs.length) &&
+      item.preview_url
     ) {
       const reversed = user_metadata.allOutputs.toReversed()
       resolvedCache.set(item.id, reversed)

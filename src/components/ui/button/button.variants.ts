@@ -19,6 +19,7 @@ export const buttonVariants = cva({
         'bg-transparent text-muted-foreground hover:bg-secondary-background-hover',
       'destructive-textonly':
         'bg-transparent text-destructive-background hover:bg-destructive-background/10',
+      link: 'bg-transparent text-muted-foreground hover:text-base-foreground',
       'overlay-white': 'bg-white text-gray-600 hover:bg-white/90',
       base: 'bg-base-background text-base-foreground hover:bg-secondary-background-hover',
       gradient:
@@ -51,6 +52,7 @@ const variants = [
   'textonly',
   'muted-textonly',
   'destructive-textonly',
+  'link',
   'base',
   'overlay-white',
   'gradient'
