@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import ImageLightbox from '@/components/common/ImageLightbox.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
@@ -46,6 +47,8 @@ const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
+const lightboxSrc = ref('')
+const lightboxOpen = ref(false)
 
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
@@ -140,20 +143,25 @@ async function rerun(e: Event) {
       ]"
     />
   </section>
-  <ImagePreview
-    v-if="canShowPreview && latentPreview"
-    :mobile
-    :src="latentPreview"
+  <LinearArrange v-if="isArrangeMode" />
+  <AppTemplateView
+    v-else-if="hasAppContent"
+    :selected-output="selectedOutput"
   />
-  <MediaOutputPreview
-    v-else-if="selectedOutput"
-    :output="selectedOutput"
-    :mobile
-  />
-  <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
-  <LinearArrange v-else-if="isArrangeMode" />
-  <AppTemplateView v-else-if="hasAppContent" />
-  <LinearWelcome v-else />
+  <template v-else>
+    <ImagePreview
+      v-if="canShowPreview && latentPreview"
+      :mobile
+      :src="latentPreview"
+    />
+    <MediaOutputPreview
+      v-else-if="selectedOutput"
+      :output="selectedOutput"
+      :mobile
+    />
+    <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
+    <LinearWelcome v-else />
+  </template>
   <div
     v-if="!mobile"
     class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
@@ -167,6 +175,12 @@ async function rerun(e: Event) {
       v-if="!isBuilderMode"
       class="z-10 min-w-0"
       @update-selection="handleSelection"
+      @open-lightbox="
+        (url) => {
+          lightboxSrc = url
+          lightboxOpen = true
+        }
+      "
     />
     <LinearFeedback
       v-if="typeformWidgetId"
@@ -177,5 +191,12 @@ async function rerun(e: Event) {
   <OutputHistory
     v-else-if="!isBuilderMode"
     @update-selection="handleSelection"
+    @open-lightbox="
+      (url) => {
+        lightboxSrc = url
+        lightboxOpen = true
+      }
+    "
   />
+  <ImageLightbox v-model="lightboxOpen" :src="lightboxSrc" />
 </template>

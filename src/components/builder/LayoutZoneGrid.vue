@@ -31,6 +31,8 @@ const {
   resizable?: boolean
   /** Zone IDs that have content — empty zones get no border in app mode. */
   filledZones?: Set<string>
+  /** Extra CSS classes per zone ID, applied to the grid cell div. */
+  zoneClasses?: Record<string, string>
 }>()
 
 defineSlots<{
@@ -227,7 +229,8 @@ function onRowResizeEnd(fractions: number[]) {
                 ? 'border-0'
                 : 'border-2 border-solid border-border-subtle',
             highlightedZone === zone.id &&
-              'border-primary-background bg-primary-background/10'
+              'border-primary-background bg-primary-background/10',
+            zoneClasses?.[zone.id]
           )
         "
         :data-zone-id="zone.id"

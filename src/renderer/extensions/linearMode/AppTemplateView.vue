@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ImageLightbox from '@/components/common/ImageLightbox.vue'
 import LayoutZoneGrid from '@/components/builder/LayoutZoneGrid.vue'
 import PresetStrip from '@/components/builder/PresetStrip.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
@@ -22,11 +23,16 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { ResultItemImpl } from '@/stores/queueStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 
 import { cn } from '@/utils/tailwindUtil'
+
+const { selectedOutput } = defineProps<{
+  selectedOutput?: ResultItemImpl
+}>()
 
 const { t } = useI18n()
 const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
@@ -58,7 +64,7 @@ const presetStripZoneId = computed(() => {
 })
 
 /** Per-zone output results — each zone gets its own assigned outputs. */
-const zoneOutputs = computed(() => {
+const liveZoneOutputs = computed(() => {
   const map = new Map<string, ReturnType<typeof flattenNodeOutput>>()
 
   for (const zone of template.value.zones) {
@@ -75,6 +81,19 @@ const zoneOutputs = computed(() => {
     }
     if (outputs.length > 0) map.set(zone.id, outputs)
   }
+  return map
+})
+
+/** When a history item is selected, show it in the first output zone. */
+const zoneOutputs = computed(() => {
+  if (!selectedOutput) return liveZoneOutputs.value
+
+  const map = new Map(liveZoneOutputs.value)
+  const outputZone =
+    template.value.zones.find((z) => z.isOutput)?.id ??
+    template.value.zones.at(-1)?.id ??
+    ''
+  map.set(outputZone, [selectedOutput])
   return map
 })
 
@@ -186,8 +205,11 @@ const filledZones = computed(() => {
   const filled = new Set<string>()
   for (const zone of template.value.zones) {
     const hasWidgets = (zoneWidgets.value.get(zone.id)?.length ?? 0) > 0
+    const hasSelectedOutput = selectedOutput && zone.isOutput
     const hasOutputs =
-      zoneOutputs.value.has(zone.id) || zoneOutputNodeCount.value.has(zone.id)
+      hasSelectedOutput ||
+      zoneOutputs.value.has(zone.id) ||
+      zoneOutputNodeCount.value.has(zone.id)
     const hasRun = zone.id === runControlsZoneId.value
     const hasPreset =
       appModeStore.presetsEnabled && zone.id === presetStripZoneId.value
@@ -200,6 +222,25 @@ const filledZones = computed(() => {
 function zoneBorderClass(zoneId: string): string {
   if (!filledZones.value.has(zoneId)) return ''
   return 'rounded-xl ring-2 ring-border-subtle ring-inset'
+}
+
+/** Apply bg-black to grid cells that are showing output content. */
+const outputZoneClasses = computed(() => {
+  const classes: Record<string, string> = {}
+  for (const zone of template.value.zones) {
+    if (zoneOutputs.value.has(zone.id)) {
+      classes[zone.id] = 'bg-black'
+    }
+  }
+  return classes
+})
+
+const lightboxSrc = ref('')
+const lightboxOpen = ref(false)
+
+function openLightbox(url: string) {
+  lightboxSrc.value = url
+  lightboxOpen.value = true
 }
 
 async function runPrompt(e: Event) {
@@ -243,11 +284,15 @@ async function runPrompt(e: Event) {
             v-if="(zoneOutputs.get(zone.id)?.length ?? 0) > 0"
             class="flex flex-col gap-2"
           >
-            <MediaOutputPreview
+            <button
               v-for="(output, idx) in zoneOutputs.get(zone.id)"
               :key="idx"
-              :output="output"
-            />
+              type="button"
+              class="cursor-pointer"
+              @dblclick="output.url && openLightbox(output.url)"
+            >
+              <MediaOutputPreview :output="output" />
+            </button>
           </div>
           <div
             v-else
@@ -319,6 +364,7 @@ async function runPrompt(e: Event) {
       :dashed="false"
       :grid-overrides="appModeStore.gridOverrides"
       :filled-zones="filledZones"
+      :zone-classes="outputZoneClasses"
       class="min-h-0"
     >
       <template #zone="{ zone }">
@@ -329,7 +375,8 @@ async function runPrompt(e: Event) {
               'flex size-full min-h-0 flex-col',
               (appModeStore.zoneAlign[zone.id] ?? 'top') === 'bottom'
                 ? 'justify-end'
-                : 'justify-start'
+                : 'justify-start',
+              zoneOutputs.has(zone.id) && 'rounded-xl bg-black'
             )
           "
         >
@@ -337,14 +384,31 @@ async function runPrompt(e: Event) {
           <div
             :class="
               cn(
-                'flex min-h-0 flex-col gap-2 overflow-y-auto p-2',
+                'flex min-h-0 flex-col overflow-y-auto',
                 zoneBorderClass(zone.id),
                 zoneOutputs.has(zone.id) || zoneOutputNodeCount.has(zone.id)
                   ? 'flex-1'
-                  : ''
+                  : '',
+                zoneOutputs.has(zone.id) ? 'bg-black' : 'gap-2 p-2'
               )
             "
           >
+            <!-- History selection: show in output zone when no builder outputs -->
+            <button
+              v-if="
+                selectedOutput &&
+                zone.isOutput &&
+                !getZoneRenderItems(zone.id).some((i) => i.type === 'output')
+              "
+              type="button"
+              class="min-h-0 flex-1 cursor-pointer overflow-hidden rounded-lg border border-warning-background/50 bg-black"
+              @dblclick="selectedOutput.url && openLightbox(selectedOutput.url)"
+            >
+              <MediaOutputPreview
+                :output="selectedOutput"
+                class="size-full [&_span]:hidden"
+              />
+            </button>
             <!-- Unified item order — deduplicated by node -->
             <template
               v-for="item in getZoneRenderItems(zone.id)"
@@ -356,8 +420,9 @@ async function runPrompt(e: Event) {
                 :class="
                   cn(
                     'min-h-0 flex-1 overflow-hidden rounded-lg border border-warning-background/50',
-                    !(zoneOutputs.get(zone.id)?.length ?? 0) &&
-                      'bg-warning-background/5 p-4'
+                    (zoneOutputs.get(zone.id)?.length ?? 0) > 0
+                      ? 'bg-black'
+                      : 'bg-warning-background/5 p-4'
                   )
                 "
               >
@@ -365,12 +430,18 @@ async function runPrompt(e: Event) {
                   v-if="(zoneOutputs.get(zone.id)?.length ?? 0) > 0"
                   class="flex size-full flex-col gap-2"
                 >
-                  <MediaOutputPreview
+                  <button
                     v-for="(output, idx) in zoneOutputs.get(zone.id)"
                     :key="idx"
-                    :output="output"
-                    class="min-h-0 flex-1"
-                  />
+                    type="button"
+                    class="min-h-0 flex-1 cursor-pointer overflow-hidden"
+                    @dblclick="output.url && openLightbox(output.url)"
+                  >
+                    <MediaOutputPreview
+                      :output="output"
+                      class="size-full bg-black [&_div]:bg-black [&_span]:hidden"
+                    />
+                  </button>
                 </div>
                 <div
                   v-else
@@ -442,5 +513,6 @@ async function runPrompt(e: Event) {
         </div>
       </template>
     </LayoutZoneGrid>
+    <ImageLightbox v-model="lightboxOpen" :src="lightboxSrc" />
   </div>
 </template>
