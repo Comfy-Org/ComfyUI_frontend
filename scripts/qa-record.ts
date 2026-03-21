@@ -215,28 +215,53 @@ const FALLBACK_AFTER: TestAction[] = [
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 async function openComfyMenu(page: Page) {
-  await page.mouse.click(20, 67)
-  await sleep(800)
+  const menuTrigger = page.locator('.comfy-menu-button-wrapper')
+  const menuPopup = page.locator('.comfy-command-menu')
+
+  // Close if already open
+  if (await menuPopup.isVisible().catch(() => false)) {
+    await page.locator('body').click({ position: { x: 500, y: 300 } })
+    await sleep(500)
+  }
+
+  await menuTrigger.click()
+  try {
+    await menuPopup.waitFor({ state: 'visible', timeout: 3000 })
+  } catch {
+    console.warn('Menu popup did not appear')
+  }
+  await sleep(300)
 }
 
 async function hoverMenuItem(page: Page, label: string) {
-  const item = page
-    .locator('.p-menubar-item-label, .p-tieredmenu-item-label')
-    .filter({ hasText: label })
-    .first()
-  if (await item.isVisible().catch(() => false)) {
-    const parent = item.locator('..').locator('..')
-    await parent.hover()
-    await sleep(600)
+  // Top-level items use .p-menubar-item-label in the comfy-command-menu
+  const menuLabel = page.locator(`.p-menubar-item-label:text-is("${label}")`)
+  if (await menuLabel.isVisible().catch(() => false)) {
+    // Hover the parent .p-tieredmenu-item to trigger submenu
+    const menuItem = page
+      .locator('.comfy-command-menu .p-tieredmenu-item')
+      .filter({ has: menuLabel })
+    await menuItem.hover()
+    // Wait for submenu to appear
+    try {
+      await page
+        .locator('.p-tieredmenu-submenu:visible')
+        .last()
+        .waitFor({ state: 'visible', timeout: 2000 })
+    } catch {
+      console.warn(`Submenu for "${label}" did not appear`)
+    }
+    await sleep(300)
   } else {
     console.warn(`Menu item "${label}" not visible`)
   }
 }
 
 async function clickSubmenuItem(page: Page, label: string) {
-  const item = page
-    .locator('.p-tieredmenu-submenu:visible')
-    .locator(`text=${label}`)
+  const submenu = page.locator('.p-tieredmenu-submenu:visible').last()
+  const item = submenu
+    .locator('.p-tieredmenu-item')
+    .filter({ hasText: label })
     .first()
   if (await item.isVisible().catch(() => false)) {
     await item.click()
@@ -360,6 +385,17 @@ async function loginAsQaCi(page: Page, serverUrl: string) {
     await dismissBtn.click()
     await sleep(500)
   }
+
+  // Wait for the editor UI to be fully loaded (menu button visible)
+  try {
+    await page
+      .locator('.comfy-menu-button-wrapper')
+      .waitFor({ state: 'visible', timeout: 10000 })
+    console.warn('Editor UI loaded (menu button visible)')
+  } catch {
+    console.warn('Menu button not visible after 10s, continuing anyway')
+  }
+  await sleep(1000)
 }
 
 // ── Main ──
