@@ -224,7 +224,15 @@ async function openComfyMenu(page: Page) {
     await sleep(500)
   }
 
-  await menuTrigger.click()
+  if (await menuTrigger.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await menuTrigger.click()
+  } else {
+    // Fallback: click where the C logo menu button typically is
+    console.warn('Menu button not found by selector, using coordinate click')
+    await page.mouse.click(46, 36)
+    await sleep(300)
+  }
+
   try {
     await menuPopup.waitFor({ state: 'visible', timeout: 3000 })
   } catch {
@@ -393,7 +401,11 @@ async function loginAsQaCi(page: Page, serverUrl: string) {
       .waitFor({ state: 'visible', timeout: 10000 })
     console.warn('Editor UI loaded (menu button visible)')
   } catch {
-    console.warn('Menu button not visible after 10s, continuing anyway')
+    console.warn('Menu button not visible after 10s')
+    // Log current URL and page state for debugging
+    console.warn(`Current URL: ${page.url()}`)
+    const title = await page.title().catch(() => 'unknown')
+    console.warn(`Page title: ${title}`)
   }
   await sleep(1000)
 }
@@ -430,6 +442,12 @@ async function main() {
     await sleep(2000)
 
     await loginAsQaCi(page, opts.serverUrl)
+
+    // Debug: capture page state after login
+    await page.screenshot({
+      path: `${opts.outputDir}/debug-after-login-${opts.mode}.png`
+    })
+    console.warn(`Debug screenshot saved: debug-after-login-${opts.mode}.png`)
     console.warn('Editor ready — executing test steps')
 
     await executeSteps(page, steps, opts.outputDir)
