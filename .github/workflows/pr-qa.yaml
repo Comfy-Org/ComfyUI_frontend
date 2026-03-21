@@ -140,7 +140,7 @@ jobs:
       always() &&
       needs.resolve-matrix.outputs.skip != 'true' &&
       needs.resolve-matrix.outputs.mode == 'focused' &&
-      (needs.analyze-pr.result == 'success' || needs.analyze-pr.result == 'skipped')
+      needs.resolve-matrix.result == 'success'
     strategy:
       fail-fast: false
       matrix:
@@ -276,7 +276,7 @@ jobs:
     if: >-
       always() &&
       needs.resolve-matrix.outputs.skip != 'true' &&
-      (needs.analyze-pr.result == 'success' || needs.analyze-pr.result == 'skipped')
+      needs.resolve-matrix.result == 'success'
     strategy:
       fail-fast: false
       matrix:
