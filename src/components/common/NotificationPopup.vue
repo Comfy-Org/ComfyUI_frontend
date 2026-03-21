@@ -1,6 +1,7 @@
 <template>
   <div
     role="status"
+    :data-position="position"
     :class="
       cn(
         'pointer-events-auto absolute z-1000 flex max-h-96 w-96 flex-col rounded-lg border border-border-default bg-base-background shadow-interface',

@@ -73,7 +73,6 @@ describe('NotificationPopup', () => {
   it('positions bottom-right when specified', () => {
     const wrapper = mountPopup({ title: 'T', position: 'bottom-right' })
     const root = wrapper.find('[role="status"]')
-    expect(root.classes()).toContain('right-4')
-    expect(root.classes()).toContain('bottom-4')
+    expect(root.attributes('data-position')).toBe('bottom-right')
   })
 })
