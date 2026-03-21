@@ -280,18 +280,26 @@ jobs:
           # If qa-report-* subdirs don't exist, move flat files into the right subdir.
           if ! ls -d qa-artifacts/qa-report-* >/dev/null 2>&1; then
             echo "No qa-report-* subdirs found — reorganizing flat download"
-            # Detect OS from report filename (e.g. *-linux-report.md)
+            DEST=""
+            # Try to detect OS from report filename (e.g. *-linux-report.md)
             for os in Linux macOS Windows; do
               OS_LOWER=$(echo "$os" | tr '[:upper:]' '[:lower:]')
               if ls qa-artifacts/*-${OS_LOWER}-report.md >/dev/null 2>&1; then
                 DEST="qa-artifacts/qa-report-${os}-${{ github.run_id }}"
-                mkdir -p "$DEST"
-                find qa-artifacts -maxdepth 1 -type f -exec mv {} "$DEST/" \;
-                [ -d qa-artifacts/videos ] && mv qa-artifacts/videos "$DEST/"
-                echo "Moved flat files into $DEST"
                 break
               fi
             done
+            # Fallback: if no report.md found, detect from webm files
+            if [ -z "$DEST" ] && ls qa-artifacts/*.webm >/dev/null 2>&1; then
+              DEST="qa-artifacts/qa-report-Linux-${{ github.run_id }}"
+              echo "No report.md found, using fallback: $DEST"
+            fi
+            if [ -n "$DEST" ]; then
+              mkdir -p "$DEST"
+              find qa-artifacts -maxdepth 1 -type f -exec mv {} "$DEST/" \;
+              [ -d qa-artifacts/videos ] && mv qa-artifacts/videos "$DEST/"
+              echo "Moved flat files into $DEST"
+            fi
           fi
           echo "=== Artifact structure ==="
           find qa-artifacts -type f 2>/dev/null | head -20
