@@ -57,11 +57,11 @@ export function getExecutionStatusMessage(
 
   if (nodeType in statusMap) return t(`execution.${statusMap[nodeType]}`)
 
-  if (nodeDef?.api_node) return t('execution.processing')
-
   for (const [pattern, key] of identifierRules) {
     if (pattern.test(nodeType)) return t(`execution.${key}`)
   }
+
+  if (nodeDef?.api_node) return t('execution.processing')
 
   return null
 }
