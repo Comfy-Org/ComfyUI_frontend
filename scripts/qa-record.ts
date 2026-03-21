@@ -358,13 +358,51 @@ async function loginAsQaCi(page: Page, _serverUrl: string) {
     .catch(() => false)
 
   if (isLoginPage) {
-    console.warn('Login page detected, creating user via text input...')
-    await newUserInput.fill('qa-ci')
-    await sleep(500)
-    const nextBtn = page.getByRole('button', { name: 'Next' })
-    await nextBtn.click({ timeout: 5000 })
-    console.warn('Clicked Next to create qa-ci user')
-    await sleep(5000)
+    console.warn('Login page detected, selecting existing user...')
+
+    // Try selecting existing user from dropdown (created by Pre-seed step)
+    const dropdown = page
+      .locator('.p-select, .p-dropdown, [role="combobox"]')
+      .first()
+    let loginDone = false
+
+    if (await dropdown.isVisible().catch(() => false)) {
+      await dropdown.click()
+      await sleep(500)
+
+      // Look for qa-ci in the dropdown options
+      const option = page.locator('text=qa-ci').first()
+      if (await option.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await option.click()
+        await sleep(300)
+        console.warn('Selected qa-ci from dropdown')
+
+        const nextBtn = page.getByRole('button', { name: 'Next' })
+        if (await nextBtn.isVisible().catch(() => false)) {
+          await nextBtn.click({ timeout: 5000 })
+          console.warn('Clicked Next with existing user')
+          loginDone = true
+          await sleep(5000)
+        }
+      } else {
+        // Close dropdown
+        await page.keyboard.press('Escape')
+        await sleep(300)
+        console.warn('qa-ci not found in dropdown')
+      }
+    }
+
+    // Fallback: create new user with unique name
+    if (!loginDone) {
+      const uniqueName = `qa-${Date.now()}`
+      console.warn(`Creating new user: ${uniqueName}`)
+      await newUserInput.fill(uniqueName)
+      await sleep(500)
+      const nextBtn = page.getByRole('button', { name: 'Next' })
+      await nextBtn.click({ timeout: 5000 })
+      console.warn('Clicked Next with new user')
+      await sleep(5000)
+    }
   } else {
     console.warn('No login page detected, continuing...')
   }
