@@ -65,11 +65,27 @@ export const StorageKeys = {
   },
 
   /**
+   * Active workflow pointer fallback key for localStorage.
+   * Used to restore state across new tabs / browser restarts.
+   */
+  activePathPersistent(workspaceId: string): string {
+    return `Comfy.Workflow.ActivePath.v2:${workspaceId}`
+  },
+
+  /**
    * Open workflows pointer key for sessionStorage.
    * @param clientId - Browser tab identifier from api.clientId
    */
   openPaths(clientId: string): string {
     return `Comfy.Workflow.OpenPaths:${clientId}`
+  },
+
+  /**
+   * Open workflows pointer fallback key for localStorage.
+   * Used to restore state across new tabs / browser restarts.
+   */
+  openPathsPersistent(workspaceId: string): string {
+    return `Comfy.Workflow.OpenPaths.v2:${workspaceId}`
   },
 
   /**
@@ -79,6 +95,8 @@ export const StorageKeys = {
     draftIndex: 'Comfy.Workflow.DraftIndex.v2:',
     draftPayload: 'Comfy.Workflow.Draft.v2:',
     activePath: 'Comfy.Workflow.ActivePath:',
-    openPaths: 'Comfy.Workflow.OpenPaths:'
+    openPaths: 'Comfy.Workflow.OpenPaths:',
+    activePathPersistent: 'Comfy.Workflow.ActivePath.v2:',
+    openPathsPersistent: 'Comfy.Workflow.OpenPaths.v2:'
   }
 } as const

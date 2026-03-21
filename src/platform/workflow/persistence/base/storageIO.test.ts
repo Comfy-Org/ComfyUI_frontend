@@ -17,6 +17,31 @@ import {
   writePayload
 } from './storageIO'
 
+function createStorageMock() {
+  const store = new Map<string, string>()
+
+  return {
+    clear: () => store.clear(),
+    getItem: (key: string) => store.get(key) ?? null,
+    key: (index: number) => Array.from(store.keys())[index] ?? null,
+    get length() {
+      return store.size
+    },
+    removeItem: (key: string) => {
+      store.delete(key)
+    },
+    setItem: (key: string, value: string) => {
+      store.set(key, value)
+    }
+  }
+}
+
+const mockLocalStorage = createStorageMock()
+const mockSessionStorage = createStorageMock()
+
+vi.stubGlobal('localStorage', mockLocalStorage)
+vi.stubGlobal('sessionStorage', mockSessionStorage)
+
 describe('storageIO', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -221,6 +246,19 @@ describe('storageIO', () => {
       expect(readActivePath('missing')).toBeNull()
     })
 
+    it('falls back to persistent local active path when session pointer is missing', () => {
+      const pointer = { workspaceId: 'ws-1', path: 'workflows/test.json' }
+      writeActivePath(clientId, pointer)
+
+      sessionStorage.clear()
+
+      const read = readActivePath('new-client', 'ws-1')
+      expect(read).toEqual(pointer)
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.ActivePath:new-client')
+      ).not.toBeNull()
+    })
+
     it('reads and writes open paths pointer', () => {
       const pointer = {
         workspaceId: 'ws-1',
@@ -235,6 +273,23 @@ describe('storageIO', () => {
 
     it('returns null for missing open paths', () => {
       expect(readOpenPaths('missing')).toBeNull()
+    })
+
+    it('falls back to persistent local open paths when session pointer is missing', () => {
+      const pointer = {
+        workspaceId: 'ws-1',
+        paths: ['workflows/a.json', 'workflows/b.json'],
+        activeIndex: 1
+      }
+      writeOpenPaths(clientId, pointer)
+
+      sessionStorage.clear()
+
+      const read = readOpenPaths('new-client', 'ws-1')
+      expect(read).toEqual(pointer)
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.OpenPaths:new-client')
+      ).not.toBeNull()
     })
 
     it('falls back to workspace search when clientId does not match and migrates', () => {
@@ -335,6 +390,8 @@ describe('storageIO', () => {
     it('clears all V2 keys from localStorage', () => {
       localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.ActivePath.v2:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.OpenPaths.v2:ws-1', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-2:def', '{}')
       localStorage.setItem('unrelated', 'keep')
 
@@ -348,6 +405,12 @@ describe('storageIO', () => {
       ).toBeNull()
       expect(
         localStorage.getItem('Comfy.Workflow.Draft.v2:ws-2:def')
+      ).toBeNull()
+      expect(
+        localStorage.getItem('Comfy.Workflow.ActivePath.v2:ws-1')
+      ).toBeNull()
+      expect(
+        localStorage.getItem('Comfy.Workflow.OpenPaths.v2:ws-1')
       ).toBeNull()
       expect(localStorage.getItem('unrelated')).toBe('keep')
     })

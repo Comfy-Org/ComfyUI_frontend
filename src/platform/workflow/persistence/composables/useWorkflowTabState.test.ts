@@ -7,10 +7,36 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+function createStorageMock() {
+  const store = new Map<string, string>()
+
+  return {
+    clear: () => store.clear(),
+    getItem: (key: string) => store.get(key) ?? null,
+    key: (index: number) => Array.from(store.keys())[index] ?? null,
+    get length() {
+      return store.size
+    },
+    removeItem: (key: string) => {
+      store.delete(key)
+    },
+    setItem: (key: string, value: string) => {
+      store.set(key, value)
+    }
+  }
+}
+
+const mockLocalStorage = createStorageMock()
+const mockSessionStorage = createStorageMock()
+
+vi.stubGlobal('localStorage', mockLocalStorage)
+vi.stubGlobal('sessionStorage', mockSessionStorage)
+
 describe('useWorkflowTabState', () => {
   beforeEach(() => {
     vi.resetModules()
     sessionStorage.clear()
+    localStorage.clear()
   })
 
   describe('activePath', () => {
@@ -26,6 +52,21 @@ describe('useWorkflowTabState', () => {
       const { getActivePath, setActivePath } = useWorkflowTabState()
 
       setActivePath('workflows/test.json')
+      expect(getActivePath()).toBe('workflows/test.json')
+    })
+
+    it('restores active path from persistent fallback after session reset', async () => {
+      const { useWorkflowTabState } = await import('./useWorkflowTabState')
+      const { getActivePath, setActivePath } = useWorkflowTabState()
+
+      setActivePath('workflows/test.json')
+      sessionStorage.clear()
+
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({ type: 'personal' })
+      )
+
       expect(getActivePath()).toBe('workflows/test.json')
     })
 
@@ -71,6 +112,24 @@ describe('useWorkflowTabState', () => {
       expect(result).not.toBeNull()
       expect(result!.paths).toEqual(paths)
       expect(result!.activeIndex).toBe(1)
+    })
+
+    it('restores open paths from persistent fallback after session reset', async () => {
+      const { useWorkflowTabState } = await import('./useWorkflowTabState')
+      const { getOpenPaths, setOpenPaths } = useWorkflowTabState()
+
+      const paths = ['workflows/a.json', 'workflows/b.json']
+      setOpenPaths(paths, 1)
+      sessionStorage.clear()
+
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({ type: 'personal' })
+      )
+
+      const result = getOpenPaths()
+      expect(result?.paths).toEqual(paths)
+      expect(result?.activeIndex).toBe(1)
     })
 
     it('ignores pointer from different workspace', async () => {

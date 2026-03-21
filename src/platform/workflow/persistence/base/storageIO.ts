@@ -210,16 +210,38 @@ function findAndMigratePointer<T extends { workspaceId: string }>(
   return null
 }
 
+function readLocalPointer<T extends { workspaceId: string }>(
+  key: string,
+  targetWorkspaceId?: string
+): T | null {
+  try {
+    const json = localStorage.getItem(key)
+    if (!json) return null
+
+    const pointer = JSON.parse(json) as T
+    if (targetWorkspaceId && pointer.workspaceId !== targetWorkspaceId) {
+      localStorage.removeItem(key)
+      return null
+    }
+
+    return pointer
+  } catch {
+    return null
+  }
+}
+
 /**
  * Reads a session pointer by clientId with workspace-based fallback.
  * Validates workspace on exact match and removes stale cross-workspace pointers.
  * If no valid entry exists, searches for any pointer matching the target
- * workspaceId and migrates it to the new key.
+ * workspaceId and migrates it to the new key. If that still fails, falls back
+ * to the persistent per-workspace localStorage pointer.
  */
 function readSessionPointer<T extends { workspaceId: string }>(
   key: string,
   prefix: string,
-  targetWorkspaceId?: string
+  targetWorkspaceId?: string,
+  localFallbackKey?: string
 ): T | null {
   try {
     const json = sessionStorage.getItem(key)
@@ -233,7 +255,25 @@ function readSessionPointer<T extends { workspaceId: string }>(
     }
 
     if (targetWorkspaceId) {
-      return findAndMigratePointer<T>(key, prefix, targetWorkspaceId)
+      const migrated = findAndMigratePointer<T>(key, prefix, targetWorkspaceId)
+      if (migrated) {
+        return migrated
+      }
+
+      if (localFallbackKey) {
+        const localPointer = readLocalPointer<T>(
+          localFallbackKey,
+          targetWorkspaceId
+        )
+        if (localPointer) {
+          try {
+            sessionStorage.setItem(key, JSON.stringify(localPointer))
+          } catch {
+            // Ignore session mirror write failures
+          }
+          return localPointer
+        }
+      }
     }
 
     return null
@@ -253,7 +293,10 @@ export function readActivePath(
   return readSessionPointer<ActivePathPointer>(
     StorageKeys.activePath(clientId),
     StorageKeys.prefixes.activePath,
+    targetWorkspaceId,
     targetWorkspaceId
+      ? StorageKeys.activePathPersistent(targetWorkspaceId)
+      : undefined
   )
 }
 
@@ -264,9 +307,18 @@ export function writeActivePath(
   clientId: string,
   pointer: ActivePathPointer
 ): void {
+  const json = JSON.stringify(pointer)
+
   try {
     const key = StorageKeys.activePath(clientId)
-    sessionStorage.setItem(key, JSON.stringify(pointer))
+    sessionStorage.setItem(key, json)
+  } catch {
+    // Best effort - ignore errors
+  }
+
+  try {
+    const persistentKey = StorageKeys.activePathPersistent(pointer.workspaceId)
+    localStorage.setItem(persistentKey, json)
   } catch {
     // Best effort - ignore errors
   }
@@ -283,7 +335,10 @@ export function readOpenPaths(
   return readSessionPointer<OpenPathsPointer>(
     StorageKeys.openPaths(clientId),
     StorageKeys.prefixes.openPaths,
+    targetWorkspaceId,
     targetWorkspaceId
+      ? StorageKeys.openPathsPersistent(targetWorkspaceId)
+      : undefined
   )
 }
 
@@ -294,9 +349,18 @@ export function writeOpenPaths(
   clientId: string,
   pointer: OpenPathsPointer
 ): void {
+  const json = JSON.stringify(pointer)
+
   try {
     const key = StorageKeys.openPaths(clientId)
-    sessionStorage.setItem(key, JSON.stringify(pointer))
+    sessionStorage.setItem(key, json)
+  } catch {
+    // Best effort - ignore errors
+  }
+
+  try {
+    const persistentKey = StorageKeys.openPathsPersistent(pointer.workspaceId)
+    localStorage.setItem(persistentKey, json)
   } catch {
     // Best effort - ignore errors
   }
@@ -309,7 +373,9 @@ export function writeOpenPaths(
 export function clearAllV2Storage(): void {
   const prefixes = [
     StorageKeys.prefixes.draftIndex,
-    StorageKeys.prefixes.draftPayload
+    StorageKeys.prefixes.draftPayload,
+    StorageKeys.prefixes.activePathPersistent,
+    StorageKeys.prefixes.openPathsPersistent
   ]
 
   try {
