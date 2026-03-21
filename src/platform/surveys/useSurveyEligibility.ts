@@ -13,6 +13,7 @@ export interface FeatureSurveyConfig {
   triggerThreshold?: number
   delayMs?: number
   enabled?: boolean
+  isFeatureActive?: () => boolean
 }
 
 interface SurveyState {
@@ -61,8 +62,13 @@ export function useSurveyEligibility(
 
   const hasOptedOut = computed(() => state.value.optedOut)
 
+  const isFeatureActive = computed(
+    () => resolvedConfig.value.isFeatureActive?.() ?? true
+  )
+
   const isEligible = computed(() => {
     if (!isSurveyEnabled.value) return false
+    if (!isFeatureActive.value) return false
     if (!isNightlyLocalhost.value) return false
     if (!hasReachedThreshold.value) return false
     if (hasSeenSurvey.value) return false
