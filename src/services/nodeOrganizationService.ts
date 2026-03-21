@@ -230,16 +230,6 @@ class NodeOrganizationService {
     if (blueprintTree.children?.length) {
       sections.push({ category: 'blueprints', tree: blueprintTree })
     }
-    if (partnerNodes.length > 0) {
-      sections.push({
-        category: 'partnerNodes',
-        tree: unwrapTreeRoot(
-          buildNodeDefTree(partnerNodes, {
-            pathExtractor: categoryPathExtractor
-          })
-        )
-      })
-    }
     if (comfyNodes.length > 0) {
       sections.push({
         category: 'comfyNodes',
@@ -254,6 +244,16 @@ class NodeOrganizationService {
         tree: buildNodeDefTree(extensions, {
           pathExtractor: categoryPathExtractor
         })
+      })
+    }
+    if (partnerNodes.length > 0) {
+      sections.push({
+        category: 'partnerNodes',
+        tree: unwrapTreeRoot(
+          buildNodeDefTree(partnerNodes, {
+            pathExtractor: categoryPathExtractor
+          })
+        )
       })
     }
 

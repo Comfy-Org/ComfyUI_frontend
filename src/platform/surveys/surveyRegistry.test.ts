@@ -43,6 +43,13 @@ describe('surveyRegistry', () => {
     })
   })
 
+  describe('node-search survey', () => {
+    it('should be disabled', () => {
+      const config = getSurveyConfig('node-search')
+      expect(config?.enabled).toBe(false)
+    })
+  })
+
   describe('getEnabledSurveys', () => {
     it('includes surveys with enabled: true', () => {
       const enabled = getEnabledSurveys()

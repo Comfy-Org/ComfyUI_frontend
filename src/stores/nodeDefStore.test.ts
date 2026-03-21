@@ -3,7 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
@@ -328,6 +328,47 @@ describe('useNodeDefStore', () => {
       // allNodeDefsByName includes all
       expect(store.allNodeDefsByName).toHaveProperty('Normal')
       expect(store.allNodeDefsByName).toHaveProperty('Deprecated')
+    })
+  })
+
+  describe('postProcessSearchScores', () => {
+    const baseNodeDef: ComfyNodeDef = {
+      name: 'TestNode',
+      display_name: 'Test Node',
+      category: 'test',
+      python_module: 'nodes',
+      description: '',
+      input: {},
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false
+    }
+
+    it('should add penalty for API nodes', () => {
+      const apiNode = new ComfyNodeDefImpl({ ...baseNodeDef, api_node: true })
+      const localNode = new ComfyNodeDefImpl({
+        ...baseNodeDef,
+        api_node: false
+      })
+
+      const scores = [2, 0.5, 3, 0.1]
+      const apiScores = apiNode.postProcessSearchScores([...scores])
+      const localScores = localNode.postProcessSearchScores([...scores])
+
+      expect(apiScores[0]).toBeGreaterThan(localScores[0])
+    })
+
+    it('should not add penalty for non-API nodes', () => {
+      const localNode = new ComfyNodeDefImpl({
+        ...baseNodeDef,
+        api_node: false
+      })
+
+      const scores = [2, 0.5, 3, 0.1]
+      const result = localNode.postProcessSearchScores([...scores])
+
+      expect(result[0]).toBe(scores[0])
     })
   })
 

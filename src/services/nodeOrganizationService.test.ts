@@ -308,6 +308,55 @@ describe('nodeOrganizationService', () => {
     })
   })
 
+  describe('organizeNodesByTab section ordering', () => {
+    it('should place partner nodes after comfy nodes and extensions', () => {
+      const nodes = [
+        createMockNodeDef({
+          name: 'ApiNode',
+          api_node: true,
+          category: 'api node/provider',
+          nodeSource: {
+            type: NodeSourceType.Core,
+            className: 'comfy-core',
+            displayText: 'Core',
+            badgeText: 'C'
+          }
+        }),
+        createMockNodeDef({
+          name: 'CoreNode',
+          category: 'loaders',
+          python_module: 'nodes',
+          nodeSource: {
+            type: NodeSourceType.Core,
+            className: 'comfy-core',
+            displayText: 'Core',
+            badgeText: 'C'
+          }
+        }),
+        createMockNodeDef({
+          name: 'ExtensionNode',
+          category: 'custom',
+          nodeSource: {
+            type: NodeSourceType.CustomNodes,
+            className: 'comfy-custom',
+            displayText: 'Custom',
+            badgeText: 'E'
+          }
+        })
+      ]
+
+      const sections = nodeOrganizationService.organizeNodesByTab(nodes, 'all')
+      const categoryOrder = sections.map((s) => s.category)
+
+      const comfyIndex = categoryOrder.indexOf('comfyNodes')
+      const extensionsIndex = categoryOrder.indexOf('extensions')
+      const partnerIndex = categoryOrder.indexOf('partnerNodes')
+
+      expect(partnerIndex).toBeGreaterThan(comfyIndex)
+      expect(partnerIndex).toBeGreaterThan(extensionsIndex)
+    })
+  })
+
   describe('sorting comparison', () => {
     it('original sort should keep order', () => {
       const strategy = nodeOrganizationService.getSortingStrategy('original')
