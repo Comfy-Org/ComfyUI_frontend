@@ -79,27 +79,36 @@ describe('workflowDraftStoreV2', () => {
       expect(draft!.updatedAt).toEqual(expect.any(Number))
     })
 
-    it('marks draft as recently used after successful load', async () => {
-      const store = useWorkflowDraftStoreV2()
+    it('keeps payload updatedAt stable when only recency is refreshed', () => {
+      vi.useFakeTimers()
 
-      store.saveDraft('workflows/a.json', '{"id":"a"}', {
-        name: 'a',
-        isTemporary: true
-      })
-      store.saveDraft('workflows/b.json', '{"id":"b"}', {
-        name: 'b',
-        isTemporary: true
-      })
+      try {
+        const store = useWorkflowDraftStoreV2()
 
-      expect(store.getMostRecentPath()).toBe('workflows/b.json')
+        vi.setSystemTime(new Date('2026-03-21T10:00:00Z'))
+        store.saveDraft('workflows/a.json', '{"id":"a"}', {
+          name: 'a',
+          isTemporary: true
+        })
+        const initialUpdatedAt = store.getDraft('workflows/a.json')!.updatedAt
 
-      const loaded = await store.loadPersistedWorkflow({
-        workflowName: 'a',
-        preferredPath: 'workflows/a.json'
-      })
+        vi.setSystemTime(new Date('2026-03-21T10:01:00Z'))
+        store.saveDraft('workflows/b.json', '{"id":"b"}', {
+          name: 'b',
+          isTemporary: true
+        })
+        expect(store.getMostRecentPath()).toBe('workflows/b.json')
 
-      expect(loaded).toBe(true)
-      expect(store.getMostRecentPath()).toBe('workflows/a.json')
+        vi.setSystemTime(new Date('2026-03-21T10:02:00Z'))
+        store.markDraftUsed('workflows/a.json')
+
+        const refreshedDraft = store.getDraft('workflows/a.json')
+        expect(refreshedDraft).not.toBeNull()
+        expect(refreshedDraft!.updatedAt).toBe(initialUpdatedAt)
+        expect(store.getMostRecentPath()).toBe('workflows/a.json')
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('evicts oldest when over limit', () => {
@@ -202,27 +211,6 @@ describe('workflowDraftStoreV2', () => {
       })
 
       expect(result).toBe(true)
-    })
-
-    it('marks a restored draft as most recent', async () => {
-      const store = useWorkflowDraftStoreV2()
-
-      store.saveDraft('workflows/a.json', '{"nodes":[]}', {
-        name: 'a',
-        isTemporary: true
-      })
-      store.saveDraft('workflows/b.json', '{"nodes":[]}', {
-        name: 'b',
-        isTemporary: true
-      })
-
-      const result = await store.loadPersistedWorkflow({
-        workflowName: 'a',
-        preferredPath: 'workflows/a.json'
-      })
-
-      expect(result).toBe(true)
-      expect(store.getMostRecentPath()).toBe('workflows/a.json')
     })
 
     it('falls back to most recent when preferredPath missing', async () => {

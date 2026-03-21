@@ -245,9 +245,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   /**
    * Gets draft data by path.
    */
-  function getDraft(
-    path: string
-  ): {
+  function getDraft(path: string): {
     data: string
     name: string
     isTemporary: boolean
@@ -270,6 +268,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       data: payload.data,
       name: entry.name,
       isTemporary: entry.isTemporary,
+      // Payload updatedAt tracks content freshness for remote-vs-draft
+      // comparisons. MRU recency lives in the index order and is refreshed
+      // by markDraftUsed() without rewriting the stored draft content.
       updatedAt: payload.updatedAt
     }
   }
