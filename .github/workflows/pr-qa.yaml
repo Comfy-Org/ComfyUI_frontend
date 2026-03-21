@@ -736,9 +736,10 @@ jobs:
           .report-body h3+p>code:first-child{background:oklch(62% 0.22 25/.15);color:var(--err);border-color:oklch(62% 0.22 25/.25)}
           .report-body h3+p>code:nth-child(2){background:oklch(62% 0.21 265/.15);color:var(--primary-up);border-color:oklch(62% 0.21 265/.25)}
           .report-body h3+p>code:nth-child(3){background:oklch(65% 0.01 265/.15);color:var(--fg-muted);border-color:var(--border)}
-          .report-body table{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.75rem;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-          .report-body th,.report-body td{border:1px solid var(--border-faint);padding:.5rem .75rem;text-align:left}
-          .report-body th{background:oklch(14% 0.02 265);color:var(--fg);font-weight:600;font-size:.6875rem;text-transform:uppercase;letter-spacing:.05em}
+          .report-body table{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.75rem;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;table-layout:fixed}
+          .report-body th,.report-body td{border:1px solid var(--border-faint);padding:.5rem .75rem;text-align:left;vertical-align:top;word-wrap:break-word}
+          .report-body th{background:oklch(14% 0.02 265);color:var(--fg);font-weight:600;font-size:.6875rem;text-transform:uppercase;letter-spacing:.05em;position:sticky;top:0}
+          .report-body th:nth-child(1){width:8%}.report-body th:nth-child(2){width:8%}.report-body th:nth-child(3){width:9%}.report-body th:nth-child(4),.report-body th:nth-child(5){width:37.5%}
           .report-body tr:nth-child(even){background:oklch(10% 0.01 265/.5)}
           .report-body tr:hover{background:oklch(16% 0.02 265/.5)}
           .report-body strong{color:var(--fg)}
