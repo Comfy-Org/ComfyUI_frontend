@@ -7,13 +7,9 @@ export type MenuActionEntry = {
   onClick?: () => void | Promise<void>
 }
 
-export type MenuDividerEntry = {
+type MenuDividerEntry = {
   kind: 'divider'
   key: string
 }
 
 export type MenuEntry = MenuActionEntry | MenuDividerEntry
-
-export function isMenuActionEntry(entry: MenuEntry): entry is MenuActionEntry {
-  return entry.kind !== 'divider'
-}
