@@ -1,0 +1,215 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "e5fb1765-0001-4548-801a-5aead34d879e",
+      "pos": [400, 300],
+      "size": [400, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": null
+        },
+        {
+          "label": "my_seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": { "name": "seed" },
+          "link": null
+        },
+        {
+          "label": "num_steps",
+          "name": "steps",
+          "type": "INT",
+          "widget": { "name": "steps" },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "proxyWidgets": [
+          ["1", "seed"],
+          ["1", "steps"]
+        ]
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "e5fb1765-0001-4548-801a-5aead34d879e",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 2,
+          "lastLinkId": 6,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Renamed Labels Subgraph",
+        "inputNode": {
+          "id": -10,
+          "bounding": [200, 300, 120, 100]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [900, 400, 120, 60]
+        },
+        "inputs": [
+          {
+            "id": "slot-positive",
+            "name": "positive",
+            "type": "CONDITIONING",
+            "linkIds": [1],
+            "pos": [220, 320]
+          },
+          {
+            "id": "slot-seed",
+            "name": "seed",
+            "type": "INT",
+            "linkIds": [3],
+            "label": "my_seed",
+            "pos": [220, 340]
+          },
+          {
+            "id": "slot-steps",
+            "name": "steps",
+            "type": "INT",
+            "linkIds": [4],
+            "label": "num_steps",
+            "pos": [220, 360]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "slot-latent-out",
+            "name": "LATENT",
+            "type": "LATENT",
+            "linkIds": [2],
+            "pos": [920, 420]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 1,
+            "type": "KSampler",
+            "pos": [500, 200],
+            "size": [270, 262],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "model",
+                "type": "MODEL",
+                "link": null
+              },
+              {
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": 1
+              },
+              {
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": null
+              },
+              {
+                "name": "seed",
+                "type": "INT",
+                "widget": { "name": "seed" },
+                "link": 3
+              },
+              {
+                "name": "steps",
+                "type": "INT",
+                "widget": { "name": "steps" },
+                "link": 4
+              }
+            ],
+            "outputs": [
+              {
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [2]
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "KSampler"
+            },
+            "widgets_values": [0, "randomize", 20, 8, "euler", "simple", 1]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 1,
+            "target_slot": 1,
+            "type": "CONDITIONING"
+          },
+          {
+            "id": 2,
+            "origin_id": 1,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "LATENT"
+          },
+          {
+            "id": 3,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 1,
+            "target_slot": 4,
+            "type": "INT"
+          },
+          {
+            "id": 4,
+            "origin_id": -10,
+            "origin_slot": 2,
+            "target_id": 1,
+            "target_slot": 5,
+            "type": "INT"
+          }
+        ],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    },
+    "frontendVersion": "1.41.21"
+  },
+  "version": 0.4
+}
