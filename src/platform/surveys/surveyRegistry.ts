@@ -1,5 +1,3 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-
 import type { FeatureSurveyConfig } from './useSurveyEligibility'
 
 /**
@@ -11,13 +9,7 @@ export const FEATURE_SURVEYS: Record<string, FeatureSurveyConfig> = {
     featureId: 'node-search',
     typeformId: 'goZLqjKL',
     triggerThreshold: 3,
-    delayMs: 5000,
-    isFeatureActive: () => {
-      const settingStore = useSettingStore()
-      return (
-        settingStore.get('Comfy.NodeSearchBoxImpl') !== 'litegraph (legacy)'
-      )
-    }
+    delayMs: 5000
   }
 }
 
