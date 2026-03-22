@@ -312,7 +312,8 @@ export const zComfyNodeDef = z.object({
   /** Category for the Essentials tab. If set, the node appears in Essentials. */
   essentials_category: z.string().optional(),
   /** Whether the blueprint is a global/installed blueprint (not user-created). */
-  isGlobal: z.boolean().optional()
+  isGlobal: z.boolean().optional(),
+  valueMigrationDict: z.array(z.string()).optional()
 })
 
 export const zAutogrowOptions = z.object({
