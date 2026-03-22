@@ -30,7 +30,11 @@
       "@tests-ui/*": ["./tests-ui/*"]
     },
     "typeRoots": ["src/types", "node_modules/@types", "./node_modules"],
-    "types": ["vitest/globals", "@webgpu/types"],
+    "types": [
+      "vitest/globals",
+      "@webgpu/types",
+      "@testing-library/jest-dom/vitest"
+    ],
     "outDir": "./dist",
     "rootDir": "./"
   },

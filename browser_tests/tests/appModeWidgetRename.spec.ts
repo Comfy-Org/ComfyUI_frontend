@@ -30,10 +30,18 @@ async function setupSubgraphBuilder(comfyPage: ComfyPage) {
   await appMode.enterBuilder()
   await appMode.goToInputs()
 
+  // Reset zoom to 1 and center on the subgraph node so click coords are accurate
+  await comfyPage.canvasOps.setScale(1)
+  await subgraphNode.centerOnNode()
+
   // Click the promoted seed widget on the canvas to select it
   const seedWidgetRef = await subgraphNode.getWidget(0)
   const seedPos = await seedWidgetRef.getPosition()
-  await page.mouse.click(seedPos.x, seedPos.y)
+  const titleHeight = await page.evaluate(
+    () => window.LiteGraph!['NODE_TITLE_HEIGHT'] as number
+  )
+
+  await page.mouse.click(seedPos.x, seedPos.y + titleHeight)
   await comfyPage.nextFrame()
 
   // Select an output node
@@ -48,9 +56,15 @@ async function setupSubgraphBuilder(comfyPage: ComfyPage) {
     )
   )
   const saveImageRef = await comfyPage.nodeOps.getNodeRefById(saveImageNodeId)
-  const saveImagePos = await saveImageRef.getPosition()
-  // Click left edge — the right side is hidden by the builder panel
-  await page.mouse.click(saveImagePos.x + 10, saveImagePos.y - 10)
+  await saveImageRef.centerOnNode()
+
+  // Node is centered on screen, so click the canvas center
+  const canvasBox = await page.locator('#graph-canvas').boundingBox()
+  if (!canvasBox) throw new Error('Canvas not found')
+  await page.mouse.click(
+    canvasBox.x + canvasBox.width / 2,
+    canvasBox.y + canvasBox.height / 2
+  )
   await comfyPage.nextFrame()
 
   return subgraphNode
@@ -80,9 +94,15 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
       }
     })
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.AppBuilder.VueNodeSwitchDismissed',
+      true
+    )
   })
 
-  test('Rename from builder input-select sidebar', async ({ comfyPage }) => {
+  test('Rename from builder input-select sidebar via menu', async ({
+    comfyPage
+  }) => {
     const { appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
 
@@ -91,17 +111,35 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
 
     const menu = appMode.getBuilderInputItemMenu('seed')
     await expect(menu).toBeVisible({ timeout: 5000 })
-    await appMode.renameWidget(menu, 'Builder Input Seed')
+    await appMode.renameBuilderInputViaMenu('seed', 'Builder Input Seed')
 
     // Verify in app mode after save/reload
     await appMode.exitBuilder()
-    const workflowName = `${new Date().getTime()} builder-input`
+    const workflowName = `${new Date().getTime()} builder-input-menu`
     await saveAndReopenInAppMode(comfyPage, workflowName)
 
     await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
     await expect(
       appMode.linearWidgets.getByText('Builder Input Seed')
     ).toBeVisible()
+  })
+
+  test('Rename from builder input-select sidebar via double-click', async ({
+    comfyPage
+  }) => {
+    const { appMode } = comfyPage
+    await setupSubgraphBuilder(comfyPage)
+
+    await appMode.goToInputs()
+
+    await appMode.renameBuilderInput('seed', 'Dblclick Seed')
+
+    await appMode.exitBuilder()
+    const workflowName = `${new Date().getTime()} builder-input-dblclick`
+    await saveAndReopenInAppMode(comfyPage, workflowName)
+
+    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets.getByText('Dblclick Seed')).toBeVisible()
   })
 
   test('Rename from builder preview sidebar', async ({ comfyPage }) => {
