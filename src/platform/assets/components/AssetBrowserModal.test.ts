@@ -386,5 +386,23 @@ describe('AssetBrowserModal', () => {
         'assetBrowser.allCategory:{"category":"Checkpoints"}'
       )
     })
+
+    it('ignores non-model assets when deriving the default title', async () => {
+      const assets = [
+        {
+          ...createTestAsset('asset1', 'Input Image', 'checkpoints'),
+          tags: ['input', 'images']
+        }
+      ]
+      mockAssetsByKey.set('CheckpointLoaderSimple', assets)
+
+      const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      await flushPromises()
+
+      const layout = wrapper.findComponent({ name: 'BaseModalLayout' })
+      expect(layout.props('contentTitle')).toBe(
+        'assetBrowser.allCategory:{"category":"Checkpoints"}'
+      )
+    })
   })
 })

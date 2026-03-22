@@ -137,8 +137,20 @@ export function getSourceName(url: string): string {
  * @returns The model type string or null if not present
  */
 export function getAssetModelType(asset: AssetItem): string | null {
+  if (!asset.tags?.includes('models')) return null
   const typeTag = asset.tags?.find((tag) => tag && tag !== 'models')
   return typeTag ?? null
+}
+
+/**
+ * Extracts the top-level model category from asset tags.
+ * @param asset - The asset to extract the model category from
+ * @returns The top-level model category string or null if not present
+ */
+export function getAssetModelCategory(asset: AssetItem): string | null {
+  const modelType = getAssetModelType(asset)
+  if (!modelType) return null
+  return modelType.split('/')[0] || null
 }
 
 /**

@@ -7,6 +7,7 @@ import {
   getAssetBaseModels,
   getAssetDescription,
   getAssetDisplayName,
+  getAssetModelCategory,
   getAssetModelType,
   getAssetSourceUrl,
   getAssetTriggerPhrases,
@@ -243,6 +244,11 @@ describe('assetMetadataUtils', () => {
         expected: 'checkpoints'
       },
       {
+        name: 'returns model type regardless of tag order',
+        tags: ['checkpoints', 'models'],
+        expected: 'checkpoints'
+      },
+      {
         name: 'returns full path for path-style tags',
         tags: ['models', 'diffusers/Kolors/text_encoder'],
         expected: 'diffusers/Kolors/text_encoder'
@@ -252,10 +258,38 @@ describe('assetMetadataUtils', () => {
         tags: ['models'],
         expected: null
       },
-      { name: 'returns null when tags empty', tags: [], expected: null }
+      { name: 'returns null when tags empty', tags: [], expected: null },
+      {
+        name: 'returns null when asset is not in the models root',
+        tags: ['input', 'images'],
+        expected: null
+      }
     ])('$name', ({ tags, expected }) => {
       const asset = { ...mockAsset, tags }
       expect(getAssetModelType(asset)).toBe(expected)
+    })
+  })
+
+  describe('getAssetModelCategory', () => {
+    it.for([
+      {
+        name: 'returns top-level category from model type',
+        tags: ['models', 'diffusers/Kolors/text_encoder'],
+        expected: 'diffusers'
+      },
+      {
+        name: 'returns category regardless of tag order',
+        tags: ['checkpoints', 'models'],
+        expected: 'checkpoints'
+      },
+      {
+        name: 'returns null for non-model assets',
+        tags: ['input', 'images'],
+        expected: null
+      }
+    ])('$name', ({ tags, expected }) => {
+      const asset = { ...mockAsset, tags }
+      expect(getAssetModelCategory(asset)).toBe(expected)
     })
   })
 

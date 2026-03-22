@@ -101,6 +101,7 @@ import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
+import { getAssetModelType } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { OnCloseKey } from '@/types/widgetTypes'
@@ -173,7 +174,7 @@ const isRightPanelOpen = ref(false)
 const primaryCategoryTag = computed(() => {
   const assets = fetchedAssets.value ?? []
   const tagFromAssets = assets
-    .map((asset) => asset.tags?.find((tag) => tag !== 'models'))
+    .map((asset) => getAssetModelType(asset))
     .find((tag): tag is string => typeof tag === 'string' && tag.length > 0)
 
   if (tagFromAssets) return tagFromAssets

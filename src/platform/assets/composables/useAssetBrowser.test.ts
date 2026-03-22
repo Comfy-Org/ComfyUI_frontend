@@ -151,6 +151,38 @@ describe('useAssetBrowser', () => {
         type: 'type'
       })
     })
+
+    it('creates model type badges regardless of tag order', () => {
+      const apiAsset = createApiAsset({
+        tags: ['checkpoints', 'models']
+      })
+
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
+      const result = filteredAssets.value[0]
+
+      expect(result.badges).toContainEqual({
+        label: 'checkpoints',
+        type: 'type'
+      })
+    })
+
+    it('does not create model type badges for non-model assets', () => {
+      const apiAsset = createApiAsset({
+        tags: ['input', 'images']
+      })
+
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
+      const result = filteredAssets.value[0]
+
+      expect(result.badges).not.toContainEqual({
+        label: 'input',
+        type: 'type'
+      })
+      expect(result.badges).not.toContainEqual({
+        label: 'images',
+        type: 'type'
+      })
+    })
   })
 
   describe('Tag-Based Filtering', () => {

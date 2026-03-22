@@ -19,9 +19,10 @@ import {
 } from '@/platform/assets/utils/assetFilterUtils'
 import {
   getAssetBaseModels,
-  getAssetFilename
+  getAssetFilename,
+  getAssetModelCategory,
+  getAssetModelType
 } from '@/platform/assets/utils/assetMetadataUtils'
-import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -88,7 +89,7 @@ export function useAssetBrowser(
 
     const badges: AssetBadge[] = []
 
-    const typeTag = asset.tags.find((tag) => tag !== 'models')
+    const typeTag = getAssetModelType(asset)
     // Type badge from non-root tag
     if (typeTag) {
       // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
@@ -124,11 +125,8 @@ export function useAssetBrowser(
 
   const typeCategories = computed<NavItemData[]>(() => {
     const categories = assets.value
-      .filter((asset) => asset.tags.includes(MODELS_TAG))
-      .flatMap((asset) =>
-        asset.tags.filter((tag) => tag !== MODELS_TAG && tag.length > 0)
-      )
-      .map((tag) => tag.split('/')[0])
+      .map((asset) => getAssetModelCategory(asset))
+      .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
 
     return Array.from(new Set(categories))
       .sort()
