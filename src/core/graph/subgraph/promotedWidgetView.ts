@@ -189,7 +189,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   get label(): string | undefined {
     const state = this.getWidgetState()
-    return state?.label ?? this.displayName ?? this.sourceWidgetName
+    return this.displayName ?? state?.label ?? this.sourceWidgetName
   }
 
   set label(value: string | undefined) {
@@ -237,11 +237,15 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const originalY = projected.y
     const originalComputedHeight = projected.computedHeight
     const originalComputedDisabled = projected.computedDisabled
+    const originalLabel = projected.label
 
     projected.y = this.y
     projected.computedHeight = this.computedHeight
     projected.computedDisabled = this.computedDisabled
     projected.value = this.value
+    if (this.displayName && this.displayName !== this.sourceWidgetName) {
+      projected.label = this.displayName
+    }
 
     projected.drawWidget(ctx, {
       width: widgetWidth,
@@ -253,6 +257,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     projected.y = originalY
     projected.computedHeight = originalComputedHeight
     projected.computedDisabled = originalComputedDisabled
+    projected.label = originalLabel
   }
 
   onPointerDown(
