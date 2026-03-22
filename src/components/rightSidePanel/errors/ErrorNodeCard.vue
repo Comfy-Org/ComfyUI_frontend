@@ -90,6 +90,7 @@
               variant="secondary"
               size="sm"
               class="h-8 w-2/3 justify-center gap-1 rounded-lg text-xs"
+              data-testid="error-card-find-on-github"
               @click="handleCheckGithub(error)"
             >
               {{ t('g.findOnGithub') }}
