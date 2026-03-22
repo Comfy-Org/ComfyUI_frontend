@@ -5,7 +5,6 @@ import {
   GoogleAuthProvider,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
-
   onAuthStateChanged,
   onIdTokenChanged,
   sendPasswordResetEmail,
