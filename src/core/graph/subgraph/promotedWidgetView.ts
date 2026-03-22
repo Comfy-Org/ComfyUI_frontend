@@ -243,7 +243,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     projected.computedHeight = this.computedHeight
     projected.computedDisabled = this.computedDisabled
     projected.value = this.value
-    if (this.displayName && this.displayName !== this.sourceWidgetName) {
+    if (this.displayName) {
       projected.label = this.displayName
     }
 
