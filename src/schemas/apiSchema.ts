@@ -362,6 +362,7 @@ const zSettings = z.object({
   'Comfy.SnapToGrid.GridSize': z.number(),
   'Comfy.TextareaWidget.FontSize': z.number(),
   'Comfy.TextareaWidget.Spellcheck': z.boolean(),
+  'Comfy.TextareaWidget.HighlightClipComments': z.boolean(),
   'Comfy.UseNewMenu': z.enum(['Disabled', 'Top']),
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),

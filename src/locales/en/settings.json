@@ -397,6 +397,10 @@
   "Comfy_TextareaWidget_Spellcheck": {
     "name": "Textarea widget spellcheck"
   },
+  "Comfy_TextareaWidget_HighlightClipComments": {
+    "name": "Highlight comments in encode nodes",
+    "tooltip": "Highlight block and line comments in CLIP text encode nodes"
+  },
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "Tree explorer item padding"
   },
