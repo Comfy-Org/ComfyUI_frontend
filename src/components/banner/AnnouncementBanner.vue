@@ -16,6 +16,7 @@
     </div>
     <button
       v-if="announcement.dismissible !== false"
+      :aria-label="$t('g.dismiss')"
       class="shrink-0 cursor-pointer rounded-sm p-0.5 opacity-70 transition-opacity hover:opacity-100"
       @click="dismiss(announcement.id)"
     >
@@ -31,11 +32,19 @@ import { computed } from 'vue'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { cn } from '@/utils/tailwindUtil'
 
+const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
 const dismissedIds = useStorage<Record<string, number>>(
   'comfy.announcements.dismissed',
   {},
   localStorage
 )
+
+function isDismissed(id: string): boolean {
+  const dismissedAt = dismissedIds.value[id]
+  if (!dismissedAt) return false
+  return Date.now() - dismissedAt < DISMISSAL_DURATION_MS
+}
 
 const severityClasses: Record<string, string> = {
   info: 'bg-blue-600 text-white',
@@ -51,7 +60,7 @@ const severityIcons: Record<string, string> = {
 
 const visibleAnnouncements = computed(() => {
   const announcements = remoteConfig.value.announcements ?? []
-  return announcements.filter((a) => !dismissedIds.value[a.id])
+  return announcements.filter((a) => !isDismissed(a.id))
 })
 
 function dismiss(id: string) {
