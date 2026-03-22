@@ -57,6 +57,8 @@ export const TestIds = {
     colorRed: 'red'
   },
   widgets: {
+    container: 'node-widgets',
+    widget: 'node-widget',
     decrement: 'decrement',
     increment: 'increment',
     domWidgetTextarea: 'dom-widget-textarea',

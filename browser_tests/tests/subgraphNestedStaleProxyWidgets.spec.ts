@@ -2,6 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 const WORKFLOW = 'subgraphs/nested-subgraph-stale-proxy-widgets'
 
@@ -22,42 +23,29 @@ test.describe(
   'Nested subgraph stale proxyWidgets',
   { tag: ['@subgraph', '@widget'] },
   () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    })
+
     test('Outer subgraph node has no stale proxyWidgets after nested packing', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
-      await comfyPage.nextFrame()
+      await comfyPage.vueNodes.waitForNodes()
 
-      const result = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph!
-        const outerNode = graph.getNodeById('10')
-        if (
-          !outerNode ||
-          typeof outerNode.isSubgraphNode !== 'function' ||
-          !outerNode.isSubgraphNode()
-        ) {
-          return { error: 'Node 10 is not a SubgraphNode' }
-        }
+      const outerNode = comfyPage.vueNodes.getNodeLocator('10')
+      await expect(outerNode).toBeVisible()
 
-        const proxyWidgets = (outerNode.properties?.proxyWidgets ??
-          []) as string[][]
-        const widgetTypes = (outerNode.widgets ?? []).map(
-          (w: { type: string }) => w.type
-        )
+      const widgets = outerNode.getByTestId(TestIds.widgets.widget)
 
-        return { proxyWidgets, widgetTypes }
-      })
+      // Only the KSampler seed widget should be present — no stale
+      // "Disconnected" placeholders from the packed CLIPTextEncode nodes.
+      await expect(widgets).toHaveCount(1)
+      await expect(widgets.first()).toBeVisible()
 
-      if ('error' in result) {
-        throw new Error(result.error)
-      }
-
-      // proxyWidgets should only contain ["3","seed"] (KSampler),
-      // not the stale ["7","text"] or ["6","text"] entries
-      expect(result.proxyWidgets).toEqual([['3', 'seed']])
-
-      // No "button" type widgets (the Disconnected placeholder)
-      expect(result.widgetTypes).not.toContain('button')
+      // Verify the seed widget is present via its label
+      const seedWidget = outerNode.getByLabel('seed', { exact: true })
+      await expect(seedWidget).toBeVisible()
     })
   }
 )
