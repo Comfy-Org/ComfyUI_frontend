@@ -100,6 +100,42 @@ describe('LGraph', () => {
     const fromOldSchema = new LGraph(oldSchemaGraph)
     expect(fromOldSchema).toMatchSnapshot('oldSchemaGraph')
   })
+  subgraphTest('should snap slots to same y-level', ({ emptySubgraph }) => {
+    const node = new LGraphNode('testname')
+    node.addInput('test', 'IMAGE')
+    emptySubgraph.add(node)
+
+    emptySubgraph.inputNode.pos = [0, 0]
+    // Reroute needs offset of ~20y to align with first slot
+    const reroute = new Reroute(1, emptySubgraph, [0, 20])
+
+    node.snapToGrid(10)
+    reroute.snapToGrid(10)
+    emptySubgraph.inputNode.snapToGrid(10)
+
+    node.arrange()
+    emptySubgraph.inputNode.arrange()
+
+    const yPos = node.getInputPos(0)[1]
+    expect(reroute.pos[1]).toBe(yPos)
+    expect(emptySubgraph.inputNode.emptySlot.pos[1]).toBe(yPos)
+
+    // Assign non-equal positions and repeat
+    emptySubgraph.inputNode.pos = [0, 43]
+    node.pos = [0, 50]
+    reroute.pos = [0, 63]
+
+    node.snapToGrid(10)
+    reroute.snapToGrid(10)
+    emptySubgraph.inputNode.snapToGrid(10)
+
+    node.arrange()
+    emptySubgraph.inputNode.arrange()
+
+    const yPos2 = node.getInputPos(0)[1]
+    expect(reroute.pos[1]).toBe(yPos2)
+    expect(emptySubgraph.inputNode.emptySlot.pos[1]).toBe(yPos2)
+  })
 })
 
 describe('Floating Links / Reroutes', () => {
@@ -967,41 +1003,5 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
     expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(new Set([10, 11, 12]))
     expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(new Set([20, 21, 22]))
-  })
-  subgraphTest('should snap slots to same y-level', ({ emptySubgraph }) => {
-    const node = new LGraphNode('testname')
-    node.addInput('test', 'IMAGE')
-    emptySubgraph.add(node)
-
-    emptySubgraph.inputNode.pos = [0, 0]
-    //Reroute needs offset of ~20y to align with first slot
-    const reroute = new Reroute(1, emptySubgraph, [0, 20])
-
-    node.snapToGrid(10)
-    reroute.snapToGrid(10)
-    emptySubgraph.inputNode.snapToGrid(10)
-
-    node.arrange()
-    emptySubgraph.inputNode.arrange()
-
-    const yPos = node.getInputPos(0)[1]
-    expect(reroute.pos[1]).toBe(yPos)
-    expect(emptySubgraph.inputNode.emptySlot.pos[1]).toBe(yPos)
-
-    //Assign non-equal positions and repeat
-    emptySubgraph.inputNode.pos = [0, 43]
-    node.pos = [0, 50]
-    reroute.pos = [0, 63]
-
-    node.snapToGrid(10)
-    reroute.snapToGrid(10)
-    emptySubgraph.inputNode.snapToGrid(10)
-
-    node.arrange()
-    emptySubgraph.inputNode.arrange()
-
-    const yPos2 = node.getInputPos(0)[1]
-    expect(reroute.pos[1]).toBe(yPos2)
-    expect(emptySubgraph.inputNode.emptySlot.pos[1]).toBe(yPos2)
   })
 })
