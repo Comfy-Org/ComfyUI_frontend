@@ -197,7 +197,8 @@ export class ComfyNodeDefImpl
   postProcessSearchScores(scores: SearchAuxScore): SearchAuxScore {
     const nodeFrequencyStore = useNodeFrequencyStore()
     const nodeFrequency = nodeFrequencyStore.getNodeFrequencyByName(this.name)
-    return [scores[0], -nodeFrequency, ...scores.slice(1)]
+    const sourcePriority = this.isCoreNode ? 0 : 1
+    return [scores[0], sourcePriority, -nodeFrequency, ...scores.slice(1)]
   }
 
   get nodeLifeCycleBadgeText(): string {

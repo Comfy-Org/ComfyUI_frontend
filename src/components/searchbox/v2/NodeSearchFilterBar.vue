@@ -101,13 +101,13 @@ const categoryButtons = computed(() => {
   if (hasBlueprintNodes) {
     buttons.push({ id: BLUEPRINT_CATEGORY, label: t('g.blueprints') })
   }
-  if (hasPartnerNodes) {
-    buttons.push({ id: 'partner-nodes', label: t('g.partner') })
-  }
   if (hasEssentialNodes) {
     buttons.push({ id: 'essentials', label: t('g.essentials') })
   }
   buttons.push({ id: 'comfy', label: t('g.comfy') })
+  if (hasPartnerNodes) {
+    buttons.push({ id: 'partner-nodes', label: t('g.partner') })
+  }
   if (hasCustomNodes) {
     buttons.push({ id: 'custom', label: t('g.extensions') })
   }
