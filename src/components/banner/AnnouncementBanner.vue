@@ -16,7 +16,7 @@
     </div>
     <button
       v-if="announcement.dismissible !== false"
-      class="shrink-0 cursor-pointer rounded p-0.5 opacity-70 transition-opacity hover:opacity-100"
+      class="shrink-0 cursor-pointer rounded-sm p-0.5 opacity-70 transition-opacity hover:opacity-100"
       @click="dismiss(announcement.id)"
     >
       <i class="pi pi-times text-xs" />
