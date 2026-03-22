@@ -50,23 +50,20 @@ test.describe('Vue Node Moving', () => {
   test('should not move node when pointer moves less than drag threshold', async ({
     comfyPage
   }) => {
-    const node = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
-    const initialPos = await node.boundingBox()
-    if (!initialPos) throw new Error('Load Checkpoint node not found')
+    const headerPos = await getLoadCheckpointHeaderPos(comfyPage)
 
     // Move only 2px — below the 3px drag threshold in useNodePointerInteractions
-    const startX = initialPos.x + 10
-    const startY = initialPos.y + 10
-    await comfyPage.page.mouse.move(startX, startY)
+    await comfyPage.page.mouse.move(headerPos.x, headerPos.y)
     await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(startX + 2, startY + 1, { steps: 5 })
+    await comfyPage.page.mouse.move(headerPos.x + 2, headerPos.y + 1, {
+      steps: 5
+    })
     await comfyPage.page.mouse.up()
     await comfyPage.nextFrame()
 
-    const afterPos = await node.boundingBox()
-    if (!afterPos) throw new Error('Load Checkpoint node not found after click')
-    expect(afterPos.x).toBeCloseTo(initialPos.x, 0)
-    expect(afterPos.y).toBeCloseTo(initialPos.y, 0)
+    const afterPos = await getLoadCheckpointHeaderPos(comfyPage)
+    expect(afterPos.x).toBeCloseTo(headerPos.x, 0)
+    expect(afterPos.y).toBeCloseTo(headerPos.y, 0)
 
     // The small movement should have selected the node, not dragged it
     expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
@@ -75,22 +72,19 @@ test.describe('Vue Node Moving', () => {
   test('should move node when pointer moves beyond drag threshold', async ({
     comfyPage
   }) => {
-    const node = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
-    const initialPos = await node.boundingBox()
-    if (!initialPos) throw new Error('Load Checkpoint node not found')
+    const headerPos = await getLoadCheckpointHeaderPos(comfyPage)
 
     // Move 50px — well beyond the 3px drag threshold
-    const startX = initialPos.x + 10
-    const startY = initialPos.y + 10
-    await comfyPage.page.mouse.move(startX, startY)
+    await comfyPage.page.mouse.move(headerPos.x, headerPos.y)
     await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(startX + 50, startY + 50, { steps: 20 })
+    await comfyPage.page.mouse.move(headerPos.x + 50, headerPos.y + 50, {
+      steps: 20
+    })
     await comfyPage.page.mouse.up()
     await comfyPage.nextFrame()
 
-    const afterPos = await node.boundingBox()
-    if (!afterPos) throw new Error('Load Checkpoint node not found after drag')
-    await expectPosChanged(initialPos, afterPos)
+    const afterPos = await getLoadCheckpointHeaderPos(comfyPage)
+    await expectPosChanged(headerPos, afterPos)
   })
 
   test(
