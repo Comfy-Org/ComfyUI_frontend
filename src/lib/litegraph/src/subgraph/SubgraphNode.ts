@@ -509,6 +509,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const prunedEntries: PromotedWidgetSource[] = []
 
     for (const entry of fallbackStoredEntries) {
+      if (!this.subgraph.getNodeById(entry.sourceNodeId)) continue
+
       const concreteKey = this._resolveConcretePromotionEntryKey(entry)
       if (concreteKey && linkedConcreteKeys.has(concreteKey)) continue
 
@@ -1049,6 +1051,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           }
           return null
         }
+        if (!this.subgraph.getNodeById(nodeId)) return null
         const entry: PromotedWidgetSource = {
           sourceNodeId: nodeId,
           sourceWidgetName: widgetName,
@@ -1060,8 +1063,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     store.setPromotions(this.rootGraph.id, this.id, entries)
 
-    // Write back resolved entries so legacy -1 format doesn't persist
-    if (raw.some(([id]) => id === '-1')) {
+    // Write back resolved entries so legacy or stale entries don't persist
+    if (entries.length !== raw.length) {
       this.properties.proxyWidgets = this._serializeEntries(entries)
     }
 
