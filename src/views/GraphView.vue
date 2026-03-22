@@ -1,4 +1,5 @@
 <template>
+  <AnnouncementBanner v-if="isCloud" />
   <div class="comfyui-body grid size-full overflow-hidden">
     <div id="comfyui-body-top" class="comfyui-body-top" />
     <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
@@ -47,6 +48,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { runWhenGlobalIdle } from '@/base/common/async'
+import AnnouncementBanner from '@/components/banner/AnnouncementBanner.vue'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'

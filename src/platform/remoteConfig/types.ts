@@ -12,6 +12,16 @@ type ServerHealthAlert = {
   badge?: string
 }
 
+/**
+ * Announcement banner configuration from the backend
+ */
+export type Announcement = {
+  id: string
+  message: string
+  severity: 'info' | 'warning' | 'critical'
+  dismissible?: boolean
+}
+
 type FirebaseRuntimeConfig = {
   apiKey: string
   authDomain: string
@@ -55,4 +65,5 @@ export type RemoteConfig = {
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   sentry_dsn?: string
+  announcements?: Announcement[]
 }
