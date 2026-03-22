@@ -1199,6 +1199,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.27.1'
   },
   {
+    id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
+    name: 'App Builder Vue Node switch dismissed',
+    type: 'hidden',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.VueNodes.AutoScaleLayout',
     category: ['Comfy', 'Nodes 2.0', 'AutoScaleLayout'],
     name: 'Auto-scale layout (Nodes 2.0)',

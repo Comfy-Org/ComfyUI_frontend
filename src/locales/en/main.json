@@ -343,9 +343,13 @@
     "frameNodes": "Frame Nodes",
     "listening": "Listening...",
     "ready": "Ready",
+    "play": "Play",
+    "pause": "Pause",
     "playPause": "Play/Pause",
     "playRecording": "Play Recording",
     "playing": "Playing",
+    "skipToStart": "Skip to Start",
+    "skipToEnd": "Skip to End",
     "stopPlayback": "Stop Playback",
     "playbackSpeed": "Playback Speed",
     "volume": "Volume",
@@ -3227,6 +3231,14 @@
     "title": "Introducing Nodes 2.0",
     "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
+  },
+  "appBuilder": {
+    "vueNodeSwitch": {
+      "title": "Switched over to Nodes 2.0",
+      "content": "For the best experience, App builder uses Nodes 2.0. You can switch back after building the app from the main menu.",
+      "dontShowAgain": "Don't show again",
+      "dismiss": "Dismiss"
+    }
   },
   "vueNodesMigration": {
     "message": "Prefer the legacy design?",
