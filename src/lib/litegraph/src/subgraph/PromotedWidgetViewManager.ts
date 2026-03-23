@@ -2,10 +2,7 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 
 type ViewManagerEntry = PromotedWidgetSource & {
   viewKey?: string
-  slotName?: string
 }
-
-type CreateView<TView> = (entry: ViewManagerEntry) => TView
 
 /**
  * Reconciles promoted widget entries to stable view instances.
@@ -18,9 +15,9 @@ export class PromotedWidgetViewManager<TView> {
   private cachedViews: TView[] | null = null
   private cachedEntryKeys: string[] | null = null
 
-  reconcile(
-    entries: readonly ViewManagerEntry[],
-    createView: CreateView<TView>
+  reconcile<TEntry extends ViewManagerEntry>(
+    entries: readonly TEntry[],
+    createView: (entry: TEntry) => TView
   ): TView[] {
     const entryKeys = entries.map((entry) =>
       this.makeKey(entry.sourceNodeId, entry.sourceWidgetName, entry.viewKey)

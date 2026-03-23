@@ -299,7 +299,7 @@ export class LGraphNode
    * Set to true when widget-backed input slot positions need recalculation.
    * Cleared after arrange() runs. Avoids per-frame O(N) scans in drawConnections.
    */
-  _widgetSlotsDirty = true
+  _widgetSlotsDirty = false
 
   locked?: boolean
 

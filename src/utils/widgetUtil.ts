@@ -85,6 +85,7 @@ export function renameWidget(
     }
   }
 
+  // Fires for all node types; listeners guard against non-subgraph nodes.
   node.graph?.trigger('node:slot-label:changed', {
     nodeId: node.id,
     slotType: NodeSlotType.INPUT

@@ -202,7 +202,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   get label(): string | undefined {
     const slot = this.getBoundSubgraphSlot()
-    if (slot) return slot.displayName ?? slot.name
+    if (slot) return slot.label ?? slot.displayName ?? slot.name
     return this.displayName
   }
 
@@ -214,7 +214,12 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   /**
    * Returns the cached bound subgraph slot reference, refreshing only when
-   * the subgraph node's input list has changed (version mismatch).
+   * the subgraph node's input list has changed (length mismatch).
+   *
+   * Note: Using length as the cache key works because the returned reference
+   * is the same mutable slot object. When slot properties (label, name) change,
+   * the caller reads fresh values from that reference.  The cache only needs
+   * to invalidate when slots are added or removed, which changes length.
    */
   private getBoundSubgraphSlot(): SubgraphSlotRef | undefined {
     const version = this.subgraphNode.inputs?.length ?? 0
@@ -292,17 +297,19 @@ class PromotedWidgetView implements IPromotedWidgetView {
     projected.value = this.value
     projected.label = this.label
 
-    projected.drawWidget(ctx, {
-      width: widgetWidth,
-      showText: !lowQuality,
-      suppressPromotedOutline: true,
-      previewImages: resolved.node.imgs
-    })
-
-    projected.y = originalY
-    projected.computedHeight = originalComputedHeight
-    projected.computedDisabled = originalComputedDisabled
-    projected.label = originalLabel
+    try {
+      projected.drawWidget(ctx, {
+        width: widgetWidth,
+        showText: !lowQuality,
+        suppressPromotedOutline: true,
+        previewImages: resolved.node.imgs
+      })
+    } finally {
+      projected.y = originalY
+      projected.computedHeight = originalComputedHeight
+      projected.computedDisabled = originalComputedDisabled
+      projected.label = originalLabel
+    }
   }
 
   onPointerDown(
