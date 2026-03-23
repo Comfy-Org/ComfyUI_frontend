@@ -880,7 +880,9 @@
     "extensionFileHint": "Esto puede deberse al siguiente script",
     "loadWorkflowTitle": "La carga se interrumpió debido a un error al recargar los datos del flujo de trabajo",
     "noStackTrace": "No hay seguimiento de pila disponible",
-    "promptExecutionError": "La ejecución del prompt falló"
+    "promptExecutionError": "La ejecución del prompt falló",
+    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "Your account is not authorized for this feature."
   },
   "errorOverlay": {
     "errorCount": "{count} ERROR | {count} ERRORES",

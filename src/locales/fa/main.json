@@ -880,7 +880,9 @@
     "extensionFileHint": "این ممکن است به دلیل اسکریپت زیر باشد",
     "loadWorkflowTitle": "بارگذاری به دلیل خطا در بارگذاری مجدد داده‌های workflow متوقف شد",
     "noStackTrace": "هیچ stacktraceی موجود نیست",
-    "promptExecutionError": "اجرای prompt با شکست مواجه شد"
+    "promptExecutionError": "اجرای prompt با شکست مواجه شد",
+    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "Your account is not authorized for this feature."
   },
   "errorOverlay": {
     "errorCount": "{count} خطا",

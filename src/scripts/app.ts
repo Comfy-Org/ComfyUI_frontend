@@ -1653,15 +1653,27 @@ export class ComfyApp {
             ) {
               // User is authenticated but not authorized (e.g. not whitelisted).
               // Show a clear message instead of a generic error or sign-in prompt.
-              // The response may be middleware JSON {"message": "..."} which doesn't
-              // match PromptResponse schema, so access the raw parsed object.
-              const raw = error.response as Record<string, unknown>
+              // The response may be middleware JSON {"message": "..."} or the
+              // standard {"error": {"message": "..."}} shape, so check both.
+              const raw =
+                error.response && typeof error.response === 'object'
+                  ? (error.response as Record<string, unknown>)
+                  : {}
+              const rawError =
+                raw.error && typeof raw.error === 'object'
+                  ? (raw.error as Record<string, unknown>)
+                  : undefined
               const detail =
                 typeof raw.message === 'string'
                   ? raw.message
-                  : 'Your account is not authorized for this feature.'
+                  : typeof rawError?.message === 'string'
+                    ? rawError.message
+                    : typeof raw.error === 'string'
+                      ? raw.error
+                      : t('errorDialog.accessRestrictedMessage')
               useDialogService().showErrorDialog(new Error(detail), {
-                title: 'Access Restricted'
+                title: t('errorDialog.accessRestrictedTitle'),
+                reportType: 'accessRestrictedError'
               })
             } else if (
               !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||

@@ -1884,7 +1884,9 @@
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
     "noStackTrace": "No stacktrace available",
     "extensionFileHint": "This may be due to the following script",
-    "promptExecutionError": "Prompt execution failed"
+    "promptExecutionError": "Prompt execution failed",
+    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "Your account is not authorized for this feature."
   },
   "apiNodesSignInDialog": {
     "title": "Sign In Required to Use API Nodes",

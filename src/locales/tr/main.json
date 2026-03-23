@@ -880,7 +880,9 @@
     "extensionFileHint": "Bu, aşağıdaki komut dosyasından kaynaklanıyor olabilir",
     "loadWorkflowTitle": "İş akışı verileri yeniden yüklenirken hata nedeniyle yükleme iptal edildi",
     "noStackTrace": "Yığın izi mevcut değil",
-    "promptExecutionError": "İstem yürütmesi başarısız oldu"
+    "promptExecutionError": "İstem yürütmesi başarısız oldu",
+    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "Your account is not authorized for this feature."
   },
   "errorOverlay": {
     "errorCount": "{count} HATA | {count} HATA",

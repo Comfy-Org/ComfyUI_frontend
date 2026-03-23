@@ -880,7 +880,9 @@
     "extensionFileHint": "다음 스크립트 때문일 수 있습니다",
     "loadWorkflowTitle": "워크플로 데이터를 다시 로드하는 중 오류로 인해 로드가 중단되었습니다",
     "noStackTrace": "스택 추적을 사용할 수 없습니다",
-    "promptExecutionError": "프롬프트 실행 실패"
+    "promptExecutionError": "프롬프트 실행 실패",
+    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "Your account is not authorized for this feature."
   },
   "errorOverlay": {
     "errorCount": "{count}개 오류",

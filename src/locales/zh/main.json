@@ -880,7 +880,9 @@
     "extensionFileHint": "这可能是由于以下脚本",
     "loadWorkflowTitle": "由于重新加载工作流数据出错，加载被中止",
     "noStackTrace": "无可用堆栈跟踪",
-    "promptExecutionError": "提示执行失败"
+    "promptExecutionError": "提示执行失败",
+    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "Your account is not authorized for this feature."
   },
   "errorOverlay": {
     "errorCount": "{count}个错误",

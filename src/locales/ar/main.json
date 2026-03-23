@@ -880,7 +880,9 @@
     "extensionFileHint": "قد يكون السبب هو السكربت التالي",
     "loadWorkflowTitle": "تم إلغاء التحميل بسبب خطأ في إعادة تحميل بيانات سير العمل",
     "noStackTrace": "لا توجد تتبع للمكدس متاحة",
-    "promptExecutionError": "فشل تنفيذ الطلب"
+    "promptExecutionError": "فشل تنفيذ الطلب",
+    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "Your account is not authorized for this feature."
   },
   "errorOverlay": {
     "errorCount": "{count} خطأ | {count} أخطاء",

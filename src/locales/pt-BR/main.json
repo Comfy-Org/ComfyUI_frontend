@@ -880,7 +880,9 @@
     "extensionFileHint": "Isso pode ser devido ao seguinte script",
     "loadWorkflowTitle": "Carregamento abortado devido a erro ao recarregar os dados do fluxo de trabalho",
     "noStackTrace": "Nenhum stacktrace disponível",
-    "promptExecutionError": "Falha na execução do prompt"
+    "promptExecutionError": "Falha na execução do prompt",
+    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "Your account is not authorized for this feature."
   },
   "errorOverlay": {
     "errorCount": "{count} ERRO | {count} ERROS",

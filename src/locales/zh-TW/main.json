@@ -880,7 +880,9 @@
     "extensionFileHint": "這可能是由於以下指令碼所致",
     "loadWorkflowTitle": "由於重新載入工作流程資料時發生錯誤，已中止載入",
     "noStackTrace": "沒有可用的堆疊追蹤",
-    "promptExecutionError": "提示執行失敗"
+    "promptExecutionError": "提示執行失敗",
+    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "Your account is not authorized for this feature."
   },
   "errorOverlay": {
     "errorCount": "{count} 個錯誤",
