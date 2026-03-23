@@ -1648,6 +1648,22 @@ export class ComfyApp {
               // Re-scan the full graph instead of using the server's single-node response.
               rescanAndSurfaceMissingNodes(this.rootGraph)
             } else if (
+              error instanceof PromptExecutionError &&
+              error.status === 403
+            ) {
+              // User is authenticated but not authorized (e.g. not whitelisted).
+              // Show a clear message instead of a generic error or sign-in prompt.
+              // The response may be middleware JSON {"message": "..."} which doesn't
+              // match PromptResponse schema, so access the raw parsed object.
+              const raw = error.response as Record<string, unknown>
+              const detail =
+                typeof raw.message === 'string'
+                  ? raw.message
+                  : 'Your account is not authorized for this feature.'
+              useDialogService().showErrorDialog(new Error(detail), {
+                title: 'Access Restricted'
+              })
+            } else if (
               !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||
               !(error instanceof PromptExecutionError)
             ) {
