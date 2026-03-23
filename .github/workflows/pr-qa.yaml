@@ -96,7 +96,8 @@ jobs:
           echo "number=${NUM}" >> "$GITHUB_OUTPUT"
 
           if [ -n "$NUM" ]; then
-            if gh pr view "$NUM" --repo "$REPO" --json number >/dev/null 2>&1; then
+            # Use the API to check if it's a PR (gh pr view can't distinguish)
+            if gh api "repos/${REPO}/pulls/${NUM}" --jq '.number' >/dev/null 2>&1; then
               echo "target_type=pr" >> "$GITHUB_OUTPUT"
               echo "Target: PR #$NUM"
             else
@@ -492,7 +493,7 @@ jobs:
           echo "number=${NUM}" >> "$GITHUB_OUTPUT"
 
           if [ -n "$NUM" ]; then
-            if gh pr view "$NUM" --repo "$REPO" --json number >/dev/null 2>&1; then
+            if gh api "repos/${REPO}/pulls/${NUM}" --jq '.number' >/dev/null 2>&1; then
               echo "target_type=pr" >> "$GITHUB_OUTPUT"
             else
               echo "target_type=issue" >> "$GITHUB_OUTPUT"
