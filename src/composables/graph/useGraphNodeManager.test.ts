@@ -197,14 +197,16 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
 
-    // Create a PromotedWidgetView with displayName="value" (subgraph input
+    // Create a PromotedWidgetView with identityName="value" (subgraph input
     // slot name) and sourceWidgetName="prompt" (interior widget name).
-    // PromotedWidgetView.name returns "value", but safeWidgetMapper sets
-    // SafeWidgetData.name to sourceWidgetName ("prompt").
+    // PromotedWidgetView.name returns "value" (identityName), but
+    // safeWidgetMapper sets SafeWidgetData.name to sourceWidgetName ("prompt").
     const promotedView = createPromotedWidgetView(
       subgraphNode,
       '10',
       'prompt',
+      undefined,
+      undefined,
       'value'
     )
 
@@ -241,6 +243,45 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     await nextTick()
 
     expect(widgetData?.slotMetadata?.linked).toBe(false)
+  })
+
+  it('sets promotedLabel from widget.label for promoted widget views', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: '*' }]
+    })
+    const interiorNode = new LGraphNode('interior')
+    interiorNode.addWidget('number', 'seed', 42, () => undefined, {})
+    const interiorInput = interiorNode.addInput('seed', '*')
+    interiorInput.widget = { name: 'seed' }
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 200 })
+    const graph = subgraphNode.graph!
+    graph.add(subgraphNode)
+
+    // Rename the subgraph input to simulate user rename
+    const subgraphInput = subgraph.inputs[0]
+    if (subgraphInput) subgraph.renameInput(subgraphInput, 'my_seed')
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const promotedWidget = nodeData?.widgets?.find(
+      (w) => w.promotedLabel !== undefined
+    )
+
+    expect(promotedWidget).toBeDefined()
+    expect(promotedWidget?.promotedLabel).toBe('my_seed')
+  })
+
+  it('does not set promotedLabel for regular widgets', () => {
+    const { graph, node } = createWidgetInputGraph()
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(node.id))
+    const regularWidget = nodeData?.widgets?.find((w) => w.name === 'prompt')
+
+    expect(regularWidget).toBeDefined()
+    expect(regularWidget?.promotedLabel).toBeUndefined()
   })
 
   it('prefers exact _widget input matches before same-name fallbacks for promoted widgets', () => {

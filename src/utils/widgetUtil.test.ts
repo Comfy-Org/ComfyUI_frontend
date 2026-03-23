@@ -7,14 +7,6 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
 
-vi.mock('@/core/graph/subgraph/resolvePromotedWidgetSource', () => ({
-  resolvePromotedWidgetSource: vi.fn()
-}))
-
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-
-const mockedResolve = vi.mocked(resolvePromotedWidgetSource)
-
 describe('getWidgetDefaultValue', () => {
   it('returns undefined for undefined spec', () => {
     expect(getWidgetDefaultValue(undefined)).toBeUndefined()
@@ -100,46 +92,68 @@ describe('renameWidget', () => {
     expect(widget.label).toBeUndefined()
   })
 
-  it('renames promoted widget source when node is a subgraph without explicit parents', () => {
-    const sourceWidget = makeWidget({ name: 'innerSeed' })
+  it('does not propagate rename to interior node widgets or inputs', () => {
+    const interiorWidget = makeWidget({ name: 'innerSeed', label: undefined })
     const interiorInput = {
       name: 'innerSeed',
+      label: undefined,
       widget: { name: 'innerSeed' }
     } as INodeInputSlot
     const interiorNode = makeNode({ inputs: [interiorInput] })
 
-    mockedResolve.mockReturnValue({
-      widget: sourceWidget,
-      node: interiorNode
-    })
-
+    // Promoted widget on SubgraphNode exterior
     const promotedWidget = makeWidget({
       name: 'seed',
       sourceNodeId: '5',
       sourceWidgetName: 'innerSeed'
     })
-    const subgraphNode = makeNode({ isSubgraph: true })
+    const subgraphInput = {
+      name: 'seed',
+      widget: { name: 'seed' }
+    } as INodeInputSlot
+    const subgraphNode = makeNode({
+      isSubgraph: true,
+      inputs: [subgraphInput]
+    })
 
     const result = renameWidget(promotedWidget, subgraphNode, 'Renamed')
 
     expect(result).toBe(true)
-    expect(sourceWidget.label).toBe('Renamed')
-    expect(interiorInput.label).toBe('Renamed')
+    // External label changed
     expect(promotedWidget.label).toBe('Renamed')
+    expect(subgraphInput.label).toBe('Renamed')
+    // Interior widget and input remain untouched
+    expect(interiorWidget.label).toBeUndefined()
+    expect(interiorInput.label).toBeUndefined()
+    // Interior node was never accessed
+    expect(interiorNode.inputs[0].label).toBeUndefined()
   })
 
-  it('does not resolve promoted widget source for non-subgraph node without parents', () => {
-    const promotedWidget = makeWidget({
+  it('only modifies the matching input, not other inputs', () => {
+    const widget = makeWidget({ name: 'seed' })
+    const matchingInput = {
       name: 'seed',
-      sourceNodeId: '5',
-      sourceWidgetName: 'innerSeed'
-    })
-    const node = makeNode({ isSubgraph: false })
+      widget: { name: 'seed' }
+    } as INodeInputSlot
+    const otherInput = {
+      name: 'steps',
+      widget: { name: 'steps' }
+    } as INodeInputSlot
+    const node = makeNode({ inputs: [matchingInput, otherInput] })
 
-    const result = renameWidget(promotedWidget, node, 'Renamed')
+    renameWidget(widget, node, 'My Seed')
+
+    expect(matchingInput.label).toBe('My Seed')
+    expect(otherInput.label).toBeUndefined()
+  })
+
+  it('handles node with no inputs gracefully', () => {
+    const widget = makeWidget({ name: 'seed' })
+    const node = makeNode({ inputs: [] })
+
+    const result = renameWidget(widget, node, 'Renamed')
 
     expect(result).toBe(true)
-    expect(mockedResolve).not.toHaveBeenCalled()
-    expect(promotedWidget.label).toBe('Renamed')
+    expect(widget.label).toBe('Renamed')
   })
 })

@@ -1,8 +1,34 @@
 import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
+
+/** Read interior node widget names from the subgraph without navigating into it. */
+async function getInteriorWidgetNames(
+  comfyPage: ComfyPage,
+  subgraphNodeId: string,
+  interiorType: string
+): Promise<string[]> {
+  return comfyPage.page.evaluate(
+    ([nodeId, type]) => {
+      const sgNode = window.app!.canvas.graph!.getNodeById(
+        nodeId
+      ) as unknown as SubgraphNode
+      const subgraph = sgNode?.subgraph
+      if (!subgraph) throw new Error('No subgraph found')
+      const interior = (subgraph._nodes as LGraphNode[]).find(
+        (n) => n.type === type
+      )
+      return ((interior?.widgets ?? []) as IBaseWidget[]).map((w) => w.name)
+    },
+    [subgraphNodeId, interiorType] as const
+  )
+}
 
 test.describe(
   'Subgraph Promoted Widget Renamed Labels',
@@ -57,13 +83,13 @@ test.describe(
         }, serialized as ComfyWorkflowJSON)
         await comfyPage.nextFrame()
 
-        const widgetNames = await comfyPage.page.evaluate((nodeId) => {
+        const widgetLabels = await comfyPage.page.evaluate((nodeId) => {
           const node = window.app!.canvas.graph!.getNodeById(nodeId)
-          return (node?.widgets ?? []).map((w) => w.name)
+          return (node?.widgets ?? []).map((w) => w.label)
         }, SUBGRAPH_NODE_ID)
 
-        expect(widgetNames).toContain('my_seed')
-        expect(widgetNames).toContain('num_steps')
+        expect(widgetLabels).toContain('my_seed')
+        expect(widgetLabels).toContain('num_steps')
       })
     })
 
@@ -98,12 +124,59 @@ test.describe(
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         // Verify the promoted widget now shows the new label
-        const widgetNames = await comfyPage.page.evaluate((nodeId) => {
+        const widgetLabels = await comfyPage.page.evaluate((nodeId) => {
           const node = window.app!.canvas.graph!.getNodeById(nodeId)
-          return (node?.widgets ?? []).map((w) => w.name)
+          return (node?.widgets ?? []).map((w) => w.label)
         }, SUBGRAPH_NODE_ID)
 
-        expect(widgetNames).toContain('renamed_seed')
+        expect(widgetLabels).toContain('renamed_seed')
+      })
+    })
+
+    test.describe('Rename non-propagation', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+      })
+
+      test('Renaming a promoted widget does not change interior node widget names', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        await comfyPage.nextFrame()
+
+        // Read interior widget names via the subgraph object (no navigation needed)
+        const interiorWidgetsBefore = await getInteriorWidgetNames(
+          comfyPage,
+          SUBGRAPH_NODE_ID,
+          'KSampler'
+        )
+
+        // Rename "seed" slot from root graph
+        const subgraphNode =
+          await comfyPage.nodeOps.getNodeRefById(SUBGRAPH_NODE_ID)
+        await subgraphNode.navigateIntoSubgraph()
+
+        await comfyPage.subgraph.rightClickInputSlot('seed')
+        await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
+        await comfyPage.nextFrame()
+        await comfyPage.page.waitForSelector('.graphdialog input', {
+          state: 'visible'
+        })
+        await comfyPage.page.fill('.graphdialog input', 'totally_new_name')
+        await comfyPage.page.keyboard.press('Enter')
+        await comfyPage.nextFrame()
+
+        // Navigate back to root
+        await comfyPage.subgraph.exitViaBreadcrumb()
+
+        // Verify interior widget names are unchanged
+        const interiorWidgetsAfter = await getInteriorWidgetNames(
+          comfyPage,
+          SUBGRAPH_NODE_ID,
+          'KSampler'
+        )
+
+        expect(interiorWidgetsAfter).toEqual(interiorWidgetsBefore)
       })
     })
 
@@ -128,8 +201,9 @@ test.describe(
           }))
         }, SUBGRAPH_NODE_ID)
 
-        const seedWidget = widgetNames.find((w) => w.name === 'my_seed')
-        const stepsWidget = widgetNames.find((w) => w.name === 'num_steps')
+        // name is now the stable identity (e.g. "seed"), label is the user rename
+        const seedWidget = widgetNames.find((w) => w.name === 'seed')
+        const stepsWidget = widgetNames.find((w) => w.name === 'steps')
 
         expect(seedWidget).toBeDefined()
         expect(stepsWidget).toBeDefined()

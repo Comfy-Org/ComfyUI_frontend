@@ -6,13 +6,15 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 // (promotedWidgetView → widgetMap → BaseWidget → LegacyWidget → barrel)
 import {
   CanvasPointer,
+  LGraph,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type {
   CanvasPointerEvent,
-  LGraphCanvas,
-  SubgraphNode
+  ExportedSubgraphInstance,
+  LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
@@ -33,6 +35,10 @@ import {
   resetSubgraphFixtureState,
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  renamedPromotedLabels,
+  SUBGRAPH_UUID
+} from '@/lib/litegraph/src/__fixtures__/renamedPromotedLabels'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -138,7 +144,20 @@ describe(createPromotedWidgetView, () => {
     expect(view.name).toBe('myWidget')
   })
 
-  test('name uses displayName when provided', () => {
+  test('name uses identityName when provided', () => {
+    const [subgraphNode] = setupSubgraph()
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      '1',
+      'myWidget',
+      'Custom Label',
+      undefined,
+      'value_1'
+    )
+    expect(view.name).toBe('value_1')
+  })
+
+  test('name falls back to sourceWidgetName when identityName is not provided', () => {
     const [subgraphNode] = setupSubgraph()
     const view = createPromotedWidgetView(
       subgraphNode,
@@ -146,7 +165,7 @@ describe(createPromotedWidgetView, () => {
       'myWidget',
       'Custom Label'
     )
-    expect(view.name).toBe('Custom Label')
+    expect(view.name).toBe('myWidget')
   })
 
   test('node getter returns the subgraphNode', () => {
@@ -328,17 +347,17 @@ describe(createPromotedWidgetView, () => {
     expect(linkedNode.widgets?.[0].value).toBe('updated')
   })
 
-  test('label falls back to displayName then widgetName', () => {
+  test('label falls back to displayName when no bound slot exists', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
     innerNode.addWidget('text', 'myWidget', 'val', () => {})
     const bareId = String(innerNode.id)
 
-    // No displayName → falls back to widgetName
+    // No displayName and no bound slot → undefined
     const view1 = createPromotedWidgetView(subgraphNode, bareId, 'myWidget')
-    expect(view1.label).toBe('myWidget')
+    expect(view1.label).toBeUndefined()
 
-    // With displayName → falls back to displayName
+    // With displayName but no bound slot → displayName
     const view2 = createPromotedWidgetView(
       subgraphNode,
       bareId,
@@ -988,7 +1007,7 @@ describe('SubgraphNode.widgets getter', () => {
     expect(secondNode.widgets?.[0].value).toBe('second-updated')
   })
 
-  test('renaming an input updates linked promoted view display names', () => {
+  test('renaming an input updates label but preserves stable identity name', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'seed', type: '*' }]
     })
@@ -1012,7 +1031,10 @@ describe('SubgraphNode.widgets getter', () => {
 
     const afterRename = promotedWidgets(subgraphNode)[0]
     if (!afterRename) throw new Error('Expected linked promoted view')
-    expect(afterRename.name).toBe('seed_renamed')
+    // name (identity) stays stable — used for slot matching
+    expect(afterRename.name).toBe('seed')
+    // label reflects the user-facing rename
+    expect(afterRename.label).toBe('seed_renamed')
   })
 
   test('caches view objects across getter calls (stable references)', () => {
@@ -2417,5 +2439,124 @@ describe('DOM widget promotion', () => {
     expect(mockDomWidgetStore.clearPositionOverride).toHaveBeenCalledWith(
       'dom-widget-widgetB'
     )
+  })
+})
+
+describe('fixture: renamed promoted labels', () => {
+  class WidgetNode extends LGraphNode {
+    constructor() {
+      super('WidgetNode')
+      const seedInput = this.addInput('seed', 'INT')
+      seedInput.widget = { name: 'seed' }
+      const stepsInput = this.addInput('steps', 'INT')
+      stepsInput.widget = { name: 'steps' }
+      this.addOutput('OUTPUT', '*')
+      this.addWidget('number', 'seed', 0, () => {})
+      this.addWidget('number', 'steps', 20, () => {})
+    }
+  }
+
+  function registerSubgraphOnCreated(graph: LGraph) {
+    graph.events.addEventListener('subgraph-created', (e) => {
+      const { subgraph, data } = e.detail
+      const id = data.id
+      class TestSubgraphNode extends SubgraphNode {
+        constructor() {
+          super(graph, subgraph, data as unknown as ExportedSubgraphInstance)
+        }
+      }
+      LiteGraph.registerNodeType(id, TestSubgraphNode)
+    })
+  }
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    resetSubgraphFixtureState()
+    LiteGraph.registerNodeType('test/WidgetNode', WidgetNode)
+  })
+
+  afterEach(() => {
+    LiteGraph.unregisterNodeType('test/WidgetNode')
+    LiteGraph.unregisterNodeType(SUBGRAPH_UUID)
+  })
+
+  function loadFixture() {
+    const graph = new LGraph()
+    registerSubgraphOnCreated(graph)
+    graph.configure(structuredClone(renamedPromotedLabels))
+
+    const subgraphNode = graph._nodes.find(
+      (n) => n.type === SUBGRAPH_UUID
+    )! as SubgraphNode
+    return { graph, subgraphNode }
+  }
+
+  test('promoted widgets have correct identity names after configure', () => {
+    const { subgraphNode } = loadFixture()
+
+    expect(subgraphNode.isSubgraphNode()).toBe(true)
+    const widgets = subgraphNode.widgets
+    expect(widgets.length).toBeGreaterThanOrEqual(2)
+
+    const names = widgets.map((w) => w.name)
+    expect(names).toContain('seed')
+    expect(names).toContain('steps')
+  })
+
+  test('promoted widget labels reflect user-renamed values', () => {
+    const { subgraphNode } = loadFixture()
+    const widgets = subgraphNode.widgets
+
+    const seedWidget = widgets.find((w) => w.name === 'seed')
+    const stepsWidget = widgets.find((w) => w.name === 'steps')
+
+    expect(seedWidget?.label).toBe('my_seed')
+    expect(stepsWidget?.label).toBe('num_steps')
+  })
+
+  test('renaming promoted widget does not change identity name', () => {
+    const { subgraphNode } = loadFixture()
+    const seedWidget = subgraphNode.widgets.find((w) => w.name === 'seed')!
+
+    seedWidget.label = 'renamed_seed'
+
+    expect(seedWidget.name).toBe('seed')
+    expect(seedWidget.label).toBe('renamed_seed')
+  })
+
+  test('interior node widget names are not affected by exterior rename', () => {
+    const { subgraphNode } = loadFixture()
+    const seedWidget = subgraphNode.widgets.find((w) => w.name === 'seed')!
+
+    seedWidget.label = 'exterior_rename'
+
+    const interiorNode = subgraphNode.subgraph!._nodes.find(
+      (n) => n.type === 'test/WidgetNode'
+    )!
+    const interiorSeedWidget = interiorNode.widgets?.find(
+      (w) => w.name === 'seed'
+    )
+    expect(interiorSeedWidget).toBeDefined()
+    expect(interiorSeedWidget?.name).toBe('seed')
+    expect(interiorSeedWidget?.label).toBeUndefined()
+  })
+
+  test('renamed labels survive serialize → configure round-trip', () => {
+    const { graph } = loadFixture()
+
+    // Fixture already has renamed labels (my_seed, num_steps).
+    // Verify they survive a full serialize → configure cycle.
+    const serialized = graph.serialize()
+    const graph2 = new LGraph()
+    registerSubgraphOnCreated(graph2)
+    graph2.configure(serialized)
+
+    const subgraphNode2 = graph2._nodes.find(
+      (n) => n.type === SUBGRAPH_UUID
+    )! as SubgraphNode
+    const seedWidget = subgraphNode2.widgets.find((w) => w.name === 'seed')
+    const stepsWidget = subgraphNode2.widgets.find((w) => w.name === 'steps')
+    expect(seedWidget?.label).toBe('my_seed')
+    expect(stepsWidget?.label).toBe('num_steps')
   })
 })
