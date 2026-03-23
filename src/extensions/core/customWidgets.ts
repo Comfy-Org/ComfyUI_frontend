@@ -169,6 +169,7 @@ function onCustomFloatCreated(this: LGraphNode) {
   })
 
   Object.defineProperty(valueWidget.options, 'gradient_stops', {
+    enumerable: true,
     get: () => this.properties.gradient_stops,
     set: (v) => {
       this.properties.gradient_stops = v
