@@ -63,14 +63,25 @@ test.describe(
       await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
       await comfyPage.nextFrame()
 
-      // Find the seed input slot label
+      // Find the seed input slot label from the subgraph's inputNode slots
       const seedSlotLabel = await page.evaluate(() => {
         const graph = window.app!.canvas.graph
         if (!graph || !('inputNode' in graph)) return null
-        const seedInput = graph.inputs?.find(
-          (i: { widget?: { name: string } }) => i.widget?.name === 'seed'
+        const inputNode = (
+          graph as {
+            inputNode: {
+              slots: Array<{
+                name: string
+                label?: string
+                widget?: { name: string }
+              }>
+            }
+          }
+        ).inputNode
+        const seedSlot = inputNode.slots.find(
+          (s) => s.name === 'seed' || s.widget?.name === 'seed'
         )
-        return seedInput?.label || seedInput?.name || null
+        return seedSlot?.label || seedSlot?.name || null
       })
       expect(seedSlotLabel).not.toBeNull()
 
