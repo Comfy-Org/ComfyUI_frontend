@@ -917,7 +917,7 @@ export class LGraphNode
       const getNamedValues = () => {
         if (info.widgets_values_named) return info.widgets_values_named
 
-        const map = this.constructor.nodeData?.valueMigrationDict
+        const map = this.constructor.nodeData?.fallbackWidgetsValuesNames
         if (!info.widgets_values || !map) return
         const namedValues: Record<string, TWidgetValue> = {}
         info.widgets_values.forEach((val, i) => {
@@ -928,10 +928,10 @@ export class LGraphNode
       const namedValues = getNamedValues()
       if (namedValues && LiteGraph.namedValuesRestore) {
         for (const widget of this.widgets ?? []) {
-          if (widget.name in namedValues) {
-            widget.value = namedValues[widget.name]
-            widget.callback?.(widget.value)
-          }
+          if (widget.serialize === false || !(widget.name in namedValues))
+            continue
+
+          widget.value = namedValues[widget.name]
         }
       } else if (info.widgets_values) {
         let i = 0
@@ -993,14 +993,14 @@ export class LGraphNode
       o.widgets_values_named = {}
       for (const [i, widget] of widgets.entries()) {
         if (widget.serialize === false) continue
-        const val = widget?.value
+        const val = widget.value
         // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
         const serialisedVal =
           val != null && typeof val === 'object'
             ? JSON.parse(JSON.stringify(val))
             : (val ?? null)
         o.widgets_values[i] = serialisedVal
-        if (val !== null) o.widgets_values_named[widget.name] = serialisedVal
+        o.widgets_values_named[widget.name] = serialisedVal
       }
     }
 

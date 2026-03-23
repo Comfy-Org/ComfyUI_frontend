@@ -313,7 +313,7 @@ export const zComfyNodeDef = z.object({
   essentials_category: z.string().optional(),
   /** Whether the blueprint is a global/installed blueprint (not user-created). */
   isGlobal: z.boolean().optional(),
-  valueMigrationDict: z.array(z.string()).optional()
+  fallbackWidgetsValuesNames: z.array(z.string()).optional()
 })
 
 export const zAutogrowOptions = z.object({
