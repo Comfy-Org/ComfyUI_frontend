@@ -2826,7 +2826,6 @@
       "title": "サブスクリプションはキャンセルされました"
     },
     "changeTo": "{plan}に変更",
-    "chooseBestPlanWorkspace": "ワークスペースに最適なプランを選択してください",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud ロゴ",
     "contactOwnerToSubscribe": "サブスクリプションのためにワークスペースのオーナーに連絡してください",

@@ -106,6 +106,10 @@ installPreservedQueryTracker(router, [
   {
     namespace: PRESERVED_QUERY_NAMESPACES.INVITE,
     keys: ['invite']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE,
+    keys: ['create_workspace']
   }
 ])
 

@@ -452,6 +452,25 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Show the team workspaces dialog for creating or switching workspaces.
+   * Optionally calls `onConfirm` after a workspace is successfully created.
+   */
+  async function showTeamWorkspacesDialog(
+    onConfirm?: (name: string) => void | Promise<void>
+  ) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/TeamWorkspacesDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'team-workspaces',
+      component,
+      props: { onConfirm },
+      dialogComponentProps: {
+        ...workspaceDialogPt
+      }
+    })
+  }
+
   async function showLeaveWorkspaceDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/LeaveWorkspaceDialogContent.vue')
@@ -566,6 +585,7 @@ export const useDialogService = () => {
     showSmallLayoutDialog,
     showDeleteWorkspaceDialog,
     showCreateWorkspaceDialog,
+    showTeamWorkspacesDialog,
     showLeaveWorkspaceDialog,
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
