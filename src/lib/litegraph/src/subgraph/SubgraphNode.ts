@@ -1220,7 +1220,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           this,
           nodeId,
           widgetName,
-          undefined,
+          input.label ?? subgraphInput.name,
           sourceNodeId,
           subgraphInput.name
         ),

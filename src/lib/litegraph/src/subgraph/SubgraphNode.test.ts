@@ -237,6 +237,51 @@ describe('SubgraphNode Synchronization', () => {
     )
     expect(matchingWidget).toBeDefined()
   })
+
+  it('should preserve renamed label through serialize/configure round-trip', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: 'INT' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'INT')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'INT')
+    interiorNode.addWidget('number', 'value', 0, () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedWidget = subgraphNode.widgets?.[0]
+    expect(promotedWidget).toBeDefined()
+
+    // Rename via the subgraph slot (simulates right-click rename)
+    subgraph.inputs[0].label = 'My Seed'
+    subgraphNode.inputs[0].label = 'My Seed'
+    subgraph.events.dispatch('renaming-input', {
+      input: subgraph.inputs[0],
+      index: 0,
+      oldName: 'seed',
+      newName: 'My Seed'
+    })
+
+    // Label should be visible before round-trip
+    const widgetBeforeRoundTrip = subgraphNode.widgets?.[0]
+    expect(widgetBeforeRoundTrip!.label || widgetBeforeRoundTrip!.name).toBe(
+      'My Seed'
+    )
+
+    // Serialize and reconfigure (simulates save/reload)
+    const serialized = subgraphNode.serialize()
+    subgraphNode.configure(serialized)
+
+    // Label should survive the round-trip
+    const widgetAfterRoundTrip = subgraphNode.widgets?.[0]
+    expect(widgetAfterRoundTrip).toBeDefined()
+    expect(widgetAfterRoundTrip!.label || widgetAfterRoundTrip!.name).toBe(
+      'My Seed'
+    )
+  })
 })
 
 describe('SubgraphNode widget name collision on rename', () => {
