@@ -182,14 +182,14 @@ const onSuccess = async () => {
 
 const signInWithGoogle = async () => {
   authError.value = ''
-  if (await authActions.signInWithGoogle()) {
+  if (await authActions.signInWithGoogle({ isNewUser: true })) {
     await onSuccess()
   }
 }
 
 const signInWithGithub = async () => {
   authError.value = ''
-  if (await authActions.signInWithGithub()) {
+  if (await authActions.signInWithGithub({ isNewUser: true })) {
     await onSuccess()
   }
 }
