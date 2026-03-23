@@ -91,8 +91,9 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private cachedDeepestByFrame?: { node: LGraphNode; widget: IBaseWidget }
   private cachedDeepestFrame = -1
 
-  /** Cached reference to the bound subgraph slot. */
+  /** Cached reference to the bound subgraph slot and its owning input. */
   private _boundSlot?: SubgraphSlotRef
+  private _boundSlotOwner?: { _subgraphSlot?: unknown }
 
   constructor(
     private readonly subgraphNode: SubgraphNode,
@@ -213,31 +214,37 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   /**
    * Returns the cached bound subgraph slot reference, invalidating when the
-   * cached slot is no longer present in the input list (e.g. after configure
-   * replaces _subgraphSlot objects).
+   * owning input's _subgraphSlot identity changes (e.g. after configure
+   * replaces slot objects).  O(1) on cache hit, O(n) on miss.
    */
   private getBoundSubgraphSlot(): SubgraphSlotRef | undefined {
-    if (this._boundSlot && this.isSlotStillBound(this._boundSlot)) {
+    // O(1) check: the owning input still holds the same slot reference
+    if (
+      this._boundSlot &&
+      this._boundSlotOwner &&
+      this._boundSlotOwner._subgraphSlot === this._boundSlot
+    ) {
       return this._boundSlot
     }
-    this._boundSlot = this.findBoundSubgraphSlot()
+    return this.refreshBoundSubgraphSlot()
+  }
+
+  private refreshBoundSubgraphSlot(): SubgraphSlotRef | undefined {
+    const result = this.findBoundSubgraphSlot()
+    this._boundSlot = result?.slot
+    this._boundSlotOwner = result?.owner
     return this._boundSlot
   }
 
-  private isSlotStillBound(slot: SubgraphSlotRef): boolean {
-    for (const input of this.subgraphNode.inputs ?? []) {
-      if (input._subgraphSlot === slot) return true
-    }
-    return false
-  }
-
-  private findBoundSubgraphSlot(): SubgraphSlotRef | undefined {
+  private findBoundSubgraphSlot():
+    | { slot: SubgraphSlotRef; owner: { _subgraphSlot?: unknown } }
+    | undefined {
     for (const input of this.subgraphNode.inputs ?? []) {
       const slot = input._subgraphSlot as SubgraphSlotRef | undefined
       if (!slot) continue
 
       // Exact identity match first
-      if (input._widget === this) return slot
+      if (input._widget === this) return { slot, owner: input }
 
       // Fallback: match by source IDs and stable name
       const w = input._widget
@@ -249,7 +256,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
         w.disambiguatingSourceNodeId === this.disambiguatingSourceNodeId &&
         w.name === this.name
       ) {
-        return slot
+        return { slot, owner: input }
       }
     }
     return undefined
