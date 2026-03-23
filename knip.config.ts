@@ -26,7 +26,8 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'packages/ingest-types': {
-      project: ['src/**/*.{js,ts}']
+      project: ['src/**/*.{js,ts}'],
+      entry: ['src/index.ts', 'src/zod.gen.ts']
     }
   },
   ignoreBinaries: ['python3'],
@@ -50,7 +51,9 @@ const config: KnipConfig = {
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js'
+    '.agents/checks/eslint.strict.config.js',
+    // Auto-generated registry types with unused exports
+    'packages/registry-types/src/comfyRegistryTypes.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']
