@@ -926,7 +926,7 @@ export class LGraphNode
         return namedValues
       }
       const namedValues = getNamedValues()
-      if (namedValues) {
+      if (namedValues && LiteGraph.namedValuesRestore) {
         for (const widget of this.widgets ?? []) {
           if (widget.name in namedValues) {
             widget.value = namedValues[widget.name]
