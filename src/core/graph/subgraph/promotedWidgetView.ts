@@ -203,13 +203,19 @@ class PromotedWidgetView implements IPromotedWidgetView {
   get label(): string | undefined {
     const slot = this.getBoundSubgraphSlot()
     if (slot) return slot.label ?? slot.displayName ?? slot.name
-    return this.displayName
+    const state = this.getWidgetState()
+    return state?.label ?? this.displayName
   }
 
   set label(value: string | undefined) {
     const slot = this.getBoundSubgraphSlot()
-    if (!slot) return
-    slot.label = value || undefined
+    if (slot) {
+      slot.label = value || undefined
+      return
+    }
+    // Fallback: write to widget value store when no bound slot exists
+    const state = this.getWidgetState()
+    if (state) state.label = value
   }
 
   /**

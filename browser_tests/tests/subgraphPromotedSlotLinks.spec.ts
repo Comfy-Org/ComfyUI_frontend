@@ -75,10 +75,21 @@ test.describe(
         await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
         await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
 
-        // Load subgraph workflow and let draft persist
+        // Load subgraph workflow and wait for draft to persist
         await comfyPage.workflow.loadWorkflow(LINKED_WORKFLOW)
         await comfyPage.nextFrame()
-        await comfyPage.page.waitForTimeout(1000)
+        await expect
+          .poll(
+            () =>
+              comfyPage.page.evaluate(() => {
+                const keys = Object.keys(localStorage)
+                return keys.some((k) =>
+                  k.startsWith('Comfy.Workflow.Draft.v2:')
+                )
+              }),
+            { timeout: 3000 }
+          )
+          .toBe(true)
 
         // Switch to legacy and reload — app restores draft in legacy mode
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
@@ -129,8 +140,19 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(LINKED_WORKFLOW)
         await comfyPage.vueNodes.waitForNodes()
 
-        // 3. Wait for debounced draft persistence (512ms debounce + margin)
-        await comfyPage.page.waitForTimeout(1000)
+        // 3. Wait for debounced draft persistence to complete
+        await expect
+          .poll(
+            () =>
+              comfyPage.page.evaluate(() => {
+                const keys = Object.keys(localStorage)
+                return keys.some((k) =>
+                  k.startsWith('Comfy.Workflow.Draft.v2:')
+                )
+              }),
+            { timeout: 3000 }
+          )
+          .toBe(true)
 
         // 4. Reload — app restores the draft via tryLoadGraph (single configure)
         await comfyPage.page.reload({ waitUntil: 'networkidle' })
