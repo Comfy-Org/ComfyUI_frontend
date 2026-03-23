@@ -183,13 +183,13 @@ const toggleState = () => {
 }
 
 const signInWithGoogle = async () => {
-  if (await authActions.signInWithGoogle()) {
+  if (await authActions.signInWithGoogle({ isNewUser: !isSignIn.value })) {
     onSuccess()
   }
 }
 
 const signInWithGithub = async () => {
-  if (await authActions.signInWithGithub()) {
+  if (await authActions.signInWithGithub({ isNewUser: !isSignIn.value })) {
     onSuccess()
   }
 }
