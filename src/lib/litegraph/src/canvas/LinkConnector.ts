@@ -267,6 +267,7 @@ export class LinkConnector {
     state.draggingExistingLinks = true
 
     this._setLegacyLinks(false)
+    this.events.dispatch('connecting', { connectingTo: 'input' })
   }
 
   /** Drag all links from an output to a new output. */
@@ -378,6 +379,7 @@ export class LinkConnector {
     state.connectingTo = 'output'
 
     this._setLegacyLinks(true)
+    this.events.dispatch('connecting', { connectingTo: 'output' })
   }
 
   /**
