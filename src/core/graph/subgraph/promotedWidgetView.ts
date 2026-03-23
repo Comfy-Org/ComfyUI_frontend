@@ -91,9 +91,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private cachedDeepestByFrame?: { node: LGraphNode; widget: IBaseWidget }
   private cachedDeepestFrame = -1
 
-  /** Cached reference to the bound subgraph slot, set at construction. */
+  /** Cached reference to the bound subgraph slot. */
   private _boundSlot?: SubgraphSlotRef
-  private _boundSlotVersion = -1
 
   constructor(
     private readonly subgraphNode: SubgraphNode,
@@ -213,21 +212,23 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   /**
-   * Returns the cached bound subgraph slot reference, refreshing only when
-   * the subgraph node's input list has changed (length mismatch).
-   *
-   * Note: Using length as the cache key works because the returned reference
-   * is the same mutable slot object. When slot properties (label, name) change,
-   * the caller reads fresh values from that reference.  The cache only needs
-   * to invalidate when slots are added or removed, which changes length.
+   * Returns the cached bound subgraph slot reference, invalidating when the
+   * cached slot is no longer present in the input list (e.g. after configure
+   * replaces _subgraphSlot objects).
    */
   private getBoundSubgraphSlot(): SubgraphSlotRef | undefined {
-    const version = this.subgraphNode.inputs?.length ?? 0
-    if (this._boundSlotVersion === version) return this._boundSlot
-
+    if (this._boundSlot && this.isSlotStillBound(this._boundSlot)) {
+      return this._boundSlot
+    }
     this._boundSlot = this.findBoundSubgraphSlot()
-    this._boundSlotVersion = version
     return this._boundSlot
+  }
+
+  private isSlotStillBound(slot: SubgraphSlotRef): boolean {
+    for (const input of this.subgraphNode.inputs ?? []) {
+      if (input._subgraphSlot === slot) return true
+    }
+    return false
   }
 
   private findBoundSubgraphSlot(): SubgraphSlotRef | undefined {
@@ -235,12 +236,18 @@ class PromotedWidgetView implements IPromotedWidgetView {
       const slot = input._subgraphSlot as SubgraphSlotRef | undefined
       if (!slot) continue
 
+      // Exact identity match first
+      if (input._widget === this) return slot
+
+      // Fallback: match by source IDs and stable name
       const w = input._widget
       if (
         w &&
         isPromotedWidgetView(w) &&
         w.sourceNodeId === this.sourceNodeId &&
-        w.sourceWidgetName === this.sourceWidgetName
+        w.sourceWidgetName === this.sourceWidgetName &&
+        w.disambiguatingSourceNodeId === this.disambiguatingSourceNodeId &&
+        w.name === this.name
       ) {
         return slot
       }

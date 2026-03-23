@@ -1,5 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -55,6 +56,11 @@ export function renameWidget(
   if (input) {
     input.label = newLabel || undefined
   }
+
+  node.graph?.trigger('node:slot-label:changed', {
+    nodeId: node.id,
+    slotType: NodeSlotType.INPUT
+  })
 
   return true
 }

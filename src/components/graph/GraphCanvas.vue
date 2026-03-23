@@ -274,9 +274,9 @@ watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
 // Force a full lifecycle reset when switching from legacy to Vue mode.
 // Multiple ResizeObservers fire sequentially, so debounce onChange to
 // wait until all measurement cycles have settled before resetting.
-watch(shouldRenderVueNodes, (enabled) => {
+watch(shouldRenderVueNodes, (enabled, _oldEnabled, onCleanup) => {
   if (enabled && comfyApp.canvas?.graph) {
-    let timer: ReturnType<typeof setTimeout>
+    let timer: ReturnType<typeof setTimeout> | undefined
     const cleanup = () => {
       clearTimeout(timer)
       clearTimeout(fallback)
@@ -286,14 +286,15 @@ watch(shouldRenderVueNodes, (enabled) => {
       clearTimeout(timer)
       timer = setTimeout(() => {
         cleanup()
-        handleVueNodeLifecycleReset()
+        void handleVueNodeLifecycleReset()
       }, 800)
     })
     // Fallback: if onChange never fires (e.g. empty graph), reset after 3s
     const fallback = setTimeout(() => {
       cleanup()
-      handleVueNodeLifecycleReset()
+      void handleVueNodeLifecycleReset()
     }, 3000)
+    onCleanup(cleanup)
   }
 })
 
