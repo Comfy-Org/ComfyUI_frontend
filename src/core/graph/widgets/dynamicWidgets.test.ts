@@ -1,14 +1,15 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
 import { describe, expect, test, vi } from 'vitest'
+import {
+  addAutogrow,
+  addDynamicCombo
+} from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { HasInitialMinSize } from '@/services/litegraphService'
 
 setActivePinia(createTestingPinia())
-type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
 type TestAutogrowNode = LGraphNode & {
   comfyDynamic: { autogrow: Record<string, unknown> }
 }
@@ -19,43 +20,6 @@ function nextTick() {
   return new Promise<void>((r) => requestAnimationFrame(() => r()))
 }
 
-function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
-  const namePrefix = `${node.widgets?.length ?? 0}`
-  function getSpec(
-    inputs: DynamicInputs,
-    depth: number = 0
-  ): { key: string; inputs: object }[] {
-    return inputs.map((group, groupIndex) => {
-      const inputs = group.map((input, inputIndex) => [
-        `${namePrefix}.${depth}.${inputIndex}`,
-        Array.isArray(input)
-          ? ['COMFY_DYNAMICCOMBO_V3', { options: getSpec(input, depth + 1) }]
-          : [input, { tooltip: `${groupIndex}` }]
-      ])
-      return {
-        key: `${groupIndex}`,
-        inputs: { required: Object.fromEntries(inputs) }
-      }
-    })
-  }
-  const inputSpec: Required<InputSpec> = [
-    'COMFY_DYNAMICCOMBO_V3',
-    { options: getSpec(inputs) }
-  ]
-  addNodeInput(
-    node,
-    transformInputSpecV1ToV2(inputSpec, { name: namePrefix, isOptional: false })
-  )
-}
-function addAutogrow(node: LGraphNode, template: unknown) {
-  addNodeInput(
-    node,
-    transformInputSpecV1ToV2(['COMFY_AUTOGROW_V3', { template }], {
-      name: `${node.inputs.length}`,
-      isOptional: false
-    })
-  )
-}
 function connectInput(node: LGraphNode, inputIndex: number, graph: LGraph) {
   const node2 = testNode()
   node2.addOutput('out', '*')
@@ -65,10 +29,6 @@ function connectInput(node: LGraphNode, inputIndex: number, graph: LGraph) {
 function testNode() {
   const node: LGraphNode & Partial<HasInitialMinSize> = new LGraphNode('test')
   node.widgets = []
-  node._initialMinSize = { width: 1, height: 1 }
-  node.constructor.nodeData = {
-    name: 'testnode'
-  } as typeof node.constructor.nodeData
   return node as LGraphNode & Required<Pick<LGraphNode, 'widgets'>>
 }
 
