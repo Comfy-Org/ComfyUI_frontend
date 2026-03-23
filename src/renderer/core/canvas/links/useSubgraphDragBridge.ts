@@ -204,10 +204,14 @@ export function useSubgraphDragBridge() {
       const hoverChanged =
         hoveredSlotKey !== session.lastHoverSlotKey ||
         hoveredNodeId !== session.lastHoverNodeId
+      // Recompute node-surface candidates even without a hover change when
+      // the pointer is on a node background (no specific slot hovered).
+      const shouldResolveCandidate =
+        hoverChanged || (hoveredSlotKey == null && hoveredNodeId != null)
 
       let candidate = dragState.candidate
 
-      if (hoverChanged) {
+      if (shouldResolveCandidate) {
         const context = { adapter, graph, session }
         const slotCandidate = resolveSlotTargetCandidate(target, context)
         const nodeCandidate = resolveNodeSurfaceSlotCandidate(target, context)
