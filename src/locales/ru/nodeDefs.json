@@ -1736,6 +1736,10 @@
         "name": "замкнутый_цикл",
         "tooltip": "Замыкать ли цикл контекстного окна; применимо только к циклическим расписаниям."
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "Список индексов латентных пространств, которые нужно сохранить в тензорах кондиционирования для каждого окна. Например, если указать '0', для каждого окна будет использоваться исходное стартовое изображение."
+      },
       "context_length": {
         "name": "длина_контекста",
         "tooltip": "Длина контекстного окна."
@@ -1767,6 +1771,10 @@
       "model": {
         "name": "модель",
         "tooltip": "Модель, к которой применяются контекстные окна во время сэмплирования."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Разделять ли несколько кондиционирований (созданных с помощью ConditionCombine) по каждому окну на основе индекса региона."
       }
     },
     "outputs": {
@@ -3815,6 +3823,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Первое изображение из процесса мышления модели. Доступно только при уровне мышления HIGH и модальности IMAGE+TEXT."
       }
     }
   },
@@ -11941,6 +11953,91 @@
       },
       "clip_name4": {
         "name": "clip_name4"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverImageToSVGNode": {
+    "description": "Векторизация растрового изображения в SVG с помощью Quiver AI.",
+    "display_name": "Quiver Image to SVG",
+    "inputs": {
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "Автоматически обрезать по доминирующему объекту."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Входное изображение для векторизации."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для векторизации SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "Генерация SVG по текстовому запросу с помощью Quiver AI.",
+    "display_name": "Quiver Text to SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "Дополнительные рекомендации по стилю или форматированию."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для генерации SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого SVG-результата."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "До 4 референсных изображений для направления генерации."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
       }
     },
     "outputs": {
