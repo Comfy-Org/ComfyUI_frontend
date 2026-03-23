@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "パスワードリセットを送信しました",
   "cloudForgotPassword_sendResetLink": "リセットリンクを送信",
   "cloudForgotPassword_title": "パスワードを忘れた場合",
+  "cloudNotification": {
+    "continueLocally": "ローカルで続行",
+    "exploreCloud": "クラウドを無料で試す",
+    "feature1Title": "毎月400クレジット無料",
+    "feature2Title": "どこでも即時利用可能",
+    "feature3Title": "すぐに使えるモデル",
+    "feature4Title": "人気カスタムノードパックをプリインストール",
+    "footer": "ComfyUIは無料かつオープンソースのままです。クラウド利用は任意です。",
+    "message": "セットアップから作成まで数秒。人気モデル、拡張機能、強力なGPUがすぐに利用可能。",
+    "title": "ComfyUIをクラウドで実行"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -502,6 +513,7 @@
   "cloudWaitlist_contactLink": "こちら",
   "cloudWaitlist_questionsText": "質問がありますか？お問い合わせください",
   "color": {
+    "alpha": "アルファ",
     "black": "黒",
     "blue": "青",
     "brown": "ブラウン",
@@ -509,11 +521,15 @@
     "cyan": "シアン",
     "default": "デフォルト",
     "green": "緑",
+    "hex": "Hex",
+    "hue": "色相",
     "noColor": "色なし",
     "pale_blue": "淡い青",
     "pink": "ピンク",
     "purple": "パープル",
     "red": "赤",
+    "rgba": "RGBA",
+    "saturationBrightness": "色の彩度と明度",
     "yellow": "黄色"
   },
   "comfyHubProfile": {
@@ -648,6 +664,7 @@
     "Open in Mask Editor": "マスクエディタで開く",
     "Outputs": "出力",
     "Paste": "貼り付け",
+    "Paste Image": "画像を貼り付け",
     "Pin": "ピン",
     "Properties": "プロパティ",
     "Properties Panel": "プロパティパネル",
@@ -731,6 +748,10 @@
       "tooltip": "Comfy全体で支払いが統一されました。すべてComfyクレジットで動作します：\n- パートナーノード（旧APIノード）\n- クラウドワークフロー\n\n既存のパートナーノード残高はクレジットに変換されました。"
     },
     "yourCreditBalance": "あなたのクレジット残高"
+  },
+  "curveWidget": {
+    "linear": "リニア",
+    "monotone_cubic": "スムーズ"
   },
   "dataTypes": {
     "*": "*",
@@ -922,9 +943,11 @@
     "2x": "2倍速",
     "about": "情報",
     "add": "追加",
+    "addNewKeybinding": "新しいキーバインドを追加",
     "addNode": "ノードを追加...",
     "addNodeFilterCondition": "ノードフィルター条件を追加",
     "all": "すべて",
+    "allKeybindingsReset": "すべてのキーバインドがデフォルトにリセットされました",
     "amount": "量",
     "apply": "適用する",
     "architecture": "アーキテクチャ",
@@ -943,6 +966,7 @@
     "cancelled": "キャンセル済み",
     "capture": "キャプチャ",
     "category": "カテゴリ",
+    "changeKeybinding": "キーバインドを変更",
     "chart": "チャート",
     "chartLowercase": "チャート",
     "choose_file_to_upload": "アップロードするファイルを選択",
@@ -1095,6 +1119,7 @@
     "moreWorkflows": "さらに多くのワークフロー",
     "mostRelevant": "最も関連性の高い",
     "multiSelectDropdown": "複数選択ドロップダウン",
+    "nMoreKeybindings": "+ {count} 件以上",
     "name": "名前",
     "newFolder": "新しいフォルダー",
     "next": "次へ",
@@ -1132,6 +1157,8 @@
     "playRecording": "録音を再生",
     "playbackSpeed": "再生速度",
     "playing": "再生中",
+    "preloadError": "必要なリソースの読み込みに失敗しました。ページを再読み込みしてください。",
+    "preloadErrorTitle": "読み込みエラー",
     "preview": "プレビュー",
     "previousImage": "前の画像",
     "profile": "プロフィール",
@@ -1155,7 +1182,11 @@
     "releaseTitle": "{package} {version} リリース",
     "reloadToApplyChanges": "変更を適用するには再読み込みしてください",
     "remove": "削除",
+    "removeAll": "すべて削除",
+    "removeAllKeybindingsMessage": "このコマンドのすべてのキーバインドが削除されます",
+    "removeAllKeybindingsTitle": "すべてのキーバインドを削除しますか？",
     "removeImage": "画像を削除",
+    "removeKeybinding": "キーバインドを削除",
     "removeTag": "タグを削除",
     "removeVideo": "ビデオを削除",
     "rename": "名前を変更",
@@ -1164,7 +1195,10 @@
     "reportSent": "レポートが送信されました",
     "reset": "リセット",
     "resetAll": "すべてリセット",
+    "resetAllKeybindingsMessage": "すべてのキーバインドがデフォルト値にリセットされます。この操作は元に戻せません。",
+    "resetAllKeybindingsTitle": "すべてのキーバインドをリセットしますか？",
     "resetAllKeybindingsTooltip": "すべてのキーバインディングをデフォルトにリセット",
+    "resetToDefault": "デフォルトにリセット",
     "resizeFromBottomLeft": "左下隅からリサイズ",
     "resizeFromBottomRight": "右下隅からリサイズ",
     "resizeFromTopLeft": "左上隅からリサイズ",
@@ -1584,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "バージョン{version}のコアノード:",
     "outdatedVersion": "このワークフローは新しいバージョンのComfyUI（{version}）で作成されました。一部のノードが正しく動作しない場合があります。",
-    "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。"
+    "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。",
+    "unknownVersion": "不明"
   },
   "maintenance": {
     "None": "なし",
@@ -2406,6 +2441,7 @@
     "groupSettings": "グループ設定",
     "groups": "グループ",
     "hideAdvancedInputsButton": "詳細入力を非表示",
+    "hideAdvancedShort": "詳細を非表示",
     "hideInput": "入力を非表示",
     "info": "情報",
     "inputs": "入力",
@@ -2420,7 +2456,9 @@
       "collapseNodes": "参照ノードを非表示",
       "confirmSelection": "選択を確定",
       "copyModelName": "モデル名をコピー",
+      "copyUrl": "URLをコピー",
       "customNodeDownloadDisabled": "クラウド環境ではこのセクションのカスタムノード用モデルのインポートはサポートされていません。標準のローダーノードを使用するか、下記のライブラリからモデルを代用してください。",
+      "downloadAll": "すべてダウンロード",
       "expandNodes": "参照ノードを表示",
       "import": "インポート",
       "importAnyway": "強制的にインポート",
@@ -2487,6 +2525,7 @@
     "seeError": "エラーを見る",
     "settings": "設定",
     "showAdvancedInputsButton": "詳細入力を表示",
+    "showAdvancedShort": "詳細を表示",
     "showInput": "入力を表示",
     "title": "ノードが選択されていません | 1件のノードが選択されています | {count}件のノードが選択されています",
     "togglePanel": "プロパティパネルの切り替え",
@@ -3034,7 +3073,6 @@
       "title": "サブスクリプションはキャンセルされました"
     },
     "changeTo": "{plan}に変更",
-    "chooseBestPlanWorkspace": "ワークスペースに最適なプランを選択してください",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud ロゴ",
     "contactOwnerToSubscribe": "サブスクリプションのためにワークスペースのオーナーに連絡してください",

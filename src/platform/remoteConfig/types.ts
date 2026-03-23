@@ -54,4 +54,5 @@ export type RemoteConfig = {
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
+  sentry_dsn?: string
 }

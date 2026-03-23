@@ -13850,7 +13850,7 @@
       },
       "steps": {
         "name": "steps",
-        "tooltip": "Optional: The number of steps to LoRA has been trained for, used to name the saved file."
+        "tooltip": "Optional: The number of steps the LoRA has been trained for, used to name the saved file."
       }
     }
   },
@@ -15251,6 +15251,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "display_name": "Hunyuan3D: 3D Texture Edit",
+    "description": "After inputting the 3D model, perform 3D model texture redrawing.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model in FBX format. Model should have less than 100000 faces."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describes texture editing. Supports up to 1024 UTF-8 characters."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Image(s) to Model",
     "inputs": {
@@ -15298,6 +15333,22 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
         "tooltip": null
       }
     }
@@ -15399,6 +15450,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }
@@ -15918,7 +15973,7 @@
       },
       "training_dtype": {
         "name": "training_dtype",
-        "tooltip": "The dtype to use for training."
+        "tooltip": "The dtype to use for training. 'none' preserves the model's native compute dtype instead of overriding it. For fp16 models, GradScaler is automatically enabled."
       },
       "lora_dtype": {
         "name": "lora_dtype",
@@ -15938,7 +15993,7 @@
       },
       "offloading": {
         "name": "offloading",
-        "tooltip": "Offload the Model to RAM. Requires Bypass Mode."
+        "tooltip": "Offload model weights to CPU during training to save GPU memory."
       },
       "existing_lora": {
         "name": "existing_lora",

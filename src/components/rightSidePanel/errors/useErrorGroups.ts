@@ -395,7 +395,8 @@ export function useErrorGroups(
         {
           message: `${e.exception_type}: ${e.exception_message}`,
           details: e.traceback.join('\n'),
-          isRuntimeError: true
+          isRuntimeError: true,
+          exceptionType: e.exception_type
         }
       ],
       filterBySelection
@@ -582,14 +583,15 @@ export function useErrorGroups(
     >()
 
     for (const c of candidates) {
-      const groupKey: GroupKey = c.isAssetSupported
-        ? c.directory || null
-        : UNSUPPORTED
+      const groupKey: GroupKey =
+        c.isAssetSupported || !isCloud ? c.directory || null : UNSUPPORTED
 
       const existing = map.get(groupKey)
       if (existing) {
         existing.candidates.push(c)
       } else {
+        // All candidates in the same directory share the same isAssetSupported
+        // value in practice (a directory is either asset-supported or not).
         map.set(groupKey, {
           candidates: [c],
           isAssetSupported: c.isAssetSupported

@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "Запрос на сброс пароля отправлен",
   "cloudForgotPassword_sendResetLink": "Отправить ссылку для сброса",
   "cloudForgotPassword_title": "Забыли пароль",
+  "cloudNotification": {
+    "continueLocally": "Продолжить локально",
+    "exploreCloud": "Попробовать облако бесплатно",
+    "feature1Title": "400 бесплатных кредитов в месяц",
+    "feature2Title": "Работает везде и мгновенно",
+    "feature3Title": "Модели готовы к использованию",
+    "feature4Title": "Лучшие пользовательские пакеты узлов предустановлены",
+    "footer": "ComfyUI остаётся бесплатным и с открытым исходным кодом. Облако — по желанию.",
+    "message": "От настройки до создания за считанные секунды. Популярные модели, расширения и мощные GPU — всё готово, когда вы готовы.",
+    "title": "Запустите ComfyUI в облаке"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -502,6 +513,7 @@
   "cloudWaitlist_contactLink": "здесь",
   "cloudWaitlist_questionsText": "Есть вопросы? Свяжитесь с нами",
   "color": {
+    "alpha": "Альфа",
     "black": "Черный",
     "blue": "Синий",
     "brown": "Коричневый",
@@ -509,11 +521,15 @@
     "cyan": "Голубой",
     "default": "По умолчанию",
     "green": "Зелёный",
+    "hex": "Hex",
+    "hue": "Оттенок",
     "noColor": "Без цвета",
     "pale_blue": "Бледно-синий",
     "pink": "Розовый",
     "purple": "Фиолетовый",
     "red": "Красный",
+    "rgba": "RGBA",
+    "saturationBrightness": "Насыщенность и яркость цвета",
     "yellow": "Жёлтый"
   },
   "comfyHubProfile": {
@@ -648,6 +664,7 @@
     "Open in Mask Editor": "Открыть в редакторе масок",
     "Outputs": "Выходы",
     "Paste": "Вставить",
+    "Paste Image": "Вставить изображение",
     "Pin": "Закрепить",
     "Properties": "Свойства",
     "Properties Panel": "Панель свойств",
@@ -731,6 +748,10 @@
       "tooltip": "Мы объединили платежи в Comfy. Теперь всё работает на Comfy Credits:\n- Партнерские узлы (ранее API-узлы)\n- Облачные рабочие процессы\n\nВаш существующий баланс партнерских узлов был преобразован в кредиты."
     },
     "yourCreditBalance": "Ваш баланс кредитов"
+  },
+  "curveWidget": {
+    "linear": "Линейная",
+    "monotone_cubic": "Сглаженная"
   },
   "dataTypes": {
     "*": "*",
@@ -922,9 +943,11 @@
     "2x": "2x",
     "about": "О программе",
     "add": "Добавить",
+    "addNewKeybinding": "Добавить новое сочетание клавиш",
     "addNode": "Добавить узел...",
     "addNodeFilterCondition": "Добавить условие фильтрации узла",
     "all": "Все",
+    "allKeybindingsReset": "Все сочетания клавиш сброшены по умолчанию",
     "amount": "Количество",
     "apply": "Применить",
     "architecture": "Архитектура",
@@ -943,6 +966,7 @@
     "cancelled": "Отменено",
     "capture": "захват",
     "category": "Категория",
+    "changeKeybinding": "Изменить сочетание клавиш",
     "chart": "Диаграмма",
     "chartLowercase": "диаграмма",
     "choose_file_to_upload": "выберите файл для загрузки",
@@ -1095,6 +1119,7 @@
     "moreWorkflows": "Больше рабочих процессов",
     "mostRelevant": "Наиболее релевантные",
     "multiSelectDropdown": "Выпадающий список множественного выбора",
+    "nMoreKeybindings": "+ ещё {count}",
     "name": "Имя",
     "newFolder": "Новая папка",
     "next": "Далее",
@@ -1132,6 +1157,8 @@
     "playRecording": "Воспроизвести запись",
     "playbackSpeed": "Скорость воспроизведения",
     "playing": "Воспроизводится",
+    "preloadError": "Не удалось загрузить необходимый ресурс. Пожалуйста, перезагрузите страницу.",
+    "preloadErrorTitle": "Ошибка загрузки",
     "preview": "ПРЕДПРОСМОТР",
     "previousImage": "Предыдущее изображение",
     "profile": "Профиль",
@@ -1155,7 +1182,11 @@
     "releaseTitle": "Релиз {package} {version}",
     "reloadToApplyChanges": "Перезагрузите, чтобы применить изменения",
     "remove": "Удалить",
+    "removeAll": "Удалить все",
+    "removeAllKeybindingsMessage": "Все сочетания клавиш для этой команды будут удалены",
+    "removeAllKeybindingsTitle": "Удалить все сочетания клавиш?",
     "removeImage": "Удалить изображение",
+    "removeKeybinding": "Удалить сочетание клавиш",
     "removeTag": "Удалить тег",
     "removeVideo": "Удалить видео",
     "rename": "Переименовать",
@@ -1164,7 +1195,10 @@
     "reportSent": "Отчёт отправлен",
     "reset": "Сброс",
     "resetAll": "Сбросить все",
+    "resetAllKeybindingsMessage": "Все сочетания клавиш будут сброшены к значениям по умолчанию. Это действие нельзя отменить.",
+    "resetAllKeybindingsTitle": "Сбросить все сочетания клавиш?",
     "resetAllKeybindingsTooltip": "Сбросить все сочетания клавиш по умолчанию",
+    "resetToDefault": "Сбросить по умолчанию",
     "resizeFromBottomLeft": "Изменять размер из левого нижнего угла",
     "resizeFromBottomRight": "Изменять размер из правого нижнего угла",
     "resizeFromTopLeft": "Изменять размер из левого верхнего угла",
@@ -1584,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Базовые узлы из версии {version}:",
     "outdatedVersion": "Этот рабочий процесс был создан в более новой версии ComfyUI ({version}). Некоторые узлы могут работать некорректно.",
-    "outdatedVersionGeneric": "Этот рабочий процесс был создан в более новой версии ComfyUI. Некоторые узлы могут работать некорректно."
+    "outdatedVersionGeneric": "Этот рабочий процесс был создан в более новой версии ComfyUI. Некоторые узлы могут работать некорректно.",
+    "unknownVersion": "неизвестно"
   },
   "maintenance": {
     "None": "Нет",
@@ -2406,6 +2441,7 @@
     "groupSettings": "Настройки группы",
     "groups": "Группы",
     "hideAdvancedInputsButton": "Скрыть расширенные параметры",
+    "hideAdvancedShort": "Скрыть расширенные",
     "hideInput": "Скрыть вход",
     "info": "Информация",
     "inputs": "ВХОДЫ",
@@ -2420,7 +2456,9 @@
       "collapseNodes": "Скрыть ссылающиеся узлы",
       "confirmSelection": "Подтвердить выбор",
       "copyModelName": "Скопировать имя модели",
+      "copyUrl": "Копировать URL",
       "customNodeDownloadDisabled": "В облачной среде импорт моделей для пользовательских узлов в этом разделе не поддерживается. Пожалуйста, используйте стандартные загрузочные узлы или выберите модель из библиотеки ниже.",
+      "downloadAll": "Скачать всё",
       "expandNodes": "Показать ссылающиеся узлы",
       "import": "Импортировать",
       "importAnyway": "Импортировать в любом случае",
@@ -2487,6 +2525,7 @@
     "seeError": "Посмотреть ошибку",
     "settings": "Настройки",
     "showAdvancedInputsButton": "Показать расширенные входные данные",
+    "showAdvancedShort": "Показать расширенные",
     "showInput": "Показать вход",
     "title": "Нет выбранных узлов | 1 узел выбран | {count} узлов выбрано",
     "togglePanel": "Показать/скрыть панель свойств",
@@ -3034,7 +3073,6 @@
       "title": "Ваша подписка отменена"
     },
     "changeTo": "Перейти на {plan}",
-    "chooseBestPlanWorkspace": "Выберите лучший тариф для вашего рабочего пространства",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Логотип Comfy Cloud",
     "contactOwnerToSubscribe": "Свяжитесь с владельцем рабочего пространства для оформления подписки",

@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "Parola sıfırlama gönderildi",
   "cloudForgotPassword_sendResetLink": "Sıfırlama bağlantısını gönder",
   "cloudForgotPassword_title": "Şifremi Unuttum",
+  "cloudNotification": {
+    "continueLocally": "Yerelde Devam Et",
+    "exploreCloud": "Bulutu Ücretsiz Dene",
+    "feature1Title": "Aylık 400 Ücretsiz Kredi",
+    "feature2Title": "Her Yerde, Anında Çalışır",
+    "feature3Title": "Kullanıma Hazır Modeller",
+    "feature4Title": "En İyi Özel Node Paketleri Önceden Yüklü",
+    "footer": "ComfyUI ücretsiz ve açık kaynak olarak kalır. Bulut seçime bağlıdır.",
+    "message": "Kurulumdan üretime saniyeler içinde. Popüler modeller, eklentiler ve güçlü GPU'lar — hazır olduğunuzda kullanıma hazır.",
+    "title": "ComfyUI'yi Bulutta Çalıştırın"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -502,6 +513,7 @@
   "cloudWaitlist_contactLink": "burada",
   "cloudWaitlist_questionsText": "Sorularınız mı var? Bize ulaşın",
   "color": {
+    "alpha": "Alfa",
     "black": "Siyah",
     "blue": "Mavi",
     "brown": "Kahverengi",
@@ -509,11 +521,15 @@
     "cyan": "Camgöbeği",
     "default": "Varsayılan",
     "green": "Yeşil",
+    "hex": "Hex",
+    "hue": "Renk tonu",
     "noColor": "Renk Yok",
     "pale_blue": "Soluk Mavi",
     "pink": "Pembe",
     "purple": "Mor",
     "red": "Kırmızı",
+    "rgba": "RGBA",
+    "saturationBrightness": "Renk doygunluğu ve parlaklığı",
     "yellow": "Sarı"
   },
   "comfyHubProfile": {
@@ -648,6 +664,7 @@
     "Open in Mask Editor": "Maske Düzenleyicide Aç",
     "Outputs": "Çıktılar",
     "Paste": "Yapıştır",
+    "Paste Image": "Görseli Yapıştır",
     "Pin": "Sabitle",
     "Properties": "Özellikler",
     "Properties Panel": "Özellikler Paneli",
@@ -731,6 +748,10 @@
       "tooltip": "Comfy genelinde ödemeleri birleştirdik. Artık her şey Comfy Kredileri ile çalışıyor:\n- Partner Düğümleri (eski adıyla API düğümleri)\n- Bulut iş akışları\n\nMevcut Partner düğümü bakiyeniz kredilere dönüştürüldü."
     },
     "yourCreditBalance": "Kredi bakiyeniz"
+  },
+  "curveWidget": {
+    "linear": "Doğrusal",
+    "monotone_cubic": "Yumuşak"
   },
   "dataTypes": {
     "*": "*",
@@ -922,9 +943,11 @@
     "2x": "2x",
     "about": "Hakkında",
     "add": "Ekle",
+    "addNewKeybinding": "Yeni kısayol tuşu ekle",
     "addNode": "Bir düğüm ekle...",
     "addNodeFilterCondition": "Düğüm filtresi koşulu ekle",
     "all": "Tümü",
+    "allKeybindingsReset": "Tüm kısayol tuşları varsayılana sıfırlandı",
     "amount": "Miktar",
     "apply": "Uygula",
     "architecture": "Mimari",
@@ -943,6 +966,7 @@
     "cancelled": "İptal Edildi",
     "capture": "yakala",
     "category": "Kategori",
+    "changeKeybinding": "Kısayol tuşunu değiştir",
     "chart": "Grafik",
     "chartLowercase": "grafik",
     "choose_file_to_upload": "yüklenecek dosyayı seçin",
@@ -1095,6 +1119,7 @@
     "moreWorkflows": "Daha fazla iş akışı",
     "mostRelevant": "En alakalı",
     "multiSelectDropdown": "Çoklu seçim açılır menüsü",
+    "nMoreKeybindings": "+ {count} tane daha",
     "name": "Ad",
     "newFolder": "Yeni Klasör",
     "next": "İleri",
@@ -1132,6 +1157,8 @@
     "playRecording": "Kaydı Oynat",
     "playbackSpeed": "Oynatma Hızı",
     "playing": "Oynatılıyor",
+    "preloadError": "Gerekli bir kaynak yüklenemedi. Lütfen sayfayı yeniden yükleyin.",
+    "preloadErrorTitle": "Yükleme Hatası",
     "preview": "ÖNİZLEME",
     "previousImage": "Önceki görsel",
     "profile": "Profil",
@@ -1155,7 +1182,11 @@
     "releaseTitle": "{package} {version} Sürümü",
     "reloadToApplyChanges": "Değişiklikleri uygulamak için yeniden yükleyin",
     "remove": "Kaldır",
+    "removeAll": "Tümünü kaldır",
+    "removeAllKeybindingsMessage": "Bu komut için tüm kısayol tuşları kaldırılacak",
+    "removeAllKeybindingsTitle": "Tüm kısayol tuşları kaldırılsın mı?",
     "removeImage": "Görüntüyü kaldır",
+    "removeKeybinding": "Kısayol tuşunu kaldır",
     "removeTag": "Etiketi kaldır",
     "removeVideo": "Videoyu kaldır",
     "rename": "Yeniden Adlandır",
@@ -1164,7 +1195,10 @@
     "reportSent": "Rapor Gönderildi",
     "reset": "Sıfırla",
     "resetAll": "Tümünü Sıfırla",
+    "resetAllKeybindingsMessage": "Tüm kısayol tuşları varsayılan değerlerine sıfırlanacak. Bu işlem geri alınamaz.",
+    "resetAllKeybindingsTitle": "Tüm kısayol tuşlarını sıfırlansın mı?",
     "resetAllKeybindingsTooltip": "Tüm tuş atamalarını varsayılana sıfırla",
+    "resetToDefault": "Varsayılana sıfırla",
     "resizeFromBottomLeft": "Sol alt köşeden yeniden boyutlandır",
     "resizeFromBottomRight": "Sağ alt köşeden yeniden boyutlandır",
     "resizeFromTopLeft": "Sol üst köşeden yeniden boyutlandır",
@@ -1584,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Sürüm {version} çekirdek düğümleri:",
     "outdatedVersion": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş ({version}). Bazı düğümler düzgün çalışmayabilir.",
-    "outdatedVersionGeneric": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş. Bazı düğümler düzgün çalışmayabilir."
+    "outdatedVersionGeneric": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş. Bazı düğümler düzgün çalışmayabilir.",
+    "unknownVersion": "bilinmeyen"
   },
   "maintenance": {
     "None": "Yok",
@@ -2406,6 +2441,7 @@
     "groupSettings": "Grup Ayarları",
     "groups": "Gruplar",
     "hideAdvancedInputsButton": "Gelişmiş girişleri gizle",
+    "hideAdvancedShort": "Gelişmişi gizle",
     "hideInput": "Girdiyi gizle",
     "info": "Bilgi",
     "inputs": "GİRİŞLER",
@@ -2420,7 +2456,9 @@
       "collapseNodes": "Referans veren node'ları gizle",
       "confirmSelection": "Seçimi onayla",
       "copyModelName": "Model adını kopyala",
+      "copyUrl": "URL'yi Kopyala",
       "customNodeDownloadDisabled": "Bulut ortamı, bu bölümde özel node'lar için model içe aktarmayı desteklemiyor. Lütfen standart yükleyici node'larını kullanın veya aşağıdaki kütüphaneden bir model ile değiştirin.",
+      "downloadAll": "Hepsini indir",
       "expandNodes": "Referans veren node'ları göster",
       "import": "İçe aktar",
       "importAnyway": "Yine de içe aktar",
@@ -2487,6 +2525,7 @@
     "seeError": "Hatayı Gör",
     "settings": "Ayarlar",
     "showAdvancedInputsButton": "Gelişmiş girdileri göster",
+    "showAdvancedShort": "Gelişmişi göster",
     "showInput": "Girdiyi göster",
     "title": "Seçili düğüm yok | 1 düğüm seçili | {count} düğüm seçili",
     "togglePanel": "Özellikler panelini aç/kapat",
@@ -3034,7 +3073,6 @@
       "title": "Aboneliğiniz iptal edildi"
     },
     "changeTo": "{plan} planına geç",
-    "chooseBestPlanWorkspace": "Çalışma alanınız için en iyi planı seçin",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud Logosu",
     "contactOwnerToSubscribe": "Abone olmak için çalışma alanı sahibiyle iletişime geçin",

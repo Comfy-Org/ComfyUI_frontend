@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "Réinitialisation du mot de passe envoyée",
   "cloudForgotPassword_sendResetLink": "Envoyer le lien de réinitialisation",
   "cloudForgotPassword_title": "Mot de passe oublié",
+  "cloudNotification": {
+    "continueLocally": "Continuer localement",
+    "exploreCloud": "Essayer le cloud gratuitement",
+    "feature1Title": "400 crédits gratuits par mois",
+    "feature2Title": "Fonctionne partout, instantanément",
+    "feature3Title": "Modèles prêts à l’emploi",
+    "feature4Title": "Packs de nœuds personnalisés préinstallés",
+    "footer": "ComfyUI reste gratuit et open source. Le cloud est optionnel.",
+    "message": "De la configuration à la création en quelques secondes. Modèles populaires, extensions et GPU puissants — prêts quand vous l’êtes.",
+    "title": "Exécutez ComfyUI dans le Cloud"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -502,6 +513,7 @@
   "cloudWaitlist_contactLink": "ici",
   "cloudWaitlist_questionsText": "Des questions ? Contactez-nous",
   "color": {
+    "alpha": "Alpha",
     "black": "Noir",
     "blue": "Bleu",
     "brown": "Marron",
@@ -509,11 +521,15 @@
     "cyan": "Cyan",
     "default": "Par défaut",
     "green": "Vert",
+    "hex": "Hex",
+    "hue": "Teinte",
     "noColor": "Pas de couleur",
     "pale_blue": "Bleu pâle",
     "pink": "Rose",
     "purple": "Violet",
     "red": "Rouge",
+    "rgba": "RGBA",
+    "saturationBrightness": "Saturation et luminosité de la couleur",
     "yellow": "Jaune"
   },
   "comfyHubProfile": {
@@ -648,6 +664,7 @@
     "Open in Mask Editor": "Ouvrir dans l'éditeur de masque",
     "Outputs": "Sorties",
     "Paste": "Coller",
+    "Paste Image": "Coller l’image",
     "Pin": "Épingler",
     "Properties": "Propriétés",
     "Properties Panel": "Panneau des Propriétés",
@@ -731,6 +748,10 @@
       "tooltip": "Nous avons unifié les paiements sur Comfy. Tout fonctionne désormais avec les Comfy Credits :\n- Nœuds partenaires (anciennement nœuds API)\n- Workflows cloud\n\nVotre solde de nœuds partenaires a été converti en crédits."
     },
     "yourCreditBalance": "Votre solde de crédits"
+  },
+  "curveWidget": {
+    "linear": "Linéaire",
+    "monotone_cubic": "Lisse"
   },
   "dataTypes": {
     "*": "*",
@@ -922,9 +943,11 @@
     "2x": "2x",
     "about": "À propos",
     "add": "Ajouter",
+    "addNewKeybinding": "Ajouter un nouveau raccourci clavier",
     "addNode": "Ajouter un nœud...",
     "addNodeFilterCondition": "Ajouter une condition de filtre de nœud",
     "all": "Tout",
+    "allKeybindingsReset": "Tous les raccourcis clavier ont été réinitialisés par défaut",
     "amount": "Quantité",
     "apply": "Appliquer",
     "architecture": "Architecture",
@@ -943,6 +966,7 @@
     "cancelled": "Annulé",
     "capture": "capture",
     "category": "Catégorie",
+    "changeKeybinding": "Modifier le raccourci clavier",
     "chart": "Graphique",
     "chartLowercase": "graphique",
     "choose_file_to_upload": "choisissez le fichier à télécharger",
@@ -1095,6 +1119,7 @@
     "moreWorkflows": "Plus de workflows",
     "mostRelevant": "Les plus pertinents",
     "multiSelectDropdown": "Menu déroulant à sélection multiple",
+    "nMoreKeybindings": "+ {count} de plus",
     "name": "Nom",
     "newFolder": "Nouveau dossier",
     "next": "Suivant",
@@ -1132,6 +1157,8 @@
     "playRecording": "Lire l'enregistrement",
     "playbackSpeed": "Vitesse de lecture",
     "playing": "Lecture en cours",
+    "preloadError": "Une ressource requise n’a pas pu être chargée. Veuillez recharger la page.",
+    "preloadErrorTitle": "Erreur de chargement",
     "preview": "APERÇU",
     "previousImage": "Image précédente",
     "profile": "Profil",
@@ -1155,7 +1182,11 @@
     "releaseTitle": "Publication de {package} {version}",
     "reloadToApplyChanges": "Recharger pour appliquer les modifications",
     "remove": "Supprimer",
+    "removeAll": "Tout supprimer",
+    "removeAllKeybindingsMessage": "Tous les raccourcis clavier pour cette commande seront supprimés",
+    "removeAllKeybindingsTitle": "Supprimer tous les raccourcis clavier ?",
     "removeImage": "Supprimer l'image",
+    "removeKeybinding": "Supprimer le raccourci clavier",
     "removeTag": "Supprimer le tag",
     "removeVideo": "Supprimer la vidéo",
     "rename": "Renommer",
@@ -1164,7 +1195,10 @@
     "reportSent": "Rapport soumis",
     "reset": "Réinitialiser",
     "resetAll": "Réinitialiser tout",
+    "resetAllKeybindingsMessage": "Tous les raccourcis clavier seront réinitialisés à leurs valeurs par défaut. Cette action est irréversible.",
+    "resetAllKeybindingsTitle": "Réinitialiser tous les raccourcis clavier ?",
     "resetAllKeybindingsTooltip": "Réinitialiser tous les raccourcis clavier par défaut",
+    "resetToDefault": "Réinitialiser par défaut",
     "resizeFromBottomLeft": "Redimensionner depuis le coin inférieur gauche",
     "resizeFromBottomRight": "Redimensionner depuis le coin inférieur droit",
     "resizeFromTopLeft": "Redimensionner depuis le coin supérieur gauche",
@@ -1584,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nœuds principaux de la version {version} :",
     "outdatedVersion": "Ce workflow a été créé avec une version plus récente de ComfyUI ({version}). Certains nœuds peuvent ne pas fonctionner correctement.",
-    "outdatedVersionGeneric": "Ce workflow a été créé avec une version plus récente de ComfyUI. Certains nœuds peuvent ne pas fonctionner correctement."
+    "outdatedVersionGeneric": "Ce workflow a été créé avec une version plus récente de ComfyUI. Certains nœuds peuvent ne pas fonctionner correctement.",
+    "unknownVersion": "inconnue"
   },
   "maintenance": {
     "None": "Aucun",
@@ -2406,6 +2441,7 @@
     "groupSettings": "Paramètres du groupe",
     "groups": "Groupes",
     "hideAdvancedInputsButton": "Masquer les entrées avancées",
+    "hideAdvancedShort": "Masquer les options avancées",
     "hideInput": "Masquer l’entrée",
     "info": "Infos",
     "inputs": "ENTRÉES",
@@ -2420,7 +2456,9 @@
       "collapseNodes": "Masquer les nœuds référencés",
       "confirmSelection": "Confirmer la sélection",
       "copyModelName": "Copier le nom du modèle",
+      "copyUrl": "Copier l’URL",
       "customNodeDownloadDisabled": "L’environnement cloud ne prend pas en charge l’importation de modèles pour les nœuds personnalisés dans cette section. Veuillez utiliser des nœuds de chargement standard ou remplacer par un modèle de la bibliothèque ci-dessous.",
+      "downloadAll": "Tout télécharger",
       "expandNodes": "Afficher les nœuds référencés",
       "import": "Importer",
       "importAnyway": "Importer quand même",
@@ -2487,6 +2525,7 @@
     "seeError": "Voir l'erreur",
     "settings": "Paramètres",
     "showAdvancedInputsButton": "Afficher les entrées avancées",
+    "showAdvancedShort": "Afficher les options avancées",
     "showInput": "Afficher l’entrée",
     "title": "Aucun nœud sélectionné | 1 nœud sélectionné | {count} nœuds sélectionnés",
     "togglePanel": "Afficher/masquer le panneau des propriétés",
@@ -3034,7 +3073,6 @@
       "title": "Votre abonnement a été annulé"
     },
     "changeTo": "Changer pour {plan}",
-    "chooseBestPlanWorkspace": "Choisissez la meilleure offre pour votre espace de travail",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Logo Comfy Cloud",
     "contactOwnerToSubscribe": "Contactez le propriétaire de l’espace de travail pour vous abonner",

@@ -77,29 +77,31 @@
           </Button>
         </template>
 
-        <Button
-          type="button"
-          class="h-10"
-          variant="secondary"
-          @click="showApiKeyForm = true"
-        >
-          <img
-            src="/assets/images/comfy-logo-mono.svg"
-            class="mr-2 size-5"
-            :alt="$t('g.comfy')"
-          />
-          {{ t('auth.login.useApiKey') }}
-        </Button>
-        <small class="text-center text-muted">
-          {{ t('auth.apiKey.helpText') }}
-          <a
-            :href="`${comfyPlatformBaseUrl}/login`"
-            target="_blank"
-            class="cursor-pointer text-blue-500"
+        <template v-if="!isCloud">
+          <Button
+            type="button"
+            class="h-10"
+            variant="secondary"
+            @click="showApiKeyForm = true"
           >
-            {{ t('auth.apiKey.generateKey') }}
-          </a>
-        </small>
+            <img
+              src="/assets/images/comfy-logo-mono.svg"
+              class="mr-2 size-5"
+              :alt="$t('g.comfy')"
+            />
+            {{ t('auth.login.useApiKey') }}
+          </Button>
+          <small class="text-center text-muted">
+            {{ t('auth.apiKey.helpText') }}
+            <a
+              :href="`${comfyPlatformBaseUrl}/login`"
+              target="_blank"
+              class="cursor-pointer text-blue-500"
+            >
+              {{ t('auth.apiKey.generateKey') }}
+            </a>
+          </small>
+        </template>
         <Message
           v-if="authActions.accessError.value"
           severity="info"
@@ -152,6 +154,7 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 import { isInChina } from '@/utils/networkUtil'
 
@@ -183,13 +186,13 @@ const toggleState = () => {
 }
 
 const signInWithGoogle = async () => {
-  if (await authActions.signInWithGoogle()) {
+  if (await authActions.signInWithGoogle({ isNewUser: !isSignIn.value })) {
     onSuccess()
   }
 }
 
 const signInWithGithub = async () => {
-  if (await authActions.signInWithGithub()) {
+  if (await authActions.signInWithGithub({ isNewUser: !isSignIn.value })) {
     onSuccess()
   }
 }

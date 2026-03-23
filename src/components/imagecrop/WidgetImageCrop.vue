@@ -36,26 +36,37 @@
 
       <div
         v-if="imageUrl && !isLoading"
-        class="absolute box-content cursor-move border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"
+        :class="
+          cn(
+            'absolute box-content cursor-move border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]',
+            isDisabled && 'pointer-events-none opacity-60'
+          )
+        "
         :style="cropBoxStyle"
         @pointerdown="handleDragStart"
         @pointermove="handleDragMove"
         @pointerup="handleDragEnd"
       />
 
-      <div
-        v-for="handle in resizeHandles"
-        v-show="imageUrl && !isLoading"
-        :key="handle.direction"
-        :class="['absolute', handle.class]"
-        :style="handle.style"
-        @pointerdown="(e) => handleResizeStart(e, handle.direction)"
-        @pointermove="handleResizeMove"
-        @pointerup="handleResizeEnd"
-      />
+      <template v-for="handle in resizeHandles" :key="handle.direction">
+        <div
+          v-show="imageUrl && !isLoading"
+          :class="
+            cn(
+              'absolute',
+              handle.class,
+              isDisabled && 'pointer-events-none opacity-60'
+            )
+          "
+          :style="handle.style"
+          @pointerdown="(e) => handleResizeStart(e, handle.direction)"
+          @pointermove="handleResizeMove"
+          @pointerup="handleResizeEnd"
+        />
+      </template>
     </div>
 
-    <div class="flex shrink-0 items-center gap-2">
+    <div v-if="!isDisabled" class="flex shrink-0 items-center gap-2">
       <label class="text-xs text-muted-foreground">
         {{ $t('imageCrop.ratio') }}
       </label>
@@ -90,12 +101,16 @@
       </Button>
     </div>
 
-    <WidgetBoundingBox v-model="modelValue" class="shrink-0" />
+    <WidgetBoundingBox
+      v-model="effectiveBounds"
+      :disabled="isDisabled"
+      class="shrink-0"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -105,15 +120,39 @@ import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
 import { ASPECT_RATIOS, useImageCrop } from '@/composables/useImageCrop'
+import {
+  boundsExtractor,
+  useUpstreamValue
+} from '@/composables/useUpstreamValue'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<{
+const { widget, nodeId } = defineProps<{
+  widget: SimplifiedWidget
   nodeId: NodeId
 }>()
 
 const modelValue = defineModel<Bounds>({
   default: () => ({ x: 0, y: 0, width: 512, height: 512 })
+})
+
+const isDisabled = computed(() => !!widget.options?.disabled)
+
+const upstreamValue = useUpstreamValue(
+  () => widget.linkedUpstream,
+  boundsExtractor()
+)
+
+const effectiveBounds = computed({
+  get: () =>
+    isDisabled.value && upstreamValue.value
+      ? upstreamValue.value
+      : modelValue.value,
+  set: (v) => {
+    if (!isDisabled.value) modelValue.value = v
+  }
 })
 
 const imageEl = useTemplateRef<HTMLImageElement>('imageEl')
@@ -139,5 +178,5 @@ const {
   handleResizeStart,
   handleResizeMove,
   handleResizeEnd
-} = useImageCrop(props.nodeId, { imageEl, containerEl, modelValue })
+} = useImageCrop(nodeId, { imageEl, containerEl, modelValue: effectiveBounds })
 </script>

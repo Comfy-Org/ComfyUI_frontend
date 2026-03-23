@@ -389,6 +389,17 @@
   "cloudForgotPassword_passwordResetSent": "تم إرسال إعادة تعيين كلمة المرور",
   "cloudForgotPassword_sendResetLink": "إرسال رابط إعادة التعيين",
   "cloudForgotPassword_title": "نسيت كلمة المرور",
+  "cloudNotification": {
+    "continueLocally": "المتابعة محليًا",
+    "exploreCloud": "جرّب السحابة مجانًا",
+    "feature1Title": "٤٠٠ رصيد مجاني شهريًا",
+    "feature2Title": "يعمل في أي مكان، فورًا",
+    "feature3Title": "نماذج جاهزة للاستخدام",
+    "feature4Title": "أفضل حزم العقد المخصصة مثبتة مسبقًا",
+    "footer": "ComfyUI يبقى مجانيًا ومفتوح المصدر. السحابة اختيارية.",
+    "message": "من الإعداد إلى الإنشاء في ثوانٍ. النماذج الشائعة، الإضافات، ومعالجات الرسوميات القوية — جاهزة متى احتجت إليها.",
+    "title": "تشغيل ComfyUI على السحابة"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -502,6 +513,7 @@
   "cloudWaitlist_contactLink": "هنا",
   "cloudWaitlist_questionsText": "أسئلة؟ اتصل بنا",
   "color": {
+    "alpha": "ألفا",
     "black": "أسود",
     "blue": "أزرق",
     "brown": "بني",
@@ -509,11 +521,15 @@
     "cyan": "سماوي",
     "default": "الافتراضي",
     "green": "أخضر",
+    "hex": "هيكس",
+    "hue": "درجة اللون",
     "noColor": "لا لون",
     "pale_blue": "أزرق باهت",
     "pink": "وردي",
     "purple": "أرجواني",
     "red": "أحمر",
+    "rgba": "RGBA",
+    "saturationBrightness": "تشبع اللون والسطوع",
     "yellow": "أصفر"
   },
   "comfyHubProfile": {
@@ -648,6 +664,7 @@
     "Open in Mask Editor": "افتح في محرر القناع",
     "Outputs": "المخرجات",
     "Paste": "لصق",
+    "Paste Image": "لصق الصورة",
     "Pin": "تثبيت",
     "Properties": "الخصائص",
     "Properties Panel": "لوحة الخصائص",
@@ -731,6 +748,10 @@
       "tooltip": "لقد قمنا بتوحيد المدفوعات عبر Comfy. كل شيء يعمل الآن على رصيد Comfy:\n- عقد الشركاء (كانت تُسمى سابقًا عقد API)\n- سير العمل السحابي\n\nتم تحويل رصيد عقد الشركاء الحالي إلى رصيد."
     },
     "yourCreditBalance": "رصيدك الحالي"
+  },
+  "curveWidget": {
+    "linear": "خطّي",
+    "monotone_cubic": "ناعم"
   },
   "dataTypes": {
     "*": "*",
@@ -922,9 +943,11 @@
     "2x": "2x",
     "about": "حول",
     "add": "إضافة",
+    "addNewKeybinding": "إضافة اختصار مفتاح جديد",
     "addNode": "إضافة عقدة...",
     "addNodeFilterCondition": "إضافة شرط لتصفية العقد",
     "all": "الكل",
+    "allKeybindingsReset": "تمت إعادة تعيين جميع اختصارات المفاتيح إلى الوضع الافتراضي",
     "amount": "الكمية",
     "apply": "تطبيق",
     "architecture": "الهندسة المعمارية",
@@ -943,6 +966,7 @@
     "cancelled": "أُلغي",
     "capture": "التقاط",
     "category": "الفئة",
+    "changeKeybinding": "تغيير اختصار المفتاح",
     "chart": "مخطط",
     "chartLowercase": "مخطط",
     "choose_file_to_upload": "اختر ملفاً للرفع",
@@ -1095,6 +1119,7 @@
     "moreWorkflows": "المزيد من سير العمل",
     "mostRelevant": "الأكثر صلة",
     "multiSelectDropdown": "قائمة منسدلة متعددة الاختيار",
+    "nMoreKeybindings": "+ {count} المزيد",
     "name": "الاسم",
     "newFolder": "مجلد جديد",
     "next": "التالي",
@@ -1132,6 +1157,8 @@
     "playRecording": "تشغيل التسجيل",
     "playbackSpeed": "سرعة التشغيل",
     "playing": "جاري التشغيل",
+    "preloadError": "فشل تحميل مورد مطلوب. يرجى إعادة تحميل الصفحة.",
+    "preloadErrorTitle": "خطأ في التحميل",
     "preview": "معاينة",
     "previousImage": "الصورة السابقة",
     "profile": "الملف الشخصي",
@@ -1155,7 +1182,11 @@
     "releaseTitle": "إصدار {package} {version}",
     "reloadToApplyChanges": "أعد التحميل لتطبيق التغييرات",
     "remove": "إزالة",
+    "removeAll": "إزالة الكل",
+    "removeAllKeybindingsMessage": "سيتم إزالة جميع اختصارات المفاتيح لهذا الأمر",
+    "removeAllKeybindingsTitle": "إزالة جميع اختصارات المفاتيح؟",
     "removeImage": "إزالة الصورة",
+    "removeKeybinding": "إزالة اختصار المفتاح",
     "removeTag": "إزالة الوسم",
     "removeVideo": "إزالة الفيديو",
     "rename": "إعادة تسمية",
@@ -1164,7 +1195,10 @@
     "reportSent": "تم إرسال التقرير",
     "reset": "إعادة تعيين",
     "resetAll": "إعادة تعيين الكل",
+    "resetAllKeybindingsMessage": "سيتم إعادة تعيين جميع اختصارات المفاتيح إلى القيم الافتراضية. لا يمكن التراجع عن هذا الإجراء.",
+    "resetAllKeybindingsTitle": "إعادة تعيين جميع اختصارات المفاتيح؟",
     "resetAllKeybindingsTooltip": "إعادة تعيين جميع اختصارات لوحة المفاتيح إلى الوضع الافتراضي",
+    "resetToDefault": "إعادة إلى الافتراضي",
     "resizeFromBottomLeft": "تغيير الحجم من الزاوية اليسرى السفلية",
     "resizeFromBottomRight": "تغيير الحجم من الزاوية اليمنى السفلية",
     "resizeFromTopLeft": "تغيير الحجم من الزاوية اليسرى العلوية",
@@ -1584,7 +1618,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "العقد الأساسية من الإصدار {version}:",
     "outdatedVersion": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI ({version}). قد لا تعمل بعض العقد بشكل صحيح.",
-    "outdatedVersionGeneric": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI. قد لا تعمل بعض العقد بشكل صحيح."
+    "outdatedVersionGeneric": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI. قد لا تعمل بعض العقد بشكل صحيح.",
+    "unknownVersion": "غير معروف"
   },
   "maintenance": {
     "None": "لا شيء",
@@ -2406,6 +2441,7 @@
     "groupSettings": "إعدادات المجموعة",
     "groups": "المجموعات",
     "hideAdvancedInputsButton": "إخفاء المدخلات المتقدمة",
+    "hideAdvancedShort": "إخفاء الخيارات المتقدمة",
     "hideInput": "إخفاء المدخل",
     "info": "معلومات",
     "inputs": "المدخلات",
@@ -2420,7 +2456,9 @@
       "collapseNodes": "إخفاء العُقد المرجعية",
       "confirmSelection": "تأكيد الاختيار",
       "copyModelName": "نسخ اسم النموذج",
+      "copyUrl": "نسخ الرابط",
       "customNodeDownloadDisabled": "بيئة السحابة لا تدعم استيراد النماذج للعُقد المخصصة في هذا القسم. يرجى استخدام عُقد التحميل القياسية أو استبدالها بنموذج من المكتبة أدناه.",
+      "downloadAll": "تنزيل الكل",
       "expandNodes": "عرض العُقد المرجعية",
       "import": "استيراد",
       "importAnyway": "استيراد على أي حال",
@@ -2487,6 +2525,7 @@
     "seeError": "عرض الخطأ",
     "settings": "الإعدادات",
     "showAdvancedInputsButton": "إظهار المدخلات المتقدمة",
+    "showAdvancedShort": "إظهار الخيارات المتقدمة",
     "showInput": "إظهار المدخل",
     "title": "لا توجد عقد محددة | عقدة واحدة محددة | {count} عقد محددة",
     "togglePanel": "تبديل لوحة الخصائص",
@@ -3034,7 +3073,6 @@
       "title": "تم إلغاء اشتراكك"
     },
     "changeTo": "تغيير إلى {plan}",
-    "chooseBestPlanWorkspace": "اختر أفضل خطة لمساحة العمل الخاصة بك",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "شعار Comfy Cloud",
     "contactOwnerToSubscribe": "يرجى التواصل مع مالك مساحة العمل للاشتراك",

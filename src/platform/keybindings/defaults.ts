@@ -56,9 +56,8 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      ctrl: true,
-      shift: true,
-      key: 'a'
+      alt: true,
+      key: 'm'
     },
     commandId: 'Comfy.ToggleLinear'
   },
@@ -179,7 +178,8 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   {
     combo: {
       key: 'm',
-      alt: true
+      alt: true,
+      shift: true
     },
     commandId: 'Comfy.Canvas.ToggleMinimap'
   },
@@ -215,22 +215,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'a'
     },
     commandId: 'Comfy.Canvas.SelectAll',
-    targetElementId: 'graph-canvas-container'
-  },
-  {
-    combo: {
-      ctrl: true,
-      key: 'c'
-    },
-    commandId: 'Comfy.Canvas.CopySelected',
-    targetElementId: 'graph-canvas-container'
-  },
-  {
-    combo: {
-      ctrl: true,
-      key: 'v'
-    },
-    commandId: 'Comfy.Canvas.PasteFromClipboard',
     targetElementId: 'graph-canvas-container'
   },
   {

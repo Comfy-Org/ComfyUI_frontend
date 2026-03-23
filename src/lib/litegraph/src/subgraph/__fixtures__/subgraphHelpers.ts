@@ -7,17 +7,65 @@
  */
 import { expect } from 'vitest'
 
-import type { ISlotType, NodeId } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   ExportedSubgraph,
-  ExportedSubgraphInstance
-} from '@/lib/litegraph/src/types/serialisation'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
+  ExportedSubgraphInstance,
+  ISlotType,
+  NodeId,
+  UUID
+} from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
+
+import { subgraphComplexPromotion1 } from './subgraphComplexPromotion1'
+
+const FIXTURE_STRING_CONCAT_TYPE = 'Fixture/StringConcatenate'
+const FIXTURE_UUID_PREFIX = '00000000-0000-4000-8000-'
+
+let fixtureUuidSequence = 1
+
+class FixtureStringConcatenateNode extends LGraphNode {
+  constructor() {
+    super('StringConcatenate')
+    const input = this.addInput('string_a', 'STRING')
+    input.widget = { name: 'string_a' }
+    this.addOutput('STRING', 'STRING')
+    this.addWidget('text', 'string_a', '', () => {})
+    this.addWidget('text', 'string_b', '', () => {})
+    this.addWidget('text', 'delimiter', '', () => {})
+  }
+}
+
+export function cleanupComplexPromotionFixtureNodeType(): void {
+  if (!LiteGraph.registered_node_types[FIXTURE_STRING_CONCAT_TYPE]) return
+  LiteGraph.unregisterNodeType(FIXTURE_STRING_CONCAT_TYPE)
+}
+
+function nextFixtureUuid(): UUID {
+  const suffix = fixtureUuidSequence.toString(16).padStart(12, '0')
+  fixtureUuidSequence += 1
+  return `${FIXTURE_UUID_PREFIX}${suffix}`
+}
+
+export function resetSubgraphFixtureState(): void {
+  fixtureUuidSequence = 1
+  cleanupComplexPromotionFixtureNodeType()
+}
+
+export function createTestRootGraph(id: UUID = nextFixtureUuid()): LGraph {
+  const graph = new LGraph()
+  graph.id = id
+  return graph
+}
 
 interface TestSubgraphOptions {
+  rootGraph?: LGraph
+  rootGraphId?: UUID
   id?: UUID
   name?: string
   nodeCount?: number
@@ -28,6 +76,7 @@ interface TestSubgraphOptions {
 }
 
 interface TestSubgraphNodeOptions {
+  parentGraph?: LGraph | Subgraph
   id?: NodeId
   pos?: [number, number]
   size?: [number, number]
@@ -86,20 +135,27 @@ export interface EventCapture<TEventMap extends object> {
 export function createTestSubgraph(
   options: TestSubgraphOptions = {}
 ): Subgraph {
+  if (options.rootGraph && options.rootGraphId) {
+    throw new Error(
+      "Cannot specify both 'rootGraph' and 'rootGraphId'. Choose one."
+    )
+  }
+
   // Validate options - cannot specify both inputs array and inputCount
   if (options.inputs && options.inputCount) {
     throw new Error(
-      `Cannot specify both 'inputs' array and 'inputCount'. Choose one approach. Received options: ${JSON.stringify(options)}`
+      `Cannot specify both 'inputs' array and 'inputCount'. Choose one approach.`
     )
   }
 
   // Validate options - cannot specify both outputs array and outputCount
   if (options.outputs && options.outputCount) {
     throw new Error(
-      `Cannot specify both 'outputs' array and 'outputCount'. Choose one approach. Received options: ${JSON.stringify(options)}`
+      `Cannot specify both 'outputs' array and 'outputCount'. Choose one approach.`
     )
   }
-  const rootGraph = new LGraph()
+  const rootGraph =
+    options.rootGraph ?? createTestRootGraph(options.rootGraphId)
 
   const subgraphData: ExportedSubgraph = {
     version: 1,
@@ -116,7 +172,7 @@ export function createTestSubgraph(
     config: {},
     definitions: { subgraphs: [] },
 
-    id: options.id || createUuidv4(),
+    id: options.id ?? nextFixtureUuid(),
     name: options.name || 'Test Subgraph',
 
     inputNode: {
@@ -191,10 +247,10 @@ export function createTestSubgraphNode(
   subgraph: Subgraph,
   options: TestSubgraphNodeOptions = {}
 ): SubgraphNode {
-  const parentGraph = new LGraph()
+  const parentGraph = options.parentGraph ?? subgraph.rootGraph
 
   const instanceData: ExportedSubgraphInstance = {
-    id: options.id || 1,
+    id: options.id ?? parentGraph.state.lastNodeId + 1,
     type: subgraph.id,
     pos: options.pos || [100, 100],
     size: options.size || [200, 100],
@@ -207,6 +263,48 @@ export function createTestSubgraphNode(
   }
 
   return new SubgraphNode(parentGraph, subgraph, instanceData)
+}
+
+export function setupComplexPromotionFixture(): {
+  graph: LGraph
+  subgraph: Subgraph
+  hostNode: SubgraphNode
+} {
+  const fixture = structuredClone(subgraphComplexPromotion1)
+  const subgraphData = fixture.definitions?.subgraphs?.[0]
+  if (!subgraphData)
+    throw new Error('Expected fixture to contain one subgraph definition')
+
+  cleanupComplexPromotionFixtureNodeType()
+  LiteGraph.registerNodeType(
+    FIXTURE_STRING_CONCAT_TYPE,
+    FixtureStringConcatenateNode
+  )
+
+  for (const node of subgraphData.nodes as Array<{ type: string }>) {
+    if (node.type === 'StringConcatenate')
+      node.type = FIXTURE_STRING_CONCAT_TYPE
+  }
+
+  const hostNodeData = fixture.nodes.find((node) => node.id === 21)
+  if (!hostNodeData)
+    throw new Error('Expected fixture to contain subgraph instance node id 21')
+
+  const graph = createTestRootGraph()
+  const subgraph = graph.createSubgraph(subgraphData as ExportedSubgraph)
+  subgraph.configure(subgraphData as ExportedSubgraph)
+  const hostNode = new SubgraphNode(
+    graph,
+    subgraph,
+    hostNodeData as ExportedSubgraphInstance
+  )
+  graph.add(hostNode)
+
+  return {
+    graph,
+    subgraph,
+    hostNode
+  }
 }
 
 /**
@@ -227,7 +325,7 @@ export function createNestedSubgraphs(options: NestedSubgraphOptions = {}) {
     outputsPerSubgraph = 1
   } = options
 
-  const rootGraph = new LGraph()
+  const rootGraph = createTestRootGraph()
   const subgraphs: Subgraph[] = []
   const subgraphNodes: SubgraphNode[] = []
 
@@ -236,6 +334,7 @@ export function createNestedSubgraphs(options: NestedSubgraphOptions = {}) {
   for (let level = 0; level < depth; level++) {
     // Create subgraph for this level
     const subgraph = createTestSubgraph({
+      rootGraph,
       name: `Level ${level} Subgraph`,
       nodeCount: nodesPerLevel,
       inputCount: inputsPerSubgraph,
@@ -245,6 +344,7 @@ export function createNestedSubgraphs(options: NestedSubgraphOptions = {}) {
     subgraphs.push(subgraph)
 
     const subgraphNode = createTestSubgraphNode(subgraph, {
+      parentGraph: currentParent,
       pos: [100 + level * 200, 100]
     })
 
@@ -366,7 +466,7 @@ export function createTestSubgraphData(
     config: {},
     definitions: { subgraphs: [] },
 
-    id: createUuidv4(),
+    id: nextFixtureUuid(),
     name: 'Test Data Subgraph',
 
     inputNode: {

@@ -21,10 +21,7 @@
     @pointermove="handleWidgetPointerEvent"
     @pointerup="handleWidgetPointerEvent"
   >
-    <template
-      v-for="(widget, index) in processedWidgets"
-      :key="`widget-${index}-${widget.name}`"
-    >
+    <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
@@ -120,7 +117,11 @@ import {
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type {
+  LinkedUpstreamInfo,
+  SimplifiedWidget,
+  WidgetValue
+} from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import { getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
 import { app } from '@/scripts/app'
@@ -214,6 +215,7 @@ interface ProcessedWidget {
   hidden: boolean
   id: string
   name: string
+  renderKey: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
   type: string
@@ -241,12 +243,48 @@ function hasWidgetError(
   )
 }
 
+function getWidgetIdentity(
+  widget: SafeWidgetData,
+  nodeId: string | number | undefined,
+  index: number
+): {
+  dedupeIdentity?: string
+  renderKey: string
+} {
+  const rawWidgetId = widget.storeNodeId ?? widget.nodeId
+  const storeWidgetName = widget.storeName ?? widget.name
+  const slotNameForIdentity = widget.slotName ?? widget.name
+  const stableIdentityRoot = rawWidgetId
+    ? `node:${String(stripGraphPrefix(rawWidgetId))}`
+    : widget.sourceExecutionId
+      ? `exec:${widget.sourceExecutionId}`
+      : undefined
+
+  const dedupeIdentity = stableIdentityRoot
+    ? `${stableIdentityRoot}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}`
+    : undefined
+  const renderKey =
+    dedupeIdentity ??
+    `transient:${String(nodeId ?? '')}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}:${index}`
+
+  return {
+    dedupeIdentity,
+    renderKey
+  }
+}
+
+function isWidgetVisible(options: IWidgetOptions): boolean {
+  const hidden = options.hidden ?? false
+  const advanced = options.advanced ?? false
+  return !hidden && (!advanced || showAdvanced.value)
+}
+
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
 
   // nodeData.id is the local node ID; subgraph nodes need the full execution
   // path (e.g. "65:63") to match keys in lastNodeErrors.
-  const nodeExecId = app.rootGraph
+  const nodeExecId = app.isGraphReady
     ? getExecutionIdFromNodeData(app.rootGraph, nodeData)
     : String(nodeData.id ?? '')
 
@@ -256,11 +294,80 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   const nodeId = nodeData.id
   const { widgets } = nodeData
   const result: ProcessedWidget[] = []
+  const uniqueWidgets: Array<{
+    widget: SafeWidgetData
+    identity: ReturnType<typeof getWidgetIdentity>
+    mergedOptions: IWidgetOptions
+    widgetState: WidgetState | undefined
+    isVisible: boolean
+  }> = []
+  const dedupeIndexByIdentity = new Map<string, number>()
 
-  for (const widget of widgets) {
+  for (const [index, widget] of widgets.entries()) {
     if (!shouldRenderAsVue(widget)) continue
 
-    const isPromotedView = !!widget.nodeId
+    const identity = getWidgetIdentity(widget, nodeId, index)
+    const storeWidgetName = widget.storeName ?? widget.name
+    const bareWidgetId = String(
+      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
+    )
+    const widgetState = graphId
+      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
+      : undefined
+    const mergedOptions: IWidgetOptions = {
+      ...(widget.options ?? {}),
+      ...(widgetState?.options ?? {})
+    }
+    const visible = isWidgetVisible(mergedOptions)
+    if (!identity.dedupeIdentity) {
+      uniqueWidgets.push({
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: visible
+      })
+      continue
+    }
+
+    const existingIndex = dedupeIndexByIdentity.get(identity.dedupeIdentity)
+    if (existingIndex === undefined) {
+      dedupeIndexByIdentity.set(identity.dedupeIdentity, uniqueWidgets.length)
+      uniqueWidgets.push({
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: visible
+      })
+      continue
+    }
+
+    const existingWidget = uniqueWidgets[existingIndex]
+    if (existingWidget && !existingWidget.isVisible && visible) {
+      uniqueWidgets[existingIndex] = {
+        widget,
+        identity,
+        mergedOptions,
+        widgetState,
+        isVisible: true
+      }
+    }
+  }
+
+  for (const {
+    widget,
+    mergedOptions,
+    widgetState,
+    identity: { renderKey }
+  } of uniqueWidgets) {
+    const hostNodeId = String(nodeId ?? '')
+    const bareWidgetId = String(
+      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
+    )
+    const promotionSourceNodeId = widget.storeName
+      ? String(bareWidgetId)
+      : undefined
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -268,34 +375,35 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const { slotMetadata } = widget
 
-    // Get metadata from store (registered during BaseWidget.setNodeId)
-    const bareWidgetId = stripGraphPrefix(
-      widget.storeNodeId ?? widget.nodeId ?? nodeId
-    )
-    const storeWidgetName = widget.storeName ?? widget.name
-    const widgetState = graphId
-      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
-      : undefined
-
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
 
     // Build options from store state, with disabled override for
     // slot-linked widgets or widgets with disabled state (e.g. display-only)
-    const storeOptions = widgetState?.options ?? {}
     const isDisabled = slotMetadata?.linked || widgetState?.disabled
     const widgetOptions = isDisabled
-      ? { ...storeOptions, disabled: true }
-      : storeOptions
+      ? { ...mergedOptions, disabled: true }
+      : mergedOptions
 
     const borderStyle =
       graphId &&
-      !isPromotedView &&
-      promotionStore.isPromotedByAny(graphId, String(bareWidgetId), widget.name)
+      promotionStore.isPromotedByAny(graphId, {
+        sourceNodeId: hostNodeId,
+        sourceWidgetName: widget.storeName ?? widget.name,
+        disambiguatingSourceNodeId: promotionSourceNodeId
+      })
         ? 'ring ring-component-node-widget-promoted'
-        : widget.options?.advanced
+        : mergedOptions.advanced
           ? 'ring ring-component-node-widget-advanced'
           : undefined
+
+    const linkedUpstream: LinkedUpstreamInfo | undefined =
+      slotMetadata?.linked && slotMetadata.originNodeId
+        ? {
+            nodeId: slotMetadata.originNodeId,
+            outputName: slotMetadata.originOutputName
+          }
+        : undefined
 
     const simplified: SimplifiedWidget = {
       name: widget.name,
@@ -305,6 +413,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       callback: widget.callback,
       controlWidget: widget.controlWidget,
       label: widgetState?.label,
+      linkedUpstream,
       options: widgetOptions,
       spec: widget.spec
     }
@@ -332,13 +441,14 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     }
 
     result.push({
-      advanced: widget.options?.advanced ?? false,
+      advanced: mergedOptions.advanced ?? false,
       handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError: hasWidgetError(widget, nodeExecId, nodeErrors),
-      hidden: widget.options?.hidden ?? false,
+      hidden: mergedOptions.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,
+      renderKey,
       type: widget.type,
       vueComponent,
       simplified,

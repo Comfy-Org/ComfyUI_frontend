@@ -37,7 +37,7 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
   const mediaTypeFilters = ref<string[]>([])
 
   const fuseOptions = {
-    keys: ['name'],
+    keys: ['display_name', 'name'],
     threshold: 0.4,
     includeScore: true
   }

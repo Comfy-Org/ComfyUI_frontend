@@ -1,5 +1,9 @@
+import { resolveBlueprintEssentialsCategory } from '@/constants/essentialsDisplayNames'
 import type { EssentialsCategory } from '@/constants/essentialsNodes'
-import { ESSENTIALS_NODES } from '@/constants/essentialsNodes'
+import {
+  ESSENTIALS_CATEGORIES,
+  ESSENTIALS_NODES
+} from '@/constants/essentialsNodes'
 import { t } from '@/i18n'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { buildNodeDefTree } from '@/stores/nodeDefStore'
@@ -144,11 +148,16 @@ class NodeOrganizationService {
 
   private organizeEssentials(nodes: ComfyNodeDefImpl[]): NodeSection[] {
     const essentialNodes = nodes.filter(
-      (nodeDef) => !!nodeDef.essentials_category
+      (nodeDef) =>
+        !!nodeDef.essentials_category ||
+        !!resolveBlueprintEssentialsCategory(nodeDef.name)
     )
     const tree = buildNodeDefTree(essentialNodes, {
       pathExtractor: (nodeDef) => {
-        const folder = nodeDef.essentials_category || ''
+        const folder =
+          nodeDef.essentials_category ||
+          resolveBlueprintEssentialsCategory(nodeDef.name) ||
+          ''
         return folder ? [folder, nodeDef.name] : [nodeDef.name]
       }
     })
@@ -158,6 +167,14 @@ class NodeOrganizationService {
 
   private sortEssentialsFolders(tree: TreeNode): void {
     if (!tree.children) return
+
+    const catLen = ESSENTIALS_CATEGORIES.length
+    tree.children.sort((a, b) => {
+      const ai = ESSENTIALS_CATEGORIES.indexOf(a.label as EssentialsCategory)
+      const bi = ESSENTIALS_CATEGORIES.indexOf(b.label as EssentialsCategory)
+      return (ai === -1 ? catLen : ai) - (bi === -1 ? catLen : bi)
+    })
+
     for (const folder of tree.children) {
       if (!folder.children) continue
       const order = ESSENTIALS_NODES[folder.label as EssentialsCategory]

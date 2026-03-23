@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { TestIds } from '../../fixtures/selectors'
 
 test.describe('Workflows sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -231,26 +232,33 @@ test.describe('Workflows sidebar', () => {
       .toEqual('workflow1')
   })
 
-  test('Does not report warning when switching between opened workflows', async ({
+  test('Reports missing nodes warning again when switching back to workflow', async ({
     comfyPage
   }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
-    await comfyPage.page
-      .locator('.p-dialog')
-      .getByRole('button', { name: 'Close' })
-      .click({ force: true })
-    await comfyPage.page.locator('.p-dialog').waitFor({ state: 'hidden' })
+
+    const errorOverlay = comfyPage.page.getByTestId(
+      TestIds.dialogs.errorOverlay
+    )
+    await expect(errorOverlay).toBeVisible()
+
+    // Dismiss the error overlay
+    await errorOverlay.getByRole('button', { name: 'Dismiss' }).click()
+    await expect(errorOverlay).not.toBeVisible()
 
     // Load blank workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
-    // Switch back to the missing_nodes workflow
+    // Switch back to the missing_nodes workflow — overlay should reappear
+    // so users can install missing node packs without a page reload
     await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
 
-    await expect(
-      comfyPage.page.locator('.comfy-missing-nodes')
-    ).not.toBeVisible()
+    await expect(errorOverlay).toBeVisible()
   })
 
   test('Can close saved-workflows from the open workflows section', async ({

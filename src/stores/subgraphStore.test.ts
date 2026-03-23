@@ -7,9 +7,10 @@ import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
-import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+
+import { useLitegraphService } from '@/services/litegraphService'
 
 import {
   createTestSubgraph,

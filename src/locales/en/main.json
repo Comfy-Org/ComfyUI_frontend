@@ -31,6 +31,7 @@
     "audioProgress": "Audio progress",
     "viewImageOfTotal": "View image {index} of {total}",
     "viewVideoOfTotal": "View video {index} of {total}",
+    "imageLightbox": "Image preview",
     "imagePreview": "Image preview - Use arrow keys to navigate between images",
     "videoPreview": "Video preview - Use arrow keys to navigate between videos",
     "galleryImage": "Gallery image",
@@ -104,6 +105,8 @@
     "usageHint": "Usage hint",
     "triggerPhrase": "Trigger phrase",
     "findIssues": "Find Issues",
+    "findOnGithub": "Find on GitHub",
+    "getHelpAction": "Get Help",
     "reportIssue": "Send Report",
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
@@ -136,9 +139,11 @@
     "enableOrDisablePack": "Enable or disable pack",
     "openManager": "Open Manager",
     "manageExtensions": "Manage extensions",
+    "gallery": "Gallery",
     "graphNavigation": "Graph navigation",
     "dropYourFileOr": "Drop your file or",
     "back": "Back",
+    "previous": "Previous",
     "next": "Next",
     "submit": "Submit",
     "install": "Install",
@@ -282,6 +287,32 @@
     "browserReservedKeybinding": "This shortcut is reserved by some browsers and may have unexpected results.",
     "browserReservedKeybindingTooltip": "This shortcut conflicts with browser-reserved shortcuts",
     "keybindingAlreadyExists": "Keybinding already exists on",
+    "keybindingPresets": {
+      "importPreset": "Import preset",
+      "importKeybindingPreset": "Import keybinding preset",
+      "exportPreset": "Export preset",
+      "saveChanges": "Save Changes",
+      "saveAsNewPreset": "Save as new preset",
+      "resetToDefault": "Reset to default",
+      "deletePreset": "Delete preset",
+      "unsavedChangesTo": "Unsaved changes to {name}",
+      "unsavedChangesMessage": "You have unsaved changes that will be lost if you switch without saving.",
+      "discardAndSwitch": "Discard and Switch",
+      "saveAndSwitch": "Save and Switch",
+      "deletePresetTitle": "Delete the current preset?",
+      "deletePresetWarning": "This preset will be deleted. This cannot be undone.",
+      "presetSaved": "Preset \"{name}\" saved",
+      "presetDeleted": "Preset \"{name}\" deleted",
+      "presetImported": "Keybinding preset imported",
+      "invalidPresetFile": "Preset file must be valid JSON exported from ComfyUI",
+      "invalidPresetName": "Preset name must not be empty, \"default\", start with a dot, contain path separators, or end with .json",
+      "loadPresetFailed": "Failed to load preset \"{name}\"",
+      "deletePresetFailed": "Failed to delete preset \"{name}\"",
+      "overwritePresetTitle": "Overwrite Preset",
+      "overwritePresetMessage": "A preset named \"{name}\" already exists. Overwrite it?",
+      "presetNamePrompt": "Enter a name for the preset",
+      "default": "Default Preset"
+    },
     "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information.",
     "startRecording": "Start Recording",
     "stopRecording": "Stop Recording",
@@ -312,9 +343,13 @@
     "frameNodes": "Frame Nodes",
     "listening": "Listening...",
     "ready": "Ready",
+    "play": "Play",
+    "pause": "Pause",
     "playPause": "Play/Pause",
     "playRecording": "Play Recording",
     "playing": "Playing",
+    "skipToStart": "Skip to Start",
+    "skipToEnd": "Skip to End",
     "stopPlayback": "Stop Playback",
     "playbackSpeed": "Playback Speed",
     "volume": "Volume",
@@ -546,6 +581,7 @@
     "Open in Mask Editor": "Open in Mask Editor",
     "Open Image": "Open Image",
     "Copy Image": "Copy Image",
+    "Paste Image": "Paste Image",
     "Save Image": "Save Image",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
@@ -856,9 +892,9 @@
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
       "sections": {
-        "favorites": "Favorites",
-        "favoriteNode": "Favorite Node",
-        "unfavoriteNode": "Unfavorite Node",
+        "favorites": "Bookmarks",
+        "favoriteNode": "Bookmark Node",
+        "unfavoriteNode": "Unbookmark Node",
         "bookmarked": "Bookmarked",
         "subgraphBlueprints": "Subgraph Blueprints",
         "myBlueprints": "My Blueprints",
@@ -867,7 +903,7 @@
         "comfyNodes": "Comfy Nodes",
         "extensions": "Extensions"
       },
-      "noBookmarkedNodes": "No favorites yet"
+      "noBookmarkedNodes": "No bookmarks yet"
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
@@ -1155,6 +1191,7 @@
   },
   "maskEditor": {
     "title": "Mask Editor",
+    "openMaskEditor": "Open in Mask Editor",
     "invert": "Invert",
     "clear": "Clear",
     "undo": "Undo",
@@ -1839,7 +1876,8 @@
   "loadWorkflowWarning": {
     "outdatedVersion": "This workflow was created with a newer version of ComfyUI ({version}). Some nodes may not work correctly.",
     "outdatedVersionGeneric": "This workflow was created with a newer version of ComfyUI. Some nodes may not work correctly.",
-    "coreNodesFromVersion": "Core nodes from version {version}:"
+    "coreNodesFromVersion": "Core nodes from version {version}:",
+    "unknownVersion": "unknown"
   },
   "errorDialog": {
     "defaultTitle": "An error occurred",
@@ -1971,6 +2009,10 @@
     "y": "Y",
     "width": "Width",
     "height": "Height"
+  },
+  "curveWidget": {
+    "monotone_cubic": "Smooth",
+    "linear": "Linear"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -2247,7 +2289,12 @@
     "topupTimeout": "Top-up verification timed out"
   },
   "subscription": {
-    "chooseBestPlanWorkspace": "Choose the best plan for your workspace",
+    "plansForWorkspace": "Plans for {workspace}",
+    "personalWorkspace": "Personal Workspace",
+    "teamWorkspace": "Team Workspace",
+    "soloUseOnly": "Solo use only",
+    "needTeamWorkspace": "Need team workspace?",
+    "inviteUpTo": "Invite up to",
     "title": "Subscription",
     "titleUnsubscribed": "Subscribe to Comfy Cloud",
     "comfyCloud": "Comfy Cloud",
@@ -2559,6 +2606,18 @@
       "failedToFetchWorkspaces": "Failed to load workspaces"
     }
   },
+  "teamWorkspacesDialog": {
+    "title": "Team Workspaces",
+    "subtitle": "Switch to an existing one or create a new workspace",
+    "subtitleNoWorkspaces": "Create a new team workspace to share credits",
+    "confirmCallbackFailed": "Workspace created but setup incomplete",
+    "yourTeamWorkspaces": "Your team workspaces",
+    "switch": "Switch",
+    "newWorkspace": "New workspace",
+    "namePlaceholder": "e.g. Marketing Team",
+    "createWorkspace": "Create workspace",
+    "nameValidationError": "Name must be 1–50 characters using letters, numbers, spaces, or common punctuation."
+  },
   "workspaceSwitcher": {
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
@@ -2566,7 +2625,8 @@
     "roleOwner": "Owner",
     "roleMember": "Member",
     "createWorkspace": "Create new workspace",
-    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one."
+    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
+    "failedToSwitch": "Failed to switch workspace"
   },
   "selectionToolbox": {
     "executeButton": {
@@ -3190,6 +3250,14 @@
     "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
   },
+  "appBuilder": {
+    "vueNodeSwitch": {
+      "title": "Switched over to Nodes 2.0",
+      "content": "For the best experience, App builder uses Nodes 2.0. You can switch back after building the app from the main menu.",
+      "dontShowAgain": "Don't show again",
+      "dismiss": "Dismiss"
+    }
+  },
   "vueNodesMigration": {
     "message": "Prefer the legacy design?",
     "button": "Switch back"
@@ -3382,6 +3450,8 @@
     "errors": "Errors",
     "noErrors": "No errors",
     "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
+    "findOnGithubTooltip": "Search GitHub issues for related problems",
+    "getHelpTooltip": "Report this error and we'll help you resolve it",
     "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
     "promptErrors": {
@@ -3437,6 +3507,7 @@
       "customNodeDownloadDisabled": "Cloud environment does not support model imports for custom nodes in this section. Please use standard loader nodes or substitute with a model from the library below.",
       "importNotSupported": "Import Not Supported",
       "copyModelName": "Copy model name",
+      "copyUrl": "Copy URL",
       "confirmSelection": "Confirm selection",
       "locateNode": "Locate node on canvas",
       "cancelSelection": "Cancel selection",
@@ -3445,7 +3516,8 @@
       "collapseNodes": "Hide referencing nodes",
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
-      "assetLoadTimeout": "Model detection timed out. Try reloading the workflow."
+      "assetLoadTimeout": "Model detection timed out. Try reloading the workflow.",
+      "downloadAll": "Download all"
     }
   },
   "errorOverlay": {
@@ -3565,9 +3637,9 @@
     "removeBackground": "Remove Background",
     "imageCompare": "Image compare",
     "extractFrame": "Extract frame",
-    "loadStyleLora": "Load style (LoRA)",
+    "loadStyleLora": "Load style",
     "lipsync": "Lipsync",
-    "textGenerationLLM": "Text generation (LLM)",
+    "textGenerationLLM": "Text generation",
     "textTo3DModel": "Text to 3D model",
     "imageTo3DModel": "Image to 3D Model",
     "musicGeneration": "Music generation",
@@ -3619,5 +3691,16 @@
   "builderMenu": {
     "enterAppMode": "Enter app mode",
     "exitAppBuilder": "Exit app builder"
+  },
+  "cloudNotification": {
+    "title": "Run ComfyUI in the Cloud",
+    "message": "From setup to creation in seconds. Popular models, extensions, and powerful GPUs — ready when you are.",
+    "feature1Title": "400 Free Credits Monthly",
+    "feature2Title": "Works Anywhere, Instantly",
+    "feature3Title": "Models Ready to Use",
+    "feature4Title": "Top Custom Node Packs Pre-installed",
+    "footer": "ComfyUI stays free and open source. Cloud is optional.",
+    "continueLocally": "Continue Locally",
+    "exploreCloud": "Try Cloud for Free"
   }
 }
