@@ -3149,6 +3149,7 @@
     },
     "gpuLabel": "RTX 6000 Pro (ذاكرة 96GB VRAM)",
     "haveQuestions": "هل لديك أسئلة أو ترغب في معرفة المزيد عن المؤسسات؟",
+    "inviteUpTo": "ادعُ حتى",
     "invoiceHistory": "سجل الفواتير",
     "learnMore": "معرفة المزيد",
     "managePayment": "إدارة الدفع",
@@ -3174,13 +3175,16 @@
     "monthlyCreditsPerMemberLabel": "الرصيد الشهري / عضو",
     "monthlyCreditsRollover": "سيتم ترحيل هذا الرصيد إلى الشهر التالي",
     "mostPopular": "الأكثر شيوعًا",
+    "needTeamWorkspace": "هل تحتاج إلى مساحة عمل للفريق؟",
     "nextBillingCycle": "دورة الفوترة التالية",
     "nextMonthInvoice": "فاتورة الشهر القادم",
     "partnerNodesBalance": "رصيد \"عُقَد الشريك\"",
     "partnerNodesCredits": "رصيد العقد الشريكة",
     "partnerNodesDescription": "لتشغيل النماذج التجارية/المملوكة",
     "perMonth": "دولار أمريكي / شهر",
+    "personalWorkspace": "مساحة العمل الشخصية",
     "plansAndPricing": "الخطط والأسعار",
+    "plansForWorkspace": "الخطط لمساحة العمل {workspace}",
     "prepaidCreditsInfo": "رصيد تم شراؤه بشكل منفصل ولا ينتهي صلاحيته",
     "prepaidDescription": "رصيد مسبق الدفع",
     "preview": {
@@ -3216,6 +3220,7 @@
     "resubscribe": "إعادة الاشتراك",
     "resubscribeSuccess": "تمت إعادة تفعيل الاشتراك بنجاح",
     "resubscribeTo": "إعادة الاشتراك في {plan}",
+    "soloUseOnly": "للاستخدام الفردي فقط",
     "subscribeForMore": "ترقية",
     "subscribeNow": "اشترك الآن",
     "subscribeTo": "اشترك في {plan}",
@@ -3223,6 +3228,7 @@
     "subscribeToRun": "اشتراك",
     "subscribeToRunFull": "الاشتراك للتشغيل",
     "subscriptionRequiredMessage": "الاشتراك مطلوب للأعضاء لتشغيل سير العمل على السحابة",
+    "teamWorkspace": "مساحة عمل الفريق",
     "tierNameYearly": "{name} سنوي",
     "tiers": {
       "creator": {
@@ -3273,6 +3279,18 @@
     "closeTabsToRight": "إغلاق التبويبات إلى اليمين",
     "duplicateTab": "تكرار التبويب",
     "removeFromBookmarks": "إزالة من العلامات"
+  },
+  "teamWorkspacesDialog": {
+    "confirmCallbackFailed": "تم إنشاء مساحة العمل لكن الإعداد غير مكتمل",
+    "createWorkspace": "إنشاء مساحة عمل",
+    "namePlaceholder": "مثال: فريق التسويق",
+    "nameValidationError": "يجب أن يكون الاسم من ١ إلى ٥٠ حرفًا باستخدام الحروف أو الأرقام أو المسافات أو علامات الترقيم الشائعة.",
+    "newWorkspace": "مساحة عمل جديدة",
+    "subtitle": "انتقل إلى مساحة عمل موجودة أو أنشئ مساحة عمل جديدة",
+    "subtitleNoWorkspaces": "أنشئ مساحة عمل فريق جديدة لمشاركة الرصيد",
+    "switch": "تبديل",
+    "title": "مساحات عمل الفريق",
+    "yourTeamWorkspaces": "مساحات عمل فريقك"
   },
   "templateWidgets": {
     "sort": {
@@ -3660,6 +3678,7 @@
   },
   "workspaceSwitcher": {
     "createWorkspace": "إنشاء مساحة عمل جديدة",
+    "failedToSwitch": "فشل في تبديل مساحة العمل",
     "maxWorkspacesReached": "يمكنك امتلاك ١٠ مساحات عمل فقط. احذف واحدة لإنشاء مساحة جديدة.",
     "personal": "شخصي",
     "roleMember": "عضو",

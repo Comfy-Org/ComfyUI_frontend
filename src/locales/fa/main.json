@@ -3161,6 +3161,7 @@
     },
     "gpuLabel": "RTX 6000 Pro (۹۶ گیگابایت VRAM)",
     "haveQuestions": "سوالی دارید یا به دنبال راهکار سازمانی هستید؟",
+    "inviteUpTo": "دعوت تا سقف",
     "invoiceHistory": "تاریخچه فاکتورها",
     "learnMore": "اطلاعات بیشتر",
     "managePayment": "مدیریت پرداخت",
@@ -3186,13 +3187,16 @@
     "monthlyCreditsPerMemberLabel": "اعتبار ماهانه / هر عضو",
     "monthlyCreditsRollover": "این اعتبارها به ماه بعد منتقل می‌شوند",
     "mostPopular": "محبوب‌ترین",
+    "needTeamWorkspace": "به فضای کاری تیمی نیاز دارید؟",
     "nextBillingCycle": "چرخه صورتحساب بعدی",
     "nextMonthInvoice": "صورتحساب ماه آینده",
     "partnerNodesBalance": "اعتبار «Partner Nodes»",
     "partnerNodesCredits": "قیمت‌گذاری Partner Nodes",
     "partnerNodesDescription": "برای اجرای مدل‌های تجاری/اختصاصی",
     "perMonth": "/ ماه",
+    "personalWorkspace": "فضای کاری شخصی",
     "plansAndPricing": "طرح‌ها و قیمت‌ها",
+    "plansForWorkspace": "طرح‌ها برای {workspace}",
     "prepaidCreditsInfo": "اعتبارهای پیش‌پرداخت تا یک سال پس از تاریخ خرید منقضی می‌شوند.",
     "prepaidDescription": "اعتبارهای پیش‌پرداخت",
     "preview": {
@@ -3228,6 +3232,7 @@
     "resubscribe": "تمدید اشتراک",
     "resubscribeSuccess": "اشتراک با موفقیت فعال شد",
     "resubscribeTo": "تمدید اشتراک {plan}",
+    "soloUseOnly": "فقط برای استفاده فردی",
     "subscribeForMore": "ارتقاء",
     "subscribeNow": "هم‌اکنون اشتراک بگیرید",
     "subscribeTo": "اشتراک در {plan}",
@@ -3235,6 +3240,7 @@
     "subscribeToRun": "اشتراک",
     "subscribeToRunFull": "اشتراک برای اجرا",
     "subscriptionRequiredMessage": "برای اجرای workflowها در Cloud، اشتراک لازم است.",
+    "teamWorkspace": "فضای کاری تیمی",
     "tierNameYearly": "{name} سالانه",
     "tiers": {
       "creator": {
@@ -3285,6 +3291,18 @@
     "closeTabsToRight": "بستن تب‌های سمت راست",
     "duplicateTab": "ایجاد تب مشابه",
     "removeFromBookmarks": "حذف از نشانک‌ها"
+  },
+  "teamWorkspacesDialog": {
+    "confirmCallbackFailed": "فضای کاری ایجاد شد اما راه‌اندازی کامل نشد",
+    "createWorkspace": "ایجاد فضای کاری",
+    "namePlaceholder": "مثلاً تیم بازاریابی",
+    "nameValidationError": "نام باید بین ۱ تا ۵۰ کاراکتر و شامل حروف، اعداد، فاصله یا علائم نگارشی رایج باشد.",
+    "newWorkspace": "فضای کاری جدید",
+    "subtitle": "به یکی از فضاهای موجود بروید یا فضای کاری جدیدی ایجاد کنید",
+    "subtitleNoWorkspaces": "برای اشتراک‌گذاری اعتبارها، فضای کاری تیمی جدیدی ایجاد کنید",
+    "switch": "تغییر",
+    "title": "فضاهای کاری تیمی",
+    "yourTeamWorkspaces": "فضاهای کاری تیمی شما"
   },
   "templateWidgets": {
     "sort": {
@@ -3672,6 +3690,7 @@
   },
   "workspaceSwitcher": {
     "createWorkspace": "ایجاد محیط کاری جدید",
+    "failedToSwitch": "تغییر فضای کاری ناموفق بود",
     "maxWorkspacesReached": "شما فقط می‌توانید مالک ۱۰ محیط کاری باشید. برای ایجاد محیط کاری جدید، یکی را حذف کنید.",
     "personal": "شخصی",
     "roleMember": "عضو",

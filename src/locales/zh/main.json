@@ -3161,6 +3161,7 @@
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "对企业级有疑问？",
+    "inviteUpTo": "可邀请多达",
     "invoiceHistory": "发票历史",
     "learnMore": "了解更多",
     "managePayment": "管理付款",
@@ -3186,13 +3187,16 @@
     "monthlyCreditsPerMemberLabel": "每成员每月积分",
     "monthlyCreditsRollover": "这些积分将结转到下个月",
     "mostPopular": "最受欢迎",
+    "needTeamWorkspace": "需要团队工作区？",
     "nextBillingCycle": "下一个计费周期",
     "nextMonthInvoice": "下月账单",
     "partnerNodesBalance": "\"合作伙伴节点\"积分余额",
     "partnerNodesCredits": "合作伙伴节点积分",
     "partnerNodesDescription": "用于运行商业/专有模型",
     "perMonth": "美元 / 月",
+    "personalWorkspace": "个人工作区",
     "plansAndPricing": "订阅和定价",
+    "plansForWorkspace": "{workspace} 的套餐",
     "prepaidCreditsInfo": "单独购买且不会过期的积分",
     "prepaidDescription": "预付款额度",
     "preview": {
@@ -3228,6 +3232,7 @@
     "resubscribe": "重新订阅",
     "resubscribeSuccess": "订阅已成功重新激活",
     "resubscribeTo": "重新订阅 {plan}",
+    "soloUseOnly": "仅限个人使用",
     "subscribeForMore": "升级",
     "subscribeNow": "立即订阅",
     "subscribeTo": "订阅 {plan}",
@@ -3235,6 +3240,7 @@
     "subscribeToRun": "订阅",
     "subscribeToRunFull": "订阅 Run",
     "subscriptionRequiredMessage": "成员在云端运行工作流需要订阅",
+    "teamWorkspace": "团队工作区",
     "tierNameYearly": "{name} 年度",
     "tiers": {
       "creator": {
@@ -3285,6 +3291,18 @@
     "closeTabsToRight": "关闭右侧标签",
     "duplicateTab": "复制标签",
     "removeFromBookmarks": "从书签中移除"
+  },
+  "teamWorkspacesDialog": {
+    "confirmCallbackFailed": "工作区已创建，但设置未完成",
+    "createWorkspace": "创建工作区",
+    "namePlaceholder": "例如：市场团队",
+    "nameValidationError": "名称需为1-50个字符，可包含字母、数字、空格或常用标点符号。",
+    "newWorkspace": "新建工作区",
+    "subtitle": "切换到已有工作区或创建新工作区",
+    "subtitleNoWorkspaces": "创建新的团队工作区以共享积分",
+    "switch": "切换",
+    "title": "团队工作区",
+    "yourTeamWorkspaces": "你的团队工作区"
   },
   "templateWidgets": {
     "sort": {
@@ -3672,6 +3690,7 @@
   },
   "workspaceSwitcher": {
     "createWorkspace": "创建新工作区",
+    "failedToSwitch": "切换工作区失败",
     "maxWorkspacesReached": "您最多只能拥有10个工作区。请删除一个以创建新工作区。",
     "personal": "个人",
     "roleMember": "成员",

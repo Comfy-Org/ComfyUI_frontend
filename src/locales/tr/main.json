@@ -3149,6 +3149,7 @@
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Sorularınız mı var veya kurumsal çözüm mü arıyorsunuz?",
+    "inviteUpTo": "Şu kadar kişiyi davet et:",
     "invoiceHistory": "Fatura geçmişi",
     "learnMore": "Daha fazla bilgi edinin",
     "managePayment": "Ödemeyi Yönet",
@@ -3174,13 +3175,16 @@
     "monthlyCreditsPerMemberLabel": "Aylık kredi / üye",
     "monthlyCreditsRollover": "Bu krediler sonraki aya devredilecek",
     "mostPopular": "En popüler",
+    "needTeamWorkspace": "Takım çalışma alanına mı ihtiyacınız var?",
     "nextBillingCycle": "sonraki fatura döngüsü",
     "nextMonthInvoice": "Gelecek ay faturası",
     "partnerNodesBalance": "\"Partner Düğümleri\" Kredi Bakiyesi",
     "partnerNodesCredits": "Partner Düğümleri kredileri",
     "partnerNodesDescription": "Ticari/özel modelleri çalıştırmak için",
     "perMonth": "USD / ay",
+    "personalWorkspace": "Kişisel Çalışma Alanı",
     "plansAndPricing": "Planlar ve fiyatlandırma",
+    "plansForWorkspace": "{workspace} için planlar",
     "prepaidCreditsInfo": "Ayrıca satın alınan ve son kullanma tarihi olmayan krediler",
     "prepaidDescription": "Ön ödemeli krediler",
     "preview": {
@@ -3216,6 +3220,7 @@
     "resubscribe": "Yeniden abone ol",
     "resubscribeSuccess": "Abonelik başarıyla yeniden etkinleştirildi",
     "resubscribeTo": "{plan} planına yeniden abone ol",
+    "soloUseOnly": "Sadece bireysel kullanım",
     "subscribeForMore": "Yükselt",
     "subscribeNow": "Hemen Abone Ol",
     "subscribeTo": "{plan} abonesi ol",
@@ -3223,6 +3228,7 @@
     "subscribeToRun": "Abone Ol",
     "subscribeToRunFull": "Çalıştırmaya Abone Ol",
     "subscriptionRequiredMessage": "Üyelerin Bulut'ta iş akışlarını çalıştırabilmesi için abonelik gereklidir",
+    "teamWorkspace": "Takım Çalışma Alanı",
     "tierNameYearly": "{name} Yıllık",
     "tiers": {
       "creator": {
@@ -3273,6 +3279,18 @@
     "closeTabsToRight": "Sağdaki Sekmeleri Kapat",
     "duplicateTab": "Sekmeyi Çoğalt",
     "removeFromBookmarks": "Yer İmlerinden Kaldır"
+  },
+  "teamWorkspacesDialog": {
+    "confirmCallbackFailed": "Çalışma alanı oluşturuldu ancak kurulum tamamlanamadı",
+    "createWorkspace": "Çalışma alanı oluştur",
+    "namePlaceholder": "örn. Pazarlama Takımı",
+    "nameValidationError": "İsim, harf, rakam, boşluk veya yaygın noktalama işaretleriyle 1–50 karakter olmalıdır.",
+    "newWorkspace": "Yeni çalışma alanı",
+    "subtitle": "Mevcut birine geçin veya yeni bir çalışma alanı oluşturun",
+    "subtitleNoWorkspaces": "Kredileri paylaşmak için yeni bir takım çalışma alanı oluşturun",
+    "switch": "Geçiş yap",
+    "title": "Takım Çalışma Alanları",
+    "yourTeamWorkspaces": "Takım çalışma alanlarınız"
   },
   "templateWidgets": {
     "sort": {
@@ -3660,6 +3678,7 @@
   },
   "workspaceSwitcher": {
     "createWorkspace": "Yeni çalışma alanı oluştur",
+    "failedToSwitch": "Çalışma alanı değiştirilemedi",
     "maxWorkspacesReached": "Yalnızca 10 çalışma alanına sahip olabilirsiniz. Yeni bir tane oluşturmak için birini silin.",
     "personal": "Kişisel",
     "roleMember": "Üye",

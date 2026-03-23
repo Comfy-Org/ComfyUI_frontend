@@ -3149,6 +3149,7 @@
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "질문이 있거나 엔터프라이즈가 궁금하신가요?",
+    "inviteUpTo": "최대 {count}명 초대",
     "invoiceHistory": "청구서 기록",
     "learnMore": "더 알아보기",
     "managePayment": "결제 관리",
@@ -3174,13 +3175,16 @@
     "monthlyCreditsPerMemberLabel": "월별 크레딧 / 멤버",
     "monthlyCreditsRollover": "이 크레딧은 다음 달로 이월됩니다",
     "mostPopular": "가장 인기 있음",
+    "needTeamWorkspace": "팀 워크스페이스가 필요하신가요?",
     "nextBillingCycle": "다음 결제 주기",
     "nextMonthInvoice": "다음 달 청구서",
     "partnerNodesBalance": "\"파트너 노드\" 크레딧 잔액",
     "partnerNodesCredits": "파트너 노드 크레딧",
     "partnerNodesDescription": "상용/독점 모델 실행용",
     "perMonth": "USD / 월",
+    "personalWorkspace": "개인 워크스페이스",
     "plansAndPricing": "플랜 및 가격",
+    "plansForWorkspace": "{workspace}의 플랜",
     "prepaidCreditsInfo": "별도 구매하여 만료되지 않는 크레딧",
     "prepaidDescription": "선불 크레딧",
     "preview": {
@@ -3216,6 +3220,7 @@
     "resubscribe": "다시 구독하기",
     "resubscribeSuccess": "구독이 성공적으로 재활성화되었습니다",
     "resubscribeTo": "{plan} 다시 구독하기",
+    "soloUseOnly": "개인용 전용",
     "subscribeForMore": "업그레이드",
     "subscribeNow": "지금 구독하기",
     "subscribeTo": "{plan} 구독하기",
@@ -3223,6 +3228,7 @@
     "subscribeToRun": "구독",
     "subscribeToRunFull": "실행 구독",
     "subscriptionRequiredMessage": "클라우드에서 워크플로우를 실행하려면 멤버가 구독해야 합니다",
+    "teamWorkspace": "팀 워크스페이스",
     "tierNameYearly": "{name} 연간",
     "tiers": {
       "creator": {
@@ -3273,6 +3279,18 @@
     "closeTabsToRight": "오른쪽 탭 닫기",
     "duplicateTab": "탭 복제",
     "removeFromBookmarks": "북마크에서 제거"
+  },
+  "teamWorkspacesDialog": {
+    "confirmCallbackFailed": "워크스페이스가 생성되었지만 설정이 완료되지 않았습니다",
+    "createWorkspace": "워크스페이스 만들기",
+    "namePlaceholder": "예: 마케팅팀",
+    "nameValidationError": "이름은 문자, 숫자, 공백 또는 일반 구두점을 사용하여 1~50자여야 합니다.",
+    "newWorkspace": "새 워크스페이스",
+    "subtitle": "기존 워크스페이스로 전환하거나 새 워크스페이스를 만드세요",
+    "subtitleNoWorkspaces": "크레딧을 공유할 새 팀 워크스페이스를 만드세요",
+    "switch": "전환",
+    "title": "팀 워크스페이스",
+    "yourTeamWorkspaces": "내 팀 워크스페이스"
   },
   "templateWidgets": {
     "sort": {
@@ -3660,6 +3678,7 @@
   },
   "workspaceSwitcher": {
     "createWorkspace": "새 워크스페이스 만들기",
+    "failedToSwitch": "워크스페이스 전환에 실패했습니다",
     "maxWorkspacesReached": "최대 10개의 워크스페이스만 소유할 수 있습니다. 새로 만들려면 하나를 삭제하세요.",
     "personal": "개인",
     "roleMember": "멤버",

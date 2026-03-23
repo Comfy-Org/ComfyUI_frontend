@@ -3149,6 +3149,7 @@
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "¿Tienes preguntas o buscas soluciones empresariales?",
+    "inviteUpTo": "Invita hasta",
     "invoiceHistory": "Historial de facturas",
     "learnMore": "Más información",
     "managePayment": "Gestionar pago",
@@ -3174,13 +3175,16 @@
     "monthlyCreditsPerMemberLabel": "Créditos mensuales / miembro",
     "monthlyCreditsRollover": "Estos créditos se transferirán al próximo mes",
     "mostPopular": "Más popular",
+    "needTeamWorkspace": "¿Necesitas un espacio de trabajo en equipo?",
     "nextBillingCycle": "próximo ciclo de facturación",
     "nextMonthInvoice": "Factura del próximo mes",
     "partnerNodesBalance": "Saldo de créditos de \"Nodos de Partners\"",
     "partnerNodesCredits": "Créditos de Nodos de Socio",
     "partnerNodesDescription": "Para ejecutar modelos comerciales/propietarios",
     "perMonth": "USD / mes",
+    "personalWorkspace": "Espacio de trabajo personal",
     "plansAndPricing": "Planes y precios",
+    "plansForWorkspace": "Planes para {workspace}",
     "prepaidCreditsInfo": "Créditos comprados por separado que no expiran",
     "prepaidDescription": "Créditos prepagados",
     "preview": {
@@ -3216,6 +3220,7 @@
     "resubscribe": "Volver a suscribirse",
     "resubscribeSuccess": "¡Suscripción reactivada correctamente!",
     "resubscribeTo": "Volver a suscribirse a {plan}",
+    "soloUseOnly": "Solo para uso individual",
     "subscribeForMore": "Mejorar",
     "subscribeNow": "Suscribirse Ahora",
     "subscribeTo": "Suscribirse a {plan}",
@@ -3223,6 +3228,7 @@
     "subscribeToRun": "Suscribirse",
     "subscribeToRunFull": "Suscribirse a Ejecutar",
     "subscriptionRequiredMessage": "Se requiere una suscripción para que los miembros ejecuten flujos de trabajo en la nube",
+    "teamWorkspace": "Espacio de trabajo en equipo",
     "tierNameYearly": "{name} Anual",
     "tiers": {
       "creator": {
@@ -3273,6 +3279,18 @@
     "closeTabsToRight": "Cerrar pestañas a la derecha",
     "duplicateTab": "Duplicar pestaña",
     "removeFromBookmarks": "Eliminar de marcadores"
+  },
+  "teamWorkspacesDialog": {
+    "confirmCallbackFailed": "Espacio de trabajo creado pero la configuración está incompleta",
+    "createWorkspace": "Crear espacio de trabajo",
+    "namePlaceholder": "ej. Equipo de Marketing",
+    "nameValidationError": "El nombre debe tener entre 1 y 50 caracteres usando letras, números, espacios o signos de puntuación comunes.",
+    "newWorkspace": "Nuevo espacio de trabajo",
+    "subtitle": "Cambia a uno existente o crea un nuevo espacio de trabajo",
+    "subtitleNoWorkspaces": "Crea un nuevo espacio de trabajo en equipo para compartir créditos",
+    "switch": "Cambiar",
+    "title": "Espacios de trabajo en equipo",
+    "yourTeamWorkspaces": "Tus espacios de trabajo en equipo"
   },
   "templateWidgets": {
     "sort": {
@@ -3660,6 +3678,7 @@
   },
   "workspaceSwitcher": {
     "createWorkspace": "Crear nuevo espacio de trabajo",
+    "failedToSwitch": "No se pudo cambiar el espacio de trabajo",
     "maxWorkspacesReached": "Solo puedes ser propietario de 10 espacios de trabajo. Elimina uno para crear uno nuevo.",
     "personal": "Personal",
     "roleMember": "Miembro",
