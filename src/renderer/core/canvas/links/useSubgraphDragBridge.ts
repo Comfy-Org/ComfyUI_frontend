@@ -19,7 +19,6 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { resolvePointerTarget } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
-import { app } from '@/scripts/app'
 import { createRafBatch } from '@/utils/rafBatch'
 
 const SNAP_CLASS = 'lg-slot--snap-target'
@@ -276,7 +275,7 @@ export function useSubgraphDragBridge() {
       }
 
       if (candidateChanged || snapPosChanged) {
-        app.canvas?.setDirty(true, true)
+        lgCanvas.setDirty(true, true)
       }
     }
 

@@ -49,7 +49,7 @@ export interface LinkConnectorEventMap {
     node: SubgraphInputNode | SubgraphOutputNode
     event: CanvasPointerEvent
   }
-  /** Fired before a link is dropped on empty canvas. Return false to intercept. */
+  /** Fired before a link is dropped on empty canvas. Call event.preventDefault() to intercept; dispatch() returns false when prevented. */
   'before-drop-on-canvas': CanvasPointerEvent
   'dropped-on-canvas': CanvasPointerEvent
 
