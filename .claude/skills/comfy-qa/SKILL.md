@@ -9,7 +9,7 @@ Perform comprehensive quality assurance of the ComfyUI frontend application by n
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - `pnpm` package manager
 - `gh` CLI (authenticated)
 - `playwright-cli` (browser automation): `npm install -g @playwright/cli@latest`

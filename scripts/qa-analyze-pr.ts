@@ -49,6 +49,8 @@ interface PrThread {
   diff: string
 }
 
+type TargetType = 'pr' | 'issue'
+
 interface Options {
   prNumber: string
   repo: string
@@ -57,6 +59,7 @@ interface Options {
   apiKey: string
   mediaBudgetBytes: number
   maxVideoBytes: number
+  type: TargetType
 }
 
 // ── CLI parsing ──
@@ -67,7 +70,8 @@ function parseArgs(): Options {
     model: 'gemini-2.5-pro',
     apiKey: process.env.GEMINI_API_KEY || '',
     mediaBudgetBytes: 20 * 1024 * 1024,
-    maxVideoBytes: 10 * 1024 * 1024
+    maxVideoBytes: 10 * 1024 * 1024,
+    type: 'pr'
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -84,9 +88,12 @@ function parseArgs(): Options {
       case '--model':
         opts.model = args[++i]
         break
+      case '--type':
+        opts.type = args[++i] as TargetType
+        break
       case '--help':
         console.warn(
-          'Usage: qa-analyze-pr.ts --pr-number <num> --repo <owner/repo> --output-dir <path> [--model <model>]'
+          'Usage: qa-analyze-pr.ts --pr-number <num> --repo <owner/repo> --output-dir <path> [--model <model>] [--type pr|issue]'
         )
         process.exit(0)
     }
@@ -177,6 +184,43 @@ function fetchPrThread(prNumber: string, repo: string): PrThread {
   }
 }
 
+interface IssueThread {
+  title: string
+  body: string
+  labels: string[]
+  comments: string[]
+}
+
+function fetchIssueThread(issueNumber: string, repo: string): IssueThread {
+  console.warn('Fetching issue thread...')
+
+  const issueView = ghExec(
+    `gh issue view ${issueNumber} --repo ${repo} --json title,body,labels`
+  )
+  const issueData = issueView
+    ? JSON.parse(issueView)
+    : { title: '', body: '', labels: [] }
+
+  const commentsRaw = ghExec(
+    `gh api repos/${repo}/issues/${issueNumber}/comments --paginate`
+  )
+  const comments: string[] = commentsRaw
+    ? JSON.parse(commentsRaw).map((c: { body: string }) => c.body)
+    : []
+
+  console.warn(
+    `Issue #${issueNumber}: "${issueData.title}" | ` +
+      `${comments.length} comments`
+  )
+
+  return {
+    title: issueData.title || '',
+    body: issueData.body || '',
+    labels: (issueData.labels || []).map((l: { name: string }) => l.name),
+    comments
+  }
+}
+
 // ── Media extraction ──
 
 const MEDIA_EXTENSIONS = /\.(png|jpg|jpeg|gif|webp|mp4|webm|mov)$/i
@@ -217,6 +261,26 @@ export function extractMediaUrls(text: string): string[] {
 
 // ── Media downloading ──
 
+const ALLOWED_MEDIA_DOMAINS = [
+  'github.com',
+  'raw.githubusercontent.com',
+  'user-images.githubusercontent.com',
+  'private-user-images.githubusercontent.com',
+  'objects.githubusercontent.com',
+  'github.githubassets.com'
+]
+
+function isAllowedMediaDomain(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname
+    return ALLOWED_MEDIA_DOMAINS.some(
+      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
+    )
+  } catch {
+    return false
+  }
+}
+
 async function downloadMedia(
   urls: string[],
   outputDir: string,
@@ -237,15 +301,32 @@ async function downloadMedia(
       break
     }
 
+    if (!isAllowedMediaDomain(url)) {
+      console.warn(`Skipping non-GitHub URL: ${url.slice(0, 80)}`)
+      continue
+    }
+
     try {
       const response = await fetch(url, {
         signal: AbortSignal.timeout(15_000),
-        headers: { Accept: 'image/*,video/*' }
+        headers: { Accept: 'image/*,video/*' },
+        redirect: 'follow'
       })
 
       if (!response.ok) {
         console.warn(`Failed to download ${url}: ${response.status}`)
         continue
+      }
+
+      const contentLength = response.headers.get('content-length')
+      if (contentLength) {
+        const declaredSize = Number.parseInt(contentLength, 10)
+        if (declaredSize > budgetBytes - totalBytes) {
+          console.warn(
+            `Content-Length ${declaredSize} would exceed budget, skipping ${url}`
+          )
+          continue
+        }
       }
 
       const contentType = response.headers.get('content-type') || ''
@@ -320,6 +401,63 @@ function guessMimeType(ext: string): string {
 }
 
 // ── Gemini analysis ──
+
+function buildIssueAnalysisPrompt(issue: IssueThread): string {
+  const allText = [
+    `# Issue: ${issue.title}`,
+    '',
+    '## Description',
+    issue.body,
+    '',
+    issue.comments.length > 0
+      ? `## Comments\n${issue.comments.join('\n\n---\n\n')}`
+      : ''
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  return `You are a senior QA engineer analyzing a bug report for ComfyUI frontend (a Vue 3 + TypeScript web application for AI image generation workflows).
+
+Your task: Generate a single targeted QA reproduction guide to verify this bug on the current main branch.
+
+${allText}
+
+## Available test actions
+Each step must use one of these actions:
+- "openMenu" — clicks the Comfy hamburger menu (top-left C logo)
+- "hoverMenuItem" — hovers a top-level menu item to open submenu (label required)
+- "clickMenuItem" — clicks an item in the visible submenu (label required)
+- "fillDialog" — fills dialog input and presses Enter (text required)
+- "pressKey" — presses a keyboard key (key required)
+- "click" — clicks an element by visible text (text required)
+- "wait" — waits briefly (ms required, max 3000)
+- "screenshot" — takes a screenshot (name required)
+
+## Output format
+Return a JSON object with exactly one key: "reproduce", containing:
+{
+  "summary": "One sentence: what bug this issue reports",
+  "test_focus": "Specific behavior to reproduce",
+  "prerequisites": ["e.g. Load default workflow"],
+  "steps": [
+    {
+      "action": "openMenu",
+      "description": "Open the main menu to trigger the reported bug",
+      "expected_before": "What should happen if the bug is present"
+    }
+  ],
+  "visual_checks": ["Specific visual evidence of the bug to look for"]
+}
+
+## Rules
+- REPRODUCE guide: 3-6 steps, under 30 seconds. Follow the issue's reproduction steps closely.
+- Focus on triggering and demonstrating the SPECIFIC bug reported.
+- Use information from the issue description and comments to understand the bug.
+- Include at least one screenshot step to capture the bug state.
+- Do NOT include login steps.
+- Menu pattern: openMenu -> hoverMenuItem -> clickMenuItem or screenshot.
+- Output ONLY valid JSON, no markdown fences or explanation.`
+}
 
 function buildAnalysisPrompt(thread: PrThread): string {
   const allText = [
@@ -479,16 +617,109 @@ async function analyzeWithGemini(
   return { before, after }
 }
 
+async function analyzeIssueWithGemini(
+  issue: IssueThread,
+  media: Array<{ path: string; mimeType: string }>,
+  model: string,
+  apiKey: string
+): Promise<QaGuide> {
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const geminiModel = genAI.getGenerativeModel({ model })
+
+  const prompt = buildIssueAnalysisPrompt(issue)
+
+  const parts: Array<
+    { text: string } | { inlineData: { mimeType: string; data: string } }
+  > = [{ text: prompt }]
+
+  for (const item of media) {
+    try {
+      const buffer = readFileSync(item.path)
+      parts.push({
+        inlineData: {
+          mimeType: item.mimeType,
+          data: buffer.toString('base64')
+        }
+      })
+    } catch (err) {
+      console.warn(
+        `Failed to read media ${item.path}: ${(err as Error).message}`
+      )
+    }
+  }
+
+  console.warn(
+    `Sending to ${model}: ${prompt.length} chars text, ${media.length} media files`
+  )
+
+  const result = await geminiModel.generateContent({
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 8192,
+      responseMimeType: 'application/json'
+    }
+  })
+
+  let text = result.response.text()
+  text = text
+    .replace(/^```(?:json)?\n?/gm, '')
+    .replace(/```$/gm, '')
+    .trim()
+
+  console.warn('Gemini response received')
+  console.warn('Raw response (first 500 chars):', text.slice(0, 500))
+  const parsed = JSON.parse(text)
+
+  const guide: QaGuide =
+    parsed.reproduce ?? parsed.qa_guide?.reproduce ?? parsed
+  return guide
+}
+
 // ── Main ──
 
 async function main() {
   const opts = parseArgs()
   mkdirSync(opts.outputDir, { recursive: true })
 
-  // A. Fetch PR thread
+  if (opts.type === 'issue') {
+    await analyzeIssue(opts)
+  } else {
+    await analyzePr(opts)
+  }
+}
+
+async function analyzeIssue(opts: Options) {
+  const issue = fetchIssueThread(opts.prNumber, opts.repo)
+
+  const allText = [issue.body, ...issue.comments].join('\n')
+  const mediaUrls = extractMediaUrls(allText)
+  console.warn(`Found ${mediaUrls.length} media URLs`)
+
+  const media = await downloadMedia(
+    mediaUrls,
+    opts.outputDir,
+    opts.mediaBudgetBytes,
+    opts.maxVideoBytes
+  )
+
+  const guide = await analyzeIssueWithGemini(
+    issue,
+    media,
+    opts.model,
+    opts.apiKey
+  )
+
+  const beforePath = resolve(opts.outputDir, 'qa-guide-before.json')
+  writeFileSync(beforePath, JSON.stringify(guide, null, 2))
+
+  console.warn(`Wrote QA guide:`)
+  console.warn(`  Reproduce: ${beforePath}`)
+}
+
+async function analyzePr(opts: Options) {
   const thread = fetchPrThread(opts.prNumber, opts.repo)
 
-  // B. Extract media URLs from all text
   const allText = [
     thread.body,
     ...thread.issueComments,
@@ -498,7 +729,6 @@ async function main() {
   const mediaUrls = extractMediaUrls(allText)
   console.warn(`Found ${mediaUrls.length} media URLs`)
 
-  // C. Download media
   const media = await downloadMedia(
     mediaUrls,
     opts.outputDir,
@@ -506,10 +736,8 @@ async function main() {
     opts.maxVideoBytes
   )
 
-  // D. Send to Gemini
   const guides = await analyzeWithGemini(thread, media, opts.model, opts.apiKey)
 
-  // E. Write guides
   const beforePath = resolve(opts.outputDir, 'qa-guide-before.json')
   const afterPath = resolve(opts.outputDir, 'qa-guide-after.json')
   writeFileSync(beforePath, JSON.stringify(guides.before, null, 2))

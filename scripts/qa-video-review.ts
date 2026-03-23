@@ -399,20 +399,42 @@ function buildSingleVideoPrompt(
     ''
   ]
 
-  if (prContext) {
-    lines.push(
-      '## PR Context',
-      'The video is a QA session testing a specific pull request.',
-      'Your review MUST evaluate whether the PR achieves its stated purpose.',
-      '',
-      prContext,
-      '',
-      '## Review Instructions',
-      "1. Does the video demonstrate the PR's intended behavior working correctly?",
-      '2. Are there regressions or side effects caused by the PR changes?',
-      '3. Does the observed behavior match what the PR claims to implement/fix?',
-      ''
+  const isIssueContext =
+    prContext &&
+    /^### Issue #|^Title:.*\bbug\b|^This video attempts to reproduce/im.test(
+      prContext
     )
+
+  if (prContext) {
+    if (isIssueContext) {
+      lines.push(
+        '## Issue Context',
+        'This video attempts to reproduce a reported bug on the main branch.',
+        'Your review MUST evaluate whether the reported bug is visible and reproducible.',
+        '',
+        prContext,
+        '',
+        '## Review Instructions',
+        '1. Does the video demonstrate the reported bug occurring?',
+        '2. Is the bug clearly visible and reproducible from the steps shown?',
+        '3. Are there any other issues visible during the reproduction attempt?',
+        ''
+      )
+    } else {
+      lines.push(
+        '## PR Context',
+        'The video is a QA session testing a specific pull request.',
+        'Your review MUST evaluate whether the PR achieves its stated purpose.',
+        '',
+        prContext,
+        '',
+        '## Review Instructions',
+        "1. Does the video demonstrate the PR's intended behavior working correctly?",
+        '2. Are there regressions or side effects caused by the PR changes?',
+        '3. Does the observed behavior match what the PR claims to implement/fix?',
+        ''
+      )
+    }
   }
 
   lines.push(
@@ -426,9 +448,11 @@ function buildSingleVideoPrompt(
     '',
     'Return markdown with these sections exactly:',
     '## Summary',
-    prContext
-      ? '(Explain what the PR intended and whether the video confirms it works)'
-      : '',
+    isIssueContext
+      ? '(Explain what bug was reported and whether the video confirms it is reproducible)'
+      : prContext
+        ? '(Explain what the PR intended and whether the video confirms it works)'
+        : '',
     '## Confirmed Issues',
     'For each confirmed issue, use this exact format (one block per issue):',
     '',
@@ -451,6 +475,18 @@ function buildSingleVideoPrompt(
   )
 
   return lines.filter(Boolean).join('\n')
+}
+
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024
+
+async function readVideoFile(videoPath: string): Promise<Buffer> {
+  const fileStat = await stat(videoPath)
+  if (fileStat.size > MAX_VIDEO_BYTES) {
+    throw new Error(
+      `Video ${basename(videoPath)} is ${formatBytes(fileStat.size)}, exceeds ${formatBytes(MAX_VIDEO_BYTES)} limit`
+    )
+  }
+  return readFile(videoPath)
 }
 
 async function requestGeminiReview(options: {
@@ -478,7 +514,7 @@ async function requestGeminiReview(options: {
   > = [{ text: prompt }]
 
   if (isComparative) {
-    const beforeBuffer = await readFile(options.beforeVideoPath)
+    const beforeBuffer = await readVideoFile(options.beforeVideoPath)
     parts.push(
       { text: 'Video 1 — BEFORE (main branch):' },
       {
@@ -490,7 +526,7 @@ async function requestGeminiReview(options: {
     )
   }
 
-  const afterBuffer = await readFile(options.videoPath)
+  const afterBuffer = await readVideoFile(options.videoPath)
   if (isComparative) {
     parts.push({ text: 'Video 2 — AFTER (PR branch):' })
   }
@@ -501,7 +537,9 @@ async function requestGeminiReview(options: {
     }
   })
 
-  const result = await model.generateContent(parts)
+  const result = await model.generateContent(parts, {
+    timeout: options.timeoutMs
+  })
   const response = result.response
   const text = response.text()
 

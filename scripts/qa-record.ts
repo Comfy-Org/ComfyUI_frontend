@@ -19,7 +19,7 @@
 import { chromium } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { readFileSync, mkdirSync, readdirSync, renameSync } from 'fs'
+import { readFileSync, mkdirSync, readdirSync, renameSync, statSync } from 'fs'
 
 // ── Types ──
 
@@ -33,9 +33,11 @@ type TestAction =
   | { action: 'wait'; ms: number }
   | { action: 'screenshot'; name: string }
 
+type RecordMode = 'before' | 'after' | 'reproduce'
+
 interface Options {
-  mode: 'before' | 'after'
-  diffFile: string
+  mode: RecordMode
+  diffFile?: string
   outputDir: string
   serverUrl: string
   model: string
@@ -57,7 +59,7 @@ function parseArgs(): Options {
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
       case '--mode':
-        opts.mode = args[++i] as 'before' | 'after'
+        opts.mode = args[++i] as RecordMode
         break
       case '--diff':
         opts.diffFile = args[++i]
@@ -79,16 +81,27 @@ function parseArgs(): Options {
         break
       case '--help':
         console.warn(
-          'Usage: qa-record.ts --mode before|after --diff <path> --output-dir <path> [--url <url>] [--model <model>] [--test-plan <path>] [--qa-guide <path>]'
+          'Usage: qa-record.ts --mode before|after|reproduce --output-dir <path> [--diff <path>] [--url <url>] [--model <model>] [--test-plan <path>] [--qa-guide <path>]'
         )
         process.exit(0)
     }
   }
 
-  if (!opts.mode || !opts.diffFile || !opts.outputDir) {
+  if (!opts.mode || !opts.outputDir) {
+    console.error('Required: --mode before|after|reproduce --output-dir <path>')
+    process.exit(1)
+  }
+
+  const validModes: RecordMode[] = ['before', 'after', 'reproduce']
+  if (!validModes.includes(opts.mode)) {
     console.error(
-      'Required: --mode before|after --diff <path> --output-dir <path>'
+      `Invalid --mode "${opts.mode}". Must be one of: ${validModes.join(', ')}`
     )
+    process.exit(1)
+  }
+
+  if (!opts.diffFile && opts.mode !== 'reproduce') {
+    console.error('--diff is required for before/after modes')
     process.exit(1)
   }
 
@@ -108,10 +121,15 @@ function buildPrompt(
   testPlan?: string,
   qaGuide?: string
 ): string {
-  const modeDesc =
-    mode === 'before'
-      ? 'BEFORE (main branch). Show the OLD state briefly — under 15 seconds. One quick demonstration of missing feature / old behavior.'
-      : 'AFTER (PR branch). Prove the changes work — 3-6 targeted steps, under 30 seconds.'
+  const modeDescriptions: Record<string, string> = {
+    before:
+      'BEFORE (main branch). Show the OLD state briefly — under 15 seconds. One quick demonstration of missing feature / old behavior.',
+    after:
+      'AFTER (PR branch). Prove the changes work — 3-6 targeted steps, under 30 seconds.',
+    reproduce:
+      'REPRODUCE a reported issue on main branch. Follow the reproduction steps to trigger and demonstrate the reported bug — 3-6 steps, under 30 seconds.'
+  }
+  const modeDesc = modeDescriptions[mode] ?? modeDescriptions.before
 
   const qaGuideSection = qaGuide
     ? `
@@ -149,18 +167,15 @@ Each step is an object with an "action" field:
 - { "action": "wait", "ms": 1000 } — waits (use sparingly, max 3000ms)
 - { "action": "screenshot", "name": "step-name" } — takes a screenshot
 ${qaGuideSection}${testPlanSection}
-## PR Diff
-\`\`\`
-${diff.slice(0, 3000)}
-\`\`\`
+${diff ? `## PR Diff\n\`\`\`\n${diff.slice(0, 3000)}\n\`\`\`` : ''}
 
 ## Rules
 - Output ONLY a valid JSON array of actions, no markdown fences or explanation
-- ${mode === 'before' ? 'Keep it minimal — just show the old/missing behavior' : 'Test the specific behavior that changed in the PR'}
+- ${mode === 'reproduce' ? 'Follow the reproduction steps to trigger and demonstrate the reported bug' : mode === 'before' ? 'Keep it minimal — just show the old/missing behavior' : 'Test the specific behavior that changed in the PR'}
 - Always include at least one screenshot
 - Do NOT include login steps (handled automatically)
 - Menu navigation pattern: openMenu → hoverMenuItem → clickMenuItem (or screenshot)
-${qaGuide ? '- Follow the QA Analysis Guide steps closely — they are PR-specific and well-researched' : '- Pick test steps from the QA test plan categories that are most relevant to the diff'}
+${qaGuide ? '- Follow the QA Analysis Guide steps closely — they are well-researched and specific' : diff ? '- Pick test steps from the QA test plan categories that are most relevant to the diff' : '- Pick test steps from the QA test plan categories most likely to reveal bugs'}
 
 ## Example output
 [
@@ -176,7 +191,7 @@ ${qaGuide ? '- Follow the QA Analysis Guide steps closely — they are PR-specif
 }
 
 async function generateTestSteps(opts: Options): Promise<TestAction[]> {
-  const diff = readFileSync(opts.diffFile, 'utf-8')
+  const diff = opts.diffFile ? readFileSync(opts.diffFile, 'utf-8') : ''
   const testPlan = opts.testPlanFile
     ? readFileSync(opts.testPlanFile, 'utf-8')
     : undefined
@@ -240,6 +255,14 @@ const FALLBACK_AFTER: TestAction[] = [
   { action: 'wait', ms: 500 },
   { action: 'screenshot', name: 'editor-after' }
 ]
+
+const FALLBACK_REPRODUCE: TestAction[] = FALLBACK_BEFORE
+
+const FALLBACK_STEPS: Record<RecordMode, TestAction[]> = {
+  before: FALLBACK_BEFORE,
+  after: FALLBACK_AFTER,
+  reproduce: FALLBACK_REPRODUCE
+}
 
 // ── Playwright helpers ──
 
@@ -372,11 +395,13 @@ async function executeSteps(
       case 'wait':
         await sleep(Math.min(step.ms, 5000))
         break
-      case 'screenshot':
+      case 'screenshot': {
+        const safeName = step.name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 100)
         await page.screenshot({
-          path: `${outputDir}/${step.name}.png`
+          path: `${outputDir}/${safeName}.png`
         })
         break
+      }
       default:
         console.warn(`Unknown action: ${JSON.stringify(step)}`)
     }
@@ -485,7 +510,7 @@ async function main() {
     steps = await generateTestSteps(opts)
   } catch (err) {
     console.warn('Gemini generation failed, using fallback steps:', err)
-    steps = opts.mode === 'before' ? FALLBACK_BEFORE : FALLBACK_AFTER
+    steps = FALLBACK_STEPS[opts.mode]
   }
 
   // Launch browser with video recording (Chromium for WebGL support)
@@ -524,12 +549,17 @@ async function main() {
   // Rename the recorded video to expected filename
   const videoName =
     opts.mode === 'before' ? 'qa-before-session.webm' : 'qa-session.webm'
+  // reproduce mode uses 'qa-session.webm' (same as after — it's the primary video)
   const knownNames = new Set(['qa-before-session.webm', 'qa-session.webm'])
-  const files = readdirSync(opts.outputDir).filter(
-    (f) => f.endsWith('.webm') && !knownNames.has(f)
-  )
+  const files = readdirSync(opts.outputDir)
+    .filter((f) => f.endsWith('.webm') && !knownNames.has(f))
+    .sort((a, b) => {
+      const mtimeA = statSync(`${opts.outputDir}/${a}`).mtimeMs
+      const mtimeB = statSync(`${opts.outputDir}/${b}`).mtimeMs
+      return mtimeB - mtimeA
+    })
   if (files.length > 0) {
-    const recorded = files[files.length - 1]
+    const recorded = files[0]
     renameSync(
       `${opts.outputDir}/${recorded}`,
       `${opts.outputDir}/${videoName}`
