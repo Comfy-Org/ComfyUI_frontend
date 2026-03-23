@@ -343,9 +343,13 @@
     "frameNodes": "Frame Nodes",
     "listening": "Listening...",
     "ready": "Ready",
+    "play": "Play",
+    "pause": "Pause",
     "playPause": "Play/Pause",
     "playRecording": "Play Recording",
     "playing": "Playing",
+    "skipToStart": "Skip to Start",
+    "skipToEnd": "Skip to End",
     "stopPlayback": "Stop Playback",
     "playbackSpeed": "Playback Speed",
     "volume": "Volume",
@@ -2285,7 +2289,12 @@
     "topupTimeout": "Top-up verification timed out"
   },
   "subscription": {
-    "chooseBestPlanWorkspace": "Choose the best plan for your workspace",
+    "plansForWorkspace": "Plans for {workspace}",
+    "personalWorkspace": "Personal Workspace",
+    "teamWorkspace": "Team Workspace",
+    "soloUseOnly": "Solo use only",
+    "needTeamWorkspace": "Need team workspace?",
+    "inviteUpTo": "Invite up to",
     "title": "Subscription",
     "titleUnsubscribed": "Subscribe to Comfy Cloud",
     "comfyCloud": "Comfy Cloud",
@@ -2597,6 +2606,18 @@
       "failedToFetchWorkspaces": "Failed to load workspaces"
     }
   },
+  "teamWorkspacesDialog": {
+    "title": "Team Workspaces",
+    "subtitle": "Switch to an existing one or create a new workspace",
+    "subtitleNoWorkspaces": "Create a new team workspace to share credits",
+    "confirmCallbackFailed": "Workspace created but setup incomplete",
+    "yourTeamWorkspaces": "Your team workspaces",
+    "switch": "Switch",
+    "newWorkspace": "New workspace",
+    "namePlaceholder": "e.g. Marketing Team",
+    "createWorkspace": "Create workspace",
+    "nameValidationError": "Name must be 1–50 characters using letters, numbers, spaces, or common punctuation."
+  },
   "workspaceSwitcher": {
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
@@ -2604,7 +2625,8 @@
     "roleOwner": "Owner",
     "roleMember": "Member",
     "createWorkspace": "Create new workspace",
-    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one."
+    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
+    "failedToSwitch": "Failed to switch workspace"
   },
   "selectionToolbox": {
     "executeButton": {
@@ -3227,6 +3249,14 @@
     "title": "Introducing Nodes 2.0",
     "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
+  },
+  "appBuilder": {
+    "vueNodeSwitch": {
+      "title": "Switched over to Nodes 2.0",
+      "content": "For the best experience, App builder uses Nodes 2.0. You can switch back after building the app from the main menu.",
+      "dontShowAgain": "Don't show again",
+      "dismiss": "Dismiss"
+    }
   },
   "vueNodesMigration": {
     "message": "Prefer the legacy design?",
