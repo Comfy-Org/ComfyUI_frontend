@@ -66,7 +66,22 @@ test.describe(
       // DOM widget overlays should be visible on the host node
       // (v-show bound to widgetState.visible in DomWidget.vue)
       await expect
-        .poll(() => comfyPage.page.locator('.dom-widget:visible').count())
+        .poll(() =>
+          comfyPage.page.evaluate((id) => {
+            const node = window.app!.canvas.graph!.getNodeById(Number(id))
+            if (!node?.widgets) return 0
+            return node.widgets.filter((w) => {
+              const element = (w as { element?: HTMLElement }).element
+              if (!(element instanceof HTMLElement)) return false
+              const style = window.getComputedStyle(element)
+              return (
+                element.isConnected &&
+                style.display !== 'none' &&
+                style.visibility !== 'hidden'
+              )
+            }).length
+          }, nodeId)
+        )
         .toBeGreaterThan(0)
     })
   }
