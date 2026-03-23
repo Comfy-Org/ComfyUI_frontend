@@ -928,8 +928,10 @@ export class LGraphNode
       const namedValues = getNamedValues()
       if (namedValues) {
         for (const widget of this.widgets ?? []) {
-          if (widget.name in namedValues)
+          if (widget.name in namedValues) {
             widget.value = namedValues[widget.name]
+            widget.callback?.(widget.value)
+          }
         }
       } else if (info.widgets_values) {
         let i = 0
