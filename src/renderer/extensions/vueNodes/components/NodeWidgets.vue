@@ -358,7 +358,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       borderStyle,
       callback: widget.callback,
       controlWidget: widget.controlWidget,
-      label: widgetState?.label,
+      label: widget.promotedLabel ?? widgetState?.label,
       options: widgetOptions,
       spec: widget.spec
     }
