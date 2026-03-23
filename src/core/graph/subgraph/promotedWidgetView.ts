@@ -27,6 +27,12 @@ import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidget
 export type { PromotedWidgetView } from './promotedWidgetTypes'
 export { isPromotedWidgetView } from './promotedWidgetTypes'
 
+interface SubgraphSlotRef {
+  name: string
+  label?: string
+  displayName?: string
+}
+
 function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
   if (value === undefined) return true
   if (typeof value === 'string') return true
@@ -50,14 +56,16 @@ export function createPromotedWidgetView(
   nodeId: string,
   widgetName: string,
   displayName?: string,
-  disambiguatingSourceNodeId?: string
+  disambiguatingSourceNodeId?: string,
+  identityName?: string
 ): IPromotedWidgetView {
   return new PromotedWidgetView(
     subgraphNode,
     nodeId,
     widgetName,
     displayName,
-    disambiguatingSourceNodeId
+    disambiguatingSourceNodeId,
+    identityName
   )
 }
 
@@ -83,12 +91,17 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private cachedDeepestByFrame?: { node: LGraphNode; widget: IBaseWidget }
   private cachedDeepestFrame = -1
 
+  /** Cached reference to the bound subgraph slot, set at construction. */
+  private _boundSlot?: SubgraphSlotRef
+  private _boundSlotVersion = -1
+
   constructor(
     private readonly subgraphNode: SubgraphNode,
     nodeId: string,
     widgetName: string,
     private readonly displayName?: string,
-    readonly disambiguatingSourceNodeId?: string
+    readonly disambiguatingSourceNodeId?: string,
+    private readonly identityName?: string
   ) {
     this.sourceNodeId = nodeId
     this.sourceWidgetName = widgetName
@@ -100,7 +113,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get name(): string {
-    return this.displayName ?? this.sourceWidgetName
+    return this.identityName ?? this.sourceWidgetName
   }
 
   get y(): number {
@@ -188,13 +201,56 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get label(): string | undefined {
+    const slot = this.getBoundSubgraphSlot()
+    if (slot) return slot.label ?? slot.displayName ?? slot.name
+    // Fall back to persisted widget state (survives save/reload before
+    // the slot binding is established) then to construction displayName.
     const state = this.getWidgetState()
-    return state?.label ?? this.displayName ?? this.sourceWidgetName
+    return state?.label ?? this.displayName
   }
 
   set label(value: string | undefined) {
+    const slot = this.getBoundSubgraphSlot()
+    if (slot) slot.label = value || undefined
+    // Also persist to widget state store for save/reload resilience
     const state = this.getWidgetState()
     if (state) state.label = value
+  }
+
+  /**
+   * Returns the cached bound subgraph slot reference, refreshing only when
+   * the subgraph node's input list has changed (length mismatch).
+   *
+   * Note: Using length as the cache key works because the returned reference
+   * is the same mutable slot object. When slot properties (label, name) change,
+   * the caller reads fresh values from that reference.  The cache only needs
+   * to invalidate when slots are added or removed, which changes length.
+   */
+  private getBoundSubgraphSlot(): SubgraphSlotRef | undefined {
+    const version = this.subgraphNode.inputs?.length ?? 0
+    if (this._boundSlotVersion === version) return this._boundSlot
+
+    this._boundSlot = this.findBoundSubgraphSlot()
+    this._boundSlotVersion = version
+    return this._boundSlot
+  }
+
+  private findBoundSubgraphSlot(): SubgraphSlotRef | undefined {
+    for (const input of this.subgraphNode.inputs ?? []) {
+      const slot = input._subgraphSlot as SubgraphSlotRef | undefined
+      if (!slot) continue
+
+      const w = input._widget
+      if (
+        w &&
+        isPromotedWidgetView(w) &&
+        w.sourceNodeId === this.sourceNodeId &&
+        w.sourceWidgetName === this.sourceWidgetName
+      ) {
+        return slot
+      }
+    }
+    return undefined
   }
 
   get hidden(): boolean {
@@ -238,21 +294,27 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const originalComputedHeight = projected.computedHeight
     const originalComputedDisabled = projected.computedDisabled
 
+    const originalLabel = projected.label
+
     projected.y = this.y
     projected.computedHeight = this.computedHeight
     projected.computedDisabled = this.computedDisabled
     projected.value = this.value
+    projected.label = this.label
 
-    projected.drawWidget(ctx, {
-      width: widgetWidth,
-      showText: !lowQuality,
-      suppressPromotedOutline: true,
-      previewImages: resolved.node.imgs
-    })
-
-    projected.y = originalY
-    projected.computedHeight = originalComputedHeight
-    projected.computedDisabled = originalComputedDisabled
+    try {
+      projected.drawWidget(ctx, {
+        width: widgetWidth,
+        showText: !lowQuality,
+        suppressPromotedOutline: true,
+        previewImages: resolved.node.imgs
+      })
+    } finally {
+      projected.y = originalY
+      projected.computedHeight = originalComputedHeight
+      projected.computedDisabled = originalComputedDisabled
+      projected.label = originalLabel
+    }
   }
 
   onPointerDown(
