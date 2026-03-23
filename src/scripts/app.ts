@@ -639,6 +639,8 @@ export class ComfyApp {
       this.canvas.setDirty(false, true)
     })
 
+    useEventListener(document, 'dragover', (e) => e.preventDefault())
+
     // Add handler for dropping onto a specific node
     useEventListener(
       this.canvasElRef,
