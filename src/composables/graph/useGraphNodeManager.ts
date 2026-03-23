@@ -808,6 +808,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
           nodeRef.outputs = [...nodeRef.outputs]
         }
+        // Re-extract widget data so promotedLabel reflects the rename
+        vueNodeData.set(nodeId, extractVueNodeData(nodeRef))
       }
     }
 
