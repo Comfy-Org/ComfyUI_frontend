@@ -30,6 +30,7 @@ concurrency:
 
 jobs:
   bump-version:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     permissions:
       contents: write
