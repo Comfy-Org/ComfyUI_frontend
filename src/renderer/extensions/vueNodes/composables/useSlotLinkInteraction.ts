@@ -105,9 +105,10 @@ function createPointerSession(): PointerSession {
 export function resolvePointerTarget(
   clientX: number,
   clientY: number,
-  fallback: EventTarget | null
+  fallback: EventTarget | null,
+  ownerDoc: Document = document
 ): EventTarget | null {
-  return document.elementFromPoint(clientX, clientY) ?? fallback
+  return ownerDoc.elementFromPoint(clientX, clientY) ?? fallback
 }
 
 export function useSlotLinkInteraction({
@@ -287,6 +288,12 @@ export function useSlotLinkInteraction({
   }
 
   const cleanupInteraction = () => {
+    // Clear synthetic hover state on subgraph IO nodes
+    const graph = app.canvas?.graph
+    if (isSubgraph(graph)) {
+      graph.inputNode?.onPointerLeave()
+      graph.outputNode?.onPointerLeave()
+    }
     autoPan?.stop()
     autoPan = null
     if (state.pointerId != null) {
@@ -409,7 +416,7 @@ export function useSlotLinkInteraction({
           subgraphIOHoverChanged = true
         }
 
-        if (node.isPointerOver) {
+        if (node.isPointerOver && newCandidate?.compatible) {
           const slot = node.getSlotInPosition(canvasX, canvasY)
           if (slot && slot.isPointerOver) {
             subgraphIOSnapPos = slot.pos

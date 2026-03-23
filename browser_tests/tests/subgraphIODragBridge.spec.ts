@@ -73,7 +73,7 @@ test.describe(
       expect(dimmedAfter).toBe(false)
     })
 
-    test('Snap-target class is applied to compatible slot on hover', async ({
+    test('Snap-target class is not applied without pointer hover', async ({
       comfyPage
     }) => {
       const { page } = comfyPage

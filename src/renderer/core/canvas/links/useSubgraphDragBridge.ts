@@ -167,6 +167,7 @@ export function useSubgraphDragBridge() {
     linkConnector: LinkConnector
   ): { cleanup: () => void; flush: () => void } {
     const ownerDoc = lgCanvas.getCanvasWindow().document
+    const ownerView = ownerDoc.defaultView
     const session = createSlotLinkDragContext()
     const slotRegistry = useNodeSlotRegistryStore()
     let pendingMove: { clientX: number; clientY: number } | null = null
@@ -182,14 +183,19 @@ export function useSubgraphDragBridge() {
       if (!adapter) return
       const graph = adapter.network
 
-      const target = resolvePointerTarget(data.clientX, data.clientY, null)
+      const target = resolvePointerTarget(
+        data.clientX,
+        data.clientY,
+        null,
+        ownerDoc
+      )
 
       let hoveredSlotKey: string | null = null
       let hoveredNodeId: NodeId | null = null
       if (target === session.lastPointerEventTarget) {
         hoveredSlotKey = session.lastPointerTargetSlotKey
         hoveredNodeId = session.lastPointerTargetNodeId
-      } else if (target instanceof HTMLElement) {
+      } else if (ownerView && target instanceof ownerView.HTMLElement) {
         const elWithSlot = target
           .closest('.lg-slot, .lg-node-widget')
           ?.querySelector<HTMLElement>('[data-slot-key]')
