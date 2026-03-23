@@ -444,28 +444,63 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
       enumerable: true
     })
   }
+  // Instrument `label` on a slot so that setting it fires a graph trigger,
+  // following the same pattern as LGraphNodeProperties for node-level props.
+  const instrumentSlotLabel = (slot: INodeInputSlot | INodeOutputSlot) => {
+    const descriptor = Object.getOwnPropertyDescriptor(slot, 'label')
+    if (descriptor?.get) return // already instrumented
+
+    let value = slot.label
+    Object.defineProperty(slot, 'label', {
+      get: () => value,
+      set: (newValue: string | undefined) => {
+        if (value === newValue) return
+        value = newValue
+        node.graph?.trigger('node:slot-label:changed', { nodeId: node.id })
+      },
+      configurable: true,
+      enumerable: true
+    })
+  }
+
   const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
+  reactiveInputs.forEach(instrumentSlotLabel)
   Object.defineProperty(node, 'inputs', {
     get() {
       return reactiveInputs
     },
-    set(v) {
+    set(v: INodeInputSlot[]) {
+      v.forEach(instrumentSlotLabel)
       reactiveInputs.splice(0, reactiveInputs.length, ...v)
     },
     configurable: true,
     enumerable: true
   })
   const reactiveOutputs = shallowReactive<INodeOutputSlot[]>(node.outputs ?? [])
+  reactiveOutputs.forEach(instrumentSlotLabel)
   Object.defineProperty(node, 'outputs', {
     get() {
       return reactiveOutputs
     },
-    set(v) {
+    set(v: INodeOutputSlot[]) {
+      v.forEach(instrumentSlotLabel)
       reactiveOutputs.splice(0, reactiveOutputs.length, ...v)
     },
     configurable: true,
     enumerable: true
   })
+
+  // Hook into node callbacks to instrument dynamically added slots.
+  const origOnInputAdded = node.onInputAdded
+  node.onInputAdded = (slot) => {
+    instrumentSlotLabel(slot)
+    origOnInputAdded?.call(node, slot)
+  }
+  const origOnOutputAdded = node.onOutputAdded
+  node.onOutputAdded = (slot) => {
+    instrumentSlotLabel(slot)
+    origOnOutputAdded?.call(node, slot)
+  }
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
     const widgetsSnapshot = node.widgets ?? []
@@ -532,6 +567,27 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Update only widgets with new slot metadata, keeping other widget data intact
     for (const widget of currentData.widgets ?? []) {
       widget.slotMetadata = slotMetadata.get(widget.slotName ?? widget.name)
+    }
+
+    // node.inputs/outputs are shallowReactive arrays (via defineProperty).
+    // Use splice (not assignment) to preserve array identity so Vue components
+    // that hold a reference to this array continue to track changes.
+    // Shallow-copy each element so shallowReactive detects new references
+    // for deep property changes (e.g., label).
+    if (nodeRef.outputs && currentData.outputs) {
+      currentData.outputs.splice(
+        0,
+        currentData.outputs.length,
+        ...nodeRef.outputs.map((o) => ({ ...o }))
+      )
+    }
+
+    if (nodeRef.inputs) {
+      currentData.inputs?.splice(
+        0,
+        currentData.inputs.length,
+        ...nodeRef.inputs.map((i) => ({ ...i }))
+      )
     }
   }
 
@@ -791,18 +847,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         }
       },
       'node:slot-label:changed': (slotLabelEvent) => {
-        const nodeId = String(slotLabelEvent.nodeId)
-        const nodeRef = nodeRefs.get(nodeId)
-        if (!nodeRef) return
-
-        // Force shallowReactive to detect the deep property change
-        // by re-assigning the affected array through the defineProperty setter.
-        if (slotLabelEvent.slotType !== NodeSlotType.OUTPUT && nodeRef.inputs) {
-          nodeRef.inputs = [...nodeRef.inputs]
-        }
-        if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
-          nodeRef.outputs = [...nodeRef.outputs]
-        }
+        refreshNodeSlots(String(slotLabelEvent.nodeId))
       }
     }
 

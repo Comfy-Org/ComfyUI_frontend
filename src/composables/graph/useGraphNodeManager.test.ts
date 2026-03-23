@@ -331,7 +331,7 @@ describe('Subgraph output slot label reactivity', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('updates output slot labels when node:slot-label:changed is triggered', async () => {
+  it('updates output slot labels reactively via instrumented label setter', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.addOutput('original_name', 'STRING')
@@ -346,12 +346,8 @@ describe('Subgraph output slot label reactivity', () => {
     expect(nodeData.outputs[0].label).toBeUndefined()
     expect(nodeData.outputs[1].label).toBeUndefined()
 
-    // Simulate what SubgraphNode does: set the label, then fire the trigger
+    // Setting label directly triggers reactivity via instrumented setter
     node.outputs[0].label = 'custom_label'
-    graph.trigger('node:slot-label:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.OUTPUT
-    })
 
     await nextTick()
 
@@ -360,7 +356,7 @@ describe('Subgraph output slot label reactivity', () => {
     expect(updatedData?.outputs?.[1]?.label).toBeUndefined()
   })
 
-  it('updates input slot labels when node:slot-label:changed is triggered', async () => {
+  it('updates input slot labels reactively via instrumented label setter', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.addInput('original_name', 'STRING')
@@ -373,16 +369,36 @@ describe('Subgraph output slot label reactivity', () => {
 
     expect(nodeData.inputs[0].label).toBeUndefined()
 
+    // Setting label directly triggers reactivity via instrumented setter
     node.inputs[0].label = 'custom_label'
-    graph.trigger('node:slot-label:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.INPUT
-    })
 
     await nextTick()
 
     const updatedData = vueNodeData.get(nodeId)
     expect(updatedData?.inputs?.[0]?.label).toBe('custom_label')
+  })
+
+  it('instruments labels on dynamically added slots', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    // Add a new output after instrumentation
+    node.addOutput('dynamic_output', 'STRING')
+
+    const nodeId = String(node.id)
+    const nodeData = vueNodeData.get(nodeId)
+    if (!nodeData?.outputs) throw new Error('Expected output data to exist')
+
+    // The dynamically added slot should also be instrumented
+    node.outputs[0].label = 'dynamic_label'
+
+    await nextTick()
+
+    const updatedData = vueNodeData.get(nodeId)
+    expect(updatedData?.outputs?.[0]?.label).toBe('dynamic_label')
   })
 
   it('ignores node:slot-label:changed for unknown node ids', () => {
