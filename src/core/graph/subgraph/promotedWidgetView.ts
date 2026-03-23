@@ -203,13 +203,18 @@ class PromotedWidgetView implements IPromotedWidgetView {
   get label(): string | undefined {
     const slot = this.getBoundSubgraphSlot()
     if (slot) return slot.label ?? slot.displayName ?? slot.name
-    return this.displayName
+    // Fall back to persisted widget state (survives save/reload before
+    // the slot binding is established) then to construction displayName.
+    const state = this.getWidgetState()
+    return state?.label ?? this.displayName
   }
 
   set label(value: string | undefined) {
     const slot = this.getBoundSubgraphSlot()
-    if (!slot) return
-    slot.label = value || undefined
+    if (slot) slot.label = value || undefined
+    // Also persist to widget state store for save/reload resilience
+    const state = this.getWidgetState()
+    if (state) state.label = value
   }
 
   /**
