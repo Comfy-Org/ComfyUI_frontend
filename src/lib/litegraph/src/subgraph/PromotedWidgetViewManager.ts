@@ -1,6 +1,9 @@
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
-type ViewManagerEntry = PromotedWidgetSource & { viewKey?: string }
+type ViewManagerEntry = PromotedWidgetSource & {
+  viewKey?: string
+  slotName?: string
+}
 
 type CreateView<TView> = (entry: ViewManagerEntry) => TView
 

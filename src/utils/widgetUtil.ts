@@ -1,5 +1,3 @@
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -46,31 +44,11 @@ export function renameWidget(
   widget: IBaseWidget,
   node: LGraphNode,
   newLabel: string,
-  parents?: SubgraphNode[]
+  _parents?: SubgraphNode[]
 ): boolean {
-  if (
-    isPromotedWidgetView(widget) &&
-    (parents?.length || node.isSubgraphNode())
-  ) {
-    const sourceWidget = resolvePromotedWidgetSource(node, widget)
-    if (!sourceWidget) {
-      console.error('Could not resolve source widget for promoted widget')
-      return false
-    }
-
-    const originalWidget = sourceWidget.widget
-    const interiorNode = sourceWidget.node
-
-    originalWidget.label = newLabel || undefined
-
-    const interiorInput = interiorNode.inputs?.find(
-      (inp) => inp.widget?.name === originalWidget.name
-    )
-    if (interiorInput) {
-      interiorInput.label = newLabel || undefined
-    }
-  }
-
+  // For promoted widgets, only rename the external-facing label.
+  // Do NOT propagate to interior node widgets/inputs — those are
+  // implementation details that should remain unchanged.
   const input = node.inputs?.find((inp) => inp.widget?.name === widget.name)
 
   widget.label = newLabel || undefined

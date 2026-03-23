@@ -271,6 +271,32 @@ const handleVueNodeLifecycleReset = async () => {
 
 watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
 
+// Force a full lifecycle reset when switching from legacy to Vue mode.
+// Multiple ResizeObservers fire sequentially, so debounce onChange to
+// wait until all measurement cycles have settled before resetting.
+watch(shouldRenderVueNodes, (enabled) => {
+  if (enabled && comfyApp.canvas?.graph) {
+    let timer: ReturnType<typeof setTimeout>
+    const cleanup = () => {
+      clearTimeout(timer)
+      clearTimeout(fallback)
+      unsub()
+    }
+    const unsub = layoutStore.onChange(() => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        cleanup()
+        handleVueNodeLifecycleReset()
+      }, 800)
+    })
+    // Fallback: if onChange never fires (e.g. empty graph), reset after 3s
+    const fallback = setTimeout(() => {
+      cleanup()
+      handleVueNodeLifecycleReset()
+    }, 3000)
+  }
+})
+
 watch(
   () => canvasStore.isInSubgraph,
   async (newValue, oldValue) => {
@@ -560,6 +586,10 @@ onMounted(async () => {
 
   // Restore saved workflow and workflow tabs state
   await workflowPersistence.initializeWorkflow()
+  // Re-initialize Vue node lifecycle after draft restore so the node manager
+  // is created against the fully-configured graph (not the empty/partial state
+  // that existed when setupEmptyGraphListener first fired).
+  await handleVueNodeLifecycleReset()
   await workflowPersistence.restoreWorkflowTabsState()
 
   const sharedWorkflowLoadStatus =

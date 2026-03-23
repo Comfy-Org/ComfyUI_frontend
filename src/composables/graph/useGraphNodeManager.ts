@@ -92,6 +92,10 @@ export interface SafeWidgetData {
    * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
    */
   sourceExecutionId?: string
+  /** Tooltip text from the resolved widget. */
+  tooltip?: string
+  /** For promoted widgets, the display label from the subgraph input slot. */
+  promotedLabel?: string
 }
 
 export interface VueNodeData {
@@ -352,7 +356,8 @@ function safeWidgetMapper(
           sourceNode && app.rootGraph
             ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
             : undefined,
-        tooltip: widget.tooltip
+        tooltip: widget.tooltip,
+        promotedLabel: isPromotedWidgetView(widget) ? widget.label : undefined
       }
     } catch (error) {
       console.warn(
