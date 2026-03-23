@@ -2484,7 +2484,8 @@
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
-      "membersCount": "Members ({count})"
+      "membersCount": "Members ({count})",
+      "settings": "Settings"
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"
@@ -2504,6 +2505,7 @@
       "actions": {
         "copyLink": "Copy invite link",
         "revokeInvite": "Revoke invite",
+        "changeRole": "Change role",
         "removeMember": "Remove member"
       },
       "upsellBannerSubscribe": "Subscribe to the Creator plan or above to invite team members to this workspace.",
@@ -2546,6 +2548,42 @@
       "title": "Uninvite this person?",
       "message": "This member won't be able to join your workspace anymore. Their invite link will be invalidated.",
       "revoke": "Uninvite"
+    },
+    "transferOwnershipDialog": {
+      "title": "Transfer ownership",
+      "message": "Select a member to become the new owner. You will become a regular member.",
+      "selectMember": "New owner",
+      "transfer": "Transfer ownership",
+      "noEligibleMembers": "No eligible members to transfer ownership to. Invite a member first."
+    },
+    "changeRoleDialog": {
+      "title": "Change the role of {name}?",
+      "selectNewRole": "Select a new role",
+      "changeRole": "Change role",
+      "error": "Failed to change role",
+      "roles": {
+        "owner": {
+          "label": "Owner",
+          "description": "Has full administrative access to the entire workspace."
+        },
+        "member": {
+          "label": "Member",
+          "description": "Can use workspace credits and view other members in the workspace."
+        }
+      }
+    },
+    "dangerZone": {
+      "title": "Danger zone",
+      "transferOwnership": {
+        "title": "Transfer ownership",
+        "description": "Transfer this workspace to another member. You will become a regular member.",
+        "button": "Transfer"
+      },
+      "deleteWorkspace": {
+        "title": "Delete this workspace",
+        "description": "Permanently delete this workspace and all associated data. This cannot be undone.",
+        "button": "Delete"
+      }
     },
     "inviteUpsellDialog": {
       "titleNotSubscribed": "A subscription is required to invite members",
@@ -2598,7 +2636,12 @@
       "failedToCreateWorkspace": "Failed to create workspace",
       "failedToDeleteWorkspace": "Failed to delete workspace",
       "failedToLeaveWorkspace": "Failed to leave workspace",
-      "failedToFetchWorkspaces": "Failed to load workspaces"
+      "failedToFetchWorkspaces": "Failed to load workspaces",
+      "ownershipTransferred": {
+        "title": "Ownership transferred",
+        "message": "You are now a member of this workspace."
+      },
+      "failedToTransferOwnership": "Failed to transfer ownership"
     }
   },
   "workspaceSwitcher": {

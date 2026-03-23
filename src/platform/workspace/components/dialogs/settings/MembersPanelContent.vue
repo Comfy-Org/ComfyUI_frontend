@@ -386,6 +386,7 @@ const { d, t } = useI18n()
 const toast = useToast()
 const { userPhotoUrl, userEmail, userDisplayName } = useCurrentUser()
 const {
+  showChangeRoleDialog,
   showRemoveMemberDialog,
   showRevokeInviteDialog,
   showCreateWorkspaceDialog
@@ -437,6 +438,15 @@ function getInviteInitial(email: string): string {
 }
 
 const memberMenuItems = computed(() => [
+  {
+    label: t('workspacePanel.members.actions.changeRole'),
+    icon: 'pi pi-users',
+    command: () => {
+      if (selectedMember.value) {
+        handleChangeRole(selectedMember.value)
+      }
+    }
+  },
   {
     label: t('workspacePanel.members.actions.removeMember'),
     icon: 'pi pi-user-minus',
@@ -554,6 +564,14 @@ function handleRevokeInvite(invite: PendingInvite) {
 
 function handleCreateWorkspace() {
   showCreateWorkspaceDialog()
+}
+
+function handleChangeRole(member: WorkspaceMember) {
+  showChangeRoleDialog({
+    memberId: member.id,
+    memberName: member.name,
+    currentRole: member.role
+  })
 }
 
 function handleRemoveMember(member: WorkspaceMember) {
