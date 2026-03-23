@@ -36,6 +36,10 @@ jobs:
       os: ${{ steps.set.outputs.os }}
       mode: ${{ steps.set.outputs.mode }}
       skip: ${{ steps.set.outputs.skip }}
+      number: ${{ steps.resolve-number.outputs.number }}
+      target_type: ${{ steps.resolve-number.outputs.target_type }}
+      before_sha: ${{ steps.resolve-refs.outputs.before_sha }}
+      after_sha: ${{ steps.resolve-refs.outputs.after_sha }}
     steps:
       - name: Determine QA mode
         id: set
@@ -71,6 +75,54 @@ jobs:
           fi
           echo "Mode: $([ "$FULL" = "true" ] && echo full || echo focused)"
 
+      - name: Resolve target number and type
+        id: resolve-number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -n "$PR_NUM" ]; then
+            NUM="$PR_NUM"
+          else
+            NUM=$(gh pr list --repo "$REPO" \
+              --head "$BRANCH" --state open \
+              --json number --jq '.[0].number // empty')
+            if [ -z "$NUM" ]; then
+              NUM=$(echo "$BRANCH" | sed -n 's/^sno-qa-\([0-9]\+\)$/\1/p')
+            fi
+          fi
+          echo "number=${NUM}" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$NUM" ]; then
+            if gh pr view "$NUM" --repo "$REPO" --json number >/dev/null 2>&1; then
+              echo "target_type=pr" >> "$GITHUB_OUTPUT"
+              echo "Target: PR #$NUM"
+            else
+              echo "target_type=issue" >> "$GITHUB_OUTPUT"
+              echo "Target: Issue #$NUM"
+            fi
+          fi
+
+      - name: Resolve commit SHAs for immutable references
+        id: resolve-refs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ steps.resolve-number.outputs.number }}
+          TARGET_TYPE: ${{ steps.resolve-number.outputs.target_type }}
+          REPO: ${{ github.repository }}
+        run: |
+          MAIN_SHA=$(gh api "repos/${REPO}/git/ref/heads/main" --jq '.object.sha')
+          echo "before_sha=${MAIN_SHA}" >> "$GITHUB_OUTPUT"
+          echo "Main: ${MAIN_SHA:0:7}"
+
+          if [ "$TARGET_TYPE" = "pr" ] && [ -n "$NUM" ]; then
+            PR_SHA=$(gh pr view "$NUM" --repo "$REPO" --json headRefOid --jq '.headRefOid')
+            echo "after_sha=${PR_SHA}" >> "$GITHUB_OUTPUT"
+            echo "PR #${NUM}: ${PR_SHA:0:7}"
+          fi
+
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   # Analyze PR — deep analysis via Gemini Pro to generate QA guides
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -90,41 +142,21 @@ jobs:
         with:
           include_build_step: false
 
-      - name: Resolve PR number
-        id: pr
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUM: ${{ github.event.pull_request.number }}
-          BRANCH: ${{ github.ref_name }}
-        run: |
-          if [ -n "$PR_NUM" ]; then
-            echo "number=$PR_NUM" >> "$GITHUB_OUTPUT"
-          else
-            # Try open PR for this branch
-            NUM=$(gh pr list --repo "${{ github.repository }}" \
-              --head "$BRANCH" --state open \
-              --json number --jq '.[0].number // empty')
-            # Fallback: extract from sno-qa-<number> branch name
-            if [ -z "$NUM" ]; then
-              NUM=$(echo "$BRANCH" | sed -n 's/^sno-qa-\([0-9]\+\)$/\1/p')
-            fi
-            echo "number=${NUM}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Run PR analysis
-        if: steps.pr.outputs.number
+      - name: Run analysis
+        if: needs.resolve-matrix.outputs.number
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p qa-guides
           pnpm exec tsx scripts/qa-analyze-pr.ts \
-            --pr-number "${{ steps.pr.outputs.number }}" \
+            --pr-number "${{ needs.resolve-matrix.outputs.number }}" \
             --repo "${{ github.repository }}" \
-            --output-dir qa-guides
+            --output-dir qa-guides \
+            --type "${{ needs.resolve-matrix.outputs.target_type }}"
 
       - name: Upload QA guides
-        if: always() && steps.pr.outputs.number
+        if: always() && needs.resolve-matrix.outputs.number
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v6.2.0
         with:
           name: qa-guides-${{ github.run_id }}
@@ -190,6 +222,7 @@ jobs:
           mkdir -p "$QA_ARTIFACTS"
 
       - name: Get PR diff
+        if: needs.resolve-matrix.outputs.target_type == 'pr'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -234,19 +267,31 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"Comfy.TutorialCompleted":true}' || echo "Settings pre-seed skipped"
 
-      - name: Run BEFORE QA recording
+      - name: Run QA recording
         shell: bash
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TARGET_TYPE: ${{ needs.resolve-matrix.outputs.target_type }}
         run: |
+          MODE="before"
+          if [ "$TARGET_TYPE" = "issue" ]; then
+            MODE="reproduce"
+          fi
+
           QA_GUIDE_FLAG=""
           if [ -f qa-guides/qa-guide-before.json ]; then
-            echo "Using QA guide for before recording"
+            echo "Using QA guide for $MODE recording"
             QA_GUIDE_FLAG="--qa-guide qa-guides/qa-guide-before.json"
           fi
+
+          DIFF_FLAG=""
+          if [ -f "${{ runner.temp }}/pr-diff.txt" ]; then
+            DIFF_FLAG="--diff ${{ runner.temp }}/pr-diff.txt"
+          fi
+
           pnpm exec tsx scripts/qa-record.ts \
-            --mode before \
-            --diff "${{ runner.temp }}/pr-diff.txt" \
+            --mode "$MODE" \
+            $DIFF_FLAG \
             --output-dir "$QA_ARTIFACTS" \
             --url http://127.0.0.1:8188 \
             --test-plan .claude/skills/comfy-qa/SKILL.md \
@@ -276,7 +321,8 @@ jobs:
     if: >-
       always() &&
       needs.resolve-matrix.outputs.skip != 'true' &&
-      needs.resolve-matrix.result == 'success'
+      needs.resolve-matrix.result == 'success' &&
+      needs.resolve-matrix.outputs.target_type == 'pr'
     strategy:
       fail-fast: false
       matrix:
@@ -294,6 +340,21 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      # When triggered via sno-qa-* push, the checkout above gets sno-skills
+      # (the scripts branch), not the actual PR. Fetch the PR ref and check it out.
+      - name: Checkout PR head for sno-qa-* triggers
+        if: >-
+          !github.head_ref &&
+          needs.resolve-matrix.outputs.target_type == 'pr' &&
+          needs.resolve-matrix.outputs.number
+        shell: bash
+        env:
+          PR_NUM: ${{ needs.resolve-matrix.outputs.number }}
+        run: |
+          git fetch origin "refs/pull/${PR_NUM}/head"
+          git checkout FETCH_HEAD
+          echo "Checked out PR #${PR_NUM} at $(git rev-parse --short HEAD)"
 
       - name: Setup frontend (PR branch)
         uses: ./.github/actions/setup-frontend
@@ -401,27 +462,41 @@ jobs:
       (github.event.pull_request.number || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
+      contents: write
       pull-requests: write
+      issues: write
     steps:
-      - name: Resolve PR number
+      - name: Configure git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Resolve target number and type
         id: pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUM: ${{ github.event.pull_request.number }}
           BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
           if [ -n "$PR_NUM" ]; then
-            echo "number=$PR_NUM" >> "$GITHUB_OUTPUT"
+            NUM="$PR_NUM"
           else
-            # Push event: look up open PR for this branch
-            NUM=$(gh pr list --repo "${{ github.repository }}" \
+            NUM=$(gh pr list --repo "$REPO" \
               --head "$BRANCH" --state open \
               --json number --jq '.[0].number // empty')
-            # Fallback: extract from sno-qa-<number> branch name
             if [ -z "$NUM" ]; then
               NUM=$(echo "$BRANCH" | sed -n 's/^sno-qa-\([0-9]\+\)$/\1/p')
             fi
-            echo "number=${NUM}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "number=${NUM}" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$NUM" ]; then
+            if gh pr view "$NUM" --repo "$REPO" --json number >/dev/null 2>&1; then
+              echo "target_type=pr" >> "$GITHUB_OUTPUT"
+            else
+              echo "target_type=issue" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Checkout repository
@@ -438,6 +513,7 @@ jobs:
           pattern: qa-before-*
 
       - name: Download AFTER artifacts
+        if: needs.qa-after.result == 'success'
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           path: qa-artifacts/after
@@ -521,28 +597,46 @@ jobs:
             fi
           done
 
-      - name: Build PR context for video review
+      - name: Build context for video review
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_NUM: ${{ steps.pr.outputs.number }}
+          TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
+          REPO: ${{ github.repository }}
         run: |
-          PR_NUM="${{ github.event.pull_request.number || '' }}"
-          if [ -n "$PR_NUM" ]; then
+          if [ -z "$TARGET_NUM" ]; then
+            echo "No target number available, skipping context"
+            exit 0
+          fi
+
+          if [ "$TARGET_TYPE" = "issue" ]; then
             {
-              echo "### PR #${PR_NUM}"
-              gh pr view "$PR_NUM" --repo "${{ github.repository }}" \
+              echo "### Issue #${TARGET_NUM}"
+              gh issue view "$TARGET_NUM" --repo "$REPO" \
+                --json title,body --jq '"Title: \(.title)\n\nDescription:\n\(.body)"' 2>/dev/null || true
+              echo ""
+              echo "### Comments"
+              gh api "repos/${REPO}/issues/${TARGET_NUM}/comments" \
+                --jq '.[].body' 2>/dev/null | head -200 || true
+              echo ""
+              echo "This video attempts to reproduce a reported bug on the main branch."
+            } > pr-context.txt
+            echo "Issue context saved ($(wc -l < pr-context.txt) lines)"
+          else
+            {
+              echo "### PR #${TARGET_NUM}"
+              gh pr view "$TARGET_NUM" --repo "$REPO" \
                 --json title,body --jq '"Title: \(.title)\n\nDescription:\n\(.body)"' 2>/dev/null || true
               echo ""
               echo "### Changed files"
-              gh pr diff "$PR_NUM" --repo "${{ github.repository }}" 2>/dev/null \
+              gh pr diff "$TARGET_NUM" --repo "$REPO" 2>/dev/null \
                 | grep '^diff --git' | sed 's|diff --git a/||;s| b/.*||' | sort -u || true
               echo ""
               echo "### Diff (truncated to 300 lines)"
-              gh pr diff "$PR_NUM" --repo "${{ github.repository }}" 2>/dev/null \
+              gh pr diff "$TARGET_NUM" --repo "$REPO" 2>/dev/null \
                 | head -300 || true
             } > pr-context.txt
             echo "PR context saved ($(wc -l < pr-context.txt) lines)"
-          else
-            echo "No PR number available, skipping PR context"
           fi
 
       - name: Run video review
@@ -571,7 +665,7 @@ jobs:
           done
 
       - name: Generate regression test from QA report
-        if: needs.resolve-matrix.outputs.mode == 'focused'
+        if: needs.resolve-matrix.outputs.mode == 'focused' && steps.pr.outputs.target_type == 'pr'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -626,6 +720,11 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           RAW_BRANCH: ${{ github.head_ref || github.ref_name }}
+          BEFORE_SHA: ${{ needs.resolve-matrix.outputs.before_sha }}
+          AFTER_SHA: ${{ needs.resolve-matrix.outputs.after_sha }}
+          TARGET_NUM: ${{ steps.pr.outputs.number }}
+          TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
+          REPO: ${{ github.repository }}
         run: |
           npm install -g wrangler@4.74.0 >/dev/null 2>&1
 
@@ -684,6 +783,21 @@ jobs:
             fi
             CARD_COUNT=$((CARD_COUNT + 1))
           done
+
+          # Build commit info for the report header
+          COMMIT_HTML=""
+          REPO_URL="https://github.com/${REPO}"
+          if [ -n "$BEFORE_SHA" ]; then
+            SHORT_BEFORE="${BEFORE_SHA:0:7}"
+            COMMIT_HTML="<a href=${REPO_URL}/commit/${BEFORE_SHA} class=sha title='main branch'>main @ ${SHORT_BEFORE}</a>"
+          fi
+          if [ -n "$AFTER_SHA" ]; then
+            SHORT_AFTER="${AFTER_SHA:0:7}"
+            AFTER_LABEL="PR"
+            [ -n "$TARGET_NUM" ] && AFTER_LABEL="#${TARGET_NUM}"
+            COMMIT_HTML="${COMMIT_HTML:+${COMMIT_HTML} &middot; }<a href=${REPO_URL}/commit/${AFTER_SHA} class=sha title='PR head commit'>${AFTER_LABEL} @ ${SHORT_AFTER}</a>"
+          fi
+          [ -n "$COMMIT_HTML" ] && COMMIT_HTML=" &middot; ${COMMIT_HTML}"
 
           cat > "$DEPLOY_DIR/index.html" <<INDEXEOF
           <!DOCTYPE html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>QA Session Recordings</title>
@@ -747,8 +861,10 @@ jobs:
           .reveal{animation:fade-up var(--dur-slow) var(--ease-out) both;animation-delay:calc(var(--i,0) * 120ms)}
           @media(prefers-reduced-motion:reduce){.reveal{animation:none}}
           @media(max-width:480px){.grid{grid-template-columns:1fr}.card-body{flex-wrap:wrap;gap:.5rem}}
+          .sha{color:var(--primary);text-decoration:none;font-family:var(--font-mono);font-size:.75rem;font-weight:500;padding:.1rem .4rem;border-radius:.25rem;background:oklch(62% 0.21 265/.08);border:1px solid oklch(62% 0.21 265/.15);transition:all var(--dur-base) var(--ease-out)}
+          .sha:hover{background:oklch(62% 0.21 265/.15);border-color:var(--primary)}
           </style></head><body><div class=container>
-          <header><div class=header-icon><svg width=20 height=20 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2 stroke-linecap=round stroke-linejoin=round><polygon points="23 7 16 12 23 17 23 7"/><rect x=1 y=5 width=15 height=14 rx=2 ry=2/></svg></div><div><h1>QA Session Recordings</h1><div class=meta>ComfyUI Frontend &middot; Automated QA</div></div></header>
+          <header><div class=header-icon><svg width=20 height=20 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2 stroke-linecap=round stroke-linejoin=round><polygon points="23 7 16 12 23 17 23 7"/><rect x=1 y=5 width=15 height=14 rx=2 ry=2/></svg></div><div><h1>QA Session Recordings</h1><div class=meta>ComfyUI Frontend &middot; Automated QA${COMMIT_HTML}</div></div></header>
           <div class=grid>${CARDS}</div>
           </div><script>document.querySelectorAll('[data-md]').forEach(el=>{const t=el.textContent;el.removeAttribute('data-md');el.innerHTML=marked.parse(t)})</script></body></html>
           INDEXEOF
@@ -769,17 +885,32 @@ jobs:
           echo "url=${URL:-https://${BRANCH}.comfy-qa.pages.dev}" >> "$GITHUB_OUTPUT"
           echo "Deployed to: ${URL}"
 
-      - name: Post unified QA comment on PR
+      - name: Post unified QA comment
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VIDEO_BASE: ${{ steps.deploy-videos.outputs.url }}
           QA_MODE: ${{ needs.resolve-matrix.outputs.mode }}
+          TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
+          BEFORE_SHA: ${{ needs.resolve-matrix.outputs.before_sha }}
+          AFTER_SHA: ${{ needs.resolve-matrix.outputs.after_sha }}
+          REPO: ${{ github.repository }}
         run: |
-          RUN="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          RUN="https://github.com/${REPO}/actions/runs/${{ github.run_id }}"
           COMMENT_MARKER="<!-- QA_REPORT_COMMENT -->"
 
           MODE_BADGE="🔍 Focused"
           if [ "$QA_MODE" = "full" ]; then MODE_BADGE="🔬 Full (3-OS)"; fi
+          if [ "$TARGET_TYPE" = "issue" ]; then MODE_BADGE="🐛 Issue Reproduce"; fi
+
+          # Build commit links
+          COMMIT_LINE=""
+          REPO_URL="https://github.com/${REPO}"
+          if [ -n "$BEFORE_SHA" ] || [ -n "$AFTER_SHA" ]; then
+            PARTS=""
+            [ -n "$BEFORE_SHA" ] && PARTS="main [\`${BEFORE_SHA:0:7}\`](${REPO_URL}/commit/${BEFORE_SHA})"
+            [ -n "$AFTER_SHA" ] && PARTS="${PARTS:+${PARTS} · }PR [\`${AFTER_SHA:0:7}\`](${REPO_URL}/commit/${AFTER_SHA})"
+            COMMIT_LINE="**Commits**: ${PARTS}"
+          fi
 
           # Build video section with GIF thumbnails linking to full videos
           VIDEO_SECTION=""
@@ -825,7 +956,8 @@ jobs:
 
           ${VIDEO_SECTION}
           **Run**: [${RUN}](${RUN}) · [Download artifacts](${RUN}#artifacts) · [All videos](${VIDEO_BASE})
-          ${VIDEO_REVIEW_SECTION}
+          ${COMMIT_LINE:+${COMMIT_LINE}
+          }${VIDEO_REVIEW_SECTION}
           EOF
           )
 
@@ -841,6 +973,9 @@ jobs:
           if [ -n "$EXISTING" ]; then
             gh api --method PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
               --field body="$BODY"
+          elif [ "$TARGET_TYPE" = "issue" ]; then
+            gh issue comment "$PR_NUM" \
+              --repo ${{ github.repository }} --body "$BODY"
           else
             gh pr comment "$PR_NUM" \
               --repo ${{ github.repository }} --body "$BODY"
