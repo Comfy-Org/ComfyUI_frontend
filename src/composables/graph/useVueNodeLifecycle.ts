@@ -91,13 +91,16 @@ function useVueNodeLifecycleIndividual() {
       // the first legacy drawConnections frame (which may run before
       // drawNode on the foreground canvas).
       const graph = comfyApp.canvas?.graph
-      if (graph) {
-        for (const node of graph._nodes) {
-          try {
-            if (!node.flags.collapsed) node.arrange()
-          } catch {
-            /* skip nodes not fully initialized */
-          }
+      if (!graph) {
+        comfyApp.canvas?.setDirty(true, true)
+        return
+      }
+      for (const node of graph._nodes) {
+        if (node.flags.collapsed) continue
+        try {
+          node.arrange()
+        } catch {
+          /* skip nodes not fully initialized */
         }
       }
 
