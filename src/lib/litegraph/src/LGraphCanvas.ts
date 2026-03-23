@@ -5882,7 +5882,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   drawSnapGuide(
     ctx: CanvasRenderingContext2D,
     item: Positionable,
-    shape = RenderShape.ROUND
+    shape = RenderShape.ROUND,
+    { offsetToSlot }: { offsetToSlot?: boolean } = {}
   ) {
     const snapGuide = temp
     snapGuide.set(item.boundingRect)
@@ -5890,7 +5891,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Not all items have pos equal to top-left of bounds
     const { pos } = item
     const offsetX = pos[0] - snapGuide[0]
-    const offsetY = pos[1] - snapGuide[1]
+    const offsetY =
+      pos[1] -
+      snapGuide[1] -
+      (offsetToSlot ? LiteGraph.NODE_SLOT_HEIGHT * 0.7 : 0)
 
     // Normalise boundingRect to pos to snap
     snapGuide[0] += offsetX
@@ -6067,7 +6071,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.isDragging &&
         this.selectedItems.has(reroute)
       ) {
-        this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE)
+        this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE, {
+          offsetToSlot: true
+        })
       }
       reroute.draw(ctx, this._pattern)
 
