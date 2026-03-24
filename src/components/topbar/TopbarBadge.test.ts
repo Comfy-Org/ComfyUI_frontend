@@ -1,5 +1,5 @@
-import { mount } from '@vue/test-utils'
-import Popover from 'primevue/popover'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
@@ -24,26 +24,27 @@ describe('TopbarBadge', () => {
     variant: 'info'
   }
 
-  const mountTopbarBadge = (
+  function renderTopbarBadge(
     badge: Partial<TopbarBadgeType> = {},
     displayMode: 'full' | 'compact' | 'icon-only' = 'full'
-  ) => {
-    return mount(TopbarBadge, {
+  ) {
+    const user = userEvent.setup()
+    const result = render(TopbarBadge, {
       global: {
         plugins: [PrimeVue, i18n],
-        directives: { tooltip: Tooltip },
-        components: { Popover }
+        directives: { tooltip: Tooltip }
       },
       props: {
         badge: { ...exampleBadge, ...badge },
         displayMode
       }
     })
+    return { ...result, user }
   }
 
   describe('full display mode', () => {
     it('renders all badge elements (icon, label, text)', () => {
-      const wrapper = mountTopbarBadge(
+      renderTopbarBadge(
         {
           text: 'Comfy Cloud',
           label: 'BETA',
@@ -51,30 +52,28 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-
-      expect(wrapper.find('.pi-cloud').exists()).toBe(true)
-      expect(wrapper.text()).toContain('BETA')
-      expect(wrapper.text()).toContain('Comfy Cloud')
+      expect(screen.getByTestId('badge-icon')).toHaveClass('pi-cloud')
+      expect(screen.getByText('BETA')).toBeInTheDocument()
+      expect(screen.getByText('Comfy Cloud')).toBeInTheDocument()
     })
 
     it('renders without icon when not provided', () => {
-      const wrapper = mountTopbarBadge(
+      renderTopbarBadge(
         {
           text: 'Test',
           label: 'NEW'
         },
         'full'
       )
-
-      expect(wrapper.find('i').exists()).toBe(false)
-      expect(wrapper.text()).toContain('NEW')
-      expect(wrapper.text()).toContain('Test')
+      expect(screen.queryByTestId('badge-icon')).not.toBeInTheDocument()
+      expect(screen.getByText('NEW')).toBeInTheDocument()
+      expect(screen.getByText('Test')).toBeInTheDocument()
     })
   })
 
   describe('compact display mode', () => {
     it('renders icon and label but not text', () => {
-      const wrapper = mountTopbarBadge(
+      renderTopbarBadge(
         {
           text: 'Hidden Text',
           label: 'BETA',
@@ -82,32 +81,28 @@ describe('TopbarBadge', () => {
         },
         'compact'
       )
-
-      expect(wrapper.find('.pi-cloud').exists()).toBe(true)
-      expect(wrapper.text()).toContain('BETA')
-      expect(wrapper.text()).not.toContain('Hidden Text')
+      expect(screen.getByTestId('badge-icon')).toHaveClass('pi-cloud')
+      expect(screen.getByText('BETA')).toBeInTheDocument()
+      expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument()
     })
 
-    it('opens popover on click', async () => {
-      const wrapper = mountTopbarBadge(
+    it('reveals full text when clicked', async () => {
+      const { user } = renderTopbarBadge(
         {
           text: 'Full Text',
           label: 'ALERT'
         },
         'compact'
       )
-
-      const clickableArea = wrapper.find('[class*="flex h-full"]')
-      await clickableArea.trigger('click')
-
-      const popover = wrapper.findComponent(Popover)
-      expect(popover.exists()).toBe(true)
+      expect(screen.queryByText('Full Text')).not.toBeInTheDocument()
+      await user.click(screen.getByText('ALERT'))
+      expect(screen.getByText('Full Text')).toBeInTheDocument()
     })
   })
 
   describe('icon-only display mode', () => {
     it('renders only icon', () => {
-      const wrapper = mountTopbarBadge(
+      renderTopbarBadge(
         {
           text: 'Hidden Text',
           label: 'BETA',
@@ -115,29 +110,27 @@ describe('TopbarBadge', () => {
         },
         'icon-only'
       )
-
-      expect(wrapper.find('.pi-cloud').exists()).toBe(true)
-      expect(wrapper.text()).not.toContain('BETA')
-      expect(wrapper.text()).not.toContain('Hidden Text')
+      expect(screen.getByTestId('badge-icon')).toHaveClass('pi-cloud')
+      expect(screen.queryByText('BETA')).not.toBeInTheDocument()
+      expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument()
     })
 
     it('renders label when no icon provided', () => {
-      const wrapper = mountTopbarBadge(
+      renderTopbarBadge(
         {
           text: 'Hidden Text',
           label: 'NEW'
         },
         'icon-only'
       )
-
-      expect(wrapper.text()).toContain('NEW')
-      expect(wrapper.text()).not.toContain('Hidden Text')
+      expect(screen.getByText('NEW')).toBeInTheDocument()
+      expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument()
     })
   })
 
   describe('badge variants', () => {
     it('applies error variant styles', () => {
-      const wrapper = mountTopbarBadge(
+      renderTopbarBadge(
         {
           text: 'Error Message',
           label: 'ERROR',
@@ -145,13 +138,12 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-
-      expect(wrapper.find('.bg-danger-100').exists()).toBe(true)
-      expect(wrapper.find('.text-danger-100').exists()).toBe(true)
+      expect(screen.getByText('ERROR')).toHaveClass('bg-danger-100')
+      expect(screen.getByText('Error Message')).toHaveClass('text-danger-100')
     })
 
     it('applies warning variant styles', () => {
-      const wrapper = mountTopbarBadge(
+      renderTopbarBadge(
         {
           text: 'Warning Message',
           label: 'WARN',
@@ -159,65 +151,53 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-
-      expect(wrapper.find('.bg-gold-600').exists()).toBe(true)
-      expect(wrapper.find('.text-warning-background').exists()).toBe(true)
+      expect(screen.getByText('WARN')).toHaveClass('bg-gold-600')
+      expect(screen.getByText('Warning Message')).toHaveClass(
+        'text-warning-background'
+      )
     })
 
     it('uses default error icon for error variant', () => {
-      const wrapper = mountTopbarBadge(
+      renderTopbarBadge(
         {
           text: 'Error',
           variant: 'error'
         },
         'full'
       )
-
-      expect(wrapper.find('.pi-exclamation-circle').exists()).toBe(true)
+      expect(screen.getByTestId('badge-icon')).toHaveClass(
+        'pi-exclamation-circle'
+      )
     })
 
     it('uses default warning icon for warning variant', () => {
-      const wrapper = mountTopbarBadge(
+      renderTopbarBadge(
         {
           text: 'Warning',
           variant: 'warning'
         },
         'full'
       )
-
-      expect(wrapper.find('.icon-\\[lucide--triangle-alert\\]').exists()).toBe(
-        true
+      expect(screen.getByTestId('badge-icon')).toHaveClass(
+        'icon-[lucide--triangle-alert]'
       )
-    })
-  })
-
-  describe('popover', () => {
-    it('includes popover component in compact and icon-only modes', () => {
-      const compactWrapper = mountTopbarBadge({}, 'compact')
-      const iconOnlyWrapper = mountTopbarBadge({}, 'icon-only')
-      const fullWrapper = mountTopbarBadge({}, 'full')
-
-      expect(compactWrapper.findComponent(Popover).exists()).toBe(true)
-      expect(iconOnlyWrapper.findComponent(Popover).exists()).toBe(true)
-      expect(fullWrapper.findComponent(Popover).exists()).toBe(false)
     })
   })
 
   describe('edge cases', () => {
     it('handles badge with only text', () => {
-      const wrapper = mountTopbarBadge(
+      renderTopbarBadge(
         {
           text: 'Simple Badge'
         },
         'full'
       )
-
-      expect(wrapper.text()).toContain('Simple Badge')
-      expect(wrapper.find('i').exists()).toBe(false)
+      expect(screen.getByText('Simple Badge')).toBeInTheDocument()
+      expect(screen.queryByTestId('badge-icon')).not.toBeInTheDocument()
     })
 
     it('handles custom icon override', () => {
-      const wrapper = mountTopbarBadge(
+      renderTopbarBadge(
         {
           text: 'Custom',
           variant: 'error',
@@ -225,9 +205,10 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-
-      expect(wrapper.find('.pi-custom-icon').exists()).toBe(true)
-      expect(wrapper.find('.pi-exclamation-circle').exists()).toBe(false)
+      expect(screen.getByTestId('badge-icon')).toHaveClass('pi-custom-icon')
+      expect(screen.getByTestId('badge-icon')).not.toHaveClass(
+        'pi-exclamation-circle'
+      )
     })
   })
 })
