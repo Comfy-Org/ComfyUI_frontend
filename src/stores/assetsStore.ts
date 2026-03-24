@@ -155,6 +155,15 @@ export const useAssetsStore = defineStore('assets', () => {
     return true
   }
 
+  function removeHistoryItems(ids: string[]) {
+    const idSet = new Set(ids)
+    allHistoryItems.value = allHistoryItems.value.filter(
+      (item) => !idSet.has(item.id)
+    )
+    ids.forEach((id) => loadedIds.delete(id))
+    historyAssets.value = allHistoryItems.value
+  }
+
   function trimToMaxItems() {
     if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
       const removed = allHistoryItems.value.splice(MAX_HISTORY_ITEMS)
@@ -766,6 +775,7 @@ export const useAssetsStore = defineStore('assets', () => {
     updateInputs,
     updateHistory,
     loadMoreHistory,
+    removeHistoryItems,
 
     // Input mapping helpers
     inputAssetsByFilename,

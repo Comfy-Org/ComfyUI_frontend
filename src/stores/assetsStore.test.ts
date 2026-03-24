@@ -421,6 +421,41 @@ describe('assetsStore - Refactored (Option A)', () => {
     })
   })
 
+  describe('Deletion', () => {
+    it('should remove items by id from history', async () => {
+      const mockHistory = Array.from({ length: 5 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(mockHistory)
+      await store.updateHistory()
+      expect(store.historyAssets).toHaveLength(5)
+
+      store.removeHistoryItems(['prompt_1', 'prompt_3'])
+
+      expect(store.historyAssets).toHaveLength(3)
+      const ids = store.historyAssets.map((a) => a.id)
+      expect(ids).not.toContain('prompt_1')
+      expect(ids).not.toContain('prompt_3')
+    })
+
+    it('should allow re-inserting a removed item on next updateHistory', async () => {
+      const mockHistory = Array.from({ length: 3 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(mockHistory)
+      await store.updateHistory()
+
+      store.removeHistoryItems(['prompt_1'])
+      expect(store.historyAssets).toHaveLength(2)
+
+      // Simulate the item reappearing from the server (e.g. delete failed)
+      vi.mocked(api.getHistory).mockResolvedValueOnce(mockHistory)
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(3)
+    })
+  })
+
   describe('Error Handling', () => {
     it('should preserve existing data when loadMore fails', async () => {
       // First successful load - full batch
