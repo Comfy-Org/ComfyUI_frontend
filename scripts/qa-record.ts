@@ -30,6 +30,18 @@ type TestAction =
   | { action: 'fillDialog'; text: string }
   | { action: 'pressKey'; key: string }
   | { action: 'click'; text: string }
+  | { action: 'rightClick'; text: string }
+  | { action: 'doubleClick'; text?: string; x?: number; y?: number }
+  | { action: 'clickCanvas'; x: number; y: number }
+  | { action: 'rightClickCanvas'; x: number; y: number }
+  | {
+      action: 'dragCanvas'
+      fromX: number
+      fromY: number
+      toX: number
+      toY: number
+    }
+  | { action: 'scrollCanvas'; x: number; y: number; deltaY: number }
   | { action: 'wait'; ms: number }
   | { action: 'screenshot'; name: string }
 
@@ -127,7 +139,7 @@ function buildPrompt(
     after:
       'AFTER (PR branch). Prove the changes work — 3-6 targeted steps, under 30 seconds.',
     reproduce:
-      'REPRODUCE a reported issue on main branch. Follow the reproduction steps to trigger and demonstrate the reported bug — 3-6 steps, under 30 seconds.'
+      'REPRODUCE a reported issue on main branch. Follow the reproduction steps PRECISELY to trigger and demonstrate the reported bug. Use 8-15 detailed steps, up to 60 seconds. You must actually perform the actions that trigger the bug — not just open a menu and take a screenshot.'
   }
   const modeDesc = modeDescriptions[mode] ?? modeDescriptions.before
 
@@ -154,16 +166,39 @@ ${testPlan.slice(0, 4000)}
 
   return `You are generating test steps for a ComfyUI frontend QA recording.
 
+ComfyUI is a node-based visual workflow editor for AI image generation. The UI has:
+- A large **canvas** (1280x720 viewport) showing a node graph, centered roughly at (640, 400)
+- Nodes are boxes with input/output slots that can be connected with wires
+- A **hamburger menu** (top-left C logo) with File, Edit, Help submenus
+- A **sidebar** on the left (Workflows, Node Library, Models)
+- A **topbar** with workflow tabs and Queue button
+- The **default workflow** loads with ~5 nodes already on canvas
+
 MODE: ${modeDesc}
 
 ## Available actions (JSON array)
 Each step is an object with an "action" field:
+
+### Menu actions
 - { "action": "openMenu" } — clicks the Comfy hamburger menu (top-left C logo)
 - { "action": "hoverMenuItem", "label": "File" } — hovers a top-level menu item to open submenu
 - { "action": "clickMenuItem", "label": "Save As" } — clicks an item in the visible submenu
-- { "action": "fillDialog", "text": "test-name" } — fills the dialog input and presses Enter
-- { "action": "pressKey", "key": "Escape" } — presses a keyboard key
+
+### Element actions (by visible text)
 - { "action": "click", "text": "Button Text" } — clicks an element by visible text
+- { "action": "rightClick", "text": "NodeTitle" } — right-clicks an element (opens context menu)
+- { "action": "doubleClick", "text": "NodeTitle" } — double-clicks an element
+- { "action": "fillDialog", "text": "test-name" } — fills dialog input and presses Enter
+- { "action": "pressKey", "key": "Escape" } — presses a keyboard key (Escape, Tab, Delete, Enter, etc.)
+
+### Canvas actions (by coordinates — viewport is 1280x720)
+- { "action": "clickCanvas", "x": 640, "y": 400 } — click at coordinates on canvas
+- { "action": "rightClickCanvas", "x": 500, "y": 350 } — right-click on canvas (node/canvas context menu)
+- { "action": "doubleClick", "x": 640, "y": 400 } — double-click on canvas (opens node search)
+- { "action": "dragCanvas", "fromX": 400, "fromY": 300, "toX": 600, "toY": 300 } — drag (move nodes, pan canvas)
+- { "action": "scrollCanvas", "x": 640, "y": 400, "deltaY": -300 } — scroll wheel (zoom in: negative, zoom out: positive)
+
+### Utility actions
 - { "action": "wait", "ms": 1000 } — waits (use sparingly, max 3000ms)
 - { "action": "screenshot", "name": "step-name" } — takes a screenshot
 ${qaGuideSection}${testPlanSection}
@@ -171,22 +206,28 @@ ${diff ? `## PR Diff\n\`\`\`\n${diff.slice(0, 3000)}\n\`\`\`` : ''}
 
 ## Rules
 - Output ONLY a valid JSON array of actions, no markdown fences or explanation
-- ${mode === 'reproduce' ? 'Follow the reproduction steps to trigger and demonstrate the reported bug' : mode === 'before' ? 'Keep it minimal — just show the old/missing behavior' : 'Test the specific behavior that changed in the PR'}
+- ${mode === 'reproduce' ? 'You MUST follow the reproduction steps from the issue closely. Generate 8-15 steps that actually trigger the bug. Do NOT just open a menu and take a screenshot — perform the FULL reproduction sequence including node interactions, context menus, keyboard shortcuts, and canvas operations' : mode === 'before' ? 'Keep it minimal — just show the old/missing behavior' : 'Test the specific behavior that changed in the PR'}
 - Always include at least one screenshot
 - Do NOT include login steps (handled automatically)
+- The default workflow is already loaded when your steps start
 - Menu navigation pattern: openMenu → hoverMenuItem → clickMenuItem (or screenshot)
+- For node interactions: right-click a node to get its context menu, double-click canvas to add nodes
+- Take screenshots BEFORE and AFTER critical actions to capture the bug state
 ${qaGuide ? '- Follow the QA Analysis Guide steps closely — they are well-researched and specific' : diff ? '- Pick test steps from the QA test plan categories that are most relevant to the diff' : '- Pick test steps from the QA test plan categories most likely to reveal bugs'}
+${mode === 'reproduce' ? '- Common ComfyUI actions: right-click node for context menu (Clone, Bypass, etc.), Ctrl+C/Ctrl+V to copy/paste, Delete key to remove, double-click canvas to add node via search, drag from output to input to connect' : ''}
 
 ## Example output
 [
-  {"action":"openMenu"},
-  {"action":"hoverMenuItem","label":"File"},
-  {"action":"screenshot","name":"file-menu"},
-  {"action":"clickMenuItem","label":"Save As"},
-  {"action":"wait","ms":800},
-  {"action":"fillDialog","text":"test-save"},
-  {"action":"wait","ms":2000},
-  {"action":"screenshot","name":"after-save"}
+  {"action":"clickCanvas","x":450,"y":350},
+  {"action":"screenshot","name":"node-selected"},
+  {"action":"rightClickCanvas","x":450,"y":350},
+  {"action":"wait","ms":500},
+  {"action":"screenshot","name":"context-menu"},
+  {"action":"clickMenuItem","label":"Clone"},
+  {"action":"wait","ms":500},
+  {"action":"screenshot","name":"after-clone"},
+  {"action":"pressKey","key":"Delete"},
+  {"action":"screenshot","name":"after-delete"}
 ]`
 }
 
@@ -256,7 +297,21 @@ const FALLBACK_AFTER: TestAction[] = [
   { action: 'screenshot', name: 'editor-after' }
 ]
 
-const FALLBACK_REPRODUCE: TestAction[] = FALLBACK_BEFORE
+const FALLBACK_REPRODUCE: TestAction[] = [
+  { action: 'screenshot', name: 'initial-state' },
+  { action: 'clickCanvas', x: 450, y: 350 },
+  { action: 'wait', ms: 300 },
+  { action: 'screenshot', name: 'node-selected' },
+  { action: 'rightClickCanvas', x: 450, y: 350 },
+  { action: 'wait', ms: 500 },
+  { action: 'screenshot', name: 'context-menu' },
+  { action: 'pressKey', key: 'Escape' },
+  { action: 'openMenu' },
+  { action: 'hoverMenuItem', label: 'File' },
+  { action: 'screenshot', name: 'file-menu' },
+  { action: 'pressKey', key: 'Escape' },
+  { action: 'screenshot', name: 'final-state' }
+]
 
 const FALLBACK_STEPS: Record<RecordMode, TestAction[]> = {
   before: FALLBACK_BEFORE,
@@ -364,7 +419,7 @@ async function executeSteps(
 ) {
   for (const step of steps) {
     console.warn(
-      `  → ${step.action}${('label' in step && `: ${step.label}`) || ('text' in step && `: ${step.text}`) || ('name' in step && `: ${step.name}`) || ''}`
+      `  → ${step.action}${('label' in step && `: ${step.label}`) || ('text' in step && `: ${step.text}`) || ('name' in step && `: ${step.name}`) || ('x' in step && `: (${step.x},${step.y})`) || ''}`
     )
     switch (step.action) {
       case 'openMenu':
@@ -391,6 +446,65 @@ async function executeSteps(
         break
       case 'click':
         await clickByText(page, step.text)
+        break
+      case 'rightClick': {
+        const rcEl = page.locator(`text=${step.text}`).first()
+        if (await rcEl.isVisible().catch(() => false)) {
+          await rcEl.click({ button: 'right' })
+          await sleep(500)
+        } else {
+          console.warn(
+            `Element with text "${step.text}" not found for rightClick`
+          )
+        }
+        break
+      }
+      case 'doubleClick': {
+        if (step.x !== undefined && step.y !== undefined) {
+          await page.mouse.dblclick(step.x, step.y)
+        } else if (step.text) {
+          const dcEl = page.locator(`text=${step.text}`).first()
+          if (await dcEl.isVisible().catch(() => false)) {
+            await dcEl.dblclick()
+          } else {
+            console.warn(
+              `Element with text "${step.text}" not found for doubleClick`
+            )
+          }
+        } else {
+          // Double-click center of canvas as fallback
+          await page.mouse.dblclick(640, 400)
+        }
+        await sleep(500)
+        break
+      }
+      case 'clickCanvas':
+        await page.mouse.click(step.x, step.y)
+        await sleep(300)
+        break
+      case 'rightClickCanvas':
+        await page.mouse.click(step.x, step.y, { button: 'right' })
+        await sleep(500)
+        break
+      case 'dragCanvas': {
+        await page.mouse.move(step.fromX, step.fromY)
+        await page.mouse.down()
+        await sleep(100)
+        const dragSteps = 5
+        for (let i = 1; i <= dragSteps; i++) {
+          const x = step.fromX + ((step.toX - step.fromX) * i) / dragSteps
+          const y = step.fromY + ((step.toY - step.fromY) * i) / dragSteps
+          await page.mouse.move(x, y)
+          await sleep(50)
+        }
+        await page.mouse.up()
+        await sleep(300)
+        break
+      }
+      case 'scrollCanvas':
+        await page.mouse.move(step.x, step.y)
+        await page.mouse.wheel(0, step.deltaY)
+        await sleep(500)
         break
       case 'wait':
         await sleep(Math.min(step.ms, 5000))

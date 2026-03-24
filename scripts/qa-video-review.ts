@@ -418,6 +418,12 @@ function buildSingleVideoPrompt(
         '1. Does the video demonstrate the reported bug occurring?',
         '2. Is the bug clearly visible and reproducible from the steps shown?',
         '3. Are there any other issues visible during the reproduction attempt?',
+        '',
+        '## CRITICAL: Honesty Requirements',
+        '- If the video only shows login, idle canvas, or trivial menu interactions WITHOUT actually performing the reproduction steps, say "INCONCLUSIVE — reproduction steps were not performed".',
+        '- Do NOT claim a bug is "confirmed" unless you can clearly see the bug behavior described in the issue.',
+        '- Do NOT hallucinate findings. If the video does not show meaningful interaction, say so clearly.',
+        '- Rate confidence as "Low" if the video does not actually demonstrate the bug scenario.',
         ''
       )
     } else {
