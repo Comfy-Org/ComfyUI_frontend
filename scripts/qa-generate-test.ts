@@ -8,7 +8,7 @@
  *     --qa-report <path>       QA video review report (markdown)
  *     --pr-diff <path>         PR diff file
  *     --output <path>          Output .spec.ts file path
- *     --model <name>           Gemini model (default: gemini-2.5-flash)
+ *     --model <name>           Gemini model (default: gemini-3-flash-preview)
  */
 import { readFile, writeFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
@@ -26,7 +26,7 @@ const DEFAULTS: CliOptions = {
   qaReport: '',
   prDiff: '',
   output: '',
-  model: 'gemini-2.5-flash'
+  model: 'gemini-3-flash-preview'
 }
 
 // ── Fixture API reference for the prompt ────────────────────────────
@@ -171,7 +171,7 @@ Options:
   --qa-report <path>   QA video review report (markdown) [required]
   --pr-diff <path>     PR diff file [required]
   --output <path>      Output .spec.ts path [required]
-  --model <name>       Gemini model (default: gemini-2.5-flash)`)
+  --model <name>       Gemini model (default: gemini-3-flash-preview)`)
         process.exit(0)
     }
   }

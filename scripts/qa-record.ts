@@ -65,7 +65,7 @@ interface Options {
 function parseArgs(): Options {
   const args = process.argv.slice(2)
   const opts: Partial<Options> = {
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.1-pro-preview',
     serverUrl: 'http://127.0.0.1:8188',
     apiKey: process.env.GEMINI_API_KEY || ''
   }

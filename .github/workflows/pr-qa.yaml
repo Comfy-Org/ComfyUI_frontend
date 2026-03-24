@@ -672,7 +672,7 @@ jobs:
               --artifacts-dir qa-artifacts \
               --output-dir video-reviews \
               --video-file "$vid" \
-              --model gemini-2.5-flash $PR_CTX_FLAG $BEFORE_FLAG $TARGET_URL_FLAG || true
+              --model gemini-3-flash-preview $PR_CTX_FLAG $BEFORE_FLAG $TARGET_URL_FLAG || true
             echo "::endgroup::"
           done
 
