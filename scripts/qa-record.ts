@@ -403,7 +403,11 @@ async function fillDialogAndConfirm(page: Page, text: string) {
 async function clickByText(page: Page, text: string) {
   const el = page.locator(`text=${text}`).first()
   if (await el.isVisible().catch(() => false)) {
-    await el.click()
+    await el.click({ timeout: 5000 }).catch((e) => {
+      console.warn(
+        `Click on "${text}" failed: ${e instanceof Error ? e.message.split('\n')[0] : e}`
+      )
+    })
     await sleep(500)
   } else {
     console.warn(`Element with text "${text}" not found`)
@@ -421,103 +425,111 @@ async function executeSteps(
     console.warn(
       `  → ${step.action}${('label' in step && `: ${step.label}`) || ('text' in step && `: ${step.text}`) || ('name' in step && `: ${step.name}`) || ('x' in step && `: (${step.x},${step.y})`) || ''}`
     )
-    switch (step.action) {
-      case 'openMenu':
-        await openComfyMenu(page)
-        break
-      case 'hoverMenuItem':
-        await hoverMenuItem(page, step.label)
-        break
-      case 'clickMenuItem':
-        await clickSubmenuItem(page, step.label)
-        break
-      case 'fillDialog':
-        await fillDialogAndConfirm(page, step.text)
-        break
-      case 'pressKey':
-        try {
-          await page.keyboard.press(step.key)
-          await sleep(300)
-        } catch (e) {
-          console.warn(
-            `Skipping invalid key "${step.key}": ${e instanceof Error ? e.message : e}`
-          )
-        }
-        break
-      case 'click':
-        await clickByText(page, step.text)
-        break
-      case 'rightClick': {
-        const rcEl = page.locator(`text=${step.text}`).first()
-        if (await rcEl.isVisible().catch(() => false)) {
-          await rcEl.click({ button: 'right' })
-          await sleep(500)
-        } else {
-          console.warn(
-            `Element with text "${step.text}" not found for rightClick`
-          )
-        }
-        break
-      }
-      case 'doubleClick': {
-        if (step.x !== undefined && step.y !== undefined) {
-          await page.mouse.dblclick(step.x, step.y)
-        } else if (step.text) {
-          const dcEl = page.locator(`text=${step.text}`).first()
-          if (await dcEl.isVisible().catch(() => false)) {
-            await dcEl.dblclick()
-          } else {
+    try {
+      switch (step.action) {
+        case 'openMenu':
+          await openComfyMenu(page)
+          break
+        case 'hoverMenuItem':
+          await hoverMenuItem(page, step.label)
+          break
+        case 'clickMenuItem':
+          await clickSubmenuItem(page, step.label)
+          break
+        case 'fillDialog':
+          await fillDialogAndConfirm(page, step.text)
+          break
+        case 'pressKey':
+          try {
+            await page.keyboard.press(step.key)
+            await sleep(300)
+          } catch (e) {
             console.warn(
-              `Element with text "${step.text}" not found for doubleClick`
+              `Skipping invalid key "${step.key}": ${e instanceof Error ? e.message : e}`
             )
           }
-        } else {
-          // Double-click center of canvas as fallback
-          await page.mouse.dblclick(640, 400)
+          break
+        case 'click':
+          await clickByText(page, step.text)
+          break
+        case 'rightClick': {
+          const rcEl = page.locator(`text=${step.text}`).first()
+          if (await rcEl.isVisible().catch(() => false)) {
+            await rcEl.click({ button: 'right' })
+            await sleep(500)
+          } else {
+            console.warn(
+              `Element with text "${step.text}" not found for rightClick`
+            )
+          }
+          break
         }
-        await sleep(500)
-        break
-      }
-      case 'clickCanvas':
-        await page.mouse.click(step.x, step.y)
-        await sleep(300)
-        break
-      case 'rightClickCanvas':
-        await page.mouse.click(step.x, step.y, { button: 'right' })
-        await sleep(500)
-        break
-      case 'dragCanvas': {
-        await page.mouse.move(step.fromX, step.fromY)
-        await page.mouse.down()
-        await sleep(100)
-        const dragSteps = 5
-        for (let i = 1; i <= dragSteps; i++) {
-          const x = step.fromX + ((step.toX - step.fromX) * i) / dragSteps
-          const y = step.fromY + ((step.toY - step.fromY) * i) / dragSteps
-          await page.mouse.move(x, y)
-          await sleep(50)
+        case 'doubleClick': {
+          if (step.x !== undefined && step.y !== undefined) {
+            await page.mouse.dblclick(step.x, step.y)
+          } else if (step.text) {
+            const dcEl = page.locator(`text=${step.text}`).first()
+            if (await dcEl.isVisible().catch(() => false)) {
+              await dcEl.dblclick()
+            } else {
+              console.warn(
+                `Element with text "${step.text}" not found for doubleClick`
+              )
+            }
+          } else {
+            // Double-click center of canvas as fallback
+            await page.mouse.dblclick(640, 400)
+          }
+          await sleep(500)
+          break
         }
-        await page.mouse.up()
-        await sleep(300)
-        break
+        case 'clickCanvas':
+          await page.mouse.click(step.x, step.y)
+          await sleep(300)
+          break
+        case 'rightClickCanvas':
+          await page.mouse.click(step.x, step.y, { button: 'right' })
+          await sleep(500)
+          break
+        case 'dragCanvas': {
+          await page.mouse.move(step.fromX, step.fromY)
+          await page.mouse.down()
+          await sleep(100)
+          const dragSteps = 5
+          for (let i = 1; i <= dragSteps; i++) {
+            const x = step.fromX + ((step.toX - step.fromX) * i) / dragSteps
+            const y = step.fromY + ((step.toY - step.fromY) * i) / dragSteps
+            await page.mouse.move(x, y)
+            await sleep(50)
+          }
+          await page.mouse.up()
+          await sleep(300)
+          break
+        }
+        case 'scrollCanvas':
+          await page.mouse.move(step.x, step.y)
+          await page.mouse.wheel(0, step.deltaY)
+          await sleep(500)
+          break
+        case 'wait':
+          await sleep(Math.min(step.ms, 5000))
+          break
+        case 'screenshot': {
+          const safeName = step.name
+            .replace(/[^a-zA-Z0-9_-]/g, '_')
+            .slice(0, 100)
+          await page.screenshot({
+            path: `${outputDir}/${safeName}.png`
+          })
+          break
+        }
+        default:
+          console.warn(`Unknown action: ${JSON.stringify(step)}`)
       }
-      case 'scrollCanvas':
-        await page.mouse.move(step.x, step.y)
-        await page.mouse.wheel(0, step.deltaY)
-        await sleep(500)
-        break
-      case 'wait':
-        await sleep(Math.min(step.ms, 5000))
-        break
-      case 'screenshot': {
-        const safeName = step.name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 100)
-        await page.screenshot({
-          path: `${outputDir}/${safeName}.png`
-        })
-        break
-      }
-      default:
-        console.warn(`Unknown action: ${JSON.stringify(step)}`)
+    } catch (e) {
+      console.warn(
+        `Step ${step.action} failed: ${e instanceof Error ? e.message.split('\n')[0] : e}`
+      )
     }
   }
 }
