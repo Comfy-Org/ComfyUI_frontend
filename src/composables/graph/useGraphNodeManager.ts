@@ -82,6 +82,10 @@ export interface SafeWidgetData {
    * which differs from the subgraph node's input slot widget name.
    */
   slotName?: string
+  /** Tooltip text from the resolved widget. */
+  tooltip?: string
+  /** For promoted widgets, the display label from the subgraph input slot. */
+  promotedLabel?: string
 }
 
 export interface VueNodeData {
@@ -335,7 +339,9 @@ function safeWidgetMapper(
             }
           : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
         slotMetadata: slotInfo,
-        slotName: name !== widget.name ? widget.name : undefined
+        slotName: name !== widget.name ? widget.name : undefined,
+        tooltip: widget.tooltip,
+        promotedLabel: isPromotedWidgetView(widget) ? widget.label : undefined
       }
     } catch (error) {
       return {
@@ -759,6 +765,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
           nodeRef.outputs = [...nodeRef.outputs]
         }
+        // Re-extract widget data so promotedLabel reflects the rename
+        vueNodeData.set(nodeId, extractVueNodeData(nodeRef))
       }
     }
 
