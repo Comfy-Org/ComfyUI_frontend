@@ -108,6 +108,27 @@ export const ESSENTIALS_CATEGORY_CANONICAL: ReadonlyMap<
 > = new Map(ESSENTIALS_CATEGORIES.map((c) => [c.toLowerCase(), c]))
 
 /**
+ * Precomputed rank map: category → display order index.
+ * Used for sorting essentials folders in their canonical order.
+ */
+export const ESSENTIALS_CATEGORY_RANK: ReadonlyMap<string, number> = new Map(
+  ESSENTIALS_CATEGORIES.map((c, i) => [c, i])
+)
+
+/**
+ * Precomputed rank maps: category → (node name → display order index).
+ * Used for sorting nodes within each essentials folder.
+ */
+export const ESSENTIALS_NODE_RANK: Partial<
+  Record<EssentialsCategory, ReadonlyMap<string, number>>
+> = Object.fromEntries(
+  Object.entries(ESSENTIALS_NODES).map(([category, nodes]) => [
+    category,
+    new Map(nodes.map((name, i) => [name, i]))
+  ])
+)
+
+/**
  * "Novel" toolkit nodes for telemetry — basics excluded.
  * Derived from ESSENTIALS_NODES minus the 'basics' category.
  */

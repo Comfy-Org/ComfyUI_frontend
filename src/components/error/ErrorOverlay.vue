@@ -49,7 +49,12 @@
           <Button variant="muted-textonly" size="unset" @click="dismiss">
             {{ t('g.dismiss') }}
           </Button>
-          <Button variant="secondary" size="lg" @click="seeErrors">
+          <Button
+            variant="secondary"
+            size="lg"
+            data-testid="error-overlay-see-errors"
+            @click="seeErrors"
+          >
             {{
               appMode ? t('linearMode.error.goto') : t('errorOverlay.seeErrors')
             }}

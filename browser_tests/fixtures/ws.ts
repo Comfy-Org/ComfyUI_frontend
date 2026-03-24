@@ -29,7 +29,8 @@ export const webSocketFixture = base.extend<{
             function ([data, url]) {
               if (!url) {
                 // If no URL specified, use page URL
-                const u = new URL(window.location.toString())
+                const u = new URL(window.location.href)
+                u.hash = ''
                 u.protocol = 'ws:'
                 u.pathname = '/'
                 url = u.toString() + 'ws'

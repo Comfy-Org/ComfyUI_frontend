@@ -23,6 +23,8 @@ const zResultItem = z.object({
   display_name: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
+// Uses .passthrough() because custom nodes can output arbitrary keys.
+// See docs/adr/0007-node-execution-output-passthrough-schema.md
 const zOutputs = z
   .object({
     audio: z.array(zResultItem).optional(),
@@ -298,6 +300,7 @@ const zSettings = z.object({
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
+  'Comfy.Appearance.DisableAnimations': z.boolean(),
   'Comfy.UI.TabBarLayout': z.enum(['Default', 'Legacy']),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
@@ -309,6 +312,7 @@ const zSettings = z.object({
   'Comfy.EnableTooltips': z.boolean(),
   'Comfy.EnableWorkflowViewRestore': z.boolean(),
   'Comfy.FloatRoundingPrecision': z.number(),
+  'Comfy.Graph.AutoPanSpeed': z.number(),
   'Comfy.Graph.CanvasInfo': z.boolean(),
   'Comfy.Graph.CanvasMenu': z.boolean(),
   'Comfy.Graph.CtrlShiftZoom': z.boolean(),
@@ -378,6 +382,7 @@ const zSettings = z.object({
   'Comfy.WorkflowActions.SeenItems': z.array(z.string()),
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
+  'Comfy.Keybinding.CurrentPreset': z.string(),
   'Comfy.Extension.Disabled': z.array(z.string()),
   'Comfy.LinkRenderMode': z.number(),
   'Comfy.Node.AutoSnapLinkToSlot': z.boolean(),
@@ -410,6 +415,7 @@ const zSettings = z.object({
   'Comfy.Canvas.LeftMouseClickBehavior': z.string(),
   'Comfy.Canvas.MouseWheelScroll': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
+  'Comfy.AppBuilder.VueNodeSwitchDismissed': z.boolean(),
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),

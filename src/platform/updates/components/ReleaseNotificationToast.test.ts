@@ -134,7 +134,7 @@ describe('ReleaseNotificationToast', () => {
     } as ReleaseNote
 
     wrapper = mountComponent()
-    expect(wrapper.find('.icon-\\[lucide--rocket\\]').exists()).toBe(true)
+    expect(wrapper.find('.release-toast-popup').exists()).toBe(true)
   })
 
   it('displays release version', () => {

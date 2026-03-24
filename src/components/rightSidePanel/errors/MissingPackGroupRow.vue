@@ -106,7 +106,7 @@
       <Button
         variant="secondary"
         size="md"
-        class="flex w-full flex-1"
+        class="flex w-full flex-1 rounded-lg"
         :disabled="
           comfyManagerStore.isPackInstalled(group.packId) || isInstalling
         "
@@ -161,7 +161,7 @@
       <Button
         variant="secondary"
         size="md"
-        class="flex w-full flex-1"
+        class="flex w-full flex-1 rounded-lg"
         @click="
           openManager({
             initialTab: ManagerTab.All,

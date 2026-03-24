@@ -281,10 +281,12 @@ export interface ComfyApi extends EventTarget {
 
 export class PromptExecutionError extends Error {
   response: PromptResponse
+  status?: number
 
-  constructor(response: PromptResponse) {
+  constructor(response: PromptResponse, status?: number) {
     super('Prompt execution failed')
     this.response = response
+    this.status = status
   }
 
   override toString() {
@@ -380,6 +382,7 @@ export class ComfyApi extends EventTarget {
   }
 
   apiURL(route: string): string {
+    if (route.startsWith('/api')) return this.api_base + route
     return this.api_base + '/api' + route
   }
 
@@ -900,7 +903,7 @@ export class ComfyApi extends EventTarget {
           }
         }
       }
-      throw new PromptExecutionError(errorResponse)
+      throw new PromptExecutionError(errorResponse, res.status)
     }
 
     return await res.json()

@@ -8,6 +8,13 @@
 import { toRaw } from 'vue'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
+import type {
+  AnimationItem,
+  BackgroundRenderModeType,
+  CameraType,
+  MaterialMode,
+  UpDirection
+} from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Object3D } from 'three'
@@ -15,6 +22,28 @@ import type { Object3D } from 'three'
 // Type for the useLoad3dViewer composable function
 // Using explicit type to avoid import() type annotations (lint rule)
 type UseLoad3dViewerFn = (node?: LGraphNode) => {
+  backgroundColor: { value: string }
+  showGrid: { value: boolean }
+  cameraType: { value: CameraType }
+  fov: { value: number }
+  lightIntensity: { value: number }
+  backgroundImage: { value: string }
+  hasBackgroundImage: { value: boolean }
+  backgroundRenderMode: { value: BackgroundRenderModeType }
+  upDirection: { value: UpDirection }
+  materialMode: { value: MaterialMode }
+  needApplyChanges: { value: boolean }
+  isPreview: { value: boolean }
+  isStandaloneMode: { value: boolean }
+  isSplatModel: { value: boolean }
+  isPlyModel: { value: boolean }
+  animations: { value: AnimationItem[] }
+  playing: { value: boolean }
+  selectedSpeed: { value: number }
+  selectedAnimation: { value: number }
+  animationProgress: { value: number }
+  animationDuration: { value: number }
+
   initializeViewer: (containerRef: HTMLElement, source: Load3d) => Promise<void>
   initializeStandaloneViewer: (
     containerRef: HTMLElement,
@@ -31,7 +60,6 @@ type UseLoad3dViewerFn = (node?: LGraphNode) => {
   handleBackgroundImageUpdate: (file: File | null) => Promise<void>
   handleModelDrop: (file: File) => Promise<void>
   handleSeek: (progress: number) => void
-  needApplyChanges: { value: boolean }
 }
 
 // Type for SkeletonUtils module
@@ -82,7 +110,7 @@ interface Load3DNode extends LGraphNode {
 
 const viewerInstances = new Map<NodeId, ReturnType<UseLoad3dViewerFn>>()
 
-export class Load3dService {
+class Load3dService {
   private static instance: Load3dService
 
   private constructor() {}

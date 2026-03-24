@@ -31,6 +31,21 @@ interface ModelWithUrl {
   directory: string
 }
 
+/**
+ * Converts a model download URL to a browsable page URL.
+ * - HuggingFace: `/resolve/` → `/blob/` (file page with model info)
+ * - Civitai: strips `/api/download` or `/api/v1` prefix (model page)
+ */
+export function toBrowsableUrl(url: string): string {
+  if (isCivitaiModelUrl(url)) {
+    return url.replace('/api/download/', '/').replace('/api/v1/', '/')
+  }
+  if (url.includes('huggingface.co')) {
+    return url.replace('/resolve/', '/blob/')
+  }
+  return url
+}
+
 export function isModelDownloadable(model: ModelWithUrl): boolean {
   if (WHITE_LISTED_URLS.has(model.url)) return true
   if (!ALLOWED_SOURCES.some((source) => model.url.startsWith(source)))
