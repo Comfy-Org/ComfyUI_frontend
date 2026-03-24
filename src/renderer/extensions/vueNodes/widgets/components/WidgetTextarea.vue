@@ -17,6 +17,7 @@
     <Textarea
       v-bind="filteredProps"
       :id
+      ref="textAreaRef"
       v-model="modelValue"
       :class="
         cn(
@@ -49,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
@@ -70,11 +71,13 @@ const { widget, placeholder = '' } = defineProps<{
   placeholder?: string
 }>()
 
+const textAreaRef = useTemplateRef('textAreaRef')
+
 const modelValue = defineModel<string>({ default: '' })
 
 const isFocused = ref(false)
 function trackFocus() {
-  isFocused.value = document.activeElement === document.getElementById(id)
+  isFocused.value = document.activeElement === textAreaRef.value?.$el
 }
 
 const hideLayoutField = useHideLayoutField()
