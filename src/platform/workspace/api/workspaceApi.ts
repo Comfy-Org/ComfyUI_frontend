@@ -290,6 +290,10 @@ async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()
 }
 
+async function getFirebaseHeaderOrThrow() {
+  return useAuthStore().getFirebaseAuthHeaderOrThrow()
+}
+
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
