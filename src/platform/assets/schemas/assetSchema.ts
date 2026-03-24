@@ -12,6 +12,7 @@ const zAsset = z.object({
   display_name: z.string().optional(),
   preview_url: z.string().optional(),
   thumbnail_url: z.string().optional(),
+  prompt_id: z.string().nullable().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
   is_immutable: z.boolean().optional(),

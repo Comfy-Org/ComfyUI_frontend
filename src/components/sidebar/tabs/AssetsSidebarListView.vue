@@ -77,6 +77,7 @@ import type { OutputStackListItem } from '@/platform/assets/composables/useOutpu
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -135,7 +136,7 @@ function isVideoAsset(asset: AssetItem): boolean {
 function getAssetPreviewUrl(asset: AssetItem): string {
   const mediaType = getAssetMediaType(asset)
   if (mediaType === 'image' || mediaType === 'video') {
-    return asset.preview_url || ''
+    return asset.preview_url || getAssetUrl(asset)
   }
   return ''
 }
@@ -158,13 +159,13 @@ function getAssetSecondaryText(asset: AssetItem): string {
   return ''
 }
 
+// OSS: metadata?.outputCount (typed). Cloud: raw user_metadata fallback.
 function getStackCount(asset: AssetItem): number | undefined {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
-  if (typeof metadata?.outputCount === 'number') {
-    return metadata.outputCount
-  }
+  const count = metadata?.outputCount ?? asset.user_metadata?.outputCount
+  if (typeof count === 'number' && count > 1) return count
 
-  if (Array.isArray(metadata?.allOutputs)) {
+  if (Array.isArray(metadata?.allOutputs) && metadata.allOutputs.length > 1) {
     return metadata.allOutputs.length
   }
 

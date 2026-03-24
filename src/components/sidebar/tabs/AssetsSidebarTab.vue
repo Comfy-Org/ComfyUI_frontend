@@ -26,8 +26,8 @@
     </template>
     <template #header>
       <!-- Job Detail View Header -->
-      <div v-if="isInFolderView" class="px-2 2xl:px-4">
-        <Button variant="secondary" size="lg" @click="exitFolderView">
+      <div v-if="isInFolderView" class="px-2 pt-2 2xl:px-4">
+        <Button variant="secondary" @click="exitFolderView">
           <i class="icon-[lucide--arrow-left] size-4" />
           <span>{{ $t('sideToolbar.backToAssets') }}</span>
         </Button>
@@ -232,12 +232,12 @@ import { useAssetSelection } from '@/platform/assets/composables/useAssetSelecti
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
-import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { resolveAssetOutputs } from '@/platform/assets/composables/resolveAssetOutputs'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -374,8 +374,8 @@ const {
   error: folderError,
   execute: loadFolderAssets
 } = useAsyncState(
-  (metadata: OutputAssetMetadata, options: { createdAt?: string } = {}) =>
-    resolveOutputAssetItems(metadata, options),
+  (asset: AssetItem) =>
+    resolveAssetOutputs(asset, { createdAt: asset.created_at }),
   [] as AssetItem[],
   { immediate: false, resetOnExecute: true }
 )
@@ -467,7 +467,7 @@ const galleryItems = computed(() => {
 
     Object.defineProperty(resultItem, 'url', {
       get() {
-        return asset.preview_url || ''
+        return asset.preview_url || getAssetUrl(asset)
       },
       configurable: true
     })
@@ -593,12 +593,8 @@ const handleZoomClick = (asset: AssetItem) => {
 
 const enterFolderView = async (asset: AssetItem) => {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
-  if (!metadata) {
-    console.warn('Invalid output asset metadata')
-    return
-  }
-
-  const { jobId, executionTimeInSeconds } = metadata
+  const jobId = asset.prompt_id ?? metadata?.jobId
+  const executionTimeInSeconds = metadata?.executionTimeInSeconds
 
   if (!jobId) {
     console.warn('Missing required folder view data')
@@ -607,9 +603,10 @@ const enterFolderView = async (asset: AssetItem) => {
 
   folderJobId.value = jobId
   folderExecutionTime.value = executionTimeInSeconds
-  expectedFolderCount.value = metadata.outputCount ?? 0
+  const outputCount = asset.user_metadata?.outputCount
+  expectedFolderCount.value = typeof outputCount === 'number' ? outputCount : 0
 
-  await loadFolderAssets(0, metadata, { createdAt: asset.created_at })
+  await loadFolderAssets(0, asset)
 
   if (folderError.value) {
     toast.add({

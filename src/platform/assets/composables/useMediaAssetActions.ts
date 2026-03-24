@@ -41,7 +41,9 @@ export function useMediaAssetActions() {
 
   /**
    * Internal helper to perform the API deletion for a single asset
-   * Handles both output assets (via history API) and input assets (via asset service)
+   * Cloud output assets are deleted individually via asset service.
+   * OSS output assets are deleted via history API (deletes entire job).
+   * Input assets can only be deleted in cloud environment.
    * @throws Error if deletion fails or is not allowed
    */
   const deleteAssetApi = async (
@@ -49,14 +51,20 @@ export function useMediaAssetActions() {
     assetType: string
   ): Promise<void> => {
     if (assetType === 'output') {
-      const jobId =
-        getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
-      if (!jobId) {
-        throw new Error('Unable to extract job ID from asset')
+      if (isCloud) {
+        await assetService.deleteAsset(asset.id)
+        if (asset.prompt_id) {
+          assetService.invalidatePromptAssetsCache(asset.prompt_id)
+        }
+      } else {
+        const jobId =
+          getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
+        if (!jobId) {
+          throw new Error('Unable to extract job ID from asset')
+        }
+        await api.deleteItem('history', jobId)
       }
-      await api.deleteItem('history', jobId)
     } else {
-      // Input assets can only be deleted in cloud environment
       if (!isCloud) {
         throw new Error(t('mediaAsset.deletingImportedFilesCloudOnly'))
       }
@@ -195,6 +203,7 @@ export function useMediaAssetActions() {
 
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
     const jobId =
+      targetAsset.prompt_id ||
       metadata?.jobId ||
       (getAssetType(targetAsset) === 'output' ? targetAsset.id : undefined)
 

@@ -7,21 +7,19 @@ import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetType } from './assetTypeUtil'
 
 /**
- * Get the download/view URL for an asset
- * Constructs the proper URL with filename encoding, type, and subfolder parameters
- *
- * @param asset The asset to get URL for
- * @param defaultType Default type if asset doesn't have tags (default: 'output')
- * @returns Full URL for viewing/downloading the asset
- *
- * @example
- * const url = getAssetUrl(asset)
- * downloadFile(url, asset.name)
+ * Get the download/view URL for an asset.
+ * Cloud assets with asset_hash use `/view?filename={asset_hash}`.
+ * OSS assets use `/view?filename={name}&type={type}&subfolder={subfolder}`.
  */
 export function getAssetUrl(
   asset: AssetItem,
   defaultType: 'input' | 'output' = 'output'
 ): string {
+  if (asset.asset_hash) {
+    const params = new URLSearchParams({ filename: asset.asset_hash })
+    return api.apiURL(`/view?${params}`)
+  }
+
   const assetType = getAssetType(asset, defaultType)
   const subfolder = asset.user_metadata?.subfolder
   const params = new URLSearchParams()

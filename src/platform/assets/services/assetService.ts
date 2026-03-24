@@ -1,3 +1,4 @@
+import QuickLRU from '@alloc/quick-lru'
 import { fromZodError } from 'zod-validation-error'
 
 import { st } from '@/i18n'
@@ -225,6 +226,59 @@ function createAssetService() {
     const data = await res.json()
     return validateAssetResponse(data)
   }
+  /**
+   * Gets output assets filtered by job IDs (prompt_id)
+   *
+   * @param jobIds - Array of job/prompt IDs to filter by
+   * @param options - Pagination options
+   * @returns Promise<AssetItem[]> - Assets matching the given job IDs
+   */
+  async function getAssetsByJobIds(
+    jobIds: string[],
+    { limit = DEFAULT_LIMIT, offset = 0 }: PaginationOptions = {}
+  ): Promise<AssetItem[]> {
+    if (jobIds.length === 0) return []
+
+    const queryParams = new URLSearchParams({
+      job_ids: jobIds.join(','),
+      limit: limit.toString()
+    })
+    if (offset > 0) {
+      queryParams.set('offset', offset.toString())
+    }
+
+    const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`
+    const res = await api.fetchApi(url)
+    if (!res.ok) {
+      throw new Error(
+        `Unable to load assets for job IDs: Server returned ${res.status}`
+      )
+    }
+    const data = await res.json()
+    const response = validateAssetResponse(data)
+    return response?.assets ?? []
+  }
+
+  const promptAssetsCache = new QuickLRU<string, AssetItem[]>({ maxSize: 50 })
+
+  /**
+   * Fetch output assets for a prompt_id with LRU caching.
+   * Filters out temp assets — only returns assets tagged 'output'.
+   */
+  async function fetchPromptAssets(promptId: string): Promise<AssetItem[]> {
+    const cached = promptAssetsCache.get(promptId)
+    if (cached) return cached
+
+    const allAssets = await getAssetsByJobIds([promptId])
+    const outputAssets = allAssets.filter((a) => a.tags.includes('output'))
+    promptAssetsCache.set(promptId, outputAssets)
+    return outputAssets
+  }
+
+  function invalidatePromptAssetsCache(promptId: string) {
+    promptAssetsCache.delete(promptId)
+  }
+
   /**
    * Gets a list of model folder keys from the asset API
    *
@@ -757,6 +811,9 @@ function createAssetService() {
   return {
     getAssetModelFolders,
     getAssetModels,
+    getAssetsByJobIds,
+    fetchPromptAssets,
+    invalidatePromptAssetsCache,
     isAssetAPIEnabled,
     isAssetBrowserEligible,
     shouldUseAssetBrowser,

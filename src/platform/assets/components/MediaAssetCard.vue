@@ -243,8 +243,8 @@ const adaptedAsset = computed(() => {
     src:
       fileKind.value === '3D'
         ? getAssetUrl(asset)
-        : asset.thumbnail_url || asset.preview_url || '',
-    preview_url: asset.preview_url,
+        : asset.thumbnail_url || asset.preview_url || getAssetUrl(asset),
+    preview_url: asset.preview_url || getAssetUrl(asset),
     preview_id: asset.preview_id,
     size: asset.size,
     tags: asset.tags || [],

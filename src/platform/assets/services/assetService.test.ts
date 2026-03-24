@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { assetService } from '@/platform/assets/services/assetService'
+import { api } from '@/scripts/api'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
@@ -102,5 +103,68 @@ describe(assetService.shouldUseAssetBrowser, () => {
         'wrong_input'
       )
     ).toBe(false)
+  })
+})
+
+describe(assetService.getAssetsByJobIds, () => {
+  const mockFetchApi = vi.mocked(api.fetchApi)
+
+  function mockFetchApiResponse(assets: Record<string, unknown>[]) {
+    mockFetchApi.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ assets })
+    } as unknown as Response)
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns empty array for empty jobIds', async () => {
+    const result = await assetService.getAssetsByJobIds([])
+
+    expect(result).toEqual([])
+    expect(mockFetchApi).not.toHaveBeenCalled()
+  })
+
+  it('constructs URL with job_ids query param', async () => {
+    mockFetchApiResponse([])
+
+    await assetService.getAssetsByJobIds(['job-1', 'job-2'])
+
+    const url = mockFetchApi.mock.calls[0][0] as string
+    expect(url).toContain('job_ids=job-1%2Cjob-2')
+  })
+
+  it('includes offset when greater than 0', async () => {
+    mockFetchApiResponse([])
+
+    await assetService.getAssetsByJobIds(['job-1'], { offset: 10 })
+
+    const url = mockFetchApi.mock.calls[0][0] as string
+    expect(url).toContain('offset=10')
+  })
+
+  it('omits offset when 0', async () => {
+    mockFetchApiResponse([])
+
+    await assetService.getAssetsByJobIds(['job-1'], { offset: 0 })
+
+    const url = mockFetchApi.mock.calls[0][0] as string
+    expect(url).not.toContain('offset')
+  })
+
+  it('returns parsed assets from response', async () => {
+    const assets = [
+      { id: 'a1', name: 'img.png', tags: ['output'] },
+      { id: 'a2', name: 'img2.png', tags: ['output'] }
+    ]
+    mockFetchApiResponse(assets)
+
+    const result = await assetService.getAssetsByJobIds(['job-1'])
+
+    expect(result).toHaveLength(2)
+    expect(result[0].id).toBe('a1')
+    expect(result[1].id).toBe('a2')
   })
 })

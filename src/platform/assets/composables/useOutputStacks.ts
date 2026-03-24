@@ -3,10 +3,8 @@ import type { Ref } from 'vue'
 
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  getOutputKey,
-  resolveOutputAssetItems
-} from '@/platform/assets/utils/outputAssetUtil'
+import { getOutputKey } from '@/platform/assets/utils/outputAssetUtil'
+import { resolveAssetOutputs } from './resolveAssetOutputs'
 
 export type OutputStackListItem = {
   key: string
@@ -55,6 +53,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
   )
 
   function getStackJobId(asset: AssetItem): string | null {
+    if (asset.prompt_id) return asset.prompt_id
     const metadata = getOutputAssetMetadata(asset.user_metadata)
     return metadata?.jobId ?? null
   }
@@ -107,21 +106,21 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
 
   async function resolveStackChildren(asset: AssetItem): Promise<AssetItem[]> {
     const metadata = getOutputAssetMetadata(asset.user_metadata)
-    if (!metadata) {
-      return []
-    }
+    if (!metadata && !asset.prompt_id) return []
 
-    const excludeOutputKey =
-      getOutputKey({
-        nodeId: metadata.nodeId,
-        subfolder: metadata.subfolder,
-        filename: asset.name
-      }) ?? undefined
+    const excludeOutputKey = metadata
+      ? (getOutputKey({
+          nodeId: metadata.nodeId,
+          subfolder: metadata.subfolder,
+          filename: asset.name
+        }) ?? undefined)
+      : undefined
 
     try {
-      return await resolveOutputAssetItems(metadata, {
+      return await resolveAssetOutputs(asset, {
         createdAt: asset.created_at,
-        excludeOutputKey
+        excludeOutputKey,
+        excludeParent: true
       })
     } catch (error) {
       console.error('Failed to resolve stack children:', error)

@@ -16,7 +16,7 @@ type OutputAssetMapOptions = {
   excludeOutputKey?: string
 }
 
-type ResolveOutputAssetItemsOptions = {
+export type ResolveOutputAssetItemsOptions = {
   createdAt?: string
   excludeOutputKey?: string
 }
@@ -88,6 +88,10 @@ function mapOutputsToAssetItems({
   }, [])
 }
 
+/**
+ * Resolve all output assets for a given job via Jobs API (OSS/Desktop).
+ * Pure data transformation — no platform branching or API state.
+ */
 export async function resolveOutputAssetItems(
   metadata: OutputAssetMetadata,
   { createdAt, excludeOutputKey }: ResolveOutputAssetItemsOptions = {}
@@ -101,7 +105,6 @@ export async function resolveOutputAssetItems(
     }
   }
 
-  // Reverse so the most recent outputs appear first
   return mapOutputsToAssetItems({
     jobId: metadata.jobId,
     outputs: outputsToDisplay.toReversed(),

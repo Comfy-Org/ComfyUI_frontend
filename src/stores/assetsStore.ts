@@ -9,6 +9,7 @@ import {
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
+import { groupAssetsByPromptId } from '@/platform/assets/utils/groupAssetsByPromptId'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -133,11 +134,11 @@ export const useAssetsStore = defineStore('assets', () => {
   })
 
   /**
-   * Fetch history assets with pagination support
-   * @param loadMore - true for pagination (append), false for initial load (replace)
+   * Fetch history assets from cloud Assets API with prompt_id grouping
    */
-  const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    // Reset state for initial load
+  const fetchHistoryAssetsFromCloud = async (
+    loadMore = false
+  ): Promise<AssetItem[]> => {
     if (!loadMore) {
       historyOffset.value = 0
       hasMoreHistory.value = true
@@ -145,56 +146,101 @@ export const useAssetsStore = defineStore('assets', () => {
       loadedIds.clear()
     }
 
-    // Fetch from server with offset
-    const history = await api.getHistory(BATCH_SIZE, {
+    const rawAssets = await assetService.getAssetsByTag('output', false, {
+      limit: BATCH_SIZE,
       offset: historyOffset.value
     })
 
-    // Convert JobListItems to AssetItems
-    const newAssets = mapHistoryToAssets(history)
+    const newAssets = groupAssetsByPromptId(rawAssets)
 
     if (loadMore) {
-      // Filter out duplicates and insert in sorted order
       for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
-        }
+        if (loadedIds.has(asset.id)) continue
         loadedIds.add(asset.id)
 
-        // Find insertion index to maintain sorted order (newest first)
         const assetTime = new Date(asset.created_at ?? 0).getTime()
         const insertIndex = allHistoryItems.value.findIndex(
           (item) => new Date(item.created_at ?? 0).getTime() < assetTime
         )
 
         if (insertIndex === -1) {
-          // Asset is oldest, append to end
           allHistoryItems.value.push(asset)
         } else {
-          // Insert at the correct position
           allHistoryItems.value.splice(insertIndex, 0, asset)
         }
       }
     } else {
-      // Initial load: replace all
       allHistoryItems.value = newAssets
       newAssets.forEach((asset) => loadedIds.add(asset.id))
     }
 
-    // Update pagination state
+    historyOffset.value += BATCH_SIZE
+    hasMoreHistory.value = rawAssets.length === BATCH_SIZE
+
+    if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
+      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
+      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
+      removed.forEach((item) => loadedIds.delete(item.id))
+    }
+
+    return allHistoryItems.value
+  }
+
+  /**
+   * Fetch history assets from Jobs API (OSS/Desktop)
+   */
+  const fetchHistoryAssetsFromJobs = async (
+    loadMore = false
+  ): Promise<AssetItem[]> => {
+    if (!loadMore) {
+      historyOffset.value = 0
+      hasMoreHistory.value = true
+      allHistoryItems.value = []
+      loadedIds.clear()
+    }
+
+    const history = await api.getHistory(BATCH_SIZE, {
+      offset: historyOffset.value
+    })
+
+    const newAssets = mapHistoryToAssets(history)
+
+    if (loadMore) {
+      for (const asset of newAssets) {
+        if (loadedIds.has(asset.id)) continue
+        loadedIds.add(asset.id)
+
+        const assetTime = new Date(asset.created_at ?? 0).getTime()
+        const insertIndex = allHistoryItems.value.findIndex(
+          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+        )
+
+        if (insertIndex === -1) {
+          allHistoryItems.value.push(asset)
+        } else {
+          allHistoryItems.value.splice(insertIndex, 0, asset)
+        }
+      }
+    } else {
+      allHistoryItems.value = newAssets
+      newAssets.forEach((asset) => loadedIds.add(asset.id))
+    }
+
     historyOffset.value += BATCH_SIZE
     hasMoreHistory.value = history.length === BATCH_SIZE
 
     if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
       const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
       allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
-
-      // Clean up Set
       removed.forEach((item) => loadedIds.delete(item.id))
     }
 
     return allHistoryItems.value
   }
+
+  const fetchHistoryAssets = isCloud
+    ? fetchHistoryAssetsFromCloud
+    : fetchHistoryAssetsFromJobs
 
   const historyAssets = ref<AssetItem[]>([])
   const historyLoading = ref(false)

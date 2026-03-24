@@ -2,20 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as OutputAssetUtil from '@/platform/assets/utils/outputAssetUtil'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 
 const mocks = vi.hoisted(() => ({
-  resolveOutputAssetItems: vi.fn()
+  resolveAssetOutputs: vi.fn()
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => {
-  const actual = await importOriginal<typeof OutputAssetUtil>()
-  return {
-    ...actual,
-    resolveOutputAssetItems: mocks.resolveOutputAssetItems
-  }
-})
+vi.mock('@/platform/assets/composables/resolveAssetOutputs', () => ({
+  resolveAssetOutputs: mocks.resolveAssetOutputs
+}))
 
 type Deferred<T> = {
   promise: Promise<T>
@@ -66,19 +61,20 @@ describe('useOutputStacks', () => {
       user_metadata: undefined
     })
 
-    vi.mocked(mocks.resolveOutputAssetItems).mockResolvedValue([childA, childB])
+    mocks.resolveAssetOutputs.mockResolvedValue([childA, childB])
 
     const { assetItems, isStackExpanded, selectableAssets, toggleStack } =
       useOutputStacks({ assets: ref([parent]) })
 
     await toggleStack(parent)
 
-    expect(mocks.resolveOutputAssetItems).toHaveBeenCalledWith(
-      expect.objectContaining({ jobId: 'job-1' }),
-      {
+    expect(mocks.resolveAssetOutputs).toHaveBeenCalledWith(
+      parent,
+      expect.objectContaining({
         createdAt: parent.created_at,
-        excludeOutputKey: 'node-1-outputs-parent.png'
-      }
+        excludeOutputKey: 'node-1-outputs-parent.png',
+        excludeParent: true
+      })
     )
     expect(isStackExpanded(parent)).toBe(true)
     expect(assetItems.value.map((item) => item.asset.id)).toEqual([
@@ -105,7 +101,7 @@ describe('useOutputStacks', () => {
       user_metadata: undefined
     })
 
-    vi.mocked(mocks.resolveOutputAssetItems).mockResolvedValue([child])
+    mocks.resolveAssetOutputs.mockResolvedValue([child])
 
     const { assetItems, isStackExpanded, toggleStack } = useOutputStacks({
       assets: ref([parent])
@@ -131,7 +127,7 @@ describe('useOutputStacks', () => {
 
     await toggleStack(asset)
 
-    expect(mocks.resolveOutputAssetItems).not.toHaveBeenCalled()
+    expect(mocks.resolveAssetOutputs).not.toHaveBeenCalled()
     expect(isStackExpanded(asset)).toBe(false)
     expect(assetItems.value).toHaveLength(1)
     expect(assetItems.value[0].asset).toMatchObject(asset)
@@ -140,7 +136,7 @@ describe('useOutputStacks', () => {
   it('does not expand when no children are resolved', async () => {
     const parent = createAsset({ id: 'parent', name: 'parent.png' })
 
-    vi.mocked(mocks.resolveOutputAssetItems).mockResolvedValue([])
+    mocks.resolveAssetOutputs.mockResolvedValue([])
 
     const { assetItems, isStackExpanded, toggleStack } = useOutputStacks({
       assets: ref([parent])
@@ -156,9 +152,7 @@ describe('useOutputStacks', () => {
     const parent = createAsset({ id: 'parent', name: 'parent.png' })
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    vi.mocked(mocks.resolveOutputAssetItems).mockRejectedValue(
-      new Error('resolve failed')
-    )
+    mocks.resolveAssetOutputs.mockRejectedValue(new Error('resolve failed'))
 
     const { assetItems, isStackExpanded, toggleStack } = useOutputStacks({
       assets: ref([parent])
@@ -181,7 +175,7 @@ describe('useOutputStacks', () => {
     })
     const deferred = createDeferred<AssetItem[]>()
 
-    vi.mocked(mocks.resolveOutputAssetItems).mockReturnValue(deferred.promise)
+    mocks.resolveAssetOutputs.mockReturnValue(deferred.promise)
 
     const { assetItems, toggleStack } = useOutputStacks({
       assets: ref([parent])
@@ -190,7 +184,7 @@ describe('useOutputStacks', () => {
     const firstToggle = toggleStack(parent)
     const secondToggle = toggleStack(parent)
 
-    expect(mocks.resolveOutputAssetItems).toHaveBeenCalledTimes(1)
+    expect(mocks.resolveAssetOutputs).toHaveBeenCalledTimes(1)
 
     deferred.resolve([child])
 
@@ -201,5 +195,67 @@ describe('useOutputStacks', () => {
       parent.id,
       child.id
     ])
+  })
+
+  describe('cloud path (prompt_id)', () => {
+    it('passes excludeParent for cloud assets with prompt_id', async () => {
+      const parent = createAsset({
+        id: 'parent',
+        name: 'parent.png',
+        prompt_id: 'prompt-1',
+        user_metadata: undefined
+      })
+      const childA = createAsset({ id: 'child-a', name: 'a.png' })
+      const childB = createAsset({ id: 'child-b', name: 'b.png' })
+
+      mocks.resolveAssetOutputs.mockResolvedValue([childA, childB])
+
+      const { assetItems, isStackExpanded, toggleStack } = useOutputStacks({
+        assets: ref([parent])
+      })
+
+      await toggleStack(parent)
+
+      expect(mocks.resolveAssetOutputs).toHaveBeenCalledWith(
+        parent,
+        expect.objectContaining({ excludeParent: true })
+      )
+      expect(isStackExpanded(parent)).toBe(true)
+      expect(assetItems.value.map((i) => i.asset.id)).toEqual([
+        'parent',
+        'child-a',
+        'child-b'
+      ])
+    })
+
+    it('uses prompt_id as stack key over metadata.jobId', () => {
+      const asset = createAsset({
+        id: 'a',
+        prompt_id: 'prompt-1',
+        user_metadata: { jobId: 'job-1', nodeId: '1', subfolder: '' }
+      })
+
+      const { isStackExpanded } = useOutputStacks({
+        assets: ref([asset])
+      })
+
+      expect(isStackExpanded(asset)).toBe(false)
+    })
+
+    it('ignores asset without prompt_id or metadata', async () => {
+      const asset = createAsset({
+        id: 'no-key',
+        prompt_id: null,
+        user_metadata: undefined
+      })
+
+      const { toggleStack } = useOutputStacks({
+        assets: ref([asset])
+      })
+
+      await toggleStack(asset)
+
+      expect(mocks.resolveAssetOutputs).not.toHaveBeenCalled()
+    })
   })
 })
