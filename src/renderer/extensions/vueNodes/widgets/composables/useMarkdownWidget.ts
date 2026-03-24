@@ -1,8 +1,11 @@
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import WidgetMarkdown from '../components/WidgetMarkdown.vue'
 
@@ -19,7 +22,21 @@ function addMarkdownWidget(
     inputSpec,
     type: 'MARKDOWN',
     options: {
-      minNodeSize: [400, 200]
+      minNodeSize: [400, 200],
+      getValue: () =>
+        (useWidgetValueStore().getWidget(
+          resolveNodeRootGraphId(node, app.rootGraph.id),
+          node.id,
+          name
+        )?.value as string) ?? opts.defaultVal,
+      setValue: (v: string) => {
+        const state = useWidgetValueStore().getWidget(
+          resolveNodeRootGraphId(node, app.rootGraph.id),
+          node.id,
+          name
+        )
+        if (state) state.value = v
+      }
     }
   })
 
