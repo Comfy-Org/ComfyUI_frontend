@@ -134,7 +134,7 @@ describe('useDomValueBridge', () => {
     })
     scope.stop()
 
-    element.value
+    void element.value
     expect(customGetter).toHaveBeenCalled()
   })
 

@@ -37,14 +37,6 @@ catalog:
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/user-event': ^14.6.1
   '@testing-library/vue': ^8.1.0
-  '@tiptap/core': ^2.27.2
-  '@tiptap/extension-link': ^2.27.2
-  '@tiptap/extension-table': ^2.27.2
-  '@tiptap/extension-table-cell': ^2.27.2
-  '@tiptap/extension-table-header': ^2.27.2
-  '@tiptap/extension-table-row': ^2.27.2
-  '@tiptap/pm': 2.27.2
-  '@tiptap/starter-kit': ^2.27.2
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/node': ^24.1.0
