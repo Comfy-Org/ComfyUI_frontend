@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex h-full flex-col gap-8 overflow-y-auto! p-4 pt-8 md:p-16"
+    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
       v-if="checkoutStep === 'preview'"
@@ -22,6 +22,27 @@
     >
       <i class="pi pi-times text-xl" />
     </Button>
+
+    <div class="flex flex-col items-center gap-3">
+      <!-- Decorative initial for "Team" workspace icon; not user-facing text -->
+      <div
+        class="flex size-10 items-center justify-center rounded-xl bg-primary-background text-lg font-semibold text-white"
+        aria-hidden="true"
+      >
+        T
+      </div>
+      <i18n-t
+        keypath="subscription.plansForWorkspace"
+        tag="h2"
+        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
+      >
+        <template #workspace>
+          <span class="text-emerald-400">
+            {{ $t('subscription.teamWorkspace') }}
+          </span>
+        </template>
+      </i18n-t>
+    </div>
 
     <div v-if="reason === 'out_of_credits'" class="text-center">
       <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
@@ -106,7 +127,6 @@ const { t } = useI18n()
 const toast = useToast()
 const { subscribe, previewSubscribe, plans, fetchStatus, fetchBalance } =
   useBillingContext()
-
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.hasPendingOperations)
 

@@ -237,6 +237,11 @@ describe('ErrorNodeCard.vue', () => {
 
     // Report is still generated with fallback log message
     expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
+    expect(mockGenerateErrorReport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        serverLogs: 'Failed to retrieve server logs'
+      })
+    )
     expect(wrapper.text()).toContain('ComfyUI Error Report')
   })
 

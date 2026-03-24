@@ -12,7 +12,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
@@ -167,7 +167,7 @@ describe('useWorkflowService', () => {
       useWorkflowService().showPendingWarnings(workflow)
 
       expect(
-        useExecutionErrorStore().surfaceMissingNodes
+        useMissingNodesErrorStore().surfaceMissingNodes
       ).not.toHaveBeenCalled()
     })
 
@@ -177,9 +177,9 @@ describe('useWorkflowService', () => {
 
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(useExecutionErrorStore().surfaceMissingNodes).toHaveBeenCalledWith(
-        missingNodeTypes
-      )
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(missingNodeTypes)
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -192,9 +192,9 @@ describe('useWorkflowService', () => {
 
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(useExecutionErrorStore().surfaceMissingNodes).toHaveBeenCalledWith(
-        ['CustomNode1']
-      )
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(['CustomNode1'])
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -208,7 +208,7 @@ describe('useWorkflowService', () => {
       service.showPendingWarnings(workflow)
 
       expect(
-        useExecutionErrorStore().surfaceMissingNodes
+        useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledTimes(1)
     })
   })
@@ -233,7 +233,7 @@ describe('useWorkflowService', () => {
       )
 
       expect(
-        useExecutionErrorStore().surfaceMissingNodes
+        useMissingNodesErrorStore().surfaceMissingNodes
       ).not.toHaveBeenCalled()
 
       await useWorkflowService().openWorkflow(workflow)
@@ -245,9 +245,9 @@ describe('useWorkflowService', () => {
         workflow,
         expect.objectContaining({ deferWarnings: true })
       )
-      expect(useExecutionErrorStore().surfaceMissingNodes).toHaveBeenCalledWith(
-        ['CustomNode1']
-      )
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(['CustomNode1'])
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -265,20 +265,20 @@ describe('useWorkflowService', () => {
 
       await service.openWorkflow(workflow1)
       expect(
-        useExecutionErrorStore().surfaceMissingNodes
+        useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledTimes(1)
-      expect(useExecutionErrorStore().surfaceMissingNodes).toHaveBeenCalledWith(
-        ['MissingNodeA']
-      )
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(['MissingNodeA'])
       expect(workflow1.pendingWarnings).toBeNull()
       expect(workflow2.pendingWarnings).not.toBeNull()
 
       await service.openWorkflow(workflow2)
       expect(
-        useExecutionErrorStore().surfaceMissingNodes
+        useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledTimes(2)
       expect(
-        useExecutionErrorStore().surfaceMissingNodes
+        useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenLastCalledWith(['MissingNodeB'])
       expect(workflow2.pendingWarnings).toBeNull()
     })
@@ -293,12 +293,12 @@ describe('useWorkflowService', () => {
 
       await service.openWorkflow(workflow, { force: true })
       expect(
-        useExecutionErrorStore().surfaceMissingNodes
+        useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledTimes(1)
 
       await service.openWorkflow(workflow, { force: true })
       expect(
-        useExecutionErrorStore().surfaceMissingNodes
+        useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledTimes(1)
     })
   })
