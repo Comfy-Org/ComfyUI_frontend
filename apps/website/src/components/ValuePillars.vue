@@ -8,28 +8,28 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const pillars = computed(() => [
   {
     icon: '⚡',
-    title: t('pillars.build', locale),
-    description: t('pillars.build.desc', locale)
+    title: t('pillars.buildTitle', locale),
+    description: t('pillars.buildDesc', locale)
   },
   {
     icon: '🎨',
-    title: t('pillars.customize', locale),
-    description: t('pillars.customize.desc', locale)
+    title: t('pillars.customizeTitle', locale),
+    description: t('pillars.customizeDesc', locale)
   },
   {
     icon: '🔧',
-    title: t('pillars.refine', locale),
-    description: t('pillars.refine.desc', locale)
+    title: t('pillars.refineTitle', locale),
+    description: t('pillars.refineDesc', locale)
   },
   {
     icon: '⚙️',
-    title: t('pillars.automate', locale),
-    description: t('pillars.automate.desc', locale)
+    title: t('pillars.automateTitle', locale),
+    description: t('pillars.automateDesc', locale)
   },
   {
     icon: '🚀',
-    title: t('pillars.run', locale),
-    description: t('pillars.run.desc', locale)
+    title: t('pillars.runTitle', locale),
+    description: t('pillars.runDesc', locale)
   }
 ])
 </script>

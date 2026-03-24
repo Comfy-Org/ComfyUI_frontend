@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+
+import type { Locale } from '../i18n/translations'
+import { localePath, t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const mobileMenuOpen = ref(false)
 const currentPath = ref('')
 
-const navLinks = [
-  { label: 'ENTERPRISE', href: '/enterprise' },
-  { label: 'GALLERY', href: '/gallery' },
-  { label: 'ABOUT', href: '/about' },
-  { label: 'CAREERS', href: '/careers' }
-]
+const navLinks = computed(() => [
+  { label: t('nav.enterprise', locale), href: localePath('/enterprise', locale) },
+  { label: t('nav.gallery', locale), href: localePath('/gallery', locale) },
+  { label: t('nav.about', locale), href: localePath('/about', locale) },
+  { label: t('nav.careers', locale), href: localePath('/careers', locale) }
+])
 
 const ctaLinks = [
   {
@@ -54,7 +59,7 @@ onUnmounted(() => {
   >
     <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
       <!-- Logo -->
-      <a href="/" class="text-2xl font-bold italic text-brand-yellow">
+      <a :href="localePath('/', locale)" class="text-2xl font-bold italic text-brand-yellow">
         Comfy
       </a>
 

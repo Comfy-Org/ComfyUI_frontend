@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import type { Locale } from '../i18n/translations'
-import { t } from '../i18n/translations'
+import { localePath, t } from '../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -10,10 +10,10 @@ const columns = computed(() => [
   {
     title: t('footer.product', locale),
     links: [
-      { label: t('footer.comfyDesktop', locale), href: '/download' },
+      { label: t('footer.comfyDesktop', locale), href: localePath('/download', locale) },
       { label: t('footer.comfyCloud', locale), href: 'https://app.comfy.org' },
       { label: t('footer.comfyHub', locale), href: 'https://hub.comfy.org' },
-      { label: t('footer.pricing', locale), href: '/pricing' }
+      { label: t('footer.pricing', locale), href: localePath('/pricing', locale) }
     ]
   },
   {
@@ -24,7 +24,7 @@ const columns = computed(() => [
         href: 'https://docs.comfy.org'
       },
       { label: t('footer.blog', locale), href: 'https://blog.comfy.org' },
-      { label: t('footer.gallery', locale), href: '/gallery' },
+      { label: t('footer.gallery', locale), href: localePath('/gallery', locale) },
       {
         label: t('footer.github', locale),
         href: 'https://github.com/comfyanonymous/ComfyUI'
@@ -34,16 +34,16 @@ const columns = computed(() => [
   {
     title: t('footer.company', locale),
     links: [
-      { label: t('footer.about', locale), href: '/about' },
-      { label: t('footer.careers', locale), href: '/careers' },
-      { label: t('footer.enterprise', locale), href: '/enterprise' }
+      { label: t('footer.about', locale), href: localePath('/about', locale) },
+      { label: t('footer.careers', locale), href: localePath('/careers', locale) },
+      { label: t('footer.enterprise', locale), href: localePath('/enterprise', locale) }
     ]
   },
   {
     title: t('footer.legal', locale),
     links: [
-      { label: t('footer.terms', locale), href: '/terms-of-service' },
-      { label: t('footer.privacy', locale), href: '/privacy-policy' }
+      { label: t('footer.terms', locale), href: localePath('/terms-of-service', locale) },
+      { label: t('footer.privacy', locale), href: localePath('/privacy-policy', locale) }
     ]
   }
 ])
@@ -89,7 +89,7 @@ const socials = [
     >
       <!-- Brand -->
       <div class="lg:col-span-1">
-        <a href="/" class="text-2xl font-bold text-brand-yellow italic">
+        <a :href="localePath('/', locale)" class="text-2xl font-bold italic text-brand-yellow">
           Comfy
         </a>
         <p class="mt-4 text-sm text-smoke-700">

@@ -55,28 +55,28 @@ const translations = {
     en: 'Five powerful capabilities that give you complete control',
     'zh-CN': '五大强大功能，让您完全掌控'
   },
-  'pillars.build': { en: 'Build', 'zh-CN': '构建' },
-  'pillars.build.desc': {
+  'pillars.buildTitle': { en: 'Build', 'zh-CN': '构建' },
+  'pillars.buildDesc': {
     en: 'Design complex AI workflows visually with our node-based editor',
     'zh-CN': '使用节点编辑器直观地设计复杂的 AI 工作流'
   },
-  'pillars.customize': { en: 'Customize', 'zh-CN': '自定义' },
-  'pillars.customize.desc': {
+  'pillars.customizeTitle': { en: 'Customize', 'zh-CN': '自定义' },
+  'pillars.customizeDesc': {
     en: 'Fine-tune every parameter across any model architecture',
     'zh-CN': '在任何模型架构中微调每个参数'
   },
-  'pillars.refine': { en: 'Refine', 'zh-CN': '优化' },
-  'pillars.refine.desc': {
+  'pillars.refineTitle': { en: 'Refine', 'zh-CN': '优化' },
+  'pillars.refineDesc': {
     en: 'Iterate on outputs with precision controls and real-time preview',
     'zh-CN': '通过精确控制和实时预览迭代输出'
   },
-  'pillars.automate': { en: 'Automate', 'zh-CN': '自动化' },
-  'pillars.automate.desc': {
+  'pillars.automateTitle': { en: 'Automate', 'zh-CN': '自动化' },
+  'pillars.automateDesc': {
     en: 'Scale your workflows with batch processing and API integration',
     'zh-CN': '通过批处理和 API 集成扩展工作流'
   },
-  'pillars.run': { en: 'Run', 'zh-CN': '运行' },
-  'pillars.run.desc': {
+  'pillars.runTitle': { en: 'Run', 'zh-CN': '运行' },
+  'pillars.runDesc': {
     en: 'Deploy locally or in the cloud with identical results',
     'zh-CN': '在本地或云端部署，获得相同的结果'
   },
@@ -242,6 +242,10 @@ type TranslationKey = keyof typeof translations
 
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
   return translations[key][locale] ?? translations[key].en
+}
+
+export function localePath(path: string, locale: Locale): string {
+  return locale === 'en' ? path : `/${locale}${path}`
 }
 
 export type { Locale }
