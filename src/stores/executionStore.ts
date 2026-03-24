@@ -6,7 +6,10 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyApiWorkflow,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
@@ -28,10 +31,12 @@ import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
-import {
-  executionIdToNodeLocatorId,
-  getNodeByExecutionId
-} from '@/utils/graphTraversalUtil'
+import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+
+interface ExecutionNodeInfo {
+  title?: string | null
+  type?: string | null
+}
 
 interface QueuedJob {
   /**
@@ -43,6 +48,25 @@ interface QueuedJob {
    * The workflow that is queued to be executed
    */
   workflow?: ComfyWorkflow
+  /**
+   * Queue-time node metadata keyed by execution ID.
+   * This stays stable even if the user switches workflows or edits the canvas.
+   */
+  nodeLookup?: Record<string, ExecutionNodeInfo>
+}
+
+function buildExecutionNodeLookup(
+  promptOutput: ComfyApiWorkflow
+): Record<string, ExecutionNodeInfo> {
+  return Object.fromEntries(
+    Object.entries(promptOutput).map(([executionId, node]) => [
+      executionId,
+      {
+        title: node._meta.title,
+        type: node.class_type
+      }
+    ])
+  )
 }
 
 export const useExecutionStore = defineStore('execution', () => {
@@ -140,11 +164,11 @@ export const useExecutionStore = defineStore('execution', () => {
     () => new Set(executingNodeIds.value.map(String))
   )
 
-  // For backward compatibility - returns the primary executing node
-  const executingNode = computed(() => {
+  // For backward compatibility - returns the primary executing node info
+  const executingNode = computed<ExecutionNodeInfo | null>(() => {
     if (!executingNodeId.value) return null
 
-    return getNodeByExecutionId(app.rootGraph, String(executingNodeId.value))
+    return activeJob.value?.nodeLookup?.[String(executingNodeId.value)] ?? null
   })
 
   // This is the progress of the currently executing node (for backward compatibility)
@@ -464,10 +488,12 @@ export const useExecutionStore = defineStore('execution', () => {
   function storeJob({
     nodes,
     id,
+    promptOutput,
     workflow
   }: {
     nodes: string[]
     id: string
+    promptOutput: ComfyApiWorkflow
     workflow: ComfyWorkflow
   }) {
     queuedJobs.value[id] ??= { nodes: {} }
@@ -479,6 +505,7 @@ export const useExecutionStore = defineStore('execution', () => {
       }, {}),
       ...queuedJob.nodes
     }
+    queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
     queuedJob.workflow = workflow
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {

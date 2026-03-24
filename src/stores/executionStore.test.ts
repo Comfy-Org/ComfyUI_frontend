@@ -2,20 +2,20 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '@/scripts/app'
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+
+type WorkflowConstructor = typeof WorkflowStoreModule.ComfyWorkflow
 
 // Create mock functions that will be shared
 const mockNodeExecutionIdToNodeLocatorId = vi.fn()
 const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
-
-import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+const workflowModuleState = vi.hoisted(() => ({
+  WorkflowClass: undefined as WorkflowConstructor | undefined
+}))
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -24,6 +24,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { ComfyWorkflow } = await vi.importActual<typeof WorkflowStoreModule>(
     '@/platform/workflow/management/stores/workflowStore'
   )
+  workflowModuleState.WorkflowClass = ComfyWorkflow
   return {
     ComfyWorkflow,
     useWorkflowStore: vi.fn(() => ({
@@ -56,6 +57,29 @@ vi.mock('@/scripts/app', () => ({
     nodePreviewImages: {}
   }
 }))
+
+function createQueuedWorkflow(path: string = 'workflows/test.json') {
+  const { WorkflowClass } = workflowModuleState
+  if (!WorkflowClass) {
+    throw new Error('ComfyWorkflow mock class is not available')
+  }
+
+  return new WorkflowClass({
+    path,
+    modified: 0,
+    size: 0
+  })
+}
+
+function createPromptNode(title: string, classType: string) {
+  return {
+    inputs: {},
+    class_type: classType,
+    _meta: {
+      title
+    }
+  }
+}
 
 describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
@@ -360,14 +384,16 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
     store = useExecutionStore()
   })
 
-  it('should find executing node in root graph', () => {
-    const mockNode = createMockLGraphNode({
-      id: '123',
-      title: 'Test Node',
-      type: 'TestNode'
+  it('should find executing node info in root graph from queued prompt data', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['123'],
+      promptOutput: {
+        '123': createPromptNode('Test Node', 'TestNode')
+      },
+      workflow: createQueuedWorkflow()
     })
-
-    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
+    store.activeJobId = 'test-prompt'
 
     store.nodeProgressStates = {
       '123': {
@@ -380,33 +406,23 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       }
     }
 
-    expect(store.executingNode).toBe(mockNode)
+    expect(store.executingNode).toEqual({
+      title: 'Test Node',
+      type: 'TestNode'
+    })
   })
 
-  it('should find executing node in subgraph using execution ID', () => {
-    const mockNodeInSubgraph = createMockLGraphNode({
-      id: '789',
-      title: 'Nested Node',
-      type: 'NestedNode'
+  it('should find executing node info in subgraph using execution ID', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['456:789'],
+      promptOutput: {
+        '456:789': createPromptNode('Nested Node', 'NestedNode')
+      },
+      workflow: createQueuedWorkflow()
     })
+    store.activeJobId = 'test-prompt'
 
-    const testSubgraph = createTestSubgraph({
-      id: 'sub-uuid'
-    })
-    testSubgraph.add(mockNodeInSubgraph)
-
-    const mockSubgraphNode = createTestSubgraphNode(testSubgraph, {
-      id: '456'
-    })
-
-    vi.spyOn(testSubgraph, 'getNodeById').mockImplementation(
-      (id: string | number | null | undefined) =>
-        id === '789' ? mockNodeInSubgraph : null
-    )
-
-    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockSubgraphNode)
-
-    // Simulate node execution in subgraph with hierarchical execution ID "456:789"
     store.nodeProgressStates = {
       '456:789': {
         state: 'running',
@@ -418,7 +434,10 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       }
     }
 
-    expect(store.executingNode).toBe(mockNodeInSubgraph)
+    expect(store.executingNode).toEqual({
+      title: 'Nested Node',
+      type: 'NestedNode'
+    })
   })
 
   it('should return null when no node is executing', () => {
@@ -427,8 +446,16 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
     expect(store.executingNode).toBeNull()
   })
 
-  it('should return null when executing node cannot be found', () => {
-    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(null)
+  it('should return null when executing node metadata cannot be found', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['123'],
+      promptOutput: {
+        '123': createPromptNode('Test Node', 'TestNode')
+      },
+      workflow: createQueuedWorkflow()
+    })
+    store.activeJobId = 'test-prompt'
 
     store.nodeProgressStates = {
       '999': {

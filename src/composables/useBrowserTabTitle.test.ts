@@ -14,25 +14,18 @@ vi.mock('@/i18n', () => ({
 const executionStore = reactive<{
   isIdle: boolean
   executionProgress: number
-  executingNode: unknown
+  executingNode: null | {
+    title?: string
+    type?: string
+  }
   executingNodeProgress: number
   nodeProgressStates: Record<string, unknown>
-  activeJob: {
-    workflow: {
-      changeTracker: {
-        activeState: {
-          nodes: { id: number; type: string }[]
-        }
-      }
-    }
-  } | null
 }>({
   isIdle: true,
   executionProgress: 0,
   executingNode: null,
   executingNodeProgress: 0,
-  nodeProgressStates: {},
-  activeJob: null
+  nodeProgressStates: {}
 })
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: () => executionStore
@@ -76,7 +69,6 @@ describe('useBrowserTabTitle', () => {
     executionStore.executingNode = null
     executionStore.executingNodeProgress = 0
     executionStore.nodeProgressStates = {}
-    executionStore.activeJob = null
 
     // reset setting and workflow stores
     vi.mocked(settingStore.get).mockReturnValue('Enabled')
@@ -184,17 +176,11 @@ describe('useBrowserTabTitle', () => {
   it('shows node execution title when executing a node using nodeProgressStates', async () => {
     executionStore.isIdle = false
     executionStore.executionProgress = 0.4
+    executionStore.executingNode = {
+      type: 'Foo'
+    }
     executionStore.nodeProgressStates = {
       '1': { state: 'running', value: 5, max: 10, node: '1', prompt_id: 'test' }
-    }
-    executionStore.activeJob = {
-      workflow: {
-        changeTracker: {
-          activeState: {
-            nodes: [{ id: 1, type: 'Foo' }]
-          }
-        }
-      }
     }
     const scope: EffectScope = effectScope()
     scope.run(() => useBrowserTabTitle())
