@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "style": "Pixel art icon on transparent black background, 128x128, clean edges, glowing accent color, game inventory item style",
+    "usage": "Each key is an artifact ID used in adventure.html. Generate one icon per artifact.",
+    "model": "Z-Image Turbo (no LoRA)",
+    "resolution": "128x128"
+  },
+  "artifacts": {
+    "graphview": {
+      "name": "GraphView.vue",
+      "type": "Component",
+      "prompt": "Pixel art icon of a glowing canvas frame with connected nodes and wires inside, blue accent glow, dark background, game inventory item"
+    },
+    "widgetvaluestore": {
+      "name": "widgetValueStore.ts",
+      "type": "Proto-ECS Store",
+      "prompt": "Pixel art icon of a vault door with a glowing slider widget embossed on it, purple and gold accents, dark background, game inventory item"
+    },
+    "layoutstore": {
+      "name": "layoutStore.ts",
+      "type": "Proto-ECS Store",
+      "prompt": "Pixel art icon of a grid blueprint with glowing position markers, purple accent lines, dark background, game inventory item"
+    },
+    "litegraphservice": {
+      "name": "litegraphService.ts",
+      "type": "Service",
+      "prompt": "Pixel art icon of a gear with a graph node symbol in the center, copper and blue metallic glow, dark background, game inventory item"
+    },
+    "lgraphcanvas": {
+      "name": "LGraphCanvas.ts",
+      "type": "God Object",
+      "prompt": "Pixel art icon of a massive cracked monolith radiating red warning light, labeled 9100, ominous dark background, game inventory item"
+    },
+    "lgraphnode": {
+      "name": "LGraphNode.ts",
+      "type": "God Object",
+      "prompt": "Pixel art icon of an oversized cube with tangled wires bursting from every face, red and amber glow, dark background, game inventory item"
+    },
+    "world-registry": {
+      "name": "World Registry",
+      "type": "ECS Core",
+      "prompt": "Pixel art icon of a glowing crystalline orb containing tiny entity symbols, bright blue and white aura, dark background, game inventory item"
+    },
+    "branded-ids": {
+      "name": "Branded Entity IDs",
+      "type": "Type Safety",
+      "prompt": "Pixel art icon of a set of ID cards with distinct colored borders and brand stamps, green checkmark glow, dark background, game inventory item"
+    },
+    "quadtree": {
+      "name": "QuadTree Spatial Index",
+      "type": "Data Structure",
+      "prompt": "Pixel art icon of a square recursively divided into four quadrants with glowing dots at intersections, teal accent, dark background, game inventory item"
+    },
+    "yjs-crdt": {
+      "name": "Y.js CRDT Layout",
+      "type": "Collaboration",
+      "prompt": "Pixel art icon of two overlapping document layers merging with sync arrows, purple and green glow, dark background, game inventory item"
+    },
+    "usecorecommands": {
+      "name": "useCoreCommands.ts",
+      "type": "Composable",
+      "prompt": "Pixel art icon of a hook tool with keyboard key symbols orbiting it, yellow and blue glow, dark background, game inventory item"
+    }
+  }
+}

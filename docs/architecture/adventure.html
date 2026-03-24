@@ -21,6 +21,15 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    #hud, .stat-bar-group, .choice-key, .challenge-badge, .artifact-type,
+    .sidebar-header, #room-layer, .ending-label, .scorecard-header,
+    #challenge-header, .map-room .room-layer, #challenge-progress,
+    .stat-delta, .ending-stat .label, #play-again-btn, #toggle-map,
+    .choice-btn .choice-hint, .challenge-choice-btn .choice-hint,
+    .inv-slot, .artifact-icon {
+      user-select: none;
+    }
+
     body {
       font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
       background: var(--bg);
@@ -389,14 +398,36 @@
       padding: 10px 12px;
       border-bottom: 1px solid var(--border);
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      gap: 10px;
       font-size: 13px;
     }
 
     .artifact:last-child { border-bottom: none; }
-    .artifact-name { color: var(--yellow); }
-    .artifact-type { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+
+    .artifact-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .artifact-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .artifact-icon.placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--yellow);
+    }
+
+    .artifact-info { flex: 1; }
+    .artifact-name { color: var(--yellow); display: block; }
+    .artifact-type { font-size: 10px; color: var(--muted); text-transform: uppercase; display: block; }
 
     /* --- Navigation Choices --- */
     #choices {
@@ -490,15 +521,53 @@
     .log-entry.error { color: var(--red); }
     .log-entry.ending { color: var(--purple); }
 
-    .inv-item {
-      padding: 6px 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    #inv-label {
+      padding: 4px 12px;
+      font-size: 11px;
+      color: var(--yellow);
+      min-height: 22px;
+      border-bottom: 1px solid var(--border);
+      user-select: none;
+      transition: color 0.15s;
     }
 
-    .inv-item-name { color: var(--yellow); font-size: 12px; }
-    .inv-item-desc { color: var(--muted); font-size: 10px; }
+    #inv-label .inv-label-type {
+      color: var(--muted);
+      font-size: 9px;
+      text-transform: uppercase;
+      margin-left: 6px;
+    }
+
+    .inv-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+      gap: 6px;
+      padding: 8px;
+    }
+
+    .inv-slot {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      cursor: default;
+      position: relative;
+      transition: border-color 0.15s;
+    }
+
+    .inv-slot:hover { border-color: var(--yellow); }
+
+    .inv-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .inv-slot.placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--yellow);
+    }
+
 
     /* --- Ending Screen --- */
     #ending-overlay {
@@ -765,6 +834,7 @@
           <span>Inventory</span>
           <span id="inv-count">0</span>
         </div>
+        <div id="inv-label">&nbsp;</div>
         <div class="sidebar-body" id="inventory">
           <div class="log-entry" style="color:var(--muted)">Empty &mdash; explore to find artifacts.</div>
         </div>
@@ -862,7 +932,7 @@
           the bottom panel shows queues and console output.
         `,
         artifacts: [
-          { name: 'GraphView.vue', type: 'Component' },
+          { name: 'GraphView.vue', type: 'Component', icon: 'graphview' },
         ],
         challenge: {
           title: 'The Circular Dependency',
@@ -917,8 +987,8 @@
           <a href="${GH}/src/stores/nodeDefStore.ts" target="_blank">nodeDefStore</a> catalogs every node type known to the system.
         `,
         artifacts: [
-          { name: 'widgetValueStore.ts', type: 'Proto-ECS Store' },
-          { name: 'layoutStore.ts', type: 'Proto-ECS Store' },
+          { name: 'widgetValueStore.ts', type: 'Proto-ECS Store', icon: 'widgetvaluestore' },
+          { name: 'layoutStore.ts', type: 'Proto-ECS Store', icon: 'layoutstore' },
         ],
         challenge: {
           title: 'The Scattered Mutations',
@@ -974,7 +1044,7 @@
           here bridges the presentation layer above with the stores below.
         `,
         artifacts: [
-          { name: 'litegraphService.ts', type: 'Service' },
+          { name: 'litegraphService.ts', type: 'Service', icon: 'litegraphservice' },
         ],
         challenge: {
           title: 'The Migration Question',
@@ -1028,8 +1098,8 @@
           and scattered mutation sites. The ECS migration aims to tame this complexity.
         `,
         artifacts: [
-          { name: 'LGraphCanvas.ts', type: 'God Object' },
-          { name: 'LGraphNode.ts', type: 'God Object' },
+          { name: 'LGraphCanvas.ts', type: 'God Object', icon: 'lgraphcanvas' },
+          { name: 'LGraphNode.ts', type: 'God Object', icon: 'lgraphnode' },
         ],
         challenge: {
           title: 'The God Object Dilemma',
@@ -1085,8 +1155,8 @@
           to operate on these components in clean, decoupled passes.
         `,
         artifacts: [
-          { name: 'World Registry', type: 'ECS Core' },
-          { name: 'Branded Entity IDs', type: 'Type Safety' },
+          { name: 'World Registry', type: 'ECS Core', icon: 'world-registry' },
+          { name: 'Branded Entity IDs', type: 'Type Safety', icon: 'branded-ids' },
         ],
         challenge: {
           title: 'The ID Crossroads',
@@ -1143,8 +1213,8 @@
           paints nodes, links, and reroutes onto the HTML canvas.
         `,
         artifacts: [
-          { name: 'QuadTree Spatial Index', type: 'Data Structure' },
-          { name: 'Y.js CRDT Layout', type: 'Collaboration' },
+          { name: 'QuadTree Spatial Index', type: 'Data Structure', icon: 'quadtree' },
+          { name: 'Y.js CRDT Layout', type: 'Collaboration', icon: 'yjs-crdt' },
         ],
         challenge: {
           title: 'The Render-Time Mutation',
@@ -1192,7 +1262,7 @@
           encapsulates logic that would otherwise clutter components.
         `,
         artifacts: [
-          { name: 'useCoreCommands.ts', type: 'Composable' },
+          { name: 'useCoreCommands.ts', type: 'Composable', icon: 'usecorecommands' },
         ],
         challenge: {
           title: 'The Collaboration Protocol',
@@ -1321,6 +1391,7 @@
       artifactsList: $('#artifacts-list'),
       inventory: $('#inventory'),
       invCount: $('#inv-count'),
+      invLabel: $('#inv-label'),
       log: $('#log'),
       logCount: $('#log-count'),
       barDebt: $('#bar-debt'),
@@ -1385,6 +1456,24 @@
         .join(' &nbsp; ')
     }
 
+    // --- Icon helper ---
+    const iconFallbacks = {
+      'Component': '&#9645;', 'Proto-ECS Store': '&#9671;', 'Service': '&#9881;',
+      'God Object': '&#9760;', 'ECS Core': '&#9672;', 'Type Safety': '&#9745;',
+      'Data Structure': '&#9638;', 'Collaboration': '&#8644;', 'Composable': '&#10038;',
+    }
+
+    function artifactIconHtml(a, size) {
+      const sz = size || 36
+      if (a.icon) {
+        return `<div class="artifact-icon" style="width:${sz}px;height:${sz}px">
+          <img src="icons/${a.icon}.png" alt="${a.name}"
+               onerror="this.parentElement.classList.add('placeholder');this.parentElement.innerHTML='${iconFallbacks[a.type] || '&#9670;'}'">
+        </div>`
+      }
+      return `<div class="artifact-icon placeholder" style="width:${sz}px;height:${sz}px">${iconFallbacks[a.type] || '&#9670;'}</div>`
+    }
+
     // --- Rendering ---
     function render(roomId) {
       const room = rooms[roomId]
@@ -1430,8 +1519,11 @@
         els.artifacts.classList.add('has-items')
         els.artifactsList.innerHTML = room.artifacts.map(a => `
           <div class="artifact">
-            <span class="artifact-name">${a.name}</span>
-            <span class="artifact-type">${a.type}</span>
+            ${artifactIconHtml(a, 36)}
+            <div class="artifact-info">
+              <span class="artifact-name">${a.name}</span>
+              <span class="artifact-type">${a.type}</span>
+            </div>
           </div>
         `).join('')
 
@@ -1566,13 +1658,29 @@
 
     function renderInventory() {
       if (state.inventory.length > 0) {
-        els.inventory.innerHTML = state.inventory.map(i => `
-          <div class="inv-item">
-            <span class="inv-item-name">${i.name}</span>
-            <span class="inv-item-desc">${i.type}</span>
-          </div>
-        `).join('')
+        els.inventory.innerHTML = '<div class="inv-grid">' + state.inventory.map((item, idx) => {
+          const fallback = iconFallbacks[item.type] || '&#9670;'
+          const inner = item.icon
+            ? `<img src="icons/${item.icon}.png" alt="${item.name}"
+                    onerror="this.parentElement.classList.add('placeholder');this.parentElement.innerHTML='${fallback}'">`
+            : fallback
+          const cls = item.icon ? 'inv-slot' : 'inv-slot placeholder'
+          return `<div class="${cls}" data-inv-idx="${idx}">${inner}</div>`
+        }).join('') + '</div>'
+
+        els.inventory.querySelectorAll('.inv-slot').forEach(slot => {
+          slot.addEventListener('mouseenter', () => {
+            const item = state.inventory[slot.dataset.invIdx]
+            if (item) els.invLabel.innerHTML = `${item.name}<span class="inv-label-type">${item.type}</span>`
+          })
+          slot.addEventListener('mouseleave', () => {
+            els.invLabel.innerHTML = '&nbsp;'
+          })
+        })
+      } else {
+        els.inventory.innerHTML = '<div class="log-entry" style="color:var(--muted)">Empty &mdash; explore to find artifacts.</div>'
       }
+      els.invLabel.innerHTML = '&nbsp;'
       els.invCount.textContent = state.inventory.length
     }
 
