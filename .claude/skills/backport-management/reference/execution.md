@@ -34,7 +34,7 @@ Most automation PRs will auto-merge once CI passes (via `--auto --squash` in the
 sleep 2700
 
 # Check which PRs are still open (CI may have failed, or auto-merge succeeded)
-STILL_OPEN=$(gh pr list --base TARGET_BRANCH --state open --limit 50 --json number,title)
+STILL_OPEN_PRS=$(gh pr list --base TARGET_BRANCH --state open --limit 50 --json number --jq '.[].number')
 RECENTLY_MERGED=$(gh pr list --base TARGET_BRANCH --state merged --limit 50 --json number,title,mergedAt)
 
 # For PRs still open, check CI status
