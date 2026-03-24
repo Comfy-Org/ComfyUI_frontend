@@ -44,6 +44,8 @@ type TestAction =
   | { action: 'scrollCanvas'; x: number; y: number; deltaY: number }
   | { action: 'wait'; ms: number }
   | { action: 'screenshot'; name: string }
+  | { action: 'loadWorkflow'; url: string }
+  | { action: 'setSetting'; id: string; value: string | number | boolean }
 
 type RecordMode = 'before' | 'after' | 'reproduce'
 
@@ -198,6 +200,10 @@ Each step is an object with an "action" field:
 - { "action": "dragCanvas", "fromX": 400, "fromY": 300, "toX": 600, "toY": 300 } — drag (move nodes, pan canvas)
 - { "action": "scrollCanvas", "x": 640, "y": 400, "deltaY": -300 } — scroll wheel (zoom in: negative, zoom out: positive)
 
+### Setup actions (use to establish prerequisites)
+- { "action": "loadWorkflow", "url": "https://..." } — loads a workflow JSON from a URL
+- { "action": "setSetting", "id": "Comfy.Setting.Id", "value": true } — changes a ComfyUI setting
+
 ### Utility actions
 - { "action": "wait", "ms": 1000 } — waits (use sparingly, max 3000ms)
 - { "action": "screenshot", "name": "step-name" } — takes a screenshot
@@ -214,7 +220,14 @@ ${diff ? `## PR Diff\n\`\`\`\n${diff.slice(0, 3000)}\n\`\`\`` : ''}
 - For node interactions: right-click a node to get its context menu, double-click canvas to add nodes
 - Take screenshots BEFORE and AFTER critical actions to capture the bug state
 ${qaGuide ? '- Follow the QA Analysis Guide steps closely — they are well-researched and specific' : diff ? '- Pick test steps from the QA test plan categories that are most relevant to the diff' : '- Pick test steps from the QA test plan categories most likely to reveal bugs'}
-${mode === 'reproduce' ? '- Common ComfyUI actions: right-click node for context menu (Clone, Bypass, etc.), Ctrl+C/Ctrl+V to copy/paste, Delete key to remove, double-click canvas to add node via search, drag from output to input to connect' : ''}
+${
+  mode === 'reproduce'
+    ? `- Common ComfyUI actions: right-click node for context menu (Clone, Bypass, etc.), Ctrl+C/Ctrl+V to copy/paste, Delete key to remove, double-click canvas to add node via search, drag from output to input to connect
+- CRITICAL: Establish all prerequisites BEFORE testing the bug. If the bug requires a saved workflow, SAVE it first. If it requires a dirty workflow, MODIFY it first. If it requires specific nodes, ADD them. If it requires a specific setting, use setSetting. Think step by step about what state the UI must be in to trigger the bug.
+- Use loadWorkflow if the issue references a specific workflow JSON URL
+- Use setSetting to configure any non-default settings needed to reproduce`
+    : ''
+}
 
 ## Example output
 [
@@ -592,6 +605,42 @@ async function executeSteps(
           await page.screenshot({
             path: `${outputDir}/${safeName}.png`
           })
+          break
+        }
+        case 'loadWorkflow': {
+          // Load a workflow JSON from a URL into ComfyUI via the API
+          console.warn(`  Loading workflow from: ${step.url}`)
+          await page.evaluate(async (workflowUrl) => {
+            const resp = await fetch(workflowUrl)
+            const workflow = await resp.json()
+            // Use ComfyUI's app.loadGraphData to load the workflow
+            const app = (window as Record<string, unknown>).app as {
+              loadGraphData: (data: unknown) => Promise<void>
+            }
+            if (app?.loadGraphData) {
+              await app.loadGraphData(workflow)
+            }
+          }, step.url)
+          await sleep(2000)
+          break
+        }
+        case 'setSetting': {
+          // Set a ComfyUI setting via the app API
+          console.warn(`  Setting ${step.id} = ${step.value}`)
+          await page.evaluate(
+            ({ id, value }) => {
+              const app = (window as Record<string, unknown>).app as {
+                ui: {
+                  settings: {
+                    setSettingValue: (id: string, value: unknown) => void
+                  }
+                }
+              }
+              app?.ui?.settings?.setSettingValue(id, value)
+            },
+            { id: step.id, value: step.value }
+          )
+          await sleep(500)
           break
         }
         default:
