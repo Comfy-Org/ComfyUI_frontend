@@ -30,15 +30,15 @@ incrementVersion(): void {
 }
 ```
 
-| File | Sites |
-|---|---|
-| `LGraph.ts` | 5 (lines 956, 989, 1042, 1109, 2643) |
-| `LGraphNode.ts` | 8 (lines 833, 2989, 3138, 3176, 3304, 3539, 3550, 3567) |
-| `LGraphCanvas.ts` | 2 (lines 3084, 7880) |
-| `BaseWidget.ts` | 1 (line 439) |
-| `SubgraphInput.ts` | 1 (line 137) |
-| `SubgraphInputNode.ts` | 1 (line 190) |
-| `SubgraphOutput.ts` | 1 (line 102) |
+| File                   | Sites                                                   |
+| ---------------------- | ------------------------------------------------------- |
+| `LGraph.ts`            | 5 (lines 956, 989, 1042, 1109, 2643)                    |
+| `LGraphNode.ts`        | 8 (lines 833, 2989, 3138, 3176, 3304, 3539, 3550, 3567) |
+| `LGraphCanvas.ts`      | 2 (lines 3084, 7880)                                    |
+| `BaseWidget.ts`        | 1 (line 439)                                            |
+| `SubgraphInput.ts`     | 1 (line 137)                                            |
+| `SubgraphInputNode.ts` | 1 (line 190)                                            |
+| `SubgraphOutput.ts`    | 1 (line 102)                                            |
 
 **Why first:** Creates the seam where a VersionSystem can later intercept,
 batch, or replace the mechanism. Mechanical find-and-replace with zero
@@ -50,10 +50,10 @@ behavioral change.
 
 `NodeId`, `LinkId`, and `RerouteId` exist as type aliases. Two are missing:
 
-| Type | Definition | Location |
-|---|---|---|
-| `GroupId` | `number` | `LGraphGroup.ts` (currently implicit on `id: number` at line 39) |
-| `SlotIndex` | `number` | `interfaces.ts` (slot positions are untyped `number` everywhere) |
+| Type        | Definition | Location                                                         |
+| ----------- | ---------- | ---------------------------------------------------------------- |
+| `GroupId`   | `number`   | `LGraphGroup.ts` (currently implicit on `id: number` at line 39) |
+| `SlotIndex` | `number`   | `interfaces.ts` (slot positions are untyped `number` everywhere) |
 
 **Change:** Add the type aliases, update property declarations, re-export from
 barrel (`litegraph.ts`).
@@ -102,6 +102,7 @@ only by new ECS code.
 **Consideration:** `NodeId = number | string` is the current type. The branded
 `NodeEntityId` narrows to `number`. The `string` branch exists solely for
 subgraph-related nodes (GroupNode hack). The migration must decide whether to:
+
 - Keep `NodeEntityId = number` and handle the string case at the bridge layer
 - Or define `NodeEntityId = number | string` with branding (less safe)
 
@@ -179,11 +180,11 @@ legacy code continues to read `node.pos` / LayoutStore directly.
 **Open question:** Should the World wrap the Y.js maps or maintain its own
 plain-data copy? Options:
 
-| Approach | Pros | Cons |
-|---|---|---|
-| World wraps Y.js | Single source of truth; no sync lag | World API becomes CRDT-aware; harder to test |
-| World copies from Y.js | Clean World API; easy to test | Two copies of position data; sync overhead |
-| World replaces Y.js | Pure ECS; no CRDT dependency in World | Breaks collaboration (ADR 0003); massive change |
+| Approach               | Pros                                  | Cons                                            |
+| ---------------------- | ------------------------------------- | ----------------------------------------------- |
+| World wraps Y.js       | Single source of truth; no sync lag   | World API becomes CRDT-aware; harder to test    |
+| World copies from Y.js | Clean World API; easy to test         | Two copies of position data; sync overhead      |
+| World replaces Y.js    | Pure ECS; no CRDT dependency in World | Breaks collaboration (ADR 0003); massive change |
 
 **Recommendation:** Start with "World copies from Y.js" for simplicity. The
 copy is cheap (position is small data). Revisit if sync overhead becomes
@@ -299,6 +300,7 @@ functions on the World. Legacy `LGraphNode.connect()` etc. delegate to the
 system.
 
 **Extension API concern:** The current system fires callbacks at each step:
+
 - `onConnectInput()` / `onConnectOutput()` — can reject connections
 - `onConnectionsChange()` — notifies after connection change
 - `onRemoved()` — notifies after node removal
@@ -365,6 +367,7 @@ defers the hard question. Eventually, the World may need to be CRDT-native —
 but this requires a separate ADR.
 
 **Questions to resolve:**
+
 - Should non-position components also be CRDT-backed for collaboration?
 - Does the World need an operation log for undo/redo, or can that remain
   external (Y.js undo manager)?
@@ -374,15 +377,15 @@ but this requires a separate ADR.
 
 The current system exposes lifecycle callbacks on entity classes:
 
-| Callback | Class | Purpose |
-|---|---|---|
-| `onConnectInput` | `LGraphNode` | Validate/reject incoming connection |
-| `onConnectOutput` | `LGraphNode` | Validate/reject outgoing connection |
-| `onConnectionsChange` | `LGraphNode` | React to topology change |
-| `onRemoved` | `LGraphNode` | Cleanup on deletion |
-| `onAdded` | `LGraphNode` | Setup on graph insertion |
-| `onConfigure` | `LGraphNode` | Post-deserialization hook |
-| `onWidgetChanged` | `LGraphNode` | React to widget value change |
+| Callback              | Class        | Purpose                             |
+| --------------------- | ------------ | ----------------------------------- |
+| `onConnectInput`      | `LGraphNode` | Validate/reject incoming connection |
+| `onConnectOutput`     | `LGraphNode` | Validate/reject outgoing connection |
+| `onConnectionsChange` | `LGraphNode` | React to topology change            |
+| `onRemoved`           | `LGraphNode` | Cleanup on deletion                 |
+| `onAdded`             | `LGraphNode` | Setup on graph insertion            |
+| `onConfigure`         | `LGraphNode` | Post-deserialization hook           |
+| `onWidgetChanged`     | `LGraphNode` | React to widget value change        |
 
 Extensions register these callbacks to customize node behavior. The ECS
 migration must preserve this contract or provide a documented migration path
@@ -394,6 +397,7 @@ layer translates events into legacy callbacks. Extensions can gradually adopt
 event listeners instead of callbacks.
 
 **Questions to resolve:**
+
 - Can extension callbacks that reject operations (e.g., `onConnectInput`
   returning `false`) work with a system that has already committed the
   connection to the World?
@@ -411,6 +415,7 @@ checkpoints but not true transactions. The graph can be in an inconsistent
 state between these calls.
 
 **Questions to resolve:**
+
 - Does the World need a `transaction()` API?
 - How does this interact with Y.js transactions (which already batch CRDT
   operations)?
@@ -421,14 +426,14 @@ state between these calls.
 
 The 6 proto-ECS stores use 6 different keying strategies:
 
-| Store | Key Format |
-|---|---|
-| WidgetValueStore | `"${nodeId}:${widgetName}"` |
-| PromotionStore | `"${sourceNodeId}:${widgetName}"` |
-| DomWidgetStore | Widget UUID |
-| LayoutStore | Raw nodeId/linkId/rerouteId |
-| NodeOutputStore | `"${subgraphId}:${nodeId}"` |
-| SubgraphNavigationStore | subgraphId or `'root'` |
+| Store                   | Key Format                        |
+| ----------------------- | --------------------------------- |
+| WidgetValueStore        | `"${nodeId}:${widgetName}"`       |
+| PromotionStore          | `"${sourceNodeId}:${widgetName}"` |
+| DomWidgetStore          | Widget UUID                       |
+| LayoutStore             | Raw nodeId/linkId/rerouteId       |
+| NodeOutputStore         | `"${subgraphId}:${nodeId}"`       |
+| SubgraphNavigationStore | subgraphId or `'root'`            |
 
 The World unifies these under branded entity IDs. But stores that use
 composite keys (e.g., `nodeId:widgetName`) reflect a genuine structural
@@ -470,14 +475,14 @@ Phase 5 (legacy removal)  ─────── depends on all of Phase 4
 
 ## Risk Summary
 
-| Phase | Risk | Reversibility | Extension Impact |
-|---|---|---|---|
-| 0 (Foundation) | None | Fully reversible | None |
-| 1 (Types/World) | Low | New files, deletable | None |
-| 2 (Bridge) | Low-Medium | Bridge is additive | None |
-| 3 (Systems) | Low-Medium | Systems run in parallel | None |
-| 4 (Write path) | High | Two-way sync is fragile | Callbacks must be preserved |
-| 5 (Legacy removal) | Very High | Irreversible | Extensions must migrate |
+| Phase              | Risk       | Reversibility           | Extension Impact            |
+| ------------------ | ---------- | ----------------------- | --------------------------- |
+| 0 (Foundation)     | None       | Fully reversible        | None                        |
+| 1 (Types/World)    | Low        | New files, deletable    | None                        |
+| 2 (Bridge)         | Low-Medium | Bridge is additive      | None                        |
+| 3 (Systems)        | Low-Medium | Systems run in parallel | None                        |
+| 4 (Write path)     | High       | Two-way sync is fragile | Callbacks must be preserved |
+| 5 (Legacy removal) | Very High  | Irreversible            | Extensions must migrate     |
 
 The plan is designed so that Phases 0-3 can ship without any risk to
 extensions or existing behavior. Phase 4 is where the real migration begins,
