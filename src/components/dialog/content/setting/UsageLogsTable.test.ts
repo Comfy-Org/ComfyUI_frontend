@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import Badge from 'primevue/badge'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Column from 'primevue/column'
 import PrimeVue from 'primevue/config'
@@ -125,13 +125,13 @@ describe('UsageLogsTable', () => {
     mockCustomerEventsService.getEventSeverity.mockImplementation((type) => {
       switch (type) {
         case EventType.CREDIT_ADDED:
-          return 'success'
+          return 'default'
         case EventType.ACCOUNT_CREATED:
-          return 'info'
+          return 'secondary'
         case EventType.API_USAGE_COMPLETED:
-          return 'warning'
+          return 'warn'
         default:
-          return 'info'
+          return 'secondary'
       }
     })
     mockCustomerEventsService.formatAmount.mockImplementation((amount) => {
@@ -163,7 +163,7 @@ describe('UsageLogsTable', () => {
         components: {
           DataTable,
           Column,
-          Badge,
+          StatusBadge,
           Button,
           Message,
           ProgressSpinner
@@ -240,7 +240,7 @@ describe('UsageLogsTable', () => {
       vm.events = mockEventsResponse.events
       await nextTick()
 
-      const badges = wrapper.findAllComponents(Badge)
+      const badges = wrapper.findAllComponents(StatusBadge)
       expect(badges.length).toBeGreaterThan(0)
 
       // Check if formatEventType and getEventSeverity are called

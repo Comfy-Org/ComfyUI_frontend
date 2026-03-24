@@ -1,16 +1,24 @@
 <template>
   <Chip removable @remove="emit('remove', $event)">
-    <Badge size="small" :class="semanticBadgeClass">
+    <span
+      :class="
+        cn(
+          'inline-flex items-center justify-center rounded-full px-1 text-xxxs font-semibold uppercase',
+          semanticBadgeClass
+        )
+      "
+    >
       {{ badge }}
-    </Badge>
+    </span>
     {{ text }}
   </Chip>
 </template>
 
 <script setup lang="ts">
-import Badge from 'primevue/badge'
 import Chip from 'primevue/chip'
 import { computed } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
 
 export interface SearchFilter {
   text: string

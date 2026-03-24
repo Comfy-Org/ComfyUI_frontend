@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import Badge from 'primevue/badge'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -47,7 +47,7 @@ describe('TreeExplorerTreeNode', () => {
     const wrapper = mount(TreeExplorerTreeNode, {
       props: { node: mockNode },
       global: {
-        components: { EditableText, Badge },
+        components: { EditableText, StatusBadge },
         plugins: [createTestingPinia(), i18n],
         provide: {
           [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
@@ -61,8 +61,7 @@ describe('TreeExplorerTreeNode', () => {
     expect(wrapper.findComponent(EditableText).props('modelValue')).toBe(
       'Test Node'
     )
-    // @ts-expect-error fixme ts strict error
-    expect(wrapper.findComponent(Badge).props()['value'].toString()).toBe('3')
+    expect(wrapper.findComponent(StatusBadge).props('label')).toBe('3')
   })
 
   it('makes node label editable when renamingEditingNode matches', async () => {
@@ -74,7 +73,7 @@ describe('TreeExplorerTreeNode', () => {
         }
       },
       global: {
-        components: { EditableText, Badge, InputText },
+        components: { EditableText, StatusBadge, InputText },
         plugins: [createTestingPinia(), i18n, PrimeVue],
         provide: {
           [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
@@ -97,7 +96,7 @@ describe('TreeExplorerTreeNode', () => {
         }
       },
       global: {
-        components: { EditableText, Badge, InputText },
+        components: { EditableText, StatusBadge, InputText },
         provide: { [InjectKeyHandleEditLabelFunction]: handleEditLabelMock },
         plugins: [createTestingPinia(), i18n, PrimeVue]
       }

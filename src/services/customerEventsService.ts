@@ -136,13 +136,13 @@ export const useCustomerEventsService = () => {
   function getEventSeverity(eventType: string) {
     switch (eventType) {
       case 'credit_added':
-        return 'success'
+        return 'default'
       case 'account_created':
-        return 'info'
+        return 'secondary'
       case 'api_usage_completed':
-        return 'warning'
+        return 'warn'
       default:
-        return 'info'
+        return 'secondary'
     }
   }
 
