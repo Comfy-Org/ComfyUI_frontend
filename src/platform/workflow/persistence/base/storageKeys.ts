@@ -73,12 +73,27 @@ export const StorageKeys = {
   },
 
   /**
+   * localStorage copies of tab pointers for cross-session restore.
+   * sessionStorage is per-tab (correct for in-session use) but lost
+   * on browser restart; these keys preserve the last-written state.
+   */
+  lastActivePath(workspaceId: string): string {
+    return `Comfy.Workflow.LastActivePath:${workspaceId}`
+  },
+
+  lastOpenPaths(workspaceId: string): string {
+    return `Comfy.Workflow.LastOpenPaths:${workspaceId}`
+  },
+
+  /**
    * Prefix patterns for cleanup operations.
    */
   prefixes: {
     draftIndex: 'Comfy.Workflow.DraftIndex.v2:',
     draftPayload: 'Comfy.Workflow.Draft.v2:',
     activePath: 'Comfy.Workflow.ActivePath:',
-    openPaths: 'Comfy.Workflow.OpenPaths:'
+    openPaths: 'Comfy.Workflow.OpenPaths:',
+    lastActivePath: 'Comfy.Workflow.LastActivePath:',
+    lastOpenPaths: 'Comfy.Workflow.LastOpenPaths:'
   }
 } as const
