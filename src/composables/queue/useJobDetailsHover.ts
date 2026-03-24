@@ -65,7 +65,7 @@ export function useJobDetailsHover<TActive>({
     }, DETAILS_SHOW_DELAY_MS)
   }
 
-  function scheduleDetailsHide(jobId?: string, onHide?: () => void) {
+  function scheduleDetailsHide(jobId?: string) {
     if (!jobId) return
 
     clearShowTimer()
@@ -79,7 +79,7 @@ export function useJobDetailsHover<TActive>({
       const currentActive = activeDetails.value
       if (currentActive && getActiveId(currentActive) === jobId) {
         activeDetails.value = null
-        onHide?.()
+        onReset?.()
       }
       hideTimer.value = null
       hideTimerJobId.value = null

@@ -23,36 +23,28 @@
     <div class="min-h-0 flex-1 overflow-y-auto">
       <JobAssetsList
         :displayed-job-groups="displayedJobGroups"
+        :get-menu-entries="getJobMenuEntries"
         @cancel-item="onCancelItemEvent"
         @delete-item="onDeleteItemEvent"
+        @menu-action="onJobMenuAction"
         @view-item="$emit('viewItem', $event)"
-        @menu="onMenuItem"
       />
     </div>
-
-    <JobContextMenu
-      ref="jobContextMenuRef"
-      :entries="jobMenuEntries"
-      @action="onJobMenuAction"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-
 import type {
   JobGroup,
   JobListItem,
   JobSortMode,
   JobTab
 } from '@/composables/queue/useJobList'
-import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import type { MenuActionEntry } from '@/types/menuTypes'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
-import JobContextMenu from './job/JobContextMenu.vue'
 import JobAssetsList from './job/JobAssetsList.vue'
 import JobFiltersBar from './job/JobFiltersBar.vue'
 
@@ -78,14 +70,9 @@ const emit = defineEmits<{
   (e: 'viewItem', item: JobListItem): void
 }>()
 
-const currentMenuItem = ref<JobListItem | null>(null)
-const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-const { jobMenuEntries } = useJobMenu(
-  () => currentMenuItem.value,
-  (item) => emit('viewItem', item)
-)
+const { getJobMenuEntries } = useJobMenu((item) => emit('viewItem', item))
 
 const onCancelItemEvent = (item: JobListItem) => {
   emit('cancelItem', item)
@@ -95,14 +82,9 @@ const onDeleteItemEvent = (item: JobListItem) => {
   emit('deleteItem', item)
 }
 
-const onMenuItem = (item: JobListItem, event: Event) => {
-  currentMenuItem.value = item
-  jobContextMenuRef.value?.open(event)
-}
-
-const onJobMenuAction = wrapWithErrorHandlingAsync(async (entry: MenuEntry) => {
-  if (entry.kind === 'divider') return
-  if (entry.onClick) await entry.onClick()
-  jobContextMenuRef.value?.hide()
-})
+const onJobMenuAction = wrapWithErrorHandlingAsync(
+  async (entry: MenuActionEntry) => {
+    if (entry.onClick) await entry.onClick()
+  }
+)
 </script>

@@ -20,30 +20,16 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import type { MenuEntry } from '@/types/menuTypes'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { appendJsonExt } from '@/utils/formatUtil'
-
-export type MenuEntry =
-  | {
-      kind?: 'item'
-      key: string
-      label: string
-      icon?: string
-      disabled?: boolean
-      onClick?: () => void | Promise<void>
-    }
-  | { kind: 'divider'; key: string }
 
 /**
  * Provides job context menu entries and actions.
  *
- * @param currentMenuItem Getter for the currently targeted job list item
  * @param onInspectAsset Callback to trigger when inspecting a completed job's asset
  */
-export function useJobMenu(
-  currentMenuItem: () => JobListItem | null = () => null,
-  onInspectAsset?: (item: JobListItem) => void
-) {
+export function useJobMenu(onInspectAsset?: (item: JobListItem) => void) {
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const queueStore = useQueueStore()
@@ -53,11 +39,8 @@ export function useJobMenu(
   const nodeDefStore = useNodeDefStore()
   const mediaAssetActions = useMediaAssetActions()
 
-  const resolveItem = (item?: JobListItem | null): JobListItem | null =>
-    item ?? currentMenuItem()
-
   const openJobWorkflow = async (item?: JobListItem | null) => {
-    const target = resolveItem(item)
+    const target = item
     if (!target) return
     const data = await getJobWorkflow(target.id)
     if (!data) return
@@ -67,13 +50,13 @@ export function useJobMenu(
   }
 
   const copyJobId = async (item?: JobListItem | null) => {
-    const target = resolveItem(item)
+    const target = item
     if (!target) return
     await copyToClipboard(target.id)
   }
 
   const cancelJob = async (item?: JobListItem | null) => {
-    const target = resolveItem(item)
+    const target = item
     if (!target) return
     if (target.state === 'running' || target.state === 'initialization') {
       if (isCloud) {
@@ -89,13 +72,13 @@ export function useJobMenu(
   }
 
   const copyErrorMessage = async (item?: JobListItem | null) => {
-    const target = resolveItem(item)
+    const target = item
     const message = target?.taskRef?.errorMessage
     if (message) await copyToClipboard(message)
   }
 
   const reportError = (item?: JobListItem | null) => {
-    const target = resolveItem(item)
+    const target = item
     if (!target) return
 
     // Use execution_error from list response if available
@@ -117,10 +100,10 @@ export function useJobMenu(
 
   // This is very magical only because it matches the respective backend implementation
   // There is or will be a better way to do this
-  const addOutputLoaderNode = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
+  const addOutputLoaderNode = async (item?: JobListItem | null) => {
+    const target = item
+    if (!target) return
+    const result: ResultItemImpl | undefined = target.taskRef?.previewOutput
     if (!result) return
 
     let nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | null = null
@@ -168,10 +151,10 @@ export function useJobMenu(
   /**
    * Trigger a download of the job's previewable output asset.
    */
-  const downloadPreviewAsset = () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
+  const downloadPreviewAsset = (item?: JobListItem | null) => {
+    const target = item
+    if (!target) return
+    const result: ResultItemImpl | undefined = target.taskRef?.previewOutput
     if (!result) return
     downloadFile(result.url)
   }
@@ -179,14 +162,14 @@ export function useJobMenu(
   /**
    * Export the workflow JSON attached to the job.
    */
-  const exportJobWorkflow = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const data = await getJobWorkflow(item.id)
+  const exportJobWorkflow = async (item?: JobListItem | null) => {
+    const target = item
+    if (!target) return
+    const data = await getJobWorkflow(target.id)
     if (!data) return
 
     const settingStore = useSettingStore()
-    let filename = `Job ${item.id}.json`
+    let filename = `Job ${target.id}.json`
 
     if (settingStore.get('Comfy.PromptFilename')) {
       const input = await useDialogService().prompt({
@@ -203,10 +186,10 @@ export function useJobMenu(
     downloadBlob(filename, blob)
   }
 
-  const deleteJobAsset = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const task = item.taskRef as TaskItemImpl | undefined
+  const deleteJobAsset = async (item?: JobListItem | null) => {
+    const target = item
+    if (!target) return
+    const task = target.taskRef as TaskItemImpl | undefined
     const preview = task?.previewOutput
     if (!task || !preview) return
 
@@ -218,8 +201,7 @@ export function useJobMenu(
   }
 
   const removeFailedJob = async (task?: TaskItemImpl | null) => {
-    const target =
-      task ?? (currentMenuItem()?.taskRef as TaskItemImpl | undefined)
+    const target = task
     if (!target) return
     await queueStore.delete(target)
   }
@@ -237,11 +219,11 @@ export function useJobMenu(
     st('queue.jobMenu.cancelJob', 'Cancel job')
   )
 
-  const jobMenuEntries = computed<MenuEntry[]>(() => {
-    const item = currentMenuItem()
-    const state = item?.state
+  const buildJobMenuEntries = (item?: JobListItem | null): MenuEntry[] => {
+    const target = item
+    const state = target?.state
     if (!state) return []
-    const hasPreviewAsset = !!item?.taskRef?.previewOutput
+    const hasPreviewAsset = !!target?.taskRef?.previewOutput
     if (state === 'completed') {
       return [
         {
@@ -251,8 +233,7 @@ export function useJobMenu(
           disabled: !hasPreviewAsset || !onInspectAsset,
           onClick: onInspectAsset
             ? () => {
-                const item = currentMenuItem()
-                if (item) onInspectAsset(item)
+                if (target) onInspectAsset(target)
               }
             : undefined
         },
@@ -264,34 +245,34 @@ export function useJobMenu(
           ),
           icon: 'icon-[comfy--node]',
           disabled: !hasPreviewAsset,
-          onClick: addOutputLoaderNode
+          onClick: () => addOutputLoaderNode(target)
         },
         {
           key: 'download',
           label: st('queue.jobMenu.download', 'Download'),
           icon: 'icon-[lucide--download]',
           disabled: !hasPreviewAsset,
-          onClick: downloadPreviewAsset
+          onClick: () => downloadPreviewAsset(target)
         },
         { kind: 'divider', key: 'd1' },
         {
           key: 'open-workflow',
           label: jobMenuOpenWorkflowLabel.value,
           icon: 'icon-[comfy--workflow]',
-          onClick: openJobWorkflow
+          onClick: () => openJobWorkflow(target)
         },
         {
           key: 'export-workflow',
           label: st('queue.jobMenu.exportWorkflow', 'Export workflow'),
           icon: 'icon-[comfy--file-output]',
-          onClick: exportJobWorkflow
+          onClick: () => exportJobWorkflow(target)
         },
         { kind: 'divider', key: 'd2' },
         {
           key: 'copy-id',
           label: jobMenuCopyJobIdLabel.value,
           icon: 'icon-[lucide--copy]',
-          onClick: copyJobId
+          onClick: () => copyJobId(target)
         },
         { kind: 'divider', key: 'd3' },
         ...(hasPreviewAsset
@@ -300,7 +281,7 @@ export function useJobMenu(
                 key: 'delete',
                 label: st('queue.jobMenu.deleteAsset', 'Delete asset'),
                 icon: 'icon-[lucide--trash-2]',
-                onClick: deleteJobAsset
+                onClick: () => deleteJobAsset(target)
               }
             ]
           : [])
@@ -312,33 +293,33 @@ export function useJobMenu(
           key: 'open-workflow',
           label: jobMenuOpenWorkflowFailedLabel.value,
           icon: 'icon-[comfy--workflow]',
-          onClick: openJobWorkflow
+          onClick: () => openJobWorkflow(target)
         },
         { kind: 'divider', key: 'd1' },
         {
           key: 'copy-id',
           label: jobMenuCopyJobIdLabel.value,
           icon: 'icon-[lucide--copy]',
-          onClick: copyJobId
+          onClick: () => copyJobId(target)
         },
         {
           key: 'copy-error',
           label: st('queue.jobMenu.copyErrorMessage', 'Copy error message'),
           icon: 'icon-[lucide--copy]',
-          onClick: copyErrorMessage
+          onClick: () => copyErrorMessage(target)
         },
         {
           key: 'report-error',
           label: st('queue.jobMenu.reportError', 'Report error'),
           icon: 'icon-[lucide--message-circle-warning]',
-          onClick: reportError
+          onClick: () => reportError(target)
         },
         { kind: 'divider', key: 'd2' },
         {
           key: 'delete',
           label: st('queue.jobMenu.removeJob', 'Remove job'),
           icon: 'icon-[lucide--circle-minus]',
-          onClick: removeFailedJob
+          onClick: () => removeFailedJob(target?.taskRef)
         }
       ]
     }
@@ -347,27 +328,27 @@ export function useJobMenu(
         key: 'open-workflow',
         label: jobMenuOpenWorkflowLabel.value,
         icon: 'icon-[comfy--workflow]',
-        onClick: openJobWorkflow
+        onClick: () => openJobWorkflow(target)
       },
       { kind: 'divider', key: 'd1' },
       {
         key: 'copy-id',
         label: jobMenuCopyJobIdLabel.value,
         icon: 'icon-[lucide--copy]',
-        onClick: copyJobId
+        onClick: () => copyJobId(target)
       },
       { kind: 'divider', key: 'd2' },
       {
         key: 'cancel-job',
         label: jobMenuCancelLabel.value,
         icon: 'icon-[lucide--x]',
-        onClick: cancelJob
+        onClick: () => cancelJob(target)
       }
     ]
-  })
+  }
 
   return {
-    jobMenuEntries,
+    getJobMenuEntries: buildJobMenuEntries,
     openJobWorkflow,
     copyJobId,
     cancelJob,

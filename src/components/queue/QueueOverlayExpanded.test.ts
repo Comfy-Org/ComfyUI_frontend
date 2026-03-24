@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { JobListItem } from '@/composables/queue/useJobList'
 
 vi.mock('@/composables/queue/useJobMenu', () => ({
-  useJobMenu: () => ({ jobMenuEntries: [] })
+  useJobMenu: () => ({ getJobMenuEntries: () => [] })
 }))
 
 vi.mock('@/composables/useErrorHandling', () => ({
@@ -30,10 +30,6 @@ const JobAssetsListStub = {
   template: '<div class="job-assets-list-stub" />'
 }
 
-const JobContextMenuStub = {
-  template: '<div />'
-}
-
 const createJob = (): JobListItem => ({
   id: 'job-1',
   title: 'Job 1',
@@ -56,8 +52,7 @@ const mountComponent = () =>
       stubs: {
         QueueOverlayHeader: QueueOverlayHeaderStub,
         JobFiltersBar: JobFiltersBarStub,
-        JobAssetsList: JobAssetsListStub,
-        JobContextMenu: JobContextMenuStub
+        JobAssetsList: JobAssetsListStub
       }
     }
   })

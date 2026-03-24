@@ -16,49 +16,83 @@
           >
             <i class="pi pi-trash text-xs" />
           </LoadingOverlay>
-          <AssetsListItem
-            role="button"
-            tabindex="0"
-            :aria-label="
-              t('assetBrowser.ariaLabel.assetCard', {
-                name: getAssetDisplayName(item.asset),
-                type: getAssetMediaType(item.asset)
-              })
-            "
-            :class="
-              cn(
-                getAssetCardClass(isSelected(item.asset.id)),
-                item.isChild && 'pl-6'
-              )
-            "
-            :preview-url="getAssetPreviewUrl(item.asset)"
-            :preview-alt="getAssetDisplayName(item.asset)"
-            :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
-            :is-video-preview="isVideoAsset(item.asset)"
-            :primary-text="getAssetPrimaryText(item.asset)"
-            :secondary-text="getAssetSecondaryText(item.asset)"
-            :stack-count="getStackCount(item.asset)"
-            :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
-            :stack-expanded="isStackExpanded(item.asset)"
-            @mouseenter="onAssetEnter(item.asset.id)"
-            @mouseleave="onAssetLeave(item.asset.id)"
-            @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
-            @click.stop="emit('select-asset', item.asset, selectableAssets)"
-            @dblclick.stop="emit('preview-asset', item.asset)"
-            @preview-click="emit('preview-asset', item.asset)"
-            @stack-toggle="void toggleStack(item.asset)"
-          >
-            <template v-if="hoveredAssetId === item.asset.id" #actions>
-              <Button
-                variant="secondary"
-                size="icon"
-                :aria-label="t('mediaAsset.actions.moreOptions')"
-                @click.stop="emit('context-menu', $event, item.asset)"
+          <ContextMenu :modal="false">
+            <ContextMenuTrigger as-child>
+              <AssetsListItem
+                role="button"
+                tabindex="0"
+                :aria-label="
+                  t('assetBrowser.ariaLabel.assetCard', {
+                    name: getAssetDisplayName(item.asset),
+                    type: getAssetMediaType(item.asset)
+                  })
+                "
+                :class="
+                  cn(
+                    getAssetCardClass(isSelected(item.asset.id)),
+                    item.isChild && 'pl-6'
+                  )
+                "
+                :preview-url="getAssetPreviewUrl(item.asset)"
+                :preview-alt="getAssetDisplayName(item.asset)"
+                :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
+                :is-video-preview="isVideoAsset(item.asset)"
+                :primary-text="getAssetPrimaryText(item.asset)"
+                :secondary-text="getAssetSecondaryText(item.asset)"
+                :stack-count="getStackCount(item.asset)"
+                :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
+                :stack-expanded="isStackExpanded(item.asset)"
+                @mouseenter="onAssetEnter(item.asset.id)"
+                @mouseleave="onAssetLeave(item.asset.id)"
+                @click.stop="emit('select-asset', item.asset, selectableAssets)"
+                @dblclick.stop="emit('preview-asset', item.asset)"
+                @preview-click="emit('preview-asset', item.asset)"
+                @stack-toggle="void toggleStack(item.asset)"
               >
-                <i class="icon-[lucide--ellipsis] size-4" />
-              </Button>
-            </template>
-          </AssetsListItem>
+                <template v-if="shouldShowActionsMenu(item.asset.id)" #actions>
+                  <DropdownMenu
+                    :open="openActionsAssetId === item.asset.id"
+                    @update:open="
+                      onActionsMenuOpenChange(item.asset.id, $event)
+                    "
+                  >
+                    <DropdownMenuTrigger as-child>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        :aria-label="t('mediaAsset.actions.moreOptions')"
+                        @click.stop
+                      >
+                        <i class="icon-[lucide--ellipsis] size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      close-on-scroll
+                      class="z-1700 bg-transparent p-0 shadow-lg"
+                      :side-offset="4"
+                      :collision-padding="8"
+                    >
+                      <MediaAssetMenuItems
+                        :entries="getAssetMenuEntries(item.asset)"
+                        surface="dropdown"
+                        @action="void onAssetMenuAction($event)"
+                      />
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </template>
+              </AssetsListItem>
+            </ContextMenuTrigger>
+            <ContextMenuContent
+              close-on-scroll
+              class="z-1700 bg-transparent p-0 shadow-lg"
+            >
+              <MediaAssetMenuItems
+                :entries="getAssetMenuEntries(item.asset)"
+                surface="context"
+                @action="void onAssetMenuAction($event)"
+              />
+            </ContextMenuContent>
+          </ContextMenu>
         </div>
       </template>
     </VirtualGrid>
@@ -72,13 +106,23 @@ import { useI18n } from 'vue-i18n'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Button from '@/components/ui/button/Button.vue'
+import ContextMenu from '@/components/ui/context-menu/ContextMenu.vue'
+import ContextMenuContent from '@/components/ui/context-menu/ContextMenuContent.vue'
+import ContextMenuTrigger from '@/components/ui/context-menu/ContextMenuTrigger.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
+import { useMediaAssetMenu } from '@/platform/assets/composables/useMediaAssetMenu'
+import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import MediaAssetMenuItems from '@/platform/assets/components/MediaAssetMenuItems.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
+import type { MenuActionEntry, MenuEntry } from '@/types/menuTypes'
 import {
   formatDuration,
   formatSize,
@@ -92,13 +136,19 @@ const {
   selectableAssets,
   isSelected,
   isStackExpanded,
-  toggleStack
+  toggleStack,
+  showDeleteButton,
+  selectedAssets,
+  isBulkMode
 } = defineProps<{
   assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
+  showDeleteButton?: boolean
+  selectedAssets?: AssetItem[]
+  isBulkMode?: boolean
 }>()
 
 const assetsStore = useAssetsStore()
@@ -106,12 +156,27 @@ const assetsStore = useAssetsStore()
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem, assets?: AssetItem[]): void
   (e: 'preview-asset', asset: AssetItem): void
-  (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
+  (e: 'asset-deleted'): void
+  (e: 'bulk-download', assets: AssetItem[]): void
+  (e: 'bulk-delete', assets: AssetItem[]): void
+  (e: 'bulk-add-to-workflow', assets: AssetItem[]): void
+  (e: 'bulk-open-workflow', assets: AssetItem[]): void
+  (e: 'bulk-export-workflow', assets: AssetItem[]): void
 }>()
 
 const { t } = useI18n()
 const hoveredAssetId = ref<string | null>(null)
+const openActionsAssetId = ref<string | null>(null)
+const { getMenuEntries } = useMediaAssetMenu({
+  inspectAsset: (asset) => emit('preview-asset', asset),
+  assetDeleted: () => emit('asset-deleted'),
+  bulkDownload: (assets) => emit('bulk-download', assets),
+  bulkDelete: (assets) => emit('bulk-delete', assets),
+  bulkAddToWorkflow: (assets) => emit('bulk-add-to-workflow', assets),
+  bulkOpenWorkflow: (assets) => emit('bulk-open-workflow', assets),
+  bulkExportWorkflow: (assets) => emit('bulk-export-workflow', assets)
+})
 
 const listGridStyle = {
   display: 'grid',
@@ -126,6 +191,17 @@ function getAssetPrimaryText(asset: AssetItem): string {
 
 function getAssetMediaType(asset: AssetItem) {
   return getMediaTypeFromFilename(asset.name)
+}
+
+function getAssetMenuEntries(asset: AssetItem): MenuEntry[] {
+  return getMenuEntries({
+    asset,
+    assetType: getAssetType(asset.tags),
+    fileKind: getAssetMediaType(asset),
+    showDeleteButton,
+    selectedAssets,
+    isBulkMode
+  })
 }
 
 function isVideoAsset(asset: AssetItem): boolean {
@@ -178,6 +254,27 @@ function getAssetCardClass(selected: boolean): string {
     selected &&
       'bg-secondary-background-hover ring-1 ring-modal-card-border-highlighted ring-inset'
   )
+}
+
+function shouldShowActionsMenu(assetId: string): boolean {
+  return (
+    hoveredAssetId.value === assetId || openActionsAssetId.value === assetId
+  )
+}
+
+function onActionsMenuOpenChange(assetId: string, isOpen: boolean): void {
+  if (isOpen) {
+    openActionsAssetId.value = assetId
+    return
+  }
+
+  if (openActionsAssetId.value === assetId) {
+    openActionsAssetId.value = null
+  }
+}
+
+async function onAssetMenuAction(entry: MenuActionEntry) {
+  await entry.onClick?.()
 }
 
 function onAssetEnter(assetId: string) {

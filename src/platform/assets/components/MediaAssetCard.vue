@@ -23,9 +23,6 @@
     :data-selected="selected"
     :draggable="true"
     @click.stop="$emit('click')"
-    @contextmenu.prevent.stop="
-      asset ? emit('context-menu', $event, asset) : undefined
-    "
     @dragstart="dragStart"
   >
     <!-- Top Area: Media Preview -->
@@ -69,16 +66,30 @@
           >
             <i class="icon-[lucide--zoom-in] size-4" />
           </Button>
-          <Button
-            variant="overlay-white"
-            size="icon"
-            :aria-label="$t('mediaAsset.actions.moreOptions')"
-            @click.stop="
-              asset ? emit('context-menu', $event, asset) : undefined
-            "
-          >
-            <i class="icon-[lucide--ellipsis] size-4" />
-          </Button>
+          <DropdownMenu v-if="asset" v-model:open="isActionsMenuOpen">
+            <DropdownMenuTrigger as-child>
+              <Button
+                variant="overlay-white"
+                size="icon"
+                :aria-label="$t('mediaAsset.actions.moreOptions')"
+                @click.stop
+              >
+                <i class="icon-[lucide--ellipsis] size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              close-on-scroll
+              class="z-1700 bg-transparent p-0 shadow-lg"
+              :side-offset="4"
+              :collision-padding="8"
+            >
+              <MediaAssetMenuItems
+                :entries="getAssetMenuEntries()"
+                surface="dropdown"
+                @action="void onAssetMenuAction($event)"
+              />
+            </DropdownMenuContent>
+          </DropdownMenu>
         </IconGroup>
       </div>
     </div>
@@ -141,7 +152,11 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import { useAssetsStore } from '@/stores/assetsStore'
+import type { MenuActionEntry, MenuEntry } from '@/types/menuTypes'
 import {
   formatDuration,
   formatSize,
@@ -154,10 +169,12 @@ import { cn } from '@/utils/tailwindUtil'
 import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import { useMediaAssetMenu } from '../composables/useMediaAssetMenu'
 import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
+import MediaAssetMenuItems from './MediaAssetMenuItems.vue'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
@@ -177,12 +194,24 @@ function getTopComponent(kind: PreviewKind) {
   return mediaComponents.top[kind] || mediaComponents.top.other
 }
 
-const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
+const {
+  asset,
+  loading,
+  selected,
+  showOutputCount,
+  outputCount,
+  showDeleteButton,
+  selectedAssets,
+  isBulkMode
+} = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
   showOutputCount?: boolean
   outputCount?: number
+  showDeleteButton?: boolean
+  selectedAssets?: AssetItem[]
+  isBulkMode?: boolean
 }>()
 
 const assetsStore = useAssetsStore()
@@ -196,13 +225,19 @@ const emit = defineEmits<{
   click: []
   zoom: [asset: AssetItem]
   'output-count-click': []
-  'context-menu': [event: MouseEvent, asset: AssetItem]
+  'asset-deleted': []
+  'bulk-download': [assets: AssetItem[]]
+  'bulk-delete': [assets: AssetItem[]]
+  'bulk-add-to-workflow': [assets: AssetItem[]]
+  'bulk-open-workflow': [assets: AssetItem[]]
+  'bulk-export-workflow': [assets: AssetItem[]]
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
 
 const isVideoPlaying = ref(false)
 const showVideoControls = ref(false)
+const isActionsMenuOpen = ref(false)
 
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
@@ -210,6 +245,15 @@ const imageDimensions = ref<{ width: number; height: number } | undefined>()
 const isHovered = useElementHover(cardContainerRef)
 
 const actions = useMediaAssetActions()
+const { getMenuEntries } = useMediaAssetMenu({
+  inspectAsset: (target) => emit('zoom', target),
+  assetDeleted: () => emit('asset-deleted'),
+  bulkDownload: (assets) => emit('bulk-download', assets),
+  bulkDelete: (assets) => emit('bulk-delete', assets),
+  bulkAddToWorkflow: (assets) => emit('bulk-add-to-workflow', assets),
+  bulkOpenWorkflow: (assets) => emit('bulk-open-workflow', assets),
+  bulkExportWorkflow: (assets) => emit('bulk-export-workflow', assets)
+})
 
 // Get asset type from tags
 const assetType = computed(() => {
@@ -290,7 +334,12 @@ const metaInfo = computed(() => {
 
 const showActionsOverlay = computed(() => {
   if (loading || !asset || isDeleting.value) return false
-  return isHovered.value || selected || isVideoPlaying.value
+  return (
+    isHovered.value ||
+    selected ||
+    isVideoPlaying.value ||
+    isActionsMenuOpen.value
+  )
 })
 
 const handleZoomClick = () => {
@@ -306,6 +355,26 @@ const handleImageLoaded = (width: number, height: number) => {
 const handleOutputCountClick = () => {
   emit('output-count-click')
 }
+
+function getAssetMenuEntries(): MenuEntry[] {
+  if (!asset) {
+    return []
+  }
+
+  return getMenuEntries({
+    asset,
+    assetType: assetType.value,
+    fileKind: fileKind.value,
+    showDeleteButton,
+    selectedAssets,
+    isBulkMode
+  })
+}
+
+async function onAssetMenuAction(entry: MenuActionEntry) {
+  await entry.onClick?.()
+}
+
 function dragStart(e: DragEvent) {
   if (!asset?.preview_url) return
 

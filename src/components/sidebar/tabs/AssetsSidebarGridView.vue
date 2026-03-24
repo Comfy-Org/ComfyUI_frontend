@@ -9,15 +9,56 @@
     >
       <template #item="{ item }">
         <MediaAssetCard
+          v-if="assetsStore.isAssetDeleting(item.asset.id)"
           :asset="item.asset"
           :selected="isSelected(item.asset.id)"
           :show-output-count="showOutputCount(item.asset)"
           :output-count="getOutputCount(item.asset)"
+          :show-delete-button="showDeleteButton"
+          :selected-assets="selectedAssets"
+          :is-bulk-mode="isBulkMode"
           @click="emit('select-asset', item.asset)"
-          @context-menu="emit('context-menu', $event, item.asset)"
           @zoom="emit('zoom', item.asset)"
+          @asset-deleted="emit('asset-deleted')"
+          @bulk-download="emit('bulk-download', $event)"
+          @bulk-delete="emit('bulk-delete', $event)"
+          @bulk-add-to-workflow="emit('bulk-add-to-workflow', $event)"
+          @bulk-open-workflow="emit('bulk-open-workflow', $event)"
+          @bulk-export-workflow="emit('bulk-export-workflow', $event)"
           @output-count-click="emit('output-count-click', item.asset)"
         />
+        <ContextMenu v-else :modal="false">
+          <ContextMenuTrigger as-child>
+            <MediaAssetCard
+              :asset="item.asset"
+              :selected="isSelected(item.asset.id)"
+              :show-output-count="showOutputCount(item.asset)"
+              :output-count="getOutputCount(item.asset)"
+              :show-delete-button="showDeleteButton"
+              :selected-assets="selectedAssets"
+              :is-bulk-mode="isBulkMode"
+              @click="emit('select-asset', item.asset)"
+              @zoom="emit('zoom', item.asset)"
+              @asset-deleted="emit('asset-deleted')"
+              @bulk-download="emit('bulk-download', $event)"
+              @bulk-delete="emit('bulk-delete', $event)"
+              @bulk-add-to-workflow="emit('bulk-add-to-workflow', $event)"
+              @bulk-open-workflow="emit('bulk-open-workflow', $event)"
+              @bulk-export-workflow="emit('bulk-export-workflow', $event)"
+              @output-count-click="emit('output-count-click', item.asset)"
+            />
+          </ContextMenuTrigger>
+          <ContextMenuContent
+            close-on-scroll
+            class="z-1700 bg-transparent p-0 shadow-lg"
+          >
+            <MediaAssetMenuItems
+              :entries="getAssetMenuEntries(item.asset)"
+              surface="context"
+              @action="void onAssetMenuAction($event)"
+            />
+          </ContextMenuContent>
+        </ContextMenu>
       </template>
     </VirtualGrid>
   </div>
@@ -27,23 +68,59 @@
 import { computed } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import ContextMenu from '@/components/ui/context-menu/ContextMenu.vue'
+import ContextMenuContent from '@/components/ui/context-menu/ContextMenuContent.vue'
+import ContextMenuTrigger from '@/components/ui/context-menu/ContextMenuTrigger.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import MediaAssetMenuItems from '@/platform/assets/components/MediaAssetMenuItems.vue'
+import { useMediaAssetMenu } from '@/platform/assets/composables/useMediaAssetMenu'
+import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useAssetsStore } from '@/stores/assetsStore'
+import type { MenuActionEntry, MenuEntry } from '@/types/menuTypes'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
-const { assets, isSelected, showOutputCount, getOutputCount } = defineProps<{
+const {
+  assets,
+  isSelected,
+  showOutputCount,
+  getOutputCount,
+  showDeleteButton,
+  selectedAssets,
+  isBulkMode
+} = defineProps<{
   assets: AssetItem[]
   isSelected: (assetId: string) => boolean
   showOutputCount: (asset: AssetItem) => boolean
   getOutputCount: (asset: AssetItem) => number
+  showDeleteButton?: boolean
+  selectedAssets?: AssetItem[]
+  isBulkMode?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
-  (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
   (e: 'zoom', asset: AssetItem): void
+  (e: 'asset-deleted'): void
+  (e: 'bulk-download', assets: AssetItem[]): void
+  (e: 'bulk-delete', assets: AssetItem[]): void
+  (e: 'bulk-add-to-workflow', assets: AssetItem[]): void
+  (e: 'bulk-open-workflow', assets: AssetItem[]): void
+  (e: 'bulk-export-workflow', assets: AssetItem[]): void
   (e: 'output-count-click', asset: AssetItem): void
 }>()
+
+const assetsStore = useAssetsStore()
+const { getMenuEntries } = useMediaAssetMenu({
+  inspectAsset: (asset) => emit('zoom', asset),
+  assetDeleted: () => emit('asset-deleted'),
+  bulkDownload: (assets) => emit('bulk-download', assets),
+  bulkDelete: (assets) => emit('bulk-delete', assets),
+  bulkAddToWorkflow: (assets) => emit('bulk-add-to-workflow', assets),
+  bulkOpenWorkflow: (assets) => emit('bulk-open-workflow', assets),
+  bulkExportWorkflow: (assets) => emit('bulk-export-workflow', assets)
+})
 
 type AssetGridItem = { key: string; asset: AssetItem }
 
@@ -53,6 +130,21 @@ const assetItems = computed<AssetGridItem[]>(() =>
     asset
   }))
 )
+
+function getAssetMenuEntries(asset: AssetItem): MenuEntry[] {
+  return getMenuEntries({
+    asset,
+    assetType: getAssetType(asset.tags),
+    fileKind: getMediaTypeFromFilename(asset.name),
+    showDeleteButton,
+    selectedAssets,
+    isBulkMode
+  })
+}
+
+async function onAssetMenuAction(entry: MenuActionEntry) {
+  await entry.onClick?.()
+}
 
 const gridStyle = {
   display: 'grid',
