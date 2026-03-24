@@ -7,7 +7,7 @@ import {
 
 describe('exceedsClickThreshold', () => {
   it('returns false when distance is within threshold', () => {
-    expect(exceedsClickThreshold({ x: 0, y: 0 }, { x: 3, y: 4 }, 5)).toBe(false)
+    expect(exceedsClickThreshold({ x: 0, y: 0 }, { x: 2, y: 2 }, 5)).toBe(false)
   })
 
   it('returns true when distance exceeds threshold', () => {

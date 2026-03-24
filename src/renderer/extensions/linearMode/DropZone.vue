@@ -39,11 +39,9 @@ function onPointerDown(e: PointerEvent) {
 }
 
 function onIndicatorClick(e: MouseEvent) {
-  if (e.detail !== 0 && clickGuard.wasDragged(e)) {
-    clickGuard.reset()
-    return
-  }
+  const dragged = e.detail !== 0 && clickGuard.wasDragged(e)
   clickGuard.reset()
+  if (dragged) return
   dropIndicator?.onClick?.(e)
 }
 
