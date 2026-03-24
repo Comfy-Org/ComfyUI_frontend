@@ -484,29 +484,32 @@
     [x] The ECS Enlightenment    - All good answers
     [x] The Clean Architecture   - Mostly good, few OK
     [x] The Eternal Refactor     - Mix of OK and bad
-    [x] The Spaghetti Singularity - All bad answers
+    [x] The Spaghetti Singularity - Maximize debt (see pro tip below)
 
   Click any unlocked achievement badge in the Endings sidebar panel
   to review that ending's screen without resetting your current game.
 
-  PRO TIP: To get "The Spaghetti Singularity" fastest, pick:
-    Components:  B (Barrel file reordering)    Debt +10
-    Stores:      C (Leave it as-is)            Debt +10
-    Services:    B (Big bang rewrite)           Debt -10 (oops, helps)
-    Litegraph:   A (Rewrite from scratch)      Debt -20 (also helps!)
-    ECS:         C (Keep plain numbers)        Debt +15
-    Renderer:    B (Dirty flags)               Debt -5
-    Composables: B (Polling-based sync)        Debt +10
+  PRO TIP: "The Spaghetti Singularity" requires Debt >= 70. This is
+  TRICKY because some "bad" answers actually LOWER debt! Rewrites
+  (Litegraph A: Debt -20) and big bang rewrites (Services B: Debt -10)
+  reduce debt short-term even though they tank morale.
 
-  Wait... the "bad" answers for Litegraph and Services actually LOWER
-  debt? Yes! Rewrites and big bangs reduce debt short-term but tank
-  morale. To actually hit Debt >= 70 you need to pick the options that
-  ADD debt without reducing it. The true worst path:
+  To hit Debt >= 70 you must pick options that ADD debt or leave it
+  alone. Here's the proven path (starting at Debt 50):
 
-    Components:  B (+10)  -> 60
-    Stores:      C (+10)  -> 70
-    ECS:         C (+15)  -> 85  (already at 70, game over at this point)
-    ... fill the rest with whatever
+    Components:  B (Barrel file reordering)    Debt +10 -> 60
+    Stores:      C (Leave it as-is)            Debt +10 -> 70
+    Services:    C (Strangler fig)             Debt  +0 -> 70
+    Litegraph:   C (Add a facade)              Debt  +5 -> 75
+    ECS:         C (Keep plain numbers)        Debt +15 -> 90
+    Renderer:    B (Dirty flags)               Debt  -5 -> 85
+    Composables: B (Polling-based sync)        Debt +10 -> 95
+
+  Final: Debt 95 / Quality 35 / Morale 75 -> SPAGHETTI SINGULARITY
+
+  WARNING: Picking "all bad-rated answers" does NOT work! The bad
+  answers for Litegraph (A: Rewrite) and Services (B: Big bang) have
+  negative debt effects that pull you back under 70.
 
 ===============================================================================
  VIII.  ARTIFACTS CHECKLIST
