@@ -861,8 +861,19 @@
     }
 
     /* --- Room transition --- */
-    #narrative { transition: opacity 0.15s ease; }
-    #narrative.transitioning { opacity: 0.4; }
+    #narrative {
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    #narrative.exit {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+
+    #narrative.enter {
+      opacity: 0;
+      transform: translateY(6px);
+    }
 
     /* --- Utilities --- */
     #toggle-map {
@@ -1619,14 +1630,35 @@
     }
 
     // --- Rendering ---
+    let isFirstRender = true
+
     function render(roomId) {
+      if (!rooms[roomId]) return
+
+      if (isFirstRender || state.currentRoom === roomId) {
+        isFirstRender = false
+        renderRoom(roomId)
+        return
+      }
+
+      // Fade out, swap, fade in
+      els.narrative.classList.add('exit')
+      setTimeout(() => {
+        renderRoom(roomId)
+        window.scrollTo({ top: 0, behavior: 'instant' })
+        els.narrative.classList.remove('exit')
+        els.narrative.classList.add('enter')
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            els.narrative.classList.remove('enter')
+          })
+        })
+      }, 200)
+    }
+
+    function renderRoom(roomId) {
       const room = rooms[roomId]
       if (!room) return
-
-      // Brief fade transition and scroll to top
-      els.narrative.classList.add('transitioning')
-      setTimeout(() => els.narrative.classList.remove('transitioning'), 150)
-      window.scrollTo({ top: 0, behavior: 'instant' })
 
       state.currentRoom = roomId
       state.visited.add(roomId)
