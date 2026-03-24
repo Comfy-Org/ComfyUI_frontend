@@ -124,44 +124,47 @@
     .stat-morale .stat-bar-fill { background: var(--yellow); }
     .stat-migration .stat-bar-fill { background: var(--purple); }
 
-    /* --- Map Panel (overlay) --- */
-    #map-panel {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0.95);
-      z-index: 50;
+    /* --- Map Dialog --- */
+    #map-dialog {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 20px 24px;
       max-width: 700px;
       width: 90%;
+      color: var(--text);
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
       opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+      transform: scale(0.95);
+      transition: opacity 0.2s ease, transform 0.2s ease,
+                  overlay 0.2s ease allow-discrete,
+                  display 0.2s ease allow-discrete;
     }
 
-    #map-panel.open {
+    #map-dialog[open] {
       opacity: 1;
-      visibility: visible;
-      transform: translate(-50%, -50%) scale(1);
+      transform: scale(1);
     }
 
-    #map-backdrop {
-      position: fixed;
-      inset: 0;
+    @starting-style {
+      #map-dialog[open] { opacity: 0; transform: scale(0.95); }
+    }
+
+    #map-dialog::backdrop {
       background: rgba(0, 0, 0, 0.5);
-      z-index: 40;
       opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.2s ease, visibility 0.2s;
+      transition: opacity 0.2s ease,
+                  overlay 0.2s ease allow-discrete,
+                  display 0.2s ease allow-discrete;
     }
 
-    #map-backdrop.open { opacity: 1; visibility: visible; }
+    #map-dialog[open]::backdrop { opacity: 1; }
 
-    #map-panel h3 {
+    @starting-style {
+      #map-dialog[open]::backdrop { opacity: 0; }
+    }
+
+    #map-dialog h3 {
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -649,44 +652,49 @@
     }
 
 
-    /* --- Ending Screen --- */
-    #ending-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.85);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-      animation: fadeIn 0.5s ease;
-    }
-
-    #ending-overlay.active { display: flex; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    #ending-card {
+    /* --- Ending Dialog --- */
+    #ending-dialog {
       background: var(--surface);
       border: 2px solid var(--border);
       border-radius: 16px;
       padding: 40px;
       max-width: 640px;
       width: 90%;
+      color: var(--text);
       text-align: center;
-      animation: scaleIn 0.4s ease 0.2s both;
       max-height: 90vh;
       overflow-y: auto;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.3s ease, transform 0.3s ease,
+                  overlay 0.3s ease allow-discrete,
+                  display 0.3s ease allow-discrete;
     }
 
-    @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.9); }
-      to { opacity: 1; transform: scale(1); }
+    #ending-dialog[open] {
+      opacity: 1;
+      transform: scale(1);
     }
 
-    #ending-card .ending-label {
+    @starting-style {
+      #ending-dialog[open] { opacity: 0; transform: scale(0.9); }
+    }
+
+    #ending-dialog::backdrop {
+      background: rgba(0, 0, 0, 0.85);
+      opacity: 0;
+      transition: opacity 0.3s ease,
+                  overlay 0.3s ease allow-discrete,
+                  display 0.3s ease allow-discrete;
+    }
+
+    #ending-dialog[open]::backdrop { opacity: 1; }
+
+    @starting-style {
+      #ending-dialog[open]::backdrop { opacity: 0; }
+    }
+
+    #ending-dialog .ending-label {
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 2px;
@@ -694,12 +702,12 @@
       margin-bottom: 8px;
     }
 
-    #ending-card h2 {
+    #ending-dialog h2 {
       font-size: 22px;
       margin-bottom: 16px;
     }
 
-    #ending-card .ending-desc {
+    #ending-dialog .ending-desc {
       font-size: 14px;
       line-height: 1.7;
       color: var(--muted);
@@ -993,12 +1001,11 @@
     </div>
   </header>
 
-  <!-- Map Overlay -->
-  <div id="map-backdrop"></div>
-  <section id="map-panel">
+  <!-- Map Dialog -->
+  <dialog id="map-dialog">
     <h3>Architecture Map</h3>
     <div id="map"></div>
-  </section>
+  </dialog>
 
   <!-- Main Layout -->
   <div id="main">
@@ -1068,17 +1075,15 @@
 
   </div>
 
-  <!-- Ending Overlay -->
-  <div id="ending-overlay">
-    <div id="ending-card">
-      <div class="ending-label">Adventure Complete</div>
-      <h2 id="ending-title"></h2>
-      <div class="ending-desc" id="ending-desc"></div>
-      <div id="ending-scorecard"></div>
-      <div id="ending-stats"></div>
-      <button id="play-again-btn">Play Again</button>
-    </div>
-  </div>
+  <!-- Ending Dialog -->
+  <dialog id="ending-dialog">
+    <div class="ending-label">Adventure Complete</div>
+    <h2 id="ending-title"></h2>
+    <div class="ending-desc" id="ending-desc"></div>
+    <div id="ending-scorecard"></div>
+    <div id="ending-stats"></div>
+    <button id="play-again-btn">Play Again</button>
+  </dialog>
 
   <script>
     // =============================================
@@ -1664,8 +1669,7 @@
       valMorale: $('#val-morale'),
       valMigration: $('#val-migration'),
       map: $('#map'),
-      mapPanel: $('#map-panel'),
-      mapBackdrop: $('#map-backdrop'),
+      mapDialog: $('#map-dialog'),
       toggleMap: $('#toggle-map'),
       valChallenges: $('#val-challenges'),
       restartBtn: $('#restart-btn'),
@@ -1673,7 +1677,7 @@
       achCount: $('#ach-count'),
       achLabel: $('#ach-label'),
       narrative: $('#narrative'),
-      endingOverlay: $('#ending-overlay'),
+      endingDialog: $('#ending-dialog'),
       endingTitle: $('#ending-title'),
       endingDesc: $('#ending-desc'),
       endingScorecard: $('#ending-scorecard'),
@@ -2143,7 +2147,7 @@
 
       endingIsPreview = false
       els.playAgainBtn.textContent = 'Play Again'
-      els.endingOverlay.classList.add('active')
+      els.endingDialog.showModal()
     }
 
     let endingIsPreview = false
@@ -2166,7 +2170,7 @@
         </div>
       `
       els.playAgainBtn.textContent = 'Close'
-      els.endingOverlay.classList.add('active')
+      els.endingDialog.showModal()
     }
 
     function renderAchievements() {
@@ -2203,7 +2207,7 @@
       state = createInitialState()
       isFirstRender = true
       localStorage.removeItem(STORAGE_KEY)
-      els.endingOverlay.classList.remove('active')
+      els.endingDialog.close()
       els.resultBanner.classList.remove('active')
       els.resultBanner.className = ''
       render('entry')
@@ -2213,16 +2217,25 @@
 
     // --- Map Toggle ---
     function toggleMap() {
-      const open = els.mapPanel.classList.toggle('open')
-      els.mapBackdrop.classList.toggle('open', open)
+      if (els.mapDialog.open) {
+        els.mapDialog.close()
+      } else {
+        els.mapDialog.showModal()
+      }
     }
 
     els.toggleMap.addEventListener('click', toggleMap)
-    els.mapBackdrop.addEventListener('click', toggleMap)
+    els.mapDialog.addEventListener('click', (e) => {
+      if (e.target === els.mapDialog) els.mapDialog.close()
+    })
+
+    els.endingDialog.addEventListener('cancel', (e) => {
+      if (!endingIsPreview) e.preventDefault()
+    })
 
     els.playAgainBtn.addEventListener('click', () => {
       if (endingIsPreview) {
-        els.endingOverlay.classList.remove('active')
+        els.endingDialog.close()
         endingIsPreview = false
       } else {
         resetGame()
@@ -2242,10 +2255,6 @@
         return
       }
 
-      if (e.key === 'Escape' && els.mapPanel.classList.contains('open')) {
-        toggleMap()
-        return
-      }
 
       const room = rooms[state.currentRoom]
       if (!room) return
