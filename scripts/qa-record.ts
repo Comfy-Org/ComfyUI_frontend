@@ -174,7 +174,17 @@ ComfyUI is a node-based visual workflow editor for AI image generation. The UI h
 - A **hamburger menu** (top-left C logo) with File, Edit, Help submenus
 - A **sidebar** on the left (Workflows, Node Library, Models)
 - A **topbar** with workflow tabs and Queue button
-- The **default workflow** loads with ~5 nodes already on canvas
+- The **default workflow** loads with these nodes on canvas (approximate center coordinates):
+  - Load Checkpoint (~150, 300)
+  - CLIP Text Encode (positive prompt) (~450, 250)
+  - CLIP Text Encode (negative prompt) (~450, 450)
+  - Empty Latent Image (~450, 600)
+  - KSampler (~750, 350)
+  - VAE Decode (~1000, 350)
+  - Save Image (~1200, 350)
+- To interact with a specific node, use its coordinates (e.g., rightClickCanvas on KSampler at ~750, 350)
+- Right-clicking ON a node shows node actions (Clone, Bypass, Convert, etc.)
+- Right-clicking on EMPTY canvas shows Add Node menu — NOT the same as node context menu
 
 MODE: ${modeDesc}
 
@@ -614,7 +624,7 @@ async function executeSteps(
             const resp = await fetch(workflowUrl)
             const workflow = await resp.json()
             // Use ComfyUI's app.loadGraphData to load the workflow
-            const app = (window as Record<string, unknown>).app as {
+            const app = (window as unknown as Record<string, unknown>).app as {
               loadGraphData: (data: unknown) => Promise<void>
             }
             if (app?.loadGraphData) {
@@ -629,7 +639,7 @@ async function executeSteps(
           console.warn(`  Setting ${step.id} = ${step.value}`)
           await page.evaluate(
             ({ id, value }) => {
-              const app = (window as Record<string, unknown>).app as {
+              const app = (window as unknown as Record<string, unknown>).app as {
                 ui: {
                   settings: {
                     setSettingValue: (id: string, value: unknown) => void
