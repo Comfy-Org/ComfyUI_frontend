@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "تحويل الرقم",
+    "inputs": {
+      "value": {
+        "name": "القيمة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "مفتاح التحويل",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "محرر المنحنى",
+    "inputs": {
+      "curve": {
+        "name": "منحنى"
+      },
+      "histogram": {
+        "name": "مخطط بياني"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "منحنى",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "تمديد فيديو موجود باستمرار سلس بناءً على وصف نصي.",
+    "display_name": "تمديد فيديو Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتمديد الفيديو."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "prompt": {
+        "name": "الوصف النصي",
+        "tooltip": "وصف نصي لما يجب أن يحدث بعد ذلك في الفيديو."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "الفيديو المصدر للتمديد. صيغة MP4، من ٢ إلى ١٥ ثانية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "توليد فيديو من مطالبة أو صورة",
     "display_name": "فيديو Grok",
@@ -4124,6 +4190,41 @@
       "seed": {
         "name": "البذرة",
         "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "توليد فيديو موجه بواسطة صور مرجعية كمرجع للأسلوب والمحتوى.",
+    "display_name": "Grok من مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "الوصف النصي",
+        "tooltip": "وصف نصي للفيديو المطلوب."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
       }
     },
     "outputs": {

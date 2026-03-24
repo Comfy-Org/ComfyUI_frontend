@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "数値変換",
+    "inputs": {
+      "value": {
+        "name": "値"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "スイッチ",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "カーブエディター",
+    "inputs": {
+      "curve": {
+        "name": "カーブ"
+      },
+      "histogram": {
+        "name": "ヒストグラム"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "カーブ",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "テキストプロンプトに基づいて、既存のビデオをシームレスに継続します。",
+    "display_name": "Grokビデオ拡張",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ拡張に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "ビデオの次に何が起こるべきかのテキスト説明。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "拡張する元のビデオ。MP4形式、2～15秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "プロンプトまたは画像から動画を生成します",
     "display_name": "Grok動画生成",
@@ -4124,6 +4190,41 @@
       "seed": {
         "name": "シード値",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシード値に関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "リファレンス画像をスタイルや内容の参考として、ビデオを生成します。",
+    "display_name": "Grokリファレンス→ビデオ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "希望するビデオのテキスト説明。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
       }
     },
     "outputs": {

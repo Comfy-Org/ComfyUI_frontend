@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "數值轉換",
+    "inputs": {
+      "value": {
+        "name": "數值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "切換",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "曲線編輯器",
+    "inputs": {
+      "curve": {
+        "name": "曲線"
+      },
+      "histogram": {
+        "name": "直方圖"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "曲線",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "根據文字提示，為現有影片無縫延伸內容。",
+    "display_name": "Grok 影片延伸",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於影片延伸的模型。"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述影片接下來應該發生什麼的文字說明。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定是否重新執行節點的種子值；實際結果無論種子如何都不具決定性。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要延伸的來源影片。MP4 格式，2-15 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "從提示或圖像生成影片",
     "display_name": "Grok 影片",
@@ -4124,6 +4190,41 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "根據參考圖像作為風格與內容指引生成影片。",
+    "display_name": "Grok 參考生成影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述所需影片的文字說明。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定是否重新執行節點的種子值；實際結果無論種子如何都不具決定性。"
       }
     },
     "outputs": {

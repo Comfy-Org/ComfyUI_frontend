@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "Преобразование числа",
+    "inputs": {
+      "value": {
+        "name": "значение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Переключатель",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Редактор кривых",
+    "inputs": {
+      "curve": {
+        "name": "кривая"
+      },
+      "histogram": {
+        "name": "гистограмма"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "кривая",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Расширьте существующее видео с плавным продолжением на основе текстового запроса.",
+    "display_name": "Grok Video Extend",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель, используемая для расширения видео."
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "prompt": {
+        "name": "запрос",
+        "tooltip": "Текстовое описание того, что должно произойти дальше в видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Исходное видео для расширения. Формат MP4, 2-15 секунд."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Генерировать видео по запросу или изображению",
     "display_name": "Grok Video",
@@ -4124,6 +4190,41 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Генерируйте видео, используя референсные изображения в качестве стиля и содержания.",
+    "display_name": "Grok Reference-to-Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель, используемая для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "prompt": {
+        "name": "запрос",
+        "tooltip": "Текстовое описание желаемого видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
       }
     },
     "outputs": {

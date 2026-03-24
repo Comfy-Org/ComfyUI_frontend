@@ -780,6 +780,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "ACONDICIONAMIENTO",
     "CONTROL_NET": "RED_DE_CONTROL",
+    "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "ARCHIVO_3D",
     "FILE_3D_FBX": "ARCHIVO_3D_FBX",
@@ -793,6 +794,7 @@
     "GEMINI_INPUT_FILES": "ARCHIVOS_ENTRADA_GEMINI",
     "GLIGEN": "GLIGEN",
     "GUIDER": "GUÍA",
+    "HISTOGRAM": "HISTOGRAMA",
     "HOOKS": "GANCHOS",
     "HOOK_KEYFRAMES": "GANCHO_FOTOGRAMAS_CLAVE",
     "IMAGE": "IMAGEN",
@@ -884,13 +886,13 @@
     "resume": "Reanudar descarga"
   },
   "errorDialog": {
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "accessRestrictedTitle": "Access Restricted",
     "defaultTitle": "Ocurrió un error",
     "extensionFileHint": "Esto puede deberse al siguiente script",
     "loadWorkflowTitle": "La carga se interrumpió debido a un error al recargar los datos del flujo de trabajo",
     "noStackTrace": "No hay seguimiento de pila disponible",
-    "promptExecutionError": "La ejecución del prompt falló",
-    "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "promptExecutionError": "La ejecución del prompt falló"
   },
   "errorOverlay": {
     "errorCount": "{count} ERROR | {count} ERRORES",
@@ -933,6 +935,19 @@
     "textTo3DModel": "Texto a modelo 3D",
     "textToImage": "Texto a imagen",
     "textToVideo": "Texto a video"
+  },
+  "execution": {
+    "decoding": "Decodificando…",
+    "encoding": "Codificando…",
+    "generating": "Generando…",
+    "generatingVideo": "Generando video…",
+    "loading": "Cargando…",
+    "processing": "Procesando…",
+    "processingVideo": "Procesando video…",
+    "resizing": "Redimensionando…",
+    "running": "Ejecutando…",
+    "saving": "Guardando…",
+    "training": "Entrenando…"
   },
   "exportToast": {
     "allExportsCompleted": "Todas las exportaciones completadas",
@@ -1090,6 +1105,7 @@
     "icon": "Icono",
     "imageDoesNotExist": "La imagen no existe",
     "imageFailedToLoad": "Falló la carga de la imagen",
+    "imageGallery": "galería de imágenes",
     "imageLightbox": "Vista previa de imagen",
     "imagePreview": "Vista previa de imagen - Usa las teclas de flecha para navegar entre imágenes",
     "imageUrl": "URL de la imagen",
@@ -1104,7 +1120,6 @@
     "installed": "Instalado",
     "installing": "Instalando",
     "interrupted": "Interrumpido",
-    "itemSelected": "{selectedCount} elemento seleccionado",
     "itemsCopiedToClipboard": "Elementos copiados al portapapeles",
     "itemsSelected": "{selectedCount} elementos seleccionados",
     "job": "Tarea",
@@ -1310,6 +1325,7 @@
     "versionMismatchWarningMessage": "{warning}: {detail} Visita https://docs.comfy.org/installation/update_comfyui#common-update-issues para obtener instrucciones de actualización.",
     "videoFailedToLoad": "Falló la carga del video",
     "videoPreview": "Vista previa de video - Usa las teclas de flecha para navegar entre videos",
+    "viewGrid": "Vista de cuadrícula",
     "viewImageOfTotal": "Ver imagen {index} de {total}",
     "viewVideoOfTotal": "Ver video {index} de {total}",
     "volume": "Volumen",

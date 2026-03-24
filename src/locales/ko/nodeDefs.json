@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "숫자 변환",
+    "inputs": {
+      "value": {
+        "name": "값"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "스위치",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "곡선 편집기",
+    "inputs": {
+      "curve": {
+        "name": "곡선"
+      },
+      "histogram": {
+        "name": "히스토그램"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "곡선",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "텍스트 프롬프트를 기반으로 기존 비디오를 자연스럽게 이어서 확장합니다.",
+    "display_name": "Grok 비디오 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 확장에 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오에서 다음에 일어나야 할 일을 설명하는 텍스트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "확장할 원본 비디오입니다. MP4 형식, 2-15초."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "프롬프트 또는 이미지를 통해 비디오를 생성합니다",
     "display_name": "Grok 비디오",
@@ -4120,6 +4186,41 @@
       "resolution": {
         "name": "해상도",
         "tooltip": "출력 비디오의 해상도입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "참조 이미지를 스타일 및 콘텐츠 참조로 사용하여 비디오를 생성합니다.",
+    "display_name": "Grok 참조-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 비디오를 설명하는 텍스트입니다."
       },
       "seed": {
         "name": "시드",

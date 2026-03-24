@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "数字转换",
+    "inputs": {
+      "value": {
+        "name": "数值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "切换",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "曲线编辑器",
+    "inputs": {
+      "curve": {
+        "name": "曲线"
+      },
+      "histogram": {
+        "name": "直方图"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "曲线",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "根据文本提示无缝扩展现有视频。",
+    "display_name": "Grok 视频扩展",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频扩展的模型。"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述视频接下来内容的文本。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是不确定的。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要扩展的视频源。MP4 格式，2-15 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "根据提示或图像生成视频",
     "display_name": "Grok 视频",
@@ -4124,6 +4190,41 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于确定节点是否应重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "根据参考图像的风格和内容生成视频。",
+    "display_name": "Grok 参考生成视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述期望视频的文本。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是不确定的。"
       }
     },
     "outputs": {

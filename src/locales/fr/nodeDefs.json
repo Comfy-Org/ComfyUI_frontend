@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "Conversion de nombre",
+    "inputs": {
+      "value": {
+        "name": "valeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Commutateur",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Éditeur de courbe",
+    "inputs": {
+      "curve": {
+        "name": "courbe"
+      },
+      "histogram": {
+        "name": "histogramme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "courbe",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Prolongez une vidéo existante avec une continuation fluide basée sur une invite textuelle.",
+    "display_name": "Extension vidéo Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour l’extension vidéo."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle de ce qui doit se passer ensuite dans la vidéo."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo source à prolonger. Format MP4, 2-15 secondes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Générez une vidéo à partir d'une invite ou d'une image",
     "display_name": "Grok Video",
@@ -4124,6 +4190,41 @@
       "seed": {
         "name": "graine",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes, quelle que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Générez une vidéo guidée par des images de référence comme références de style et de contenu.",
+    "display_name": "Grok Référence-vers-Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour la génération vidéo."
+      },
+      "model_aspect_ratio": {
+        "name": "ratio d’aspect"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle de la vidéo souhaitée."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes quel que soit la graine."
       }
     },
     "outputs": {
