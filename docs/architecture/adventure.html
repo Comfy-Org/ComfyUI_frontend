@@ -860,6 +860,62 @@
       color: var(--border);
     }
 
+    /* --- Achievements --- */
+    .ach-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+      gap: 6px;
+      padding: 8px;
+    }
+
+    .ach-slot {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      overflow: hidden;
+      cursor: default;
+      position: relative;
+      transition: border-color 0.15s;
+    }
+
+    .ach-slot:hover { border-color: var(--accent); }
+    .ach-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .ach-slot.locked {
+      border-style: dashed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ach-slot.locked img { filter: brightness(0) saturate(0); opacity: 0.2; }
+
+    .ach-slot.unlocked { border-color: var(--purple); }
+
+    #ach-label {
+      padding: 4px 12px;
+      font-size: 11px;
+      color: var(--purple);
+      min-height: 22px;
+      border-bottom: 1px solid var(--border);
+      user-select: none;
+    }
+
+    /* --- Restart button --- */
+    #restart-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    #restart-btn:hover { border-color: var(--red); color: var(--red); }
+
     /* --- Room transition --- */
     #narrative {
       transition: opacity 0.2s ease, transform 0.2s ease;
@@ -931,6 +987,7 @@
         </div>
       </div>
       <span id="challenge-progress">Challenges: <span class="progress-value" id="val-challenges">0/7</span></span>
+      <button id="restart-btn">Restart</button>
       <button id="toggle-map">Map [M]</button>
     </div>
   </header>
@@ -991,6 +1048,14 @@
           <div class="log-entry" style="color:var(--muted)">No decisions yet.</div>
         </div>
       </div>
+      <div class="sidebar-section">
+        <div class="sidebar-header">
+          <span>Endings</span>
+          <span id="ach-count">0/4</span>
+        </div>
+        <div id="ach-label">&nbsp;</div>
+        <div class="sidebar-body" id="achievements"></div>
+      </div>
       <details class="sidebar-section" id="log-section">
         <summary class="sidebar-header">
           <span style="flex:1">Log</span>
@@ -1019,6 +1084,9 @@
     // Game Engine
     // =============================================
 
+    const STORAGE_KEY = 'codebase-caverns-state'
+    const ACH_KEY = 'codebase-caverns-achievements'
+
     function createInitialState() {
       return {
         currentRoom: 'entry',
@@ -1032,7 +1100,44 @@
       }
     }
 
-    let state = createInitialState()
+    function saveState() {
+      try {
+        const s = {
+          ...state,
+          visited: [...state.visited],
+          challengesCompleted: [...state.challengesCompleted],
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(s))
+      } catch {}
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (!raw) return null
+        const s = JSON.parse(raw)
+        s.visited = new Set(s.visited)
+        s.challengesCompleted = new Set(s.challengesCompleted)
+        return s
+      } catch { return null }
+    }
+
+    function loadAchievements() {
+      try {
+        const raw = localStorage.getItem(ACH_KEY)
+        return raw ? JSON.parse(raw) : []
+      } catch { return [] }
+    }
+
+    function saveAchievement(endingId) {
+      const achs = loadAchievements()
+      if (!achs.includes(endingId)) {
+        achs.push(endingId)
+        try { localStorage.setItem(ACH_KEY, JSON.stringify(achs)) } catch {}
+      }
+    }
+
+    let state = loadState() || createInitialState()
 
     const TOTAL_CHALLENGES = 7
     const GH = 'https://github.com/Comfy-Org/ComfyUI_frontend/blob/main'
@@ -1562,6 +1667,10 @@
       mapBackdrop: $('#map-backdrop'),
       toggleMap: $('#toggle-map'),
       valChallenges: $('#val-challenges'),
+      restartBtn: $('#restart-btn'),
+      achievements: $('#achievements'),
+      achCount: $('#ach-count'),
+      achLabel: $('#ach-label'),
       narrative: $('#narrative'),
       endingOverlay: $('#ending-overlay'),
       endingTitle: $('#ending-title'),
@@ -1735,6 +1844,7 @@
 
       addLog(`Entered: ${room.title}`)
       preloadAdjacentImages(room)
+      saveState()
     }
 
     // --- Image preloading ---
@@ -1842,6 +1952,7 @@
       // Show navigation choices
       renderChoices(room.choices)
       renderDecisions()
+      saveState()
 
       // Log
       addLog(`Challenge resolved: ${challenge.title}`, choice.rating === 'good' ? 'discovery' : choice.rating === 'bad' ? 'error' : 'warning')
@@ -2025,16 +2136,49 @@
         statColor('ECS Migration', s.migrationProgress + ' / 5', s.migrationProgress >= 4),
       ].join('')
 
+      // Save achievement
+      saveAchievement(ending.id)
+      renderAchievements()
+
       els.endingOverlay.classList.add('active')
+    }
+
+    function renderAchievements() {
+      const unlocked = loadAchievements()
+
+      els.achievements.innerHTML = '<div class="ach-grid">' + endings.map(e => {
+        const got = unlocked.includes(e.id)
+        const cls = got ? 'ach-slot unlocked' : 'ach-slot locked'
+        return `<div class="${cls}" data-ending="${e.id}">
+          <img src="icons/ending-${e.id}.png" alt="${got ? e.title : '?'}"
+               onerror="this.style.display='none'">
+        </div>`
+      }).join('') + '</div>'
+
+      els.achievements.querySelectorAll('.ach-slot').forEach(slot => {
+        const e = endings.find(x => x.id === slot.dataset.ending)
+        const got = unlocked.includes(e.id)
+        slot.addEventListener('mouseenter', () => {
+          els.achLabel.textContent = got ? e.title : 'Locked'
+        })
+        slot.addEventListener('mouseleave', () => {
+          els.achLabel.innerHTML = '&nbsp;'
+        })
+      })
+
+      els.achCount.textContent = unlocked.length + '/' + endings.length
     }
 
     // --- Reset ---
     function resetGame() {
       state = createInitialState()
+      isFirstRender = true
+      localStorage.removeItem(STORAGE_KEY)
       els.endingOverlay.classList.remove('active')
       els.resultBanner.classList.remove('active')
       els.resultBanner.className = ''
       render('entry')
+      renderAchievements()
       addLog('Welcome back, architect. The codebase awaits.', 'discovery')
     }
 
@@ -2048,6 +2192,10 @@
     els.mapBackdrop.addEventListener('click', toggleMap)
 
     els.playAgainBtn.addEventListener('click', resetGame)
+    els.restartBtn.addEventListener('click', () => {
+      if (state.challengesCompleted.size === 0 && state.visited.size <= 1) return
+      resetGame()
+    })
 
     // --- Keyboard Navigation ---
     document.addEventListener('keydown', (e) => {
@@ -2080,9 +2228,12 @@
     })
 
     // --- Boot ---
-    render('entry')
+    render(state.currentRoom)
     renderStats()
-    addLog('Welcome, architect. Explore the codebase. Challenges await in every room.', 'discovery')
+    renderAchievements()
+    if (state.log.length === 0) {
+      addLog('Welcome, architect. Explore the codebase. Challenges await in every room.', 'discovery')
+    }
   </script>
 
 </body>

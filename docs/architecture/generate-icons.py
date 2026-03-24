@@ -16,6 +16,7 @@ COMFY_URL = "http://localhost:8188"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ARTIFACT_PROMPTS = os.path.join(SCRIPT_DIR, "adventure-icon-prompts.json")
 CHOICE_PROMPTS = os.path.join(SCRIPT_DIR, "adventure-choice-icon-prompts.json")
+ACHIEVEMENT_PROMPTS = os.path.join(SCRIPT_DIR, "adventure-achievement-icon-prompts.json")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "icons")
 BASE_SEED = 7777
 WIDTH = 128
@@ -136,6 +137,12 @@ def main():
             data = json.load(f)
         for icon_id, entry in data["choices"].items():
             all_icons[icon_id] = entry["prompt"]
+
+    if os.path.exists(ACHIEVEMENT_PROMPTS):
+        with open(ACHIEVEMENT_PROMPTS) as f:
+            data = json.load(f)
+        for icon_id, entry in data["achievements"].items():
+            all_icons[f"ending-{icon_id}"] = entry["prompt"]
 
     # Filter out already-generated icons
     to_generate = {}
