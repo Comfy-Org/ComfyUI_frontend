@@ -424,7 +424,11 @@ The UI has:
 - A hamburger menu (top-left C logo) with File, Edit, Help submenus
 - Sidebars (Workflows, Node Library, Models)
 - A topbar with workflow tabs and Queue button
-- The default workflow loads with ~5 nodes already visible on canvas
+- The default workflow loads with these nodes (approximate center coordinates):
+  - Load Checkpoint (~150, 300), CLIP Text Encode x2 (~450, 250 and ~450, 450)
+  - Empty Latent Image (~450, 600), KSampler (~750, 350), VAE Decode (~1000, 350), Save Image (~1200, 350)
+- Right-clicking ON a node shows node actions (Clone, Bypass, Convert, etc.)
+- Right-clicking on EMPTY canvas shows Add Node menu — different from node context menu
 
 Your task: Generate a DETAILED reproduction guide (8-15 steps) to trigger this bug on main.
 
