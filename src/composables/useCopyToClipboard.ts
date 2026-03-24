@@ -20,7 +20,7 @@ function legacyCopy(text: string): boolean {
 }
 
 export function useCopyToClipboard() {
-  const { copy, copied, isSupported } = useClipboard()
+  const { copy, isSupported } = useClipboard()
   const toast = useToast()
 
   async function copyToClipboard(text: string) {
