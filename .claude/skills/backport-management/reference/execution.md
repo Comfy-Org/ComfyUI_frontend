@@ -161,8 +161,7 @@ git rebase origin/TARGET_BRANCH
 git push --force origin backport-$PR-to-TARGET
 sleep 20  # Wait for GitHub to recompute merge state
 # Wait for CI after rebase before merging
-gh pr checks $PR --watch --fail-fast
-gh pr merge $PR --squash --admin
+gh pr checks $PR --watch --fail-fast && gh pr merge $PR --squash --admin
 ```
 
 ## Lessons Learned
