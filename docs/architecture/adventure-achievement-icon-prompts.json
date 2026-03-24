@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "style": "Pixel art badge/medal icon, 128x128, dark background, achievement unlock style",
+    "usage": "Each key matches an ending ID. Shown in achievements panel when that ending has been reached.",
+    "model": "Z-Image Turbo (no LoRA)",
+    "resolution": "128x128"
+  },
+  "achievements": {
+    "great": {
+      "title": "The ECS Enlightenment",
+      "prompt": "Pixel art achievement badge of a radiant crystal temple with clean geometric architecture, bright green and gold triumphant glow, laurel wreath border, dark background"
+    },
+    "good": {
+      "title": "The Clean Architecture",
+      "prompt": "Pixel art achievement badge of a solid fortress with neat organized blocks, blue and silver steady glow, star emblem, dark background"
+    },
+    "mediocre": {
+      "title": "The Eternal Refactor",
+      "prompt": "Pixel art achievement badge of an hourglass with sand still flowing endlessly, amber and grey weary glow, circular border, dark background"
+    },
+    "disaster": {
+      "title": "The Spaghetti Singularity",
+      "prompt": "Pixel art achievement badge of a tangled mass of spaghetti code wires collapsing into a black hole, red and purple chaotic glow, cracked border, dark background"
+    }
+  }
+}
