@@ -1,5 +1,5 @@
 <template>
-  <BaseModalLayout content-title="" data-testid="settings-dialog" size="md">
+  <BaseModalLayout content-title="" data-testid="settings-dialog" size="sm">
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
       <h2 class="text-neutral text-base">{{ $t('g.settings') }}</h2>
@@ -12,6 +12,7 @@
           size="md"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
+          autofocus
           @search="handleSearch"
         />
       </div>

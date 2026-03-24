@@ -25,6 +25,10 @@
     },
     "tooltip": "Choisissez l'option personnalisée pour masquer la barre de titre du système"
   },
+  "Comfy_Appearance_DisableAnimations": {
+    "name": "Désactiver les animations",
+    "tooltip": "Désactive la plupart des animations et transitions CSS. Accélère l'inférence lorsque le GPU d'affichage est également utilisé pour la génération."
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Image de fond du canevas",
     "tooltip": "URL de l'image pour le fond du canevas. Vous pouvez faire un clic droit sur une image dans le panneau de sortie et sélectionner « Définir comme fond » pour l'utiliser."
@@ -94,6 +98,10 @@
   "Comfy_FloatRoundingPrecision": {
     "name": "Nombre de décimales pour l'arrondi du widget flottant [0 = auto].",
     "tooltip": "(nécessite le rechargement de la page)"
+  },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "Vitesse de défilement automatique",
+    "tooltip": "Vitesse maximale lors du défilement automatique en faisant glisser vers le bord du canevas. Réglez sur 0 pour désactiver le défilement automatique."
   },
   "Comfy_Graph_CanvasInfo": {
     "name": "Afficher les informations du canevas en bas à gauche (fps, etc.)"
@@ -453,9 +461,6 @@
   },
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Afficher l'avertissement des modèles manquants"
-  },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Afficher l'avertissement des nœuds manquants"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Trier les ID de nœuds lors de l'enregistrement du flux de travail"

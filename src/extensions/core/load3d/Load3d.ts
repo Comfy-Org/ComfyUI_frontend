@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 
+import { exceedsClickThreshold } from '@/composables/useClickDragGuard'
+
 import { AnimationManager } from './AnimationManager'
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
@@ -68,9 +70,7 @@ class Load3d {
   targetAspectRatio: number = 1
   isViewerMode: boolean = false
 
-  // Context menu tracking
-  private rightMouseDownX: number = 0
-  private rightMouseDownY: number = 0
+  private rightMouseStart: { x: number; y: number } = { x: 0, y: 0 }
   private rightMouseMoved: boolean = false
   private readonly dragThreshold: number = 5
   private contextMenuAbortController: AbortController | null = null
@@ -197,18 +197,20 @@ class Load3d {
 
     const mousedownHandler = (e: MouseEvent) => {
       if (e.button === 2) {
-        this.rightMouseDownX = e.clientX
-        this.rightMouseDownY = e.clientY
+        this.rightMouseStart = { x: e.clientX, y: e.clientY }
         this.rightMouseMoved = false
       }
     }
 
     const mousemoveHandler = (e: MouseEvent) => {
       if (e.buttons === 2) {
-        const dx = Math.abs(e.clientX - this.rightMouseDownX)
-        const dy = Math.abs(e.clientY - this.rightMouseDownY)
-
-        if (dx > this.dragThreshold || dy > this.dragThreshold) {
+        if (
+          exceedsClickThreshold(
+            this.rightMouseStart,
+            { x: e.clientX, y: e.clientY },
+            this.dragThreshold
+          )
+        ) {
           this.rightMouseMoved = true
         }
       }
@@ -217,12 +219,13 @@ class Load3d {
     const contextmenuHandler = (e: MouseEvent) => {
       if (this.isViewerMode) return
 
-      const dx = Math.abs(e.clientX - this.rightMouseDownX)
-      const dy = Math.abs(e.clientY - this.rightMouseDownY)
       const wasDragging =
         this.rightMouseMoved ||
-        dx > this.dragThreshold ||
-        dy > this.dragThreshold
+        exceedsClickThreshold(
+          this.rightMouseStart,
+          { x: e.clientX, y: e.clientY },
+          this.dragThreshold
+        )
 
       this.rightMouseMoved = false
 
