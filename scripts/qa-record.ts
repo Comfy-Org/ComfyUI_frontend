@@ -375,29 +375,100 @@ async function hoverMenuItem(page: Page, label: string) {
 }
 
 async function clickSubmenuItem(page: Page, label: string) {
+  // Try PrimeVue tiered menu first (hamburger menu submenus)
   const submenu = page.locator('.p-tieredmenu-submenu:visible').last()
-  const item = submenu
+  const primeItem = submenu
     .locator('.p-tieredmenu-item')
     .filter({ hasText: label })
     .first()
-  if (await item.isVisible().catch(() => false)) {
-    await item.click()
+  if (await primeItem.isVisible().catch(() => false)) {
+    await primeItem.click({ timeout: 5000 }).catch(() => {
+      console.warn(`Click on PrimeVue menu item "${label}" failed`)
+    })
     await sleep(800)
-  } else {
-    console.warn(`Submenu item "${label}" not found`)
+    return
   }
+
+  // Try litegraph context menu (right-click on nodes/canvas)
+  const liteItem = page
+    .locator('.litemenu-entry')
+    .filter({ hasText: label })
+    .first()
+  if (await liteItem.isVisible().catch(() => false)) {
+    await liteItem.click({ timeout: 5000 }).catch(() => {
+      console.warn(`Click on litegraph menu item "${label}" failed`)
+    })
+    await sleep(800)
+    return
+  }
+
+  // Try any visible menu/context menu item
+  const anyItem = page.locator(`[role="menuitem"]:has-text("${label}")`).first()
+  if (await anyItem.isVisible().catch(() => false)) {
+    await anyItem.click({ timeout: 5000 }).catch(() => {
+      console.warn(`Click on menu role item "${label}" failed`)
+    })
+    await sleep(800)
+    return
+  }
+
+  console.warn(`Submenu item "${label}" not found in any menu type`)
 }
 
 async function fillDialogAndConfirm(page: Page, text: string) {
-  const input = page.locator('.p-dialog-content input')
-  if (await input.isVisible().catch(() => false)) {
-    await input.fill(text)
+  // Try PrimeVue dialog input first
+  const dialogInput = page.locator('.p-dialog-content input')
+  if (await dialogInput.isVisible().catch(() => false)) {
+    await dialogInput.fill(text)
     await sleep(300)
     await page.keyboard.press('Enter')
     await sleep(2000)
-  } else {
-    console.warn('Dialog input not found')
+    return
   }
+
+  // Try node search box input (opened by double-clicking canvas)
+  const searchInput = page.locator(
+    '[id^="comfy-vue-node-search-box-input"], [role="search"] input, .comfy-vue-node-search-container input, .p-autocomplete-input'
+  )
+  if (
+    await searchInput
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await searchInput.first().fill(text)
+    await sleep(500)
+    // Select first result from dropdown
+    const firstOption = page
+      .locator('.p-autocomplete-item, .p-autocomplete-option, [role="option"]')
+      .first()
+    if (await firstOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await firstOption.click({ timeout: 3000 }).catch(() => {
+        console.warn('Could not click autocomplete option, pressing Enter')
+      })
+    } else {
+      await page.keyboard.press('Enter')
+    }
+    await sleep(1000)
+    return
+  }
+
+  // Fallback: type into whatever is focused
+  const activeInput = page.locator('input:focus, textarea:focus')
+  if (await activeInput.isVisible().catch(() => false)) {
+    await activeInput.fill(text)
+    await sleep(300)
+    await page.keyboard.press('Enter')
+    await sleep(1000)
+    return
+  }
+
+  // Last resort: keyboard type
+  console.warn('No input found, typing via keyboard')
+  await page.keyboard.type(text, { delay: 50 })
+  await sleep(300)
+  await page.keyboard.press('Enter')
+  await sleep(1000)
 }
 
 async function clickByText(page: Page, text: string) {
