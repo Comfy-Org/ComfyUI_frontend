@@ -1667,9 +1667,7 @@ export class ComfyApp {
               .map((n) => `#${n.nodeId} ${n.title}`)
               .join(', ')
             useDialogService().showErrorDialog(
-              new Error(
-                t('errorDialog.emptyFileInputMessage', { nodeList })
-              ),
+              new Error(t('errorDialog.emptyFileInputMessage', { nodeList })),
               { title: t('errorDialog.emptyFileInputTitle') }
             )
             break
