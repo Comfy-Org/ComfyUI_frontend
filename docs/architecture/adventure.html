@@ -37,7 +37,13 @@
       --purple: #bc8cff;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* Modern CSS reset (based on Josh Comeau / Andy Bell) */
+    *, *::before, *::after { box-sizing: border-box; }
+    * { margin: 0; }
+    body { line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    img, svg { display: block; max-width: 100%; }
+    input, button, textarea, select { font: inherit; }
+    p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
 
     #hud, .stat-bar-group, .choice-key, .challenge-badge, .artifact-type,
     .sidebar-header, #room-layer, .ending-label, .scorecard-header,
@@ -653,6 +659,8 @@
 
 
     /* --- Ending Dialog --- */
+    dialog { margin: auto; }
+
     #ending-dialog {
       background: var(--surface);
       border: 2px solid var(--border);
@@ -927,17 +935,12 @@
 
     /* --- Room transition --- */
     #narrative {
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      transition: opacity 0.2s ease;
     }
 
-    #narrative.exit {
-      opacity: 0;
-      transform: translateY(-6px);
-    }
-
+    #narrative.exit,
     #narrative.enter {
       opacity: 0;
-      transform: translateY(6px);
     }
 
     /* --- Utilities --- */
