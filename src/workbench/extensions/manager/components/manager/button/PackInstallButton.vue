@@ -3,7 +3,7 @@
     variant="primary"
     :size
     :disabled="isLoading || isInstalling"
-    @click="installAllPacks"
+    @click.stop="installAllPacks"
   >
     <i
       v-if="hasConflict && !isInstalling && !isLoading"

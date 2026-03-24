@@ -2,10 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import {
-  getCnrIdFromProperties,
-  getCnrIdFromNode
-} from './missingNodeErrorUtil'
+import { getCnrIdFromNode, getCnrIdFromProperties } from './cnrIdUtil'
 
 describe('getCnrIdFromProperties', () => {
   it('returns cnr_id when present', () => {

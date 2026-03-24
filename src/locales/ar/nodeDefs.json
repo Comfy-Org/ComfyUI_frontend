@@ -1736,6 +1736,10 @@
         "name": "closed_loop",
         "tooltip": "ما إذا كان سيتم إغلاق حلقة نافذة السياق؛ تنطبق فقط على الجداول الحلقية."
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "قائمة مؤشرات latent التي سيتم الاحتفاظ بها في موترات التكييف لكل نافذة. على سبيل المثال، تعيين هذه القيمة إلى '0' سيستخدم صورة البداية الأولية لكل نافذة."
+      },
       "context_length": {
         "name": "context_length",
         "tooltip": "طول نافذة السياق."
@@ -1767,6 +1771,10 @@
       "model": {
         "name": "model",
         "tooltip": "النموذج المراد تطبيق نوافذ السياق عليه أثناء أخذ العينات."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "هل تريد تقسيم التكييفات المتعددة (التي تم إنشاؤها بواسطة ConditionCombine) إلى كل نافذة بناءً على مؤشر المنطقة."
       }
     },
     "outputs": {
@@ -3815,6 +3823,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "الصورة الأولى من عملية تفكير النموذج. متوفرة فقط عند مستوى التفكير العالي ونمط IMAGE+TEXT."
       }
     }
   },
@@ -11941,6 +11953,91 @@
       },
       "clip_name4": {
         "name": "اسم الكليب 4"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverImageToSVGNode": {
+    "description": "تحويل صورة نقطية إلى SVG باستخدام Quiver AI.",
+    "display_name": "Quiver تحويل صورة إلى SVG",
+    "inputs": {
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "قص تلقائي للعنصر الرئيسي في الصورة."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "الصورة المدخلة لتحويلها إلى متجهات."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المستخدم لتحويل الصورة إلى SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "إنشاء SVG من وصف نصي باستخدام Quiver AI.",
+    "display_name": "Quiver تحويل نص إلى SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "إرشادات إضافية حول الأسلوب أو التنسيق."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المستخدم لإنشاء SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "وصف نصي لمخرجات SVG المطلوبة."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "حتى ٤ صور مرجعية لتوجيه عملية الإنشاء."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
       }
     },
     "outputs": {

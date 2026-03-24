@@ -34,6 +34,8 @@
     "imageLightbox": "Image preview",
     "imagePreview": "Image preview - Use arrow keys to navigate between images",
     "videoPreview": "Video preview - Use arrow keys to navigate between videos",
+    "viewGrid": "Grid view",
+    "imageGallery": "image gallery",
     "galleryImage": "Gallery image",
     "galleryThumbnail": "Gallery thumbnail",
     "previousImage": "Previous image",
@@ -276,8 +278,7 @@
     "clearAll": "Clear all",
     "copyURL": "Copy URL",
     "releaseTitle": "{package} {version} Release",
-    "itemSelected": "{selectedCount} item selected",
-    "itemsSelected": "{selectedCount} items selected",
+    "itemsSelected": "No items selected | {count} item selected | {count} items selected",
     "multiSelectDropdown": "Multi-select dropdown",
     "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
@@ -1720,6 +1721,7 @@
     "photomaker": "photomaker",
     "PixVerse": "PixVerse",
     "primitive": "primitive",
+    "Quiver": "Quiver",
     "Recraft": "Recraft",
     "edit_models": "edit_models",
     "Reve": "Reve",
@@ -1884,7 +1886,9 @@
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
     "noStackTrace": "No stacktrace available",
     "extensionFileHint": "This may be due to the following script",
-    "promptExecutionError": "Prompt execution failed"
+    "promptExecutionError": "Prompt execution failed",
+    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "Your account is not authorized for this feature."
   },
   "apiNodesSignInDialog": {
     "title": "Sign In Required to Use API Nodes",
@@ -3702,5 +3706,18 @@
     "footer": "ComfyUI stays free and open source. Cloud is optional.",
     "continueLocally": "Continue Locally",
     "exploreCloud": "Try Cloud for Free"
+  },
+  "execution": {
+    "generating": "Generating…",
+    "saving": "Saving…",
+    "loading": "Loading…",
+    "encoding": "Encoding…",
+    "decoding": "Decoding…",
+    "processing": "Processing…",
+    "resizing": "Resizing…",
+    "generatingVideo": "Generating video…",
+    "training": "Training…",
+    "processingVideo": "Processing video…",
+    "running": "Running…"
   }
 }
