@@ -28,10 +28,15 @@ export const TestIds = {
     settingsTabAbout: 'settings-tab-about',
     confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
+    errorOverlaySeeErrors: 'error-overlay-see-errors',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
+    errorCardFindOnGithub: 'error-card-find-on-github',
+    errorCardCopy: 'error-card-copy',
     about: 'about-panel',
-    whatsNewSection: 'whats-new-section'
+    whatsNewSection: 'whats-new-section',
+    missingNodePacksGroup: 'error-group-missing-node',
+    missingModelsGroup: 'error-group-missing-model'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -76,6 +81,10 @@ export const TestIds = {
   },
   user: {
     currentUserIndicator: 'current-user-indicator'
+  },
+  errors: {
+    imageLoadError: 'error-loading-image',
+    videoLoadError: 'error-loading-video'
   }
 } as const
 
@@ -101,3 +110,4 @@ export type TestIdValue =
       (id: string) => string
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
+  | (typeof TestIds.errors)[keyof typeof TestIds.errors]

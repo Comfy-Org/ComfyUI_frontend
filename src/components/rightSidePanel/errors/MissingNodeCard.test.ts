@@ -1,7 +1,5 @@
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
-import PrimeVue from 'primevue/config'
-import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -42,23 +40,25 @@ vi.mock('@/stores/systemStatsStore', () => ({
   })
 }))
 
-const mockApplyChanges = vi.fn()
-const mockIsRestarting = ref(false)
+const mockApplyChanges = vi.hoisted(() => vi.fn())
+const mockIsRestarting = vi.hoisted(() => ({ value: false }))
 vi.mock('@/workbench/extensions/manager/composables/useApplyChanges', () => ({
   useApplyChanges: () => ({
-    isRestarting: mockIsRestarting,
+    get isRestarting() {
+      return mockIsRestarting.value
+    },
     applyChanges: mockApplyChanges
   })
 }))
 
-const mockIsPackInstalled = vi.fn(() => false)
+const mockIsPackInstalled = vi.hoisted(() => vi.fn(() => false))
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   useComfyManagerStore: () => ({
     isPackInstalled: mockIsPackInstalled
   })
 }))
 
-const mockShouldShowManagerButtons = { value: false }
+const mockShouldShowManagerButtons = vi.hoisted(() => ({ value: false }))
 vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
   useManagerState: () => ({
     shouldShowManagerButtons: mockShouldShowManagerButtons
@@ -128,7 +128,7 @@ function mountCard(
       ...props
     },
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n],
+      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
       stubs: {
         DotSpinner: { template: '<span role="status" aria-label="loading" />' }
       }
