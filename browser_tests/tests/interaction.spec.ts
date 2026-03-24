@@ -764,12 +764,12 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     )
   })
 
+  const generateUniqueFilename = (extension = '') =>
+    `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${extension}`
+
   test.describe('Restore all open workflows on reload', () => {
     let workflowA: string
     let workflowB: string
-
-    const generateUniqueFilename = (extension = '') =>
-      `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${extension}`
 
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
@@ -810,6 +810,82 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     })
 
     test('Restores sidebar workflows after reload', async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Sidebar'
+      )
+      await comfyPage.menu.workflowsTab.open()
+      const openWorkflows =
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      const activeWorkflowName =
+        await comfyPage.menu.workflowsTab.getActiveWorkflowName()
+      expect(openWorkflows).toEqual(
+        expect.arrayContaining([workflowA, workflowB])
+      )
+      expect(openWorkflows.indexOf(workflowA)).toBeLessThan(
+        openWorkflows.indexOf(workflowB)
+      )
+      expect(activeWorkflowName).toEqual(workflowB)
+    })
+  })
+
+  test.describe('Restore workflow tabs after browser restart', () => {
+    let workflowA: string
+    let workflowB: string
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+
+      workflowA = generateUniqueFilename()
+      await comfyPage.menu.topbar.saveWorkflow(workflowA)
+      workflowB = generateUniqueFilename()
+      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+      await comfyPage.menu.topbar.saveWorkflow(workflowB)
+
+      // Wait for localStorage fallback pointers to be written
+      await comfyPage.page.waitForFunction(() => {
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const key = window.localStorage.key(i)
+          if (key?.startsWith('Comfy.Workflow.LastOpenPaths:')) {
+            return true
+          }
+        }
+        return false
+      })
+
+      // Simulate browser restart: clear sessionStorage (lost on close)
+      // but keep localStorage (survives browser restart)
+      await comfyPage.page.evaluate(() => {
+        sessionStorage.clear()
+      })
+      await comfyPage.setup({ clearStorage: false })
+    })
+
+    test('Restores topbar workflow tabs after browser restart', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Topbar'
+      )
+      // Wait for both restored tabs to render (localStorage fallback is async)
+      await expect(
+        comfyPage.page.locator('.workflow-tabs .workflow-label', {
+          hasText: workflowA
+        })
+      ).toBeVisible()
+
+      const tabs = await comfyPage.menu.topbar.getTabNames()
+      const activeWorkflowName = await comfyPage.menu.topbar.getActiveTabName()
+
+      expect(tabs).toEqual(expect.arrayContaining([workflowA, workflowB]))
+      expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
+      expect(activeWorkflowName).toEqual(workflowB)
+    })
+
+    test('Restores sidebar workflows after browser restart', async ({
+      comfyPage
+    }) => {
       await comfyPage.settings.setSetting(
         'Comfy.Workflow.WorkflowTabsPosition',
         'Sidebar'
