@@ -37,31 +37,67 @@
       z-index: 10;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 12px 24px;
+      padding: 10px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
     }
 
     #hud h1 {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--accent);
       letter-spacing: 0.5px;
     }
 
-    #stats {
+    #hud-right {
       display: flex;
-      gap: 20px;
-      font-size: 12px;
-      color: var(--muted);
+      align-items: center;
+      gap: 12px;
     }
 
-    #stats span { display: flex; align-items: center; gap: 4px; }
-    .stat-icon { font-size: 14px; }
-    .stat-value { color: var(--text); font-weight: 600; }
+    #stat-bars {
+      display: flex;
+      gap: 14px;
+      font-size: 10px;
+    }
+
+    .stat-bar-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .stat-bar-label { color: var(--muted); white-space: nowrap; }
+
+    .stat-bar {
+      width: 60px;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease, background-color 0.4s ease;
+    }
+
+    .stat-bar-value {
+      color: var(--text);
+      font-weight: 600;
+      min-width: 20px;
+      text-align: right;
+    }
+
+    .stat-debt .stat-bar-fill { background: var(--red); }
+    .stat-quality .stat-bar-fill { background: var(--green); }
+    .stat-morale .stat-bar-fill { background: var(--yellow); }
+    .stat-migration .stat-bar-fill { background: var(--purple); }
 
     /* --- Map Panel --- */
     #map-panel {
@@ -87,14 +123,22 @@
       font-size: 11px;
       cursor: pointer;
       transition: all 0.15s;
-      position: relative;
     }
 
     .map-room:hover { border-color: var(--accent); background: var(--accent-dim); }
     .map-room.visited { border-color: var(--green); opacity: 0.7; }
     .map-room.current { border-color: var(--accent); background: var(--accent-dim); }
-    .map-room.locked { opacity: 0.35; cursor: not-allowed; }
     .map-room .room-layer { color: var(--muted); font-size: 9px; text-transform: uppercase; }
+    .map-room .challenge-badge {
+      display: inline-block;
+      font-size: 8px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-left: 4px;
+    }
+
+    .map-room .challenge-badge.pending { background: var(--yellow); color: var(--bg); }
+    .map-room .challenge-badge.done { background: var(--green); color: var(--bg); }
 
     /* --- Main Content --- */
     #main {
@@ -133,6 +177,35 @@
       letter-spacing: 1px;
     }
 
+    /* --- Room Image --- */
+    .room-image {
+      aspect-ratio: 16 / 9;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .room-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .room-image.placeholder {
+      background: linear-gradient(135deg, #1a1e2e 0%, #0d1117 50%, #161b22 100%);
+      border-style: dashed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      font-style: italic;
+    }
+
     #room-description {
       font-size: 14px;
       line-height: 1.7;
@@ -147,6 +220,119 @@
       color: var(--accent);
       font-size: 13px;
     }
+
+    /* --- Challenge Panel --- */
+    #challenge-panel {
+      border: 2px solid var(--yellow);
+      border-radius: 10px;
+      overflow: hidden;
+      display: none;
+      animation: fadeSlideIn 0.3s ease;
+    }
+
+    #challenge-panel.active { display: block; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #challenge-header {
+      background: rgba(210, 153, 34, 0.1);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--yellow);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #challenge-header .icon { font-size: 16px; }
+
+    #challenge-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--yellow);
+    }
+
+    #challenge-desc {
+      padding: 12px 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    #challenge-desc code {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--accent);
+      font-size: 12px;
+    }
+
+    #challenge-choices {
+      padding: 8px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .challenge-choice-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .challenge-choice-btn:hover {
+      border-color: var(--yellow);
+      background: rgba(210, 153, 34, 0.08);
+    }
+
+    .challenge-choice-btn .choice-key {
+      background: var(--yellow);
+      color: var(--bg);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      min-width: 24px;
+      text-align: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .challenge-choice-btn .choice-text { flex: 1; }
+    .challenge-choice-btn .choice-label { display: block; }
+    .challenge-choice-btn .choice-hint { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* --- Result Banner --- */
+    #result-banner {
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: none;
+      animation: fadeSlideIn 0.3s ease;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    #result-banner.active { display: block; }
+    #result-banner.good { border: 1px solid var(--green); background: rgba(63, 185, 80, 0.08); color: var(--green); }
+    #result-banner.ok { border: 1px solid var(--yellow); background: rgba(210, 153, 34, 0.08); color: var(--yellow); }
+    #result-banner.bad { border: 1px solid var(--red); background: rgba(248, 81, 73, 0.08); color: var(--red); }
+
+    .stat-delta { font-weight: 600; font-size: 11px; }
+    .stat-delta.positive { color: var(--green); }
+    .stat-delta.negative { color: var(--red); }
 
     /* --- Artifacts / Items --- */
     #artifacts {
@@ -181,7 +367,7 @@
     .artifact-name { color: var(--yellow); }
     .artifact-type { font-size: 10px; color: var(--muted); text-transform: uppercase; }
 
-    /* --- Choices --- */
+    /* --- Navigation Choices --- */
     #choices {
       display: flex;
       flex-direction: column;
@@ -210,7 +396,7 @@
       background: var(--accent-dim);
     }
 
-    .choice-key {
+    .choice-btn .choice-key {
       background: var(--border);
       color: var(--text);
       padding: 2px 8px;
@@ -221,8 +407,8 @@
       text-align: center;
     }
 
-    .choice-label { flex: 1; }
-    .choice-hint { font-size: 11px; color: var(--muted); }
+    .choice-btn .choice-label { flex: 1; }
+    .choice-btn .choice-hint { font-size: 11px; color: var(--muted); }
 
     /* --- Sidebar: Inventory / Log --- */
     #sidebar {
@@ -268,6 +454,7 @@
     .log-entry.discovery { color: var(--green); }
     .log-entry.warning { color: var(--yellow); }
     .log-entry.error { color: var(--red); }
+    .log-entry.ending { color: var(--purple); }
 
     .inv-item {
       padding: 6px 8px;
@@ -279,9 +466,95 @@
     .inv-item-name { color: var(--yellow); font-size: 12px; }
     .inv-item-desc { color: var(--muted); font-size: 10px; }
 
-    /* --- Utilities --- */
-    .hidden { display: none !important; }
+    /* --- Ending Screen --- */
+    #ending-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.5s ease;
+    }
 
+    #ending-overlay.active { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    #ending-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 560px;
+      width: 90%;
+      text-align: center;
+      animation: scaleIn 0.4s ease 0.2s both;
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    #ending-card .ending-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    #ending-card h2 {
+      font-size: 22px;
+      margin-bottom: 16px;
+    }
+
+    #ending-card .ending-desc {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    #ending-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 28px;
+      text-align: left;
+    }
+
+    .ending-stat {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .ending-stat .label { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+    .ending-stat .value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+
+    #play-again-btn {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 10px 28px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    #play-again-btn:hover { opacity: 0.85; }
+
+    /* --- Utilities --- */
     #toggle-map {
       background: none;
       border: 1px solid var(--border);
@@ -295,14 +568,16 @@
 
     #toggle-map:hover { border-color: var(--accent); color: var(--accent); }
 
-    /* --- Typewriter effect --- */
-    .typing { border-right: 2px solid var(--accent); animation: blink 0.8s step-end infinite; }
-    @keyframes blink { 50% { border-color: transparent; } }
-
     /* --- Responsive --- */
+    @media (max-width: 900px) {
+      #stat-bars { flex-wrap: wrap; gap: 8px; }
+      .stat-bar { width: 40px; }
+    }
+
     @media (max-width: 768px) {
       #main { flex-direction: column; padding: 16px; }
       #sidebar { min-width: unset; }
+      #stat-bars { gap: 6px; }
     }
   </style>
 </head>
@@ -310,11 +585,30 @@
 
   <!-- HUD -->
   <header id="hud">
-    <h1>COMFYUI FRONTEND — ARCHITECTURE ADVENTURE</h1>
-    <div id="stats">
-      <span><span class="stat-icon">&#9670;</span> Rooms: <span class="stat-value" id="stat-rooms">0/0</span></span>
-      <span><span class="stat-icon">&#9733;</span> Artifacts: <span class="stat-value" id="stat-artifacts">0</span></span>
-      <span><span class="stat-icon">&#9881;</span> Layer: <span class="stat-value" id="stat-layer">—</span></span>
+    <h1>CODEBASE CAVERNS</h1>
+    <div id="hud-right">
+      <div id="stat-bars">
+        <div class="stat-bar-group stat-debt">
+          <span class="stat-bar-label">Debt</span>
+          <div class="stat-bar"><div class="stat-bar-fill" id="bar-debt"></div></div>
+          <span class="stat-bar-value" id="val-debt">50</span>
+        </div>
+        <div class="stat-bar-group stat-quality">
+          <span class="stat-bar-label">Quality</span>
+          <div class="stat-bar"><div class="stat-bar-fill" id="bar-quality"></div></div>
+          <span class="stat-bar-value" id="val-quality">30</span>
+        </div>
+        <div class="stat-bar-group stat-morale">
+          <span class="stat-bar-label">Morale</span>
+          <div class="stat-bar"><div class="stat-bar-fill" id="bar-morale"></div></div>
+          <span class="stat-bar-value" id="val-morale">60</span>
+        </div>
+        <div class="stat-bar-group stat-migration">
+          <span class="stat-bar-label">ECS</span>
+          <div class="stat-bar"><div class="stat-bar-fill" id="bar-migration"></div></div>
+          <span class="stat-bar-value" id="val-migration">0/5</span>
+        </div>
+      </div>
       <button id="toggle-map">Map [M]</button>
     </div>
   </header>
@@ -330,10 +624,20 @@
     <!-- Narrative -->
     <section id="narrative">
       <div id="room-header">
-        <div id="room-layer">—</div>
+        <div id="room-layer"></div>
         <h2 id="room-title">Loading...</h2>
       </div>
+      <div id="room-image" class="room-image" style="display:none"></div>
       <div id="room-description"></div>
+      <div id="challenge-panel">
+        <div id="challenge-header">
+          <span class="icon">&#9888;</span>
+          <span id="challenge-title"></span>
+        </div>
+        <div id="challenge-desc"></div>
+        <div id="challenge-choices"></div>
+      </div>
+      <div id="result-banner"></div>
       <div id="artifacts">
         <div id="artifacts-header">Artifacts in this room</div>
         <div id="artifacts-list"></div>
@@ -349,7 +653,7 @@
           <span id="inv-count">0</span>
         </div>
         <div class="sidebar-body" id="inventory">
-          <div class="log-entry" style="color:var(--muted)">Empty — explore to find artifacts.</div>
+          <div class="log-entry" style="color:var(--muted)">Empty &mdash; explore to find artifacts.</div>
         </div>
       </div>
       <div class="sidebar-section">
@@ -363,30 +667,65 @@
 
   </div>
 
+  <!-- Ending Overlay -->
+  <div id="ending-overlay">
+    <div id="ending-card">
+      <div class="ending-label">Adventure Complete</div>
+      <h2 id="ending-title"></h2>
+      <div class="ending-desc" id="ending-desc"></div>
+      <div id="ending-stats"></div>
+      <button id="play-again-btn">Play Again</button>
+    </div>
+  </div>
+
   <script>
     // =============================================
-    // Game Engine — Skeleton
+    // Game Engine
     // =============================================
 
-    const state = {
-      currentRoom: 'entry',
-      visited: new Set(),
-      inventory: [],
-      log: [],
-      roomCount: 0,
+    function createInitialState() {
+      return {
+        currentRoom: 'entry',
+        visited: new Set(),
+        inventory: [],
+        log: [],
+        stats: { techDebt: 50, quality: 30, morale: 60, migrationProgress: 0 },
+        challengesCompleted: new Set(),
+        endingShown: false,
+      }
+    }
+
+    let state = createInitialState()
+
+    const TOTAL_CHALLENGES = 7
+
+    // --- Image prompts per room ---
+    // Image generation prompts per room (also exported as adventure-image-prompts.json)
+    const imagePrompts = {
+      entry: 'Pixel art of a glowing terminal in a vast dark server room, Vue.js and TypeScript logos floating as holographic projections, three corridors branching ahead lit by blue, green, and purple lights',
+      components: 'Pixel art gallery hall with framed Vue component cards hung on stone walls, a massive canvas painting labeled "GraphView" in the center, smaller panels flanking either side, warm torchlight',
+      stores: 'Pixel art underground vault with 60 glowing vault doors lining the walls, three doors in front glow brightest (labeled widget, layout, promotion), a Pinia pineapple emblem etched in stone above',
+      services: 'Pixel art clean corridors with labeled pipes connecting rooms overhead, data flowing as glowing particles through transparent tubes, service names etched on brass plaques',
+      litegraph: 'Pixel art dark engine room with three massive monolith machines labeled 9100, 4300, and 3100 lines of code, warning lights flashing amber, tangled wires and cables everywhere',
+      ecs: "Pixel art architect's drafting room with blueprints pinned to walls showing entity-component diagrams, a glowing World orb floating in the center, branded ID cards scattered across the desk",
+      renderer: 'Pixel art observation deck overlooking a vast canvas being painted by precise robotic arms, Y.js CRDT symbols floating in the air, a QuadTree grid visible on the floor below',
+      composables: 'Pixel art workshop with hooks hanging from a pegboard wall, each labeled (useCoreCommands, useCanvasDrop, etc.), workbenches for auth, canvas, and queue domains, cozy lantern light',
+      sidepanel: 'Pixel art multi-tabbed control panel glowing in the dark, a node browser search bar at top, properties inspector in the middle, model catalog below, all connected by wires to vault doors',
     }
 
     // --- Room Definitions ---
     const rooms = {
       entry: {
         title: 'The Entry Point',
-        layer: 'src',
+        layer: 'src/main.ts',
         description: `
           You stand at <code>src/main.ts</code>, the entry point of the ComfyUI frontend.
           The air hums with the bootstrapping of a Vue 3 application. Pinia stores
           initialize around you, the router unfurls paths into the distance, and
           i18n translations whisper in dozens of languages.<br><br>
           Three corridors stretch ahead, each leading deeper into the architecture.
+          Somewhere in this codebase, god objects lurk, mutations scatter in the shadows,
+          and a grand migration awaits your decisions.
         `,
         artifacts: [],
         choices: [
@@ -401,7 +740,7 @@
         layer: 'Presentation',
         description: `
           Vast halls lined with Vue Single File Components. <code>GraphView.vue</code>
-          dominates the center — the main canvas workspace where nodes are wired together.
+          dominates the center &mdash; the main canvas workspace where nodes are wired together.
           To one side, <code>LinearView.vue</code> offers an alternative perspective.<br><br>
           Panels flank the walls: the right side panel houses the node browser and properties;
           the bottom panel shows queues and console output.
@@ -409,6 +748,38 @@
         artifacts: [
           { name: 'GraphView.vue', type: 'Component' },
         ],
+        challenge: {
+          title: 'The Circular Dependency',
+          description: `
+            A tangled knot blocks the corridor ahead. <code>Subgraph</code> extends <code>LGraph</code>,
+            but <code>LGraph</code> creates and manages Subgraph instances. The circular import
+            forces order-dependent barrel exports and makes testing impossible in isolation.<br><br>
+            How do you untangle it?
+          `,
+          choices: [
+            {
+              key: 'A', label: 'Composition over inheritance',
+              hint: 'Subgraph HAS a graph, not IS a graph. ECS eliminates class inheritance entirely.',
+              effects: { techDebt: -10, quality: 15, morale: 5, migrationProgress: 1 },
+              rating: 'good',
+              feedback: 'The circular dependency dissolves. Subgraph becomes a thin wrapper holding a graph reference. Components replace inheritance.',
+            },
+            {
+              key: 'B', label: 'Barrel file reordering',
+              hint: 'Rearrange exports so the cycle resolves at module load time.',
+              effects: { techDebt: 10, quality: -5, morale: -5 },
+              rating: 'bad',
+              feedback: 'The imports stop crashing... for now. But the underlying coupling remains, and any new file touching both classes risks reviving the cycle.',
+            },
+            {
+              key: 'C', label: 'Factory injection',
+              hint: 'Pass a graph factory function to break the static import cycle.',
+              effects: { techDebt: -5, quality: 10 },
+              rating: 'ok',
+              feedback: 'The factory breaks the import cycle cleanly. It\'s a pragmatic fix, though the classes remain tightly coupled at runtime.',
+            },
+          ],
+        },
         choices: [
           { key: '1', label: 'Inspect the Canvas', hint: 'Litegraph Engine', room: 'litegraph' },
           { key: '2', label: 'Open the Right Side Panel', hint: 'Node Browser & Properties', room: 'sidepanel' },
@@ -421,8 +792,8 @@
         layer: 'State',
         description: `
           Sixty Pinia stores line the walls like vault doors, each guarding a domain of reactive state.
-          The proto-ECS stores glow brightest — <code>widgetValueStore</code>,
-          <code>layoutStore</code>, and <code>promotionStore</code> — bridging the old
+          The proto-ECS stores glow brightest &mdash; <code>widgetValueStore</code>,
+          <code>layoutStore</code>, and <code>promotionStore</code> &mdash; bridging the old
           litegraph world with a modern ECS future.<br><br>
           Deeper in, <code>queueStore</code> tracks execution jobs and
           <code>nodeDefStore</code> catalogs every node type known to the system.
@@ -431,6 +802,39 @@
           { name: 'widgetValueStore.ts', type: 'Proto-ECS Store' },
           { name: 'layoutStore.ts', type: 'Proto-ECS Store' },
         ],
+        challenge: {
+          title: 'The Scattered Mutations',
+          description: `
+            Deep in the vaults, you find a fragile counter: <code>graph._version++</code>.
+            It appears in <strong>19 locations across 7 files</strong> &mdash; LGraph.ts (5 sites),
+            LGraphNode.ts (8 sites), LGraphCanvas.ts (2 sites), BaseWidget.ts, SubgraphInput.ts,
+            SubgraphInputNode.ts, SubgraphOutput.ts.<br><br>
+            Change tracking depends on this scattered increment. One missed site means silent data loss.
+          `,
+          choices: [
+            {
+              key: 'A', label: 'Centralize into graph.incrementVersion()',
+              hint: 'Route all 19 sites through a single method. Phase 0a of the migration plan.',
+              effects: { techDebt: -15, quality: 15, migrationProgress: 1 },
+              rating: 'good',
+              feedback: 'All 19 scattered increments now flow through one method. Change tracking becomes auditable, and the VersionSystem has a single hook point.',
+            },
+            {
+              key: 'B', label: 'Add a JavaScript Proxy',
+              hint: 'Intercept all writes to _version automatically.',
+              effects: { techDebt: 5, quality: 5, morale: -5 },
+              rating: 'ok',
+              feedback: 'The Proxy catches mutations, but adds runtime overhead and makes debugging opaque. The scattered sites remain in the code.',
+            },
+            {
+              key: 'C', label: 'Leave it as-is',
+              hint: 'It works. Don\'t touch it.',
+              effects: { techDebt: 10, morale: 5 },
+              rating: 'bad',
+              feedback: 'The team breathes a sigh of relief... until the next silent data loss bug from a missed increment site.',
+            },
+          ],
+        },
         choices: [
           { key: '1', label: 'Examine the ECS Blueprints', hint: 'Entity-Component-System', room: 'ecs' },
           { key: '2', label: 'Visit the Renderer', hint: 'Canvas & Layout', room: 'renderer' },
@@ -452,6 +856,38 @@
         artifacts: [
           { name: 'litegraphService.ts', type: 'Service' },
         ],
+        challenge: {
+          title: 'The Migration Question',
+          description: `
+            A fork in the corridor. The legacy litegraph engine works &mdash; thousands of users
+            depend on it daily. But the architecture docs describe a better future: ECS with
+            branded types, pure systems, and a World registry.<br><br>
+            How do you get from here to there without breaking production?
+          `,
+          choices: [
+            {
+              key: 'A', label: '5-phase incremental plan',
+              hint: 'Foundation \u2192 Types \u2192 Bridge \u2192 Systems \u2192 Legacy Removal. Each phase is independently shippable.',
+              effects: { quality: 15, morale: 10, migrationProgress: 1 },
+              rating: 'good',
+              feedback: 'The team maps out five phases, each independently testable and shippable. Old and new coexist during transition. Production never breaks.',
+            },
+            {
+              key: 'B', label: 'Big bang rewrite',
+              hint: 'Freeze features, rewrite everything in parallel, swap when ready.',
+              effects: { techDebt: -10, quality: 5, morale: -20 },
+              rating: 'bad',
+              feedback: 'Feature freeze begins. Weeks pass. The rewrite grows scope. Morale plummets. The old codebase drifts further from the new one.',
+            },
+            {
+              key: 'C', label: 'Strangler fig pattern',
+              hint: 'Build new ECS beside old code, migrate consumers one by one.',
+              effects: { quality: 10, morale: 5 },
+              rating: 'ok',
+              feedback: 'A solid pattern. The new system grows organically around the old, though without a phased plan the migration lacks clear milestones.',
+            },
+          ],
+        },
         choices: [
           { key: '1', label: 'Follow the Composables', hint: 'Reusable Logic Hooks', room: 'composables' },
           { key: '2', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
@@ -463,9 +899,9 @@
         layer: 'Graph Engine',
         description: `
           The beating heart of ComfyUI's visual programming. Massive class files loom:
-          <code>LGraphCanvas.ts</code> at 276KB handles all rendering and interaction,
-          <code>LGraphNode.ts</code> at 127KB is the god-object node entity, and
-          <code>LGraph.ts</code> at 93KB contains the graph itself.<br><br>
+          <code>LGraphCanvas.ts</code> at ~9,100 lines handles all rendering and interaction,
+          <code>LGraphNode.ts</code> at ~4,300 lines is the god-object node entity, and
+          <code>LGraph.ts</code> at ~3,100 lines contains the graph itself.<br><br>
           Warning signs mark known issues: circular dependencies, render-time side effects,
           and scattered mutation sites. The ECS migration aims to tame this complexity.
         `,
@@ -473,6 +909,39 @@
           { name: 'LGraphCanvas.ts', type: 'God Object' },
           { name: 'LGraphNode.ts', type: 'God Object' },
         ],
+        challenge: {
+          title: 'The God Object Dilemma',
+          description: `
+            <code>LGraphCanvas</code> looms before you: <strong>~9,100 lines</strong> of rendering,
+            input handling, selection, context menus, undo/redo, and more. <code>LGraphNode</code>
+            adds <strong>~4,300 lines</strong> with ~539 method/property definitions mixing rendering,
+            serialization, connectivity, execution, layout, and state management.<br><br>
+            These god objects are the root of most architectural pain. What's your approach?
+          `,
+          choices: [
+            {
+              key: 'A', label: 'Rewrite from scratch',
+              hint: 'Tear it all down and rebuild with clean architecture from day one.',
+              effects: { techDebt: -20, quality: 5, morale: -25 },
+              rating: 'bad',
+              feedback: 'The rewrite begins heroically... and stalls at month three. The team burns out reimplementing edge cases the god objects handled implicitly.',
+            },
+            {
+              key: 'B', label: 'Extract incrementally',
+              hint: 'Peel responsibilities into focused modules one at a time. Position first, then connectivity, then rendering.',
+              effects: { techDebt: -10, quality: 15, morale: 5, migrationProgress: 1 },
+              rating: 'good',
+              feedback: 'Position extraction lands first (it\'s already in LayoutStore). Then connectivity. Each extraction is a small, testable PR. The god objects shrink steadily.',
+            },
+            {
+              key: 'C', label: 'Add a facade layer',
+              hint: 'Wrap the god objects with a clean API without changing internals.',
+              effects: { techDebt: 5, quality: 5, morale: 10 },
+              rating: 'ok',
+              feedback: 'The facade provides a nicer API, but the complexity still lives behind it. New features still require diving into the god objects.',
+            },
+          ],
+        },
         choices: [
           { key: '1', label: 'Examine the ECS Blueprints', hint: 'The planned future', room: 'ecs' },
           { key: '2', label: 'Return to Components', hint: 'Presentation Layer', room: 'components' },
@@ -487,7 +956,7 @@
           Blueprints cover every surface. The Entity-Component-System architecture is taking shape:
           branded entity IDs (<code>NodeEntityId</code>, <code>LinkEntityId</code>, etc.)
           prevent cross-kind mistakes at compile time.<br><br>
-          The <code>World</code> registry maps each entity kind to its components — data-only
+          The <code>World</code> registry maps each entity kind to its components &mdash; data-only
           structs with no methods. Systems like RenderSystem and SerializationSystem are planned
           to operate on these components in clean, decoupled passes.
         `,
@@ -495,6 +964,40 @@
           { name: 'World Registry', type: 'ECS Core' },
           { name: 'Branded Entity IDs', type: 'Type Safety' },
         ],
+        challenge: {
+          title: 'The ID Crossroads',
+          description: `
+            The blueprints show a problem: <code>NodeId</code> is typed as <code>number | string</code>.
+            Nothing prevents passing a <code>LinkId</code> where a <code>NodeId</code> is expected.
+            Magic sentinel values lurk: <code>SUBGRAPH_INPUT_ID = -10</code>,
+            <code>SUBGRAPH_OUTPUT_ID = -20</code>. Widgets are identified by name + parent node (fragile lookup).
+            Slots are identified by array index (breaks when reordered).<br><br>
+            How do you bring type safety to this ID chaos?
+          `,
+          choices: [
+            {
+              key: 'A', label: 'Branded types with cast helpers',
+              hint: 'type NodeEntityId = number & { __brand: \'NodeEntityId\' } — compile-time safety, zero runtime cost.',
+              effects: { techDebt: -15, quality: 20, migrationProgress: 1 },
+              rating: 'good',
+              feedback: 'The compiler now catches cross-kind ID bugs. Cast helpers at system boundaries (asNodeEntityId()) keep the ergonomics clean. Phase 1a complete.',
+            },
+            {
+              key: 'B', label: 'String prefixes at runtime',
+              hint: '"node:42", "link:7" — parse and validate at every usage site.',
+              effects: { techDebt: 5, quality: 5, morale: -5 },
+              rating: 'ok',
+              feedback: 'Runtime checks catch some bugs, but parsing overhead spreads everywhere. And someone will forget the prefix check in a hot path.',
+            },
+            {
+              key: 'C', label: 'Keep plain numbers',
+              hint: 'Just be careful. Document which IDs are which.',
+              effects: { techDebt: 15, quality: -5 },
+              rating: 'bad',
+              feedback: 'The next developer passes a LinkId to a node lookup. The silent failure takes two days to debug in production.',
+            },
+          ],
+        },
         choices: [
           { key: '1', label: 'Visit the Renderer', hint: 'Canvas & Layout', room: 'renderer' },
           { key: '2', label: 'Return to the Store Vaults', hint: 'State Management', room: 'stores' },
@@ -507,7 +1010,7 @@
         layer: 'Renderer',
         description: `
           From here you can see the entire canvas rendering pipeline. The
-          <code>layoutStore</code> uses Y.js CRDTs for collaborative position data —
+          <code>layoutStore</code> uses Y.js CRDTs for collaborative position data &mdash;
           multiple users can edit the same graph simultaneously.<br><br>
           A <code>QuadTree</code> spatial index accelerates hit detection, and thumbnail
           generation creates workflow previews. The render loop reads layout state and
@@ -517,6 +1020,32 @@
           { name: 'QuadTree Spatial Index', type: 'Data Structure' },
           { name: 'Y.js CRDT Layout', type: 'Collaboration' },
         ],
+        challenge: {
+          title: 'The Render-Time Mutation',
+          description: `
+            Alarms sound. The render pipeline has a critical flaw: <code>drawNode()</code> calls
+            <code>_setConcreteSlots()</code> and <code>arrange()</code> during the render pass.
+            The <strong>render phase mutates state</strong>, making draw order affect layout.
+            Node A's position depends on whether Node B was drawn first.<br><br>
+            How do you fix the pipeline?
+          `,
+          choices: [
+            {
+              key: 'A', label: 'Separate update and render phases',
+              hint: 'Compute all layout in an update pass, then render as a pure read-only pass. Matches the ECS system pipeline.',
+              effects: { techDebt: -15, quality: 15, migrationProgress: 1 },
+              rating: 'good',
+              feedback: 'The pipeline becomes: Input \u2192 Update (layout, connectivity) \u2192 Render (read-only). Draw order no longer matters. Bugs vanish.',
+            },
+            {
+              key: 'B', label: 'Dirty flags and deferred render',
+              hint: 'Mark mutated nodes dirty, skip them, re-render next frame.',
+              effects: { techDebt: -5, quality: 5, morale: 5 },
+              rating: 'ok',
+              feedback: 'Dirty flags reduce the worst symptoms, but the render pass still has permission to mutate. It\'s a band-aid on an architectural wound.',
+            },
+          ],
+        },
         choices: [
           { key: '1', label: 'Examine the ECS Blueprints', hint: 'Entity-Component-System', room: 'ecs' },
           { key: '2', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
@@ -528,7 +1057,7 @@
         layer: 'Composables',
         description: `
           Hooks hang from the walls, each a reusable piece of Vue composition logic.
-          <code>useCoreCommands.ts</code> is the largest at 42KB — an orchestrator binding
+          <code>useCoreCommands.ts</code> is the largest at 42KB &mdash; an orchestrator binding
           keyboard shortcuts to application commands.<br><br>
           Domain-specific workshops branch off: <code>auth/</code>, <code>canvas/</code>,
           <code>queue/</code>, <code>node/</code>, <code>graph/</code>. Each composable
@@ -537,6 +1066,37 @@
         artifacts: [
           { name: 'useCoreCommands.ts', type: 'Composable' },
         ],
+        challenge: {
+          title: 'The Collaboration Protocol',
+          description: `
+            A request arrives: multiple users want to edit the same workflow simultaneously.
+            The <code>layoutStore</code> already extracts position data from litegraph entities.
+            But how do you synchronize positions across users without conflicts?
+          `,
+          choices: [
+            {
+              key: 'A', label: 'Y.js CRDTs',
+              hint: 'Conflict-free replicated data types. Merge without coordination. Already proven at scale.',
+              effects: { techDebt: -10, quality: 15, morale: 10 },
+              rating: 'good',
+              feedback: 'Y.js CRDT maps back the layout store. Concurrent edits merge automatically. ADR 0003 is realized. The collaboration future is here.',
+            },
+            {
+              key: 'B', label: 'Polling-based sync',
+              hint: 'Fetch full state every few seconds, merge manually, hope for the best.',
+              effects: { techDebt: 10, quality: -5, morale: -5 },
+              rating: 'bad',
+              feedback: 'Polling creates a flickering, laggy experience. Two users move the same node and one edit is silently lost. Support tickets pile up.',
+            },
+            {
+              key: 'C', label: 'Skip collaboration for now',
+              hint: 'Single-user editing only. Focus on other priorities.',
+              effects: { morale: 5 },
+              rating: 'ok',
+              feedback: 'A pragmatic choice. The team focuses elsewhere. But the cloud product team is not happy about the delay.',
+            },
+          ],
+        },
         choices: [
           { key: '1', label: 'Descend into the Store Vaults', hint: 'State Management', room: 'stores' },
           { key: '2', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
@@ -563,30 +1123,131 @@
       },
     }
 
-    // Count total rooms
     const totalRooms = Object.keys(rooms).length
+
+    // --- Endings ---
+    const endings = [
+      {
+        id: 'great',
+        test: (s) => s.techDebt < 25 && s.quality >= 75 && s.morale >= 60,
+        title: 'The ECS Enlightenment',
+        color: '--green',
+        description: `The World registry hums with clean data. Node removal: 30 lines instead of 107.
+          Serialization: one system instead of six scattered methods. Branded IDs catch bugs at compile time.
+          Y.js CRDTs enable real-time collaboration. The team ships features faster than ever.<br><br>
+          The god objects are gone. In their place: focused components, pure systems, and a codebase
+          that new developers can understand in days, not months.`,
+      },
+      {
+        id: 'good',
+        test: (s) => s.techDebt < 40 && s.quality >= 50,
+        title: 'The Clean Architecture',
+        color: '--accent',
+        description: `The migration completes on schedule. Systems hum along, the ECS World holds
+          most entity state, and the worst god objects have been tamed. A few rough edges remain,
+          but the architecture is solid.<br><br>
+          The team can iterate with confidence. Not perfect, but a significant improvement
+          over the tangled monolith you first encountered.`,
+      },
+      {
+        id: 'mediocre',
+        test: (s) => s.techDebt < 70,
+        title: 'The Eternal Refactor',
+        color: '--yellow',
+        description: `The migration... continues. Every sprint has a "cleanup" ticket that never quite closes.
+          The proto-ECS stores coexist awkwardly with the old god objects. Some components use
+          the World, others still reach through class hierarchies.<br><br>
+          It works, mostly. But every new feature requires understanding both the old and new patterns.
+          The refactor continues into its third year.`,
+      },
+      {
+        id: 'disaster',
+        test: () => true,
+        title: 'The Spaghetti Singularity',
+        color: '--red',
+        description: `The god objects grew sentient. LGraphCanvas hit 12,000 lines and developed
+          a circular dependency with itself. Render-time mutations cause nodes to teleport randomly.
+          The version counter overflows because nobody centralized the 19 increment sites.<br><br>
+          The codebase collapses under its own weight. The team rewrites it in Rust. Then in Go.
+          Then back in TypeScript. The cycle continues.`,
+      },
+    ]
 
     // --- DOM Refs ---
     const $ = (sel) => document.querySelector(sel)
-    const $$ = (sel) => document.querySelectorAll(sel)
 
     const els = {
       roomTitle: $('#room-title'),
       roomLayer: $('#room-layer'),
       roomDesc: $('#room-description'),
+      roomImage: $('#room-image'),
       choices: $('#choices'),
+      challengePanel: $('#challenge-panel'),
+      challengeTitle: $('#challenge-title'),
+      challengeDesc: $('#challenge-desc'),
+      challengeChoices: $('#challenge-choices'),
+      resultBanner: $('#result-banner'),
       artifacts: $('#artifacts'),
       artifactsList: $('#artifacts-list'),
       inventory: $('#inventory'),
       invCount: $('#inv-count'),
       log: $('#log'),
       logCount: $('#log-count'),
-      statRooms: $('#stat-rooms'),
-      statArtifacts: $('#stat-artifacts'),
-      statLayer: $('#stat-layer'),
+      barDebt: $('#bar-debt'),
+      barQuality: $('#bar-quality'),
+      barMorale: $('#bar-morale'),
+      barMigration: $('#bar-migration'),
+      valDebt: $('#val-debt'),
+      valQuality: $('#val-quality'),
+      valMorale: $('#val-morale'),
+      valMigration: $('#val-migration'),
       map: $('#map'),
       mapPanel: $('#map-panel'),
       toggleMap: $('#toggle-map'),
+      endingOverlay: $('#ending-overlay'),
+      endingTitle: $('#ending-title'),
+      endingDesc: $('#ending-desc'),
+      endingStats: $('#ending-stats'),
+      playAgainBtn: $('#play-again-btn'),
+    }
+
+    // --- Stats ---
+    function clamp(val, min, max) {
+      return Math.max(min, Math.min(max, val))
+    }
+
+    function applyEffects(effects) {
+      if (!effects) return
+      const s = state.stats
+      if (effects.techDebt) s.techDebt = clamp(s.techDebt + effects.techDebt, 0, 100)
+      if (effects.quality) s.quality = clamp(s.quality + effects.quality, 0, 100)
+      if (effects.morale) s.morale = clamp(s.morale + effects.morale, 0, 100)
+      if (effects.migrationProgress) s.migrationProgress = clamp(s.migrationProgress + effects.migrationProgress, 0, 5)
+      renderStats()
+    }
+
+    function renderStats() {
+      const s = state.stats
+      els.barDebt.style.width = s.techDebt + '%'
+      els.barQuality.style.width = s.quality + '%'
+      els.barMorale.style.width = s.morale + '%'
+      els.barMigration.style.width = (s.migrationProgress / 5 * 100) + '%'
+      els.valDebt.textContent = s.techDebt
+      els.valQuality.textContent = s.quality
+      els.valMorale.textContent = s.morale
+      els.valMigration.textContent = s.migrationProgress + '/5'
+    }
+
+    function formatEffects(effects) {
+      const labels = { techDebt: 'Debt', quality: 'Quality', morale: 'Morale', migrationProgress: 'ECS' }
+      return Object.entries(effects)
+        .filter(([, v]) => v !== 0 && v !== undefined)
+        .map(([k, v]) => {
+          const sign = v > 0 ? '+' : ''
+          const cls = (k === 'techDebt' ? (v < 0 ? 'positive' : 'negative') : (v > 0 ? 'positive' : 'negative'))
+          return `<span class="stat-delta ${cls}">${labels[k]} ${sign}${v}</span>`
+        })
+        .join(' &nbsp; ')
     }
 
     // --- Rendering ---
@@ -600,13 +1261,32 @@
       // Header
       els.roomTitle.textContent = room.title
       els.roomLayer.textContent = room.layer
-      els.statLayer.textContent = room.layer
+
+      // Room image
+      const prompt = imagePrompts[roomId]
+      els.roomImage.style.display = ''
+      els.roomImage.classList.remove('placeholder')
+      const img = new Image()
+      img.src = `images/${roomId}.png`
+      img.alt = prompt || room.title
+      img.onload = () => {
+        els.roomImage.innerHTML = ''
+        els.roomImage.appendChild(img)
+      }
+      img.onerror = () => {
+        if (prompt) {
+          els.roomImage.classList.add('placeholder')
+          els.roomImage.innerHTML = `<span>${prompt}</span>`
+        } else {
+          els.roomImage.style.display = 'none'
+        }
+      }
 
       // Description
       els.roomDesc.innerHTML = room.description.trim()
 
       // Artifacts in room
-      if (room.artifacts.length > 0) {
+      if (room.artifacts && room.artifacts.length > 0) {
         els.artifacts.classList.add('has-items')
         els.artifactsList.innerHTML = room.artifacts.map(a => `
           <div class="artifact">
@@ -615,7 +1295,6 @@
           </div>
         `).join('')
 
-        // Auto-collect artifacts
         for (const a of room.artifacts) {
           if (!state.inventory.find(i => i.name === a.name)) {
             state.inventory.push(a)
@@ -627,8 +1306,93 @@
         els.artifactsList.innerHTML = ''
       }
 
-      // Choices
-      els.choices.innerHTML = room.choices.map(c => `
+      // Challenge or navigation
+      const hasUnresolvedChallenge = room.challenge && !state.challengesCompleted.has(roomId)
+
+      if (hasUnresolvedChallenge) {
+        showChallenge(roomId, room.challenge)
+      } else {
+        hideChallenge()
+      }
+      renderChoices(room.choices)
+
+      // Clear result banner on room change
+      els.resultBanner.classList.remove('active')
+
+      // Update HUD
+      renderStats()
+      renderInventory()
+      renderMap()
+
+      addLog(`Entered: ${room.title}`)
+    }
+
+    function showChallenge(roomId, challenge) {
+      els.challengePanel.classList.add('active')
+      els.challengeTitle.textContent = challenge.title
+      els.challengeDesc.innerHTML = challenge.description.trim()
+
+      els.challengeChoices.innerHTML = challenge.choices.map(c => `
+        <button class="challenge-choice-btn" data-key="${c.key}">
+          <span class="choice-key">${c.key}</span>
+          <div class="choice-text">
+            <span class="choice-label">${c.label}</span>
+            <span class="choice-hint">${c.hint}</span>
+          </div>
+        </button>
+      `).join('')
+
+      els.challengeChoices.querySelectorAll('.challenge-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.key
+          resolveChallenge(roomId, key)
+        })
+      })
+    }
+
+    function hideChallenge() {
+      els.challengePanel.classList.remove('active')
+    }
+
+    function resolveChallenge(roomId, choiceKey) {
+      const room = rooms[roomId]
+      const challenge = room.challenge
+      const choice = challenge.choices.find(c => c.key === choiceKey)
+      if (!choice) return
+
+      state.challengesCompleted.add(roomId)
+
+      // Apply effects
+      applyEffects(choice.effects)
+
+      // Hide challenge, show result
+      hideChallenge()
+
+      els.resultBanner.className = 'active ' + choice.rating
+      els.resultBanner.classList.add('active')
+      els.resultBanner.innerHTML = `
+        <strong>${choice.label}</strong><br>
+        ${choice.feedback}<br><br>
+        ${formatEffects(choice.effects)}
+      `
+
+      // Show navigation choices
+      renderChoices(room.choices)
+
+      // Log
+      addLog(`Challenge resolved: ${challenge.title}`, choice.rating === 'good' ? 'discovery' : choice.rating === 'bad' ? 'error' : 'warning')
+
+      // Check ending
+      if (state.challengesCompleted.size >= TOTAL_CHALLENGES) {
+        addLog('All challenges resolved. Your fate is sealed...', 'ending')
+        setTimeout(showEnding, 1500)
+      }
+
+      renderMap()
+    }
+
+    function renderChoices(choices) {
+      els.choices.innerHTML = choices.map(c => `
         <button class="choice-btn" data-room="${c.room}">
           <span class="choice-key">${c.key}</span>
           <span class="choice-label">${c.label}</span>
@@ -636,16 +1400,12 @@
         </button>
       `).join('')
 
-      // Bind choice clicks
       els.choices.querySelectorAll('.choice-btn').forEach(btn => {
         btn.addEventListener('click', () => render(btn.dataset.room))
       })
+    }
 
-      // Update HUD
-      els.statRooms.textContent = `${state.visited.size}/${totalRooms}`
-      els.statArtifacts.textContent = state.inventory.length
-
-      // Update inventory
+    function renderInventory() {
       if (state.inventory.length > 0) {
         els.inventory.innerHTML = state.inventory.map(i => `
           <div class="inv-item">
@@ -655,12 +1415,6 @@
         `).join('')
       }
       els.invCount.textContent = state.inventory.length
-
-      // Update map
-      renderMap()
-
-      // Log navigation
-      addLog(`Entered: ${room.title}`)
     }
 
     function addLog(message, type = '') {
@@ -676,9 +1430,19 @@
         const classes = ['map-room']
         if (id === state.currentRoom) classes.push('current')
         else if (state.visited.has(id)) classes.push('visited')
+
+        let badge = ''
+        if (room.challenge) {
+          if (state.challengesCompleted.has(id)) {
+            badge = '<span class="challenge-badge done">&#10003;</span>'
+          } else {
+            badge = '<span class="challenge-badge pending">?</span>'
+          }
+        }
+
         return `
           <div class="${classes.join(' ')}" data-room="${id}">
-            <div class="room-layer">${room.layer}</div>
+            <div class="room-layer">${room.layer}${badge}</div>
             <div>${room.title}</div>
           </div>
         `
@@ -689,13 +1453,57 @@
       })
     }
 
+    // --- Endings ---
+    function showEnding() {
+      if (state.endingShown) return
+      state.endingShown = true
+
+      const s = state.stats
+      const ending = endings.find(e => e.test(s))
+
+      els.endingTitle.textContent = ending.title
+      els.endingTitle.style.color = `var(${ending.color})`
+      els.endingDesc.innerHTML = ending.description
+
+      const statColor = (label, val, good) => {
+        const color = good ? 'var(--green)' : (label === 'Technical Debt' ? 'var(--red)' : 'var(--yellow)')
+        return `<div class="ending-stat">
+          <div class="label">${label}</div>
+          <div class="value" style="color:${color}">${val}</div>
+        </div>`
+      }
+
+      els.endingStats.innerHTML = [
+        statColor('Technical Debt', s.techDebt, s.techDebt < 30),
+        statColor('Code Quality', s.quality, s.quality >= 60),
+        statColor('Team Morale', s.morale, s.morale >= 60),
+        statColor('ECS Migration', s.migrationProgress + ' / 5', s.migrationProgress >= 4),
+      ].join('')
+
+      els.endingOverlay.classList.add('active')
+    }
+
+    // --- Reset ---
+    function resetGame() {
+      state = createInitialState()
+      els.endingOverlay.classList.remove('active')
+      els.resultBanner.classList.remove('active')
+      els.resultBanner.className = ''
+      render('entry')
+      addLog('Welcome back, architect. The codebase awaits.', 'discovery')
+    }
+
     // --- Map Toggle ---
     els.toggleMap.addEventListener('click', () => {
       els.mapPanel.classList.toggle('open')
     })
 
+    els.playAgainBtn.addEventListener('click', resetGame)
+
     // --- Keyboard Navigation ---
     document.addEventListener('keydown', (e) => {
+      if (state.endingShown) return
+
       if (e.key === 'm' || e.key === 'M') {
         els.mapPanel.classList.toggle('open')
         return
@@ -704,13 +1512,23 @@
       const room = rooms[state.currentRoom]
       if (!room) return
 
+      // Check if challenge is active
+      const hasUnresolvedChallenge = room.challenge && !state.challengesCompleted.has(state.currentRoom)
+      if (hasUnresolvedChallenge && els.challengePanel.classList.contains('active')) {
+        const choice = room.challenge.choices.find(c => c.key.toLowerCase() === e.key.toLowerCase())
+        if (choice) resolveChallenge(state.currentRoom, choice.key)
+        return
+      }
+
+      // Normal navigation
       const choice = room.choices.find(c => c.key === e.key)
       if (choice) render(choice.room)
     })
 
     // --- Boot ---
     render('entry')
-    addLog('Welcome, architect. Explore the codebase.', 'discovery')
+    renderStats()
+    addLog('Welcome, architect. Explore the codebase. Challenges await in every room.', 'discovery')
   </script>
 
 </body>

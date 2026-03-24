@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "style": "Pixel art, 16:9 aspect ratio, dark moody palette with glowing accent lighting",
+    "usage": "Each key corresponds to a room ID in adventure.html. Generate images with generate-images.py.",
+    "model": "Z-Image Turbo (no LoRA)",
+    "resolution": "1152x640",
+    "generated": "2026-03-24"
+  },
+  "rooms": {
+    "entry": {
+      "title": "The Entry Point",
+      "prompt": "Pixel art of a glowing terminal in a vast dark server room, Vue.js and TypeScript logos floating as holographic projections, three corridors branching ahead lit by blue, green, and purple lights",
+      "path": "images/entry.png"
+    },
+    "components": {
+      "title": "The Component Gallery",
+      "prompt": "Pixel art gallery hall with framed Vue component cards hung on stone walls, a massive canvas painting labeled 'GraphView' in the center, smaller panels flanking either side, warm torchlight",
+      "path": "images/components.png"
+    },
+    "stores": {
+      "title": "The Store Vaults",
+      "prompt": "Pixel art underground vault with 60 glowing vault doors lining the walls, three doors in front glow brightest (labeled widget, layout, promotion), a Pinia pineapple emblem etched in stone above",
+      "path": "images/stores.png"
+    },
+    "services": {
+      "title": "The Service Corridors",
+      "prompt": "Pixel art clean corridors with labeled pipes connecting rooms overhead, data flowing as glowing particles through transparent tubes, service names etched on brass plaques",
+      "path": "images/services.png"
+    },
+    "litegraph": {
+      "title": "The Litegraph Engine Room",
+      "prompt": "Pixel art dark engine room with three massive monolith machines labeled 9100, 4300, and 3100 lines of code, warning lights flashing amber, tangled wires and cables everywhere",
+      "path": "images/litegraph.png"
+    },
+    "ecs": {
+      "title": "The ECS Architect's Chamber",
+      "prompt": "Pixel art architect's drafting room with blueprints pinned to walls showing entity-component diagrams, a glowing World orb floating in the center, branded ID cards scattered across the desk",
+      "path": "images/ecs.png"
+    },
+    "renderer": {
+      "title": "The Renderer Overlook",
+      "prompt": "Pixel art observation deck overlooking a vast canvas being painted by precise robotic arms, Y.js CRDT symbols floating in the air, a QuadTree grid visible on the floor below",
+      "path": "images/renderer.png"
+    },
+    "composables": {
+      "title": "The Composables Workshop",
+      "prompt": "Pixel art workshop with hooks hanging from a pegboard wall, each labeled (useCoreCommands, useCanvasDrop, etc.), workbenches for auth, canvas, and queue domains, cozy lantern light",
+      "path": "images/composables.png"
+    },
+    "sidepanel": {
+      "title": "The Right Side Panel",
+      "prompt": "Pixel art multi-tabbed control panel glowing in the dark, a node browser search bar at top, properties inspector in the middle, model catalog below, all connected by wires to vault doors",
+      "path": "images/sidepanel.png"
+    }
+  }
+}
