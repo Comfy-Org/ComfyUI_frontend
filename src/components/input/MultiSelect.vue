@@ -19,9 +19,9 @@
             'transition-all duration-200 ease-in-out',
             'hover:bg-secondary-background-hover',
             'border-[2.5px] border-solid border-transparent',
-            'focus-within:border-node-component-border',
-            'data-[state=open]:border-node-component-border',
-            selectedCount > 0 && 'border-base-foreground',
+            selectedCount > 0
+              ? 'border-base-foreground'
+              : 'focus-visible:border-node-component-border data-[state=open]:border-node-component-border',
             disabled &&
               'cursor-default opacity-30 hover:bg-secondary-background'
           )
@@ -72,6 +72,7 @@
             'data-[side=bottom]:slide-in-from-top-2'
           )
         "
+        @focus-outside="preventFocusDismiss"
       >
         <div
           v-if="showSearchBox || showSelectedCount || showClearButton"
@@ -162,6 +163,7 @@
 <script setup lang="ts">
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
+import type { FocusOutsideEvent } from 'reka-ui'
 import {
   ComboboxAnchor,
   ComboboxContent,
@@ -231,6 +233,10 @@ const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
 const { t } = useI18n()
 const selectedCount = computed(() => selectedItems.value.length)
+
+function preventFocusDismiss(event: FocusOutsideEvent) {
+  event.preventDefault()
+}
 
 const popoverStyle = usePopoverSizing({
   minWidth: popoverMinWidth,
